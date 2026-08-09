@@ -1,0 +1,164 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databases.sspc.io
+spec:
+  group: sspc.io
+  names:
+    kind: Database
+    plural: databases
+    shortNames:
+    - db
+    singular: database
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.nodePort
+      name: Port
+      type: integer
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for DatabaseSpec via `CustomResource`
+        properties:
+          spec:
+            properties:
+              suspendAfterSeconds:
+                default: 300
+                description: Idle seconds before suspend (enforced by the operator's idle loop, P3).
+                format: int64
+                type: integer
+              ttlSeconds:
+                description: Optional TTL; the reaper deletes the resource after this many seconds.
+                format: int64
+                nullable: true
+                type: integer
+            type: object
+          status:
+            nullable: true
+            properties:
+              flushLsn:
+                nullable: true
+                type: string
+              lastActivity:
+                nullable: true
+                type: string
+              message:
+                nullable: true
+                type: string
+              nodePort:
+                format: int32
+                nullable: true
+                type: integer
+              phase:
+                enum:
+                - Provisioning
+                - Active
+                - Suspended
+                - Expired
+                - Failed
+                - null
+                nullable: true
+                type: string
+              tenantId:
+                nullable: true
+                type: string
+              timelineId:
+                nullable: true
+                type: string
+            type: object
+        required:
+        - spec
+        title: Database
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: branches.sspc.io
+spec:
+  group: sspc.io
+  names:
+    kind: Branch
+    plural: branches
+    shortNames:
+    - br
+    singular: branch
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.database
+      name: Database
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.nodePort
+      name: Port
+      type: integer
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for BranchSpec via `CustomResource`
+        properties:
+          spec:
+            properties:
+              database:
+                description: Name of the parent Database (same namespace).
+                type: string
+              ttlSeconds:
+                description: 'Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).'
+                format: int64
+                nullable: true
+                type: integer
+            required:
+            - database
+            type: object
+          status:
+            nullable: true
+            properties:
+              flushLsn:
+                nullable: true
+                type: string
+              lastActivity:
+                nullable: true
+                type: string
+              message:
+                nullable: true
+                type: string
+              nodePort:
+                format: int32
+                nullable: true
+                type: integer
+              phase:
+                enum:
+                - Provisioning
+                - Active
+                - Suspended
+                - Expired
+                - Failed
+                - null
+                nullable: true
+                type: string
+              tenantId:
+                nullable: true
+                type: string
+              timelineId:
+                nullable: true
+                type: string
+            type: object
+        required:
+        - spec
+        title: Branch
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
