@@ -111,7 +111,44 @@ container: PID-1 bash ignores SIGTERM → Docker burns its full 10s kill-grace �
   ≈ 2s. Same lesson for K8s: compute_ctl must be the container entrypoint (or wrapped with
   exec), or every pod deletion eats `terminationGracePeriodSeconds` and kills PG hard.
 
-**Next**: kind + kubectl + helm — translate the cell to K8s manifests (storage controller included
-this time), measure the cold-start distribution (laptop floor to beat: ~1–2s wake), prototype the
-operator's suspend→terminate→delete-pod / wake→create-pod loop.
+## Day 3 (2026-08-08): P0 complete — cell on kind, controller in the loop, both de-risks green
+
+**P0 exit criteria all met in one session** (RFC 012 estimated 3–4 days):
+
+- **Cell on kind via `kubectl apply -f spike/k8s/cell/`**: MinIO(demo) + bucket job, broker,
+  safekeeper×1, pageserver, storage controller + its PG, all Ready. kind config pre-maps the
+  M1 port block (30001–30020 endpoints, 30080 MCP, 30098/30099 debug).
+- **Storage controller IS in the loop** (D2 verdict: GO, fallback not needed): launched with
+  `--listen/--database-url/--dev`; pageserver self-registers (metadata.json + control_plane_api
+  `…/upcall/v1/`; az id required). Tenant + timeline (incl. ancestor branches) created through
+  the controller (`POST /v1/tenant`, `POST /v1/tenant/{id}/timeline`).
+- **De-risk ① green**: 90-line stdlib stub (spike/mcp-stub/server.py) speaking streamable-HTTP
+  MCP + bearer auth; `claude mcp add -t http` → ✔ Connected; headless `claude -p` listed and
+  CALLED the tool and returned the URI. Bonus: Claude Code accepts a 405 on the GET/SSE leg —
+  **the M1 operator does not need to implement SSE.**
+- **De-risk ② found a real landmine**: with `control_plane_url` unset, the controller PANICS
+  (`compute_hook.rs:892` unchecked unwrap, "validated at startup" except not in `--dev`) on the
+  first compute notification and crash-loops (startup reconcile retries it). P0 workaround: a
+  busybox always-200 `notify-sink` + `--control-plane-url`. **M1 design insight: the operator
+  should BE this receiver** — notify-attach is the placement-change signal that triggers
+  compute-spec regeneration.
+- **K8s gotchas recorded**: (a) headless-service pod DNS only exists for READY pods, but
+  controller registration resolves the DNS name and readiness depends on registration →
+  deadlock; fix `publishNotReadyAddresses: true`. (b) `kind load docker-image` fails on
+  multi-arch images under the containerd store; fix `docker save --platform linux/arm64` +
+  `kind load image-archive`. (c) compose's `cloud_admin` md5 hash is not "password" — spec
+  template now carries our own known hash (`sspc-p0`); external (NodePort) connections hit md5
+  auth while in-pod ones hit trust.
+- **Provisioning flow scripted** (`spike/k8s/compute/mk-compute.sh` — the operator crib sheet):
+  tenant → timeline (± ancestor) via controller → spec ConfigMap (JWKS + tenant/timeline pinned,
+  D6/D7) → pod (compute_ctl as PID-1 command, stock compute-node-v16 image, no wrapper) →
+  NodePort service.
+- **Numbers (kind on colima, laptop)**: first compute pod Ready **1.7s** from apply; branch =
+  timeline create + compute + SQL-ready **1.4s wall**; **wake distribution n=5: 1.3–1.8s to
+  SQL-verified-with-data** (incl. 1s-quantized readiness probe + exec overhead). 100k rows
+  loaded via NodePort from host; branch saw 100k, diverged to 150k, parent untouched.
+
+**Next (P1)**: `platform/` Rust workspace — helm chart wrapping spike/k8s/cell, operator kernel
+(Database/Branch CRDs, reconciler = mk-compute.sh flow, JWT minting, golden-spec tests), then
+P2 MCP façade. The notify-sink gets replaced by the operator's own notify receiver.
 
