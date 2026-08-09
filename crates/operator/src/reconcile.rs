@@ -30,6 +30,31 @@ use crate::storcon::Storcon;
 
 pub const FINALIZER: &str = "sspc.io/cell-cleanup";
 pub const ENDPOINT_LABEL: &str = "sspc.io/endpoint";
+/// RFC3339 UTC timestamp; wake requests newer than `suspendedAt` win.
+pub const WAKE_ANNOTATION: &str = "sspc.io/wake-requested-at";
+
+pub fn now_ts() -> String {
+    chrono::Utc::now()
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
+
+/// Suspend-awareness: a resource runs unless it is Suspended with no wake
+/// request newer than the suspension. Fixed-format UTC RFC3339 strings
+/// compare chronologically, so this is monotonic with no annotation clearing.
+pub fn wants_running(
+    meta: &kube::api::ObjectMeta,
+    status: Option<&crate::crd::EndpointStatus>,
+) -> bool {
+    let Some(s) = status else { return true };
+    if s.phase != Some(Phase::Suspended) {
+        return true;
+    }
+    let suspended_at = s.suspended_at.as_deref().unwrap_or("");
+    meta.annotations
+        .as_ref()
+        .and_then(|a| a.get(WAKE_ANNOTATION))
+        .is_some_and(|w| w.as_str() > suspended_at)
+}
 
 pub struct Ctx {
     pub client: Client,
@@ -40,6 +65,7 @@ pub struct Ctx {
     pub image_pull_policy: String,
     pub safekeepers: String,
     pub pageserver_connstring: String,
+    pub pg_password: String,
 }
 
 /// 32-hex deterministic id from a CR UID and a salt.
@@ -75,12 +101,15 @@ impl Ctx {
     }
 
     /// The shared ensure-flow for a connectable endpoint (Database or Branch).
+    /// `run_pod: false` keeps ConfigMap + Service (sticky port) but does not
+    /// (re)create the compute — the suspended state (RFC 012 D5).
     async fn ensure_endpoint<K>(
         &self,
         obj: &K,
         name: &str,
         tenant: &str,
         timeline: &str,
+        run_pod: bool,
     ) -> anyhow::Result<i32>
     where
         K: Resource<DynamicType = ()>,
@@ -132,6 +161,9 @@ impl Ctx {
         }))?;
         svcs.patch(name, &pp, &Patch::Apply(&svc)).await?;
 
+        if !run_pod {
+            return Ok(port);
+        }
         // Compute pod: compute_ctl as PID 1 (D6), stock image, spec from the CM.
         let pod: Pod = serde_json::from_value(json!({
             "apiVersion": "v1", "kind": "Pod",
@@ -205,14 +237,18 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
 
     ctx.storcon.create_tenant(&tenant).await?;
     ctx.storcon.create_timeline(&tenant, &timeline, None).await?;
-    let port = ctx.ensure_endpoint(db.as_ref(), &name, &tenant, &timeline).await?;
+    let run = wants_running(db.meta(), db.status.as_ref());
+    let port = ctx
+        .ensure_endpoint(db.as_ref(), &name, &tenant, &timeline, run)
+        .await?;
 
+    let phase = if run { Phase::Active } else { Phase::Suspended };
     let api: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     ctx.patch_status(&api, &name, json!({
-        "phase": Phase::Active, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
+        "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
     }))
     .await;
-    info!("database {name} reconciled: tenant={tenant} timeline={timeline} port={port}");
+    info!("database {name} reconciled: tenant={tenant} timeline={timeline} port={port} run={run}");
     Ok(Action::requeue(Duration::from_secs(300)))
 }
 
@@ -255,11 +291,15 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     ctx.storcon
         .create_timeline(&tenant, &timeline, Some(&ancestor))
         .await?;
-    let port = ctx.ensure_endpoint(br.as_ref(), &name, &tenant, &timeline).await?;
+    let run = wants_running(br.meta(), br.status.as_ref());
+    let port = ctx
+        .ensure_endpoint(br.as_ref(), &name, &tenant, &timeline, run)
+        .await?;
 
+    let phase = if run { Phase::Active } else { Phase::Suspended };
     let api: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     ctx.patch_status(&api, &name, json!({
-        "phase": Phase::Active, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
+        "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
     }))
     .await;
     info!("branch {name} reconciled: timeline={timeline} (ancestor {ancestor}) port={port}");
@@ -302,6 +342,41 @@ pub async fn run(ctx: Arc<Ctx>) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::crd::EndpointStatus;
+
+    fn status(phase: Phase, suspended_at: Option<&str>) -> EndpointStatus {
+        EndpointStatus {
+            phase: Some(phase),
+            suspended_at: suspended_at.map(String::from),
+            ..Default::default()
+        }
+    }
+
+    fn meta_with_wake(at: Option<&str>) -> kube::api::ObjectMeta {
+        kube::api::ObjectMeta {
+            annotations: at.map(|t| {
+                [(WAKE_ANNOTATION.to_string(), t.to_string())].into()
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn wake_wins_only_when_newer_than_suspension() {
+        let m_none = meta_with_wake(None);
+        let m_old = meta_with_wake(Some("2026-08-09T10:00:00Z"));
+        let m_new = meta_with_wake(Some("2026-08-09T12:00:00Z"));
+        let s = status(Phase::Suspended, Some("2026-08-09T11:00:00Z"));
+
+        assert!(!wants_running(&m_none, Some(&s)), "suspended, no wake");
+        assert!(!wants_running(&m_old, Some(&s)), "stale wake loses");
+        assert!(wants_running(&m_new, Some(&s)), "fresh wake wins");
+        assert!(
+            wants_running(&m_none, Some(&status(Phase::Active, None))),
+            "non-suspended always runs"
+        );
+        assert!(wants_running(&m_none, None), "no status yet -> provision");
+    }
 
     #[test]
     fn derived_ids_are_stable_32_hex_and_distinct() {

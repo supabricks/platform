@@ -45,6 +45,9 @@ pub struct DatabaseSpec {
 pub struct BranchSpec {
     /// Name of the parent Database (same namespace).
     pub database: String,
+    /// Idle seconds before suspend (branches sleep aggressively by default).
+    #[serde(default = "default_suspend_after")]
+    pub suspend_after_seconds: i64,
     /// Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ttl_seconds: Option<i64>,
@@ -65,6 +68,8 @@ pub struct EndpointStatus {
     pub flush_lsn: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_activity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub suspended_at: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }

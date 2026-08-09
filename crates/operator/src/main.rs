@@ -1,5 +1,6 @@
 mod crd;
 mod keys;
+mod lifecycle;
 mod mcp;
 mod ports;
 mod reconcile;
@@ -128,7 +129,10 @@ async fn main() -> anyhow::Result<()> {
         image_pull_policy,
         safekeepers,
         pageserver_connstring,
+        pg_password: env_or("SSPC_PG_PASSWORD", "sspc-p0"),
     });
+
+    tokio::spawn(lifecycle::run(ctx.clone()));
 
     let mcp_state = Arc::new(mcp::McpState {
         ctx: ctx.clone(),

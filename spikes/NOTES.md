@@ -226,3 +226,26 @@ wake in get_connection, TTL reaper).
 delete pod, port sticky), wake inside get_connection (fresh pod), TTL reaper + K8s Events;
 suspend/wake status phases. Then P4: up.sh installer + `just e2e` (T3/T4) + pinned digests.
 
+## P3 (2026-08-09): scale-to-zero, wake, and TTL — all live
+
+- **Idle-suspend** (`src/lifecycle.rs`, 15s tick): SQL activity poll per Active endpoint →
+  Day-2 terminate sequence (minted JWT → `POST /terminate` → flush LSN into status → delete
+  pod; Service stays = sticky port). Suspend-awareness in the reconciler via monotonic
+  timestamps: run unless `phase==Suspended` and no `sspc.io/wake-requested-at` annotation
+  newer than `suspendedAt` — no annotation clearing, unit-tested.
+- **THE TRAP, REPRODUCED**: first run never suspended — `compute_ctl:compute_monitor` holds a
+  persistent client-backend session, i.e. the research doc's Neon-cloud `check_availability`
+  "never truly zero" problem, found in our own living room. Filter now excludes
+  `application_name LIKE 'compute_ctl%'` and `sspc-operator`. M2's gateway-owned activity
+  truth remains the real fix.
+- **Measured**: `sleepy` (suspendAfter=30s) → **Suspended after 38s idle**, pod gone, LSN
+  `0/17261D0` recorded. `get_connection` → wake annotation → reconciler recreates pod →
+  **1.3s to URI**, same port, 20k rows intact.
+- **TTL reaper**: 10 branches of one parent burst-created concurrently via MCP — **all ready
+  in 7s wall** — then all 10 reaped on schedule (60s TTL), 10 `TTLExpired` Events (the audit
+  line), 0 pods left, tenant timeline count back to 1 (cell-side deletion verified).
+- CRD additions: `Branch.suspendAfterSeconds`, `status.suspendedAt` (crdgen re-applied —
+  remember helm won't upgrade crds/).
+- Demo-script status: **steps 2–5 all live** (wake is MCP-explicit; plain-psql wake = M2).
+  Remaining for M1: P4 — up.sh installer, `just e2e` under operator RBAC, pinned digests.
+

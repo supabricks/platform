@@ -19,8 +19,8 @@ use kube::ResourceExt;
 use serde_json::{Value, json};
 use tracing::info;
 
-use crate::crd::{Branch, Database};
-use crate::reconcile::Ctx;
+use crate::crd::{Branch, Database, Phase};
+use crate::reconcile::{Ctx, WAKE_ANNOTATION, now_ts};
 
 pub struct McpState {
     pub ctx: Arc<Ctx>,
@@ -159,8 +159,8 @@ fn capabilities(state: &McpState) -> ToolResult {
         "pg_version": 16,
         "max_endpoints": crate::ports::RANGE_LEN,
         "connect_host": state.connect_host,
-        "features": {"branching": true, "ttl": "accepted, reaped in P3",
-                      "scale_to_zero": "P3", "wake_on_connect": "M2"},
+        "features": {"branching": true, "ttl": true, "scale_to_zero": true,
+                      "wake": "explicit via get_connection (plain-psql wake-on-connect: M2)"},
     }))
 }
 
@@ -213,6 +213,9 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
     let mut spec = json!({});
     if let Some(ttl) = args["ttl_seconds"].as_i64() {
         spec["ttlSeconds"] = json!(ttl);
+    }
+    if let Some(s) = args["suspend_after_seconds"].as_i64() {
+        spec["suspendAfterSeconds"] = json!(s);
     }
     let db: Database = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "Database",
@@ -269,7 +272,8 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
 fn summarize(status: Option<&crate::crd::EndpointStatus>) -> Value {
     match status {
         Some(s) => json!({"phase": s.phase, "node_port": s.node_port,
-                           "tenant_id": s.tenant_id, "timeline_id": s.timeline_id}),
+                           "tenant_id": s.tenant_id, "timeline_id": s.timeline_id,
+                           "last_activity": s.last_activity, "suspended_at": s.suspended_at}),
         None => json!({"phase": null}),
     }
 }
@@ -322,13 +326,56 @@ async fn get_database(state: &McpState, args: &Value) -> ToolResult {
 
 async fn get_connection(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
-    // P3 turns this into the wake path; today computes never sleep.
-    match await_ready(state, &name, 20).await {
-        Some(port) => Ok(json!({"name": name, "connection_uri": uri(state, port)})),
+    let ns = &state.ctx.namespace;
+    let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), ns);
+    let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), ns);
+
+    // The wake path (RFC 012 P3): a suspended endpoint gets a wake annotation;
+    // the reconciler recreates the compute; we wait and report the wake time.
+    let wake_patch = Patch::Merge(json!({
+        "metadata": {"annotations": {WAKE_ANNOTATION: now_ts()}}
+    }));
+    let suspended = |s: &Option<crate::crd::EndpointStatus>| {
+        s.as_ref().map(|s| s.phase) == Some(Some(Phase::Suspended))
+    };
+    let mut woke = false;
+    if let Some(db) = dbs.get_opt(&name).await.map_err(from_kube)? {
+        if suspended(&db.status) {
+            dbs.patch(&name, &PatchParams::default(), &wake_patch)
+                .await
+                .map_err(from_kube)?;
+            woke = true;
+        }
+    } else if let Some(br) = brs.get_opt(&name).await.map_err(from_kube)? {
+        if suspended(&br.status) {
+            brs.patch(&name, &PatchParams::default(), &wake_patch)
+                .await
+                .map_err(from_kube)?;
+            woke = true;
+        }
+    } else {
+        return Err(terr(
+            format!("{name} not found"),
+            false,
+            "list_databases / list_branches to see what exists",
+        ));
+    }
+
+    let t0 = Instant::now();
+    match await_ready(state, &name, 45).await {
+        Some(port) => {
+            let mut out = json!({"name": name, "connection_uri": uri(state, port)});
+            if woke {
+                out["woke_from_suspend"] = json!(true);
+                out["wake_seconds"] =
+                    json!(format!("{:.1}", t0.elapsed().as_secs_f64()));
+            }
+            Ok(out)
+        }
         None => Err(terr(
-            format!("{name} is not ready or does not exist"),
+            format!("{name} is not ready"),
             true,
-            "create it first, or retry shortly if it is provisioning",
+            "retry shortly; if it stays unready, check the operator logs",
         )),
     }
 }
@@ -364,7 +411,8 @@ fn tool_defs() -> Value {
          "description": "Create a Postgres database; returns a psql connection URI. Idempotent on name.",
          "inputSchema": {"type": "object", "properties": {
              "name": name_arg,
-             "ttl_seconds": {"type": "integer", "description": "Optional TTL (reaped in P3)"}},
+             "ttl_seconds": {"type": "integer", "description": "Optional TTL; the platform reaps the database when it expires"},
+             "suspend_after_seconds": {"type": "integer", "description": "Idle seconds before scale-to-zero (default 300)"}},
              "required": ["name"]}},
         {"name": "list_databases", "description": "List databases with status.",
          "inputSchema": {"type": "object", "properties": {}}},
@@ -385,7 +433,7 @@ fn tool_defs() -> Value {
         {"name": "delete_branch", "description": "Delete a branch and its compute.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "get_connection",
-         "description": "Connection URI for an existing database or branch (waits briefly if provisioning).",
+         "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
     ])
 }

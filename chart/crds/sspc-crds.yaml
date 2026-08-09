@@ -63,6 +63,9 @@ spec:
                 - null
                 nullable: true
                 type: string
+              suspendedAt:
+                nullable: true
+                type: string
               tenantId:
                 nullable: true
                 type: string
@@ -113,6 +116,11 @@ spec:
               database:
                 description: Name of the parent Database (same namespace).
                 type: string
+              suspendAfterSeconds:
+                default: 300
+                description: Idle seconds before suspend (branches sleep aggressively by default).
+                format: int64
+                type: integer
               ttlSeconds:
                 description: 'Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).'
                 format: int64
@@ -145,6 +153,9 @@ spec:
                 - Expired
                 - Failed
                 - null
+                nullable: true
+                type: string
+              suspendedAt:
                 nullable: true
                 type: string
               tenantId:
