@@ -1,0 +1,55 @@
+# Safekeeper. M1 supports replicas=1; the 3-SK toggle (004) needs
+# ordinal-derived --id/--advertise-pg and is a chart TODO.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: safekeeper
+spec:
+  serviceName: safekeeper
+  replicas: {{ .Values.safekeeper.replicas }}
+  selector: {matchLabels: {app: safekeeper}}
+  template:
+    metadata: {labels: {app: safekeeper}}
+    spec:
+      containers:
+      - name: safekeeper
+        image: {{ .Values.images.neon }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args:
+        - >
+          safekeeper --id=1
+          --listen-pg=0.0.0.0:5454
+          --advertise-pg=safekeeper-0.safekeeper.{{ .Release.Namespace }}.svc.cluster.local:5454
+          --listen-http=0.0.0.0:7676
+          --broker-endpoint=http://broker:50051
+          -D /data
+          --remote-storage="{endpoint='{{ .Values.s3.endpoint }}', bucket_name='{{ .Values.s3.bucket }}', bucket_region='{{ .Values.s3.region }}', prefix_in_bucket='/safekeeper/'}"
+        env:
+        - {name: AWS_ACCESS_KEY_ID, value: {{ .Values.s3.accessKey | quote }}}
+        - {name: AWS_SECRET_ACCESS_KEY, value: {{ .Values.s3.secretKey | quote }}}
+        ports:
+        - {containerPort: 5454}
+        - {containerPort: 7676}
+        volumeMounts:
+        - {name: data, mountPath: /data}
+        readinessProbe:
+          httpGet: {path: /v1/status, port: 7676}
+          periodSeconds: 2
+  volumeClaimTemplates:
+  - metadata: {name: data}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 2Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: safekeeper
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: {app: safekeeper}
+  ports:
+  - {name: pg, port: 5454}
+  - {name: http, port: 7676}

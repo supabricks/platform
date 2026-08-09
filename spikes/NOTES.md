@@ -178,3 +178,26 @@ to validate the reconcilers:
 in several places incl. the Rust spec template; needs a values-driven render), operator
 Dockerfile + in-cluster Deployment/RBAC, then the P1 exit run (`helm install` → CR → psql).
 
+## P1 COMPLETE (2026-08-09): helm install → CR → psql → clean delete, all in-cluster
+
+- **Spec render de-namespaced**: SAFEKEEPERS_ADDR / PAGESERVER_CONNSTRING placeholders;
+  operator derives defaults from its namespace (env-overridable); golden test still
+  byte-exact vs the P0 fixture.
+- **Chart** (`platform/chart/`): 22 resources — cell (minio demo toggle, broker, safekeeper,
+  pageserver, storcon+pg, notify-sink) + operator (SA/Role/RoleBinding/Deployment, namespace
+  via downward API) + CRDs in `crds/`. Values: images, pull policy, s3.*, safekeeper.replicas
+  (=1 only; 3-SK toggle needs ordinal-derived --id — chart TODO), NodePorts. Lints clean.
+- **Operator image**: `platform/Dockerfile` (rust:1.92 build stage + cmake/perl for aws-lc-rs;
+  bookworm-slim runtime, nonroot). `sspc-operator:p1` kind-loaded via the save --platform trick.
+- **Exit run from a deleted namespace**: `helm install sspc platform/chart -n sspc-cell
+  --create-namespace` → **all pods Ready in 14s** (operator in-cluster). Database CR `exit1` →
+  **pod Ready in 3.4s**, psql via NodePort 30018, 10k rows. Branch CR → inherited on 30019.
+  Deletes → **tenants: 0, endpoint objects: 0** (finalizer + ownerRef GC, verified in storcon).
+- Gotcha for the e2e script: `kubectl delete branch X database Y` parses as two *branches* —
+  delete kinds separately.
+
+**Next (P2)**: MCP façade in the operator (streamable HTTP, the 9 tools, bearer auth,
+idempotency keys) — de-risk ① already proved the client side; then `claude mcp add` against
+the real thing = the M1 core demo moment. Then P3 lifecycle (idle-suspend via SQL poll,
+wake in get_connection, TTL reaper).
+

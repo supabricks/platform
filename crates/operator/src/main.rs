@@ -72,6 +72,14 @@ async fn main() -> anyhow::Result<()> {
         "ghcr.io/neondatabase/compute-node-v16:latest",
     );
     let image_pull_policy = env_or("SSPC_IMAGE_PULL_POLICY", "Never");
+    let safekeepers = env_or(
+        "SSPC_SAFEKEEPERS",
+        &format!("safekeeper-0.safekeeper.{namespace}.svc.cluster.local:5454"),
+    );
+    let pageserver_connstring = env_or(
+        "SSPC_PAGESERVER_CONNSTRING",
+        &format!("host=pageserver-0.pageserver.{namespace}.svc.cluster.local port=6400"),
+    );
 
     let client = Client::try_default().await?;
     let key = ensure_key(&client, &namespace).await?;
@@ -87,6 +95,8 @@ async fn main() -> anyhow::Result<()> {
         namespace,
         compute_image,
         image_pull_policy,
+        safekeepers,
+        pageserver_connstring,
     });
     reconcile::run(ctx).await
 }

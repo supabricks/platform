@@ -38,6 +38,8 @@ pub struct Ctx {
     pub namespace: String,
     pub compute_image: String,
     pub image_pull_policy: String,
+    pub safekeepers: String,
+    pub pageserver_connstring: String,
 }
 
 /// 32-hex deterministic id from a CR UID and a salt.
@@ -93,6 +95,8 @@ impl Ctx {
             timeline_id: timeline,
             jwks_x_b64url: &self.key.x_b64url,
             jwks_kid_b64url: &self.key.kid_b64url,
+            safekeepers: &self.safekeepers,
+            pageserver_connstring: &self.pageserver_connstring,
         })?;
         let cm: ConfigMap = serde_json::from_value(json!({
             "apiVersion": "v1", "kind": "ConfigMap",

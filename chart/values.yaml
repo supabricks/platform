@@ -1,0 +1,30 @@
+# M1 defaults target kind with locally-loaded images.
+images:
+  neon: ghcr.io/neondatabase/neon:latest
+  compute: ghcr.io/neondatabase/compute-node-v16:latest
+  operator: sspc-operator:p1
+  postgres: postgres:16-alpine
+  busybox: busybox:1.36
+  minio: quay.io/minio/minio:RELEASE.2022-10-20T00-55-09Z
+  mc: minio/mc:latest
+imagePullPolicy: Never
+
+# Demo-only object store (001: the product integrates the customer's S3).
+demoMinio:
+  enabled: true
+
+safekeeper:
+  replicas: 1
+
+# S3 credentials + bucket (point at the customer's store when demoMinio is off)
+s3:
+  endpoint: http://minio:9000
+  bucket: neon
+  region: eu-north-1
+  accessKey: minio
+  secretKey: password
+
+# NodePorts (must match the kind extraPortMappings block)
+nodePorts:
+  storageController: 30099
+  pageserverApi: 30098

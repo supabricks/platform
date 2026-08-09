@@ -1,0 +1,41 @@
+# The storage controller's own Postgres (system-catalog seed, 001 §4.1/O2).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: controller-pg
+spec:
+  serviceName: controller-pg
+  replicas: 1
+  selector: {matchLabels: {app: controller-pg}}
+  template:
+    metadata: {labels: {app: controller-pg}}
+    spec:
+      containers:
+      - name: postgres
+        image: {{ .Values.images.postgres }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+        - {name: POSTGRES_PASSWORD, value: postgres}
+        - {name: POSTGRES_DB, value: storage_controller}
+        - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+        ports:
+        - {containerPort: 5432}
+        volumeMounts:
+        - {name: data, mountPath: /var/lib/postgresql/data}
+        readinessProbe:
+          exec: {command: [pg_isready, -U, postgres]}
+          periodSeconds: 2
+  volumeClaimTemplates:
+  - metadata: {name: data}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 1Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: controller-pg
+spec:
+  selector: {app: controller-pg}
+  ports:
+  - {name: pg, port: 5432}

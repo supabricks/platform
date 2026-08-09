@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sspc-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sspc-operator
+rules:
+- apiGroups: [""]
+  resources: [pods, services, configmaps, secrets]
+  verbs: [get, list, watch, create, patch, delete]
+- apiGroups: [""]
+  resources: [events]
+  verbs: [create, patch]
+- apiGroups: [sspc.io]
+  resources: [databases, branches]
+  verbs: [get, list, watch, patch, update]
+- apiGroups: [sspc.io]
+  resources: [databases/status, branches/status]
+  verbs: [get, patch, update]
+- apiGroups: [sspc.io]
+  resources: [databases/finalizers, branches/finalizers]
+  verbs: [update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sspc-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sspc-operator
+subjects:
+- kind: ServiceAccount
+  name: sspc-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sspc-operator
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: sspc-operator}}
+  template:
+    metadata: {labels: {app: sspc-operator}}
+    spec:
+      serviceAccountName: sspc-operator
+      containers:
+      - name: operator
+        image: {{ .Values.images.operator }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+        - name: SSPC_NAMESPACE
+          valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+        - {name: SSPC_STORCON_URL, value: "http://storage-controller:1234"}
+        - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute | quote }}}
+        - {name: SSPC_IMAGE_PULL_POLICY, value: {{ .Values.imagePullPolicy | quote }}}
+        - {name: RUST_LOG, value: "info,kube=warn"}

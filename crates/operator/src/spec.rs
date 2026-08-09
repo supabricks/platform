@@ -11,6 +11,10 @@ pub struct SpecParams<'a> {
     pub timeline_id: &'a str,
     pub jwks_x_b64url: &'a str,
     pub jwks_kid_b64url: &'a str,
+    /// `neon.safekeepers` GUC value, e.g. `safekeeper-0.safekeeper.<ns>.svc.cluster.local:5454`.
+    pub safekeepers: &'a str,
+    /// `neon.pageserver_connstring` GUC value, e.g. `host=pageserver-0.pageserver.<ns>… port=6400`.
+    pub pageserver_connstring: &'a str,
 }
 
 /// Render the compute spec for compute_ctl's `--config`.
@@ -20,7 +24,9 @@ pub fn render(p: &SpecParams) -> anyhow::Result<Value> {
         .replace("TENANT_ID", p.tenant_id)
         .replace("TIMELINE_ID", p.timeline_id)
         .replace("KID_B64URL", p.jwks_kid_b64url)
-        .replace("X_B64URL", p.jwks_x_b64url);
+        .replace("X_B64URL", p.jwks_x_b64url)
+        .replace("SAFEKEEPERS_ADDR", p.safekeepers)
+        .replace("PAGESERVER_CONNSTRING", p.pageserver_connstring);
     Ok(serde_json::from_str(&s)?)
 }
 
@@ -39,6 +45,8 @@ mod tests {
             timeline_id: "461d39b24a3592dc712a379c0d3ab6e5",
             jwks_x_b64url: "mOLh_FkiKWIGG-AX-yKDcD1KiNvxkk_dcePrTF1GX0c",
             jwks_kid_b64url: "mxha6Szurut0u5Hz0JT058YlUi8tryLtYBBBiUokYtA",
+            safekeepers: "safekeeper-0.safekeeper.sspc-cell.svc.cluster.local:5454",
+            pageserver_connstring: "host=pageserver-0.pageserver.sspc-cell.svc.cluster.local port=6400",
         })
         .unwrap();
         assert_eq!(rendered, golden);
@@ -51,6 +59,8 @@ mod tests {
             timeline_id: "l1",
             jwks_x_b64url: "x",
             jwks_kid_b64url: "k",
+            safekeepers: "sk:5454",
+            pageserver_connstring: "host=ps port=6400",
         })
         .unwrap();
         let settings = v["spec"]["cluster"]["settings"].as_array().unwrap();

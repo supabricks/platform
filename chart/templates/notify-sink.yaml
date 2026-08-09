@@ -1,0 +1,32 @@
+# Always-200 sink for controller compute notifications (see storage-controller.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notify-sink
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: notify-sink}}
+  template:
+    metadata: {labels: {app: notify-sink}}
+    spec:
+      containers:
+      - name: sink
+        image: {{ .Values.images.busybox }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          while true; do
+            printf 'HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}' | nc -l -p 3081
+          done
+        ports:
+        - {containerPort: 3081}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notify-sink
+spec:
+  selector: {app: notify-sink}
+  ports:
+  - {name: http, port: 3081}

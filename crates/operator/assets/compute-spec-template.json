@@ -33,10 +33,10 @@
         {"name": "restart_after_crash", "value": "off", "vartype": "bool"},
         {"name": "synchronous_standby_names", "value": "walproposer", "vartype": "string"},
         {"name": "shared_preload_libraries", "value": "neon,pg_stat_statements", "vartype": "string"},
-        {"name": "neon.safekeepers", "value": "safekeeper-0.safekeeper.sspc-cell.svc.cluster.local:5454", "vartype": "string"},
+        {"name": "neon.safekeepers", "value": "SAFEKEEPERS_ADDR", "vartype": "string"},
         {"name": "neon.timeline_id", "value": "TIMELINE_ID", "vartype": "string"},
         {"name": "neon.tenant_id", "value": "TENANT_ID", "vartype": "string"},
-        {"name": "neon.pageserver_connstring", "value": "host=pageserver-0.pageserver.sspc-cell.svc.cluster.local port=6400", "vartype": "string"},
+        {"name": "neon.pageserver_connstring", "value": "PAGESERVER_CONNSTRING", "vartype": "string"},
         {"name": "max_replication_write_lag", "value": "500MB", "vartype": "string"},
         {"name": "max_replication_flush_lag", "value": "10GB", "vartype": "string"}
       ]

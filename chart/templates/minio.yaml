@@ -1,0 +1,70 @@
+{{- if .Values.demoMinio.enabled }}
+# Demo-only object store. The product integrates the customer's S3 (001 §1.6):
+# disable this and point .Values.s3 at their endpoint.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: minio}}
+  template:
+    metadata: {labels: {app: minio}}
+    spec:
+      containers:
+      - name: minio
+        image: {{ .Values.images.minio }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        args: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+        env:
+        - {name: MINIO_ROOT_USER, value: {{ .Values.s3.accessKey | quote }}}
+        - {name: MINIO_ROOT_PASSWORD, value: {{ .Values.s3.secretKey | quote }}}
+        ports:
+        - {containerPort: 9000}
+        volumeMounts:
+        - {name: data, mountPath: /data}
+        readinessProbe:
+          httpGet: {path: /minio/health/ready, port: 9000}
+          periodSeconds: 2
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: minio-data}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 5Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  selector: {app: minio}
+  ports:
+  - {name: api, port: 9000}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-create-bucket
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mc
+        image: {{ .Values.images.mc }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          until mc alias set minio {{ .Values.s3.endpoint }} {{ .Values.s3.accessKey }} {{ .Values.s3.secretKey }}; do
+            echo waiting for minio; sleep 1
+          done
+          mc mb --ignore-existing minio/{{ .Values.s3.bucket }} --region={{ .Values.s3.region }}
+{{- end }}

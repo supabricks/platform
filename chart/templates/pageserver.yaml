@@ -1,0 +1,84 @@
+# Pageserver; self-registers with the storage controller (metadata.json +
+# control_plane_api). Config files subPath-mounted over the PVC dir.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pageserver-config
+data:
+  pageserver.toml: |
+    broker_endpoint='http://broker:50051'
+    pg_distrib_dir='/usr/local/'
+    listen_pg_addr='0.0.0.0:6400'
+    listen_http_addr='0.0.0.0:9898'
+    remote_storage={ endpoint='{{ .Values.s3.endpoint }}', bucket_name='{{ .Values.s3.bucket }}', bucket_region='{{ .Values.s3.region }}', prefix_in_bucket='/pageserver' }
+    control_plane_api='http://storage-controller:1234/upcall/v1/'
+    virtual_file_io_mode="buffered"
+  identity.toml: |
+    id = 1
+  metadata.json: |
+    {"host": "pageserver-0.pageserver.{{ .Release.Namespace }}.svc.cluster.local", "port": 6400,
+     "http_host": "pageserver-0.pageserver.{{ .Release.Namespace }}.svc.cluster.local", "http_port": 9898,
+     "availability_zone_id": "az-1"}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pageserver
+spec:
+  serviceName: pageserver
+  replicas: 1
+  selector: {matchLabels: {app: pageserver}}
+  template:
+    metadata: {labels: {app: pageserver}}
+    spec:
+      containers:
+      - name: pageserver
+        image: {{ .Values.images.neon }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["pageserver", "-D", "/data/.neon"]
+        env:
+        - {name: AWS_ACCESS_KEY_ID, value: {{ .Values.s3.accessKey | quote }}}
+        - {name: AWS_SECRET_ACCESS_KEY, value: {{ .Values.s3.secretKey | quote }}}
+        ports:
+        - {containerPort: 6400}
+        - {containerPort: 9898}
+        volumeMounts:
+        - {name: data, mountPath: /data/.neon}
+        - {name: config, mountPath: /data/.neon/pageserver.toml, subPath: pageserver.toml}
+        - {name: config, mountPath: /data/.neon/identity.toml, subPath: identity.toml}
+        - {name: config, mountPath: /data/.neon/metadata.json, subPath: metadata.json}
+        readinessProbe:
+          httpGet: {path: /v1/status, port: 9898}
+          periodSeconds: 2
+      volumes:
+      - name: config
+        configMap: {name: pageserver-config}
+  volumeClaimTemplates:
+  - metadata: {name: data}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 5Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pageserver
+spec:
+  clusterIP: None
+  # Pod DNS must exist before readiness: controller registration resolves the
+  # DNS name, and readiness depends on registration (spike/NOTES.md Day 3).
+  publishNotReadyAddresses: true
+  selector: {app: pageserver}
+  ports:
+  - {name: pg, port: 6400}
+  - {name: http, port: 9898}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pageserver-api
+spec:
+  type: NodePort
+  selector: {app: pageserver}
+  ports:
+  - {name: http, port: 9898, nodePort: {{ .Values.nodePorts.pageserverApi }}}
