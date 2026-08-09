@@ -201,3 +201,28 @@ idempotency keys) — de-risk ① already proved the client side; then `claude m
 the real thing = the M1 core demo moment. Then P3 lifecycle (idle-suspend via SQL poll,
 wake in get_connection, TTL reaper).
 
+## P2 (2026-08-09): the core demo moment — Claude Code provisions on the real platform
+
+- **MCP façade** (`src/mcp.rs`, ~450 lines): hand-rolled streamable-HTTP JSON-RPC (D8's
+  sanctioned fallback — de-risk ① proved the exact surface: POST-only, 202 for notifications,
+  405 on GET/SSE). 9 tools as thin verbs over the CR model; create is server-side apply on
+  name → naturally idempotent; bounded 30s await-ready with an honest "provisioning, poll
+  get_connection" fallback; structured errors {reason, retriable, suggested_action}.
+- **Auth**: bearer token minted into Secret `sspc-mcp-token` on first run (aws-lc-rs random);
+  Service `sspc-mcp` NodePort 30080 (already in the kind port map). 401 without it, verified.
+- **THE TEST**: `claude mcp add -t http :30080` → ✔ Connected → headless `claude -p` session:
+  created `agentdb` (URI returned), loaded 1,000 rows via dockerized psql ITSELF, branched to
+  `agentdb-test`, verified the branch sees all rows. Demo script steps 1–3 are live minus the
+  installer — a real agent, zero humans, zero kubectl.
+- **The agent found a real bug**: operator Role lacked create/delete on databases/branches
+  (the in-operator MCP server creates CRs itself — my host-run P1 validation used my admin
+  kubeconfig, masking it). Chart fixed (+create,+delete), helm rev 3, verbs verified. Lesson
+  for T4/T5: run e2e under the operator's RBAC, never an admin identity.
+- Live artifacts left running: `agentdb` (:30018) + `agentdb-test` (:30004); MCP registration
+  in Claude Code local scope for the platform/ dir — open Claude Code there and ask for a
+  database.
+
+**Next (P3)**: lifecycle — idle-suspend loop (SQL activity poll → /terminate w/ minted JWT →
+delete pod, port sticky), wake inside get_connection (fresh pod), TTL reaper + K8s Events;
+suspend/wake status phases. Then P4: up.sh installer + `just e2e` (T3/T4) + pinned digests.
+

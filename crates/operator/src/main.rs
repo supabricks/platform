@@ -1,5 +1,6 @@
 mod crd;
 mod keys;
+mod mcp;
 mod ports;
 mod reconcile;
 mod spec;
@@ -16,6 +17,36 @@ use tracing::info;
 use keys::ComputeKey;
 
 const JWK_SECRET: &str = "sspc-compute-jwk";
+const MCP_TOKEN_SECRET: &str = "sspc-mcp-token";
+
+/// Load or mint the MCP bearer token (fetch it for `claude mcp add` with:
+/// kubectl -n <ns> get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d).
+async fn ensure_mcp_token(client: &Client, ns: &str) -> anyhow::Result<String> {
+    use aws_lc_rs::rand::SecureRandom;
+    let secrets: Api<Secret> = Api::namespaced(client.clone(), ns);
+    if let Some(existing) = secrets.get_opt(MCP_TOKEN_SECRET).await? {
+        let data = existing
+            .data
+            .as_ref()
+            .and_then(|d| d.get("token"))
+            .context("mcp token secret exists but has no token")?;
+        return Ok(String::from_utf8(data.0.clone())?);
+    }
+    let mut raw = [0u8; 24];
+    aws_lc_rs::rand::SystemRandom::new()
+        .fill(&mut raw)
+        .map_err(|e| anyhow::anyhow!("token gen: {e}"))?;
+    let token = hex::encode(raw);
+    let mut secret = Secret::default();
+    secret.metadata.name = Some(MCP_TOKEN_SECRET.into());
+    secret.metadata.namespace = Some(ns.into());
+    secret.data = Some(
+        [("token".to_string(), k8s_openapi::ByteString(token.clone().into_bytes()))].into(),
+    );
+    secrets.create(&PostParams::default(), &secret).await?;
+    info!("generated MCP bearer token in secret {MCP_TOKEN_SECRET}");
+    Ok(token)
+}
 
 fn env_or(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_string())
@@ -98,5 +129,18 @@ async fn main() -> anyhow::Result<()> {
         safekeepers,
         pageserver_connstring,
     });
+
+    let mcp_state = Arc::new(mcp::McpState {
+        ctx: ctx.clone(),
+        token: ensure_mcp_token(&ctx.client, &ctx.namespace).await?,
+        connect_host: env_or("SSPC_CONNECT_HOST", "localhost"),
+    });
+    let mcp_addr = env_or("SSPC_MCP_ADDR", "0.0.0.0:8080");
+    tokio::spawn(async move {
+        if let Err(e) = mcp::serve(mcp_state, &mcp_addr).await {
+            tracing::error!("mcp server exited: {e}");
+        }
+    });
+
     reconcile::run(ctx).await
 }

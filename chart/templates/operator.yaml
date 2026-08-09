@@ -16,7 +16,8 @@ rules:
   verbs: [create, patch]
 - apiGroups: [sspc.io]
   resources: [databases, branches]
-  verbs: [get, list, watch, patch, update]
+  # create/delete: the in-operator MCP server creates and deletes CRs itself.
+  verbs: [get, list, watch, create, patch, update, delete]
 - apiGroups: [sspc.io]
   resources: [databases/status, branches/status]
   verbs: [get, patch, update]
@@ -58,3 +59,15 @@ spec:
         - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute | quote }}}
         - {name: SSPC_IMAGE_PULL_POLICY, value: {{ .Values.imagePullPolicy | quote }}}
         - {name: RUST_LOG, value: "info,kube=warn"}
+        ports:
+        - {containerPort: 8080, name: mcp}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sspc-mcp
+spec:
+  type: NodePort
+  selector: {app: sspc-operator}
+  ports:
+  - {name: mcp, port: 8080, nodePort: {{ .Values.nodePorts.mcp }}}
