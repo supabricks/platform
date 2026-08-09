@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# sspc one-command install (RFC 012 B0): kind cluster + platform + MCP
+# registration. Usage: up.sh [--yes]   (--yes = no prompts, CI mode)
+set -euo pipefail
+cd "$(dirname "$0")"
+YES=${1:-}
+
+# ---- image pins (single source of truth; local tags are what the chart uses)
+PINS=(
+  "ghcr.io/neondatabase/neon@sha256:7a4f124917bb929964b2d696d710f19584f80bb9bd51b2af4a6e2425434c761f|ghcr.io/neondatabase/neon:latest"
+  "ghcr.io/neondatabase/compute-node-v16@sha256:b3e151661bd2ee11eb2843c8926001966cb23969227e9673c5f42fc3fbe14249|ghcr.io/neondatabase/compute-node-v16:latest"
+  "postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777|postgres:16-alpine"
+  "minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727|minio/mc:latest"
+  "quay.io/minio/minio@sha256:df7363871efee5192fb5510ee80e10bb8c5cdc45c9301a825302b1d52c60ba64|quay.io/minio/minio:RELEASE.2022-10-20T00-55-09Z"
+  "busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662|busybox:1.36"
+)
+OPERATOR_TAG=sspc-operator:p1
+
+say() { printf '\033[1;36m== %s\033[0m\n' "$*"; }
+die() { printf '\033[1;31mFATAL: %s\033[0m\n' "$*" >&2; exit 1; }
+
+say "checking prerequisites"
+for bin in docker kind kubectl helm jq; do
+  command -v "$bin" >/dev/null || die "$bin not found — install it first"
+done
+docker info >/dev/null 2>&1 || die "docker daemon not running"
+
+if ! kind get clusters 2>/dev/null | grep -qx sspc; then
+  say "creating kind cluster 'sspc' (pre-mapped port block 30001-30020, 30080)"
+  kind create cluster --config kind-config.yaml --wait 120s
+else
+  say "kind cluster 'sspc' already exists"
+fi
+
+say "pulling pinned images + loading into kind (first run: a few minutes)"
+tags=()
+for pin in "${PINS[@]}"; do
+  digest="${pin%%|*}"; tag="${pin##*|}"
+  docker image inspect "$tag" >/dev/null 2>&1 || {
+    docker pull -q "$digest"
+    docker tag "$digest" "$tag"
+  }
+  tags+=("$tag")
+done
+docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
+  say "building operator image (not found locally)"
+  docker build -t "$OPERATOR_TAG" ..
+}
+if docker exec sspc-control-plane crictl images 2>/dev/null | grep -q sspc-operator; then
+  say "images already on the node; skipping load"
+else
+  tar=$(mktemp -d)/images.tar
+  docker save --platform linux/arm64 -o "$tar" "${tags[@]}" "$OPERATOR_TAG" \
+    || docker save -o "$tar" "${tags[@]}" "$OPERATOR_TAG"
+  kind load image-archive --name sspc "$tar" >/dev/null
+  rm -f "$tar"
+fi
+
+say "installing the platform (helm)"
+helm upgrade --install sspc ../chart -n sspc-cell --create-namespace >/dev/null
+# Wait on workloads, not pods --all: the bucket job's Completed pod is never
+# "Ready" and would hang the wait (found by the second-consecutive-run test).
+kubectl -n sspc-cell wait --for=condition=Available deploy --all --timeout=300s >/dev/null
+for ss in controller-pg safekeeper pageserver; do
+  kubectl -n sspc-cell rollout status "statefulset/$ss" --timeout=300s >/dev/null
+done
+kubectl -n sspc-cell wait --for=condition=Complete job/minio-create-bucket --timeout=120s >/dev/null 2>&1 || true
+say "platform healthy"
+
+TOKEN=$(kubectl -n sspc-cell get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d)
+MCP_URL=http://localhost:30080/mcp
+
+say "smoke test: create + delete a database through MCP"
+mcp() { curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$1" "$MCP_URL"; }
+r=$(mcp '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_database","arguments":{"name":"smoke-check"}}}' | jq -r '.result.content[0].text' | jq -r .status)
+[ "$r" = "ready" ] || die "smoke create returned '$r'"
+mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"delete_database","arguments":{"name":"smoke-check"}}}' >/dev/null
+say "smoke test passed"
+
+ADD_CMD="claude mcp add -s user -t http sspc $MCP_URL -H \"Authorization: Bearer $TOKEN\""
+if command -v claude >/dev/null; then
+  consent=y
+  if [ "$YES" != "--yes" ]; then
+    read -r -p "Register the sspc MCP server with Claude Code (user scope)? [y/N] " consent
+  fi
+  if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
+    claude mcp remove -s user sspc >/dev/null 2>&1 || true
+    eval "$ADD_CMD" >/dev/null
+    say "registered with Claude Code — open a session here and ask for a database"
+  else
+    say "skipped; register later with:"; echo "  $ADD_CMD"
+  fi
+else
+  say "claude CLI not found; register later with:"; echo "  $ADD_CMD"
+fi
+
+cat <<EOF
+
+  sspc is up.
+    try:      open Claude Code and say "create me a postgres database"
+    inspect:  kubectl -n sspc-cell get databases,branches,pods
+    e2e:      just e2e        teardown: ./down.sh
+EOF

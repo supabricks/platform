@@ -249,3 +249,25 @@ suspend/wake status phases. Then P4: up.sh installer + `just e2e` (T3/T4) + pinn
 - Demo-script status: **steps 2–5 all live** (wake is MCP-explicit; plain-psql wake = M2).
   Remaining for M1: P4 — up.sh installer, `just e2e` under operator RBAC, pinned digests.
 
+## P4 / M1 COMPLETE (2026-08-09): one command, then it's Neon on your laptop
+
+- **`platform/install/up.sh [--yes]`**: prereq check → kind cluster (port block) → pinned-digest
+  pulls (6 images, single source of truth in the script) → node-aware image load (skips when
+  present: re-runs drop from ~6min to **9.5s**) → helm install → workload-aware health wait →
+  MCP smoke (create+delete through the API) → `claude mcp add -s user` with consent. `down.sh`
+  reverses everything incl. the registration.
+- **`platform/e2e/run.sh` (T3+T4)**: drives everything through MCP (operator's identity — P2's
+  RBAC lesson), pre-cleans, dumps artifacts on failure. **PASS in 100s**: idempotency (1 CR from
+  2 creates), 100k load, branch isolation, suspend at 20s threshold, wake < 10s w/ data,
+  TTL reap + Event, delete + cell-side tenant-gone verification.
+- **Two real bugs found by the exit discipline**: (1) TCP-socket readiness races PG startup
+  (accepts then resets) → probe switched to exec `pg_isready` + e2e clients retry (M2's gateway
+  is the real absorber); (2) `kubectl wait pod --all` hangs forever on the bucket job's
+  Completed pod → wait on deploys + statefulset rollouts instead. Both only surfaced on
+  second-consecutive runs — the "twice in a row" criterion earns its keep.
+- **M1 exit met**: fresh `up.sh` 7m13s → repeat 9.5s, both green; `just test` 10/10;
+  `just e2e` PASS; demo steps 2–5 live (P2's agent session + P3's live runs + e2e).
+  Outstanding by definition: one run by someone who didn't build it.
+- M2 next when scheduled: gateway v0 — single entry port, plain-psql wake-on-connect,
+  gateway-owned activity truth (deletes NodePort-per-endpoint + SQL polling).
+

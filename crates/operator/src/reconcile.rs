@@ -185,7 +185,13 @@ impl Ctx {
                     ],
                     "ports": [{"containerPort": 55433}, {"containerPort": 3080}],
                     "volumeMounts": [{"name": "spec", "mountPath": "/config"}],
-                    "readinessProbe": {"tcpSocket": {"port": 55433}, "periodSeconds": 1},
+                    // pg_isready, not tcpSocket: PG briefly accepts TCP but
+                    // resets connections during startup (found by T4).
+                    "readinessProbe": {
+                        "exec": {"command": ["pg_isready", "-h", "localhost",
+                                              "-p", "55433", "-U", "cloud_admin"]},
+                        "periodSeconds": 1,
+                    },
                 }],
                 "volumes": [{"name": "spec", "configMap": {"name": format!("{name}-spec")}}],
             },
