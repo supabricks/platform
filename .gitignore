@@ -12,5 +12,6 @@ spike/compose/compute_wrapper/public-key.der
 .DS_Store
 *.log
 
-# Pageserver runtime data (bind-mounted live cell state, written by the running pageserver)
-spike/compose/pageserver_config/tenants/
+# Pageserver runtime data (bind-mounted live cell state; only pageserver.toml is config)
+spike/compose/pageserver_config/*
+!spike/compose/pageserver_config/pageserver.toml

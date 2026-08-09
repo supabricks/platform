@@ -97,7 +97,21 @@ note: **bind mounts recorded the old `pg-cos-compat` path**; the stack survived 
 while running. Any restart needed `--force-recreate` to re-resolve mounts. Host `pgroot/` binaries
 also broke (dylib install paths bake the old prefix) — rebuild or symlink when next needed.
 
+**Day 2 addendum — the 10.8s decomposed (and mostly deleted).** The 10.8s "container overhead"
+was an artifact of measuring wake via `--force-recreate`, which first *stops* the old husk
+container: PID-1 bash ignores SIGTERM → Docker burns its full 10s kill-grace → SIGKILL (measured:
+`docker stop` = 10.4s, `rm` = 0.1s, create+start = 0.6s). A true wake never stops anything
+(suspend already deleted the compute). Measured clean:
+- **Wake (create → SQL-ready-with-data): 0.8–2.0s end-to-end on the laptop** (2.0s cold-ish,
+  0.81s warm; includes compute.sh's nc-wait + discovery curls, which the operator replaces with
+  direct spec generation).
+- Fixed root cause in our compute.sh: `exec compute_ctl` (PID 1, receives SIGTERM directly;
+  also deleted upstream's orphaned `--dev` line). After the fix: **`docker stop` = 0.44s**
+  (graceful, lock files cleaned — the stale-lock crash-loop class is gone), stop→start cycle
+  ≈ 2s. Same lesson for K8s: compute_ctl must be the container entrypoint (or wrapped with
+  exec), or every pod deletion eats `terminationGracePeriodSeconds` and kills PG hard.
+
 **Next**: kind + kubectl + helm — translate the cell to K8s manifests (storage controller included
-this time), measure the cold-start distribution (the ~10.8s container overhead is the number K8s
-must beat), prototype the operator's suspend→terminate→delete-pod / wake→create-pod loop.
+this time), measure the cold-start distribution (laptop floor to beat: ~1–2s wake), prototype the
+operator's suspend→terminate→delete-pod / wake→create-pod loop.
 
