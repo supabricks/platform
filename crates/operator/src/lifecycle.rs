@@ -15,7 +15,7 @@ use kube::{Resource, ResourceExt};
 use serde_json::json;
 use tracing::{info, warn};
 
-use crate::crd::{Branch, Database, EndpointStatus, Phase};
+use crate::crd::{Branch, Database, EndpointStatus, EnrolledDatabase, EnrolledPhase, Phase};
 use crate::reconcile::{Ctx, now_ts};
 
 const TICK: Duration = Duration::from_secs(15);
@@ -50,7 +50,52 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
         maybe_suspend::<Branch>(ctx, &name, br.spec.suspend_after_seconds, br.status.as_ref())
             .await;
     }
+    let edbs: Api<EnrolledDatabase> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    for edb in edbs.list(&Default::default()).await?.items {
+        check_enrolled(&edbs, &edb).await;
+    }
     Ok(())
+}
+
+/// Agentless SQL health for an enrolled (foreign) Postgres — RFC 010:
+/// observe and advise, never operate. One round-trip, read-only.
+async fn check_enrolled(api: &Api<EnrolledDatabase>, edb: &EnrolledDatabase) {
+    let name = edb.name_any();
+    let status = match probe_enrolled(&edb.spec.connection_uri).await {
+        Ok((version, dbs, size)) => json!({
+            "phase": EnrolledPhase::Reachable, "serverVersion": version,
+            "databaseCount": dbs, "totalSize": size,
+            "lastChecked": now_ts(), "message": null,
+        }),
+        Err(e) => json!({
+            "phase": EnrolledPhase::Unreachable,
+            "lastChecked": now_ts(), "message": e.to_string(),
+        }),
+    };
+    let _ = api
+        .patch_status(&name, &PatchParams::default(), &Patch::Merge(json!({"status": status})))
+        .await;
+}
+
+async fn probe_enrolled(uri: &str) -> anyhow::Result<(String, i64, String)> {
+    let mut cfg: tokio_postgres::Config = uri.parse()?;
+    cfg.application_name("sspc-operator")
+        .connect_timeout(Duration::from_secs(3));
+    let (client, conn) = cfg.connect(tokio_postgres::NoTls).await?;
+    let handle = tokio::spawn(conn);
+    let row = client
+        .query_one(
+            "SELECT current_setting('server_version'), \
+             (SELECT count(*) FROM pg_database WHERE NOT datistemplate), \
+             (SELECT pg_size_pretty(sum(pg_database_size(oid))::bigint) \
+              FROM pg_database WHERE NOT datistemplate)",
+            &[],
+        )
+        .await?;
+    let out = (row.get::<_, String>(0), row.get::<_, i64>(1), row.get::<_, String>(2));
+    drop(client);
+    handle.abort();
+    Ok(out)
 }
 
 fn ttl_expired(meta: &ObjectMeta, ttl_seconds: Option<i64>) -> bool {

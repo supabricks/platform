@@ -173,3 +173,81 @@ spec:
     storage: true
     subresources:
       status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: enrolleddatabases.sspc.io
+spec:
+  group: sspc.io
+  names:
+    kind: EnrolledDatabase
+    plural: enrolleddatabases
+    shortNames:
+    - edb
+    singular: enrolleddatabase
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.serverVersion
+      name: Version
+      type: string
+    - jsonPath: .status.databaseCount
+      name: DBs
+      type: integer
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for EnrolledDatabaseSpec via `CustomResource`
+        properties:
+          spec:
+            description: |-
+              An existing Postgres — anywhere — under governance without migration
+              (RFC 010: enrolled class; M1-lite: reachability + inventory health).
+            properties:
+              connectionUri:
+                description: |-
+                  Postgres connection URI. RFC 010's friction budget: a read-only
+                  monitoring role is all it needs (`GRANT pg_monitor`).
+                type: string
+            required:
+            - connectionUri
+            type: object
+          status:
+            nullable: true
+            properties:
+              databaseCount:
+                format: int64
+                nullable: true
+                type: integer
+              lastChecked:
+                nullable: true
+                type: string
+              message:
+                nullable: true
+                type: string
+              phase:
+                enum:
+                - Reachable
+                - Unreachable
+                - null
+                nullable: true
+                type: string
+              serverVersion:
+                nullable: true
+                type: string
+              totalSize:
+                nullable: true
+                type: string
+            type: object
+        required:
+        - spec
+        title: EnrolledDatabase
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

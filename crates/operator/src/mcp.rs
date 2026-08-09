@@ -19,7 +19,7 @@ use kube::ResourceExt;
 use serde_json::{Value, json};
 use tracing::info;
 
-use crate::crd::{Branch, Database, Phase};
+use crate::crd::{Branch, Database, EnrolledDatabase, Phase};
 use crate::reconcile::{Ctx, WAKE_ANNOTATION, now_ts};
 
 pub struct McpState {
@@ -137,6 +137,8 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
         "list_branches" => list_branches(state).await,
         "delete_branch" => delete_branch(state, args).await,
         "get_connection" => get_connection(state, args).await,
+        "enroll_database" => enroll_database(state, args).await,
+        "unenroll_database" => unenroll_database(state, args).await,
         other => Err(terr(
             format!("unknown tool {other}"),
             false,
@@ -160,6 +162,7 @@ fn capabilities(state: &McpState) -> ToolResult {
         "max_endpoints": crate::ports::RANGE_LEN,
         "connect_host": state.connect_host,
         "features": {"branching": true, "ttl": true, "scale_to_zero": true,
+                      "enrollment": "attach existing Postgres for inventory/health, zero migration",
                       "wake": "explicit via get_connection (plain-psql wake-on-connect: M2)"},
     }))
 }
@@ -281,15 +284,80 @@ fn summarize(status: Option<&crate::crd::EndpointStatus>) -> Value {
 async fn list_databases(state: &McpState) -> ToolResult {
     let api: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
     let items = api.list(&Default::default()).await.map_err(from_kube)?;
-    Ok(json!(items
+    let mut out: Vec<Value> = items
         .items
         .iter()
         .map(|d| {
             let mut v = summarize(d.status.as_ref());
             v["name"] = json!(d.name_any());
+            v["kind"] = json!("cell-backed");
             v
         })
-        .collect::<Vec<_>>()))
+        .collect();
+    // The estate view includes enrolled (foreign) Postgres — RFC 010.
+    let edbs: Api<EnrolledDatabase> =
+        Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    for e in edbs.list(&Default::default()).await.map_err(from_kube)?.items {
+        let s = e.status.clone().unwrap_or_default();
+        out.push(json!({
+            "name": e.name_any(), "kind": "enrolled",
+            "phase": s.phase, "server_version": s.server_version,
+            "database_count": s.database_count, "total_size": s.total_size,
+            "last_checked": s.last_checked, "message": s.message,
+        }));
+    }
+    Ok(json!(out))
+}
+
+async fn enroll_database(state: &McpState, args: &Value) -> ToolResult {
+    let name = need_name(args)?;
+    let uri_arg = args["connection_uri"].as_str().ok_or_else(|| {
+        terr("missing required argument: connection_uri", false,
+             "pass a postgres:// connection URI (a read-only monitoring role is enough)")
+    })?;
+    let edb: EnrolledDatabase = serde_json::from_value(json!({
+        "apiVersion": "sspc.io/v1alpha1", "kind": "EnrolledDatabase",
+        "metadata": {"name": name, "namespace": state.ctx.namespace},
+        "spec": {"connectionUri": uri_arg},
+    }))
+    .map_err(|e| terr(format!("bad arguments: {e}"), false, "check argument types"))?;
+    let api: Api<EnrolledDatabase> =
+        Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    api.patch(&name, &PatchParams::apply("sspc-mcp"), &Patch::Apply(&edb))
+        .await
+        .map_err(from_kube)?;
+    // First health check lands on the next lifecycle tick (≤15s); wait briefly.
+    let deadline = Instant::now() + Duration::from_secs(20);
+    loop {
+        if let Ok(Some(e)) = api.get_opt(&name).await {
+            if let Some(s) = e.status.filter(|s| s.phase.is_some()) {
+                return Ok(json!({
+                    "name": name, "kind": "enrolled", "phase": s.phase,
+                    "server_version": s.server_version,
+                    "database_count": s.database_count, "total_size": s.total_size,
+                    "message": s.message,
+                    "note": "enrolled: inventoried and health-monitored in place; nothing was migrated or modified",
+                }));
+            }
+        }
+        if Instant::now() > deadline {
+            return Ok(json!({"name": name, "kind": "enrolled", "phase": "pending",
+                              "note": "first health check pending; list_databases will show it shortly"}));
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+}
+
+async fn unenroll_database(state: &McpState, args: &Value) -> ToolResult {
+    let name = need_name(args)?;
+    let api: Api<EnrolledDatabase> =
+        Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    match api.delete(&name, &kube::api::DeleteParams::default()).await {
+        Ok(_) => Ok(json!({"name": name, "status": "unenrolled",
+                            "note": "the database itself was never touched"})),
+        Err(kube::Error::Api(e)) if e.code == 404 => Ok(json!({"name": name, "status": "absent"})),
+        Err(e) => Err(from_kube(e)),
+    }
 }
 
 async fn list_branches(state: &McpState) -> ToolResult {
@@ -414,8 +482,18 @@ fn tool_defs() -> Value {
              "ttl_seconds": {"type": "integer", "description": "Optional TTL; the platform reaps the database when it expires"},
              "suspend_after_seconds": {"type": "integer", "description": "Idle seconds before scale-to-zero (default 300)"}},
              "required": ["name"]}},
-        {"name": "list_databases", "description": "List databases with status.",
+        {"name": "list_databases",
+         "description": "The estate: cell-backed databases AND enrolled (existing, unmigrated) Postgres, with health.",
          "inputSchema": {"type": "object", "properties": {}}},
+        {"name": "enroll_database",
+         "description": "Attach an EXISTING Postgres (anywhere) for inventory and health monitoring — zero migration, zero changes to it. Needs only a connection URI (read-only role is enough).",
+         "inputSchema": {"type": "object", "properties": {
+             "name": name_arg,
+             "connection_uri": {"type": "string", "description": "postgres:// URI of the existing server"}},
+             "required": ["name", "connection_uri"]}},
+        {"name": "unenroll_database",
+         "description": "Detach an enrolled database from the estate (the database itself is never touched).",
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "get_database", "description": "Get one database's status.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "delete_database",

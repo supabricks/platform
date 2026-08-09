@@ -15,11 +15,11 @@ rules:
   resources: [events]
   verbs: [create, patch]
 - apiGroups: [sspc.io]
-  resources: [databases, branches]
+  resources: [databases, branches, enrolleddatabases]
   # create/delete: the in-operator MCP server creates and deletes CRs itself.
   verbs: [get, list, watch, create, patch, update, delete]
 - apiGroups: [sspc.io]
-  resources: [databases/status, branches/status]
+  resources: [databases/status, branches/status, enrolleddatabases/status]
   verbs: [get, patch, update]
 - apiGroups: [sspc.io]
   resources: [databases/finalizers, branches/finalizers]

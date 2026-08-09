@@ -36,6 +36,7 @@ trap 'fail "unexpected error at line $LINENO"' ERR
 step "pre-clean (idempotent)"
 for r in e2ebr e2ettl; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 for r in e2edb e2esleep; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null 2>&1 || true
 sleep 3
 
 step "capabilities"
@@ -78,6 +79,12 @@ for i in $(seq 1 30); do
   sleep 5; [ "$i" = 30 ] && fail "TTL never reaped"
 done
 kubectl -n $NS get events --field-selector reason=TTLExpired --no-headers | grep -q e2ettl || fail "no TTLExpired event"
+
+step "enrollment: attach existing PG, zero migration"
+E=$(mcp enroll_database '{"name":"e2enrolled","connection_uri":"postgresql://postgres:postgres@controller-pg.sspc-cell.svc.cluster.local:5432/storage_controller"}')
+echo "$E" | jq -e '.phase == "Reachable"' >/dev/null || fail "enrolled not Reachable: $E"
+mcp list_databases '{}' | jq -e '[.[] | select(.kind == "enrolled" and .name == "e2enrolled")] | length == 1' >/dev/null || fail "enrolled missing from estate list"
+mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null
 
 step "cleanup + cell-side verification"
 TEN=$(kubectl -n $NS get database e2edb -o jsonpath='{.status.tenantId}')

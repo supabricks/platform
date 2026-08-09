@@ -10,6 +10,7 @@ fn main() {
     let docs = [
         serde_yaml::to_string(&crd::Database::crd()).unwrap(),
         serde_yaml::to_string(&crd::Branch::crd()).unwrap(),
+        serde_yaml::to_string(&crd::EnrolledDatabase::crd()).unwrap(),
     ];
     print!("{}", docs.join("---\n"));
 }

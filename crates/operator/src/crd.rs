@@ -53,6 +53,50 @@ pub struct BranchSpec {
     pub ttl_seconds: Option<i64>,
 }
 
+/// An existing Postgres — anywhere — under governance without migration
+/// (RFC 010: enrolled class; M1-lite: reachability + inventory health).
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "sspc.io",
+    version = "v1alpha1",
+    kind = "EnrolledDatabase",
+    namespaced,
+    status = "EnrolledStatus",
+    shortname = "edb",
+    printcolumn = r#"{"name":"Phase","type":"string","jsonPath":".status.phase"}"#,
+    printcolumn = r#"{"name":"Version","type":"string","jsonPath":".status.serverVersion"}"#,
+    printcolumn = r#"{"name":"DBs","type":"integer","jsonPath":".status.databaseCount"}"#
+)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrolledDatabaseSpec {
+    /// Postgres connection URI. RFC 010's friction budget: a read-only
+    /// monitoring role is all it needs (`GRANT pg_monitor`).
+    pub connection_uri: String,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrolledStatus {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<EnrolledPhase>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub database_count: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_size: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_checked: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, JsonSchema)]
+pub enum EnrolledPhase {
+    Reachable,
+    Unreachable,
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct EndpointStatus {
