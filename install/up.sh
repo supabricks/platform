@@ -94,10 +94,35 @@ else
   say "claude CLI not found; register later with:"; echo "  $ADD_CMD"
 fi
 
+# third-party MCP clients: reads mcpServers from ~/.mcp-client/mcp.json (global) or
+# mcp-client/mcp.json (project). Our server is POST-only streamable HTTP — validated
+# with Claude Code; the MCP client speaks streamable-http per its docs. If the client's client
+# turns out to require the optional GET/SSE leg, that lands server-side.
+CLIENT_CFG="$HOME/.mcp-client/mcp.json"
+if [ -d "$HOME/.mcp-client" ]; then
+  consent=y
+  if [ "$YES" != "--yes" ]; then
+    read -r -p "Register the sspc MCP server with third-party MCP client (~/.mcp-client/mcp.json)? [y/N] " consent
+  fi
+  if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
+    [ -f "$CLIENT_CFG" ] || printf '{"mcpServers":{}}\n' > "$CLIENT_CFG"
+    tmp=$(mktemp)
+    jq --arg url "$MCP_URL" --arg auth "Bearer $TOKEN" \
+      '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
+                            "headers": {"Authorization": $auth},
+                            "alwaysAllow": [], "disabled": false}' \
+      "$CLIENT_CFG" > "$tmp" && mv "$tmp" "$CLIENT_CFG"
+    say "registered with third-party MCP client — restart the server from the client's MCP settings to pick it up"
+  else
+    say "skipped third-party MCP client registration"
+  fi
+fi
+
 cat <<EOF
 
   sspc is up.
-    try:      open Claude Code and say "create me a postgres database"
+    try:      open Claude Code (or third-party MCP client) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     e2e:      just e2e        teardown: ./down.sh
+    other harnesses: any MCP client works — see platform/README.md "Connect an agent"
 EOF

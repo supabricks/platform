@@ -36,6 +36,22 @@ just e2e                                      # the full acceptance suite
 - `install/` — pinned-digest one-command install / teardown.
 - `e2e/` — the T3/T4 acceptance suite (drives everything through MCP).
 
+## Connect an agent
+
+The API is standard MCP (streamable HTTP + bearer token) — any MCP-capable
+harness works. `up.sh` auto-registers the two it knows:
+
+- **Claude Code**: `claude mcp add -s user -t http sspc http://localhost:30080/mcp -H "Authorization: Bearer <token>"`
+- **third-party MCP client**: merged into `~/.mcp-client/mcp.json` as
+  `{"type": "streamable-http", "url": "http://localhost:30080/mcp", "headers": {"Authorization": "Bearer <token>"}}`
+  (restart the server from the client's MCP settings tab)
+
+Any other harness: point its MCP config at the same URL/header. The token:
+`kubectl -n sspc-cell get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d`.
+Caveat: the server is POST-only streamable HTTP (no SSE leg), verified against
+Claude Code; clients that require the optional GET/SSE stream would need that
+leg added server-side.
+
 ## Honest M1 limits (by design — see RFC 012)
 
 Single admin MCP token; per-endpoint NodePorts (gateway lands in M2, bringing
