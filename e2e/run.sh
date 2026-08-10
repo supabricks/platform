@@ -8,7 +8,7 @@ NS=sspc-cell
 ART=./e2e-artifacts
 T_START=$(date +%s)
 
-TOKEN=$(kubectl -n $NS get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d)
+TOKEN=$(kubectl -n $NS get secret sspc-mcp-token -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)
 mcp() { # $1 tool, $2 args-json → tool text payload
   curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}" \

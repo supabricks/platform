@@ -67,17 +67,16 @@ done
 kubectl -n sspc-cell wait --for=condition=Complete job/minio-create-bucket --timeout=120s >/dev/null 2>&1 || true
 say "platform healthy"
 
-TOKEN=$(kubectl -n sspc-cell get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d)
 MCP_URL=http://localhost:30080/mcp
 
 say "smoke test: create + delete a database through MCP"
-mcp() { curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$1" "$MCP_URL"; }
+mcp() { curl -sf -X POST -H "Content-Type: application/json" -d "$1" "$MCP_URL"; }
 r=$(mcp '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_database","arguments":{"name":"smoke-check"}}}' | jq -r '.result.content[0].text' | jq -r .status)
 [ "$r" = "ready" ] || die "smoke create returned '$r'"
 mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"delete_database","arguments":{"name":"smoke-check"}}}' >/dev/null
 say "smoke test passed"
 
-ADD_CMD="claude mcp add -s user -t http sspc $MCP_URL -H \"Authorization: Bearer $TOKEN\""
+ADD_CMD="claude mcp add -s user -t http sspc $MCP_URL"
 if command -v claude >/dev/null; then
   consent=y
   if [ "$YES" != "--yes" ]; then
@@ -107,9 +106,8 @@ if [ -d "$HOME/.mcp-client" ]; then
   if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
     [ -f "$CLIENT_CFG" ] || printf '{"mcpServers":{}}\n' > "$CLIENT_CFG"
     tmp=$(mktemp)
-    jq --arg url "$MCP_URL" --arg auth "Bearer $TOKEN" \
+    jq --arg url "$MCP_URL" \
       '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
-                            "headers": {"Authorization": $auth},
                             "alwaysAllow": [], "disabled": false}' \
       "$CLIENT_CFG" > "$tmp" && mv "$tmp" "$CLIENT_CFG"
     say "registered with third-party MCP client — restart the server from the client's MCP settings to pick it up"
@@ -118,11 +116,11 @@ if [ -d "$HOME/.mcp-client" ]; then
   fi
 fi
 
-[ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/?token=$TOKEN" || true
+[ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/" || true
 cat <<EOF
 
   sspc is up.
-    UI:       http://localhost:30080/?token=$TOKEN
+    UI:       http://localhost:30080/
     try:      open Claude Code (or third-party MCP client) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     e2e:      just e2e        teardown: ./down.sh

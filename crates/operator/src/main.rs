@@ -134,9 +134,18 @@ async fn main() -> anyhow::Result<()> {
 
     tokio::spawn(lifecycle::run(ctx.clone()));
 
+    // POC default is open mode: install binds ports to loopback, so the
+    // network layer guards the surface. Set SSPC_MCP_REQUIRE_TOKEN=true to
+    // mint/require the bearer instead (real IAM: RFC 008).
+    let token = if env_or("SSPC_MCP_REQUIRE_TOKEN", "false") == "true" {
+        Some(ensure_mcp_token(&ctx.client, &ctx.namespace).await?)
+    } else {
+        info!("MCP auth: open mode (loopback-bound POC posture)");
+        None
+    };
     let mcp_state = Arc::new(mcp::McpState {
         ctx: ctx.clone(),
-        token: ensure_mcp_token(&ctx.client, &ctx.namespace).await?,
+        token,
         connect_host: env_or("SSPC_CONNECT_HOST", "localhost"),
     });
     let mcp_addr = env_or("SSPC_MCP_ADDR", "0.0.0.0:8080");

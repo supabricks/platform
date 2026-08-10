@@ -24,7 +24,9 @@ use crate::reconcile::{Ctx, WAKE_ANNOTATION, now_ts};
 
 pub struct McpState {
     pub ctx: Arc<Ctx>,
-    pub token: String,
+    /// None = open mode (POC default: ports bind loopback, the network layer
+    /// is the guard; real IAM lands per RFC 008). Some = require this bearer.
+    pub token: Option<String>,
     pub connect_host: String,
 }
 
@@ -64,10 +66,13 @@ async fn handle_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    let authed = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .is_some_and(|v| v == format!("Bearer {}", state.token));
+    let authed = match &state.token {
+        None => true,
+        Some(t) => headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v == format!("Bearer {t}")),
+    };
     if !authed {
         return (
             StatusCode::UNAUTHORIZED,
