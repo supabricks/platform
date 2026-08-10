@@ -118,9 +118,11 @@ if [ -d "$HOME/.mcp-client" ]; then
   fi
 fi
 
+[ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/?token=$TOKEN" || true
 cat <<EOF
 
   sspc is up.
+    UI:       http://localhost:30080/?token=$TOKEN
     try:      open Claude Code (or third-party MCP client) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     e2e:      just e2e        teardown: ./down.sh

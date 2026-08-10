@@ -13,7 +13,8 @@ rules:
   verbs: [get, list, watch, create, patch, delete]
 - apiGroups: [""]
   resources: [events]
-  verbs: [create, patch]
+  # get/list: the get_events tool reads the audit line back (013 ticker).
+  verbs: [get, list, watch, create, patch]
 - apiGroups: [sspc.io]
   resources: [databases, branches, enrolleddatabases]
   # create/delete: the in-operator MCP server creates and deletes CRs itself.

@@ -52,7 +52,16 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
     }
     let edbs: Api<EnrolledDatabase> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     for edb in edbs.list(&Default::default()).await?.items {
+        let first = edb.status.as_ref().and_then(|s| s.phase).is_none();
         check_enrolled(&edbs, &edb).await;
+        if first {
+            crate::reconcile::post_event(
+                ctx, "sspc.io/v1alpha1", "EnrolledDatabase", &edb.name_any(),
+                edb.meta().uid.clone(), "Enrolled",
+                format!("{} enrolled — inventoried in place, nothing migrated", edb.name_any()),
+            )
+            .await;
+        }
     }
     Ok(())
 }
@@ -204,6 +213,12 @@ async fn maybe_suspend<K>(
             }
             let lsn = terminate_compute(ctx, &pod_ip).await;
             let _ = pods.delete(name, &DeleteParams::default()).await;
+            crate::reconcile::post_event(
+                ctx, "sspc.io/v1alpha1", K::kind(&()).as_ref(), name, None,
+                "Suspended",
+                format!("{name} suspended after {idle_secs}s idle — compute released"),
+            )
+            .await;
             let mut st = json!({"phase": Phase::Suspended, "suspendedAt": now_ts()});
             if let Some(l) = lsn {
                 st["flushLsn"] = json!(l);

@@ -1,10 +1,18 @@
-# sspc-operator image. Build context: platform/
+# sspc-operator image (operator + embedded UI). Build context: platform/
+FROM node:22-slim AS ui
+WORKDIR /ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY ui .
+RUN npm run build
+
 FROM rust:1.92-bookworm AS build
 RUN apt-get update && apt-get install -y --no-install-recommends cmake perl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+COPY --from=ui /ui/dist ./ui/dist
 RUN cargo build --release --bin sspc-operator
 
 FROM debian:bookworm-slim

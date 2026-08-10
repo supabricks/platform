@@ -28,13 +28,33 @@ pub struct McpState {
     pub connect_host: String,
 }
 
+/// The UI bundle, embedded at compile time (RFC 013): served from the same
+/// origin as /mcp — no CORS, no extra pod, air-gap clean.
+#[derive(rust_embed::RustEmbed)]
+#[folder = "../../ui/dist"]
+struct UiAssets;
+
+async fn serve_ui(uri: axum::http::Uri) -> Response {
+    let path = uri.path().trim_start_matches('/');
+    let path = if path.is_empty() { "index.html" } else { path };
+    match UiAssets::get(path) {
+        Some(f) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            ([(axum::http::header::CONTENT_TYPE, mime.to_string())], f.data.into_owned())
+                .into_response()
+        }
+        None => (StatusCode::NOT_FOUND, "not found").into_response(),
+    }
+}
+
 pub async fn serve(state: Arc<McpState>, addr: &str) -> anyhow::Result<()> {
     let app = Router::new()
         .route("/mcp", post(handle_post))
         .route("/mcp", any(|| async { StatusCode::METHOD_NOT_ALLOWED }))
+        .fallback(axum::routing::get(serve_ui))
         .with_state(state);
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!("MCP server listening on {addr}");
+    info!("MCP server + UI listening on {addr}");
     axum::serve(listener, app).await?;
     Ok(())
 }
@@ -139,6 +159,7 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
         "get_connection" => get_connection(state, args).await,
         "enroll_database" => enroll_database(state, args).await,
         "unenroll_database" => unenroll_database(state, args).await,
+        "get_events" => get_events(state).await,
         other => Err(terr(
             format!("unknown tool {other}"),
             false,
@@ -291,6 +312,9 @@ async fn list_databases(state: &McpState) -> ToolResult {
             let mut v = summarize(d.status.as_ref());
             v["name"] = json!(d.name_any());
             v["kind"] = json!("cell-backed");
+            v["created_at"] = json!(d.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
+            v["ttl_seconds"] = json!(d.spec.ttl_seconds);
+            v["suspend_after_seconds"] = json!(d.spec.suspend_after_seconds);
             v
         })
         .collect();
@@ -370,6 +394,8 @@ async fn list_branches(state: &McpState) -> ToolResult {
             let mut v = summarize(b.status.as_ref());
             v["name"] = json!(b.name_any());
             v["database"] = json!(b.spec.database);
+            v["created_at"] = json!(b.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
+            v["ttl_seconds"] = json!(b.spec.ttl_seconds);
             v
         })
         .collect::<Vec<_>>()))
@@ -469,6 +495,42 @@ async fn delete_branch(state: &McpState, args: &Value) -> ToolResult {
     }
 }
 
+/// Recent lifecycle events — the audit line (013 ticker; agents get it too).
+async fn get_events(state: &McpState) -> ToolResult {
+    let api: Api<k8s_openapi::api::core::v1::Event> =
+        Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let mut evs: Vec<_> = api
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+        .into_iter()
+        .filter(|e| {
+            matches!(
+                e.involved_object.kind.as_deref(),
+                Some("Database") | Some("Branch") | Some("EnrolledDatabase")
+            )
+        })
+        .map(|e| {
+            let t = e
+                .last_timestamp
+                .as_ref()
+                .map(|t| t.0.to_string())
+                .or_else(|| e.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
+            json!({
+                "time": t,
+                "reason": e.reason,
+                "kind": e.involved_object.kind,
+                "name": e.involved_object.name,
+                "message": e.message,
+            })
+        })
+        .collect();
+    evs.sort_by(|a, b| b["time"].as_str().cmp(&a["time"].as_str()));
+    evs.truncate(30);
+    Ok(json!(evs))
+}
+
 fn tool_defs() -> Value {
     let name_arg = json!({"type": "string", "description": "Resource name (lowercase DNS label)"});
     json!([
@@ -513,5 +575,8 @@ fn tool_defs() -> Value {
         {"name": "get_connection",
          "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+        {"name": "get_events",
+         "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",
+         "inputSchema": {"type": "object", "properties": {}}},
     ])
 }

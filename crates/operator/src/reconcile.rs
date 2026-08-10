@@ -68,6 +68,42 @@ pub struct Ctx {
     pub pg_password: String,
 }
 
+/// Post a lifecycle Event on a CR — the audit line (013 ticker, 009 seed).
+pub async fn post_event(
+    ctx: &Ctx,
+    api_version: &str,
+    kind: &str,
+    name: &str,
+    uid: Option<String>,
+    reason: &str,
+    message: String,
+) {
+    let ev = k8s_openapi::api::core::v1::Event {
+        metadata: kube::api::ObjectMeta {
+            name: Some(format!("{name}-{}-{}", reason.to_lowercase(), chrono::Utc::now().timestamp())),
+            namespace: Some(ctx.namespace.clone()),
+            ..Default::default()
+        },
+        type_: Some("Normal".into()),
+        reason: Some(reason.into()),
+        message: Some(message),
+        involved_object: k8s_openapi::api::core::v1::ObjectReference {
+            api_version: Some(api_version.into()),
+            kind: Some(kind.into()),
+            name: Some(name.into()),
+            namespace: Some(ctx.namespace.clone()),
+            uid,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let api: Api<k8s_openapi::api::core::v1::Event> =
+        Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    if let Err(e) = api.create(&kube::api::PostParams::default(), &ev).await {
+        warn!("event {reason} for {name}: {e}");
+    }
+}
+
 /// 32-hex deterministic id from a CR UID and a salt.
 pub fn derive_id(uid: &str, salt: &str) -> String {
     hex::encode(&Sha256::digest(format!("{uid}:{salt}").as_bytes())[..16])
@@ -241,9 +277,17 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
     let tenant = derive_id(&uid, "tenant");
     let timeline = derive_id(&uid, "root");
 
+    let was = db.status.as_ref().and_then(|s| s.phase);
     ctx.storcon.create_tenant(&tenant).await?;
     ctx.storcon.create_timeline(&tenant, &timeline, None).await?;
     let run = wants_running(db.meta(), db.status.as_ref());
+    if was.is_none() {
+        post_event(ctx, "sspc.io/v1alpha1", "Database", &name, db.meta().uid.clone(),
+                   "Created", format!("database {name} provisioned")).await;
+    } else if was == Some(Phase::Suspended) && run {
+        post_event(ctx, "sspc.io/v1alpha1", "Database", &name, db.meta().uid.clone(),
+                   "Woke", format!("database {name} woke from suspend")).await;
+    }
     let port = ctx
         .ensure_endpoint(db.as_ref(), &name, &tenant, &timeline, run)
         .await?;
@@ -293,11 +337,19 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
         return Ok(Action::requeue(Duration::from_secs(3)));
     };
 
+    let was = br.status.as_ref().and_then(|s| s.phase);
     let timeline = derive_id(&uid, "branch");
     ctx.storcon
         .create_timeline(&tenant, &timeline, Some(&ancestor))
         .await?;
     let run = wants_running(br.meta(), br.status.as_ref());
+    if was.is_none() {
+        post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
+                   "Created", format!("branch {name} of {} created", br.spec.database)).await;
+    } else if was == Some(Phase::Suspended) && run {
+        post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
+                   "Woke", format!("branch {name} woke from suspend")).await;
+    }
     let port = ctx
         .ensure_endpoint(br.as_ref(), &name, &tenant, &timeline, run)
         .await?;
