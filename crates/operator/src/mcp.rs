@@ -169,11 +169,25 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
 }
 
 fn need_name(args: &Value) -> Result<String, ToolError> {
-    args["name"]
+    let name = args["name"]
         .as_str()
         .filter(|s| !s.is_empty())
         .map(|s| s.to_lowercase())
-        .ok_or_else(|| terr("missing required argument: name", false, "pass a name argument"))
+        .ok_or_else(|| terr("missing required argument: name", false, "pass a name argument"))?;
+    // Friendly DNS-1123 guard: without it, invalid names surface as raw
+    // Kubernetes validation errors (found by the first UI user).
+    let valid = name.len() <= 40
+        && name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        && !name.starts_with('-')
+        && !name.ends_with('-');
+    if !valid {
+        return Err(terr(
+            format!("invalid name {name:?}"),
+            false,
+            "use lowercase letters, digits, and hyphens (max 40 chars), starting and ending with a letter or digit — e.g. \"my-db\"",
+        ));
+    }
+    Ok(name)
 }
 
 fn capabilities(state: &McpState) -> ToolResult {

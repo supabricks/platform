@@ -6,6 +6,8 @@ import {
 } from '@carbon/react'
 import { Add, Link as LinkIcon, TrashCan } from '@carbon/icons-react'
 import { callTool, type BranchRow, type EstateRow, type EventRow } from './mcp'
+
+const slug = (s: string) => s.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
 import Rails from './Rails'
 
 type Toast = { id: number; title: string; subtitle?: string; kind: 'success' | 'error' | 'info' }
@@ -220,7 +222,7 @@ export default function App() {
             name: form.name, ...(form.ttl ? { ttl_seconds: Number(form.ttl) } : {}),
             ...(form.suspend ? { suspend_after_seconds: Number(form.suspend) } : {}),
           }), `Created ${form.name}`)}>
-          <TextInput id="db-name" labelText="Name" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <TextInput id="db-name" labelText="Name" helperText="Lowercase letters, digits, hyphens" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: slug(e.target.value) })} />
           <NumberInput id="db-ttl" label="TTL seconds (optional — it will clean itself up)" value={form.ttl ?? ''} hideSteppers allowEmpty
             onChange={(_, { value }) => setForm({ ...form, ttl: String(value ?? '') })} />
           <NumberInput id="db-suspend" label="Suspend after idle seconds (default 300)" value={form.suspend ?? ''} hideSteppers allowEmpty
@@ -232,7 +234,7 @@ export default function App() {
           onRequestSubmit={() => act(() => callTool('create_branch', {
             name: form.name, database: form.database, ...(form.ttl ? { ttl_seconds: Number(form.ttl) } : {}),
           }), `Branched ${form.database} → ${form.name}`)}>
-          <TextInput id="br-name" labelText="Branch name" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <TextInput id="br-name" labelText="Branch name" helperText="Lowercase letters, digits, hyphens" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: slug(e.target.value) })} />
           <NumberInput id="br-ttl" label="TTL seconds (optional)" value={form.ttl ?? ''} hideSteppers allowEmpty
             onChange={(_, { value }) => setForm({ ...form, ttl: String(value ?? '') })} />
         </Modal>
@@ -240,8 +242,8 @@ export default function App() {
         <Modal open={modal === 'enroll'} modalHeading="Enroll an existing Postgres" primaryButtonText="Enroll" secondaryButtonText="Cancel"
           primaryButtonDisabled={busy || !form.name || !form.uri} onRequestClose={() => setModal(null)}
           onRequestSubmit={() => act(() => callTool('enroll_database', { name: form.name, connection_uri: form.uri }), `Enrolled ${form.name}`)}>
-          <TextInput id="en-name" labelText="Name (how it appears in the estate)" value={form.name ?? ''}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <TextInput id="en-name" labelText="Name (how it appears in the estate)" helperText="Lowercase letters, digits, hyphens" value={form.name ?? ''}
+            onChange={(e) => setForm({ ...form, name: slug(e.target.value) })} />
           <TextInput id="en-uri" labelText="Connection string" helperText="A read-only role is enough. Nothing is migrated or modified."
             placeholder="postgresql://user:pass@host:5432/db" value={form.uri ?? ''}
             onChange={(e) => setForm({ ...form, uri: e.target.value })} />
