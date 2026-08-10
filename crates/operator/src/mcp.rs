@@ -12,7 +12,7 @@ use axum::body::Bytes;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{any, post};
+use axum::routing::post;
 use axum::{Json, Router};
 use kube::api::{Api, DeleteParams, Patch, PatchParams};
 use kube::ResourceExt;
@@ -49,10 +49,22 @@ async fn serve_ui(uri: axum::http::Uri) -> Response {
     }
 }
 
+/// Streamable-HTTP GET leg: an open, idle server→client stream. Claude Code
+/// tolerates a 405 here; other MCP clients (third-party MCP client among them) may treat a
+/// missing stream as a dead server — so we hold one open with keep-alives.
+async fn handle_get() -> Response {
+    let stream =
+        futures::stream::pending::<Result<axum::response::sse::Event, std::convert::Infallible>>();
+    axum::response::sse::Sse::new(stream)
+        .keep_alive(
+            axum::response::sse::KeepAlive::new().interval(std::time::Duration::from_secs(15)),
+        )
+        .into_response()
+}
+
 pub async fn serve(state: Arc<McpState>, addr: &str) -> anyhow::Result<()> {
     let app = Router::new()
-        .route("/mcp", post(handle_post))
-        .route("/mcp", any(|| async { StatusCode::METHOD_NOT_ALLOWED }))
+        .route("/mcp", post(handle_post).get(handle_get))
         .fallback(axum::routing::get(serve_ui))
         .with_state(state);
     let listener = tokio::net::TcpListener::bind(addr).await?;
