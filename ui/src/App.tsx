@@ -5,7 +5,7 @@ import {
   Tag, TextInput, Theme, ToastNotification,
 } from '@carbon/react'
 import { Add, Link as LinkIcon, TrashCan } from '@carbon/icons-react'
-import { callTool, type BranchRow, type EstateRow, type EventRow } from './mcp'
+import { callTool, setToken, type BranchRow, type EstateRow, type EventRow } from './mcp'
 
 const slug = (s: string) => s.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
 import Rails from './Rails'
@@ -41,6 +41,7 @@ export default function App() {
   const [modal, setModal] = useState<'db' | 'branch' | 'enroll' | null>(null)
   const [form, setForm] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  const [authed, setAuthed] = useState<boolean | null>(null)
   const [, forceTick] = useState(0)
 
   const toast = useCallback((t: Omit<Toast, 'id'>) => {
@@ -56,9 +57,10 @@ export default function App() {
         callTool<BranchRow[]>('list_branches'),
         callTool<EventRow[]>('get_events'),
       ])
-      setDbs(d); setBranches(b); setEvents(e)
-    } catch {
-      /* keep last good frame; ticker shows staleness implicitly */
+      setDbs(d); setBranches(b); setEvents(e); setAuthed(true)
+    } catch (e) {
+      if (String(e).includes('Not authorized')) setAuthed(false)
+      /* otherwise keep last good frame */
     }
   }, [])
 
@@ -107,6 +109,32 @@ export default function App() {
     { key: 'ttl', header: 'TTL' }, { key: 'actions', header: '' },
   ]
   const rows = useMemo(() => [...cell, ...enrolled].map((r) => ({ id: r.name, ...r })), [dbs])
+
+  if (authed === false) {
+    return (
+      <Theme theme="g90">
+        <div style={{ minHeight: '100vh', background: 'var(--cds-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--cds-layer-01)', padding: '2rem', maxWidth: '30rem' }}>
+            <h4 style={{ marginBottom: '0.5rem' }}>Access token required</h4>
+            <p style={{ color: 'var(--cds-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+              This page talks to the platform with a bearer token. Print it with:
+            </p>
+            <pre className="mono" style={{ background: 'var(--cds-layer-02)', padding: '0.75rem', marginBottom: '1rem', overflowX: 'auto' }}>
+              kubectl -n sspc-cell get secret sspc-mcp-token{'\n'}  -o jsonpath='{'{'}.data.token{'}'}' | base64 -d
+            </pre>
+            <TextInput id="gate-token" labelText="Access token" type="password" value={form.tok ?? ''}
+              onChange={(e) => setForm({ ...form, tok: e.target.value })} />
+            <div style={{ marginTop: '1rem' }}>
+              <Button kind="primary" disabled={!form.tok}
+                onClick={() => { setToken(form.tok); setAuthed(null); setForm({}); refresh() }}>
+                Unlock
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Theme>
+    )
+  }
 
   return (
     <Theme theme="g90">

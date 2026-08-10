@@ -14,6 +14,10 @@ export function token(): string {
   return localStorage.getItem(KEY) ?? ''
 }
 
+export function setToken(t: string) {
+  localStorage.setItem(KEY, t.trim())
+}
+
 let seq = 1
 
 export async function callTool<T = unknown>(name: string, args: object = {}): Promise<T> {
