@@ -97,19 +97,24 @@ fi
 # mcp-client/mcp.json (project). Our server is POST-only streamable HTTP — validated
 # with Claude Code; the MCP client speaks streamable-http per its docs. If the client's client
 # turns out to require the optional GET/SSE leg, that lands server-side.
-CLIENT_CFG="$HOME/.mcp-client/mcp.json"
+# the client's docs say ~/.mcp-client/mcp.json; real installs use ~/.mcp-client/settings/mcp.json.
+# Write both (idempotent merges) so either version picks it up.
+CLIENT_CFGS="$HOME/.mcp-client/mcp.json"
+[ -d "$HOME/.mcp-client/settings" ] && CLIENT_CFGS="$CLIENT_CFGS $HOME/.mcp-client/settings/mcp.json"
 if [ -d "$HOME/.mcp-client" ]; then
   consent=y
   if [ "$YES" != "--yes" ]; then
     read -r -p "Register the sspc MCP server with third-party MCP client (~/.mcp-client/mcp.json)? [y/N] " consent
   fi
   if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
-    [ -f "$CLIENT_CFG" ] || printf '{"mcpServers":{}}\n' > "$CLIENT_CFG"
-    tmp=$(mktemp)
-    jq --arg url "$MCP_URL" \
-      '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
-                            "alwaysAllow": [], "disabled": false}' \
-      "$CLIENT_CFG" > "$tmp" && mv "$tmp" "$CLIENT_CFG"
+    for cfg in $CLIENT_CFGS; do
+      [ -f "$cfg" ] || printf '{"mcpServers":{}}\n' > "$cfg"
+      tmp=$(mktemp)
+      jq --arg url "$MCP_URL" \
+        '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
+                              "alwaysAllow": [], "disabled": false}' \
+        "$cfg" > "$tmp" && mv "$tmp" "$cfg"
+    done
     say "registered with third-party MCP client — restart the server from the client's MCP settings to pick it up"
   else
     say "skipped third-party MCP client registration"
