@@ -219,6 +219,13 @@ impl Ctx {
                         format!("--compute-id={name}"),
                         "--config=/config/spec.json",
                     ],
+                    // Burstable (RFC 011 CapacityMode serverless): low request
+                    // for density, high limit for burst. ComputeClass makes
+                    // these policy later; these are the M1 floor.
+                    "resources": {
+                        "requests": {"cpu": "100m", "memory": "256Mi"},
+                        "limits": {"cpu": "1", "memory": "1Gi"},
+                    },
                     "ports": [{"containerPort": 55433}, {"containerPort": 3080}],
                     "volumeMounts": [{"name": "spec", "mountPath": "/config"}],
                     // pg_isready, not tcpSocket: PG briefly accepts TCP but
