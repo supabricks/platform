@@ -14,14 +14,13 @@ mcp() { # $1 tool, $2 args-json → tool text payload
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}" \
     http://localhost:30080/mcp | jq -r '.result.content[0].text'
 }
-psql_run() { # retry x3: clients absorb the startup window until M2's gateway holds connections
+psql_run() { # in-pod psql (loopback-bound host ports are unreachable from containers); retry x3
   for a in 1 2 3; do
-    out=$(docker run --rm postgres:16-alpine psql "$1" -Atc "$2" 2>&1) && { echo "$out"; return 0; }
+    out=$(kubectl -n $NS exec "$1" -- psql -U cloud_admin -h localhost -p 55433 -d postgres -Atc "$2" 2>&1) && { echo "$out"; return 0; }
     sleep 2
   done
   echo "$out"; return 1
 }
-host_uri() { echo "$1" | sed 's/localhost/host.docker.internal/'; }
 step() { printf '\033[1;36m[%3ds] %s\033[0m\n' "$(($(date +%s)-T_START))" "$*"; }
 fail() {
   printf '\033[1;31mFAIL: %s\033[0m\n' "$*" >&2
@@ -45,32 +44,37 @@ mcp capabilities '{}' | jq -e '.features.scale_to_zero == true' >/dev/null
 step "T3 idempotency: create e2edb twice -> exactly one CR"
 mcp create_database '{"name":"e2edb"}' >/dev/null
 URI=$(mcp create_database '{"name":"e2edb"}' | jq -r .connection_uri)
+[ "$URI" != "null" ] || fail "no connection_uri from create"
 [ "$(kubectl -n $NS get databases --no-headers | grep -c '^e2edb ')" = "1" ] || fail "duplicate CRs"
 
 step "load 100k rows"
-psql_run "$(host_uri "$URI")" "create table t as select g from generate_series(1,100000) g; select count(*) from t" | tail -1 | grep -qx 100000 || fail "load"
+psql_run e2edb "create table t as select g from generate_series(1,100000) g; select count(*) from t" | tail -1 | grep -qx 100000 || fail "load"
 
 step "branch + isolation"
 BURI=$(mcp create_branch '{"name":"e2ebr","database":"e2edb"}' | jq -r .connection_uri)
-psql_run "$(host_uri "$BURI")" "insert into t select g from generate_series(1,50000) g; select count(*) from t" | tail -1 | grep -qx 150000 || fail "branch write"
-psql_run "$(host_uri "$URI")" "select count(*) from t" | grep -qx 100000 || fail "parent isolation"
+psql_run e2ebr "insert into t select g from generate_series(1,50000) g; select count(*) from t" | tail -1 | grep -qx 150000 || fail "branch write"
+psql_run e2edb "select count(*) from t" | grep -qx 100000 || fail "parent isolation"
 
 step "scale-to-zero: e2esleep (suspendAfter=20s)"
 mcp create_database '{"name":"e2esleep","suspend_after_seconds":20}' >/dev/null
 SURI=$(mcp get_connection '{"name":"e2esleep"}' | jq -r .connection_uri)
-psql_run "$(host_uri "$SURI")" "create table z as select 1 as v; select count(*) from z" >/dev/null
+psql_run e2esleep "create table z as select 1 as v; select count(*) from z" >/dev/null
 for i in $(seq 1 30); do
   [ "$(kubectl -n $NS get database e2esleep -o jsonpath='{.status.phase}')" = "Suspended" ] && break
   sleep 4; [ "$i" = 30 ] && fail "never suspended"
 done
-[ -z "$(kubectl -n $NS get pod e2esleep --no-headers --ignore-not-found)" ] || fail "pod survived suspension"
+for i in $(seq 1 8); do
+  POD_LEFT=$(kubectl -n $NS get pod e2esleep --no-headers --ignore-not-found)
+  [ -z "$POD_LEFT" ] && break; sleep 2
+done
+[ -z "$POD_LEFT" ] || fail "pod survived suspension"
 
 step "wake via get_connection (budget 10s)"
 W=$(mcp get_connection '{"name":"e2esleep"}')
 echo "$W" | jq -e '.woke_from_suspend == true' >/dev/null || fail "did not report wake"
 WS=$(echo "$W" | jq -r .wake_seconds)
 awk "BEGIN{exit !($WS <= 10)}" || fail "wake took ${WS}s (>10s)"
-psql_run "$(host_uri "$(echo "$W" | jq -r .connection_uri)")" "select count(*) from z" | grep -qx 1 || fail "data lost across suspend"
+psql_run e2esleep "select count(*) from z" | grep -qx 1 || fail "data lost across suspend"
 
 step "TTL: e2ettl branch (45s) reaps itself"
 mcp create_branch '{"name":"e2ettl","database":"e2edb","ttl_seconds":45}' >/dev/null

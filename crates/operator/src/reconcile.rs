@@ -104,6 +104,36 @@ pub async fn post_event(
     }
 }
 
+/// Parse "0/29E2300" into a comparable number.
+fn lsn_num(lsn: &str) -> u64 {
+    let mut it = lsn.splitn(2, '/');
+    let hi = u64::from_str_radix(it.next().unwrap_or("0"), 16).unwrap_or(0);
+    let lo = u64::from_str_radix(it.next().unwrap_or("0"), 16).unwrap_or(0);
+    (hi << 32) | lo
+}
+
+/// The parent compute's current flush LSN, via in-cluster SQL.
+async fn parent_flush_lsn(ctx: &Ctx, db_name: &str) -> Option<String> {
+    let mut cfg = tokio_postgres::Config::new();
+    cfg.host(format!("{db_name}.{}.svc.cluster.local", ctx.namespace))
+        .port(55433)
+        .user("cloud_admin")
+        .password(&ctx.pg_password)
+        .dbname("postgres")
+        .application_name("sspc-operator")
+        .connect_timeout(Duration::from_secs(3));
+    let (client, conn) = cfg.connect(tokio_postgres::NoTls).await.ok()?;
+    let handle = tokio::spawn(conn);
+    let row = client
+        .query_one("SELECT pg_current_wal_flush_lsn()::text", &[])
+        .await
+        .ok()?;
+    let lsn: String = row.get(0);
+    drop(client);
+    handle.abort();
+    Some(lsn)
+}
+
 /// 32-hex deterministic id from a CR UID and a salt.
 pub fn derive_id(uid: &str, salt: &str) -> String {
     hex::encode(&Sha256::digest(format!("{uid}:{salt}").as_bytes())[..16])
@@ -346,6 +376,35 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
 
     let was = br.status.as_ref().and_then(|s| s.phase);
     let timeline = derive_id(&uid, "branch");
+    // Branch-at-head race (found by T4): the timeline branches at the
+    // pageserver's INGESTED lsn, which can lag the parent's just-flushed
+    // writes — a branch created immediately after a load would miss it.
+    // If the parent is awake, wait (bounded) for ingestion to catch up.
+    if was.is_none() && parent.status.as_ref().and_then(|s| s.phase) == Some(Phase::Active) {
+        match parent_flush_lsn(ctx, &br.spec.database).await {
+            None => warn!("branch {name}: could not read parent flush lsn; branching without ingestion wait"),
+            Some(flush) => {
+                let deadline = std::time::Instant::now() + Duration::from_secs(20);
+                loop {
+                    let ingested = ctx.storcon.timeline_last_record_lsn(&tenant, &ancestor).await;
+                    match &ingested {
+                        Some(i) if lsn_num(i) >= lsn_num(&flush) => {
+                            info!("branch {name}: ingestion caught up ({i} >= flush {flush})");
+                            break;
+                        }
+                        _ if std::time::Instant::now() > deadline => {
+                            warn!("branch {name}: ingestion lag past deadline (flush {flush}, ingested {ingested:?}); branching anyway");
+                            break;
+                        }
+                        _ => {
+                            info!("branch {name}: waiting for ingestion ({ingested:?} < flush {flush})");
+                            tokio::time::sleep(Duration::from_millis(250)).await;
+                        }
+                    }
+                }
+            }
+        }
+    }
     ctx.storcon
         .create_timeline(&tenant, &timeline, Some(&ancestor))
         .await?;

@@ -55,6 +55,25 @@ impl Storcon {
         }
     }
 
+    /// Pageserver-ingested head of a timeline (None on any failure).
+    pub async fn timeline_last_record_lsn(
+        &self,
+        tenant_id: &str,
+        timeline_id: &str,
+    ) -> Option<String> {
+        let r = self
+            .http
+            .get(format!(
+                "{}/v1/tenant/{tenant_id}/timeline/{timeline_id}",
+                self.base
+            ))
+            .send()
+            .await
+            .ok()?;
+        let v: serde_json::Value = r.json().await.ok()?;
+        v["last_record_lsn"].as_str().map(String::from)
+    }
+
     pub async fn delete_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
         let r = self
             .http

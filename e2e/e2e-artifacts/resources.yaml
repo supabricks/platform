@@ -3,50 +3,196 @@ items:
 - apiVersion: sspc.io/v1alpha1
   kind: Database
   metadata:
-    creationTimestamp: "2026-08-09T18:43:16Z"
+    creationTimestamp: "2026-08-10T04:32:28Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: dev-db
+    namespace: sspc-cell
+    resourceVersion: "5876"
+    uid: 5f5639c7-431a-45aa-b816-c6fa3241fd35
+  spec:
+    suspendAfterSeconds: 300
+  status:
+    flushLsn: 0/15D04B0
+    nodePort: 30015
+    phase: Suspended
+    suspendedAt: "2026-08-10T04:37:31Z"
+    tenantId: 6ae6ba339e7caba240bd685e9821b88e
+    timelineId: f843446c5725f90fc4908199cffb45f5
+- apiVersion: sspc.io/v1alpha1
+  kind: Database
+  metadata:
+    creationTimestamp: "2026-08-11T18:08:19Z"
     finalizers:
     - sspc.io/cell-cleanup
     generation: 1
     name: e2edb
     namespace: sspc-cell
-    resourceVersion: "1523"
-    uid: ef2f9991-0348-4c2a-888f-ca9020911097
+    resourceVersion: "61688"
+    uid: 990525f6-fe87-4f69-918c-c90f85f704f2
   spec:
     suspendAfterSeconds: 300
   status:
     nodePort: 30012
     phase: Active
-    tenantId: 886e8c7c419a7fdfca8debb64df73c5e
-    timelineId: a912eaf2a2b6f926f8815c43d86773d0
+    tenantId: 3e63974274b06842b717063119fdfba5
+    timelineId: 334855b117adf1a3f89bcccecfefd6cb
+- apiVersion: sspc.io/v1alpha1
+  kind: Database
+  metadata:
+    creationTimestamp: "2026-08-11T18:08:25Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: e2esleep
+    namespace: sspc-cell
+    resourceVersion: "61826"
+    uid: 7613ffc2-db0c-4834-a393-dc648808b698
+  spec:
+    suspendAfterSeconds: 20
+  status:
+    flushLsn: 0/159B210
+    nodePort: 30017
+    phase: Suspended
+    suspendedAt: "2026-08-11T18:08:56Z"
+    tenantId: 8d5fdf4e1de7cf7c58a2141ca44a8aca
+    timelineId: 288bb43a542387a3c622866beb1ef3ea
+- apiVersion: sspc.io/v1alpha1
+  kind: Database
+  metadata:
+    creationTimestamp: "2026-08-10T04:34:18Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: playground-db
+    namespace: sspc-cell
+    resourceVersion: "6065"
+    uid: 3e811564-7e99-48eb-94e8-c4f9946b39f8
+  spec:
+    suspendAfterSeconds: 300
+  status:
+    flushLsn: 0/15D24F8
+    nodePort: 30004
+    phase: Suspended
+    suspendedAt: "2026-08-10T04:39:32Z"
+    tenantId: 8abbca37da1a93a71899e21137ce0780
+    timelineId: 3f2989a2c81ecf8cdb068bcd08060f82
+- apiVersion: sspc.io/v1alpha1
+  kind: Database
+  metadata:
+    annotations:
+      sspc.io/wake-requested-at: "2026-08-11T17:45:31Z"
+    creationTimestamp: "2026-08-10T04:57:54Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: sample
+    namespace: sspc-cell
+    resourceVersion: "59681"
+    uid: 2b3a13a6-a56a-425e-939d-1b863d855e22
+  spec:
+    suspendAfterSeconds: 120
+  status:
+    flushLsn: 0/1ABC3E8
+    nodePort: 30016
+    phase: Suspended
+    suspendedAt: "2026-08-11T17:47:35Z"
+    tenantId: bc1cd9bc2549e7580427932ab063dfa5
+    timelineId: b191fbd7c7bd0a4bcf92255d95871044
+- apiVersion: sspc.io/v1alpha1
+  kind: Database
+  metadata:
+    creationTimestamp: "2026-08-10T03:45:58Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: testdb
+    namespace: sspc-cell
+    resourceVersion: "1781"
+    uid: eb748e30-a412-4ec2-8d1c-3fd635cad789
+  spec:
+    suspendAfterSeconds: 300
+  status:
+    flushLsn: 0/15D24F8
+    nodePort: 30001
+    phase: Suspended
+    suspendedAt: "2026-08-10T03:51:11Z"
+    tenantId: 1e74ddfc8b2d09e9a8cf4e628119b3d4
+    timelineId: a6088d3664a5b26cfdeb2e6a15013876
 - apiVersion: sspc.io/v1alpha1
   kind: Branch
   metadata:
-    creationTimestamp: "2026-08-09T18:43:20Z"
+    creationTimestamp: "2026-08-11T18:08:23Z"
     finalizers:
     - sspc.io/cell-cleanup
     generation: 1
     name: e2ebr
     namespace: sspc-cell
-    resourceVersion: "1551"
-    uid: d20b4fbc-2aed-4567-b41f-49517fccc6e6
+    resourceVersion: "61725"
+    uid: 19314907-33a6-467e-a051-4df4d8d90065
   spec:
     database: e2edb
     suspendAfterSeconds: 300
   status:
     nodePort: 30009
     phase: Active
-    tenantId: 886e8c7c419a7fdfca8debb64df73c5e
-    timelineId: d9f331577f3d18332ff0176c28a457c7
+    tenantId: 3e63974274b06842b717063119fdfba5
+    timelineId: 0af1c704fac2532aa6e0155221bc70ea
+- apiVersion: sspc.io/v1alpha1
+  kind: Branch
+  metadata:
+    annotations:
+      sspc.io/wake-requested-at: "2026-08-10T04:33:46Z"
+    creationTimestamp: "2026-08-10T03:46:12Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 2
+    name: experiment
+    namespace: sspc-cell
+    resourceVersion: "5991"
+    uid: 5ac93cd7-18ad-4fa9-9f84-8266cd842062
+  spec:
+    database: dev-db
+    suspendAfterSeconds: 300
+  status:
+    flushLsn: 0/15D98A8
+    nodePort: 30006
+    phase: Suspended
+    suspendedAt: "2026-08-10T04:38:47Z"
+    tenantId: 6ae6ba339e7caba240bd685e9821b88e
+    timelineId: 92434d3f2d47861ab05cb10af1365ad0
+- apiVersion: sspc.io/v1alpha1
+  kind: Branch
+  metadata:
+    creationTimestamp: "2026-08-10T04:57:57Z"
+    finalizers:
+    - sspc.io/cell-cleanup
+    generation: 1
+    name: sample-dev
+    namespace: sspc-cell
+    resourceVersion: "8127"
+    uid: 8f431c3b-c9b4-47c1-a64d-b2025a4fab98
+  spec:
+    database: sample
+    suspendAfterSeconds: 300
+  status:
+    flushLsn: 0/189C4C8
+    nodePort: 30013
+    phase: Suspended
+    suspendedAt: "2026-08-10T05:03:03Z"
+    tenantId: bc1cd9bc2549e7580427932ab063dfa5
+    timelineId: 5aaf2695183a3deb05eea84817c5de49
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: broker-6449764c6b-
     generation: 1
     labels:
       app: broker
       pod-template-hash: 6449764c6b
-    name: broker-6449764c6b-nwnph
+    name: broker-6449764c6b-782tx
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: apps/v1
@@ -54,9 +200,9 @@ items:
       controller: true
       kind: ReplicaSet
       name: broker-6449764c6b
-      uid: ed21f93d-9064-4c67-af33-b6cdcac9c18d
-    resourceVersion: "901"
-    uid: cf0d7cc7-2fec-4995-995c-f06b2bf57ec0
+      uid: ce292cf1-1fac-42cc-bea8-ac6c5845e3d6
+    resourceVersion: "883"
+    uid: eb9bacec-3268-4ed5-ac7b-4043c005be93
   spec:
     containers:
     - command:
@@ -73,7 +219,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-c6gf8
+        name: kube-api-access-wd75b
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -96,7 +242,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-c6gf8
+    - name: kube-api-access-wd75b
       projected:
         defaultMode: 420
         sources:
@@ -117,34 +263,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:31Z"
+      lastTransitionTime: "2026-08-10T03:43:07Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:33Z"
+      lastTransitionTime: "2026-08-10T03:43:09Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:33Z"
+      lastTransitionTime: "2026-08-10T03:43:09Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://c1c4ee96146e5cec17507d12351b384a6ac56fa7332263d8e2f3ca3c14aea84f
+    - containerID: containerd://d283eb260aea66d877fa9f13d4a87ba139e60f1b40d3ae2c701866d7eedde92a
       image: ghcr.io/neondatabase/neon:latest
-      imageID: docker.io/library/import-2026-08-09@sha256:0e84f69c605433d24beb6bae1043453d3c7e4caa7c6b3bb901fdbbbcbb11e3b8
+      imageID: docker.io/library/import-2026-08-10@sha256:8bd4324dd98256c21c10b1b4c59c7a3470826b1922c9d52a833718b6a76aa80b
       lastState: {}
       name: broker
       ready: true
@@ -153,7 +299,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:33Z"
+          startedAt: "2026-08-10T03:43:09Z"
       user:
         linux:
           gid: 1000
@@ -162,7 +308,7 @@ items:
           uid: 1000
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-c6gf8
+        name: kube-api-access-wd75b
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -170,16 +316,16 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.5
+    podIP: 10.244.0.6
     podIPs:
-    - ip: 10.244.0.5
+    - ip: 10.244.0.6
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:30Z"
+    startTime: "2026-08-10T03:43:06Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:30Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: controller-pg-
     generation: 1
     labels:
@@ -195,9 +341,9 @@ items:
       controller: true
       kind: StatefulSet
       name: controller-pg
-      uid: 6b1cc6d2-1c01-42ca-94fc-1d8f39fddd09
-    resourceVersion: "1012"
-    uid: ab31f8b0-07e6-495e-bf6a-d3963009a7a2
+      uid: 53169b7c-e305-443d-a836-45d4d61522a6
+    resourceVersion: "2604"
+    uid: e67e8074-d2e6-4832-906c-5d45b2604adb
   spec:
     containers:
     - env:
@@ -230,7 +376,7 @@ items:
       - mountPath: /var/lib/postgresql/data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-cxv8x
+        name: kube-api-access-5nbtv
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -258,7 +404,7 @@ items:
     - name: data
       persistentVolumeClaim:
         claimName: data-controller-pg-0
-    - name: kube-api-access-cxv8x
+    - name: kube-api-access-5nbtv
       projected:
         defaultMode: 420
         sources:
@@ -279,32 +425,32 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:12Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:11Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:41Z"
+      lastTransitionTime: "2026-08-10T04:00:27Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:41Z"
+      lastTransitionTime: "2026-08-10T04:00:27Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:11Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://6423e973af683c1e6c045c6b816c20ebaf8c147c358c3fce876fd9ddef02b0a4
+    - containerID: containerd://0ebd5b6d61e6d9660b7479e7df3e5a7cb268bc5779d26c058ad364f05d5f28e2
       image: docker.io/library/postgres:16-alpine
       imageID: sha256:7e7dbab8d3b431a20793a6d99cb5a6bc84e44914309917f1bf5589a7568cdefd
       lastState: {}
@@ -315,7 +461,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:38Z"
+          startedAt: "2026-08-10T03:43:12Z"
       user:
         linux:
           gid: 0
@@ -336,7 +482,7 @@ items:
       - mountPath: /var/lib/postgresql/data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-cxv8x
+        name: kube-api-access-5nbtv
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -344,16 +490,16 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.16
+    podIP: 10.244.0.14
     podIPs:
-    - ip: 10.244.0.16
+    - ip: 10.244.0.14
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:38Z"
+    startTime: "2026-08-10T03:43:11Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:43:20Z"
+    creationTimestamp: "2026-08-11T18:08:23Z"
     generation: 1
     labels:
       app: compute
@@ -365,9 +511,9 @@ items:
       controller: true
       kind: Branch
       name: e2ebr
-      uid: d20b4fbc-2aed-4567-b41f-49517fccc6e6
-    resourceVersion: "1564"
-    uid: 37723e7b-fc5a-4e5b-9f17-533752417c46
+      uid: 19314907-33a6-467e-a051-4df4d8d90065
+    resourceVersion: "61741"
+    uid: fefc7684-9164-4d22-977e-9cce6614aaf2
   spec:
     containers:
     - command:
@@ -386,20 +532,33 @@ items:
       - containerPort: 3080
         protocol: TCP
       readinessProbe:
+        exec:
+          command:
+          - pg_isready
+          - -h
+          - localhost
+          - -p
+          - "55433"
+          - -U
+          - cloud_admin
         failureThreshold: 3
         periodSeconds: 1
         successThreshold: 1
-        tcpSocket:
-          port: 55433
         timeoutSeconds: 1
-      resources: {}
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 100m
+          memory: 256Mi
       terminationMessagePath: /dev/termination-log
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /config
         name: spec
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-7m495
+        name: kube-api-access-d2qh2
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -426,7 +585,7 @@ items:
         defaultMode: 420
         name: e2ebr-spec
       name: spec
-    - name: kube-api-access-7m495
+    - name: kube-api-access-d2qh2
       projected:
         defaultMode: 420
         sources:
@@ -445,45 +604,57 @@ items:
                 fieldPath: metadata.namespace
               path: namespace
   status:
+    allocatedResources:
+      cpu: 100m
+      memory: 256Mi
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:20Z"
+      lastTransitionTime: "2026-08-11T18:08:24Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:20Z"
+      lastTransitionTime: "2026-08-11T18:08:23Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:21Z"
+      lastTransitionTime: "2026-08-11T18:08:24Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:21Z"
+      lastTransitionTime: "2026-08-11T18:08:24Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:20Z"
+      lastTransitionTime: "2026-08-11T18:08:23Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://3ada78a9dd9d082568e674c6446bee303bd13a9fa7ef5d2b66156d49ef0f41c6
+    - allocatedResources:
+        cpu: 100m
+        memory: 256Mi
+      containerID: containerd://44bb749f97f7ffd29037f5777297475245d950e1ecad6263506172676aac3c65
       image: ghcr.io/neondatabase/compute-node-v16:latest
       imageID: sha256:40e8dbb962db1f3177abc2194298b56fb2a13d4e4bed06312e7ced51f1848259
       lastState: {}
       name: compute
       ready: true
-      resources: {}
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 100m
+          memory: 256Mi
       restartCount: 0
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:43:20Z"
+          startedAt: "2026-08-11T18:08:24Z"
       user:
         linux:
           gid: 1000
@@ -494,7 +665,7 @@ items:
       - mountPath: /config
         name: spec
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-7m495
+        name: kube-api-access-d2qh2
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -502,16 +673,22 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.19
+    podIP: 10.244.0.42
     podIPs:
-    - ip: 10.244.0.19
-    qosClass: BestEffort
-    resources: {}
-    startTime: "2026-08-09T18:43:20Z"
+    - ip: 10.244.0.42
+    qosClass: Burstable
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 79m
+        memory: 256Mi
+    startTime: "2026-08-11T18:08:23Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:43:17Z"
+    creationTimestamp: "2026-08-11T18:08:19Z"
     generation: 1
     labels:
       app: compute
@@ -523,9 +700,9 @@ items:
       controller: true
       kind: Database
       name: e2edb
-      uid: ef2f9991-0348-4c2a-888f-ca9020911097
-    resourceVersion: "1536"
-    uid: 1de012e7-64a2-4aad-a6a9-fc5a1ab207e3
+      uid: 990525f6-fe87-4f69-918c-c90f85f704f2
+    resourceVersion: "61711"
+    uid: eed57bfc-30c8-4c45-a5ac-d5a46bca8756
   spec:
     containers:
     - command:
@@ -544,20 +721,33 @@ items:
       - containerPort: 3080
         protocol: TCP
       readinessProbe:
+        exec:
+          command:
+          - pg_isready
+          - -h
+          - localhost
+          - -p
+          - "55433"
+          - -U
+          - cloud_admin
         failureThreshold: 3
         periodSeconds: 1
         successThreshold: 1
-        tcpSocket:
-          port: 55433
         timeoutSeconds: 1
-      resources: {}
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 100m
+          memory: 256Mi
       terminationMessagePath: /dev/termination-log
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /config
         name: spec
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-bcjks
+        name: kube-api-access-2t9f7
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -584,7 +774,7 @@ items:
         defaultMode: 420
         name: e2edb-spec
       name: spec
-    - name: kube-api-access-bcjks
+    - name: kube-api-access-2t9f7
       projected:
         defaultMode: 420
         sources:
@@ -603,45 +793,57 @@ items:
                 fieldPath: metadata.namespace
               path: namespace
   status:
+    allocatedResources:
+      cpu: 100m
+      memory: 256Mi
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:18Z"
+      lastTransitionTime: "2026-08-11T18:08:20Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:17Z"
+      lastTransitionTime: "2026-08-11T18:08:19Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:18Z"
+      lastTransitionTime: "2026-08-11T18:08:22Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:18Z"
+      lastTransitionTime: "2026-08-11T18:08:22Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:43:17Z"
+      lastTransitionTime: "2026-08-11T18:08:19Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://f749519240ccaaa7a84e940a0f093d3bf037dbd9bcb04edcc834c2c594e6d8de
+    - allocatedResources:
+        cpu: 100m
+        memory: 256Mi
+      containerID: containerd://50c1173f67c826a399f7d9f9f99a04c75fcd10dbefef3be13024d93140b24614
       image: ghcr.io/neondatabase/compute-node-v16:latest
       imageID: sha256:40e8dbb962db1f3177abc2194298b56fb2a13d4e4bed06312e7ced51f1848259
       lastState: {}
       name: compute
       ready: true
-      resources: {}
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: 100m
+          memory: 256Mi
       restartCount: 0
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:43:18Z"
+          startedAt: "2026-08-11T18:08:20Z"
       user:
         linux:
           gid: 1000
@@ -652,7 +854,7 @@ items:
       - mountPath: /config
         name: spec
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-bcjks
+        name: kube-api-access-2t9f7
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -660,22 +862,28 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.18
+    podIP: 10.244.0.41
     podIPs:
-    - ip: 10.244.0.18
-    qosClass: BestEffort
-    resources: {}
-    startTime: "2026-08-09T18:43:17Z"
+    - ip: 10.244.0.41
+    qosClass: Burstable
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 79m
+        memory: 256Mi
+    startTime: "2026-08-11T18:08:19Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: minio-6575647b74-
     generation: 1
     labels:
       app: minio
       pod-template-hash: 6575647b74
-    name: minio-6575647b74-nwsdr
+    name: minio-6575647b74-vkf5j
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: apps/v1
@@ -683,9 +891,9 @@ items:
       controller: true
       kind: ReplicaSet
       name: minio-6575647b74
-      uid: 6687cb35-4dc9-4ae5-b36b-c430e635be20
-    resourceVersion: "995"
-    uid: 60eba4b5-a048-4994-af29-7936fe55e663
+      uid: 0480eb09-e560-418e-8172-31e8f1b55625
+    resourceVersion: "58219"
+    uid: f877c71d-f570-45b8-895b-ef05294852ae
   spec:
     containers:
     - args:
@@ -722,7 +930,7 @@ items:
       - mountPath: /data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-s7gvn
+        name: kube-api-access-js4zn
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -748,7 +956,7 @@ items:
     - name: data
       persistentVolumeClaim:
         claimName: minio-data
-    - name: kube-api-access-s7gvn
+    - name: kube-api-access-js4zn
       projected:
         defaultMode: 420
         sources:
@@ -769,32 +977,32 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:37Z"
+      lastTransitionTime: "2026-08-10T03:43:15Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:37Z"
+      lastTransitionTime: "2026-08-10T03:43:14Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:39Z"
+      lastTransitionTime: "2026-08-11T07:24:19Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:39Z"
+      lastTransitionTime: "2026-08-11T07:24:19Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:37Z"
+      lastTransitionTime: "2026-08-10T03:43:14Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://7c22ba7b19f35423e875b1ccddfa88bca13670571b086733987e3c846e6d55bb
+    - containerID: containerd://66ad436aaee8b3964796c99e8e0dafe58872498dbfb61fac19942a2205c8c75f
       image: quay.io/minio/minio:RELEASE.2022-10-20T00-55-09Z
       imageID: sha256:30f6fc39a544b7fe037d7d617b959873e3032e57363a1fc5305828b7f1f8df2e
       lastState: {}
@@ -805,7 +1013,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:37Z"
+          startedAt: "2026-08-10T03:43:15Z"
       user:
         linux:
           gid: 0
@@ -816,7 +1024,7 @@ items:
       - mountPath: /data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-s7gvn
+        name: kube-api-access-js4zn
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -824,24 +1032,24 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.15
+    podIP: 10.244.0.17
     podIPs:
-    - ip: 10.244.0.15
+    - ip: 10.244.0.17
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:37Z"
+    startTime: "2026-08-10T03:43:14Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:30Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: minio-create-bucket-
     generation: 1
     labels:
-      batch.kubernetes.io/controller-uid: 0017a468-92ba-460d-afa6-a5c6e694e605
+      batch.kubernetes.io/controller-uid: afe8ebe4-d257-460e-912e-c8b515e2015a
       batch.kubernetes.io/job-name: minio-create-bucket
-      controller-uid: 0017a468-92ba-460d-afa6-a5c6e694e605
+      controller-uid: afe8ebe4-d257-460e-912e-c8b515e2015a
       job-name: minio-create-bucket
-    name: minio-create-bucket-mvdcj
+    name: minio-create-bucket-sn4xn
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: batch/v1
@@ -849,9 +1057,9 @@ items:
       controller: true
       kind: Job
       name: minio-create-bucket
-      uid: 0017a468-92ba-460d-afa6-a5c6e694e605
-    resourceVersion: "1030"
-    uid: ff618aa9-1f51-4d24-990c-e426dda2a862
+      uid: afe8ebe4-d257-460e-912e-c8b515e2015a
+    resourceVersion: "1015"
+    uid: c1611b84-1eb4-400c-a872-88cbf92f6f3b
   spec:
     containers:
     - args:
@@ -871,7 +1079,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-pbqrx
+        name: kube-api-access-knnr2
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -894,7 +1102,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-pbqrx
+    - name: kube-api-access-knnr2
       projected:
         defaultMode: 420
         sources:
@@ -915,35 +1123,35 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:43Z"
+      lastTransitionTime: "2026-08-10T03:43:18Z"
       observedGeneration: 1
       status: "False"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       reason: PodCompleted
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:41Z"
+      lastTransitionTime: "2026-08-10T03:43:17Z"
       observedGeneration: 1
       reason: PodCompleted
       status: "False"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:41Z"
+      lastTransitionTime: "2026-08-10T03:43:17Z"
       observedGeneration: 1
       reason: PodCompleted
       status: "False"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://3b49e4fd6cf46e6fc6f74a55231e8a47d18a1f28162244545daae530365298e0
+    - containerID: containerd://4adc22e507f0b52ae554cb5a51fd6a6ca17db8dfcfa8eb818ca31bae9c887cf0
       image: docker.io/minio/mc:latest
       imageID: sha256:5dee113ef037d349ac22ab6c20193ade5c4701e2a38e3777fa1c1bec1c063ad1
       lastState: {}
@@ -954,11 +1162,11 @@ items:
       started: false
       state:
         terminated:
-          containerID: containerd://3b49e4fd6cf46e6fc6f74a55231e8a47d18a1f28162244545daae530365298e0
+          containerID: containerd://4adc22e507f0b52ae554cb5a51fd6a6ca17db8dfcfa8eb818ca31bae9c887cf0
           exitCode: 0
-          finishedAt: "2026-08-09T18:37:41Z"
+          finishedAt: "2026-08-10T03:43:16Z"
           reason: Completed
-          startedAt: "2026-08-09T18:37:32Z"
+          startedAt: "2026-08-10T03:43:08Z"
       user:
         linux:
           gid: 0
@@ -967,7 +1175,7 @@ items:
           uid: 0
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-pbqrx
+        name: kube-api-access-knnr2
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -975,22 +1183,22 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Succeeded
-    podIP: 10.244.0.10
+    podIP: 10.244.0.9
     podIPs:
-    - ip: 10.244.0.10
+    - ip: 10.244.0.9
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:30Z"
+    startTime: "2026-08-10T03:43:06Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: notify-sink-664b9bb4bb-
     generation: 1
     labels:
       app: notify-sink
       pod-template-hash: 664b9bb4bb
-    name: notify-sink-664b9bb4bb-s42lg
+    name: notify-sink-664b9bb4bb-7pdgq
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: apps/v1
@@ -998,9 +1206,9 @@ items:
       controller: true
       kind: ReplicaSet
       name: notify-sink-664b9bb4bb
-      uid: 8c72663e-2acc-442d-8ca3-58f16e2fd796
-    resourceVersion: "875"
-    uid: a1f68d53-90e5-496e-802e-86352b9bf511
+      uid: 1e947383-dbf1-4457-a2f3-9566f01bf22b
+    resourceVersion: "852"
+    uid: a9834864-cd1a-46a2-95f5-a82f6c5a8854
   spec:
     containers:
     - args:
@@ -1022,7 +1230,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-tch8g
+        name: kube-api-access-wb8s9
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -1045,7 +1253,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-tch8g
+    - name: kube-api-access-wb8s9
       projected:
         defaultMode: 420
         sources:
@@ -1066,32 +1274,32 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:31Z"
+      lastTransitionTime: "2026-08-10T03:43:07Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:32Z"
+      lastTransitionTime: "2026-08-10T03:43:08Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:32Z"
+      lastTransitionTime: "2026-08-10T03:43:08Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://38a088bd1cdacf42591feb968680341da1f528f5538ff97a5ea406a9d81c1a8d
+    - containerID: containerd://30df05a2b967ddf9b71c8778010a43e21a55e0ce9a7d34a16bcf76dd2af2a221
       image: docker.io/library/busybox:1.36
       imageID: sha256:b7c873bd97bdc9046fc894e0b216c8aef31e0db4c5b761fb53022e40577ab6c0
       lastState: {}
@@ -1102,7 +1310,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:32Z"
+          startedAt: "2026-08-10T03:43:08Z"
       user:
         linux:
           gid: 0
@@ -1112,7 +1320,7 @@ items:
           uid: 0
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-tch8g
+        name: kube-api-access-wb8s9
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -1120,16 +1328,16 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.6
+    podIP: 10.244.0.8
     podIPs:
-    - ip: 10.244.0.6
+    - ip: 10.244.0.8
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:30Z"
+    startTime: "2026-08-10T03:43:06Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:30Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: pageserver-
     generation: 1
     labels:
@@ -1145,9 +1353,9 @@ items:
       controller: true
       kind: StatefulSet
       name: pageserver
-      uid: 209c2d4f-b82c-4d53-82ca-8727bd7e53ec
-    resourceVersion: "1045"
-    uid: f2676b83-b299-485e-a842-6f74f0675121
+      uid: 2b652b4b-2d48-4399-b918-a33c67bcb2a9
+    resourceVersion: "58238"
+    uid: 2f77dfcf-cbfe-452a-a220-0180b9eea24f
   spec:
     containers:
     - command:
@@ -1192,7 +1400,7 @@ items:
         name: config
         subPath: metadata.json
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-xkfnf
+        name: kube-api-access-lzkvz
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -1224,7 +1432,7 @@ items:
         defaultMode: 420
         name: pageserver-config
       name: config
-    - name: kube-api-access-xkfnf
+    - name: kube-api-access-lzkvz
       projected:
         defaultMode: 420
         sources:
@@ -1245,34 +1453,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:14Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:13Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:47Z"
+      lastTransitionTime: "2026-08-11T07:24:19Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:47Z"
+      lastTransitionTime: "2026-08-11T07:24:19Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-10T03:43:13Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://20bb5065121e3ae8dde267b1f4bd53ca9d988c67bc8f76ebcd3f40d77f0f5da2
+    - containerID: containerd://58f7a790944dc63c0405baed27d40a0ff0b3f1208c71c72f143d621822d497c2
       image: ghcr.io/neondatabase/neon:latest
-      imageID: docker.io/library/import-2026-08-09@sha256:0e84f69c605433d24beb6bae1043453d3c7e4caa7c6b3bb901fdbbbcbb11e3b8
+      imageID: docker.io/library/import-2026-08-10@sha256:8bd4324dd98256c21c10b1b4c59c7a3470826b1922c9d52a833718b6a76aa80b
       lastState: {}
       name: pageserver
       ready: true
@@ -1281,7 +1489,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:40Z"
+          startedAt: "2026-08-10T03:43:15Z"
       user:
         linux:
           gid: 1000
@@ -1298,7 +1506,7 @@ items:
       - mountPath: /data/.neon/metadata.json
         name: config
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-xkfnf
+        name: kube-api-access-lzkvz
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -1306,16 +1514,16 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.17
+    podIP: 10.244.0.16
     podIPs:
-    - ip: 10.244.0.17
+    - ip: 10.244.0.16
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:38Z"
+    startTime: "2026-08-10T03:43:13Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:30Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: safekeeper-
     generation: 1
     labels:
@@ -1331,9 +1539,9 @@ items:
       controller: true
       kind: StatefulSet
       name: safekeeper
-      uid: 5125322b-0e8d-4f1b-bc81-24f1b4db50fe
-    resourceVersion: "986"
-    uid: ca7a7a19-649f-438d-bb1c-aafd60db178e
+      uid: 4318a252-8337-464e-bad2-6a49ce4bb3c2
+    resourceVersion: "58232"
+    uid: af4b53d8-f7a7-400e-8e4e-180f738b1a28
   spec:
     containers:
     - args:
@@ -1371,7 +1579,7 @@ items:
       - mountPath: /data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4n2m6
+        name: kube-api-access-rj65k
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -1399,7 +1607,7 @@ items:
     - name: data
       persistentVolumeClaim:
         claimName: data-safekeeper-0
-    - name: kube-api-access-4n2m6
+    - name: kube-api-access-rj65k
       projected:
         defaultMode: 420
         sources:
@@ -1420,34 +1628,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:36Z"
+      lastTransitionTime: "2026-08-10T03:43:14Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:36Z"
+      lastTransitionTime: "2026-08-10T03:43:13Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-11T07:24:18Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:38Z"
+      lastTransitionTime: "2026-08-11T07:24:18Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:36Z"
+      lastTransitionTime: "2026-08-10T03:43:13Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://de7ffcd919b2acfbb4d3cc68c7a29d12f061bbf32bfb4ea6019cc08a1bf61bd9
+    - containerID: containerd://be52f2e55f3da3ff09663e5e3ae41453c946ad5cd96bb6372f162556684ab23e
       image: ghcr.io/neondatabase/neon:latest
-      imageID: docker.io/library/import-2026-08-09@sha256:0e84f69c605433d24beb6bae1043453d3c7e4caa7c6b3bb901fdbbbcbb11e3b8
+      imageID: docker.io/library/import-2026-08-10@sha256:8bd4324dd98256c21c10b1b4c59c7a3470826b1922c9d52a833718b6a76aa80b
       lastState: {}
       name: safekeeper
       ready: true
@@ -1456,7 +1664,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:36Z"
+          startedAt: "2026-08-10T03:43:14Z"
       user:
         linux:
           gid: 1000
@@ -1467,7 +1675,7 @@ items:
       - mountPath: /data
         name: data
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-4n2m6
+        name: kube-api-access-rj65k
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -1475,32 +1683,34 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.14
+    podIP: 10.244.0.15
     podIPs:
-    - ip: 10.244.0.14
+    - ip: 10.244.0.15
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:36Z"
+    startTime: "2026-08-10T03:43:13Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:29Z"
-    generateName: sspc-operator-799456d676-
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-08-11T11:08:10-07:00"
+    creationTimestamp: "2026-08-11T18:08:10Z"
+    generateName: sspc-operator-6c57d74dc6-
     generation: 1
     labels:
       app: sspc-operator
-      pod-template-hash: 799456d676
-    name: sspc-operator-799456d676-bjc8z
+      pod-template-hash: 6c57d74dc6
+    name: sspc-operator-6c57d74dc6-bzflv
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: apps/v1
       blockOwnerDeletion: true
       controller: true
       kind: ReplicaSet
-      name: sspc-operator-799456d676
-      uid: 5bb12e3b-44d2-43ae-a8d1-d3f0007ce024
-    resourceVersion: "867"
-    uid: 8947387f-282c-49eb-97eb-754528df377f
+      name: sspc-operator-6c57d74dc6
+      uid: 1c752b42-5c26-41b4-9e57-d9974fd08dfa
+    resourceVersion: "61635"
+    uid: 1a148ced-cf9e-44ee-8487-3a347f9c872b
   spec:
     containers:
     - env:
@@ -1529,7 +1739,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-cjnjd
+        name: kube-api-access-p45dp
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -1552,7 +1762,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-cjnjd
+    - name: kube-api-access-p45dp
       projected:
         defaultMode: 420
         sources:
@@ -1573,34 +1783,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:31Z"
+      lastTransitionTime: "2026-08-11T18:08:10Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-11T18:08:10Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:32Z"
+      lastTransitionTime: "2026-08-11T18:08:11Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:32Z"
+      lastTransitionTime: "2026-08-11T18:08:11Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-11T18:08:10Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://c28b7627574905186aaf21302d64acad38fa6d2ef0a8a8bf6a9c810227f1e8ab
+    - containerID: containerd://00beb0570a1dc032e6642123a30d703b1f96bc4259c127939772256abc71c8d6
       image: docker.io/library/sspc-operator:p1
-      imageID: sha256:14ba976e9e9856c36296f7cd9ccb50a23a58f48a8d66a16913c6633b87666d04
+      imageID: docker.io/library/import-2026-08-11@sha256:0573b6463288235d4c4c32d281fa9d368fe6dcf5f9ae771277668fa4796c8185
       lastState: {}
       name: operator
       ready: true
@@ -1609,7 +1819,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:32Z"
+          startedAt: "2026-08-11T18:08:11Z"
       user:
         linux:
           gid: 65534
@@ -1618,7 +1828,7 @@ items:
           uid: 65534
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-cjnjd
+        name: kube-api-access-p45dp
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
@@ -1626,22 +1836,22 @@ items:
     - ip: 172.19.0.2
     observedGeneration: 1
     phase: Running
-    podIP: 10.244.0.9
+    podIP: 10.244.0.40
     podIPs:
-    - ip: 10.244.0.9
+    - ip: 10.244.0.40
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:30Z"
+    startTime: "2026-08-11T18:08:10Z"
 - apiVersion: v1
   kind: Pod
   metadata:
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     generateName: storage-controller-9df7b7f9f-
     generation: 1
     labels:
       app: storage-controller
       pod-template-hash: 9df7b7f9f
-    name: storage-controller-9df7b7f9f-v5plw
+    name: storage-controller-9df7b7f9f-qzw4w
     namespace: sspc-cell
     ownerReferences:
     - apiVersion: apps/v1
@@ -1649,9 +1859,9 @@ items:
       controller: true
       kind: ReplicaSet
       name: storage-controller-9df7b7f9f
-      uid: 65dd99f1-d8fc-4124-bc4b-7c9cbca38e14
-    resourceVersion: "1035"
-    uid: 308950e9-2935-477c-9975-5c85c52e2050
+      uid: aef15c7d-c1bc-4aab-af2f-d33d1fcb52ee
+    resourceVersion: "58235"
+    uid: 2ee8fff4-5581-4ef1-8d98-4b84871a248d
   spec:
     containers:
     - command:
@@ -1680,7 +1890,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-rjn5s
+        name: kube-api-access-pb4rc
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
@@ -1698,7 +1908,7 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-rjn5s
+        name: kube-api-access-pb4rc
         readOnly: true
     nodeName: sspc-control-plane
     preemptionPolicy: PreemptLowerPriority
@@ -1719,7 +1929,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-rjn5s
+    - name: kube-api-access-pb4rc
       projected:
         defaultMode: 420
         sources:
@@ -1740,34 +1950,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:31Z"
+      lastTransitionTime: "2026-08-10T03:43:07Z"
       observedGeneration: 1
       status: "True"
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:42Z"
+      lastTransitionTime: "2026-08-10T03:43:15Z"
       observedGeneration: 1
       status: "True"
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:45Z"
+      lastTransitionTime: "2026-08-11T07:24:20Z"
       observedGeneration: 1
       status: "True"
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:45Z"
+      lastTransitionTime: "2026-08-11T07:24:20Z"
       observedGeneration: 1
       status: "True"
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: "2026-08-09T18:37:30Z"
+      lastTransitionTime: "2026-08-10T03:43:06Z"
       observedGeneration: 1
       status: "True"
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://410f790145a73b36ca54edcc773a387131e49d28542b22efc39ba27430eb13e2
+    - containerID: containerd://91be17ee806469b8fe28020b89c9937186e39c30975c445da5bdfc7dc3197acd
       image: ghcr.io/neondatabase/neon:latest
-      imageID: docker.io/library/import-2026-08-09@sha256:0e84f69c605433d24beb6bae1043453d3c7e4caa7c6b3bb901fdbbbcbb11e3b8
+      imageID: docker.io/library/import-2026-08-10@sha256:8bd4324dd98256c21c10b1b4c59c7a3470826b1922c9d52a833718b6a76aa80b
       lastState: {}
       name: controller
       ready: true
@@ -1776,7 +1986,7 @@ items:
       started: true
       state:
         running:
-          startedAt: "2026-08-09T18:37:43Z"
+          startedAt: "2026-08-10T03:43:16Z"
       user:
         linux:
           gid: 1000
@@ -1785,14 +1995,14 @@ items:
           uid: 1000
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-rjn5s
+        name: kube-api-access-pb4rc
         readOnly: true
         recursiveReadOnly: Disabled
     hostIP: 172.19.0.2
     hostIPs:
     - ip: 172.19.0.2
     initContainerStatuses:
-    - containerID: containerd://3aee63824948dc6ca7f57ec9eb7d43673c545ec75bea0e2ba9e1968d140d42dd
+    - containerID: containerd://8d738ec217f0021788edc28afac2a3e1835e2035819f30a12025ad7eb9034e09
       image: docker.io/library/postgres:16-alpine
       imageID: sha256:7e7dbab8d3b431a20793a6d99cb5a6bc84e44914309917f1bf5589a7568cdefd
       lastState: {}
@@ -1803,11 +2013,11 @@ items:
       started: false
       state:
         terminated:
-          containerID: containerd://3aee63824948dc6ca7f57ec9eb7d43673c545ec75bea0e2ba9e1968d140d42dd
+          containerID: containerd://8d738ec217f0021788edc28afac2a3e1835e2035819f30a12025ad7eb9034e09
           exitCode: 0
-          finishedAt: "2026-08-09T18:37:42Z"
+          finishedAt: "2026-08-10T03:43:15Z"
           reason: Completed
-          startedAt: "2026-08-09T18:37:31Z"
+          startedAt: "2026-08-10T03:43:08Z"
       user:
         linux:
           gid: 0
@@ -1826,7 +2036,7 @@ items:
           uid: 0
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-rjn5s
+        name: kube-api-access-pb4rc
         readOnly: true
         recursiveReadOnly: Disabled
     observedGeneration: 1
@@ -1836,24 +2046,24 @@ items:
     - ip: 10.244.0.7
     qosClass: BestEffort
     resources: {}
-    startTime: "2026-08-09T18:37:30Z"
+    startTime: "2026-08-10T03:43:06Z"
 - apiVersion: v1
   kind: Service
   metadata:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: broker
     namespace: sspc-cell
-    resourceVersion: "697"
-    uid: 70fdce67-a102-42b9-a11b-0e327adffc90
+    resourceVersion: "661"
+    uid: 6eb46146-ec9b-45bf-939d-52147ef0c82d
   spec:
-    clusterIP: 10.96.164.141
+    clusterIP: 10.96.27.116
     clusterIPs:
-    - 10.96.164.141
+    - 10.96.27.116
     internalTrafficPolicy: Cluster
     ipFamilies:
     - IPv4
@@ -1875,17 +2085,17 @@ items:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: controller-pg
     namespace: sspc-cell
-    resourceVersion: "695"
-    uid: a3b6297b-3308-4613-a90b-b5a821abb780
+    resourceVersion: "658"
+    uid: aec57d1d-ae5d-49d2-820b-7a0c19117c17
   spec:
-    clusterIP: 10.96.149.89
+    clusterIP: 10.96.101.107
     clusterIPs:
-    - 10.96.149.89
+    - 10.96.101.107
     internalTrafficPolicy: Cluster
     ipFamilies:
     - IPv4
@@ -1904,7 +2114,44 @@ items:
 - apiVersion: v1
   kind: Service
   metadata:
-    creationTimestamp: "2026-08-09T18:43:20Z"
+    creationTimestamp: "2026-08-10T04:32:30Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: dev-db
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Database
+      name: dev-db
+      uid: 5f5639c7-431a-45aa-b816-c6fa3241fd35
+    resourceVersion: "5382"
+    uid: d7eb1126-8481-4e5b-b44a-2b37f5c0519d
+  spec:
+    clusterIP: 10.96.101.5
+    clusterIPs:
+    - 10.96.101.5
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30015
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: dev-db
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-08-11T18:08:23Z"
     labels:
       sspc.io/endpoint: "true"
     name: e2ebr
@@ -1914,13 +2161,13 @@ items:
       controller: true
       kind: Branch
       name: e2ebr
-      uid: d20b4fbc-2aed-4567-b41f-49517fccc6e6
-    resourceVersion: "1546"
-    uid: 4cecae06-de52-442a-9e73-a18378cbb72d
+      uid: 19314907-33a6-467e-a051-4df4d8d90065
+    resourceVersion: "61720"
+    uid: b0f453fd-cbf8-4313-a7b2-5fe83ab853ac
   spec:
-    clusterIP: 10.96.189.176
+    clusterIP: 10.96.139.16
     clusterIPs:
-    - 10.96.189.176
+    - 10.96.139.16
     externalTrafficPolicy: Cluster
     internalTrafficPolicy: Cluster
     ipFamilies:
@@ -1941,7 +2188,7 @@ items:
 - apiVersion: v1
   kind: Service
   metadata:
-    creationTimestamp: "2026-08-09T18:43:17Z"
+    creationTimestamp: "2026-08-11T18:08:19Z"
     labels:
       sspc.io/endpoint: "true"
     name: e2edb
@@ -1951,13 +2198,13 @@ items:
       controller: true
       kind: Database
       name: e2edb
-      uid: ef2f9991-0348-4c2a-888f-ca9020911097
-    resourceVersion: "1520"
-    uid: 4e661605-dc51-4919-ac6c-53aef03a7bfb
+      uid: 990525f6-fe87-4f69-918c-c90f85f704f2
+    resourceVersion: "61683"
+    uid: 56032163-f8dc-49b5-a525-c95bca81951f
   spec:
-    clusterIP: 10.96.137.98
+    clusterIP: 10.96.208.87
     clusterIPs:
-    - 10.96.137.98
+    - 10.96.208.87
     externalTrafficPolicy: Cluster
     internalTrafficPolicy: Cluster
     ipFamilies:
@@ -1978,20 +2225,94 @@ items:
 - apiVersion: v1
   kind: Service
   metadata:
+    creationTimestamp: "2026-08-11T18:08:25Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: e2esleep
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Database
+      name: e2esleep
+      uid: 7613ffc2-db0c-4834-a393-dc648808b698
+    resourceVersion: "61748"
+    uid: c9198cb5-387f-4681-8abb-596a9f41b2e7
+  spec:
+    clusterIP: 10.96.123.76
+    clusterIPs:
+    - 10.96.123.76
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30017
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: e2esleep
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-08-10T03:46:12Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: experiment
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Branch
+      name: experiment
+      uid: 5ac93cd7-18ad-4fa9-9f84-8266cd842062
+    resourceVersion: "1337"
+    uid: 13df9335-8378-4bab-ba59-75c14e6112f4
+  spec:
+    clusterIP: 10.96.130.0
+    clusterIPs:
+    - 10.96.130.0
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30006
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: experiment
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: minio
     namespace: sspc-cell
-    resourceVersion: "694"
-    uid: 94bdf2cf-7530-46c4-a014-7e8252622cfa
+    resourceVersion: "669"
+    uid: 5c75e855-7e42-491e-baf3-38181fd9eae4
   spec:
-    clusterIP: 10.96.231.124
+    clusterIP: 10.96.255.149
     clusterIPs:
-    - 10.96.231.124
+    - 10.96.255.149
     internalTrafficPolicy: Cluster
     ipFamilies:
     - IPv4
@@ -2013,17 +2334,17 @@ items:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: notify-sink
     namespace: sspc-cell
-    resourceVersion: "686"
-    uid: 9b9fb2c7-f7f5-426c-9f97-734590672fdf
+    resourceVersion: "678"
+    uid: 1671f7f9-d505-4f60-9d5d-28fdd0e3fdca
   spec:
-    clusterIP: 10.96.128.135
+    clusterIP: 10.96.38.115
     clusterIPs:
-    - 10.96.128.135
+    - 10.96.38.115
     internalTrafficPolicy: Cluster
     ipFamilies:
     - IPv4
@@ -2045,13 +2366,13 @@ items:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: pageserver
     namespace: sspc-cell
-    resourceVersion: "674"
-    uid: fba849d2-0ea0-41c8-b7b5-658bcd63d1e6
+    resourceVersion: "652"
+    uid: 40e66451-78d6-4e25-9ad7-662e384138ea
   spec:
     clusterIP: None
     clusterIPs:
@@ -2082,17 +2403,17 @@ items:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: pageserver-api
     namespace: sspc-cell
-    resourceVersion: "706"
-    uid: a75d2cc6-537c-4dc0-bf84-96815c819606
+    resourceVersion: "686"
+    uid: 16b55958-07fd-42d8-ae43-ad33663f927e
   spec:
-    clusterIP: 10.96.78.230
+    clusterIP: 10.96.178.204
     clusterIPs:
-    - 10.96.78.230
+    - 10.96.178.204
     externalTrafficPolicy: Cluster
     internalTrafficPolicy: Cluster
     ipFamilies:
@@ -2113,16 +2434,53 @@ items:
 - apiVersion: v1
   kind: Service
   metadata:
+    creationTimestamp: "2026-08-10T04:34:20Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: playground-db
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Database
+      name: playground-db
+      uid: 3e811564-7e99-48eb-94e8-c4f9946b39f8
+    resourceVersion: "5579"
+    uid: 106c7a4e-9791-4a11-9e0c-7c9a70dd13b9
+  spec:
+    clusterIP: 10.96.156.55
+    clusterIPs:
+    - 10.96.156.55
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30004
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: playground-db
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: safekeeper
     namespace: sspc-cell
-    resourceVersion: "673"
-    uid: ea14c722-ef6d-42ce-a381-fa6de8bec976
+    resourceVersion: "654"
+    uid: 632c2bb0-1162-493a-b5f9-a2f5226b3133
   spec:
     clusterIP: None
     clusterIPs:
@@ -2150,20 +2508,94 @@ items:
 - apiVersion: v1
   kind: Service
   metadata:
+    creationTimestamp: "2026-08-10T04:57:55Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: sample
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Database
+      name: sample
+      uid: 2b3a13a6-a56a-425e-939d-1b863d855e22
+    resourceVersion: "7630"
+    uid: e2a065da-5af1-46ba-9d06-6d20cd580768
+  spec:
+    clusterIP: 10.96.107.150
+    clusterIPs:
+    - 10.96.107.150
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30016
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: sample
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-08-10T04:57:57Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: sample-dev
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Branch
+      name: sample-dev
+      uid: 8f431c3b-c9b4-47c1-a64d-b2025a4fab98
+    resourceVersion: "7657"
+    uid: c4bce21c-0e94-4354-a4ae-bce173b1681e
+  spec:
+    clusterIP: 10.96.179.194
+    clusterIPs:
+    - 10.96.179.194
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30013
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: sample-dev
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: sspc-mcp
     namespace: sspc-cell
-    resourceVersion: "688"
-    uid: 5aeb41b9-d99f-4104-a181-cb5f06841c9a
+    resourceVersion: "673"
+    uid: c07ec066-0ae6-4519-a51d-8fc0afda6cb3
   spec:
-    clusterIP: 10.96.65.168
+    clusterIP: 10.96.14.76
     clusterIPs:
-    - 10.96.65.168
+    - 10.96.14.76
     externalTrafficPolicy: Cluster
     internalTrafficPolicy: Cluster
     ipFamilies:
@@ -2187,17 +2619,17 @@ items:
     annotations:
       meta.helm.sh/release-name: sspc
       meta.helm.sh/release-namespace: sspc-cell
-    creationTimestamp: "2026-08-09T18:37:29Z"
+    creationTimestamp: "2026-08-10T03:43:06Z"
     labels:
       app.kubernetes.io/managed-by: Helm
     name: storage-controller
     namespace: sspc-cell
-    resourceVersion: "678"
-    uid: fe1c55ff-5eac-4a0a-95be-c9e9d624a1ab
+    resourceVersion: "680"
+    uid: 28d0e538-ea7f-427f-9f43-444246cb39cb
   spec:
-    clusterIP: 10.96.35.21
+    clusterIP: 10.96.78.173
     clusterIPs:
-    - 10.96.35.21
+    - 10.96.78.173
     externalTrafficPolicy: Cluster
     internalTrafficPolicy: Cluster
     ipFamilies:
@@ -2211,6 +2643,43 @@ items:
       targetPort: 1234
     selector:
       app: storage-controller
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-08-10T03:46:00Z"
+    labels:
+      sspc.io/endpoint: "true"
+    name: testdb
+    namespace: sspc-cell
+    ownerReferences:
+    - apiVersion: sspc.io/v1alpha1
+      controller: true
+      kind: Database
+      name: testdb
+      uid: eb748e30-a412-4ec2-8d1c-3fd635cad789
+    resourceVersion: "1294"
+    uid: f46900c8-e14a-4df9-a14f-0c47e36b25ee
+  spec:
+    clusterIP: 10.96.164.192
+    clusterIPs:
+    - 10.96.164.192
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: pg
+      nodePort: 30001
+      port: 55433
+      protocol: TCP
+      targetPort: 55433
+    selector:
+      sspc.io/compute: testdb
     sessionAffinity: None
     type: NodePort
   status:
