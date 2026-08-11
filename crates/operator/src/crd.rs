@@ -8,6 +8,21 @@ fn default_suspend_after() -> i64 {
     300
 }
 
+fn default_cu_limit() -> i64 {
+    10
+}
+
+/// Compute priority (RFC 011 QoS classes, compute layer): under contention,
+/// CPU divides by CFS weight (higher priority = larger request fraction), and
+/// preemption/eviction takes Low first — which here is just a rude suspend.
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, Default, PartialEq, Eq, JsonSchema)]
+pub enum Priority {
+    High,
+    #[default]
+    Standard,
+    Low,
+}
+
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
     group = "sspc.io",
@@ -24,6 +39,12 @@ pub struct DatabaseSpec {
     /// Idle seconds before suspend (enforced by the operator's idle loop, P3).
     #[serde(default = "default_suspend_after")]
     pub suspend_after_seconds: i64,
+    /// Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+    /// pool; suspended databases hold zero CU.
+    #[serde(default = "default_cu_limit")]
+    pub cu_limit: i64,
+    #[serde(default)]
+    pub priority: Priority,
     /// Optional TTL; the reaper deletes the resource after this many seconds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ttl_seconds: Option<i64>,
@@ -48,6 +69,12 @@ pub struct BranchSpec {
     /// Idle seconds before suspend (branches sleep aggressively by default).
     #[serde(default = "default_suspend_after")]
     pub suspend_after_seconds: i64,
+    /// Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+    /// pool; suspended databases hold zero CU.
+    #[serde(default = "default_cu_limit")]
+    pub cu_limit: i64,
+    #[serde(default)]
+    pub priority: Priority,
     /// Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ttl_seconds: Option<i64>,

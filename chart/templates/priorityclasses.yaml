@@ -1,0 +1,23 @@
+# Compute priorities (RFC 011 QoS classes, compute layer). Preemption of a
+# lower class is safe by architecture: an evicted compute is a rude suspend —
+# state lives in the cell, the database wakes on demand.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: sspc-high
+value: 100200
+description: sspc high-priority compute — degrades last under contention
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: sspc-standard
+value: 100100
+description: sspc standard compute
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: sspc-low
+value: 100000
+description: sspc low-priority compute — throttled and preempted first

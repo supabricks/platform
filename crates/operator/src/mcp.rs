@@ -272,6 +272,14 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
     if let Some(s) = args["suspend_after_seconds"].as_i64() {
         spec["suspendAfterSeconds"] = json!(s);
     }
+    if let Some(c) = args["cu_limit"].as_i64() {
+        spec["cuLimit"] = json!(c);
+    }
+    if let Some(p) = args["priority"].as_str() {
+        spec["priority"] = json!(match p.to_lowercase().as_str() {
+            "high" => "High", "low" => "Low", _ => "Standard",
+        });
+    }
     let db: Database = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "Database",
         "metadata": {"name": name, "namespace": state.ctx.namespace},
@@ -303,6 +311,14 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     let mut spec = json!({"database": database});
     if let Some(ttl) = args["ttl_seconds"].as_i64() {
         spec["ttlSeconds"] = json!(ttl);
+    }
+    if let Some(c) = args["cu_limit"].as_i64() {
+        spec["cuLimit"] = json!(c);
+    }
+    if let Some(p) = args["priority"].as_str() {
+        spec["priority"] = json!(match p.to_lowercase().as_str() {
+            "high" => "High", "low" => "Low", _ => "Standard",
+        });
     }
     let br: Branch = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "Branch",
@@ -573,7 +589,9 @@ fn tool_defs() -> Value {
          "inputSchema": {"type": "object", "properties": {
              "name": name_arg,
              "ttl_seconds": {"type": "integer", "description": "Optional TTL; the platform reaps the database when it expires"},
-             "suspend_after_seconds": {"type": "integer", "description": "Idle seconds before scale-to-zero (default 300)"}},
+             "suspend_after_seconds": {"type": "integer", "description": "Idle seconds before scale-to-zero (default 300)"},
+             "cu_limit": {"type": "integer", "description": "Compute ceiling in CU, 1 CU = 0.1 core (default 10)"},
+             "priority": {"type": "string", "enum": ["high", "standard", "low"], "description": "Contention priority: high degrades last, low is preempted first (default standard)"}},
              "required": ["name"]}},
         {"name": "list_databases",
          "description": "The estate: cell-backed databases AND enrolled (existing, unmigrated) Postgres, with health.",
@@ -597,7 +615,9 @@ fn tool_defs() -> Value {
          "inputSchema": {"type": "object", "properties": {
              "name": name_arg,
              "database": {"type": "string", "description": "Parent database name"},
-             "ttl_seconds": {"type": "integer", "description": "Optional TTL (reaped in P3)"}},
+             "ttl_seconds": {"type": "integer", "description": "Optional TTL"},
+             "cu_limit": {"type": "integer", "description": "Compute ceiling in CU (default 10)"},
+             "priority": {"type": "string", "enum": ["high", "standard", "low"]}},
              "required": ["name", "database"]}},
         {"name": "list_branches", "description": "List branches with status and parentage.",
          "inputSchema": {"type": "object", "properties": {}}},

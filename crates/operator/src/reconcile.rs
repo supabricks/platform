@@ -22,7 +22,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use tracing::{info, warn};
 
-use crate::crd::{Branch, Database, Phase};
+use crate::crd::{Branch, Database, Phase, Priority};
 use crate::keys::ComputeKey;
 use crate::ports;
 use crate::spec::{SpecParams, render};
@@ -104,6 +104,29 @@ pub async fn post_event(
     }
 }
 
+/// CU/priority → pod resources + PriorityClass (RFC 011 QoS, compute layer).
+/// Request = priority-weighted fraction of the limit: that fraction IS the
+/// contention share under CFS, so throttling follows priority automatically.
+pub fn class_resources(cu_limit: i64, priority: Priority) -> (serde_json::Value, &'static str) {
+    let cu = cu_limit.clamp(1, 960);
+    let cpu_limit_m = cu * 100;
+    let (div, class) = match priority {
+        Priority::High => (5, "sspc-high"),
+        Priority::Standard => (10, "sspc-standard"),
+        Priority::Low => (20, "sspc-low"),
+    };
+    let cpu_req_m = (cpu_limit_m / div).max(10);
+    let mem_limit_mi = (cu * 100).max(512);
+    let mem_req_mi = mem_limit_mi.min(256);
+    (
+        json!({
+            "requests": {"cpu": format!("{cpu_req_m}m"), "memory": format!("{mem_req_mi}Mi")},
+            "limits": {"cpu": format!("{cpu_limit_m}m"), "memory": format!("{mem_limit_mi}Mi")},
+        }),
+        class,
+    )
+}
+
 /// Parse "0/29E2300" into a comparable number.
 fn lsn_num(lsn: &str) -> u64 {
     let mut it = lsn.splitn(2, '/');
@@ -176,6 +199,8 @@ impl Ctx {
         tenant: &str,
         timeline: &str,
         run_pod: bool,
+        cu_limit: i64,
+        priority: Priority,
     ) -> anyhow::Result<i32>
     where
         K: Resource<DynamicType = ()>,
@@ -230,6 +255,7 @@ impl Ctx {
         if !run_pod {
             return Ok(port);
         }
+        let (resources, priority_class) = class_resources(cu_limit, priority);
         // Compute pod: compute_ctl as PID 1 (D6), stock image, spec from the CM.
         let pod: Pod = serde_json::from_value(json!({
             "apiVersion": "v1", "kind": "Pod",
@@ -237,6 +263,7 @@ impl Ctx {
                           "labels": {"app": "compute", "sspc.io/compute": name},
                           "ownerReferences": [oref]},
             "spec": {
+                "priorityClassName": priority_class,
                 "containers": [{
                     "name": "compute",
                     "image": self.compute_image,
@@ -249,13 +276,7 @@ impl Ctx {
                         format!("--compute-id={name}"),
                         "--config=/config/spec.json",
                     ],
-                    // Burstable (RFC 011 CapacityMode serverless): low request
-                    // for density, high limit for burst. ComputeClass makes
-                    // these policy later; these are the M1 floor.
-                    "resources": {
-                        "requests": {"cpu": "100m", "memory": "256Mi"},
-                        "limits": {"cpu": "1", "memory": "1Gi"},
-                    },
+                    "resources": resources,
                     "ports": [{"containerPort": 55433}, {"containerPort": 3080}],
                     "volumeMounts": [{"name": "spec", "mountPath": "/config"}],
                     // pg_isready, not tcpSocket: PG briefly accepts TCP but
@@ -326,7 +347,7 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
                    "Woke", format!("database {name} woke from suspend")).await;
     }
     let port = ctx
-        .ensure_endpoint(db.as_ref(), &name, &tenant, &timeline, run)
+        .ensure_endpoint(db.as_ref(), &name, &tenant, &timeline, run, db.spec.cu_limit, db.spec.priority)
         .await?;
 
     let phase = if run { Phase::Active } else { Phase::Suspended };
@@ -417,7 +438,7 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
                    "Woke", format!("branch {name} woke from suspend")).await;
     }
     let port = ctx
-        .ensure_endpoint(br.as_ref(), &name, &tenant, &timeline, run)
+        .ensure_endpoint(br.as_ref(), &name, &tenant, &timeline, run, br.spec.cu_limit, br.spec.priority)
         .await?;
 
     let phase = if run { Phase::Active } else { Phase::Suspended };
@@ -500,6 +521,24 @@ mod tests {
             "non-suspended always runs"
         );
         assert!(wants_running(&m_none, None), "no status yet -> provision");
+    }
+
+    #[test]
+    fn class_resources_follow_priority() {
+        let (hi, hic) = class_resources(10, Priority::High);
+        let (st, stc) = class_resources(10, Priority::Standard);
+        let (lo, loc) = class_resources(10, Priority::Low);
+        assert_eq!((hic, stc, loc), ("sspc-high", "sspc-standard", "sspc-low"));
+        assert_eq!(hi["limits"]["cpu"], "1000m");
+        assert_eq!(hi["requests"]["cpu"], "200m");
+        assert_eq!(st["requests"]["cpu"], "100m");
+        assert_eq!(lo["requests"]["cpu"], "50m");
+        let (big, _) = class_resources(200, Priority::Standard);
+        assert_eq!(big["limits"]["cpu"], "20000m");
+        assert_eq!(big["limits"]["memory"], "20000Mi");
+        let (tiny, _) = class_resources(1, Priority::Low);
+        assert_eq!(tiny["requests"]["cpu"], "10m");
+        assert_eq!(tiny["limits"]["memory"], "512Mi");
     }
 
     #[test]

@@ -26,6 +26,24 @@ spec:
         properties:
           spec:
             properties:
+              cuLimit:
+                default: 10
+                description: |-
+                  Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+                  pool; suspended databases hold zero CU.
+                format: int64
+                type: integer
+              priority:
+                default: Standard
+                description: |-
+                  Compute priority (RFC 011 QoS classes, compute layer): under contention,
+                  CPU divides by CFS weight (higher priority = larger request fraction), and
+                  preemption/eviction takes Low first — which here is just a rude suspend.
+                enum:
+                - High
+                - Standard
+                - Low
+                type: string
               suspendAfterSeconds:
                 default: 300
                 description: Idle seconds before suspend (enforced by the operator's idle loop, P3).
@@ -113,8 +131,26 @@ spec:
         properties:
           spec:
             properties:
+              cuLimit:
+                default: 10
+                description: |-
+                  Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+                  pool; suspended databases hold zero CU.
+                format: int64
+                type: integer
               database:
                 description: Name of the parent Database (same namespace).
+                type: string
+              priority:
+                default: Standard
+                description: |-
+                  Compute priority (RFC 011 QoS classes, compute layer): under contention,
+                  CPU divides by CFS weight (higher priority = larger request fraction), and
+                  preemption/eviction takes Low first — which here is just a rude suspend.
+                enum:
+                - High
+                - Standard
+                - Low
                 type: string
               suspendAfterSeconds:
                 default: 300
