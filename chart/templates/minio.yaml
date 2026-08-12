@@ -11,11 +11,14 @@ spec:
   template:
     metadata: {labels: {app: minio}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: minio
         image: {{ .Values.images.minio }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         args: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+        resources:
+          requests: {cpu: {{ .Values.cellResources.minio.cpu }}, memory: {{ .Values.cellResources.minio.memory }}}
         env:
         - {name: MINIO_ROOT_USER, value: {{ .Values.s3.accessKey | quote }}}
         - {name: MINIO_ROOT_PASSWORD, value: {{ .Values.s3.secretKey | quote }}}

@@ -11,6 +11,7 @@ spec:
   template:
     metadata: {labels: {app: storage-controller}}
     spec:
+      priorityClassName: sspc-cell
       initContainers:
       - name: wait-for-pg
         image: {{ .Values.images.postgres }}
@@ -27,6 +28,8 @@ spec:
         - --database-url=postgresql://postgres:postgres@controller-pg:5432/storage_controller
         - --control-plane-url=http://notify-sink:3081
         - --dev
+        resources:
+          requests: {cpu: {{ .Values.cellResources.storageController.cpu }}, memory: {{ .Values.cellResources.storageController.memory }}}
         ports:
         - {containerPort: 1234}
         readinessProbe:

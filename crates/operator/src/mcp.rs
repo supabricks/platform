@@ -178,6 +178,7 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
         "unenroll_database" => unenroll_database(state, args).await,
         "get_events" => get_events(state).await,
         "get_metrics" => get_metrics(state, args).await,
+        "get_cu_ledger" => get_cu_ledger(state).await,
         other => Err(terr(
             format!("unknown tool {other}"),
             false,
@@ -605,6 +606,68 @@ async fn get_metrics(state: &McpState, args: &Value) -> ToolResult {
                "cpu_limit_millis": cu * 100, "series": series}))
 }
 
+/// Kubernetes CPU quantities come as "8", "0.5", "7910m", or (rarely) "…n".
+fn cpu_quantity_millis(q: &str) -> i64 {
+    if let Some(n) = q.strip_suffix('m') {
+        n.parse().unwrap_or(0)
+    } else if let Some(n) = q.strip_suffix('n') {
+        n.parse::<i64>().unwrap_or(0) / 1_000_000
+    } else {
+        (q.parse::<f64>().unwrap_or(0.0) * 1000.0) as i64
+    }
+}
+
+/// The oversubscription ledger (RFC 011): what the cluster physically has vs
+/// what has been promised as CU ceilings vs what is awake and drawing now.
+/// Suspended endpoints hold zero CU — that gap is the whole business model.
+async fn get_cu_ledger(state: &McpState) -> ToolResult {
+    let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(state.ctx.client.clone());
+    let mut physical_millis: i64 = 0;
+    for n in nodes.list(&Default::default()).await.map_err(from_kube)?.items {
+        if let Some(q) = n.status.as_ref().and_then(|s| s.allocatable.as_ref()).and_then(|a| a.get("cpu")) {
+            physical_millis += cpu_quantity_millis(&q.0);
+        }
+    }
+
+    let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let mut promised: i64 = 0;
+    let mut active: i64 = 0;
+    let mut active_names: Vec<String> = Vec::new();
+    let mut endpoints: i64 = 0;
+    let mut tally = |name: String, cu: i64, phase: Option<Phase>| {
+        endpoints += 1;
+        promised += cu;
+        if phase == Some(Phase::Active) {
+            active += cu;
+            active_names.push(name);
+        }
+    };
+    for d in dbs.list(&Default::default()).await.map_err(from_kube)?.items {
+        tally(d.name_any(), d.spec.cu_limit, d.status.as_ref().and_then(|s| s.phase));
+    }
+    for b in brs.list(&Default::default()).await.map_err(from_kube)?.items {
+        tally(b.name_any(), b.spec.cu_limit, b.status.as_ref().and_then(|s| s.phase));
+    }
+
+    let used_millis: i64 = {
+        let m = state.ctx.metrics.lock().unwrap();
+        active_names
+            .iter()
+            .filter_map(|n| m.get(n).and_then(|ring| ring.back()).map(|(_, cpu, _)| *cpu))
+            .sum()
+    };
+
+    Ok(json!({
+        "physical_cu": physical_millis / 100,
+        "promised_cu": promised,
+        "active_cu": active,
+        "used_millis": used_millis,
+        "endpoints": endpoints,
+        "endpoints_active": active_names.len(),
+    }))
+}
+
 fn tool_defs() -> Value {
     let name_arg = json!({"type": "string", "description": "Resource name (lowercase DNS label)"});
     json!([
@@ -656,6 +719,9 @@ fn tool_defs() -> Value {
         {"name": "get_metrics",
          "description": "Recent CPU/memory usage for a database or branch (15s samples, ~10 min window), with its CU limit.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+        {"name": "get_cu_ledger",
+         "description": "The compute ledger: physical CU on the cluster, CU promised as ceilings, CU awake right now, and live draw. Shows oversubscription headroom (suspended databases hold zero CU).",
+         "inputSchema": {"type": "object", "properties": {}}},
         {"name": "get_events",
          "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",
          "inputSchema": {"type": "object", "properties": {}}},

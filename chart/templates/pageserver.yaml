@@ -31,11 +31,14 @@ spec:
   template:
     metadata: {labels: {app: pageserver}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: pageserver
         image: {{ .Values.images.neon }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         command: ["pageserver", "-D", "/data/.neon"]
+        resources:
+          requests: {cpu: {{ .Values.cellResources.pageserver.cpu }}, memory: {{ .Values.cellResources.pageserver.memory }}}
         env:
         - {name: AWS_ACCESS_KEY_ID, value: {{ .Values.s3.accessKey | quote }}}
         - {name: AWS_SECRET_ACCESS_KEY, value: {{ .Values.s3.secretKey | quote }}}

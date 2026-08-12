@@ -1,6 +1,16 @@
 # Compute priorities (RFC 011 QoS classes, compute layer). Preemption of a
 # lower class is safe by architecture: an evicted compute is a rude suspend —
 # state lives in the cell, the database wakes on demand.
+#
+# The cell itself sits ABOVE every compute class: one pageserver serves all
+# tenants, so no compute pod may ever preempt or outlive the storage under it.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: sspc-cell
+value: 100300
+description: sspc cell (storage + control plane) — never preempted by compute
+---
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:

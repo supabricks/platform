@@ -24,6 +24,19 @@ s3:
   accessKey: minio
   secretKey: password
 
+# Cell (storage layer) resource guarantees. Requests only — the cell serves
+# every tenant so it may burst, but it must never run BestEffort (evicted
+# before the computes it backs). Laptop-sized defaults; raise on real metal.
+cellResources:
+  pageserver: {cpu: 250m, memory: 512Mi}
+  safekeeper: {cpu: 100m, memory: 256Mi}
+  broker: {cpu: 20m, memory: 32Mi}
+  storageController: {cpu: 50m, memory: 64Mi}
+  controllerPg: {cpu: 50m, memory: 128Mi}
+  minio: {cpu: 50m, memory: 128Mi}
+  notifySink: {cpu: 5m, memory: 16Mi}
+  operator: {cpu: 50m, memory: 64Mi}
+
 # NodePorts (must match the kind extraPortMappings block)
 nodePorts:
   storageController: 30099

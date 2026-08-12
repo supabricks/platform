@@ -49,10 +49,13 @@ spec:
     metadata: {labels: {app: sspc-operator}}
     spec:
       serviceAccountName: sspc-operator
+      priorityClassName: sspc-cell
       containers:
       - name: operator
         image: {{ .Values.images.operator }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          requests: {cpu: {{ .Values.cellResources.operator.cpu }}, memory: {{ .Values.cellResources.operator.memory }}}
         env:
         - name: SSPC_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}

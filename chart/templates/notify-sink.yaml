@@ -9,10 +9,13 @@ spec:
   template:
     metadata: {labels: {app: notify-sink}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: sink
         image: {{ .Values.images.busybox }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          requests: {cpu: {{ .Values.cellResources.notifySink.cpu }}, memory: {{ .Values.cellResources.notifySink.memory }}}
         command: ["/bin/sh", "-c"]
         args:
         - |

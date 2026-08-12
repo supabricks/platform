@@ -8,11 +8,14 @@ spec:
   template:
     metadata: {labels: {app: broker}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: broker
         image: {{ .Values.images.neon }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         command: ["storage_broker", "--listen-addr=0.0.0.0:50051"]
+        resources:
+          requests: {cpu: {{ .Values.cellResources.broker.cpu }}, memory: {{ .Values.cellResources.broker.memory }}}
         ports:
         - {containerPort: 50051}
 ---

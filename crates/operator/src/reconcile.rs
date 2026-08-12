@@ -404,26 +404,28 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     // writes — a branch created immediately after a load would miss it.
     // If the parent is awake, wait (bounded) for ingestion to catch up.
     if was.is_none() && parent.status.as_ref().and_then(|s| s.phase) == Some(Phase::Active) {
-        match parent_flush_lsn(ctx, &br.spec.database).await {
-            None => warn!("branch {name}: could not read parent flush lsn; branching without ingestion wait"),
-            Some(flush) => {
-                let deadline = std::time::Instant::now() + Duration::from_secs(20);
-                loop {
-                    let ingested = ctx.storcon.timeline_last_record_lsn(&tenant, &ancestor).await;
-                    match &ingested {
-                        Some(i) if lsn_num(i) >= lsn_num(&flush) => {
-                            info!("branch {name}: ingestion caught up ({i} >= flush {flush})");
-                            break;
-                        }
-                        _ if std::time::Instant::now() > deadline => {
-                            warn!("branch {name}: ingestion lag past deadline (flush {flush}, ingested {ingested:?}); branching anyway");
-                            break;
-                        }
-                        _ => {
-                            info!("branch {name}: waiting for ingestion ({ingested:?} < flush {flush})");
-                            tokio::time::sleep(Duration::from_millis(250)).await;
-                        }
-                    }
+        // Fail closed: an unreadable flush LSN is usually Service-endpoint
+        // propagation lag on a parent that just woke — branching blind at the
+        // ingested LSN would silently drop the parent's latest writes.
+        let Some(flush) = parent_flush_lsn(ctx, &br.spec.database).await else {
+            warn!("branch {name}: parent flush lsn unreadable; requeueing instead of branching blind");
+            return Ok(Action::requeue(Duration::from_secs(2)));
+        };
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        loop {
+            let ingested = ctx.storcon.timeline_last_record_lsn(&tenant, &ancestor).await;
+            match &ingested {
+                Some(i) if lsn_num(i) >= lsn_num(&flush) => {
+                    info!("branch {name}: ingestion caught up ({i} >= flush {flush})");
+                    break;
+                }
+                _ if std::time::Instant::now() > deadline => {
+                    warn!("branch {name}: ingestion lag past deadline (flush {flush}, ingested {ingested:?}); branching anyway");
+                    break;
+                }
+                _ => {
+                    info!("branch {name}: waiting for ingestion ({ingested:?} < flush {flush})");
+                    tokio::time::sleep(Duration::from_millis(250)).await;
                 }
             }
         }

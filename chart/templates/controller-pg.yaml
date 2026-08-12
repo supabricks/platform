@@ -10,10 +10,13 @@ spec:
   template:
     metadata: {labels: {app: controller-pg}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: postgres
         image: {{ .Values.images.postgres }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          requests: {cpu: {{ .Values.cellResources.controllerPg.cpu }}, memory: {{ .Values.cellResources.controllerPg.memory }}}
         env:
         - {name: POSTGRES_PASSWORD, value: postgres}
         - {name: POSTGRES_DB, value: storage_controller}

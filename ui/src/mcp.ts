@@ -73,6 +73,15 @@ export interface EventRow {
   message?: string | null
 }
 
+export interface LedgerResp {
+  physical_cu: number
+  promised_cu: number
+  active_cu: number
+  used_millis: number
+  endpoints: number
+  endpoints_active: number
+}
+
 export interface MetricsResp {
   name: string
   cu_limit: number

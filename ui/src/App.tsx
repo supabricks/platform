@@ -5,7 +5,7 @@ import {
   Tag, TextInput, Theme, ToastNotification,
 } from '@carbon/react'
 import { Add, Link as LinkIcon, TrashCan } from '@carbon/icons-react'
-import { callTool, setToken, type BranchRow, type EstateRow, type EventRow, type MetricsResp } from './mcp'
+import { callTool, setToken, type BranchRow, type EstateRow, type EventRow, type LedgerResp, type MetricsResp } from './mcp'
 
 const slug = (s: string) => s.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
 import Rails from './Rails'
@@ -31,6 +31,21 @@ function Spark({ pts, cap }: { pts: number[]; cap: number }) {
   )
 }
 
+/* The oversubscription bar: promised ceilings (dim) can run past the physical
+   line — that gap, held by suspended databases, is what serverless sells. */
+function LedgerBar({ l }: { l: LedgerResp }) {
+  const cap = Math.max(l.physical_cu, l.promised_cu, 1)
+  const w = (v: number) => `${Math.min(100, (v / cap) * 100)}%`
+  return (
+    <div style={{ position: 'relative', height: 6, background: 'var(--cds-layer-02)', marginTop: '0.5rem' }} aria-label="CU ledger">
+      <div style={{ position: 'absolute', inset: 0, width: w(l.promised_cu), background: 'var(--cds-support-info)', opacity: 0.25 }} />
+      <div style={{ position: 'absolute', inset: 0, width: w(l.active_cu), background: 'var(--cds-support-info)', opacity: 0.55 }} />
+      <div style={{ position: 'absolute', inset: 0, width: w(l.used_millis / 100), background: 'var(--cds-support-info)' }} />
+      <div style={{ position: 'absolute', top: -2, bottom: -2, left: w(l.physical_cu), width: 2, background: 'var(--cds-text-primary)' }} />
+    </div>
+  )
+}
+
 function phaseTag(phase?: string | null) {
   const map: Record<string, { type: any; label: string }> = {
     Active: { type: 'green', label: '● Active' },
@@ -51,6 +66,7 @@ export default function App() {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [modal, setModal] = useState<'db' | 'branch' | 'enroll' | null>(null)
   const [metrics, setMetrics] = useState<Record<string, MetricsResp>>({})
+  const [ledger, setLedger] = useState<LedgerResp | null>(null)
   const [form, setForm] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -64,12 +80,13 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [d, b, e] = await Promise.all([
+      const [d, b, e, l] = await Promise.all([
         callTool<EstateRow[]>('list_databases'),
         callTool<BranchRow[]>('list_branches'),
         callTool<EventRow[]>('get_events'),
+        callTool<LedgerResp>('get_cu_ledger'),
       ])
-      setDbs(d); setBranches(b); setEvents(e); setAuthed(true)
+      setDbs(d); setBranches(b); setEvents(e); setLedger(l); setAuthed(true)
     } catch (e) {
       if (String(e).includes('Not authorized')) setAuthed(false)
       /* otherwise keep last good frame */
@@ -185,6 +202,19 @@ export default function App() {
               <div style={{ color: 'var(--cds-text-secondary)', fontSize: '0.75rem' }}>{l}</div>
             </div>
           ))}
+          {ledger && (
+            <div style={{ background: 'var(--cds-layer-01)', padding: '1rem' }}>
+              <div className="tile-num">
+                {ledger.promised_cu}
+                <span style={{ fontSize: '1.125rem', color: 'var(--cds-text-secondary)' }}> of {ledger.physical_cu} CU</span>
+              </div>
+              <div style={{ color: 'var(--cds-text-secondary)', fontSize: '0.75rem' }}>
+                promised · {ledger.active_cu} CU awake · {(ledger.used_millis / 100).toFixed(1)} drawn
+                {ledger.promised_cu > ledger.physical_cu && ` · ${(ledger.promised_cu / ledger.physical_cu).toFixed(1)}× oversubscribed`}
+              </div>
+              <LedgerBar l={ledger} />
+            </div>
+          )}
         </div>
 
         <div className="estate-body">

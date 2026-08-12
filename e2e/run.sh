@@ -40,6 +40,7 @@ sleep 3
 
 step "capabilities"
 mcp capabilities '{}' | jq -e '.features.scale_to_zero == true' >/dev/null
+mcp get_cu_ledger '{}' | jq -e '.physical_cu > 0 and .promised_cu >= .active_cu' >/dev/null || fail "cu ledger"
 
 step "T3 idempotency: create e2edb twice -> exactly one CR"
 mcp create_database '{"name":"e2edb"}' >/dev/null

@@ -11,10 +11,13 @@ spec:
   template:
     metadata: {labels: {app: safekeeper}}
     spec:
+      priorityClassName: sspc-cell
       containers:
       - name: safekeeper
         image: {{ .Values.images.neon }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          requests: {cpu: {{ .Values.cellResources.safekeeper.cpu }}, memory: {{ .Values.cellResources.safekeeper.memory }}}
         command: ["/bin/sh", "-c"]
         args:
         - >
