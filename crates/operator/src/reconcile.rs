@@ -129,6 +129,29 @@ pub fn class_resources(cu_limit: i64, priority: Priority) -> (serde_json::Value,
     )
 }
 
+/// PG classic md5 credential: hex(md5(password + user)), no "md5" prefix —
+/// the format the compute spec's `encrypted_password` field expects.
+pub fn pg_md5(password: &str, user: &str) -> String {
+    use md5::Digest as _;
+    hex::encode(md5::Md5::digest(format!("{password}{user}")))
+}
+
+/// The endpoint's owner password from its credential Secret (RFC 014 H3);
+/// falls back to the legacy shared password for endpoints minted before H3.
+pub async fn endpoint_password(ctx: &Ctx, name: &str) -> String {
+    let secrets: Api<k8s_openapi::api::core::v1::Secret> =
+        Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    match secrets.get_opt(&format!("sspc-cred-{name}")).await {
+        Ok(Some(s)) => s
+            .data
+            .as_ref()
+            .and_then(|d| d.get("password"))
+            .and_then(|b| String::from_utf8(b.0.clone()).ok())
+            .unwrap_or_else(|| ctx.pg_password.clone()),
+        _ => ctx.pg_password.clone(),
+    }
+}
+
 /// Parse "0/29E2300" into a comparable number.
 fn lsn_num(lsn: &str) -> u64 {
     let mut it = lsn.splitn(2, '/');
@@ -137,13 +160,14 @@ fn lsn_num(lsn: &str) -> u64 {
     (hi << 32) | lo
 }
 
-/// The parent compute's current flush LSN, via in-cluster SQL.
+/// The parent compute's current flush LSN, via in-cluster SQL. `db_name` is
+/// any endpoint name — a Database or (branch-of-branch) a parent Branch.
 async fn parent_flush_lsn(ctx: &Ctx, db_name: &str) -> Option<String> {
     let mut cfg = tokio_postgres::Config::new();
     cfg.host(format!("{db_name}.{}.svc.cluster.local", ctx.namespace))
         .port(55433)
         .user("cloud_admin")
-        .password(&ctx.pg_password)
+        .password(&endpoint_password(ctx, db_name).await)
         .dbname("postgres")
         .application_name("sspc-operator")
         .connect_timeout(Duration::from_secs(3));
@@ -211,10 +235,16 @@ impl Ctx {
         let pp = PatchParams::apply("sspc-operator").force();
         let oref = owner_ref(obj);
 
+        // Per-endpoint owner credential (RFC 014 H3, executing 012-D9).
+        // Minted once, owner-referenced so it dies with the CR. Pods render
+        // at create/wake, so the running pod and the Secret always agree.
+        let password = self.ensure_credential(obj, name).await?;
+
         // Spec ConfigMap
         let spec_json = render(&SpecParams {
             tenant_id: tenant,
             timeline_id: timeline,
+            encrypted_password: &pg_md5(&password, "cloud_admin"),
             jwks_x_b64url: &self.key.x_b64url,
             jwks_kid_b64url: &self.key.kid_b64url,
             safekeepers: &self.safekeepers,
@@ -299,6 +329,38 @@ impl Ctx {
         Ok(port)
     }
 
+    /// Load-or-mint the endpoint's owner password Secret (idempotent: crashes
+    /// and replays converge on the first minted value, never rotate).
+    async fn ensure_credential<K>(&self, obj: &K, name: &str) -> anyhow::Result<String>
+    where
+        K: Resource<DynamicType = ()>,
+    {
+        use aws_lc_rs::rand::SecureRandom as _;
+        let secrets: Api<k8s_openapi::api::core::v1::Secret> =
+            Api::namespaced(self.client.clone(), &self.namespace);
+        let sname = format!("sspc-cred-{name}");
+        if let Some(s) = secrets.get_opt(&sname).await? {
+            if let Some(pw) = s.data.as_ref().and_then(|d| d.get("password")) {
+                return Ok(String::from_utf8(pw.0.clone())?);
+            }
+        }
+        let mut raw = [0u8; 18];
+        aws_lc_rs::rand::SystemRandom::new()
+            .fill(&mut raw)
+            .map_err(|e| anyhow::anyhow!("credential gen: {e}"))?;
+        let pw = hex::encode(raw);
+        let secret: k8s_openapi::api::core::v1::Secret = serde_json::from_value(json!({
+            "apiVersion": "v1", "kind": "Secret",
+            "metadata": {"name": sname, "namespace": self.namespace,
+                          "ownerReferences": [owner_ref(obj)]},
+            "stringData": {"password": pw},
+        }))?;
+        secrets
+            .patch(&sname, &PatchParams::apply("sspc-operator").force(), &Patch::Apply(&secret))
+            .await?;
+        Ok(pw)
+    }
+
     async fn patch_status<K>(&self, api: &Api<K>, name: &str, status: serde_json::Value)
     where
         K: Resource<DynamicType = ()> + Clone + serde::de::DeserializeOwned + std::fmt::Debug,
@@ -339,7 +401,7 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
 
     let was = db.status.as_ref().and_then(|s| s.phase);
     ctx.storcon.create_tenant(&tenant).await?;
-    ctx.storcon.create_timeline(&tenant, &timeline, None).await?;
+    ctx.storcon.create_timeline(&tenant, &timeline, None, None).await?;
     let run = wants_running(db.meta(), db.status.as_ref());
     if was.is_none() {
         post_event(ctx, "sspc.io/v1alpha1", "Database", &name, db.meta().uid.clone(),
@@ -363,10 +425,29 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
 }
 
 async fn cleanup_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
+    let name = db.name_any();
+    // RFC 014 H1 backstop (MCP refuses earlier and friendlier): deleting the
+    // tenant destroys every branch's storage, so never do it under live
+    // children — hold the finalizer until they are gone.
+    let brs: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    let children: Vec<String> = brs
+        .list(&Default::default())
+        .await?
+        .items
+        .iter()
+        .filter(|b| b.spec.database == name && b.meta().deletion_timestamp.is_none())
+        .map(|b| b.name_any())
+        .collect();
+    if !children.is_empty() {
+        anyhow::bail!(
+            "database {name} still has branches [{}]; delete them first",
+            children.join(", ")
+        );
+    }
     let uid = db.meta().uid.clone().context("no uid")?;
     let tenant = derive_id(&uid, "tenant");
     ctx.storcon.delete_tenant(&tenant).await?;
-    info!("database {} cleaned up (tenant {tenant})", db.name_any());
+    info!("database {name} cleaned up (tenant {tenant})");
     Ok(Action::await_change())
 }
 
@@ -388,26 +469,74 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     let uid = br.meta().uid.clone().context("no uid")?;
     let api_db: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
 
-    let parent = api_db.get(&br.spec.database).await?;
-    let Some(status) = parent.status.as_ref() else {
+    let parent_db = api_db.get(&br.spec.database).await?;
+    let Some(status) = parent_db.status.as_ref() else {
         return Ok(Action::requeue(Duration::from_secs(3)));
     };
-    let (Some(tenant), Some(ancestor)) = (status.tenant_id.clone(), status.timeline_id.clone())
+    let (Some(tenant), Some(db_timeline)) = (status.tenant_id.clone(), status.timeline_id.clone())
     else {
         return Ok(Action::requeue(Duration::from_secs(3)));
     };
 
+    // The effective ancestor: a parent Branch's timeline when `parent` is set
+    // (branch-of-branch, RFC 014 H2), else the database's root timeline.
+    let api_br: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    let (ancestor, ancestor_name, ancestor_active) = match &br.spec.parent {
+        Some(p) => {
+            let pbr = api_br.get(p).await?;
+            if pbr.spec.database != br.spec.database {
+                anyhow::bail!(
+                    "parent branch {p} belongs to database {}, not {}",
+                    pbr.spec.database,
+                    br.spec.database
+                );
+            }
+            let Some(tl) = pbr.status.as_ref().and_then(|s| s.timeline_id.clone()) else {
+                return Ok(Action::requeue(Duration::from_secs(3)));
+            };
+            let active = pbr.status.as_ref().and_then(|s| s.phase) == Some(Phase::Active);
+            (tl, p.clone(), active)
+        }
+        None => (
+            db_timeline,
+            br.spec.database.clone(),
+            parent_db.status.as_ref().and_then(|s| s.phase) == Some(Phase::Active),
+        ),
+    };
+
     let was = br.status.as_ref().and_then(|s| s.phase);
     let timeline = derive_id(&uid, "branch");
+
+    // Branch point (RFC 014 H2): a raw LSN passes through; a timestamp
+    // resolves via the pageserver. An unresolvable user-supplied point fails
+    // the CR loudly rather than retrying forever.
+    let start_lsn: Option<String> = match &br.spec.at {
+        None => None,
+        Some(a) if a.contains('/') => Some(a.clone()),
+        Some(ts) => match ctx.storcon.lsn_by_timestamp(&tenant, &ancestor, ts).await {
+            Ok(l) => Some(l),
+            Err(e) => {
+                let msg = format!("branch point {ts}: {e}");
+                warn!("branch {name}: {msg}");
+                ctx.patch_status(&api_br, &name, json!({"phase": "Failed", "message": msg.clone()}))
+                    .await;
+                post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
+                           "Failed", msg).await;
+                return Ok(Action::await_change());
+            }
+        },
+    };
+
     // Branch-at-head race (found by T4): the timeline branches at the
     // pageserver's INGESTED lsn, which can lag the parent's just-flushed
     // writes — a branch created immediately after a load would miss it.
     // If the parent is awake, wait (bounded) for ingestion to catch up.
-    if was.is_none() && parent.status.as_ref().and_then(|s| s.phase) == Some(Phase::Active) {
+    // A historical branch point (`at`) needs no wait: it is already ingested.
+    if was.is_none() && start_lsn.is_none() && ancestor_active {
         // Fail closed: an unreadable flush LSN is usually Service-endpoint
         // propagation lag on a parent that just woke — branching blind at the
         // ingested LSN would silently drop the parent's latest writes.
-        let Some(flush) = parent_flush_lsn(ctx, &br.spec.database).await else {
+        let Some(flush) = parent_flush_lsn(ctx, &ancestor_name).await else {
             warn!("branch {name}: parent flush lsn unreadable; requeueing instead of branching blind");
             return Ok(Action::requeue(Duration::from_secs(2)));
         };
@@ -431,7 +560,7 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
         }
     }
     ctx.storcon
-        .create_timeline(&tenant, &timeline, Some(&ancestor))
+        .create_timeline(&tenant, &timeline, Some(&ancestor), start_lsn.as_deref())
         .await?;
     let run = wants_running(br.meta(), br.status.as_ref());
     if was.is_none() {
@@ -456,6 +585,27 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
 }
 
 async fn cleanup_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
+    let name = br.name_any();
+    // Same H1 guard one level down: a branch with child branches (H2) is a
+    // parent timeline — deleting it would orphan them.
+    let brs: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
+    let children: Vec<String> = brs
+        .list(&Default::default())
+        .await?
+        .items
+        .iter()
+        .filter(|b| {
+            b.spec.parent.as_deref() == Some(name.as_str())
+                && b.meta().deletion_timestamp.is_none()
+        })
+        .map(|b| b.name_any())
+        .collect();
+    if !children.is_empty() {
+        anyhow::bail!(
+            "branch {name} still has child branches [{}]; delete them first",
+            children.join(", ")
+        );
+    }
     let uid = br.meta().uid.clone().context("no uid")?;
     let timeline = derive_id(&uid, "branch");
     // Parent may already be gone (tenant delete removes all timelines) — 404 is fine.

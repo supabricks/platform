@@ -288,7 +288,7 @@ async fn check_activity(ctx: &Ctx, name: &str) -> Option<bool> {
     cfg.host(format!("{name}.{}.svc.cluster.local", ctx.namespace))
         .port(55433)
         .user("cloud_admin")
-        .password(&ctx.pg_password)
+        .password(&crate::reconcile::endpoint_password(ctx, name).await)
         .dbname("postgres")
         .application_name("sspc-operator")
         .connect_timeout(Duration::from_secs(3));

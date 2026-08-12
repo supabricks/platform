@@ -215,15 +215,19 @@ fn capabilities(state: &McpState) -> ToolResult {
         "pg_version": 16,
         "max_endpoints": crate::ports::RANGE_LEN,
         "connect_host": state.connect_host,
-        "features": {"branching": true, "ttl": true, "scale_to_zero": true,
+        "features": {"branching": true, "branch_at_time": true, "branch_of_branch": true,
+                      "per_database_credentials": true,
+                      "ttl": true, "scale_to_zero": true,
                       "enrollment": "attach existing Postgres for inventory/health, zero migration",
                       "wake": "explicit via get_connection (plain-psql wake-on-connect: M2)"},
     }))
 }
 
-fn uri(state: &McpState, port: i32) -> String {
+/// Connection URI with the endpoint's own credential (RFC 014 H3).
+async fn uri(state: &McpState, name: &str, port: i32) -> String {
+    let pw = crate::reconcile::endpoint_password(&state.ctx, name).await;
     format!(
-        "postgresql://cloud_admin:sspc-p0@{}:{port}/postgres",
+        "postgresql://cloud_admin:{pw}@{}:{port}/postgres",
         state.connect_host
     )
 }
@@ -295,7 +299,7 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
         .map_err(from_kube)?;
     match await_ready(state, &name, 30).await {
         Some(port) => Ok(json!({
-            "name": name, "status": "ready", "connection_uri": uri(state, port),
+            "name": name, "status": "ready", "connection_uri": uri(state, &name, port).await,
             "note": "psql-ready now; TTL reaping and scale-to-zero arrive in P3",
         })),
         None => Ok(json!({
@@ -311,6 +315,33 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
         terr("missing required argument: database", false, "pass the parent database name")
     })?;
     let mut spec = json!({"database": database});
+    // Branch-of-branch (RFC 014 H2): validate up front so the error is
+    // synchronous and structured, not a reconciler retry loop.
+    if let Some(p) = args["parent"].as_str() {
+        let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+        match brs.get_opt(p).await.map_err(from_kube)? {
+            Some(pbr) if pbr.spec.database == database => {}
+            Some(pbr) => {
+                return Err(terr(
+                    format!("parent branch {p} belongs to database {}, not {database}", pbr.spec.database),
+                    false,
+                    "pass the database that owns the parent branch",
+                ));
+            }
+            None => {
+                return Err(terr(
+                    format!("parent branch {p} not found"),
+                    false,
+                    "list_branches to see what exists",
+                ));
+            }
+        }
+        spec["parent"] = json!(p);
+    }
+    // Branch point (RFC 014 H2): LSN or RFC 3339 timestamp; default head-now.
+    if let Some(a) = args["at"].as_str() {
+        spec["at"] = json!(a);
+    }
     if let Some(ttl) = args["ttl_seconds"].as_i64() {
         spec["ttlSeconds"] = json!(ttl);
     }
@@ -334,11 +365,24 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
         .map_err(from_kube)?;
     match await_ready(state, &name, 30).await {
         Some(port) => Ok(json!({
-            "name": name, "parent": database, "status": "ready",
-            "connection_uri": uri(state, port),
+            "name": name, "parent": args["parent"].as_str().unwrap_or(database),
+            "database": database, "status": "ready",
+            "connection_uri": uri(state, &name, port).await,
         })),
-        None => Ok(json!({"name": name, "status": "provisioning",
-                           "note": "call get_connection to poll"})),
+        None => {
+            // Distinguish "slow" from "failed" (a bad `at` fails the CR).
+            if let Ok(Some(br)) = api.get_opt(&name).await {
+                if let Some(s) = br.status.filter(|s| s.phase == Some(Phase::Failed)) {
+                    return Err(terr(
+                        s.message.unwrap_or_else(|| "branch failed".into()),
+                        false,
+                        "fix the branch point (`at`) and recreate; delete_branch removes this one",
+                    ));
+                }
+            }
+            Ok(json!({"name": name, "status": "provisioning",
+                       "note": "call get_connection to poll"}))
+        }
     }
 }
 
@@ -443,6 +487,8 @@ async fn list_branches(state: &McpState) -> ToolResult {
             let mut v = summarize(b.status.as_ref());
             v["name"] = json!(b.name_any());
             v["database"] = json!(b.spec.database);
+            v["parent"] = json!(b.spec.parent);
+            v["at"] = json!(b.spec.at);
             v["created_at"] = json!(b.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
             v["ttl_seconds"] = json!(b.spec.ttl_seconds);
             v
@@ -507,7 +553,7 @@ async fn get_connection(state: &McpState, args: &Value) -> ToolResult {
     let t0 = Instant::now();
     match await_ready(state, &name, 45).await {
         Some(port) => {
-            let mut out = json!({"name": name, "connection_uri": uri(state, port)});
+            let mut out = json!({"name": name, "connection_uri": uri(state, &name, port).await});
             if woke {
                 out["woke_from_suspend"] = json!(true);
                 out["wake_seconds"] =
@@ -525,6 +571,25 @@ async fn get_connection(state: &McpState, args: &Value) -> ToolResult {
 
 async fn delete_database(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
+    // RFC 014 H1: the tenant delete would destroy every branch's storage and
+    // orphan their CRs — refuse, naming the children, instead of cascading.
+    let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let children: Vec<String> = brs
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+        .iter()
+        .filter(|b| b.spec.database == name && b.metadata.deletion_timestamp.is_none())
+        .map(|b| b.name_any())
+        .collect();
+    if !children.is_empty() {
+        return Err(terr(
+            format!("database {name} has {} live branch(es): {}", children.len(), children.join(", ")),
+            false,
+            "delete those branches first (delete_branch), then delete the database",
+        ));
+    }
     let api: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
     match api.delete(&name, &DeleteParams::default()).await {
         Ok(_) => Ok(json!({"name": name, "status": "deleting",
@@ -537,6 +602,26 @@ async fn delete_database(state: &McpState, args: &Value) -> ToolResult {
 async fn delete_branch(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
     let api: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    // H1, one level down: this branch may itself be a parent (H2).
+    let children: Vec<String> = api
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+        .iter()
+        .filter(|b| {
+            b.spec.parent.as_deref() == Some(name.as_str())
+                && b.metadata.deletion_timestamp.is_none()
+        })
+        .map(|b| b.name_any())
+        .collect();
+    if !children.is_empty() {
+        return Err(terr(
+            format!("branch {name} has {} child branch(es): {}", children.len(), children.join(", ")),
+            false,
+            "delete those child branches first, then this one",
+        ));
+    }
     match api.delete(&name, &DeleteParams::default()).await {
         Ok(_) => Ok(json!({"name": name, "status": "deleting"})),
         Err(kube::Error::Api(e)) if e.code == 404 => Ok(json!({"name": name, "status": "absent"})),
@@ -698,20 +783,22 @@ fn tool_defs() -> Value {
         {"name": "get_database", "description": "Get one database's status.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "delete_database",
-         "description": "Delete a database, its branches' parent storage, and its compute.",
+         "description": "Delete a database, its storage, and its compute. Refuses (with the list) while the database still has branches.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "create_branch",
-         "description": "Instant copy-on-write branch of a database; returns its own connection URI.",
+         "description": "Instant copy-on-write branch; returns its own connection URI. Branch a database, another branch (parent), and/or a moment in time (at).",
          "inputSchema": {"type": "object", "properties": {
              "name": name_arg,
-             "database": {"type": "string", "description": "Parent database name"},
+             "database": {"type": "string", "description": "Owning database name (the root of the branch tree)"},
+             "parent": {"type": "string", "description": "Optional parent BRANCH name — branch-of-branch; default branches the database itself"},
+             "at": {"type": "string", "description": "Optional branch point: an LSN (e.g. 0/1BCC200) or RFC 3339 timestamp (e.g. 2026-08-12T10:00:00Z); default = head of parent now"},
              "ttl_seconds": {"type": "integer", "description": "Optional TTL"},
              "cu_limit": {"type": "integer", "description": "Compute ceiling in CU (default 10)"},
              "priority": {"type": "string", "enum": ["high", "standard", "low"]}},
              "required": ["name", "database"]}},
         {"name": "list_branches", "description": "List branches with status and parentage.",
          "inputSchema": {"type": "object", "properties": {}}},
-        {"name": "delete_branch", "description": "Delete a branch and its compute.",
+        {"name": "delete_branch", "description": "Delete a branch and its compute. Refuses while the branch has child branches.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "get_connection",
          "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",

@@ -57,6 +57,9 @@ else
 fi
 
 say "installing the platform (helm)"
+# helm only installs crds/ on first install; re-apply so upgrades get schema
+# changes too (RFC 014 PR A: Branch gained parent/at).
+kubectl apply -f ../chart/crds/ >/dev/null
 helm upgrade --install sspc ../chart -n sspc-cell --create-namespace >/dev/null
 # Wait on workloads, not pods --all: the bucket job's Completed pod is never
 # "Ready" and would hang the wait (found by the second-consecutive-run test).

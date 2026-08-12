@@ -15,6 +15,7 @@ http = "1.5.0"
 jsonwebtoken = { version = "11.0.0", features = ["aws_lc_rs"] }
 k8s-openapi = { version = "0.28.0", features = ["latest"] }
 kube = { version = "4.2.0", features = ["runtime", "derive", "client"] }
+md-5 = "0.10"
 mime_guess = "2.0.5"
 rand = "0.10.2"
 reqwest = { version = "0.13.4", features = ["json"] }
@@ -26,7 +27,7 @@ serde_json = "1.0.151"
 serde_yaml = "0.9.34"
 sha2 = "0.11.0"
 thiserror = "2.0.20"
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "signal"] }
 tokio-postgres = "0.7.18"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

@@ -97,6 +97,19 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
+    // PID 1 ignores default signal dispositions: without this handler the
+    // operator survives `kubectl rollout restart` for the full termination
+    // grace period and keeps reconciling — a zombie second writer that races
+    // its own replacement (found by the RFC 014 H3 e2e: it rendered a stale
+    // compute spec 3s before the new operator's first pass).
+    tokio::spawn(async {
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("install SIGTERM handler");
+        term.recv().await;
+        info!("SIGTERM received: exiting now (PID 1 must opt in to death)");
+        std::process::exit(0);
+    });
+
     let namespace = env_or("SSPC_NAMESPACE", "sspc-cell");
     let storcon_url = env_or("SSPC_STORCON_URL", "http://storage-controller:1234");
     let compute_image = env_or(

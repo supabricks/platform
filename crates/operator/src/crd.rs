@@ -64,8 +64,17 @@ pub struct DatabaseSpec {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct BranchSpec {
-    /// Name of the parent Database (same namespace).
+    /// Name of the owning Database (same namespace) — always the root of the
+    /// branch tree, even when branching from another branch.
     pub database: String,
+    /// Optional parent Branch (same database): branch-of-branch (RFC 014 H2).
+    /// Absent = branch directly off the database.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<String>,
+    /// Branch point (RFC 014 H2, executing 012's reserved `at`): an LSN
+    /// ("0/1BCC200") or RFC 3339 timestamp. Absent = head of parent now.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub at: Option<String>,
     /// Idle seconds before suspend (branches sleep aggressively by default).
     #[serde(default = "default_suspend_after")]
     pub suspend_after_seconds: i64,
@@ -75,7 +84,6 @@ pub struct BranchSpec {
     pub cu_limit: i64,
     #[serde(default)]
     pub priority: Priority,
-    /// Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ttl_seconds: Option<i64>,
 }

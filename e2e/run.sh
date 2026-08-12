@@ -33,7 +33,7 @@ fail() {
 trap 'fail "unexpected error at line $LINENO"' ERR
 
 step "pre-clean (idempotent)"
-for r in e2ebr e2ettl; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+for r in e2egrand e2epit e2epts e2ebr e2ettl; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 for r in e2edb e2esleep; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null 2>&1 || true
 sleep 3
@@ -55,6 +55,37 @@ step "branch + isolation"
 BURI=$(mcp create_branch '{"name":"e2ebr","database":"e2edb"}' | jq -r .connection_uri)
 psql_run e2ebr "insert into t select g from generate_series(1,50000) g; select count(*) from t" | tail -1 | grep -qx 150000 || fail "branch write"
 psql_run e2edb "select count(*) from t" | grep -qx 100000 || fail "parent isolation"
+
+step "H3 per-endpoint credentials: distinct, real, enforced"
+P_DB=$(echo "$URI"  | sed -E 's|.*cloud_admin:([^@]+)@.*|\1|')
+P_BR=$(echo "$BURI" | sed -E 's|.*cloud_admin:([^@]+)@.*|\1|')
+[ -n "$P_DB" ] && [ "$P_DB" != "sspc-p0" ] || fail "e2edb still on the shared static password"
+[ "$P_DB" != "$P_BR" ] || fail "database and branch share a credential"
+# The credential is enforced on the wire (cross-pod through the Service):
+R=$(kubectl -n $NS exec e2ebr -- env PGPASSWORD="$P_DB" psql -h e2edb.$NS.svc.cluster.local -p 55433 -U cloud_admin -d postgres -Atc "select 1" 2>&1) && [ "$R" = "1" ] || fail "right password refused: $R"
+if kubectl -n $NS exec e2ebr -- env PGPASSWORD=not-the-password psql -h e2edb.$NS.svc.cluster.local -p 55433 -U cloud_admin -d postgres -Atc "select 1" >/dev/null 2>&1; then
+  fail "wrong password accepted"
+fi
+
+step "H2 branch-at-time: e2epit (LSN) lacks rows written after the mark"
+sleep 2
+MARK=$(psql_run e2edb "select pg_current_wal_flush_lsn()::text" | tail -1)
+TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+sleep 2
+psql_run e2edb "insert into t select g from generate_series(1,23456) g" >/dev/null
+psql_run e2edb "select count(*) from t" | grep -qx 123456 || fail "parent post-mark load"
+mcp create_branch "{\"name\":\"e2epit\",\"database\":\"e2edb\",\"at\":\"$MARK\",\"cu_limit\":2}" | jq -e '.status == "ready"' >/dev/null || fail "pit branch not ready"
+psql_run e2epit "select count(*) from t" | grep -qx 100000 || fail "pit branch sees post-mark rows"
+mcp delete_branch '{"name":"e2epit"}' >/dev/null
+
+step "H2 branch-at-time: e2epts (timestamp) resolves via the pageserver"
+mcp create_branch "{\"name\":\"e2epts\",\"database\":\"e2edb\",\"at\":\"$TS\",\"cu_limit\":2}" | jq -e '.status == "ready"' >/dev/null || fail "timestamp branch not ready"
+psql_run e2epts "select count(*) from t" | grep -qx 100000 || fail "timestamp branch sees post-mark rows"
+mcp delete_branch '{"name":"e2epts"}' >/dev/null
+
+step "H2 branch-of-branch: e2egrand forks e2ebr, not the database"
+mcp create_branch '{"name":"e2egrand","database":"e2edb","parent":"e2ebr","cu_limit":2}' | jq -e '.status == "ready"' >/dev/null || fail "grand branch not ready"
+psql_run e2egrand "select count(*) from t" | grep -qx 150000 || fail "grand branch should carry e2ebr's 150k rows"
 
 step "scale-to-zero: e2esleep (suspendAfter=20s)"
 mcp create_database '{"name":"e2esleep","suspend_after_seconds":20}' >/dev/null
@@ -91,8 +122,14 @@ echo "$E" | jq -e '.phase == "Reachable"' >/dev/null || fail "enrolled not Reach
 mcp list_databases '{}' | jq -e '[.[] | select(.kind == "enrolled" and .name == "e2enrolled")] | length == 1' >/dev/null || fail "enrolled missing from estate list"
 mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null
 
+step "H1 safe deletes: refusal names children, then ordered teardown"
+mcp delete_database '{"name":"e2edb"}' | jq -e '.reason | test("e2ebr")' >/dev/null || fail "db delete guard missing/unnamed"
+kubectl -n $NS get database e2edb >/dev/null 2>&1 || fail "guard deleted the database anyway"
+mcp delete_branch '{"name":"e2ebr"}' | jq -e '.reason | test("e2egrand")' >/dev/null || fail "branch delete guard missing/unnamed"
+
 step "cleanup + cell-side verification"
 TEN=$(kubectl -n $NS get database e2edb -o jsonpath='{.status.tenantId}')
+mcp delete_branch '{"name":"e2egrand"}' >/dev/null
 mcp delete_branch '{"name":"e2ebr"}' >/dev/null
 mcp delete_database '{"name":"e2edb"}' >/dev/null
 mcp delete_database '{"name":"e2esleep"}' >/dev/null

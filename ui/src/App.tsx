@@ -349,8 +349,12 @@ export default function App() {
           primaryButtonDisabled={busy || !form.name} onRequestClose={() => setModal(null)}
           onRequestSubmit={() => act(() => callTool('create_branch', {
             name: form.name, database: form.database, ...(form.ttl ? { ttl_seconds: Number(form.ttl) } : {}),
+            ...(form.at ? { at: form.at.trim() } : {}),
           }), `Branched ${form.database} → ${form.name}`)}>
           <TextInput id="br-name" labelText="Branch name" helperText="Lowercase letters, digits, hyphens" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: slug(e.target.value) })} />
+          <TextInput id="br-at" labelText="Branch point (optional)" placeholder="2026-08-12T10:00:00Z or 0/1BCC200"
+            helperText="A timestamp or LSN — branch the database as it was then. Empty = now" value={form.at ?? ''}
+            onChange={(e) => setForm({ ...form, at: e.target.value })} />
           <NumberInput id="br-ttl" label="TTL seconds (optional)" value={form.ttl ?? ''} hideSteppers allowEmpty
             onChange={(_, { value }) => setForm({ ...form, ttl: String(value ?? '') })} />
         </Modal>

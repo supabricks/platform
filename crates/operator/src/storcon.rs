@@ -37,10 +37,14 @@ impl Storcon {
         tenant_id: &str,
         timeline_id: &str,
         ancestor: Option<&str>,
+        ancestor_start_lsn: Option<&str>,
     ) -> anyhow::Result<()> {
         let mut body = json!({"new_timeline_id": timeline_id, "pg_version": 16});
         if let Some(a) = ancestor {
             body["ancestor_timeline_id"] = json!(a);
+        }
+        if let Some(lsn) = ancestor_start_lsn {
+            body["ancestor_start_lsn"] = json!(lsn);
         }
         let r = self
             .http
@@ -72,6 +76,52 @@ impl Storcon {
             .ok()?;
         let v: serde_json::Value = r.json().await.ok()?;
         v["last_record_lsn"].as_str().map(String::from)
+    }
+
+    /// Resolve an RFC 3339 timestamp to the nearest LSN on a timeline
+    /// (pageserver get_lsn_by_timestamp, proxied by the controller).
+    pub async fn lsn_by_timestamp(
+        &self,
+        tenant_id: &str,
+        timeline_id: &str,
+        ts: &str,
+    ) -> anyhow::Result<String> {
+        let url = reqwest::Url::parse_with_params(
+            &format!(
+                "{}/v1/tenant/{tenant_id}/timeline/{timeline_id}/get_lsn_by_timestamp",
+                self.base
+            ),
+            [("timestamp", ts)],
+        )
+        .context("get_lsn_by_timestamp url")?;
+        let r = self
+            .http
+            .get(url)
+            .send()
+            .await
+            .context("storcon get_lsn_by_timestamp")?;
+        let code = r.status().as_u16();
+        let body = r.text().await.unwrap_or_default();
+        if !(200..300).contains(&code) {
+            bail!("get_lsn_by_timestamp: HTTP {code}: {body}");
+        }
+        // Older pageservers return a bare LSN string; newer ones
+        // {"kind": past|present|future|nodata, "lsn": ...}.
+        let v: serde_json::Value =
+            serde_json::from_str(&body).unwrap_or_else(|_| json!(body.trim()));
+        match &v {
+            serde_json::Value::String(s) => Ok(s.trim_matches('"').to_string()),
+            obj => {
+                let kind = obj["kind"].as_str().unwrap_or("");
+                match obj["lsn"].as_str() {
+                    Some(l) if kind != "future" && kind != "nodata" => Ok(l.to_string()),
+                    _ => bail!(
+                        "timestamp resolves to no usable LSN (kind={kind}); \
+                         is it within the parent's history?"
+                    ),
+                }
+            }
+        }
     }
 
     pub async fn delete_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {

@@ -9,6 +9,9 @@ const TEMPLATE: &str = include_str!("../assets/compute-spec-template.json");
 pub struct SpecParams<'a> {
     pub tenant_id: &'a str,
     pub timeline_id: &'a str,
+    /// PG classic md5 credential for the owner role: hex(md5(password+user)),
+    /// no "md5" prefix (RFC 014 H3 — one generated credential per endpoint).
+    pub encrypted_password: &'a str,
     pub jwks_x_b64url: &'a str,
     pub jwks_kid_b64url: &'a str,
     /// `neon.safekeepers` GUC value, e.g. `safekeeper-0.safekeeper.<ns>.svc.cluster.local:5454`.
@@ -23,6 +26,7 @@ pub fn render(p: &SpecParams) -> anyhow::Result<Value> {
     let s = TEMPLATE
         .replace("TENANT_ID", p.tenant_id)
         .replace("TIMELINE_ID", p.timeline_id)
+        .replace("ENCRYPTED_PASSWORD", p.encrypted_password)
         .replace("KID_B64URL", p.jwks_kid_b64url)
         .replace("X_B64URL", p.jwks_x_b64url)
         .replace("SAFEKEEPERS_ADDR", p.safekeepers)
@@ -43,6 +47,8 @@ mod tests {
         let rendered = render(&SpecParams {
             tenant_id: "dbd271b86f9fa29a8842ac23f67fede5",
             timeline_id: "461d39b24a3592dc712a379c0d3ab6e5",
+            // The P0 fixture's credential: md5("sspc-p0" + "cloud_admin").
+            encrypted_password: "36817c67283c101851f0ce6de1159c01",
             jwks_x_b64url: "mOLh_FkiKWIGG-AX-yKDcD1KiNvxkk_dcePrTF1GX0c",
             jwks_kid_b64url: "mxha6Szurut0u5Hz0JT058YlUi8tryLtYBBBiUokYtA",
             safekeepers: "safekeeper-0.safekeeper.sspc-cell.svc.cluster.local:5454",
@@ -57,6 +63,7 @@ mod tests {
         let v = render(&SpecParams {
             tenant_id: "t1",
             timeline_id: "l1",
+            encrypted_password: "deadbeef",
             jwks_x_b64url: "x",
             jwks_kid_b64url: "k",
             safekeepers: "sk:5454",
