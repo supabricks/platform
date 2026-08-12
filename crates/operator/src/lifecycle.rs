@@ -30,6 +30,7 @@ pub async fn run(ctx: Arc<Ctx>) {
 }
 
 async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
+    let mut endpoint_names: Vec<String> = Vec::new();
     let dbs: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     for db in dbs.list(&Default::default()).await?.items {
         let name = db.name_any();
@@ -39,6 +40,7 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
         }
         maybe_suspend::<Database>(ctx, &name, db.spec.suspend_after_seconds, db.status.as_ref())
             .await;
+        endpoint_names.push(name);
     }
     let brs: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     for br in brs.list(&Default::default()).await?.items {
@@ -49,6 +51,7 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
         }
         maybe_suspend::<Branch>(ctx, &name, br.spec.suspend_after_seconds, br.status.as_ref())
             .await;
+        endpoint_names.push(name);
     }
     let edbs: Api<EnrolledDatabase> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     for edb in edbs.list(&Default::default()).await?.items {
@@ -63,6 +66,7 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
             .await;
         }
     }
+    sample_metrics(ctx, &endpoint_names).await;
     Ok(())
 }
 
@@ -105,6 +109,53 @@ async fn probe_enrolled(uri: &str) -> anyhow::Result<(String, i64, String)> {
     drop(client);
     handle.abort();
     Ok(out)
+}
+
+/// Basic usage sampling (013 round 2): kubelet Summary API via the node
+/// proxy — per-pod CPU nanocores and working-set bytes, no metrics-server.
+async fn sample_metrics(ctx: &Ctx, names: &[String]) {
+    let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(ctx.client.clone());
+    let Ok(list) = nodes.list(&Default::default()).await else { return };
+    let now = chrono::Utc::now().timestamp();
+    let mut samples: Vec<(String, i64, i64)> = Vec::new();
+    for node in list.items {
+        let node_name = node.name_any();
+        let req = match http::Request::get(format!("/api/v1/nodes/{node_name}/proxy/stats/summary"))
+            .body(Vec::new())
+        {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        let v = match ctx.client.request::<serde_json::Value>(req).await {
+            Ok(v) => v,
+            Err(e) => {
+                warn!("kubelet summary for {node_name}: {e}");
+                continue;
+            }
+        };
+        let empty = Vec::new();
+        for pod in v["pods"].as_array().unwrap_or(&empty) {
+            if pod["podRef"]["namespace"].as_str() != Some(ctx.namespace.as_str()) {
+                continue;
+            }
+            let Some(pname) = pod["podRef"]["name"].as_str() else { continue };
+            if !names.iter().any(|n| n == pname) {
+                continue;
+            }
+            let cpu_m = pod["cpu"]["usageNanoCores"].as_u64().unwrap_or(0) / 1_000_000;
+            let mem_mi = pod["memory"]["workingSetBytes"].as_u64().unwrap_or(0) / (1024 * 1024);
+            samples.push((pname.to_string(), cpu_m as i64, mem_mi as i64));
+        }
+    }
+    let mut m = ctx.metrics.lock().unwrap();
+    for (name, cpu, mem) in samples {
+        let ring = m.entry(name).or_default();
+        ring.push_back((now, cpu, mem));
+        while ring.len() > 40 {
+            ring.pop_front();
+        }
+    }
+    m.retain(|k, _| names.iter().any(|n| n == k));
 }
 
 fn ttl_expired(meta: &ObjectMeta, ttl_seconds: Option<i64>) -> bool {

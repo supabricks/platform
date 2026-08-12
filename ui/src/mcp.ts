@@ -72,3 +72,11 @@ export interface EventRow {
   name?: string | null
   message?: string | null
 }
+
+export interface MetricsResp {
+  name: string
+  cu_limit: number
+  priority: string
+  cpu_limit_millis: number
+  series: { t: number; cpu_millis: number; mem_mib: number }[]
+}

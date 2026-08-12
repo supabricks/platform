@@ -130,6 +130,7 @@ async fn main() -> anyhow::Result<()> {
         safekeepers,
         pageserver_connstring,
         pg_password: env_or("SSPC_PG_PASSWORD", "sspc-p0"),
+        metrics: std::sync::Mutex::new(std::collections::HashMap::new()),
     });
 
     tokio::spawn(lifecycle::run(ctx.clone()));

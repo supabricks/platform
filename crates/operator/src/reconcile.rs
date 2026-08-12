@@ -66,6 +66,8 @@ pub struct Ctx {
     pub safekeepers: String,
     pub pageserver_connstring: String,
     pub pg_password: String,
+    /// name -> ring of (epoch_secs, cpu_millis, mem_mib); ~10 min at 15s ticks.
+    pub metrics: std::sync::Mutex<std::collections::HashMap<String, std::collections::VecDeque<(i64, i64, i64)>>>,
 }
 
 /// Post a lifecycle Event on a CR — the audit line (013 ticker, 009 seed).

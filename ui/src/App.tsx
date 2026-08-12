@@ -5,7 +5,7 @@ import {
   Tag, TextInput, Theme, ToastNotification,
 } from '@carbon/react'
 import { Add, Link as LinkIcon, TrashCan } from '@carbon/icons-react'
-import { callTool, setToken, type BranchRow, type EstateRow, type EventRow } from './mcp'
+import { callTool, setToken, type BranchRow, type EstateRow, type EventRow, type MetricsResp } from './mcp'
 
 const slug = (s: string) => s.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
 import Rails from './Rails'
@@ -18,6 +18,17 @@ function ttlRemaining(created?: string | null, ttl?: number | null): string {
   const left = Math.max(0, Math.floor((end - Date.now()) / 1000))
   const m = Math.floor(left / 60), s = left % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function Spark({ pts, cap }: { pts: number[]; cap: number }) {
+  if (pts.length < 2) return <span className="mono" style={{ color: 'var(--cds-text-secondary)' }}>–</span>
+  const W = 96, H = 20, m = Math.max(cap, ...pts, 1)
+  const line = pts.map((v, i) => `${(i / (pts.length - 1)) * W},${H - 2 - (v / m) * (H - 4)}`).join(' ')
+  return (
+    <svg width={W} height={H} aria-label="cpu usage">
+      <polyline points={line} fill="none" stroke="var(--cds-support-info)" strokeWidth={1.5} />
+    </svg>
+  )
 }
 
 function phaseTag(phase?: string | null) {
@@ -39,6 +50,7 @@ export default function App() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [toasts, setToasts] = useState<Toast[]>([])
   const [modal, setModal] = useState<'db' | 'branch' | 'enroll' | null>(null)
+  const [metrics, setMetrics] = useState<Record<string, MetricsResp>>({})
   const [form, setForm] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -63,6 +75,19 @@ export default function App() {
       /* otherwise keep last good frame */
     }
   }, [])
+
+  useEffect(() => {
+    const t = setInterval(async () => {
+      const names = [...dbs.filter((d) => d.kind === 'cell-backed'), ...branches]
+        .filter((r) => r.phase === 'Active').map((r) => r.name)
+      const out: Record<string, MetricsResp> = {}
+      await Promise.all(names.slice(0, 24).map(async (n) => {
+        try { out[n] = await callTool<MetricsResp>('get_metrics', { name: n }) } catch { /* absent */ }
+      }))
+      setMetrics((p) => ({ ...p, ...out }))
+    }, 5000)
+    return () => clearInterval(t)
+  }, [dbs, branches])
 
   useEffect(() => {
     refresh()
@@ -106,6 +131,7 @@ export default function App() {
   const headers = [
     { key: 'name', header: 'Name' }, { key: 'kind', header: 'Kind' },
     { key: 'phase', header: 'Phase' }, { key: 'detail', header: 'Detail' },
+    { key: 'usage', header: 'Usage' },
     { key: 'ttl', header: 'TTL' }, { key: 'actions', header: '' },
   ]
   const rows = useMemo(() => [...cell, ...enrolled].map((r) => ({ id: r.name, ...r })), [dbs])
@@ -176,7 +202,7 @@ export default function App() {
                   </TableHead>
                   <TableBody>
                     {tr.length === 0 && (
-                      <TableRow><TableCell colSpan={7}>
+                      <TableRow><TableCell colSpan={8}>
                         No databases yet. Ask your agent for one — or create it here.
                       </TableCell></TableRow>
                     )}
@@ -194,6 +220,21 @@ export default function App() {
                                 ? `PG ${r.server_version ?? '?'} · ${r.database_count ?? '?'} dbs · ${r.total_size ?? '?'}`
                                 : r.node_port ? `:${r.node_port}` : ''}
                             </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const mm = metrics[r.name]
+                                if (r.kind !== 'cell-backed' || r.phase !== 'Active' || !mm) return <span className="mono" style={{ color: 'var(--cds-text-secondary)' }}>–</span>
+                                const cur = mm.series.length ? mm.series[mm.series.length - 1] : null
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Spark pts={mm.series.map((s) => s.cpu_millis)} cap={mm.cpu_limit_millis} />
+                                    <span className="mono" style={{ color: 'var(--cds-text-secondary)' }}>
+                                      {cur ? `${(cur.cpu_millis / 100).toFixed(1)}/${mm.cu_limit} CU · ${cur.mem_mib}Mi` : ''}
+                                    </span>
+                                  </div>
+                                )
+                              })()}
+                            </TableCell>
                             <TableCell className="mono">{ttlRemaining(r.created_at, r.ttl_seconds)}</TableCell>
                             <TableCell>
                               {r.kind === 'cell-backed' && (
@@ -209,7 +250,7 @@ export default function App() {
                                   r.kind === 'enrolled' ? `Unenrolled ${r.name}` : `Deleting ${r.name}`)} />
                             </TableCell>
                           </TableExpandRow>
-                          <TableExpandedRow colSpan={7} key={`${r.name}-x`}>
+                          <TableExpandedRow colSpan={8} key={`${r.name}-x`}>
                             {r.kind === 'enrolled'
                               ? <p style={{ padding: '0.5rem 0', color: 'var(--cds-text-secondary)' }}>
                                   Enrolled in place — inventoried and health-checked over SQL. Nothing was migrated or modified.
@@ -249,12 +290,29 @@ export default function App() {
           onRequestSubmit={() => act(() => callTool('create_database', {
             name: form.name, ...(form.ttl ? { ttl_seconds: Number(form.ttl) } : {}),
             ...(form.suspend ? { suspend_after_seconds: Number(form.suspend) } : {}),
+            ...(form.cu ? { cu_limit: Number(form.cu) } : {}),
+            ...(form.prio ? { priority: form.prio } : {}),
           }), `Created ${form.name}`)}>
           <TextInput id="db-name" labelText="Name" helperText="Lowercase letters, digits, hyphens" value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: slug(e.target.value) })} />
           <NumberInput id="db-ttl" label="TTL seconds (optional — it will clean itself up)" value={form.ttl ?? ''} hideSteppers allowEmpty
             onChange={(_, { value }) => setForm({ ...form, ttl: String(value ?? '') })} />
           <NumberInput id="db-suspend" label="Suspend after idle seconds (default 300)" value={form.suspend ?? ''} hideSteppers allowEmpty
             onChange={(_, { value }) => setForm({ ...form, suspend: String(value ?? '') })} />
+          <NumberInput id="db-cu" label="Compute ceiling in CU (1 CU = 0.1 core; default 10)"
+            helperText="Ceilings may oversubscribe the pool — suspended databases hold zero CU"
+            value={form.cu ?? ''} hideSteppers allowEmpty
+            onChange={(_, { value }) => setForm({ ...form, cu: String(value ?? '') })} />
+          <fieldset style={{ marginTop: '1rem', border: 0, padding: 0 }}>
+            <legend style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '0.25rem' }}>
+              Priority — high degrades last under contention; low is throttled and preempted first
+            </legend>
+            {['high', 'standard', 'low'].map((p) => (
+              <label key={p} style={{ marginRight: '1rem', fontSize: '0.875rem' }}>
+                <input type="radio" name="db-prio" checked={(form.prio ?? 'standard') === p}
+                  onChange={() => setForm({ ...form, prio: p })} /> {p}
+              </label>
+            ))}
+          </fieldset>
         </Modal>
 
         <Modal open={modal === 'branch'} modalHeading={`New branch of ${form.database ?? ''}`} primaryButtonText="Branch" secondaryButtonText="Cancel"

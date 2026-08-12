@@ -177,6 +177,7 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
         "enroll_database" => enroll_database(state, args).await,
         "unenroll_database" => unenroll_database(state, args).await,
         "get_events" => get_events(state).await,
+        "get_metrics" => get_metrics(state, args).await,
         other => Err(terr(
             format!("unknown tool {other}"),
             false,
@@ -578,6 +579,32 @@ async fn get_events(state: &McpState) -> ToolResult {
     Ok(json!(evs))
 }
 
+/// Basic usage series for one endpoint (013 round 2; 001 §5.4 toolset).
+async fn get_metrics(state: &McpState, args: &Value) -> ToolResult {
+    let name = need_name(args)?;
+    let series: Vec<Value> = {
+        let m = state.ctx.metrics.lock().unwrap();
+        m.get(&name)
+            .map(|ring| {
+                ring.iter()
+                    .map(|(t, cpu, mem)| json!({"t": t, "cpu_millis": cpu, "mem_mib": mem}))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let (cu, prio) = if let Ok(Some(d)) = dbs.get_opt(&name).await {
+        (d.spec.cu_limit, format!("{:?}", d.spec.priority))
+    } else if let Ok(Some(b)) = brs.get_opt(&name).await {
+        (b.spec.cu_limit, format!("{:?}", b.spec.priority))
+    } else {
+        return Err(terr(format!("{name} not found"), false, "list_databases to see what exists"));
+    };
+    Ok(json!({"name": name, "cu_limit": cu, "priority": prio,
+               "cpu_limit_millis": cu * 100, "series": series}))
+}
+
 fn tool_defs() -> Value {
     let name_arg = json!({"type": "string", "description": "Resource name (lowercase DNS label)"});
     json!([
@@ -625,6 +652,9 @@ fn tool_defs() -> Value {
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "get_connection",
          "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+        {"name": "get_metrics",
+         "description": "Recent CPU/memory usage for a database or branch (15s samples, ~10 min window), with its CU limit.",
          "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
         {"name": "get_events",
          "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",

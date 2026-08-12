@@ -22,6 +22,12 @@ function Head({ x, y, phase, color }: { x: number; y: number; phase?: string | n
   return <circle className="pulse" cx={x} cy={y} r={4.5} fill={color} />
 }
 
+function ttlLabel(b: BranchRow): string {
+  if (!b.ttl_seconds || !b.created_at) return ''
+  const left = Math.max(0, Math.floor((new Date(b.created_at).getTime() + b.ttl_seconds * 1000 - Date.now()) / 1000))
+  return ` · reaps in ${Math.floor(left / 60)}m${String(left % 60).padStart(2, '0')}s`
+}
+
 export default function Rails({ db, branches }: { db: EstateRow; branches: BranchRow[] }) {
   const color = familyColor(db.name)
   const W = 640
@@ -44,15 +50,17 @@ export default function Rails({ db, branches }: { db: EstateRow; branches: Branc
           const bx = forkX + i * 36
           return (
             <g key={b.name}>
-              {/* fork tick at the branch point */}
-              <line x1={bx} y1={20} x2={bx} y2={y} stroke={color} strokeWidth={1.5} opacity={0.55} />
-              <line x1={bx} y1={y} x2={W - 40} y2={y} stroke={color} strokeWidth={2} opacity={b.phase === 'Suspended' ? 0.4 : 0.75} />
+              {/* fork curve from the branch point */}
+              <path d={`M ${bx} 20 Q ${bx} ${y} ${bx + 24} ${y}`} fill="none" stroke={color} strokeWidth={1.5} opacity={0.55} />
+              <line x1={bx + 24} y1={y} x2={W - 40} y2={y} stroke={color} strokeWidth={2}
+                strokeDasharray={b.phase === 'Suspended' ? '4 4' : undefined}
+                opacity={b.phase === 'Suspended' ? 0.4 : 0.75} />
               <text x={bx - 4} y={y + 16} fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace" textAnchor="end">
                 {b.timeline_id ? b.timeline_id.slice(0, 8) : ''}
               </text>
               <Head x={W - 40} y={y} phase={b.phase} color={color} />
               <text x={W - 28} y={y + 4} fill="var(--cds-text-primary)" fontSize={12} fontFamily="system-ui">
-                {b.name}
+                {b.name}{ttlLabel(b) && <tspan fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace">{ttlLabel(b)}</tspan>}
               </text>
             </g>
           )
