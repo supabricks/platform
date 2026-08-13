@@ -141,7 +141,12 @@ for i in $(seq 1 30); do
   [ -z "$(kubectl -n $NS get branch e2ettl --no-headers --ignore-not-found)" ] && break
   sleep 5; [ "$i" = 30 ] && fail "TTL never reaped"
 done
-kubectl -n $NS get events --field-selector reason=TTLExpired --no-headers | grep -q e2ettl || fail "no TTLExpired event"
+for i in $(seq 1 10); do
+  kubectl -n $NS get events -o json \
+    | jq -e '.items[] | select(.reason == "TTLExpired" and .involvedObject.name == "e2ettl")' >/dev/null \
+    && break
+  sleep 1; [ "$i" = 10 ] && fail "no TTLExpired event"
+done
 
 step "enrollment: attach existing PG, zero migration"
 E=$(mcp enroll_database '{"name":"e2enrolled","connection_uri":"postgresql://postgres:postgres@controller-pg.sspc-cell.svc.cluster.local:5432/storage_controller"}')

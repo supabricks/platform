@@ -72,6 +72,9 @@ jobs:
       - name: T6 chaos drills (operator kill, pageserver restart, node reboot)
         run: ./e2e/chaos.sh
 
+      - name: T7 cold-attach restore (destroy local state, rebuild from bucket)
+        run: ./e2e/restore.sh
+
       - name: failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

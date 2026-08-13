@@ -13,6 +13,11 @@ data:
     remote_storage={ endpoint='{{ .Values.s3.endpoint }}', bucket_name='{{ .Values.s3.bucket }}', bucket_region='{{ .Values.s3.region }}', prefix_in_bucket='/pageserver' }
     control_plane_api='http://storage-controller:1234/upcall/v1/'
     virtual_file_io_mode="buffered"
+    # Durability posture (review 002 P0): stock checkpoint_timeout is 10m —
+    # a quiet timeline's tail WAL would sit out of the bucket that long.
+    # Seconds-scale checkpointing makes "the bucket is the database" true
+    # within seconds; write amplification is negligible at cell scale.
+    tenant_config={ checkpoint_timeout='10 s' }
   identity.toml: |
     id = 1
   metadata.json: |

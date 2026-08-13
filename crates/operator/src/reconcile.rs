@@ -172,6 +172,27 @@ fn lsn_num(lsn: &str) -> u64 {
     (hi << 32) | lo
 }
 
+/// The branch-at-head ingestion-wait decision, pure so review 002 P1's
+/// negative case is provable in a unit test: under sustained lag the verdict
+/// is NEVER `Ready` — the caller holds the branch (no timeline creation).
+#[derive(Debug, PartialEq)]
+pub enum HeadWait {
+    /// Ingestion caught up to the parent's flushed WAL — safe to branch.
+    Ready,
+    /// Still catching up, deadline not reached — keep polling.
+    KeepWaiting,
+    /// Deadline passed while lagging — hold the branch and requeue.
+    HoldAndRequeue,
+}
+
+pub fn head_wait_verdict(ingested: Option<&str>, flush: &str, deadline_passed: bool) -> HeadWait {
+    match ingested {
+        Some(i) if lsn_num(i) >= lsn_num(flush) => HeadWait::Ready,
+        _ if deadline_passed => HeadWait::HoldAndRequeue,
+        _ => HeadWait::KeepWaiting,
+    }
+}
+
 /// The parent compute's current flush LSN, via in-cluster SQL. `db_name` is
 /// any endpoint name — a Database or (branch-of-branch) a parent Branch.
 async fn parent_flush_lsn(ctx: &Ctx, db_name: &str) -> Option<String> {
@@ -624,12 +645,13 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
                 .storcon
                 .timeline_last_record_lsn(&tenant, &ancestor)
                 .await;
-            match &ingested {
-                Some(i) if lsn_num(i) >= lsn_num(&flush) => {
-                    info!("branch {name}: ingestion caught up ({i} >= flush {flush})");
+            let deadline_passed = std::time::Instant::now() > deadline;
+            match head_wait_verdict(ingested.as_deref(), &flush, deadline_passed) {
+                HeadWait::Ready => {
+                    info!("branch {name}: ingestion caught up ({ingested:?} >= flush {flush})");
                     break;
                 }
-                _ if std::time::Instant::now() > deadline => {
+                HeadWait::HoldAndRequeue => {
                     // Fail closed (review 001 P0-1): a branch cut below the
                     // parent's flushed head silently loses rows. Hold the
                     // branch and say why; retry from a fresh deadline.
@@ -646,16 +668,35 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
                     .await;
                     return Ok(Action::requeue(Duration::from_secs(5)));
                 }
-                _ => {
+                HeadWait::KeepWaiting => {
                     info!("branch {name}: waiting for ingestion ({ingested:?} < flush {flush})");
                     tokio::time::sleep(Duration::from_millis(250)).await;
                 }
             }
         }
     }
-    ctx.storcon
+    if let Err(e) = ctx
+        .storcon
         .create_timeline(&tenant, &timeline, Some(&ancestor), start_lsn.as_deref())
-        .await?;
+        .await
+    {
+        // Review 002 P1: a user-supplied branch point that the cell rejects
+        // (4xx) is terminal — fail the CR with the reason instead of
+        // retrying forever. 5xx/network errors stay retriable.
+        let user_error = br.spec.at.is_some()
+            && e.downcast_ref::<crate::storcon::StorconHttp>()
+                .is_some_and(|h| (400..500).contains(&h.status));
+        if user_error {
+            let msg = format!("branch point {}: {e:#}", br.spec.at.as_deref().unwrap_or(""));
+            warn!("branch {name}: {msg}");
+            ctx.patch_status(&api_br, &name, json!({"phase": "Failed", "message": msg.clone()}))
+                .await;
+            post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
+                       "Failed", msg).await;
+            return Ok(Action::await_change());
+        }
+        return Err(e);
+    }
     let run = wants_running(br.meta(), br.status.as_ref());
     if was.is_none() {
         post_event(
@@ -844,5 +885,40 @@ mod tests {
         assert_eq!(a, derive_id("uid-1", "tenant"), "replay converges");
         assert_ne!(a, b, "tenant and timeline differ");
         assert_ne!(a, c, "different CRs differ");
+    }
+
+    /// Review 002 P1's negative case: under sustained ingestion lag the
+    /// verdict is never Ready — past the deadline the branch is HELD (the
+    /// caller requeues before any timeline creation), not cut stale.
+    #[test]
+    fn head_wait_holds_on_sustained_lag() {
+        assert_eq!(head_wait_verdict(Some("0/1000"), "0/2000", false), HeadWait::KeepWaiting);
+        assert_eq!(head_wait_verdict(Some("0/1000"), "0/2000", true), HeadWait::HoldAndRequeue);
+        assert_eq!(head_wait_verdict(None, "0/2000", true), HeadWait::HoldAndRequeue);
+    }
+
+    #[test]
+    fn head_wait_ready_only_at_or_past_flush() {
+        assert_eq!(head_wait_verdict(Some("0/2000"), "0/2000", false), HeadWait::Ready);
+        assert_eq!(head_wait_verdict(Some("1/0"), "0/FFFFFFFF", true), HeadWait::Ready);
+        assert_eq!(head_wait_verdict(Some("0/1FFF"), "0/2000", false), HeadWait::KeepWaiting);
+    }
+
+    /// The review-002 retry-state regression: a requeued branch has
+    /// phase=Provisioning but NO timelineId — it must still be treated as
+    /// unallocated so the head wait runs again on retry.
+    #[test]
+    fn provisioning_retry_is_not_allocated() {
+        let no_tl = crate::crd::EndpointStatus {
+            phase: Some(Phase::Provisioning),
+            ..Default::default()
+        };
+        assert!(no_tl.timeline_id.is_none());
+        let with_tl = crate::crd::EndpointStatus {
+            phase: Some(Phase::Provisioning),
+            timeline_id: Some("abc".into()),
+            ..Default::default()
+        };
+        assert!(with_tl.timeline_id.is_some());
     }
 }

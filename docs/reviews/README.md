@@ -12,4 +12,4 @@ clear, tested, and hard to misuse.
 | Doc | Focus |
 |---|---|
 | [001-implementation-gaps.md](001-implementation-gaps.md) | Initial issue register from source, docs, build, and local cluster review. |
-
+| [002-data-safety-review.md](002-data-safety-review.md) | Branch correctness, cleanup/finalizers, suspend/wake durability, restore, and remaining data-safety gaps. |

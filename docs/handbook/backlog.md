@@ -27,10 +27,10 @@ detail, fair game when it blocks you, each with its exit condition.
    2026-08-13): `endpoint_password()` now errors on a missing/unreadable
    credential — surfaced as a structured retriable MCP error. The
    `SSPC_PG_PASSWORD` env and fallback are gone.
-4. **`at` with a bad LSN retries forever**: timestamp resolution fails closed
-   with a `Failed` phase + message, but a syntactically-valid-yet-bogus LSN
-   only errors at `create_timeline` → reconciler retry loop (MCP shows
-   `provisioning`). Exit: classify storcon 4xx as terminal → `Failed`.
+4. ~~`at` with a bad LSN retries forever~~ **EXECUTED** (review 002 P1,
+   2026-08-13): storage-controller 4xx on a user-supplied branch point is
+   terminal — `Failed` phase + message, surfaced through MCP. 5xx/network
+   errors stay retriable.
 5. **Spec ConfigMap changes don't reach running pods** until the next wake
    (compute_ctl `/configure` unused). Harmless today (only the credential and
    pins live there); matters the day specs carry tunables. Exit: wire
@@ -47,10 +47,10 @@ detail, fair game when it blocks you, each with its exit condition.
 9. **Events are create-only with timestamp names**: no dedup/aggregation;
    noisy under long retry loops. Exit: switch to EventSeries semantics when
    someone actually consumes events programmatically.
-10. **Restore-from-bucket-only is unproven**: S3 + CRs are *designed* as the
-    durable truth (P1–P6), and chaos proves node-reboot recovery — but no
-    test yet destroys the PVCs and rebuilds a cell from the bucket. Exit:
-    the P1 cold-attach verify job (002), post-M1.5.
+10. ~~Restore-from-bucket-only is unproven~~ **EXECUTED** (review 002 P0,
+    2026-08-13): `e2e/restore.sh` (T7, in CI) destroys the pageserver,
+    safekeeper, and controller PVCs and rebuilds the cell from the bucket —
+    parent and branch serve their exact data, isolation holds, writes work.
 11. **`safekeeper.replicas` toggle exists but 3-SK needs ordinal-derived
     `--id`/`--advertise-pg`** (chart TODO noted in the template). Exit: with
     the HA story.

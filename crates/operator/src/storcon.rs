@@ -4,6 +4,23 @@
 use anyhow::{Context, bail};
 use serde_json::json;
 
+/// A non-success storage-controller response with its HTTP status, so
+/// callers can classify user-error 4xx as terminal instead of retrying
+/// forever (review 002 P1: bogus raw LSNs).
+#[derive(Debug)]
+pub struct StorconHttp {
+    pub status: u16,
+    pub body: String,
+}
+
+impl std::fmt::Display for StorconHttp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HTTP {}: {}", self.status, self.body)
+    }
+}
+
+impl std::error::Error for StorconHttp {}
+
 #[derive(Clone)]
 pub struct Storcon {
     base: String,
@@ -58,10 +75,11 @@ impl Storcon {
             .context("storcon create_timeline")?;
         match r.status().as_u16() {
             200..=299 | 409 => Ok(()),
-            code => bail!(
-                "create_timeline {timeline_id}: HTTP {code}: {}",
-                r.text().await?
-            ),
+            code => Err(anyhow::Error::new(StorconHttp {
+                status: code,
+                body: r.text().await.unwrap_or_default(),
+            })
+            .context(format!("create_timeline {timeline_id}"))),
         }
     }
 

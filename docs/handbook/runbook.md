@@ -52,6 +52,25 @@ as the operator pod is Ready. Total convergence observed: ~130s. Nothing to
 clean up. If a compute pod stays Pending afterward, it's the 2-core request
 budget (see dev-loop landmine #9), not the reboot.
 
+### Drill 4 — restore the cell from the bucket alone
+```sh
+./e2e/restore.sh   # quiesce → flush-verify → DESTROY pageserver/safekeeper/controller PVCs → rebuild → verify
+```
+**Observed** (T7, review 002 P0): flush-to-bucket completes within seconds —
+because the chart pins the cell's tenant `checkpoint_timeout` to `10 s`
+(stock Neon is 10 *minutes*, which would leave a quiet database's tail WAL
+out of the bucket that long; this drill found that). Rebuild from empty PVCs
+takes ~16s: every tenant re-attaches from its remote index, suspended
+endpoints stay suspended, first wake ~2s, parent and divergent branch serve
+their exact row counts, writes work. Full drill: 95s. Estate-wide by nature —
+every tenant in the cell re-attaches.
+
+**The one manual-recovery rule it encodes**: if you ever replace
+`controller-pg`'s storage, you MUST restart the `storage-controller`
+deployment — it runs schema migrations only at startup and caches node state
+in memory, so against a fresh database it 500s every pageserver re-attach
+with `relation "nodes" does not exist` (found by this drill's first destroy).
+
 ## Specific symptoms
 
 | Symptom | Cause | Fix |
