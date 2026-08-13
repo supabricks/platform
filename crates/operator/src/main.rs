@@ -42,7 +42,11 @@ async fn ensure_mcp_token(client: &Client, ns: &str) -> anyhow::Result<String> {
     secret.metadata.name = Some(MCP_TOKEN_SECRET.into());
     secret.metadata.namespace = Some(ns.into());
     secret.data = Some(
-        [("token".to_string(), k8s_openapi::ByteString(token.clone().into_bytes()))].into(),
+        [(
+            "token".to_string(),
+            k8s_openapi::ByteString(token.clone().into_bytes()),
+        )]
+        .into(),
     );
     secrets.create(&PostParams::default(), &secret).await?;
     info!("generated MCP bearer token in secret {MCP_TOKEN_SECRET}");
@@ -78,7 +82,10 @@ async fn ensure_key(client: &Client, ns: &str) -> anyhow::Result<ComputeKey> {
         .into(),
     );
     secrets.create(&PostParams::default(), &secret).await?;
-    info!("generated compute JWK and stored in secret {}", secret.name_any());
+    info!(
+        "generated compute JWK and stored in secret {}",
+        secret.name_any()
+    );
     Ok(key)
 }
 
@@ -142,8 +149,8 @@ async fn main() -> anyhow::Result<()> {
         image_pull_policy,
         safekeepers,
         pageserver_connstring,
-        pg_password: env_or("SSPC_PG_PASSWORD", "sspc-p0"),
         metrics: std::sync::Mutex::new(std::collections::HashMap::new()),
+        sessions: std::sync::Mutex::new(std::collections::HashMap::new()),
     });
 
     tokio::spawn(lifecycle::run(ctx.clone()));

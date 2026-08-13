@@ -14,8 +14,8 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
-use kube::api::{Api, DeleteParams, Patch, PatchParams};
 use kube::ResourceExt;
+use kube::api::{Api, DeleteParams, Patch, PatchParams};
 use serde_json::{Value, json};
 use tracing::info;
 
@@ -42,7 +42,10 @@ async fn serve_ui(uri: axum::http::Uri) -> Response {
     match UiAssets::get(path) {
         Some(f) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
-            ([(axum::http::header::CONTENT_TYPE, mime.to_string())], f.data.into_owned())
+            (
+                [(axum::http::header::CONTENT_TYPE, mime.to_string())],
+                f.data.into_owned(),
+            )
                 .into_response()
         }
         None => (StatusCode::NOT_FOUND, "not found").into_response(),
@@ -158,7 +161,11 @@ fn terr(reason: impl Into<String>, retriable: bool, action: impl Into<String>) -
 }
 
 fn from_kube(e: kube::Error) -> ToolError {
-    terr(format!("kubernetes api error: {e}"), true, "retry; if it persists, check operator logs")
+    terr(
+        format!("kubernetes api error: {e}"),
+        true,
+        "retry; if it persists, check operator logs",
+    )
 }
 
 type ToolResult = Result<Value, ToolError>;
@@ -192,11 +199,19 @@ fn need_name(args: &Value) -> Result<String, ToolError> {
         .as_str()
         .filter(|s| !s.is_empty())
         .map(|s| s.to_lowercase())
-        .ok_or_else(|| terr("missing required argument: name", false, "pass a name argument"))?;
+        .ok_or_else(|| {
+            terr(
+                "missing required argument: name",
+                false,
+                "pass a name argument",
+            )
+        })?;
     // Friendly DNS-1123 guard: without it, invalid names surface as raw
     // Kubernetes validation errors (found by the first UI user).
     let valid = name.len() <= 40
-        && name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        && name
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
         && !name.starts_with('-')
         && !name.ends_with('-');
     if !valid {
@@ -223,13 +238,23 @@ fn capabilities(state: &McpState) -> ToolResult {
     }))
 }
 
-/// Connection URI with the endpoint's own credential (RFC 014 H3).
-async fn uri(state: &McpState, name: &str, port: i32) -> String {
-    let pw = crate::reconcile::endpoint_password(&state.ctx, name).await;
-    format!(
+/// Connection URI with the endpoint's own credential (RFC 014 H3). An
+/// unreadable credential is a structured, retriable error (review 001 P1-2)
+/// — never a URI with a guessed password.
+async fn uri(state: &McpState, name: &str, port: i32) -> Result<String, ToolError> {
+    let pw = crate::reconcile::endpoint_password(&state.ctx, name)
+        .await
+        .map_err(|e| {
+            terr(
+                format!("credential unavailable: {e:#}"),
+                true,
+                "retry shortly; if it persists, check the operator's Secret RBAC and logs",
+            )
+        })?;
+    Ok(format!(
         "postgresql://cloud_admin:{pw}@{}:{port}/postgres",
         state.connect_host
-    )
+    ))
 }
 
 /// Wait until the CR has a port and its compute pod is Ready. Bounded; on
@@ -237,8 +262,7 @@ async fn uri(state: &McpState, name: &str, port: i32) -> String {
 /// async" — M1's cheap version).
 async fn await_ready(state: &McpState, name: &str, secs: u64) -> Option<i32> {
     let ns = &state.ctx.namespace;
-    let pods: Api<k8s_openapi::api::core::v1::Pod> =
-        Api::namespaced(state.ctx.client.clone(), ns);
+    let pods: Api<k8s_openapi::api::core::v1::Pod> = Api::namespaced(state.ctx.client.clone(), ns);
     let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), ns);
     let brs: Api<Branch> = Api::namespaced(state.ctx.client.clone(), ns);
     let deadline = Instant::now() + Duration::from_secs(secs);
@@ -283,7 +307,9 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
     }
     if let Some(p) = args["priority"].as_str() {
         spec["priority"] = json!(match p.to_lowercase().as_str() {
-            "high" => "High", "low" => "Low", _ => "Standard",
+            "high" => "High",
+            "low" => "Low",
+            _ => "Standard",
         });
     }
     let db: Database = serde_json::from_value(json!({
@@ -299,7 +325,7 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
         .map_err(from_kube)?;
     match await_ready(state, &name, 30).await {
         Some(port) => Ok(json!({
-            "name": name, "status": "ready", "connection_uri": uri(state, &name, port).await,
+            "name": name, "status": "ready", "connection_uri": uri(state, &name, port).await?,
             "note": "psql-ready now; TTL reaping and scale-to-zero arrive in P3",
         })),
         None => Ok(json!({
@@ -312,7 +338,11 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
 async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
     let database = args["database"].as_str().ok_or_else(|| {
-        terr("missing required argument: database", false, "pass the parent database name")
+        terr(
+            "missing required argument: database",
+            false,
+            "pass the parent database name",
+        )
     })?;
     let mut spec = json!({"database": database});
     // Branch-of-branch (RFC 014 H2): validate up front so the error is
@@ -323,7 +353,10 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
             Some(pbr) if pbr.spec.database == database => {}
             Some(pbr) => {
                 return Err(terr(
-                    format!("parent branch {p} belongs to database {}, not {database}", pbr.spec.database),
+                    format!(
+                        "parent branch {p} belongs to database {}, not {database}",
+                        pbr.spec.database
+                    ),
                     false,
                     "pass the database that owns the parent branch",
                 ));
@@ -350,7 +383,9 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     }
     if let Some(p) = args["priority"].as_str() {
         spec["priority"] = json!(match p.to_lowercase().as_str() {
-            "high" => "High", "low" => "Low", _ => "Standard",
+            "high" => "High",
+            "low" => "Low",
+            _ => "Standard",
         });
     }
     let br: Branch = serde_json::from_value(json!({
@@ -367,7 +402,7 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
         Some(port) => Ok(json!({
             "name": name, "parent": args["parent"].as_str().unwrap_or(database),
             "database": database, "status": "ready",
-            "connection_uri": uri(state, &name, port).await,
+            "connection_uri": uri(state, &name, port).await?,
         })),
         None => {
             // Distinguish "slow" from "failed" (a bad `at` fails the CR).
@@ -405,7 +440,12 @@ async fn list_databases(state: &McpState) -> ToolResult {
             let mut v = summarize(d.status.as_ref());
             v["name"] = json!(d.name_any());
             v["kind"] = json!("cell-backed");
-            v["created_at"] = json!(d.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
+            v["created_at"] = json!(
+                d.metadata
+                    .creation_timestamp
+                    .as_ref()
+                    .map(|t| t.0.to_string())
+            );
             v["ttl_seconds"] = json!(d.spec.ttl_seconds);
             v["suspend_after_seconds"] = json!(d.spec.suspend_after_seconds);
             v
@@ -414,7 +454,12 @@ async fn list_databases(state: &McpState) -> ToolResult {
     // The estate view includes enrolled (foreign) Postgres — RFC 010.
     let edbs: Api<EnrolledDatabase> =
         Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
-    for e in edbs.list(&Default::default()).await.map_err(from_kube)?.items {
+    for e in edbs
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+    {
         let s = e.status.clone().unwrap_or_default();
         out.push(json!({
             "name": e.name_any(), "kind": "enrolled",
@@ -429,8 +474,11 @@ async fn list_databases(state: &McpState) -> ToolResult {
 async fn enroll_database(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
     let uri_arg = args["connection_uri"].as_str().ok_or_else(|| {
-        terr("missing required argument: connection_uri", false,
-             "pass a postgres:// connection URI (a read-only monitoring role is enough)")
+        terr(
+            "missing required argument: connection_uri",
+            false,
+            "pass a postgres:// connection URI (a read-only monitoring role is enough)",
+        )
     })?;
     let edb: EnrolledDatabase = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "EnrolledDatabase",
@@ -480,20 +528,27 @@ async fn unenroll_database(state: &McpState, args: &Value) -> ToolResult {
 async fn list_branches(state: &McpState) -> ToolResult {
     let api: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
     let items = api.list(&Default::default()).await.map_err(from_kube)?;
-    Ok(json!(items
-        .items
-        .iter()
-        .map(|b| {
-            let mut v = summarize(b.status.as_ref());
-            v["name"] = json!(b.name_any());
-            v["database"] = json!(b.spec.database);
-            v["parent"] = json!(b.spec.parent);
-            v["at"] = json!(b.spec.at);
-            v["created_at"] = json!(b.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
-            v["ttl_seconds"] = json!(b.spec.ttl_seconds);
-            v
-        })
-        .collect::<Vec<_>>()))
+    Ok(json!(
+        items
+            .items
+            .iter()
+            .map(|b| {
+                let mut v = summarize(b.status.as_ref());
+                v["name"] = json!(b.name_any());
+                v["database"] = json!(b.spec.database);
+                v["parent"] = json!(b.spec.parent);
+                v["at"] = json!(b.spec.at);
+                v["created_at"] = json!(
+                    b.metadata
+                        .creation_timestamp
+                        .as_ref()
+                        .map(|t| t.0.to_string())
+                );
+                v["ttl_seconds"] = json!(b.spec.ttl_seconds);
+                v
+            })
+            .collect::<Vec<_>>()
+    ))
 }
 
 async fn get_database(state: &McpState, args: &Value) -> ToolResult {
@@ -553,11 +608,10 @@ async fn get_connection(state: &McpState, args: &Value) -> ToolResult {
     let t0 = Instant::now();
     match await_ready(state, &name, 45).await {
         Some(port) => {
-            let mut out = json!({"name": name, "connection_uri": uri(state, &name, port).await});
+            let mut out = json!({"name": name, "connection_uri": uri(state, &name, port).await?});
             if woke {
                 out["woke_from_suspend"] = json!(true);
-                out["wake_seconds"] =
-                    json!(format!("{:.1}", t0.elapsed().as_secs_f64()));
+                out["wake_seconds"] = json!(format!("{:.1}", t0.elapsed().as_secs_f64()));
             }
             Ok(out)
         }
@@ -585,7 +639,11 @@ async fn delete_database(state: &McpState, args: &Value) -> ToolResult {
         .collect();
     if !children.is_empty() {
         return Err(terr(
-            format!("database {name} has {} live branch(es): {}", children.len(), children.join(", ")),
+            format!(
+                "database {name} has {} live branch(es): {}",
+                children.len(),
+                children.join(", ")
+            ),
             false,
             "delete those branches first (delete_branch), then delete the database",
         ));
@@ -617,7 +675,11 @@ async fn delete_branch(state: &McpState, args: &Value) -> ToolResult {
         .collect();
     if !children.is_empty() {
         return Err(terr(
-            format!("branch {name} has {} child branch(es): {}", children.len(), children.join(", ")),
+            format!(
+                "branch {name} has {} child branch(es): {}",
+                children.len(),
+                children.join(", ")
+            ),
             false,
             "delete those child branches first, then this one",
         ));
@@ -650,7 +712,12 @@ async fn get_events(state: &McpState) -> ToolResult {
                 .last_timestamp
                 .as_ref()
                 .map(|t| t.0.to_string())
-                .or_else(|| e.metadata.creation_timestamp.as_ref().map(|t| t.0.to_string()));
+                .or_else(|| {
+                    e.metadata
+                        .creation_timestamp
+                        .as_ref()
+                        .map(|t| t.0.to_string())
+                });
             json!({
                 "time": t,
                 "reason": e.reason,
@@ -685,7 +752,11 @@ async fn get_metrics(state: &McpState, args: &Value) -> ToolResult {
     } else if let Ok(Some(b)) = brs.get_opt(&name).await {
         (b.spec.cu_limit, format!("{:?}", b.spec.priority))
     } else {
-        return Err(terr(format!("{name} not found"), false, "list_databases to see what exists"));
+        return Err(terr(
+            format!("{name} not found"),
+            false,
+            "list_databases to see what exists",
+        ));
     };
     Ok(json!({"name": name, "cu_limit": cu, "priority": prio,
                "cpu_limit_millis": cu * 100, "series": series}))
@@ -708,8 +779,18 @@ fn cpu_quantity_millis(q: &str) -> i64 {
 async fn get_cu_ledger(state: &McpState) -> ToolResult {
     let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(state.ctx.client.clone());
     let mut physical_millis: i64 = 0;
-    for n in nodes.list(&Default::default()).await.map_err(from_kube)?.items {
-        if let Some(q) = n.status.as_ref().and_then(|s| s.allocatable.as_ref()).and_then(|a| a.get("cpu")) {
+    for n in nodes
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+    {
+        if let Some(q) = n
+            .status
+            .as_ref()
+            .and_then(|s| s.allocatable.as_ref())
+            .and_then(|a| a.get("cpu"))
+        {
             physical_millis += cpu_quantity_millis(&q.0);
         }
     }
@@ -728,18 +809,40 @@ async fn get_cu_ledger(state: &McpState) -> ToolResult {
             active_names.push(name);
         }
     };
-    for d in dbs.list(&Default::default()).await.map_err(from_kube)?.items {
-        tally(d.name_any(), d.spec.cu_limit, d.status.as_ref().and_then(|s| s.phase));
+    for d in dbs
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+    {
+        tally(
+            d.name_any(),
+            d.spec.cu_limit,
+            d.status.as_ref().and_then(|s| s.phase),
+        );
     }
-    for b in brs.list(&Default::default()).await.map_err(from_kube)?.items {
-        tally(b.name_any(), b.spec.cu_limit, b.status.as_ref().and_then(|s| s.phase));
+    for b in brs
+        .list(&Default::default())
+        .await
+        .map_err(from_kube)?
+        .items
+    {
+        tally(
+            b.name_any(),
+            b.spec.cu_limit,
+            b.status.as_ref().and_then(|s| s.phase),
+        );
     }
 
     let used_millis: i64 = {
         let m = state.ctx.metrics.lock().unwrap();
         active_names
             .iter()
-            .filter_map(|n| m.get(n).and_then(|ring| ring.back()).map(|(_, cpu, _)| *cpu))
+            .filter_map(|n| {
+                m.get(n)
+                    .and_then(|ring| ring.back())
+                    .map(|(_, cpu, _)| *cpu)
+            })
             .sum()
     };
 
@@ -836,6 +939,18 @@ mod tests {
             current, saved,
             "MCP tool schema drifted from the snapshot — if intentional, \
              UPDATE_SNAPSHOTS=1 cargo test and commit the fixture"
+        );
+    }
+
+    /// The tool count is stated in README.md and docs/handbook/architecture.md
+    /// — this pin makes those docs fail loudly here instead of drifting
+    /// silently (review 001 P1-3).
+    #[test]
+    fn tool_count_is_fourteen() {
+        assert_eq!(
+            tool_defs().as_array().unwrap().len(),
+            14,
+            "tool count changed — update README.md and docs/handbook/architecture.md"
         );
     }
 

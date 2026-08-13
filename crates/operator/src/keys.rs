@@ -4,10 +4,10 @@
 //! (spike/compose/mint-compute-jwt.sh): x = b64url(raw 32-byte pubkey),
 //! kid = b64url(sha256(x-as-string)).
 
+use aws_lc_rs::signature::{Ed25519KeyPair, KeyPair};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-use aws_lc_rs::signature::{Ed25519KeyPair, KeyPair};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -28,14 +28,14 @@ pub struct ComputeClaims {
 impl ComputeKey {
     pub fn generate() -> anyhow::Result<Self> {
         let rng = aws_lc_rs::rand::SystemRandom::new();
-        let doc = Ed25519KeyPair::generate_pkcs8(&rng)
-            .map_err(|e| anyhow::anyhow!("keygen: {e}"))?;
+        let doc =
+            Ed25519KeyPair::generate_pkcs8(&rng).map_err(|e| anyhow::anyhow!("keygen: {e}"))?;
         Self::from_pkcs8(doc.as_ref())
     }
 
     pub fn from_pkcs8(pkcs8: &[u8]) -> anyhow::Result<Self> {
-        let pair = Ed25519KeyPair::from_pkcs8(pkcs8)
-            .map_err(|e| anyhow::anyhow!("bad pkcs8: {e}"))?;
+        let pair =
+            Ed25519KeyPair::from_pkcs8(pkcs8).map_err(|e| anyhow::anyhow!("bad pkcs8: {e}"))?;
         let x = B64.encode(pair.public_key().as_ref());
         let kid = B64.encode(Sha256::digest(x.as_bytes()));
         Ok(Self {
@@ -93,7 +93,11 @@ mod tests {
         let token = key.mint_admin_jwt(60).unwrap();
 
         let raw_pub = B64.decode(&key.x_b64url).unwrap();
-        assert_eq!(raw_pub.len(), 32, "x must be raw 32 bytes (Day-2 bug class)");
+        assert_eq!(
+            raw_pub.len(),
+            32,
+            "x must be raw 32 bytes (Day-2 bug class)"
+        );
         let mut val = Validation::new(Algorithm::EdDSA);
         val.set_audience(&["compute"]);
         let data = decode::<ComputeClaims>(&token, &DecodingKey::from_ed_der(&raw_pub), &val)

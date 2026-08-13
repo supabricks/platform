@@ -38,8 +38,13 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
             reap(ctx, &dbs, &db, "Database", db.spec.ttl_seconds.unwrap_or(0)).await;
             continue;
         }
-        maybe_suspend::<Database>(ctx, &name, db.spec.suspend_after_seconds, db.status.as_ref())
-            .await;
+        maybe_suspend::<Database>(
+            ctx,
+            &name,
+            db.spec.suspend_after_seconds,
+            db.status.as_ref(),
+        )
+        .await;
         endpoint_names.push(name);
     }
     let brs: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
@@ -49,8 +54,13 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
             reap(ctx, &brs, &br, "Branch", br.spec.ttl_seconds.unwrap_or(0)).await;
             continue;
         }
-        maybe_suspend::<Branch>(ctx, &name, br.spec.suspend_after_seconds, br.status.as_ref())
-            .await;
+        maybe_suspend::<Branch>(
+            ctx,
+            &name,
+            br.spec.suspend_after_seconds,
+            br.status.as_ref(),
+        )
+        .await;
         endpoint_names.push(name);
     }
     let edbs: Api<EnrolledDatabase> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
@@ -59,9 +69,16 @@ async fn tick(ctx: &Ctx) -> anyhow::Result<()> {
         check_enrolled(&edbs, &edb).await;
         if first {
             crate::reconcile::post_event(
-                ctx, "sspc.io/v1alpha1", "EnrolledDatabase", &edb.name_any(),
-                edb.meta().uid.clone(), "Enrolled",
-                format!("{} enrolled — inventoried in place, nothing migrated", edb.name_any()),
+                ctx,
+                "sspc.io/v1alpha1",
+                "EnrolledDatabase",
+                &edb.name_any(),
+                edb.meta().uid.clone(),
+                "Enrolled",
+                format!(
+                    "{} enrolled — inventoried in place, nothing migrated",
+                    edb.name_any()
+                ),
             )
             .await;
         }
@@ -86,7 +103,11 @@ async fn check_enrolled(api: &Api<EnrolledDatabase>, edb: &EnrolledDatabase) {
         }),
     };
     let _ = api
-        .patch_status(&name, &PatchParams::default(), &Patch::Merge(json!({"status": status})))
+        .patch_status(
+            &name,
+            &PatchParams::default(),
+            &Patch::Merge(json!({"status": status})),
+        )
         .await;
 }
 
@@ -105,7 +126,11 @@ async fn probe_enrolled(uri: &str) -> anyhow::Result<(String, i64, String)> {
             &[],
         )
         .await?;
-    let out = (row.get::<_, String>(0), row.get::<_, i64>(1), row.get::<_, String>(2));
+    let out = (
+        row.get::<_, String>(0),
+        row.get::<_, i64>(1),
+        row.get::<_, String>(2),
+    );
     drop(client);
     handle.abort();
     Ok(out)
@@ -115,7 +140,9 @@ async fn probe_enrolled(uri: &str) -> anyhow::Result<(String, i64, String)> {
 /// proxy — per-pod CPU nanocores and working-set bytes, no metrics-server.
 async fn sample_metrics(ctx: &Ctx, names: &[String]) {
     let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(ctx.client.clone());
-    let Ok(list) = nodes.list(&Default::default()).await else { return };
+    let Ok(list) = nodes.list(&Default::default()).await else {
+        return;
+    };
     let now = chrono::Utc::now().timestamp();
     let mut samples: Vec<(String, i64, i64)> = Vec::new();
     for node in list.items {
@@ -138,7 +165,9 @@ async fn sample_metrics(ctx: &Ctx, names: &[String]) {
             if pod["podRef"]["namespace"].as_str() != Some(ctx.namespace.as_str()) {
                 continue;
             }
-            let Some(pname) = pod["podRef"]["name"].as_str() else { continue };
+            let Some(pname) = pod["podRef"]["name"].as_str() else {
+                continue;
+            };
             if !names.iter().any(|n| n == pname) {
                 continue;
             }
@@ -156,6 +185,13 @@ async fn sample_metrics(ctx: &Ctx, names: &[String]) {
         }
     }
     m.retain(|k, _| names.iter().any(|n| n == k));
+    drop(m);
+    // Stopped endpoints also drop their session-churn baseline; a fresh
+    // compute gets a fresh first-observation (see check_activity).
+    ctx.sessions
+        .lock()
+        .unwrap()
+        .retain(|k, _| names.iter().any(|n| n == k));
 }
 
 fn ttl_expired(meta: &ObjectMeta, ttl_seconds: Option<i64>) -> bool {
@@ -175,10 +211,7 @@ where
     let name = obj.name_any();
     let ev = Event {
         metadata: ObjectMeta {
-            name: Some(format!(
-                "{name}-ttl-{}",
-                chrono::Utc::now().timestamp()
-            )),
+            name: Some(format!("{name}-ttl-{}", chrono::Utc::now().timestamp())),
             namespace: Some(ctx.namespace.clone()),
             ..Default::default()
         },
@@ -242,30 +275,41 @@ async fn maybe_suspend<K>(
                 .await;
         }
         Some(false) => {
-            // Idle since lastActivity, or since pod start if never seen active.
-            let idle_since = status
-                .and_then(|s| s.last_activity.clone())
-                .or_else(|| {
-                    pod.status
-                        .as_ref()
-                        .and_then(|s| s.start_time.as_ref())
-                        .map(|t| t.0.to_string()) // jiff Display = RFC3339
-                });
-            let Some(since) = idle_since
-                .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+            // Idle since lastActivity or pod start — whichever is NEWER. A
+            // wake creates a fresh pod, and stale lastActivity from before
+            // the suspend must not outvote it, or the endpoint re-suspends
+            // on the first tick after waking (caught by chaos drill 3: wake
+            // after reboot, instant re-suspend, reader saw "data lost").
+            // Fixed-format RFC3339 UTC strings compare chronologically.
+            let idle_since = {
+                let last = status.and_then(|s| s.last_activity.clone());
+                let started = pod
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.start_time.as_ref())
+                    .map(|t| t.0.to_string()); // jiff Display = RFC3339
+                match (last, started) {
+                    (Some(l), Some(s)) => Some(if l > s { l } else { s }),
+                    (l, s) => l.or(s),
+                }
+            };
+            let Some(since) =
+                idle_since.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
             else {
                 return;
             };
-            let idle_secs = (chrono::Utc::now()
-                - since.with_timezone(&chrono::Utc))
-            .num_seconds();
+            let idle_secs = (chrono::Utc::now() - since.with_timezone(&chrono::Utc)).num_seconds();
             if idle_secs < suspend_after {
                 return;
             }
             let lsn = terminate_compute(ctx, &pod_ip).await;
             let _ = pods.delete(name, &DeleteParams::default()).await;
             crate::reconcile::post_event(
-                ctx, "sspc.io/v1alpha1", K::kind(&()).as_ref(), name, None,
+                ctx,
+                "sspc.io/v1alpha1",
+                K::kind(&()).as_ref(),
+                name,
+                None,
                 "Suspended",
                 format!("{name} suspended after {idle_secs}s idle — compute released"),
             )
@@ -275,7 +319,11 @@ async fn maybe_suspend<K>(
                 st["flushLsn"] = json!(l);
             }
             let _ = api
-                .patch_status(name, &PatchParams::default(), &Patch::Merge(json!({"status": st})))
+                .patch_status(
+                    name,
+                    &PatchParams::default(),
+                    &Patch::Merge(json!({"status": st})),
+                )
                 .await;
             info!("suspended {name} after {idle_secs}s idle (threshold {suspend_after}s)");
         }
@@ -288,7 +336,7 @@ async fn check_activity(ctx: &Ctx, name: &str) -> Option<bool> {
     cfg.host(format!("{name}.{}.svc.cluster.local", ctx.namespace))
         .port(55433)
         .user("cloud_admin")
-        .password(&crate::reconcile::endpoint_password(ctx, name).await)
+        .password(&crate::reconcile::endpoint_password(ctx, name).await.ok()?)
         .dbname("postgres")
         .application_name("sspc-operator")
         .connect_timeout(Duration::from_secs(3));
@@ -296,22 +344,38 @@ async fn check_activity(ctx: &Ctx, name: &str) -> Option<bool> {
     let handle = tokio::spawn(conn);
     let row = client
         .query_one(
-            // Excludes ourselves AND compute_ctl's internal connections
-            // (compute_ctl:compute_monitor holds a persistent session — the
-            // local reproduction of the research doc's check_availability
-            // "never truly zero" trap).
-            "SELECT count(*)::int4 FROM pg_stat_activity \
-             WHERE backend_type = 'client backend' \
-               AND application_name <> 'sspc-operator' \
-               AND application_name NOT LIKE 'compute_ctl%'",
+            // Two signals (review 001 P1-1):
+            // 1. connected client backends, excluding ourselves AND
+            //    compute_ctl's internals (compute_ctl:compute_monitor holds a
+            //    persistent session — the check_availability "never truly
+            //    zero" trap);
+            // 2. the monotonic sessions counter, so short-lived clients that
+            //    connect and leave BETWEEN polls still count as activity.
+            "SELECT \
+               (SELECT count(*)::int8 FROM pg_stat_activity \
+                 WHERE backend_type = 'client backend' \
+                   AND application_name <> 'sspc-operator' \
+                   AND application_name NOT LIKE 'compute_ctl%'), \
+               (SELECT coalesce(sum(sessions), 0)::int8 FROM pg_stat_database \
+                 WHERE datname IS NOT NULL)",
             &[],
         )
         .await
         .ok()?;
-    let active: i32 = row.get(0);
+    let connected: i64 = row.get(0);
+    let sessions: i64 = row.get(1);
     drop(client);
     handle.abort();
-    Some(active > 0)
+    // Our own poll starts exactly one session per tick, so a delta of 1 is
+    // baseline; more means someone else connected since the last tick. A
+    // shrinking counter means stats reset (fresh compute) — observe only.
+    let prev = ctx
+        .sessions
+        .lock()
+        .unwrap()
+        .insert(name.to_string(), sessions);
+    let churn = matches!(prev, Some(p) if sessions >= p && sessions - p > 1);
+    Some(connected > 0 || churn)
 }
 
 /// Day-2 suspend sequence: authed POST /terminate, return the flush LSN.

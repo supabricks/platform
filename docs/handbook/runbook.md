@@ -60,7 +60,7 @@ budget (see dev-loop landmine #9), not the reboot.
 | Database never suspends | a real client is connected; or you added a poller without excluding its `application_name` | check `pg_stat_activity` for `client backend`s; the operator + compute_ctl are excluded already |
 | Wake >5s or times out | image pull (must be `Never` + preloaded); cell unhealthy | `kubectl describe pod <name>`; drill-2 checks |
 | Branch shows `Failed` phase | bad `at` branch point (timestamp outside parent history) — this is fail-loud by design | `get_database`/status message has the reason; delete and recreate with a valid point |
-| Branch creation slow (~20s) | ingestion wait against a lagging pageserver — by design, never disable | watch `waiting for ingestion` log lines; if it *deadlines* repeatedly, pageserver is unhealthy |
+| Branch creation slow / held at `Provisioning` | ingestion wait against a lagging pageserver — the branch is HELD, never cut early (fail-closed by design) | `status.message` says "ingestion lagging (ingested X, parent flushed Y)"; if it persists, the pageserver is unhealthy — drill-2 checks |
 | `delete_database` refuses | it has live branches — H1 guard, not a bug | delete the named branches first |
 | "password authentication failed" on a URI that just worked | you're holding a pre-H3 URI, or the pod predates its credential Secret | `get_connection` again (fresh URI); suspend/wake cycles the pod onto its Secret |
 | MCP 401 | `SSPC_MCP_REQUIRE_TOKEN=true` mode | token: `kubectl -n sspc-cell get secret sspc-mcp-token -o jsonpath='{.data.token}' \| base64 -d` |

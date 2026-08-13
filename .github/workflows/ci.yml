@@ -30,10 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Hosted runners have ~14GB free; the Neon image set plus the
-      # installer's save-tar needs more. Drop the preinstalled bloat.
+      # Hosted runners have ~14GB free; at peak the image set exists three
+      # times (host docker storage + save-tar + kind-node containerd), so
+      # drop all the preinstalled bloat we will never use.
       - name: free runner disk
-        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
 
       # Build the operator image with a layer cache so the cargo release
       # build doesn't cold-start every run. up.sh sees the tag and skips
@@ -46,6 +51,11 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The image is loaded into the docker daemon and the layer cache is
+      # exported to GHA — the local builder copy is pure disk pressure now.
+      - name: reclaim local build cache
+        run: docker builder prune -af && df -h /
 
       - name: kind cluster (the installer's own config)
         uses: helm/kind-action@v1

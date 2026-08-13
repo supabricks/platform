@@ -31,9 +31,10 @@ just e2e                                      # the full acceptance suite
 
 - `crates/operator` — CRDs (`Database`, `Branch`), reconcilers (tenant/timeline
   via the storage controller, compute pods running stock Neon images with
-  compute_ctl as PID 1), lifecycle loop (idle-suspend via SQL activity polling,
-  TTL reaper), Ed25519 compute-auth, and the MCP façade (streamable HTTP,
-  bearer token, 9 tools).
+  compute_ctl as PID 1), lifecycle loop (idle-suspend via SQL activity +
+  session-churn polling, TTL reaper), Ed25519 compute-auth, and the MCP façade
+  (streamable HTTP with the GET/SSE leg, 14 tools — the count is pinned by a
+  unit test, and the schema by a snapshot fixture).
 - `chart/` — the platform: storage cell (pageserver, safekeeper, broker,
   storage controller + its PG, demo MinIO) + operator + CRDs.
 - `install/` — pinned-digest one-command install / teardown.
@@ -41,19 +42,21 @@ just e2e                                      # the full acceptance suite
 
 ## Connect an agent
 
-The API is standard MCP (streamable HTTP + bearer token) — any MCP-capable
-harness works. `up.sh` auto-registers the two it knows:
+The API is standard MCP (streamable HTTP, including the optional GET/SSE
+server stream — third-party MCP client requires it) — any MCP-capable harness works. `up.sh`
+auto-registers the two it knows:
 
-- **Claude Code**: `claude mcp add -s user -t http sspc http://localhost:30080/mcp -H "Authorization: Bearer <token>"`
-- **third-party MCP client**: merged into `~/.mcp-client/mcp.json` as
-  `{"type": "streamable-http", "url": "http://localhost:30080/mcp", "headers": {"Authorization": "Bearer <token>"}}`
+- **Claude Code**: `claude mcp add -s user -t http sspc http://localhost:30080/mcp`
+- **third-party MCP client**: merged into `~/.mcp-client/settings/mcp.json` (and the documented
+  `~/.mcp-client/mcp.json`) as `{"type": "streamable-http", "url": "http://localhost:30080/mcp"}`
   (restart the server from the client's MCP settings tab)
 
-Any other harness: point its MCP config at the same URL/header. The token:
+Any other harness: point its MCP config at the same URL. **Auth default is
+open mode**: the installer binds all host ports to loopback, so the network
+layer is the guard (this is the deliberate POC posture; real IAM is RFC 008).
+To require a bearer instead, set `SSPC_MCP_REQUIRE_TOKEN=true` on the operator
+and pass `Authorization: Bearer <token>` with the token from:
 `kubectl -n sspc-cell get secret sspc-mcp-token -o jsonpath='{.data.token}' | base64 -d`.
-Caveat: the server is POST-only streamable HTTP (no SSE leg), verified against
-Claude Code; clients that require the optional GET/SSE stream would need that
-leg added server-side.
 
 ## Honest M1 limits (by design — see RFC 012)
 

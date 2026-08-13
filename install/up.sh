@@ -97,9 +97,8 @@ else
 fi
 
 # third-party MCP clients: reads mcpServers from ~/.mcp-client/mcp.json (global) or
-# mcp-client/mcp.json (project). Our server is POST-only streamable HTTP — validated
-# with Claude Code; the MCP client speaks streamable-http per its docs. If the client's client
-# turns out to require the optional GET/SSE leg, that lands server-side.
+# mcp-client/mcp.json (project). Our server speaks full streamable HTTP including
+# the GET/SSE server stream (the MCP client requires it; Claude Code doesn't).
 # the client's docs say ~/.mcp-client/mcp.json; real installs use ~/.mcp-client/settings/mcp.json.
 # Write both (idempotent merges) so either version picks it up.
 CLIENT_CFGS="$HOME/.mcp-client/mcp.json"

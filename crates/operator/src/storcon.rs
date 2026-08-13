@@ -28,7 +28,10 @@ impl Storcon {
             .context("storcon create_tenant")?;
         match r.status().as_u16() {
             200..=299 | 409 => Ok(()),
-            code => bail!("create_tenant {tenant_id}: HTTP {code}: {}", r.text().await?),
+            code => bail!(
+                "create_tenant {tenant_id}: HTTP {code}: {}",
+                r.text().await?
+            ),
         }
     }
 
@@ -55,7 +58,10 @@ impl Storcon {
             .context("storcon create_timeline")?;
         match r.status().as_u16() {
             200..=299 | 409 => Ok(()),
-            code => bail!("create_timeline {timeline_id}: HTTP {code}: {}", r.text().await?),
+            code => bail!(
+                "create_timeline {timeline_id}: HTTP {code}: {}",
+                r.text().await?
+            ),
         }
     }
 
@@ -133,7 +139,10 @@ impl Storcon {
             .context("storcon delete_tenant")?;
         match r.status().as_u16() {
             200..=299 | 404 => Ok(()),
-            code => bail!("delete_tenant {tenant_id}: HTTP {code}: {}", r.text().await?),
+            code => bail!(
+                "delete_tenant {tenant_id}: HTTP {code}: {}",
+                r.text().await?
+            ),
         }
     }
 
@@ -149,7 +158,10 @@ impl Storcon {
             .context("storcon delete_timeline")?;
         match r.status().as_u16() {
             200..=299 | 404 => Ok(()),
-            code => bail!("delete_timeline {timeline_id}: HTTP {code}: {}", r.text().await?),
+            code => bail!(
+                "delete_timeline {timeline_id}: HTTP {code}: {}",
+                r.text().await?
+            ),
         }
     }
 }

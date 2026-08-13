@@ -34,8 +34,7 @@ pub const ENDPOINT_LABEL: &str = "sspc.io/endpoint";
 pub const WAKE_ANNOTATION: &str = "sspc.io/wake-requested-at";
 
 pub fn now_ts() -> String {
-    chrono::Utc::now()
-        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 /// Suspend-awareness: a resource runs unless it is Suspended with no wake
@@ -65,9 +64,14 @@ pub struct Ctx {
     pub image_pull_policy: String,
     pub safekeepers: String,
     pub pageserver_connstring: String,
-    pub pg_password: String,
     /// name -> ring of (epoch_secs, cpu_millis, mem_mib); ~10 min at 15s ticks.
-    pub metrics: std::sync::Mutex<std::collections::HashMap<String, std::collections::VecDeque<(i64, i64, i64)>>>,
+    pub metrics: std::sync::Mutex<
+        std::collections::HashMap<String, std::collections::VecDeque<(i64, i64, i64)>>,
+    >,
+    /// name -> last observed pg_stat_database sessions total (review 001
+    /// P1-1: session churn between ticks counts as activity even when no
+    /// client is connected at poll time).
+    pub sessions: std::sync::Mutex<std::collections::HashMap<String, i64>>,
 }
 
 /// Post a lifecycle Event on a CR — the audit line (013 ticker, 009 seed).
@@ -82,7 +86,11 @@ pub async fn post_event(
 ) {
     let ev = k8s_openapi::api::core::v1::Event {
         metadata: kube::api::ObjectMeta {
-            name: Some(format!("{name}-{}-{}", reason.to_lowercase(), chrono::Utc::now().timestamp())),
+            name: Some(format!(
+                "{name}-{}-{}",
+                reason.to_lowercase(),
+                chrono::Utc::now().timestamp()
+            )),
             namespace: Some(ctx.namespace.clone()),
             ..Default::default()
         },
@@ -136,20 +144,24 @@ pub fn pg_md5(password: &str, user: &str) -> String {
     hex::encode(md5::Md5::digest(format!("{password}{user}")))
 }
 
-/// The endpoint's owner password from its credential Secret (RFC 014 H3);
-/// falls back to the legacy shared password for endpoints minted before H3.
-pub async fn endpoint_password(ctx: &Ctx, name: &str) -> String {
+/// The endpoint's owner password from its credential Secret (RFC 014 H3).
+/// Review 001 P1-2: a missing/unreadable credential is an ERROR, never a
+/// silent fallback to a shared password — the reconciler mints the Secret
+/// before any pod exists, so absence means "not reconciled yet" (retriable)
+/// or a real Secret/RBAC problem worth surfacing.
+pub async fn endpoint_password(ctx: &Ctx, name: &str) -> anyhow::Result<String> {
     let secrets: Api<k8s_openapi::api::core::v1::Secret> =
         Api::namespaced(ctx.client.clone(), &ctx.namespace);
-    match secrets.get_opt(&format!("sspc-cred-{name}")).await {
-        Ok(Some(s)) => s
-            .data
-            .as_ref()
-            .and_then(|d| d.get("password"))
-            .and_then(|b| String::from_utf8(b.0.clone()).ok())
-            .unwrap_or_else(|| ctx.pg_password.clone()),
-        _ => ctx.pg_password.clone(),
-    }
+    let s = secrets
+        .get_opt(&format!("sspc-cred-{name}"))
+        .await
+        .with_context(|| format!("reading credential secret for {name}"))?
+        .with_context(|| format!("credential secret sspc-cred-{name} not found"))?;
+    s.data
+        .as_ref()
+        .and_then(|d| d.get("password"))
+        .and_then(|b| String::from_utf8(b.0.clone()).ok())
+        .with_context(|| format!("credential secret sspc-cred-{name} is malformed"))
 }
 
 /// Parse "0/29E2300" into a comparable number.
@@ -167,7 +179,7 @@ async fn parent_flush_lsn(ctx: &Ctx, db_name: &str) -> Option<String> {
     cfg.host(format!("{db_name}.{}.svc.cluster.local", ctx.namespace))
         .port(55433)
         .user("cloud_admin")
-        .password(&endpoint_password(ctx, db_name).await)
+        .password(&endpoint_password(ctx, db_name).await.ok()?)
         .dbname("postgres")
         .application_name("sspc-operator")
         .connect_timeout(Duration::from_secs(3));
@@ -356,7 +368,11 @@ impl Ctx {
             "stringData": {"password": pw},
         }))?;
         secrets
-            .patch(&sname, &PatchParams::apply("sspc-operator").force(), &Patch::Apply(&secret))
+            .patch(
+                &sname,
+                &PatchParams::apply("sspc-operator").force(),
+                &Patch::Apply(&secret),
+            )
             .await?;
         Ok(pw)
     }
@@ -378,7 +394,10 @@ impl Ctx {
 
 // ---------- Database ----------
 
-async fn reconcile_db(db: Arc<Database>, ctx: Arc<Ctx>) -> Result<Action, kube::runtime::finalizer::Error<kube::Error>> {
+async fn reconcile_db(
+    db: Arc<Database>,
+    ctx: Arc<Ctx>,
+) -> Result<Action, kube::runtime::finalizer::Error<kube::Error>> {
     let api: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     finalizer(&api, FINALIZER, db, |event| async {
         match event {
@@ -401,24 +420,54 @@ async fn apply_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
 
     let was = db.status.as_ref().and_then(|s| s.phase);
     ctx.storcon.create_tenant(&tenant).await?;
-    ctx.storcon.create_timeline(&tenant, &timeline, None, None).await?;
+    ctx.storcon
+        .create_timeline(&tenant, &timeline, None, None)
+        .await?;
     let run = wants_running(db.meta(), db.status.as_ref());
     if was.is_none() {
-        post_event(ctx, "sspc.io/v1alpha1", "Database", &name, db.meta().uid.clone(),
-                   "Created", format!("database {name} provisioned")).await;
+        post_event(
+            ctx,
+            "sspc.io/v1alpha1",
+            "Database",
+            &name,
+            db.meta().uid.clone(),
+            "Created",
+            format!("database {name} provisioned"),
+        )
+        .await;
     } else if was == Some(Phase::Suspended) && run {
-        post_event(ctx, "sspc.io/v1alpha1", "Database", &name, db.meta().uid.clone(),
-                   "Woke", format!("database {name} woke from suspend")).await;
+        post_event(
+            ctx,
+            "sspc.io/v1alpha1",
+            "Database",
+            &name,
+            db.meta().uid.clone(),
+            "Woke",
+            format!("database {name} woke from suspend"),
+        )
+        .await;
     }
     let port = ctx
-        .ensure_endpoint(db.as_ref(), &name, &tenant, &timeline, run, db.spec.cu_limit, db.spec.priority)
+        .ensure_endpoint(
+            db.as_ref(),
+            &name,
+            &tenant,
+            &timeline,
+            run,
+            db.spec.cu_limit,
+            db.spec.priority,
+        )
         .await?;
 
     let phase = if run { Phase::Active } else { Phase::Suspended };
     let api: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
-    ctx.patch_status(&api, &name, json!({
-        "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
-    }))
+    ctx.patch_status(
+        &api,
+        &name,
+        json!({
+            "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
+        }),
+    )
     .await;
     info!("database {name} reconciled: tenant={tenant} timeline={timeline} port={port} run={run}");
     Ok(Action::requeue(Duration::from_secs(300)))
@@ -453,7 +502,10 @@ async fn cleanup_db(db: Arc<Database>, ctx: &Ctx) -> anyhow::Result<Action> {
 
 // ---------- Branch ----------
 
-async fn reconcile_branch(br: Arc<Branch>, ctx: Arc<Ctx>) -> Result<Action, kube::runtime::finalizer::Error<kube::Error>> {
+async fn reconcile_branch(
+    br: Arc<Branch>,
+    ctx: Arc<Ctx>,
+) -> Result<Action, kube::runtime::finalizer::Error<kube::Error>> {
     let api: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
     finalizer(&api, FINALIZER, br, |event| async {
         match event {
@@ -505,6 +557,11 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     };
 
     let was = br.status.as_ref().and_then(|s| s.phase);
+    let timeline_allocated = br
+        .status
+        .as_ref()
+        .and_then(|s| s.timeline_id.as_ref())
+        .is_some();
     let timeline = derive_id(&uid, "branch");
 
     // Branch point (RFC 014 H2): a raw LSN passes through; a timestamp
@@ -518,10 +575,22 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
             Err(e) => {
                 let msg = format!("branch point {ts}: {e}");
                 warn!("branch {name}: {msg}");
-                ctx.patch_status(&api_br, &name, json!({"phase": "Failed", "message": msg.clone()}))
-                    .await;
-                post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
-                           "Failed", msg).await;
+                ctx.patch_status(
+                    &api_br,
+                    &name,
+                    json!({"phase": "Failed", "message": msg.clone()}),
+                )
+                .await;
+                post_event(
+                    ctx,
+                    "sspc.io/v1alpha1",
+                    "Branch",
+                    &name,
+                    br.meta().uid.clone(),
+                    "Failed",
+                    msg,
+                )
+                .await;
                 return Ok(Action::await_change());
             }
         },
@@ -532,25 +601,50 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     // writes — a branch created immediately after a load would miss it.
     // If the parent is awake, wait (bounded) for ingestion to catch up.
     // A historical branch point (`at`) needs no wait: it is already ingested.
-    if was.is_none() && start_lsn.is_none() && ancestor_active {
+    if !timeline_allocated && start_lsn.is_none() && ancestor_active {
         // Fail closed: an unreadable flush LSN is usually Service-endpoint
         // propagation lag on a parent that just woke — branching blind at the
         // ingested LSN would silently drop the parent's latest writes.
         let Some(flush) = parent_flush_lsn(ctx, &ancestor_name).await else {
-            warn!("branch {name}: parent flush lsn unreadable; requeueing instead of branching blind");
+            warn!(
+                "branch {name}: parent flush lsn unreadable; requeueing instead of branching blind"
+            );
+            ctx.patch_status(
+                &api_br,
+                &name,
+                json!({"phase": "Provisioning",
+                "message": "waiting: parent flush LSN unreadable (endpoint may be settling)"}),
+            )
+            .await;
             return Ok(Action::requeue(Duration::from_secs(2)));
         };
         let deadline = std::time::Instant::now() + Duration::from_secs(20);
         loop {
-            let ingested = ctx.storcon.timeline_last_record_lsn(&tenant, &ancestor).await;
+            let ingested = ctx
+                .storcon
+                .timeline_last_record_lsn(&tenant, &ancestor)
+                .await;
             match &ingested {
                 Some(i) if lsn_num(i) >= lsn_num(&flush) => {
                     info!("branch {name}: ingestion caught up ({i} >= flush {flush})");
                     break;
                 }
                 _ if std::time::Instant::now() > deadline => {
-                    warn!("branch {name}: ingestion lag past deadline (flush {flush}, ingested {ingested:?}); branching anyway");
-                    break;
+                    // Fail closed (review 001 P0-1): a branch cut below the
+                    // parent's flushed head silently loses rows. Hold the
+                    // branch and say why; retry from a fresh deadline.
+                    let msg = format!(
+                        "waiting: pageserver ingestion lagging (ingested {}, parent flushed {flush})",
+                        ingested.as_deref().unwrap_or("unknown")
+                    );
+                    warn!("branch {name}: {msg}; holding branch creation");
+                    ctx.patch_status(
+                        &api_br,
+                        &name,
+                        json!({"phase": "Provisioning", "message": msg}),
+                    )
+                    .await;
+                    return Ok(Action::requeue(Duration::from_secs(5)));
                 }
                 _ => {
                     info!("branch {name}: waiting for ingestion ({ingested:?} < flush {flush})");
@@ -564,21 +658,50 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
         .await?;
     let run = wants_running(br.meta(), br.status.as_ref());
     if was.is_none() {
-        post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
-                   "Created", format!("branch {name} of {} created", br.spec.database)).await;
+        post_event(
+            ctx,
+            "sspc.io/v1alpha1",
+            "Branch",
+            &name,
+            br.meta().uid.clone(),
+            "Created",
+            format!("branch {name} of {} created", br.spec.database),
+        )
+        .await;
     } else if was == Some(Phase::Suspended) && run {
-        post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
-                   "Woke", format!("branch {name} woke from suspend")).await;
+        post_event(
+            ctx,
+            "sspc.io/v1alpha1",
+            "Branch",
+            &name,
+            br.meta().uid.clone(),
+            "Woke",
+            format!("branch {name} woke from suspend"),
+        )
+        .await;
     }
     let port = ctx
-        .ensure_endpoint(br.as_ref(), &name, &tenant, &timeline, run, br.spec.cu_limit, br.spec.priority)
+        .ensure_endpoint(
+            br.as_ref(),
+            &name,
+            &tenant,
+            &timeline,
+            run,
+            br.spec.cu_limit,
+            br.spec.priority,
+        )
         .await?;
 
     let phase = if run { Phase::Active } else { Phase::Suspended };
     let api: Api<Branch> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
-    ctx.patch_status(&api, &name, json!({
-        "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
-    }))
+    ctx.patch_status(
+        &api,
+        &name,
+        json!({
+            "phase": phase, "tenantId": tenant, "timelineId": timeline, "nodePort": port,
+            "message": null,
+        }),
+    )
     .await;
     info!("branch {name} reconciled: timeline={timeline} (ancestor {ancestor}) port={port}");
     Ok(Action::requeue(Duration::from_secs(300)))
@@ -595,8 +718,7 @@ async fn cleanup_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
         .items
         .iter()
         .filter(|b| {
-            b.spec.parent.as_deref() == Some(name.as_str())
-                && b.meta().deletion_timestamp.is_none()
+            b.spec.parent.as_deref() == Some(name.as_str()) && b.meta().deletion_timestamp.is_none()
         })
         .map(|b| b.name_any())
         .collect();
@@ -608,9 +730,24 @@ async fn cleanup_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
     }
     let uid = br.meta().uid.clone().context("no uid")?;
     let timeline = derive_id(&uid, "branch");
-    // Parent may already be gone (tenant delete removes all timelines) — 404 is fine.
-    if let Some(tenant) = br.status.as_ref().and_then(|s| s.tenant_id.as_ref()) {
-        ctx.storcon.delete_timeline(tenant, &timeline).await?;
+    // Review 001 P0-2: status writes are best-effort, so the tenant may never
+    // have landed in status — derive it from the owning Database rather than
+    // skipping cell-side cleanup (which leaks the timeline).
+    let tenant = match br.status.as_ref().and_then(|s| s.tenant_id.clone()) {
+        Some(t) => Some(t),
+        None => {
+            let dbs: Api<Database> = Api::namespaced(ctx.client.clone(), &ctx.namespace);
+            dbs.get_opt(&br.spec.database).await?.and_then(|db| {
+                db.status
+                    .as_ref()
+                    .and_then(|s| s.tenant_id.clone())
+                    .or_else(|| db.meta().uid.as_ref().map(|u| derive_id(u, "tenant")))
+            })
+            // Database CR gone too: its tenant delete reclaims every timeline.
+        }
+    };
+    if let Some(tenant) = tenant {
+        ctx.storcon.delete_timeline(&tenant, &timeline).await?;
     }
     info!("branch {} cleaned up (timeline {timeline})", br.name_any());
     Ok(Action::await_change())
@@ -618,7 +755,11 @@ async fn cleanup_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
 
 // ---------- runners ----------
 
-fn error_policy<K>(_obj: Arc<K>, err: &kube::runtime::finalizer::Error<kube::Error>, _ctx: Arc<Ctx>) -> Action {
+fn error_policy<K>(
+    _obj: Arc<K>,
+    err: &kube::runtime::finalizer::Error<kube::Error>,
+    _ctx: Arc<Ctx>,
+) -> Action {
     warn!("reconcile error: {err:?}");
     Action::requeue(Duration::from_secs(5))
 }
@@ -653,9 +794,7 @@ mod tests {
 
     fn meta_with_wake(at: Option<&str>) -> kube::api::ObjectMeta {
         kube::api::ObjectMeta {
-            annotations: at.map(|t| {
-                [(WAKE_ANNOTATION.to_string(), t.to_string())].into()
-            }),
+            annotations: at.map(|t| [(WAKE_ANNOTATION.to_string(), t.to_string())].into()),
             ..Default::default()
         }
     }

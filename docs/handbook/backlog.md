@@ -23,9 +23,10 @@ detail, fair game when it blocks you, each with its exit condition.
 2. **Operator is a single writer with no lease**: SIGTERM handler closes the
    rollout race, but two replicas would corrupt. Exit: kube leader election
    before any HA story.
-3. **Legacy shared-password fallback**: `endpoint_password()` falls back to
-   `SSPC_PG_PASSWORD` for pre-H3 endpoints. Exit: after one estate-wide
-   suspend/wake cycle, make the fallback a hard error.
+3. ~~Legacy shared-password fallback~~ **EXECUTED** (review 001 P1-2,
+   2026-08-13): `endpoint_password()` now errors on a missing/unreadable
+   credential — surfaced as a structured retriable MCP error. The
+   `SSPC_PG_PASSWORD` env and fallback are gone.
 4. **`at` with a bad LSN retries forever**: timestamp resolution fails closed
    with a `Failed` phase + message, but a syntactically-valid-yet-bogus LSN
    only errors at `create_timeline` → reconciler retry loop (MCP shows

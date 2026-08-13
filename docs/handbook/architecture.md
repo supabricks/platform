@@ -68,16 +68,22 @@ points at another Branch (branch-of-branch); `at` (optional) is an LSN
 (passthrough) or RFC 3339 timestamp (resolved via pageserver
 `get_lsn_by_timestamp`). **Branch-at-head ingestion wait**: the pageserver's
 ingested LSN lags the parent's flushed WAL, so a head-branch waits (bounded
-20s) until `last_record_lsn >= parent's pg_current_wal_flush_lsn()` — and
-**fails closed** (requeues) if the parent's flush LSN is unreadable. Skipped
-for historical `at` points.
+20s per attempt) until `last_record_lsn >= parent's
+pg_current_wal_flush_lsn()`. **Fails closed on every path** (review 001
+P0-1): unreadable parent flush LSN → requeue; ingestion still lagging at the
+deadline → status message ("ingestion lagging…") + requeue with a fresh
+deadline. A head branch is never created below the parent's flushed head.
+Skipped for historical `at` points.
 
 ## Lifecycle (lifecycle.rs, 15s tick)
 
-- **Idle detection**: SQL poll per active endpoint counting client backends,
-  excluding `application_name` = `sspc-operator` and `compute_ctl%` (the
-  compute_ctl monitor holds a permanent session — without the exclusion
-  nothing ever suspends). M1-only; the M2 gateway owns activity truth.
+- **Idle detection**: SQL poll per active endpoint with two signals (review
+  001 P1-1): connected client backends — excluding `application_name` =
+  `sspc-operator` and `compute_ctl%` (the compute_ctl monitor holds a
+  permanent session; without the exclusion nothing ever suspends) — plus the
+  monotonic `pg_stat_database.sessions` delta, so short-lived clients that
+  connect and leave *between* polls still count as activity (baseline is 1:
+  the poll's own session). M1-only; the M2 gateway owns activity truth.
 - **Suspend** (idle > `suspendAfterSeconds`): mint admin JWT → POST
   `/terminate` on compute_ctl :3080 → record returned flush LSN in status →
   delete pod. Service and ConfigMap stay (sticky port).
@@ -97,11 +103,13 @@ for historical `at` points.
 ## MCP + UI (mcp.rs)
 
 Hand-rolled streamable-HTTP JSON-RPC (POST + idle GET/SSE keep-alive leg —
-third-party MCP client requires the GET leg; Claude Code tolerates its absence). 15 tools,
-each a thin verb over the CR model — the reconcilers are the single
-implementation of behavior. Errors are structured
-`{reason, retriable, suggested_action}` and the tool schema is
-snapshot-tested (`mcp-tools.json`) so contract drift fails CI. Auth: open
+third-party MCP client requires the GET leg; Claude Code tolerates its absence). 14 tools
+(count pinned by a unit test; schema snapshot-tested in `mcp-tools.json`, so
+contract drift fails CI), each a thin verb over the CR model — the
+reconcilers are the single implementation of behavior. Errors are structured
+`{reason, retriable, suggested_action}`. Kubernetes Events are best-effort
+operational signal (create-only, failures logged and dropped), NOT a durable
+audit trail — long retry loops surface through CR `status.message` instead. Auth: open
 mode by default (install binds host ports to 127.0.0.1; real IAM is RFC 008),
 `SSPC_MCP_REQUIRE_TOKEN=true` for bearer mode. The UI (Carbon, RFC 013) is
 rust-embedded into the binary and speaks only MCP tools — a browser is just

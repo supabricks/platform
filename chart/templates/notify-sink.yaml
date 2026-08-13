@@ -10,10 +10,18 @@ spec:
     metadata: {labels: {app: notify-sink}}
     spec:
       priorityClassName: sspc-cell
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: sink
         image: {{ .Values.images.busybox }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          readOnlyRootFilesystem: true
         resources:
           requests: {cpu: {{ .Values.cellResources.notifySink.cpu }}, memory: {{ .Values.cellResources.notifySink.memory }}}
         command: ["/bin/sh", "-c"]

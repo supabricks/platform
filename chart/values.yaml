@@ -24,6 +24,13 @@ s3:
   accessKey: minio
   secretKey: password
 
+# Security baseline (review 001 P1-5): our own images (operator, notify-sink)
+# run fully hardened — nonroot, no privilege escalation, all capabilities
+# dropped, read-only root. The STOCK images (Neon pageserver/safekeeper/
+# broker/controller, postgres, minio) run as shipped: they manage their own
+# users and data dirs, and constraining them is upstream's contract, not
+# ours. Documented exception, revisit at M2 hardening.
+
 # Cell (storage layer) resource guarantees. Requests only — the cell serves
 # every tenant so it may burst, but it must never run BestEffort (evicted
 # before the computes it backs). Laptop-sized defaults; raise on real metal.

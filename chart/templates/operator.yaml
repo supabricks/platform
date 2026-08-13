@@ -50,10 +50,26 @@ spec:
     spec:
       serviceAccountName: sspc-operator
       priorityClassName: sspc-cell
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: operator
         image: {{ .Values.images.operator }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          readOnlyRootFilesystem: true
+        # The MCP/UI listener doubles as the health surface: it serves only
+        # after the runtime is up, and a wedged runtime stops answering.
+        readinessProbe:
+          httpGet: {path: /, port: 8080}
+          periodSeconds: 5
+        livenessProbe:
+          httpGet: {path: /, port: 8080}
+          initialDelaySeconds: 10
+          periodSeconds: 15
         resources:
           requests: {cpu: {{ .Values.cellResources.operator.cpu }}, memory: {{ .Values.cellResources.operator.memory }}}
         env:

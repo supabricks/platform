@@ -10,14 +10,14 @@ T_START=$(date +%s)
 
 TOKEN=$(kubectl -n $NS get secret sspc-mcp-token -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)
 mcp() { # $1 tool, $2 args-json → tool text payload
-  curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  curl -sf -m 60 -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}" \
     http://localhost:30080/mcp | jq -r '.result.content[0].text'
 }
 psql_run() { # in-pod psql (loopback-bound host ports are unreachable from containers); retry x3
-  for a in 1 2 3; do
+  for a in 1 2 3 4 5; do
     out=$(kubectl -n $NS exec "$1" -- psql -U cloud_admin -h localhost -p 55433 -d postgres -Atc "$2" 2>&1) && { echo "$out"; return 0; }
-    sleep 2
+    sleep 3
   done
   echo "$out"; return 1
 }
@@ -33,8 +33,8 @@ fail() {
 trap 'fail "unexpected error at line $LINENO"' ERR
 
 step "pre-clean (idempotent)"
-for r in e2egrand e2epit e2epts e2ebr e2ettl; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
-for r in e2edb e2esleep; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+for r in e2egrand e2epit e2epts e2ebr e2ettl e2enostat; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+for r in e2edb e2esleep e2echurn; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null 2>&1 || true
 sleep 3
 
@@ -86,6 +86,33 @@ mcp delete_branch '{"name":"e2epts"}' >/dev/null
 step "H2 branch-of-branch: e2egrand forks e2ebr, not the database"
 mcp create_branch '{"name":"e2egrand","database":"e2edb","parent":"e2ebr","cu_limit":2}' | jq -e '.status == "ready"' >/dev/null || fail "grand branch not ready"
 psql_run e2egrand "select count(*) from t" | grep -qx 150000 || fail "grand branch should carry e2ebr's 150k rows"
+
+step "cleanup without status: timeline reclaimed anyway (review 001 P0-2)"
+mcp create_branch '{"name":"e2enostat","database":"e2edb","cu_limit":2}' | jq -e '.status == "ready"' >/dev/null || fail "nostat branch not ready"
+NTL=$(kubectl -n $NS get branch e2enostat -o jsonpath='{.status.timelineId}')
+NTEN=$(kubectl -n $NS get branch e2enostat -o jsonpath='{.status.tenantId}')
+[ -n "$NTL" ] && [ -n "$NTEN" ] || fail "nostat branch has no status ids"
+# Deterministically exercise the status-missing cleanup path: with the
+# operator stopped, strip the tenant from status and delete — no reconcile
+# can re-write it before the finalizer runs.
+kubectl -n $NS scale deploy/sspc-operator --replicas=0 >/dev/null
+kubectl -n $NS wait --for=delete pod -l app=sspc-operator --timeout=60s >/dev/null 2>&1 || true
+kubectl -n $NS patch branch e2enostat --subresource=status --type=merge -p '{"status":{"tenantId":null}}' >/dev/null
+kubectl -n $NS delete branch e2enostat --wait=false >/dev/null
+kubectl -n $NS scale deploy/sspc-operator --replicas=1 >/dev/null
+kubectl -n $NS rollout status deploy/sspc-operator --timeout=120s >/dev/null
+for i in $(seq 1 20); do
+  gone_cr=$(kubectl -n $NS get branch e2enostat --no-headers --ignore-not-found)
+  gone_tl=$(curl -s "http://localhost:30099/v1/tenant/$NTEN/timeline" | jq -r --arg t "$NTL" 'any(.[]; .timeline_id == $t)')
+  [ -z "$gone_cr" ] && [ "$gone_tl" != "true" ] && break
+  sleep 2; [ "$i" = 20 ] && fail "status-less delete leaked timeline $NTL (cr='$gone_cr' present=$gone_tl)"
+done
+
+step "idle detection: short-lived clients keep it awake (review 001 P1-1)"
+mcp create_database '{"name":"e2echurn","suspend_after_seconds":20,"cu_limit":2}' >/dev/null
+for i in $(seq 1 6); do psql_run e2echurn "select 1" >/dev/null; sleep 7; done
+[ "$(kubectl -n $NS get database e2echurn -o jsonpath='{.status.phase}')" = "Active" ] || fail "suspended despite session churn"
+mcp delete_database '{"name":"e2echurn"}' >/dev/null
 
 step "scale-to-zero: e2esleep (suspendAfter=20s)"
 mcp create_database '{"name":"e2esleep","suspend_after_seconds":20}' >/dev/null

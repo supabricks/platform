@@ -30,7 +30,11 @@ mod tests {
             assert!((RANGE_START..RANGE_START + RANGE_LEN).contains(&p));
             assert!(used.insert(p), "duplicate allocation");
         }
-        assert_eq!(pick("overflow", &used), None, "exhaustion is a None, not a panic");
+        assert_eq!(
+            pick("overflow", &used),
+            None,
+            "exhaustion is a None, not a panic"
+        );
     }
 
     #[test]

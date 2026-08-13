@@ -11,14 +11,14 @@ T_START=$(date +%s)
 
 TOKEN=$(kubectl -n $NS get secret sspc-mcp-token -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)
 mcp() { # $1 tool, $2 args-json → tool text payload
-  curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  curl -sf -m 60 -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}" \
     http://localhost:30080/mcp | jq -r '.result.content[0].text'
 }
 psql_run() { # in-pod psql; retry x3 (pod may be mid-restart during drills)
-  for a in 1 2 3; do
+  for a in 1 2 3 4 5; do
     out=$(kubectl -n $NS exec "$1" -- psql -U cloud_admin -h localhost -p 55433 -d postgres -Atc "$2" 2>&1) && { echo "$out"; return 0; }
-    sleep 2
+    sleep 3
   done
   echo "$out"; return 1
 }
