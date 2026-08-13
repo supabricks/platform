@@ -814,3 +814,39 @@ fn tool_defs() -> Value {
          "inputSchema": {"type": "object", "properties": {}}},
     ])
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// T2 (RFC 012, landed by RFC 014 PR B): the tool schema is the agent
+    /// contract — unintentional drift fails CI. Intentional change?
+    /// UPDATE_SNAPSHOTS=1 cargo test, then review the fixture diff.
+    #[test]
+    fn tool_schema_snapshot() {
+        let current = serde_json::to_string_pretty(&tool_defs()).unwrap();
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/mcp-tools.json");
+        if std::env::var("UPDATE_SNAPSHOTS").is_ok() {
+            std::fs::write(path, &current).unwrap();
+            return;
+        }
+        let saved = std::fs::read_to_string(path)
+            .expect("snapshot missing — UPDATE_SNAPSHOTS=1 cargo test to create it");
+        assert_eq!(
+            current, saved,
+            "MCP tool schema drifted from the snapshot — if intentional, \
+             UPDATE_SNAPSHOTS=1 cargo test and commit the fixture"
+        );
+    }
+
+    /// Every tool failure is remediable by an agent (001 §5.2): the error
+    /// payload always carries reason / retriable / suggested_action.
+    #[test]
+    fn tool_errors_are_structured() {
+        let e = terr("it broke", true, "try again");
+        let v: Value = serde_json::from_str(&e.to_string()).unwrap();
+        assert_eq!(v["reason"], "it broke");
+        assert_eq!(v["retriable"], true);
+        assert_eq!(v["suggested_action"], "try again");
+    }
+}

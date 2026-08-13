@@ -1,0 +1,241 @@
+[
+  {
+    "description": "Platform capabilities, limits, and feature flags.",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "capabilities"
+  },
+  {
+    "description": "Create a Postgres database; returns a psql connection URI. Idempotent on name.",
+    "inputSchema": {
+      "properties": {
+        "cu_limit": {
+          "description": "Compute ceiling in CU, 1 CU = 0.1 core (default 10)",
+          "type": "integer"
+        },
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Contention priority: high degrades last, low is preempted first (default standard)",
+          "enum": [
+            "high",
+            "standard",
+            "low"
+          ],
+          "type": "string"
+        },
+        "suspend_after_seconds": {
+          "description": "Idle seconds before scale-to-zero (default 300)",
+          "type": "integer"
+        },
+        "ttl_seconds": {
+          "description": "Optional TTL; the platform reaps the database when it expires",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "create_database"
+  },
+  {
+    "description": "The estate: cell-backed databases AND enrolled (existing, unmigrated) Postgres, with health.",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "list_databases"
+  },
+  {
+    "description": "Attach an EXISTING Postgres (anywhere) for inventory and health monitoring — zero migration, zero changes to it. Needs only a connection URI (read-only role is enough).",
+    "inputSchema": {
+      "properties": {
+        "connection_uri": {
+          "description": "postgres:// URI of the existing server",
+          "type": "string"
+        },
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "connection_uri"
+      ],
+      "type": "object"
+    },
+    "name": "enroll_database"
+  },
+  {
+    "description": "Detach an enrolled database from the estate (the database itself is never touched).",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "unenroll_database"
+  },
+  {
+    "description": "Get one database's status.",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "get_database"
+  },
+  {
+    "description": "Delete a database, its storage, and its compute. Refuses (with the list) while the database still has branches.",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "delete_database"
+  },
+  {
+    "description": "Instant copy-on-write branch; returns its own connection URI. Branch a database, another branch (parent), and/or a moment in time (at).",
+    "inputSchema": {
+      "properties": {
+        "at": {
+          "description": "Optional branch point: an LSN (e.g. 0/1BCC200) or RFC 3339 timestamp (e.g. 2026-08-12T10:00:00Z); default = head of parent now",
+          "type": "string"
+        },
+        "cu_limit": {
+          "description": "Compute ceiling in CU (default 10)",
+          "type": "integer"
+        },
+        "database": {
+          "description": "Owning database name (the root of the branch tree)",
+          "type": "string"
+        },
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        },
+        "parent": {
+          "description": "Optional parent BRANCH name — branch-of-branch; default branches the database itself",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "high",
+            "standard",
+            "low"
+          ],
+          "type": "string"
+        },
+        "ttl_seconds": {
+          "description": "Optional TTL",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "database"
+      ],
+      "type": "object"
+    },
+    "name": "create_branch"
+  },
+  {
+    "description": "List branches with status and parentage.",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "list_branches"
+  },
+  {
+    "description": "Delete a branch and its compute. Refuses while the branch has child branches.",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "delete_branch"
+  },
+  {
+    "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "get_connection"
+  },
+  {
+    "description": "Recent CPU/memory usage for a database or branch (15s samples, ~10 min window), with its CU limit.",
+    "inputSchema": {
+      "properties": {
+        "name": {
+          "description": "Resource name (lowercase DNS label)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "get_metrics"
+  },
+  {
+    "description": "The compute ledger: physical CU on the cluster, CU promised as ceilings, CU awake right now, and live draw. Shows oversubscription headroom (suspended databases hold zero CU).",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "get_cu_ledger"
+  },
+  {
+    "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "name": "get_events"
+  }
+]
