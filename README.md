@@ -5,6 +5,9 @@ turn declarative `Database`/`Branch` resources into disaggregated Postgres
 (Neon's Apache-2.0 storage engine) with scale-to-zero, ~1s wakes, instant
 copy-on-write branches, TTL self-cleanup — and an MCP server so agents (Claude
 Code) are first-class users. Design: `docs/design/012-poc-m1-plan.md`.
+New to the codebase? Start with the engineering handbook:
+`docs/handbook/README.md` (architecture as built, dev loop + landmines,
+runbook, and what's deliberately deferred).
 
 ## Quickstart (laptop, kind)
 
