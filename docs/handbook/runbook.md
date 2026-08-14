@@ -86,6 +86,7 @@ with `relation "nodes" does not exist` (found by this drill's first destroy).
 | the MCP client doesn't see sspc | wrong config path or missing GET leg (both fixed — regression check) | `~/.mcp-client/settings/mcp.json` must list it; `curl -N localhost:30080/mcp` must hold an SSE stream open |
 | storage-controller CrashLoop | it panicked on a compute notification — notify-sink missing/broken | `kubectl -n sspc-cell get svc notify-sink`; restore it |
 | Everything Pending after adding endpoints | request budget exhausted on small nodes | lower `cuLimit`s / delete endpoints; on real metal raise `cellResources` and node counts |
+| Every storcon call times out; `controller-pg` 0/1 with `PANIC: could not write ... No space left on device` | the kind NODE disk is full — every dev-loop `kind load` piles a full image layer stack into the node's containerd (~15 loads ≈ 9GB), sharing the disk with all PVCs | `docker exec sspc-control-plane crictl rmi --prune` + host `docker system prune -af`; then delete pod `controller-pg-0` and `rollout restart deploy/storage-controller` (drill-4 rule). CAUTION: with every database suspended, the prune removes the "unused" COMPUTE image → wakes fail `ErrImageNeverPull`; re-run `install/up.sh --yes` (its image-load re-checks the compute image) |
 
 ## Recovery invariants (what you can always rely on)
 

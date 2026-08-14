@@ -31,7 +31,16 @@ impl Storcon {
     pub fn new(base: impl Into<String>) -> Self {
         Self {
             base: base.into(),
-            http: reqwest::Client::new(),
+            // Timeouts are mandatory (found live, review 003): a client with
+            // none lets one hung request park an object's reconcile future
+            // FOREVER — kube-rs dedups events for in-flight objects, so the
+            // CR never reconciles again until the operator restarts. 30s
+            // covers the slowest legitimate call (tenant create → initdb).
+            http: reqwest::Client::builder()
+                .connect_timeout(std::time::Duration::from_secs(5))
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .expect("reqwest client"),
         }
     }
 

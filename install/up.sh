@@ -46,7 +46,11 @@ docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
   say "building operator image (not found locally)"
   docker build -t "$OPERATOR_TAG" ..
 }
-if docker exec sspc-control-plane crictl images 2>/dev/null | grep -q sspc-operator; then
+# Check the operator AND the compute image: a node-side image prune while
+# every database is suspended removes the "unused" compute image (found by
+# the review-003 disk-full incident) — the skip must notice.
+if docker exec sspc-control-plane crictl images 2>/dev/null | grep -q sspc-operator \
+   && docker exec sspc-control-plane crictl images 2>/dev/null | grep -q compute-node-v16; then
   say "images already on the node; skipping load"
 else
   tar=$(mktemp -d)/images.tar

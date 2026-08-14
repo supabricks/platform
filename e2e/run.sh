@@ -36,11 +36,36 @@ step "pre-clean (idempotent)"
 for r in e2egrand e2epit e2epts e2ebr e2ettl e2enostat; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 for r in e2edb e2esleep e2echurn; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
 mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null 2>&1 || true
-sleep 3
+# Wait for the CRs to actually vanish (finalizers do real cell-side work) —
+# an SSA create against a still-deleting CR fails (found twice; also fixed
+# in restore.sh's pre-clean).
+for i in $(seq 1 30); do
+  left=$(kubectl -n $NS get databases,branches --no-headers --ignore-not-found 2>/dev/null | grep -cE '^\S*e2e' || true)
+  [ "${left:-0}" = "0" ] && break
+  sleep 2
+done
 
 step "capabilities"
 mcp capabilities '{}' | jq -e '.features.scale_to_zero == true' >/dev/null
 mcp get_cu_ledger '{}' | jq -e '.physical_cu > 0 and .promised_cu >= .active_cu' >/dev/null || fail "cu ledger"
+
+step "API contract: invalid input fails synchronously (review 003)"
+mcp create_branch '{"name":"apimissing","database":"doesnotexist"}' | jq -e '.reason | test("not found")' >/dev/null || fail "missing database accepted"
+[ -z "$(kubectl -n $NS get branch apimissing --no-headers --ignore-not-found)" ] || fail "branch CR created for missing database"
+mcp create_database '{"name":"apibad","cu_limit":-5}' | jq -e '.reason | test("out of range")' >/dev/null || fail "negative cu_limit accepted"
+mcp create_database '{"name":"apibad","ttl_seconds":-10}' | jq -e '.reason | test("out of range")' >/dev/null || fail "negative ttl accepted"
+mcp create_database '{"name":"apibad","priority":"urgent"}' | jq -e '.reason | test("unknown priority")' >/dev/null || fail "bogus priority accepted"
+[ -z "$(kubectl -n $NS get database apibad --no-headers --ignore-not-found)" ] || fail "invalid input created a CR"
+# The CRD schema guards direct kubectl apply too (review 003 P1-2).
+if kubectl -n $NS apply -f - >/dev/null 2>&1 <<'YAML'
+apiVersion: sspc.io/v1alpha1
+kind: Database
+metadata: {name: apibad-direct}
+spec: {cuLimit: -5}
+YAML
+then fail "CRD schema accepted negative cuLimit"; fi
+# Protocol layer: malformed JSON gets a JSON-RPC parse-error envelope.
+curl -s -m 10 -X POST -H "Content-Type: application/json" -d 'not json' http://localhost:30080/mcp | jq -e '.error.code == -32700' >/dev/null || fail "parse error not JSON-RPC shaped"
 
 step "T3 idempotency: create e2edb twice -> exactly one CR"
 mcp create_database '{"name":"e2edb"}' >/dev/null

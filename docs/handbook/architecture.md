@@ -106,10 +106,18 @@ Hand-rolled streamable-HTTP JSON-RPC (POST + idle GET/SSE keep-alive leg —
 third-party MCP client requires the GET leg; Claude Code tolerates its absence). 14 tools
 (count pinned by a unit test; schema snapshot-tested in `mcp-tools.json`, so
 contract drift fails CI), each a thin verb over the CR model — the
-reconcilers are the single implementation of behavior. Errors are structured
-`{reason, retriable, suggested_action}`. Kubernetes Events are best-effort
-operational signal (create-only, failures logged and dropped), NOT a durable
-audit trail — long retry loops surface through CR `status.message` instead. Auth: open
+reconcilers are the single implementation of behavior. Every tool also
+declares an **outputSchema** (result contract, snapshot-pinned). Input is
+validated synchronously at the boundary (review 003): names normalize to
+lowercase (the canonical name is echoed back), numeric bounds mirror the CRD
+schema (`suspend_after_seconds: 0` = never suspend), and enum values are
+strict — never silently coerced. Errors come in three layers: HTTP
+(401/parse-error envelope), JSON-RPC (`error` envelope), and tool-level
+`{reason, retriable, suggested_action}` — the layer agents act on. The
+GET/SSE leg is keep-alive only: no session model or server notifications.
+Kubernetes Events are best-effort operational signal (create-only, failures
+logged and dropped), NOT a durable audit trail — long retry loops surface
+through CR `status.message` instead. Auth: open
 mode by default (install binds host ports to 127.0.0.1; real IAM is RFC 008),
 `SSPC_MCP_REQUIRE_TOKEN=true` for bearer mode. The UI (Carbon, RFC 013) is
 rust-embedded into the binary and speaks only MCP tools — a browser is just

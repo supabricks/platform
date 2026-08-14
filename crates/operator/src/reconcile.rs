@@ -687,12 +687,27 @@ async fn apply_branch(br: Arc<Branch>, ctx: &Ctx) -> anyhow::Result<Action> {
             && e.downcast_ref::<crate::storcon::StorconHttp>()
                 .is_some_and(|h| (400..500).contains(&h.status));
         if user_error {
-            let msg = format!("branch point {}: {e:#}", br.spec.at.as_deref().unwrap_or(""));
+            let msg = format!(
+                "branch point {}: {e:#}",
+                br.spec.at.as_deref().unwrap_or("")
+            );
             warn!("branch {name}: {msg}");
-            ctx.patch_status(&api_br, &name, json!({"phase": "Failed", "message": msg.clone()}))
-                .await;
-            post_event(ctx, "sspc.io/v1alpha1", "Branch", &name, br.meta().uid.clone(),
-                       "Failed", msg).await;
+            ctx.patch_status(
+                &api_br,
+                &name,
+                json!({"phase": "Failed", "message": msg.clone()}),
+            )
+            .await;
+            post_event(
+                ctx,
+                "sspc.io/v1alpha1",
+                "Branch",
+                &name,
+                br.meta().uid.clone(),
+                "Failed",
+                msg,
+            )
+            .await;
             return Ok(Action::await_change());
         }
         return Err(e);
@@ -892,16 +907,34 @@ mod tests {
     /// caller requeues before any timeline creation), not cut stale.
     #[test]
     fn head_wait_holds_on_sustained_lag() {
-        assert_eq!(head_wait_verdict(Some("0/1000"), "0/2000", false), HeadWait::KeepWaiting);
-        assert_eq!(head_wait_verdict(Some("0/1000"), "0/2000", true), HeadWait::HoldAndRequeue);
-        assert_eq!(head_wait_verdict(None, "0/2000", true), HeadWait::HoldAndRequeue);
+        assert_eq!(
+            head_wait_verdict(Some("0/1000"), "0/2000", false),
+            HeadWait::KeepWaiting
+        );
+        assert_eq!(
+            head_wait_verdict(Some("0/1000"), "0/2000", true),
+            HeadWait::HoldAndRequeue
+        );
+        assert_eq!(
+            head_wait_verdict(None, "0/2000", true),
+            HeadWait::HoldAndRequeue
+        );
     }
 
     #[test]
     fn head_wait_ready_only_at_or_past_flush() {
-        assert_eq!(head_wait_verdict(Some("0/2000"), "0/2000", false), HeadWait::Ready);
-        assert_eq!(head_wait_verdict(Some("1/0"), "0/FFFFFFFF", true), HeadWait::Ready);
-        assert_eq!(head_wait_verdict(Some("0/1FFF"), "0/2000", false), HeadWait::KeepWaiting);
+        assert_eq!(
+            head_wait_verdict(Some("0/2000"), "0/2000", false),
+            HeadWait::Ready
+        );
+        assert_eq!(
+            head_wait_verdict(Some("1/0"), "0/FFFFFFFF", true),
+            HeadWait::Ready
+        );
+        assert_eq!(
+            head_wait_verdict(Some("0/1FFF"), "0/2000", false),
+            HeadWait::KeepWaiting
+        );
     }
 
     /// The review-002 retry-state regression: a requeued branch has

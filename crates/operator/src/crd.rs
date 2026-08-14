@@ -38,15 +38,18 @@ pub enum Priority {
 pub struct DatabaseSpec {
     /// Idle seconds before suspend (enforced by the operator's idle loop, P3).
     #[serde(default = "default_suspend_after")]
+    #[schemars(range(min = 0, max = 86400))] // 0 = never suspend (review 003)
     pub suspend_after_seconds: i64,
     /// Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
     /// pool; suspended databases hold zero CU.
     #[serde(default = "default_cu_limit")]
+    #[schemars(range(min = 1, max = 960))]
     pub cu_limit: i64,
     #[serde(default)]
     pub priority: Priority,
     /// Optional TTL; the reaper deletes the resource after this many seconds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1))]
     pub ttl_seconds: Option<i64>,
 }
 
@@ -77,14 +80,17 @@ pub struct BranchSpec {
     pub at: Option<String>,
     /// Idle seconds before suspend (branches sleep aggressively by default).
     #[serde(default = "default_suspend_after")]
+    #[schemars(range(min = 0, max = 86400))] // 0 = never suspend (review 003)
     pub suspend_after_seconds: i64,
     /// Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
     /// pool; suspended databases hold zero CU.
     #[serde(default = "default_cu_limit")]
+    #[schemars(range(min = 1, max = 960))]
     pub cu_limit: i64,
     #[serde(default)]
     pub priority: Priority,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1))]
     pub ttl_seconds: Option<i64>,
 }
 

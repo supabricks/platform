@@ -1,9 +1,17 @@
 //! The MCP façade (RFC 012 D8, 004 B3): streamable-HTTP JSON-RPC served from
-//! the operator binary. Hand-rolled per D8's sanctioned fallback — de-risk ①
-//! proved the exact surface Claude Code needs: POST JSON responses, 202 for
-//! notifications, no SSE. Every tool is a thin verb over the CR model; the
-//! reconcilers stay the single implementation of behavior (001 §5: one machine
-//! API, many clients).
+//! the operator binary. Hand-rolled per D8's sanctioned fallback. POST carries
+//! JSON-RPC (202 for notifications); GET holds a keep-alive-only SSE stream —
+//! no session model or server notifications, just enough for clients
+//! that treat a missing stream as a dead server. Every tool is a thin
+//! verb over the CR model; the reconcilers stay the single implementation of
+//! behavior (001 §5: one machine API, many clients).
+//!
+//! Error contract, three layers (review 003 P1-5):
+//! 1. HTTP: 401 unauthorized (bearer mode only); 400 + JSON-RPC parse-error
+//!    envelope (code -32700) for unparseable bodies.
+//! 2. JSON-RPC: `error` envelope (e.g. -32601 unknown method), HTTP 200.
+//! 3. Tool: `result.isError=true`, content = {reason, retriable,
+//!    suggested_action} — the layer agents act on.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -96,7 +104,13 @@ async fn handle_post(
             .into_response();
     }
     let Ok(req) = serde_json::from_slice::<Value>(&body) else {
-        return (StatusCode::BAD_REQUEST, Json(json!({"error": "bad json"}))).into_response();
+        // JSON-RPC parse-error envelope (review 003 P1-5), not an ad-hoc shape.
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"jsonrpc": "2.0", "id": null,
+                         "error": {"code": -32700, "message": "parse error: body is not valid JSON"}})),
+        )
+            .into_response();
     };
     let method = req["method"].as_str().unwrap_or_default().to_string();
     let id = req["id"].clone();
@@ -135,6 +149,7 @@ async fn handle_post(
 }
 
 /// Structured, remediable errors (001 §5.2): agents act on failures.
+#[derive(Debug)]
 struct ToolError {
     reason: String,
     retriable: bool,
@@ -194,16 +209,19 @@ async fn call_tool(state: &McpState, name: &str, args: &Value) -> ToolResult {
     }
 }
 
-fn need_name(args: &Value) -> Result<String, ToolError> {
-    let name = args["name"]
+/// Normalize (lowercase) and validate one identifier argument. Normalization
+/// is the documented contract (review 003 P2-2): every response echoes the
+/// canonical name.
+fn valid_name(args: &Value, key: &str) -> Result<String, ToolError> {
+    let name = args[key]
         .as_str()
         .filter(|s| !s.is_empty())
         .map(|s| s.to_lowercase())
         .ok_or_else(|| {
             terr(
-                "missing required argument: name",
+                format!("missing required argument: {key}"),
                 false,
-                "pass a name argument",
+                format!("pass a {key} argument"),
             )
         })?;
     // Friendly DNS-1123 guard: without it, invalid names surface as raw
@@ -216,12 +234,59 @@ fn need_name(args: &Value) -> Result<String, ToolError> {
         && !name.ends_with('-');
     if !valid {
         return Err(terr(
-            format!("invalid name {name:?}"),
+            format!("invalid {key} {name:?}"),
             false,
             "use lowercase letters, digits, and hyphens (max 40 chars), starting and ending with a letter or digit — e.g. \"my-db\"",
         ));
     }
     Ok(name)
+}
+
+fn need_name(args: &Value) -> Result<String, ToolError> {
+    valid_name(args, "name")
+}
+
+/// Bounded integer argument (review 003 P1-2): out-of-range values are
+/// synchronous structured errors, mirroring the CRD schema bounds.
+fn bounded_int(args: &Value, key: &str, min: i64, max: i64) -> Result<Option<i64>, ToolError> {
+    match &args[key] {
+        Value::Null => Ok(None),
+        v => {
+            let n = v.as_i64().ok_or_else(|| {
+                terr(
+                    format!("{key} must be an integer"),
+                    false,
+                    format!("pass {key} as an integer"),
+                )
+            })?;
+            if n < min || n > max {
+                return Err(terr(
+                    format!("{key} {n} out of range"),
+                    false,
+                    format!("use {min}..={max}"),
+                ));
+            }
+            Ok(Some(n))
+        }
+    }
+}
+
+/// Strict priority parse (review 003 P1-3): unknown values are errors, never
+/// silently coerced to Standard.
+fn parse_priority(args: &Value) -> Result<Option<&'static str>, ToolError> {
+    match args["priority"].as_str() {
+        None => Ok(None),
+        Some(p) => match p.to_lowercase().as_str() {
+            "high" => Ok(Some("High")),
+            "standard" => Ok(Some("Standard")),
+            "low" => Ok(Some("Low")),
+            other => Err(terr(
+                format!("unknown priority {other:?}"),
+                false,
+                "use one of: high, standard, low",
+            )),
+        },
+    }
 }
 
 fn capabilities(state: &McpState) -> ToolResult {
@@ -296,21 +361,19 @@ async fn await_ready(state: &McpState, name: &str, secs: u64) -> Option<i32> {
 async fn create_database(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
     let mut spec = json!({});
-    if let Some(ttl) = args["ttl_seconds"].as_i64() {
+    if let Some(ttl) = bounded_int(args, "ttl_seconds", 1, 30 * 86400)? {
         spec["ttlSeconds"] = json!(ttl);
     }
-    if let Some(s) = args["suspend_after_seconds"].as_i64() {
+    // 0 = never suspend (the lifecycle loop skips non-positive values) —
+    // documented contract, review 003 P1-2.
+    if let Some(s) = bounded_int(args, "suspend_after_seconds", 0, 86400)? {
         spec["suspendAfterSeconds"] = json!(s);
     }
-    if let Some(c) = args["cu_limit"].as_i64() {
+    if let Some(c) = bounded_int(args, "cu_limit", 1, 960)? {
         spec["cuLimit"] = json!(c);
     }
-    if let Some(p) = args["priority"].as_str() {
-        spec["priority"] = json!(match p.to_lowercase().as_str() {
-            "high" => "High",
-            "low" => "Low",
-            _ => "Standard",
-        });
+    if let Some(p) = parse_priority(args)? {
+        spec["priority"] = json!(p);
     }
     let db: Database = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "Database",
@@ -337,13 +400,18 @@ async fn create_database(state: &McpState, args: &Value) -> ToolResult {
 
 async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
-    let database = args["database"].as_str().ok_or_else(|| {
-        terr(
-            "missing required argument: database",
+    // Review 003 P1-1: validate the owning database's NAME and EXISTENCE up
+    // front — a typo must be a synchronous structured error, not a Branch CR
+    // stuck in permanent retry.
+    let database = valid_name(args, "database")?;
+    let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    if dbs.get_opt(&database).await.map_err(from_kube)?.is_none() {
+        return Err(terr(
+            format!("database {database} not found"),
             false,
-            "pass the parent database name",
-        )
-    })?;
+            "list_databases to see what exists; create_database to make it",
+        ));
+    }
     let mut spec = json!({"database": database});
     // Branch-of-branch (RFC 014 H2): validate up front so the error is
     // synchronous and structured, not a reconciler retry loop.
@@ -375,18 +443,14 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     if let Some(a) = args["at"].as_str() {
         spec["at"] = json!(a);
     }
-    if let Some(ttl) = args["ttl_seconds"].as_i64() {
+    if let Some(ttl) = bounded_int(args, "ttl_seconds", 1, 30 * 86400)? {
         spec["ttlSeconds"] = json!(ttl);
     }
-    if let Some(c) = args["cu_limit"].as_i64() {
+    if let Some(c) = bounded_int(args, "cu_limit", 1, 960)? {
         spec["cuLimit"] = json!(c);
     }
-    if let Some(p) = args["priority"].as_str() {
-        spec["priority"] = json!(match p.to_lowercase().as_str() {
-            "high" => "High",
-            "low" => "Low",
-            _ => "Standard",
-        });
+    if let Some(p) = parse_priority(args)? {
+        spec["priority"] = json!(p);
     }
     let br: Branch = serde_json::from_value(json!({
         "apiVersion": "sspc.io/v1alpha1", "kind": "Branch",
@@ -400,7 +464,7 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
         .map_err(from_kube)?;
     match await_ready(state, &name, 30).await {
         Some(port) => Ok(json!({
-            "name": name, "parent": args["parent"].as_str().unwrap_or(database),
+            "name": name, "parent": args["parent"].as_str().unwrap_or(&database),
             "database": database, "status": "ready",
             "connection_uri": uri(state, &name, port).await?,
         })),
@@ -857,11 +921,37 @@ async fn get_cu_ledger(state: &McpState) -> ToolResult {
 }
 
 fn tool_defs() -> Value {
-    let name_arg = json!({"type": "string", "description": "Resource name (lowercase DNS label)"});
+    let name_arg = json!({"type": "string", "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)"});
+    // Result contracts (review 003 P1-4): every tool declares an
+    // outputSchema. These live in the same snapshot fixture as the input
+    // schemas, so result-field drift fails CI before it reaches a client.
+    let err_note =
+        "On failure the content is {reason, retriable, suggested_action} with isError=true.";
+    let estate_row = json!({"type": "object", "properties": {
+        "name": {"type": "string"}, "kind": {"type": "string", "enum": ["cell-backed", "enrolled"]},
+        "phase": {"type": ["string", "null"]}, "node_port": {"type": ["integer", "null"]},
+        "tenant_id": {"type": ["string", "null"]}, "timeline_id": {"type": ["string", "null"]},
+        "last_activity": {"type": ["string", "null"]}, "suspended_at": {"type": ["string", "null"]},
+        "created_at": {"type": ["string", "null"]}, "ttl_seconds": {"type": ["integer", "null"]},
+        "suspend_after_seconds": {"type": ["integer", "null"]},
+        "server_version": {"type": ["string", "null"]}, "database_count": {"type": ["integer", "null"]},
+        "total_size": {"type": ["string", "null"]}, "message": {"type": ["string", "null"]}},
+        "required": ["name"]});
+    let create_result = json!({"type": "object", "description": err_note, "properties": {
+        "name": {"type": "string"},
+        "status": {"type": "string", "enum": ["ready", "provisioning"]},
+        "connection_uri": {"type": "string", "description": "present when status=ready"},
+        "note": {"type": "string"}},
+        "required": ["name", "status"]});
     json!([
         {"name": "capabilities",
          "description": "Platform capabilities, limits, and feature flags.",
-         "inputSchema": {"type": "object", "properties": {}}},
+         "inputSchema": {"type": "object", "properties": {}},
+         "outputSchema": {"type": "object", "properties": {
+             "platform": {"type": "string"}, "version": {"type": "string"},
+             "pg_version": {"type": "integer"}, "max_endpoints": {"type": "integer"},
+             "connect_host": {"type": "string"}, "features": {"type": "object"}},
+             "required": ["platform", "features"]}},
         {"name": "create_database",
          "description": "Create a Postgres database; returns a psql connection URI. Idempotent on name.",
          "inputSchema": {"type": "object", "properties": {
@@ -870,24 +960,38 @@ fn tool_defs() -> Value {
              "suspend_after_seconds": {"type": "integer", "description": "Idle seconds before scale-to-zero (default 300)"},
              "cu_limit": {"type": "integer", "description": "Compute ceiling in CU, 1 CU = 0.1 core (default 10)"},
              "priority": {"type": "string", "enum": ["high", "standard", "low"], "description": "Contention priority: high degrades last, low is preempted first (default standard)"}},
-             "required": ["name"]}},
+             "required": ["name"]},
+         "outputSchema": create_result},
         {"name": "list_databases",
          "description": "The estate: cell-backed databases AND enrolled (existing, unmigrated) Postgres, with health.",
-         "inputSchema": {"type": "object", "properties": {}}},
+         "inputSchema": {"type": "object", "properties": {}},
+         "outputSchema": {"type": "array", "items": estate_row}},
         {"name": "enroll_database",
          "description": "Attach an EXISTING Postgres (anywhere) for inventory and health monitoring — zero migration, zero changes to it. Needs only a connection URI (read-only role is enough).",
          "inputSchema": {"type": "object", "properties": {
              "name": name_arg,
              "connection_uri": {"type": "string", "description": "postgres:// URI of the existing server"}},
-             "required": ["name", "connection_uri"]}},
+             "required": ["name", "connection_uri"]},
+         "outputSchema": {"type": "object", "description": err_note, "properties": {
+             "name": {"type": "string"}, "kind": {"type": "string"}, "phase": {"type": ["string", "null"]},
+             "server_version": {"type": ["string", "null"]}, "database_count": {"type": ["integer", "null"]},
+             "total_size": {"type": ["string", "null"]}, "message": {"type": ["string", "null"]},
+             "note": {"type": "string"}}, "required": ["name"]}},
         {"name": "unenroll_database",
          "description": "Detach an enrolled database from the estate (the database itself is never touched).",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": {"type": "object", "properties": {
+             "name": {"type": "string"}, "status": {"type": "string", "enum": ["unenrolled", "absent"]},
+             "note": {"type": "string"}}, "required": ["name", "status"]}},
         {"name": "get_database", "description": "Get one database's status.",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": estate_row},
         {"name": "delete_database",
          "description": "Delete a database, its storage, and its compute. Refuses (with the list) while the database still has branches.",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": {"type": "object", "description": err_note, "properties": {
+             "name": {"type": "string"}, "status": {"type": "string", "enum": ["deleting", "absent"]},
+             "note": {"type": "string"}}, "required": ["name", "status"]}},
         {"name": "create_branch",
          "description": "Instant copy-on-write branch; returns its own connection URI. Branch a database, another branch (parent), and/or a moment in time (at).",
          "inputSchema": {"type": "object", "properties": {
@@ -898,23 +1002,54 @@ fn tool_defs() -> Value {
              "ttl_seconds": {"type": "integer", "description": "Optional TTL"},
              "cu_limit": {"type": "integer", "description": "Compute ceiling in CU (default 10)"},
              "priority": {"type": "string", "enum": ["high", "standard", "low"]}},
-             "required": ["name", "database"]}},
+             "required": ["name", "database"]},
+         "outputSchema": create_result},
         {"name": "list_branches", "description": "List branches with status and parentage.",
-         "inputSchema": {"type": "object", "properties": {}}},
+         "inputSchema": {"type": "object", "properties": {}},
+         "outputSchema": {"type": "array", "items": {"type": "object", "properties": {
+             "name": {"type": "string"}, "database": {"type": "string"},
+             "parent": {"type": ["string", "null"]}, "at": {"type": ["string", "null"]},
+             "phase": {"type": ["string", "null"]}, "node_port": {"type": ["integer", "null"]},
+             "created_at": {"type": ["string", "null"]}, "ttl_seconds": {"type": ["integer", "null"]}},
+             "required": ["name", "database"]}}},
         {"name": "delete_branch", "description": "Delete a branch and its compute. Refuses while the branch has child branches.",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": {"type": "object", "description": err_note, "properties": {
+             "name": {"type": "string"}, "status": {"type": "string", "enum": ["deleting", "absent"]}},
+             "required": ["name", "status"]}},
         {"name": "get_connection",
          "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": {"type": "object", "description": err_note, "properties": {
+             "name": {"type": "string"}, "connection_uri": {"type": "string"},
+             "woke_from_suspend": {"type": "boolean", "description": "present only when a wake happened"},
+             "wake_seconds": {"type": "string", "description": "present only when a wake happened"}},
+             "required": ["name", "connection_uri"]}},
         {"name": "get_metrics",
          "description": "Recent CPU/memory usage for a database or branch (15s samples, ~10 min window), with its CU limit.",
-         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]}},
+         "inputSchema": {"type": "object", "properties": {"name": name_arg}, "required": ["name"]},
+         "outputSchema": {"type": "object", "properties": {
+             "name": {"type": "string"}, "cu_limit": {"type": "integer"},
+             "priority": {"type": "string"}, "cpu_limit_millis": {"type": "integer"},
+             "series": {"type": "array", "items": {"type": "object", "properties": {
+                 "t": {"type": "integer"}, "cpu_millis": {"type": "integer"}, "mem_mib": {"type": "integer"}},
+                 "required": ["t", "cpu_millis", "mem_mib"]}}},
+             "required": ["name", "cu_limit", "series"]}},
         {"name": "get_cu_ledger",
          "description": "The compute ledger: physical CU on the cluster, CU promised as ceilings, CU awake right now, and live draw. Shows oversubscription headroom (suspended databases hold zero CU).",
-         "inputSchema": {"type": "object", "properties": {}}},
+         "inputSchema": {"type": "object", "properties": {}},
+         "outputSchema": {"type": "object", "properties": {
+             "physical_cu": {"type": "integer"}, "promised_cu": {"type": "integer"},
+             "active_cu": {"type": "integer"}, "used_millis": {"type": "integer"},
+             "endpoints": {"type": "integer"}, "endpoints_active": {"type": "integer"}},
+             "required": ["physical_cu", "promised_cu", "active_cu"]}},
         {"name": "get_events",
          "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",
-         "inputSchema": {"type": "object", "properties": {}}},
+         "inputSchema": {"type": "object", "properties": {}},
+         "outputSchema": {"type": "array", "items": {"type": "object", "properties": {
+             "time": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"]},
+             "kind": {"type": ["string", "null"]}, "name": {"type": ["string", "null"]},
+             "message": {"type": ["string", "null"]}}}}},
     ])
 }
 
@@ -952,6 +1087,62 @@ mod tests {
             14,
             "tool count changed — update README.md and docs/handbook/architecture.md"
         );
+    }
+
+    /// Review 003 P1-4: every tool declares its result contract. A tool
+    /// added without an outputSchema fails here; a changed one fails the
+    /// snapshot above.
+    #[test]
+    fn every_tool_declares_output_schema() {
+        for t in tool_defs().as_array().unwrap() {
+            assert!(
+                t.get("outputSchema").is_some(),
+                "tool {} has no outputSchema",
+                t["name"]
+            );
+        }
+    }
+
+    /// Review 003 P1-2/P1-3: boundary validation is synchronous and strict.
+    #[test]
+    fn invalid_inputs_are_rejected() {
+        use serde_json::json;
+        assert!(bounded_int(&json!({"cu_limit": -5}), "cu_limit", 1, 960).is_err());
+        assert!(bounded_int(&json!({"cu_limit": 0}), "cu_limit", 1, 960).is_err());
+        assert!(bounded_int(&json!({"cu_limit": 961}), "cu_limit", 1, 960).is_err());
+        assert!(bounded_int(&json!({"ttl_seconds": -10}), "ttl_seconds", 1, 2592000).is_err());
+        assert!(
+            bounded_int(
+                &json!({"suspend_after_seconds": -1}),
+                "suspend_after_seconds",
+                0,
+                86400
+            )
+            .is_err()
+        );
+        // 0 = never suspend: explicitly allowed.
+        assert_eq!(
+            bounded_int(
+                &json!({"suspend_after_seconds": 0}),
+                "suspend_after_seconds",
+                0,
+                86400
+            )
+            .unwrap(),
+            Some(0)
+        );
+        assert!(parse_priority(&json!({"priority": "urgent"})).is_err());
+        assert_eq!(
+            parse_priority(&json!({"priority": "HIGH"})).unwrap(),
+            Some("High")
+        );
+        assert_eq!(parse_priority(&json!({})).unwrap(), None);
+        // Names normalize to lowercase; invalid ones are synchronous errors.
+        assert_eq!(
+            valid_name(&json!({"database": "Prod"}), "database").unwrap(),
+            "prod"
+        );
+        assert!(valid_name(&json!({"database": "no_scores"}), "database").is_err());
     }
 
     /// Every tool failure is remediable by an agent (001 §5.2): the error

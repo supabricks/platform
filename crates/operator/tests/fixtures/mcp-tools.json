@@ -5,7 +5,34 @@
       "properties": {},
       "type": "object"
     },
-    "name": "capabilities"
+    "name": "capabilities",
+    "outputSchema": {
+      "properties": {
+        "connect_host": {
+          "type": "string"
+        },
+        "features": {
+          "type": "object"
+        },
+        "max_endpoints": {
+          "type": "integer"
+        },
+        "pg_version": {
+          "type": "integer"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "features"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Create a Postgres database; returns a psql connection URI. Idempotent on name.",
@@ -16,7 +43,7 @@
           "type": "integer"
         },
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         },
         "priority": {
@@ -42,7 +69,34 @@
       ],
       "type": "object"
     },
-    "name": "create_database"
+    "name": "create_database",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "connection_uri": {
+          "description": "present when status=ready",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "provisioning"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "The estate: cell-backed databases AND enrolled (existing, unmigrated) Postgres, with health.",
@@ -50,7 +104,106 @@
       "properties": {},
       "type": "object"
     },
-    "name": "list_databases"
+    "name": "list_databases",
+    "outputSchema": {
+      "items": {
+        "properties": {
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "database_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "kind": {
+            "enum": [
+              "cell-backed",
+              "enrolled"
+            ],
+            "type": "string"
+          },
+          "last_activity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "node_port": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "phase": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "server_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "suspend_after_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "suspended_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tenant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timeline_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_size": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
   },
   {
     "description": "Attach an EXISTING Postgres (anywhere) for inventory and health monitoring — zero migration, zero changes to it. Needs only a connection URI (read-only role is enough).",
@@ -61,7 +214,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -71,14 +224,62 @@
       ],
       "type": "object"
     },
-    "name": "enroll_database"
+    "name": "enroll_database",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "database_count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "phase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "server_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_size": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Detach an enrolled database from the estate (the database itself is never touched).",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -87,14 +288,36 @@
       ],
       "type": "object"
     },
-    "name": "unenroll_database"
+    "name": "unenroll_database",
+    "outputSchema": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "unenrolled",
+            "absent"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Get one database's status.",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -103,14 +326,110 @@
       ],
       "type": "object"
     },
-    "name": "get_database"
+    "name": "get_database",
+    "outputSchema": {
+      "properties": {
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "database_count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "cell-backed",
+            "enrolled"
+          ],
+          "type": "string"
+        },
+        "last_activity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "node_port": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "phase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "server_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "suspend_after_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "suspended_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tenant_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeline_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_size": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ttl_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Delete a database, its storage, and its compute. Refuses (with the list) while the database still has branches.",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -119,7 +438,30 @@
       ],
       "type": "object"
     },
-    "name": "delete_database"
+    "name": "delete_database",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "deleting",
+            "absent"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Instant copy-on-write branch; returns its own connection URI. Branch a database, another branch (parent), and/or a moment in time (at).",
@@ -138,7 +480,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         },
         "parent": {
@@ -164,7 +506,34 @@
       ],
       "type": "object"
     },
-    "name": "create_branch"
+    "name": "create_branch",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "connection_uri": {
+          "description": "present when status=ready",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "provisioning"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "List branches with status and parentage.",
@@ -172,14 +541,68 @@
       "properties": {},
       "type": "object"
     },
-    "name": "list_branches"
+    "name": "list_branches",
+    "outputSchema": {
+      "items": {
+        "properties": {
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "database": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "node_port": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "parent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phase": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "database"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
   },
   {
     "description": "Delete a branch and its compute. Refuses while the branch has child branches.",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -188,14 +611,34 @@
       ],
       "type": "object"
     },
-    "name": "delete_branch"
+    "name": "delete_branch",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "deleting",
+            "absent"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Connection URI for an existing database or branch. Wakes it if suspended (scale-to-zero) and reports the wake time.",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -204,14 +647,38 @@
       ],
       "type": "object"
     },
-    "name": "get_connection"
+    "name": "get_connection",
+    "outputSchema": {
+      "description": "On failure the content is {reason, retriable, suggested_action} with isError=true.",
+      "properties": {
+        "connection_uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "wake_seconds": {
+          "description": "present only when a wake happened",
+          "type": "string"
+        },
+        "woke_from_suspend": {
+          "description": "present only when a wake happened",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "connection_uri"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Recent CPU/memory usage for a database or branch (15s samples, ~10 min window), with its CU limit.",
     "inputSchema": {
       "properties": {
         "name": {
-          "description": "Resource name (lowercase DNS label)",
+          "description": "Resource name; normalized to lowercase (the canonical name is echoed in every response)",
           "type": "string"
         }
       },
@@ -220,7 +687,51 @@
       ],
       "type": "object"
     },
-    "name": "get_metrics"
+    "name": "get_metrics",
+    "outputSchema": {
+      "properties": {
+        "cpu_limit_millis": {
+          "type": "integer"
+        },
+        "cu_limit": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "series": {
+          "items": {
+            "properties": {
+              "cpu_millis": {
+                "type": "integer"
+              },
+              "mem_mib": {
+                "type": "integer"
+              },
+              "t": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "t",
+              "cpu_millis",
+              "mem_mib"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "cu_limit",
+        "series"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "The compute ledger: physical CU on the cluster, CU promised as ceilings, CU awake right now, and live draw. Shows oversubscription headroom (suspended databases hold zero CU).",
@@ -228,7 +739,35 @@
       "properties": {},
       "type": "object"
     },
-    "name": "get_cu_ledger"
+    "name": "get_cu_ledger",
+    "outputSchema": {
+      "properties": {
+        "active_cu": {
+          "type": "integer"
+        },
+        "endpoints": {
+          "type": "integer"
+        },
+        "endpoints_active": {
+          "type": "integer"
+        },
+        "physical_cu": {
+          "type": "integer"
+        },
+        "promised_cu": {
+          "type": "integer"
+        },
+        "used_millis": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "physical_cu",
+        "promised_cu",
+        "active_cu"
+      ],
+      "type": "object"
+    }
   },
   {
     "description": "Recent lifecycle events across the estate: created, suspended, woke, TTL-reaped, enrolled.",
@@ -236,6 +775,44 @@
       "properties": {},
       "type": "object"
     },
-    "name": "get_events"
+    "name": "get_events",
+    "outputSchema": {
+      "items": {
+        "properties": {
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    }
   }
 ]

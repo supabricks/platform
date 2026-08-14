@@ -20,23 +20,48 @@ export function setToken(t: string) {
 
 let seq = 1
 
+// Three error layers (review 003 P1-5), each with a readable message:
+// HTTP (401/parse), JSON-RPC protocol (`error` envelope), and tool-level
+// (`isError` + {reason, retriable, suggested_action}).
 export async function callTool<T = unknown>(name: string, args: object = {}): Promise<T> {
-  const res = await fetch('/mcp', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token()}`,
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: seq++,
-      method: 'tools/call',
-      params: { name, arguments: args },
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch('/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token()}`,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: seq++,
+        method: 'tools/call',
+        params: { name, arguments: args },
+      }),
+    })
+  } catch {
+    throw new Error('Platform unreachable — is the cluster up? (kubectl -n sspc-cell get pods)')
+  }
   if (res.status === 401) throw new Error('Not authorized — reopen the page with ?token=…')
-  const body = await res.json()
-  const payload = JSON.parse(body.result.content[0].text)
+  let body: any
+  try {
+    body = await res.json()
+  } catch {
+    throw new Error(`Platform returned a non-JSON response (HTTP ${res.status})`)
+  }
+  if (body?.error) {
+    throw new Error(`Protocol error ${body.error.code ?? ''}: ${body.error.message ?? 'unknown'}`)
+  }
+  const text = body?.result?.content?.[0]?.text
+  if (typeof text !== 'string') {
+    throw new Error(`Malformed tool response (HTTP ${res.status})`)
+  }
+  let payload: any
+  try {
+    payload = JSON.parse(text)
+  } catch {
+    throw new Error('Tool returned unparseable content')
+  }
   if (body.result.isError) {
     throw new Error(payload.suggested_action ? `${payload.reason}. ${payload.suggested_action}` : payload.reason)
   }

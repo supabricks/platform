@@ -32,6 +32,8 @@ spec:
                   Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
                   pool; suspended databases hold zero CU.
                 format: int64
+                maximum: 960.0
+                minimum: 1.0
                 type: integer
               priority:
                 default: Standard
@@ -48,10 +50,13 @@ spec:
                 default: 300
                 description: Idle seconds before suspend (enforced by the operator's idle loop, P3).
                 format: int64
+                maximum: 86400.0
+                minimum: 0.0
                 type: integer
               ttlSeconds:
                 description: Optional TTL; the reaper deletes the resource after this many seconds.
                 format: int64
+                minimum: 1.0
                 nullable: true
                 type: integer
             type: object
@@ -143,6 +148,8 @@ spec:
                   Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
                   pool; suspended databases hold zero CU.
                 format: int64
+                maximum: 960.0
+                minimum: 1.0
                 type: integer
               database:
                 description: |-
@@ -170,9 +177,12 @@ spec:
                 default: 300
                 description: Idle seconds before suspend (branches sleep aggressively by default).
                 format: int64
+                maximum: 86400.0
+                minimum: 0.0
                 type: integer
               ttlSeconds:
                 format: int64
+                minimum: 1.0
                 nullable: true
                 type: integer
             required:
