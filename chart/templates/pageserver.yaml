@@ -34,19 +34,27 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: pageserver}}
   template:
-    metadata: {labels: {app: pageserver}}
+    metadata:
+      labels: {app: pageserver}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.neon.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: pageserver
-        image: {{ .Values.images.neon }}
+        image: {{ .Values.images.neon.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         command: ["pageserver", "-D", "/data/.neon"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         resources:
           requests: {cpu: {{ .Values.cellResources.pageserver.cpu }}, memory: {{ .Values.cellResources.pageserver.memory }}}
-        env:
-        - {name: AWS_ACCESS_KEY_ID, value: {{ .Values.s3.accessKey | quote }}}
-        - {name: AWS_SECRET_ACCESS_KEY, value: {{ .Values.s3.secretKey | quote }}}
+        envFrom:
+        - secretRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}}
         ports:
         - {containerPort: 6400}
         - {containerPort: 9898}

@@ -9,13 +9,22 @@ spec:
   replicas: {{ .Values.safekeeper.replicas }}
   selector: {matchLabels: {app: safekeeper}}
   template:
-    metadata: {labels: {app: safekeeper}}
+    metadata:
+      labels: {app: safekeeper}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.neon.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: safekeeper
-        image: {{ .Values.images.neon }}
+        image: {{ .Values.images.neon.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         resources:
           requests: {cpu: {{ .Values.cellResources.safekeeper.cpu }}, memory: {{ .Values.cellResources.safekeeper.memory }}}
         command: ["/bin/sh", "-c"]
@@ -28,9 +37,8 @@ spec:
           --broker-endpoint=http://broker:50051
           -D /data
           --remote-storage="{endpoint='{{ .Values.s3.endpoint }}', bucket_name='{{ .Values.s3.bucket }}', bucket_region='{{ .Values.s3.region }}', prefix_in_bucket='/safekeeper/'}"
-        env:
-        - {name: AWS_ACCESS_KEY_ID, value: {{ .Values.s3.accessKey | quote }}}
-        - {name: AWS_SECRET_ACCESS_KEY, value: {{ .Values.s3.secretKey | quote }}}
+        envFrom:
+        - secretRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}}
         ports:
         - {containerPort: 5454}
         - {containerPort: 7676}

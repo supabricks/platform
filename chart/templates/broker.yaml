@@ -6,14 +6,23 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: broker}}
   template:
-    metadata: {labels: {app: broker}}
+    metadata:
+      labels: {app: broker}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.neon.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: broker
-        image: {{ .Values.images.neon }}
+        image: {{ .Values.images.neon.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         command: ["storage_broker", "--listen-addr=0.0.0.0:50051"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         resources:
           requests: {cpu: {{ .Values.cellResources.broker.cpu }}, memory: {{ .Values.cellResources.broker.memory }}}
         ports:

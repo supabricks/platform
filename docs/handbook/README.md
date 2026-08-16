@@ -39,3 +39,7 @@ The RFCs (`docs/design/`) record *decisions*; this handbook records *reality*.
   is the fact (`.github/workflows/ci.yml` runs unit + installer + e2e + chaos).
 - **One writer.** The operator is single-replica by design (no leader
   election yet — see backlog). Never scale the Deployment to 2.
+- **File naming.** Ecosystem-mandated names keep their canonical casing
+  (`Chart.yaml`, `Cargo.toml`, `Dockerfile`, `README.md`); everything we
+  name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
+  `docs/business/vision.md`).

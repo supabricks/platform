@@ -9,25 +9,43 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: storage-controller}}
   template:
-    metadata: {labels: {app: storage-controller}}
+    metadata:
+      labels: {app: storage-controller}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.neon.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       initContainers:
       - name: wait-for-pg
-        image: {{ .Values.images.postgres }}
+        image: {{ .Values.images.postgres.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         command: ["/bin/sh", "-c"]
         args: ["until pg_isready -h controller-pg -U postgres; do sleep 1; done"]
       containers:
       - name: controller
-        image: {{ .Values.images.neon }}
+        image: {{ .Values.images.neon.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.controllerPg.existingSecret | default "sspc-controller-pg" | quote }}
+              key: password
         command:
         - storage_controller
         - --listen=0.0.0.0:1234
-        - --database-url=postgresql://postgres:postgres@controller-pg:5432/storage_controller
+        - --database-url=postgresql://postgres:$(DATABASE_PASSWORD)@controller-pg:5432/storage_controller
         - --control-plane-url=http://notify-sink:3081
         - --dev
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         resources:
           requests: {cpu: {{ .Values.cellResources.storageController.cpu }}, memory: {{ .Values.cellResources.storageController.memory }}}
         ports:

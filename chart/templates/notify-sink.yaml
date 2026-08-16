@@ -7,16 +7,20 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: notify-sink}}
   template:
-    metadata: {labels: {app: notify-sink}}
+    metadata:
+      labels: {app: notify-sink}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.busybox.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
         seccompProfile: {type: RuntimeDefault}
       containers:
       - name: sink
-        image: {{ .Values.images.busybox }}
+        image: {{ .Values.images.busybox.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
           allowPrivilegeEscalation: false

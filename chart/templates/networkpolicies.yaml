@@ -1,0 +1,135 @@
+# In-cluster network boundary: default-deny ingress plus
+# the exact edges the cell needs. Ports that must accept host traffic
+# (NodePort paths: MCP, compute Postgres, debug APIs) allow all sources —
+# NodePort traffic arrives from the node address, and the host-side guard is
+# the installer's loopback binding. Everything else is pod-scoped.
+# NOTE: kind's default CNI does not enforce these — see chart/hardening.md.
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+# Host-facing: MCP/UI (loopback-bound at the host by the kind config).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mcp
+spec:
+  podSelector: {matchLabels: {app: sspc-operator}}
+  ingress:
+  - ports: [{port: 8080}]
+---
+# Host-facing: every compute's Postgres (per-endpoint NodePorts) — also the
+# operator's SQL activity poll and branch flush-LSN reads.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-compute-pg
+spec:
+  podSelector: {matchLabels: {app: compute}}
+  ingress:
+  - ports: [{port: 55433}]
+---
+# compute_ctl's API: operator only (suspend /terminate, JWT-authed).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-compute-ctl
+spec:
+  podSelector: {matchLabels: {app: compute}}
+  ingress:
+  - from: [{podSelector: {matchLabels: {app: sspc-operator}}}]
+    ports: [{port: 3080}]
+---
+# Pageserver: GetPage@LSN from computes; HTTP API host-facing (debug
+# NodePort) + storage controller + operator passthrough.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pageserver
+spec:
+  podSelector: {matchLabels: {app: pageserver}}
+  ingress:
+  - from: [{podSelector: {matchLabels: {app: compute}}}]
+    ports: [{port: 6400}]
+  - ports: [{port: 9898}]
+---
+# Safekeeper: WAL from computes and pageserver; HTTP from the cell.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-safekeeper
+spec:
+  podSelector: {matchLabels: {app: safekeeper}}
+  ingress:
+  - from:
+    - {podSelector: {matchLabels: {app: compute}}}
+    - {podSelector: {matchLabels: {app: pageserver}}}
+    ports: [{port: 5454}]
+  - from: [{podSelector: {}}]
+    ports: [{port: 7676}]
+---
+# Broker pub/sub: cell-internal only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-broker
+spec:
+  podSelector: {matchLabels: {app: broker}}
+  ingress:
+  - from: [{podSelector: {}}]
+    ports: [{port: 50051}]
+---
+# Object storage: the storage layer and the bucket-seed job only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-minio
+spec:
+  podSelector: {matchLabels: {app: minio}}
+  ingress:
+  - from:
+    - {podSelector: {matchLabels: {app: pageserver}}}
+    - {podSelector: {matchLabels: {app: safekeeper}}}
+    - {podSelector: {matchLabels: {app: minio-setup}}}
+    ports: [{port: 9000}]
+---
+# The controller's Postgres: storage controller + the operator (the e2e
+# enrollment probe enrolls it as a demo "existing Postgres").
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-controller-pg
+spec:
+  podSelector: {matchLabels: {app: controller-pg}}
+  ingress:
+  - from:
+    - {podSelector: {matchLabels: {app: storage-controller}}}
+    - {podSelector: {matchLabels: {app: sspc-operator}}}
+    ports: [{port: 5432}]
+---
+# Storage controller API: operator + pageserver upcalls + host debug NodePort.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-storage-controller
+spec:
+  podSelector: {matchLabels: {app: storage-controller}}
+  ingress:
+  - ports: [{port: 1234}]
+---
+# Notify-sink: storage controller only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-notify-sink
+spec:
+  podSelector: {matchLabels: {app: notify-sink}}
+  ingress:
+  - from: [{podSelector: {matchLabels: {app: storage-controller}}}]
+    ports: [{port: 3081}]
+{{- end }}

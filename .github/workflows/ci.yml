@@ -23,6 +23,9 @@ jobs:
       - name: cargo test (T1 unit + T2 schema snapshots)
         run: cargo test --locked
 
+      - name: chart hardening contract
+        run: ./chart/check-hardening.sh
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45

@@ -46,16 +46,22 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: sspc-operator}}
   template:
-    metadata: {labels: {app: sspc-operator}}
+    metadata:
+      labels: {app: sspc-operator}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.operator.digest | quote }}
     spec:
       serviceAccountName: sspc-operator
+      # The ONLY API-token consumer in the namespace — explicit so the
+      # exception is visible.
+      automountServiceAccountToken: true
       priorityClassName: sspc-cell
       securityContext:
         runAsNonRoot: true
         seccompProfile: {type: RuntimeDefault}
       containers:
       - name: operator
-        image: {{ .Values.images.operator }}
+        image: {{ .Values.images.operator.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
           allowPrivilegeEscalation: false
@@ -76,7 +82,7 @@ spec:
         - name: SSPC_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
         - {name: SSPC_STORCON_URL, value: "http://storage-controller:1234"}
-        - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute | quote }}}
+        - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute.name | quote }}}
         - {name: SSPC_IMAGE_PULL_POLICY, value: {{ .Values.imagePullPolicy | quote }}}
         - {name: RUST_LOG, value: "info,kube=warn"}
         ports:

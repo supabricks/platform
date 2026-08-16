@@ -329,10 +329,18 @@ impl Ctx {
                           "ownerReferences": [oref]},
             "spec": {
                 "priorityClassName": priority_class,
+                // Computes never talk to the Kubernetes API, and the compute
+                // image runs unprivileged (initdb refuses root).
+                "automountServiceAccountToken": false,
+                "securityContext": {"seccompProfile": {"type": "RuntimeDefault"}},
                 "containers": [{
                     "name": "compute",
                     "image": self.compute_image,
                     "imagePullPolicy": self.image_pull_policy,
+                    "securityContext": {
+                        "allowPrivilegeEscalation": false,
+                        "capabilities": {"drop": ["ALL"]},
+                    },
                     "command": [
                         "compute_ctl",
                         "--pgdata=/var/db/postgres/compute",

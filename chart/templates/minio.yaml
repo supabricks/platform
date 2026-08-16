@@ -9,19 +9,35 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: minio}}
   template:
-    metadata: {labels: {app: minio}}
+    metadata:
+      labels: {app: minio}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.minio.digest | quote }}
     spec:
       priorityClassName: sspc-cell
+      automountServiceAccountToken: false
+      # Stays root: the existing demo PVC data is root-owned and local-path
+      # volumes don't get fsGroup relabeling. With all capabilities dropped,
+      # root here is plain uid-0 file access, no privileged syscalls.
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: minio
-        image: {{ .Values.images.minio }}
+        image: {{ .Values.images.minio.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         args: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
         resources:
           requests: {cpu: {{ .Values.cellResources.minio.cpu }}, memory: {{ .Values.cellResources.minio.memory }}}
         env:
-        - {name: MINIO_ROOT_USER, value: {{ .Values.s3.accessKey | quote }}}
-        - {name: MINIO_ROOT_PASSWORD, value: {{ .Values.s3.secretKey | quote }}}
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}, key: AWS_ACCESS_KEY_ID}
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}, key: AWS_SECRET_ACCESS_KEY}
         ports:
         - {containerPort: 9000}
         volumeMounts:
@@ -54,19 +70,42 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: minio-create-bucket
+  # Job templates are immutable — recreate on every upgrade (any template
+  # change otherwise fails the whole helm upgrade; hit on this Job's first
+  # ever change, the hardening rollout).
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   backoffLimit: 20
   template:
+    metadata:
+      labels: {app: minio-setup}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.mc.digest | quote }}
     spec:
       restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: mc
-        image: {{ .Values.images.mc }}
+        image: {{ .Values.images.mc.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+        envFrom:
+        - secretRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}}
+        env:
+        # The image's /root has no owner-write bit; with CAP_DAC_OVERRIDE
+        # dropped even uid 0 obeys it — point mc's config home somewhere
+        # writable instead of granting the capability back.
+        - {name: HOME, value: /tmp}
         command: ["/bin/sh", "-c"]
         args:
         - |
-          until mc alias set minio {{ .Values.s3.endpoint }} {{ .Values.s3.accessKey }} {{ .Values.s3.secretKey }}; do
+          until mc alias set minio {{ .Values.s3.endpoint }} "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY"; do
             echo waiting for minio; sleep 1
           done
           mc mb --ignore-existing minio/{{ .Values.s3.bucket }} --region={{ .Values.s3.region }}

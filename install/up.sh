@@ -5,16 +5,18 @@ set -euo pipefail
 cd "$(dirname "$0")"
 YES=${1:-}
 
-# ---- image pins (single source of truth; local tags are what the chart uses)
-PINS=(
-  "ghcr.io/neondatabase/neon@sha256:7a4f124917bb929964b2d696d710f19584f80bb9bd51b2af4a6e2425434c761f|ghcr.io/neondatabase/neon:latest"
-  "ghcr.io/neondatabase/compute-node-v16@sha256:b3e151661bd2ee11eb2843c8926001966cb23969227e9673c5f42fc3fbe14249|ghcr.io/neondatabase/compute-node-v16:latest"
-  "postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777|postgres:16-alpine"
-  "minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727|minio/mc:latest"
-  "quay.io/minio/minio@sha256:df7363871efee5192fb5510ee80e10bb8c5cdc45c9301a825302b1d52c60ba64|quay.io/minio/minio:RELEASE.2022-10-20T00-55-09Z"
-  "busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662|busybox:1.36"
-)
-OPERATOR_TAG=sspc-operator:p1
+# ---- image pins: derived from chart/values.yaml — the chart's digest
+# fields are the single source of truth; this parser reads the one-line
+# `key: {name: "...", digest: "..."}` entries.
+PINS=()
+while IFS= read -r line; do
+  name=$(printf '%s' "$line" | sed -E 's/.*name: "([^"]+)".*/\1/')
+  digest=$(printf '%s' "$line" | sed -E 's/.*digest: "([^"]+)".*/\1/')
+  [ "$digest" = "local-build" ] && continue
+  PINS+=("$digest|$name")
+done < <(grep -E '^\s+\w+: \{name: "' ../chart/values.yaml)
+[ "${#PINS[@]}" -ge 6 ] || { echo "FATAL: could not parse image pins from chart/values.yaml" >&2; exit 1; }
+OPERATOR_TAG=$(grep -E 'operator: \{name: "' ../chart/values.yaml | sed -E 's/.*name: "([^"]+)".*/\1/')
 
 say() { printf '\033[1;36m== %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mFATAL: %s\033[0m\n' "$*" >&2; exit 1; }
