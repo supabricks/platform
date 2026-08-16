@@ -23,7 +23,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
 use kube::ResourceExt;
-use kube::api::{Api, DeleteParams, Patch, PatchParams};
+use kube::api::{Api, DeleteParams, ListParams, Patch, PatchParams};
 use serde_json::{Value, json};
 use tracing::info;
 
@@ -246,6 +246,33 @@ fn need_name(args: &Value) -> Result<String, ToolError> {
     valid_name(args, "name")
 }
 
+/// Endpoint capacity pre-check: the M1 NodePort block is finite, and
+/// exhaustion discovered inside the reconciler surfaces only as retry logs —
+/// refuse synchronously with a structured error instead. Idempotent creates
+/// of an EXISTING endpoint (its Service already holds a port) always pass.
+async fn ensure_capacity(state: &McpState, name: &str) -> Result<(), ToolError> {
+    let svcs: Api<k8s_openapi::api::core::v1::Service> =
+        Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    let list = svcs
+        .list(&ListParams::default().labels(crate::reconcile::ENDPOINT_LABEL))
+        .await
+        .map_err(from_kube)?;
+    if list.items.iter().any(|s| s.name_any() == name) {
+        return Ok(());
+    }
+    if list.items.len() as i32 >= crate::ports::RANGE_LEN {
+        return Err(terr(
+            format!(
+                "endpoint capacity reached ({} NodePorts in the M1 block)",
+                crate::ports::RANGE_LEN
+            ),
+            false,
+            "delete an endpoint to free its port (suspended endpoints keep theirs); the M2 gateway removes this cap",
+        ));
+    }
+    Ok(())
+}
+
 /// Bounded integer argument (review 003 P1-2): out-of-range values are
 /// synchronous structured errors, mirroring the CRD schema bounds.
 fn bounded_int(args: &Value, key: &str, min: i64, max: i64) -> Result<Option<i64>, ToolError> {
@@ -360,6 +387,20 @@ async fn await_ready(state: &McpState, name: &str, secs: u64) -> Option<i32> {
 
 async fn create_database(state: &McpState, args: &Value) -> ToolResult {
     let name = need_name(args)?;
+    ensure_capacity(state, &name).await?;
+    // Create-during-delete returns success against the DYING endpoint (the
+    // SSA lands as an update on the deleting CR and the old pod still reads
+    // Ready) — found by the idempotency torture e2e. Refuse retriably.
+    let pre: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    if let Some(existing) = pre.get_opt(&name).await.map_err(from_kube)? {
+        if existing.metadata.deletion_timestamp.is_some() {
+            return Err(terr(
+                format!("{name} is still being deleted"),
+                true,
+                "retry in a few seconds, once the previous instance finishes deleting",
+            ));
+        }
+    }
     let mut spec = json!({});
     if let Some(ttl) = bounded_int(args, "ttl_seconds", 1, 30 * 86400)? {
         spec["ttlSeconds"] = json!(ttl);
@@ -404,6 +445,17 @@ async fn create_branch(state: &McpState, args: &Value) -> ToolResult {
     // front — a typo must be a synchronous structured error, not a Branch CR
     // stuck in permanent retry.
     let database = valid_name(args, "database")?;
+    ensure_capacity(state, &name).await?;
+    let pre: Api<Branch> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
+    if let Some(existing) = pre.get_opt(&name).await.map_err(from_kube)? {
+        if existing.metadata.deletion_timestamp.is_some() {
+            return Err(terr(
+                format!("{name} is still being deleted"),
+                true,
+                "retry in a few seconds, once the previous instance finishes deleting",
+            ));
+        }
+    }
     let dbs: Api<Database> = Api::namespaced(state.ctx.client.clone(), &state.ctx.namespace);
     if dbs.get_opt(&database).await.map_err(from_kube)?.is_none() {
         return Err(terr(
@@ -1143,6 +1195,22 @@ mod tests {
             "prod"
         );
         assert!(valid_name(&json!({"database": "no_scores"}), "database").is_err());
+    }
+
+    /// Every declared result contract must itself be a valid JSON Schema —
+    /// a malformed outputSchema would pass the snapshot yet be useless to
+    /// clients that compile it.
+    #[test]
+    fn output_schemas_compile_as_json_schema() {
+        for t in tool_defs().as_array().unwrap() {
+            let schema = t["outputSchema"].clone();
+            if let Err(e) = jsonschema::validator_for(&schema) {
+                panic!(
+                    "tool {} outputSchema is not valid JSON Schema: {e}",
+                    t["name"]
+                );
+            }
+        }
     }
 
     /// Every tool failure is remediable by an agent (001 §5.2): the error

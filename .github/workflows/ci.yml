@@ -20,11 +20,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: platform
-      - name: cargo test (T1 unit + T2 schema snapshots)
+      # This job == `just verify-static`. Keep the two in lockstep.
+      - name: rust format
+        run: cargo fmt -- --check
+
+      - name: cargo test (T1 unit + T2 snapshots + chart hardening contract)
         run: cargo test --locked
 
-      - name: chart hardening contract
-        run: ./chart/check-hardening.sh
+      - name: generated CRDs match crd.rs
+        run: cargo run --locked --bin crdgen | diff -u chart/crds/sspc-crds.yaml -
+
+      - name: helm lint
+        run: helm lint chart
+
+      - name: UI tests + build
+        run: cd ui && npm ci --no-audit --no-fund && npm test && npm run build
 
   e2e:
     runs-on: ubuntu-latest

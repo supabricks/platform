@@ -19,6 +19,12 @@ kubectl -n sspc-cell rollout status deploy/sspc-operator
 Changed the MCP tool schema on purpose? `UPDATE_SNAPSHOTS=1 cargo test`,
 review the `mcp-tools.json` diff, commit it.
 
+Brew-installed docker CLI (colima) warns `DEPRECATED: legacy builder`?
+Install the missing plugin once: `brew install docker-buildx && mkdir -p
+~/.docker/cli-plugins && ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx"
+~/.docker/cli-plugins/docker-buildx` — builds then use BuildKit (better
+layer caching; `-q` still prints the image sha).
+
 Changed `crd.rs`? Regenerate + apply: `cargo run --bin crdgen >
 chart/crds/sspc-crds.yaml && kubectl apply -f chart/crds/`. Helm installs
 `crds/` **only on first install** — upgrades silently skip it (the installer
@@ -87,12 +93,18 @@ re-applies them for this reason).
 
 ## Testing tiers
 
-| Gate | Command | Time | When |
+Two aggregate gates mirror CI exactly — when in doubt, run these:
+
+| Gate | Command | Time | Mirrors |
 |---|---|---|---|
-| T1+T2 unit + snapshots | `cargo test` | <1 min | every change |
-| T3+T4 e2e | `./e2e/run.sh` | ~2 min | every change |
-| T6 chaos | `./e2e/chaos.sh` | ~3 min | lifecycle/reconciler changes; always before PR |
-| CI (all of the above + the real installer) | push a PR | ~18 min | the arbiter |
+| static (fmt, unit+snapshots, hardening contract, CRD drift, helm lint, UI tests+build) | `just verify-static` | ~2 min | the CI unit job |
+| runtime (e2e + chaos + restore) | `just verify-runtime` | ~8 min | the CI e2e job's test stages |
+
+Individual targets: `just test`, `just hardening`, `just crd-check`,
+`just helm-lint`, `just ui-test`, `just e2e`, `just chaos`, `just restore`.
+Repeat deploys go through `just deploy` (build → image-archive load →
+restart) — the installer's load-skip compares operator image IDs, but the
+dev loop should not depend on the installer at all.
 
 `e2e/run.sh` asserts the RFC 014 core-semantics promises by name (credential
 distinctness/enforcement, branch-at-LSN and at-timestamp correctness,

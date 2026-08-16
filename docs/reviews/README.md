@@ -15,3 +15,4 @@ clear, tested, and hard to misuse.
 | [002-data-safety-review.md](002-data-safety-review.md) | Branch correctness, cleanup/finalizers, suspend/wake durability, restore, and remaining data-safety gaps. |
 | [003-api-contract-review.md](003-api-contract-review.md) | MCP schema, result payloads, error semantics, validation, UI assumptions, and client compatibility. |
 | [004-kubernetes-hardening-review.md](004-kubernetes-hardening-review.md) | Helm rendering, pod security, RBAC, service-account tokens, network boundaries, image provenance, secrets, and probes. |
+| [005-test-matrix.md](005-test-matrix.md) | Local/CI gates, unit and contract coverage, e2e/chaos/restore harnesses, UI testing, and reproducibility gaps. |

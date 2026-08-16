@@ -21,6 +21,26 @@ psql_run() { # in-pod psql (loopback-bound host ports are unreachable from conta
   done
   echo "$out"; return 1
 }
+# Live result-contract validation: every checked payload must carry its
+# tool's outputSchema required fields (fetched from tools/list, so the
+# running server's declared contract is what's enforced).
+TOOLS_JSON=$(curl -sf -m 30 -X POST -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' http://localhost:30080/mcp || true)
+contract() { # $1 tool, $2 payload
+  local typ req f
+  typ=$(printf '%s' "$TOOLS_JSON" | jq -r ".result.tools[] | select(.name==\"$1\") | .outputSchema.type // \"object\"")
+  if [ "$typ" = "array" ]; then
+    req=$(printf '%s' "$TOOLS_JSON" | jq -r ".result.tools[] | select(.name==\"$1\") | .outputSchema.items.required[]?")
+    for f in $req; do
+      printf '%s' "$2" | jq -e "all(.[]; has(\"$f\"))" >/dev/null || fail "contract: $1 items missing required field $f"
+    done
+  else
+    req=$(printf '%s' "$TOOLS_JSON" | jq -r ".result.tools[] | select(.name==\"$1\") | .outputSchema.required[]?")
+    for f in $req; do
+      printf '%s' "$2" | jq -e "has(\"$f\")" >/dev/null || fail "contract: $1 missing required field $f"
+    done
+  fi
+}
 step() { printf '\033[1;36m[%3ds] %s\033[0m\n' "$(($(date +%s)-T_START))" "$*"; }
 fail() {
   printf '\033[1;31mFAIL: %s\033[0m\n' "$*" >&2
@@ -34,7 +54,11 @@ trap 'fail "unexpected error at line $LINENO"' ERR
 
 step "pre-clean (idempotent)"
 for r in e2egrand e2epit e2epts e2ebr e2ettl e2enostat; do mcp delete_branch "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
-for r in e2edb e2esleep e2echurn; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+for r in e2edb e2esleep e2echurn e2erace e2eover; do mcp delete_database "{\"name\":\"$r\"}" >/dev/null 2>&1 || true; done
+for i in $(seq 1 20); do
+  kubectl -n $NS delete database "e2eport$i" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  kubectl -n $NS delete svc "e2eport$i" --ignore-not-found >/dev/null 2>&1 || true
+done
 mcp unenroll_database '{"name":"e2enrolled"}' >/dev/null 2>&1 || true
 # Wait for the CRs to actually vanish (finalizers do real cell-side work) —
 # an SSA create against a still-deleting CR fails (found twice; also fixed
@@ -46,11 +70,17 @@ for i in $(seq 1 30); do
 done
 
 step "capabilities"
-mcp capabilities '{}' | jq -e '.features.scale_to_zero == true' >/dev/null
-mcp get_cu_ledger '{}' | jq -e '.physical_cu > 0 and .promised_cu >= .active_cu' >/dev/null || fail "cu ledger"
+CAP=$(mcp capabilities '{}')
+echo "$CAP" | jq -e '.features.scale_to_zero == true' >/dev/null
+contract capabilities "$CAP"
+LEDGER=$(mcp get_cu_ledger '{}')
+echo "$LEDGER" | jq -e '.physical_cu > 0 and .promised_cu >= .active_cu' >/dev/null || fail "cu ledger"
+contract get_cu_ledger "$LEDGER"
 
 step "API contract: invalid input fails synchronously (review 003)"
-mcp create_branch '{"name":"apimissing","database":"doesnotexist"}' | jq -e '.reason | test("not found")' >/dev/null || fail "missing database accepted"
+ERRP=$(mcp create_branch '{"name":"apimissing","database":"doesnotexist"}')
+echo "$ERRP" | jq -e '.reason | test("not found")' >/dev/null || fail "missing database accepted"
+echo "$ERRP" | jq -e 'has("reason") and has("retriable") and has("suggested_action")' >/dev/null || fail "error payload missing structured fields"
 [ -z "$(kubectl -n $NS get branch apimissing --no-headers --ignore-not-found)" ] || fail "branch CR created for missing database"
 mcp create_database '{"name":"apibad","cu_limit":-5}' | jq -e '.reason | test("out of range")' >/dev/null || fail "negative cu_limit accepted"
 mcp create_database '{"name":"apibad","ttl_seconds":-10}' | jq -e '.reason | test("out of range")' >/dev/null || fail "negative ttl accepted"
@@ -69,9 +99,51 @@ curl -s -m 10 -X POST -H "Content-Type: application/json" -d 'not json' http://l
 
 step "T3 idempotency: create e2edb twice -> exactly one CR"
 mcp create_database '{"name":"e2edb"}' >/dev/null
-URI=$(mcp create_database '{"name":"e2edb"}' | jq -r .connection_uri)
+CREATE_RESP=$(mcp create_database '{"name":"e2edb"}')
+contract create_database "$CREATE_RESP"
+URI=$(echo "$CREATE_RESP" | jq -r .connection_uri)
 [ "$URI" != "null" ] || fail "no connection_uri from create"
 [ "$(kubectl -n $NS get databases --no-headers | grep -c '^e2edb ')" = "1" ] || fail "duplicate CRs"
+LIST=$(mcp list_databases '{}'); contract list_databases "$LIST"
+BLIST=$(mcp list_branches '{}'); contract list_branches "$BLIST"
+
+step "T3+ idempotency torture: concurrent, racing, exhausted"
+for i in 1 2 3 4 5; do mcp create_database '{"name":"e2erace","cu_limit":2}' >/dev/null 2>&1 & done; wait
+[ "$(kubectl -n $NS get databases --no-headers | grep -c '^e2erace ')" = "1" ] || fail "concurrent creates made duplicate CRs"
+[ "$(kubectl -n $NS get svc -l sspc.io/endpoint --no-headers | grep -c '^e2erace ')" = "1" ] || fail "concurrent creates made duplicate services"
+mcp delete_database '{"name":"e2erace"}' >/dev/null
+OUT=$(mcp create_database '{"name":"e2erace","cu_limit":2}')
+for i in $(seq 1 10); do
+  echo "$OUT" | jq -e '.status == "ready"' >/dev/null 2>&1 && break
+  echo "$OUT" | jq -e 'has("reason")' >/dev/null 2>&1 || fail "unstructured response during delete race: $OUT"
+  sleep 3; OUT=$(mcp create_database '{"name":"e2erace","cu_limit":2}')
+  [ "$i" = 10 ] && fail "create never converged after delete race"
+done
+psql_run e2erace "select count(*) from pg_tables" >/dev/null || fail "recreated database not serving"
+mcp delete_database '{"name":"e2erace"}' >/dev/null
+# Fill the block with labeled dummy Services — the capacity check counts
+# endpoint Services, so the refusal path is identical and the fill is
+# instant (13 real databases would mean 13 pageserver initdbs).
+# e2erace's service is GC'd asynchronously — wait so it can't skew the count.
+for i in $(seq 1 20); do
+  [ -z "$(kubectl -n $NS get svc e2erace --no-headers --ignore-not-found 2>/dev/null)" ] && break
+  sleep 1
+done
+USED=$(kubectl -n $NS get svc -l sspc.io/endpoint --no-headers 2>/dev/null | wc -l | tr -d ' ')
+NEED=$((20 - USED))
+for i in $(seq 1 $NEED); do
+  kubectl -n $NS create service clusterip "e2eport$i" --tcp=5432:5432 >/dev/null
+  kubectl -n $NS label svc "e2eport$i" sspc.io/endpoint=true >/dev/null
+done
+for i in $(seq 1 10); do
+  [ "$(kubectl -n $NS get svc -l sspc.io/endpoint --no-headers | wc -l | tr -d ' ')" -ge 20 ] && break
+  kubectl -n $NS create service clusterip "e2eport-top$i" --tcp=5432:5432 >/dev/null 2>&1 || true
+  kubectl -n $NS label svc "e2eport-top$i" sspc.io/endpoint=true --overwrite >/dev/null 2>&1 || true
+  sleep 1; [ "$i" = 10 ] && fail "port block not filled"
+done
+mcp create_database '{"name":"e2eover"}' | jq -e '.reason | test("capacity")' >/dev/null || fail "port exhaustion was not a structured refusal"
+for i in $(seq 1 $NEED); do kubectl -n $NS delete svc "e2eport$i" >/dev/null 2>&1 || true; done
+for i in $(seq 1 10); do kubectl -n $NS delete svc "e2eport-top$i" --ignore-not-found >/dev/null 2>&1 || true; done
 
 step "load 100k rows"
 psql_run e2edb "create table t as select g from generate_series(1,100000) g; select count(*) from t" | tail -1 | grep -qx 100000 || fail "load"
@@ -155,7 +227,9 @@ done
 
 step "wake via get_connection (budget 10s)"
 W=$(mcp get_connection '{"name":"e2esleep"}')
+contract get_connection "$W"
 echo "$W" | jq -e '.woke_from_suspend == true' >/dev/null || fail "did not report wake"
+MET=$(mcp get_metrics '{"name":"e2esleep"}'); contract get_metrics "$MET"
 WS=$(echo "$W" | jq -r .wake_seconds)
 awk "BEGIN{exit !($WS <= 10)}" || fail "wake took ${WS}s (>10s)"
 psql_run e2esleep "select count(*) from z" | grep -qx 1 || fail "data lost across suspend"

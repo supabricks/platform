@@ -54,6 +54,13 @@ detail, fair game when it blocks you, each with its exit condition.
 11. **`safekeeper.replicas` toggle exists but 3-SK needs ordinal-derived
     `--id`/`--advertise-pg`** (chart TODO noted in the template). Exit: with
     the HA story.
+12a. **NetworkPolicy enforcement is render-checked, not runtime-proven**:
+    kind's CNI ignores policies, so CI validates the rendered contract only.
+    Exit: a policy-capable CI target (kind+Calico or k3s+Cilium) proving an
+    unrelated pod cannot reach MCP/storage while the suite passes.
+12b. **The agent harness (T5) is still manual**: schema tests cannot catch
+    tool-description ergonomics on an agent-first surface. Exit: a scheduled
+    non-blocking headless-agent run with recorded artifacts.
 12. **e2e asserts through `kubectl exec`** (loopback binding blocks
     host-side psql; runners lack psql). Fine, but it means client-driver
     behavior over NodePort isn't exercised in CI. Exit: gateway conformance

@@ -48,12 +48,15 @@ docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
   say "building operator image (not found locally)"
   docker build -t "$OPERATOR_TAG" ..
 }
-# Check the operator AND the compute image: a node-side image prune while
-# every database is suspended removes the "unused" compute image (found by
-# the review-003 disk-full incident) — the skip must notice.
-if docker exec sspc-control-plane crictl images 2>/dev/null | grep -q sspc-operator \
+# The load-skip must compare IMAGE IDS, not just names: a same-tag operator
+# rebuild would otherwise silently exercise the stale node image. (The
+# compute-image presence check guards against node-side prunes while every
+# database is suspended — the "unused" compute image gets reaped.)
+local_op_id=$(docker image inspect "$OPERATOR_TAG" --format '{{.Id}}' 2>/dev/null || true)
+node_op_id=$(docker exec sspc-control-plane crictl inspecti -o go-template --template '{{.status.id}}' "docker.io/library/$OPERATOR_TAG" 2>/dev/null || true)
+if [ -n "$local_op_id" ] && [ "$local_op_id" = "$node_op_id" ] \
    && docker exec sspc-control-plane crictl images 2>/dev/null | grep -q compute-node-v16; then
-  say "images already on the node; skipping load"
+  say "images already on the node (operator image ID matches); skipping load"
 else
   tar=$(mktemp -d)/images.tar
   docker save --platform linux/arm64 -o "$tar" "${tags[@]}" "$OPERATOR_TAG" \
