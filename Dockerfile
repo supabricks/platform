@@ -1,4 +1,4 @@
-# sspc-operator image (operator + embedded UI). Build context: platform/
+# sspc-operator image (operator + embedded UI). Build context: repo root
 FROM node:22-slim AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./

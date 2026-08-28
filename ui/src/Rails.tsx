@@ -42,7 +42,7 @@ export default function Rails({ db, branches }: { db: EstateRow; branches: Branc
         <circle cx={16} cy={20} r={3} fill={color} />
         <line x1={16} y1={20} x2={W - 40} y2={20} stroke={color} strokeWidth={2} opacity={db.phase === 'Suspended' ? 0.45 : 0.9} />
         <Head x={W - 40} y={20} phase={db.phase} color={color} />
-        <text x={W - 28} y={24} fill="var(--cds-text-primary)" fontSize={12} fontFamily="system-ui">
+        <text x={W - 28} y={24} fill="var(--cds-text-primary)" fontSize={12} fontFamily="system-ui, sans-serif">
           {db.name}
         </text>
         {branches.map((b, i) => {
@@ -55,12 +55,12 @@ export default function Rails({ db, branches }: { db: EstateRow; branches: Branc
               <line x1={bx + 24} y1={y} x2={W - 40} y2={y} stroke={color} strokeWidth={2}
                 strokeDasharray={b.phase === 'Suspended' ? '4 4' : undefined}
                 opacity={b.phase === 'Suspended' ? 0.4 : 0.75} />
-              <text x={bx - 4} y={y + 16} fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace" textAnchor="end">
+              <text x={bx - 4} y={y + 16} fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace, monospace" textAnchor="end">
                 {b.timeline_id ? b.timeline_id.slice(0, 8) : ''}
               </text>
               <Head x={W - 40} y={y} phase={b.phase} color={color} />
-              <text x={W - 28} y={y + 4} fill="var(--cds-text-primary)" fontSize={12} fontFamily="system-ui">
-                {b.name}{ttlLabel(b) && <tspan fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace">{ttlLabel(b)}</tspan>}
+              <text x={W - 28} y={y + 4} fill="var(--cds-text-primary)" fontSize={12} fontFamily="system-ui, sans-serif">
+                {b.name}{ttlLabel(b) && <tspan fill="var(--cds-text-secondary)" fontSize={10} fontFamily="ui-monospace, monospace">{ttlLabel(b)}</tspan>}
               </text>
             </g>
           )

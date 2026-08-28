@@ -87,9 +87,9 @@ re-applies them for this reason).
 13. **Storage controller `--dev` panics** on compute notifications unless
     `control_plane_url` is set — that's what notify-sink is for. Don't
     remove it until the operator implements the receiver.
-14. **third-party MCP client needs the GET/SSE leg** of streamable HTTP and reads
-    `~/.mcp-client/settings/mcp.json` (docs say `~/.mcp-client/mcp.json`; write both).
-    Claude Code needs neither. Test MCP changes against both harnesses.
+14. **Some MCP clients need the GET/SSE leg** of streamable HTTP and treat a
+    missing stream as a dead server; Claude Code needs neither. Test MCP
+    changes against more than one harness.
 
 ## Testing tiers
 

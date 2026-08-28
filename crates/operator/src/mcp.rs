@@ -61,7 +61,7 @@ async fn serve_ui(uri: axum::http::Uri) -> Response {
 }
 
 /// Streamable-HTTP GET leg: an open, idle server→client stream. Claude Code
-/// tolerates a 405 here; other MCP clients (third-party MCP client among them) may treat a
+/// tolerates a 405 here; other MCP clients may treat a
 /// missing stream as a dead server — so we hold one open with keep-alives.
 async fn handle_get() -> Response {
     let stream =

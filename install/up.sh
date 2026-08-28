@@ -105,40 +105,13 @@ else
   say "claude CLI not found; register later with:"; echo "  $ADD_CMD"
 fi
 
-# third-party MCP clients: reads mcpServers from ~/.mcp-client/mcp.json (global) or
-# mcp-client/mcp.json (project). Our server speaks full streamable HTTP including
-# the GET/SSE server stream (the MCP client requires it; Claude Code doesn't).
-# the client's docs say ~/.mcp-client/mcp.json; real installs use ~/.mcp-client/settings/mcp.json.
-# Write both (idempotent merges) so either version picks it up.
-CLIENT_CFGS="$HOME/.mcp-client/mcp.json"
-[ -d "$HOME/.mcp-client/settings" ] && CLIENT_CFGS="$CLIENT_CFGS $HOME/.mcp-client/settings/mcp.json"
-if [ -d "$HOME/.mcp-client" ]; then
-  consent=y
-  if [ "$YES" != "--yes" ]; then
-    read -r -p "Register the sspc MCP server with third-party MCP client (~/.mcp-client/mcp.json)? [y/N] " consent
-  fi
-  if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
-    for cfg in $CLIENT_CFGS; do
-      [ -f "$cfg" ] || printf '{"mcpServers":{}}\n' > "$cfg"
-      tmp=$(mktemp)
-      jq --arg url "$MCP_URL" \
-        '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
-                              "alwaysAllow": [], "disabled": false}' \
-        "$cfg" > "$tmp" && mv "$tmp" "$cfg"
-    done
-    say "registered with third-party MCP client — restart the server from the client's MCP settings to pick it up"
-  else
-    say "skipped third-party MCP client registration"
-  fi
-fi
-
 [ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/" || true
 cat <<EOF
 
   sspc is up.
     UI:       http://localhost:30080/
-    try:      open Claude Code (or third-party MCP client) and say "create me a postgres database"
+    try:      open Claude Code (or any MCP client) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     e2e:      just e2e        teardown: ./down.sh
-    other harnesses: any MCP client works — see platform/README.md "Connect an agent"
+    other harnesses: any MCP client works — see README.md "Connect an agent"
 EOF

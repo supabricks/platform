@@ -13,13 +13,12 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults: {run: {working-directory: platform}}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: platform
+          workspaces: .
       # This job == `just verify-static`. Keep the two in lockstep.
       - name: rust format
         run: cargo fmt -- --check
@@ -39,7 +38,6 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    defaults: {run: {working-directory: platform}}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,7 +57,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
-          context: platform
+          context: .
           tags: sspc-operator:p1
           load: true
           cache-from: type=gha
@@ -74,7 +72,7 @@ jobs:
         uses: helm/kind-action@v1
         with:
           cluster_name: sspc
-          config: platform/install/kind-config.yaml
+          config: install/kind-config.yaml
 
       - name: install the platform (the real installer, CI mode)
         run: ./install/up.sh --yes
@@ -93,5 +91,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-artifacts
-          path: platform/e2e/e2e-artifacts/
+          path: e2e/e2e-artifacts/
           if-no-files-found: ignore

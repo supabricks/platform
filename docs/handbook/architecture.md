@@ -103,7 +103,7 @@ Skipped for historical `at` points.
 ## MCP + UI (mcp.rs)
 
 Hand-rolled streamable-HTTP JSON-RPC (POST + idle GET/SSE keep-alive leg —
-third-party MCP client requires the GET leg; Claude Code tolerates its absence). 14 tools
+some MCP clients require the GET leg; Claude Code tolerates its absence). 14 tools
 (count pinned by a unit test; schema snapshot-tested in `mcp-tools.json`, so
 contract drift fails CI), each a thin verb over the CR model — the
 reconcilers are the single implementation of behavior. Every tool also

@@ -3,7 +3,7 @@
 This is the operational knowledge that isn't in the RFCs: how the system is
 actually built, how to work on it without stepping on the landmines we already
 found, what to do when it breaks, and what is deliberately NOT built yet.
-The RFCs (`docs/design/`) record *decisions*; this handbook records *reality*.
+The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisions*; this handbook records *reality*.
 
 | Doc | Question it answers |
 |---|---|
@@ -14,8 +14,8 @@ The RFCs (`docs/design/`) record *decisions*; this handbook records *reality*.
 
 ## Your first week
 
-1. Read [architecture.md](architecture.md) (20 minutes) with `platform/crates/operator/src/` open next to it.
-2. Run `platform/install/up.sh` on your laptop. It should end with a working
+1. Read [architecture.md](architecture.md) (20 minutes) with `crates/operator/src/` open next to it.
+2. Run `install/up.sh` on your laptop. It should end with a working
    UI at http://localhost:30080/ and a smoke-tested MCP server. If it doesn't,
    that's a bug — file it.
 3. Run the gates: `./e2e/run.sh` (~2 min) then `./e2e/chaos.sh` (~3 min, it
@@ -42,4 +42,4 @@ The RFCs (`docs/design/`) record *decisions*; this handbook records *reality*.
 - **File naming.** Ecosystem-mandated names keep their canonical casing
   (`Chart.yaml`, `Cargo.toml`, `Dockerfile`, `README.md`); everything we
   name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
-  `docs/business/vision.md`).
+  `rfcs/business/vision.md`).

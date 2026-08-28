@@ -4,7 +4,7 @@ Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres
 (Neon's Apache-2.0 storage engine) with scale-to-zero, ~1s wakes, instant
 copy-on-write branches, TTL self-cleanup — and an MCP server so agents (Claude
-Code) are first-class users. Design: `docs/design/012-poc-m1-plan.md`.
+Code) are first-class users. Design: [RFC 012](https://github.com/supabricks/rfcs/blob/main/design/012-poc-m1-plan.md).
 New to the codebase? Start with the engineering handbook:
 `docs/handbook/README.md` (architecture as built, dev loop + landmines,
 runbook, and what's deliberately deferred).
@@ -43,13 +43,10 @@ just e2e                                      # the full acceptance suite
 ## Connect an agent
 
 The API is standard MCP (streamable HTTP, including the optional GET/SSE
-server stream — third-party MCP client requires it) — any MCP-capable harness works. `up.sh`
-auto-registers the two it knows:
+server stream that some clients require) — any MCP-capable harness works.
+`up.sh` registers the one it knows:
 
 - **Claude Code**: `claude mcp add -s user -t http sspc http://localhost:30080/mcp`
-- **third-party MCP client**: merged into `~/.mcp-client/settings/mcp.json` (and the documented
-  `~/.mcp-client/mcp.json`) as `{"type": "streamable-http", "url": "http://localhost:30080/mcp"}`
-  (restart the server from the client's MCP settings tab)
 
 Any other harness: point its MCP config at the same URL. **Auth default is
 open mode**: the installer binds all host ports to loopback, so the network
