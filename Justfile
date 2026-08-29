@@ -19,13 +19,7 @@ helm-lint:
 hardening:
     ./chart/check-hardening.sh
 
-ui-test:
-    cd ui && npm test
-
-ui-build:
-    cd ui && npm run build
-
-verify-static: fmt-check test crd-check helm-lint ui-test ui-build
+verify-static: fmt-check test crd-check helm-lint
 
 # ---- runtime gates (CI parity: e2e job) ----
 

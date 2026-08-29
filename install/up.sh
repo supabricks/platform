@@ -105,11 +105,10 @@ else
   say "claude CLI not found; register later with:"; echo "  $ADD_CMD"
 fi
 
-[ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/" || true
 cat <<EOF
 
   sspc is up.
-    UI:       http://localhost:30080/
+    MCP:      http://localhost:30080/mcp   (placeholder page at /)
     try:      open Claude Code (or any MCP client) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     e2e:      just e2e        teardown: ./down.sh

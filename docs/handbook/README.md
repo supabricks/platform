@@ -15,8 +15,9 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 ## Your first week
 
 1. Read [architecture.md](architecture.md) (20 minutes) with `crates/operator/src/` open next to it.
-2. Run `install/up.sh` on your laptop. It should end with a working
-   UI at http://localhost:30080/ and a smoke-tested MCP server. If it doesn't,
+2. Run `install/up.sh` on your laptop. It should end with a
+   smoke-tested MCP server at http://localhost:30080/mcp (and a placeholder
+   page at `/`). If it doesn't,
    that's a bug — file it.
 3. Run the gates: `./e2e/run.sh` (~2 min) then `./e2e/chaos.sh` (~3 min, it
    reboots the kind node on purpose). Both must pass before and after any

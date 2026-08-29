@@ -32,8 +32,6 @@ jobs:
       - name: helm lint
         run: helm lint chart
 
-      - name: UI tests + build
-        run: cd ui && npm ci --no-audit --no-fund && npm test && npm run build
 
   e2e:
     runs-on: ubuntu-latest

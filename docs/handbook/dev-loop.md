@@ -5,7 +5,7 @@
 ```sh
 cd platform
 cargo test                                  # T1 unit + T2 schema snapshots, <1 min
-docker build -t sspc-operator:p1 .          # builds UI + operator (release)
+docker build -t sspc-operator:p1 .          # builds the operator (release)
 docker save --platform linux/arm64 -o /tmp/op.tar sspc-operator:p1 \
   || docker save -o /tmp/op.tar sspc-operator:p1
 kind load image-archive --name sspc /tmp/op.tar
@@ -78,16 +78,13 @@ re-applies them for this reason).
     "no space left on device"). On colima, a full disk makes `docker build`
     silently no-op; `docker system df` + prune. CI runners need the
     free-disk step in `ci.yml` for the same reason.
-11. **`ui/dist` must exist** for `cargo test`/`cargo check` (rust-embed
-    compile-time folder check) — a `.gitkeep` pins it. The real dist is
-    built inside the Docker image; never commit build output.
-12. **helm `--wait` style waits**: wait on Deployments + StatefulSet
+11. **helm `--wait` style waits**: wait on Deployments + StatefulSet
     rollouts, never `pod --all` — the bucket-seed Job's Completed pod is
     never Ready and hangs the wait.
-13. **Storage controller `--dev` panics** on compute notifications unless
+12. **Storage controller `--dev` panics** on compute notifications unless
     `control_plane_url` is set — that's what notify-sink is for. Don't
     remove it until the operator implements the receiver.
-14. **Some MCP clients need the GET/SSE leg** of streamable HTTP and treat a
+13. **Some MCP clients need the GET/SSE leg** of streamable HTTP and treat a
     missing stream as a dead server; Claude Code needs neither. Test MCP
     changes against more than one harness.
 
@@ -97,11 +94,11 @@ Two aggregate gates mirror CI exactly — when in doubt, run these:
 
 | Gate | Command | Time | Mirrors |
 |---|---|---|---|
-| static (fmt, unit+snapshots, hardening contract, CRD drift, helm lint, UI tests+build) | `just verify-static` | ~2 min | the CI unit job |
+| static (fmt, unit+snapshots, hardening contract, CRD drift, helm lint) | `just verify-static` | ~2 min | the CI unit job |
 | runtime (e2e + chaos + restore) | `just verify-runtime` | ~8 min | the CI e2e job's test stages |
 
 Individual targets: `just test`, `just hardening`, `just crd-check`,
-`just helm-lint`, `just ui-test`, `just e2e`, `just chaos`, `just restore`.
+`just helm-lint`, `just e2e`, `just chaos`, `just restore`.
 Repeat deploys go through `just deploy` (build → image-archive load →
 restart) — the installer's load-skip compares operator image IDs, but the
 dev loop should not depend on the installer at all.

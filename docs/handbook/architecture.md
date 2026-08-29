@@ -5,7 +5,7 @@ layers: a **cell** (Neon's stock, unmodified storage engine) and **our
 platform** (one Rust binary: reconcilers + lifecycle loop + MCP server + UI).
 
 ```
- agent / UI / psql
+ agent / psql
    │ MCP (JSON-RPC over HTTP :30080)          NodePort per endpoint (:30001-20)
    ▼                                                     │
  sspc-operator ──── Database/Branch/EnrolledDatabase CRs │
@@ -100,7 +100,7 @@ Skipped for historical `at` points.
   40-sample ring per endpoint in operator memory (10 min at 15s). Feeds
   `get_metrics` and the `get_cu_ledger` oversubscription arithmetic.
 
-## MCP + UI (mcp.rs)
+## MCP (mcp.rs)
 
 Hand-rolled streamable-HTTP JSON-RPC (POST + idle GET/SSE keep-alive leg —
 some MCP clients require the GET leg; Claude Code tolerates its absence). 14 tools
@@ -119,15 +119,15 @@ Kubernetes Events are best-effort operational signal (create-only, failures
 logged and dropped), NOT a durable audit trail — long retry loops surface
 through CR `status.message` instead. Auth: open
 mode by default (install binds host ports to 127.0.0.1; real IAM is RFC 008),
-`SSPC_MCP_REQUIRE_TOKEN=true` for bearer mode. The UI (Carbon, RFC 013) is
-rust-embedded into the binary and speaks only MCP tools — a browser is just
-another agent.
+`SSPC_MCP_REQUIRE_TOKEN=true` for bearer mode. A placeholder page is
+embedded at `/` (it is also the probe target); the console is being rebuilt in
+its own repository as an MCP-only client — a browser is just another agent.
 
 ## What talks to what (ports)
 
 | Port | What |
 |---|---|
-| host 30080 | MCP + UI (loopback-bound by kind config) |
+| host 30080 | MCP + a placeholder page at `/` (loopback-bound by kind config) |
 | host 30001–30020 | per-endpoint Postgres NodePorts (M1 cap: 20 endpoints) |
 | host 30099 / 30098 | storage-controller / pageserver APIs (debug) |
 | pod 55433 | Postgres in every compute |

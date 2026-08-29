@@ -38,10 +38,11 @@ pub struct McpState {
     pub connect_host: String,
 }
 
-/// The UI bundle, embedded at compile time (RFC 013): served from the same
-/// origin as /mcp — no CORS, no extra pod, air-gap clean.
+/// Static assets embedded at compile time: a placeholder page at `/` (also
+/// the health-probe target). The console is being rebuilt in its own
+/// repository as an MCP-only client and will be embedded here the same way.
 #[derive(rust_embed::RustEmbed)]
-#[folder = "../../ui/dist"]
+#[folder = "assets/ui"]
 struct UiAssets;
 
 async fn serve_ui(uri: axum::http::Uri) -> Response {
