@@ -67,7 +67,7 @@ spec:
           allowPrivilegeEscalation: false
           capabilities: {drop: [ALL]}
           readOnlyRootFilesystem: true
-        # The MCP/UI listener doubles as the health surface: it serves only
+        # The MCP listener (with the placeholder page at /) doubles as the health surface: it serves only
         # after the runtime is up, and a wedged runtime stops answering.
         readinessProbe:
           httpGet: {path: /, port: 8080}

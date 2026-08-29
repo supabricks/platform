@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supabricks platform</title>
+<style>
+  body{margin:0;background:#0f1418;color:#e3e9ee;font:16px/1.55 system-ui,sans-serif}
+  main{max-width:38rem;margin:14vh auto;padding:0 1.5rem}
+  h1{font-size:1.5rem;font-weight:600;margin:0 0 .75rem}
+  p{margin:0 0 1rem;color:#aab4be} code{font-family:ui-monospace,monospace;background:#1b232b;padding:.1rem .35rem;border-radius:2px;color:#e3e9ee}
+  pre{background:#161c22;border:1px solid #2a343d;padding:.9rem 1rem;overflow-x:auto;font-family:ui-monospace,monospace;font-size:.9rem}
+</style></head><body><main>
+<h1>Supabricks platform</h1>
+<p>This node is up. The machine API is MCP over streamable HTTP at <code>/mcp</code>; every operation available to a person is available to an agent through it.</p>
+<p>The console is being rebuilt in its own repository. Until it lands, connect an MCP client:</p>
+<pre>claude mcp add -s user -t http sspc http://localhost:30080/mcp</pre>
+<p><code>kubectl -n sspc-cell get databases,branches</code> shows the estate directly.</p>
+</main></body></html>
