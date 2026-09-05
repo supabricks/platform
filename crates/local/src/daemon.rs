@@ -94,8 +94,17 @@ impl Daemon {
                 Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
                 Err(e) => return Err(e.into()),
             };
-            stream.set_read_timeout(Some(Duration::from_secs(2)))?;
-            stream.set_write_timeout(Some(Duration::from_secs(2)))?;
+            // A probe may close immediately after connect. Socket setup errors
+            // belong to that client, not to the daemon's ownership lifetime.
+            if stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .is_err()
+                || stream
+                    .set_write_timeout(Some(Duration::from_secs(2)))
+                    .is_err()
+            {
+                continue;
+            }
             let request = read_request(&mut stream);
             let shutdown = matches!(
                 &request,

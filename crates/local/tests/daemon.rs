@@ -26,12 +26,13 @@ fn spawn(root: &Path) -> ChildGuard {
             .args(["daemon", "--data-dir"])
             .arg(root)
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stderr(Stdio::inherit())
             .spawn()
             .unwrap(),
     )
 }
 fn call(root: &Path, request: Request) -> Value {
+    let request_label = serde_json::to_value(&request).unwrap()["method"].clone();
     let mut stream = UnixStream::connect(root.join("control.sock")).unwrap();
     stream
         .set_read_timeout(Some(Duration::from_secs(5)))
@@ -48,7 +49,8 @@ fn call(root: &Path, request: Request) -> Value {
     .unwrap();
     let mut line = String::new();
     BufReader::new(stream).read_line(&mut line).unwrap();
-    serde_json::from_str(&line).unwrap()
+    serde_json::from_str(&line)
+        .unwrap_or_else(|error| panic!("request {request_label} returned {line:?}: {error}"))
 }
 fn ready(root: &Path) {
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -88,6 +90,10 @@ fn simultaneous_startup_has_one_owner_and_kill_restart_retains_intent() {
             }
         }
     };
+    // Bare connection probes can disappear before the server configures them.
+    for _ in 0..8 {
+        drop(UnixStream::connect(data.join("control.sock")).unwrap());
+    }
     let status = call(&data, Request::Status);
     let generation = status["result"]["generation"].as_i64().unwrap();
     assert_eq!(status["result"]["engine_execution"], false);
