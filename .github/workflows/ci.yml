@@ -22,7 +22,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: portable dependency boundary
         run: python3 scripts/check-portable-deps.py
-      - name: portable contracts without UI or cluster setup
+      - name: portable contracts and local crash recovery without UI or cluster setup
         run: cargo test --locked -p supabricks-core -p supabricks-local
 
   unit:

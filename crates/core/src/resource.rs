@@ -21,7 +21,14 @@ macro_rules! uuid_id {
         }
     )+ };
 }
-uuid_id!(ProjectId, BranchId, EndpointId, OperationId);
+uuid_id!(
+    ProjectId,
+    BranchId,
+    EndpointId,
+    OperationId,
+    EpochId,
+    LeaseId
+);
 
 macro_rules! engine_id {
     ($($name:ident),+) => { $(

@@ -46,3 +46,5 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
   (`Chart.yaml`, `Cargo.toml`, `Dockerfile`, `README.md`); everything we
   name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
   `rfcs/business/vision.md`).
+
+Native runtime work: [local state and durable operations (P02)](local-state.md).

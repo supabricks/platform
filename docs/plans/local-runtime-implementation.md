@@ -655,7 +655,8 @@ Platform records source pins, helper archive checksums and bundle verification
 in `components/`. The evidence is an engineering probe: macOS clean-host/offline
 qualification, current upstream minor integration, license notices
 and signing remain open. S3 and product lifecycle qualification remain P03.
-No platform CLI, installer or website is implemented yet.
+The local state daemon entry point is introduced in P02 below. Public database
+commands, the installer and website remain unimplemented.
 
 P01 extracts `supabricks-core` and introduces the configuration-only
 `supabricks-local` adapter. The operator consumes the shared spec, keys,
@@ -664,4 +665,12 @@ profile. Native configuration selects the PG17 bundle path, loopback ports,
 fsync and compute_ctl development mode explicitly. Invalid LSNs now fail closed.
 Portable dependency checks and Linux/macOS contract tests run in CI alongside
 the existing operator deployment gate. See [the core contract](../../crates/core/README.md).
-Local state/ownership (P02) and storage/process lifecycle (P03) remain unimplemented.
+P02 adds the SQLite state daemon, private socket, installation ownership lock,
+project/worktree metadata and durable operation journal. Resource revisions and
+owner generations fence stale checkpoints; endpoint reservations and cleanup
+survive restart. Epoch/table mapping metadata, process evidence and work leases
+are persisted. Real subprocess tests exercise simultaneous ownership, duplicate
+requests and all 12 create/delete crash boundaries using an idempotent fake
+engine. See [local state](../handbook/local-state.md) for contracts and limits.
+Storage/process execution and qualification remain P03; database branch semantics
+and the public CLI/MCP surfaces remain subsequent slices.
