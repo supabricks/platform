@@ -12,8 +12,8 @@ schema. Persistence, migrations and resource revisions belong to P02.
 and an argv vector from explicit bundle/data/config paths and loopback ports.
 It enables fsync, disables Unix sockets, and passes `--dev` to skip
 compute_ctl VM-specific shutdown actions. Paths must be absolute UTF-8 paths;
-spaces are preserved as part of each argument. It neither checks installed
-binaries nor launches them. The caller must supply verified component paths
+spaces are preserved as part of each argument. It omits the POC fixture's fixed operation and cluster metadata. It neither
+checks installed binaries nor launches them. The caller must supply verified component paths
 and provision storage addresses and authentication before execution.
 
 The existing operator is an adapter: Kubernetes Secrets, resources, statuses,

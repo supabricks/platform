@@ -71,7 +71,7 @@ pub fn plan_compute(
         format!("--external-http-port={}", input.external_http.port()),
         format!("--internal-http-port={}", input.internal_http.port()),
     ]);
-    let config = render(
+    let mut config = render(
         spec,
         &Settings {
             port: input.sql.port(),
@@ -80,7 +80,23 @@ pub fn plan_compute(
             unix_socket_directories: Some(""),
         },
     )
-    .map_err(|e| invalid(&e.to_string()))?;
+    .map_err(|e| match e.downcast::<ValidationError>() {
+        Ok(error) => error,
+        Err(error) => invalid(&error.to_string()),
+    })?;
+    // These optional fields describe the old P0 fixture, not a native operation.
+    // P02 will supply durable operation identity when it owns execution.
+    let body = config["spec"]
+        .as_object_mut()
+        .expect("rendered spec object");
+    body.remove("timestamp");
+    body.remove("operation_uuid");
+    let cluster = body["cluster"]
+        .as_object_mut()
+        .expect("rendered cluster object");
+    for field in ["cluster_id", "name", "state"] {
+        cluster.remove(field);
+    }
     Ok(ComputePlan {
         pg_major: input.pg_major,
         config,
@@ -119,6 +135,9 @@ mod tests {
         let p = params();
         let plan = plan_compute(&input(), &p).unwrap();
         assert_eq!(plan.pg_major, PgMajor::V17);
+        assert!(plan.config["spec"].get("operation_uuid").is_none());
+        assert!(plan.config["spec"].get("timestamp").is_none());
+        assert!(plan.config["spec"]["cluster"].get("cluster_id").is_none());
         assert!(plan.command.contains(&"--dev".into()));
         assert_eq!(plan.command[0], "/tmp/bundle with spaces/bin/compute_ctl");
         assert!(
