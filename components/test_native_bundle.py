@@ -67,3 +67,11 @@ class NativeBundleContractTests(unittest.TestCase):
         self.manifest["bundle"]["symlinks"]["missing"] = "not-present"
         with self.assertRaisesRegex(ValueError, "dangling"):
             self.check()
+
+    def test_symlink_cannot_bypass_required_binary_hash(self):
+        path = self.bundle / "bin/pageserver"
+        path.unlink()
+        path.symlink_to("safekeeper")
+        self.manifest["bundle"]["symlinks"]["bin/pageserver"] = "safekeeper"
+        with self.assertRaisesRegex(ValueError, "both file and symlink"):
+            self.check()

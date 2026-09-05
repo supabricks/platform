@@ -2,8 +2,8 @@
   "component": "process-compose",
   "repository": "https://github.com/F1bonacc1/process-compose",
   "release": "v1.122.0",
-  "source_commit": "673850dd20683ef14b33890444ca3416d02c751c",
-  "source": "GitHub release API; downloaded bytes verified separately",
+  "source_commit": "23b0acacc937d745279fb1551337f4031c4fc865",
+  "source": "Downloaded release binaries declare this full Go vcs.revision on both targets; corresponding GitHub commit inspected",
   "qualification": "untested",
   "artifacts": [
     {
@@ -27,6 +27,20 @@
     ],
     "linux_version_command": "passed",
     "macos_execution": "not-run",
-    "runtime_lifecycle": "not-run"
+    "runtime_lifecycle": "not-run",
+    "embedded_go_vcs": {
+      "targets": [
+        "linux-x86_64",
+        "macos-arm64"
+      ],
+      "revision": "23b0acacc937d745279fb1551337f4031c4fc865",
+      "modified": false
+    }
+  },
+  "release_tag": {
+    "object": "c1b34612c727e12ceeb0c7ae99a8ad838dceae21",
+    "commit": "673850dd20683ef14b33890444ca3416d02c751c",
+    "note": "Published binaries were built from the immediate child commit, which only updates default.nix version from 1.120.0 to 1.122.0. Selection records the binaries' declared source rather than the tag target.",
+    "comparison": "https://github.com/F1bonacc1/process-compose/commit/23b0acacc937d745279fb1551337f4031c4fc865"
   }
 }

@@ -41,6 +41,14 @@ class ComponentContractTests(unittest.TestCase):
         self.component("neon-engine")["selection"]["commit"] = "1" * 40
         self.assert_invalid("claim exceeds the recorded native probe")
 
+    def test_helper_source_and_archive_must_match_provenance(self):
+        component = self.component("process-compose")
+        component["selection"]["commit"] = "1" * 40
+        self.assert_invalid("differs from release provenance")
+        component = self.component("seaweedfs")
+        component["artifacts"][0]["sha256"] = "0" * 64
+        self.assert_invalid("seaweedfs/linux-x86_64: source or artifact differs from release provenance")
+
     def test_native_probe_cannot_qualify_another_target(self):
         qualification = self.component("neon-engine")["qualification"]
         qualification["macos-arm64"] = copy.deepcopy(qualification["linux-x86_64"])

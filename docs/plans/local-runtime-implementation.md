@@ -644,7 +644,7 @@ passed in GitHub CI. RFC scope publication remains a separate repo change.
 
 E01 now has native build/packaging scripts and standalone Linux/macOS CI in
 [neon PR #1](https://github.com/supabricks/neon/pull/1). The selected PG17.8 pair
-passed 224 PostgreSQL regression tests and eight relocated runtime checks on
+passed 224 PostgreSQL regression tests and nine relocated runtime checks on
 Linux, including branch isolation, compute restart and lazy SLRU download.
 Platform records source pins, helper archive checksums and bundle verification
 in `components/`. The evidence is an engineering probe: both-target and

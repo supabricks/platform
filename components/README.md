@@ -48,7 +48,7 @@ current Justfile recipes.
   provenance. License identifiers identify the primary component only; full
   bundled dependency notices and license review belong to E01/R02 packaging.
 
-The selected pair is Neon `032d26fb628b4bddfa95e1ced4ffb9e415725bd9`
+The selected pair is Neon `1c6fa095261112aae239beef5a221b484703d49a`
 with PG17.8 gitlink `56692dfb680281a963c7470fc7f0fec7f65ecfd4` from
 `sb/REL_17_STABLE`. The original PG17.5 pair was reproduced first, then the Neon
 extension was adapted to the maintained fork's SLRU, block-LSN and lock hooks.
@@ -91,7 +91,7 @@ builds Linux x86_64 and macOS arm64 without private Neon credentials. Follow
 headers remain build inputs; only PG17 compute and extensions are packaged.
 
 The [Linux report](provenance/native-linux.json) records 224 PostgreSQL regression
-tests and eight native runtime checks against the exact selected clean sources.
+tests and nine native runtime checks against the exact selected clean sources.
 The bundle was moved into a path containing spaces before ordinary `psql`,
 explicit-LSN branching, isolation, compute restart, concurrent GiST reads and
 lazy SLRU download checks. This used the LocalFs test remote backend on the build
@@ -115,7 +115,11 @@ python components/fetch-native-helpers.py macos-arm64 /tmp/supabricks-helpers
 ```
 
 Both target downloads have been checksum-verified, and the Linux binaries passed
-their version commands. Downloading does not install or launch services. P03
+their version commands. Downloading does not install or launch services. Platform
+uses the binaries' embedded Go source revisions for the helper pins; Process
+Compose's release tag points to the immediately preceding commit, documented in
+its [provenance](provenance/process-compose.json). The validator rejects source
+or archive identities that disagree with these records. P03
 must still qualify supervisor ownership and the S3 backend. Current upstream
 PG17 minor integration, macOS and clean-host evidence, transitive license notices
 and release signing remain gates. No platform CLI or one-command installer is

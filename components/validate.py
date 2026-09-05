@@ -61,6 +61,14 @@ def validate(manifest, root=ROOT, require_qualified=False):
                 errors.append(f"{name}: duplicate artifact target: {target}")
             artifacts[target] = artifact
             evidence_exists(artifact["provenance"])
+            if (name in {"process-compose", "seaweedfs"}
+                    and artifact["provenance"] == f"components/provenance/{name}.json"):
+                path = (root / artifact["provenance"]).resolve()
+                if path.is_relative_to(root) and path.is_file():
+                    provenance = read_json(path)
+                    if (provenance.get("source_commit") != component["selection"].get("commit")
+                            or artifact not in provenance.get("artifacts", [])):
+                        errors.append(f"{name}/{target}: source or artifact differs from release provenance")
         for target, qualification in component["qualification"].items():
             for evidence in qualification["evidence"]:
                 evidence_exists(evidence)
@@ -92,19 +100,24 @@ def validate(manifest, root=ROOT, require_qualified=False):
     for name in ("neon-engine", "postgres17"):
         for target, qualification in components.get(name, {}).get("qualification", {}).items():
             for evidence in qualification["evidence"]:
-                if evidence != "components/provenance/native-linux.json":
+                if evidence not in {"components/provenance/native-linux.json",
+                                    "components/provenance/native-macos.json"}:
                     continue
                 path = (root / evidence).resolve()
                 if not path.is_relative_to(root) or not path.is_file():
                     continue  # Already reported by evidence_exists.
                 native = read_json(path)
                 build, smoke = native.get("build", {}), native.get("smoke", {})
+                architecture, system = {"linux-x86_64": ("x86_64", "Linux"),
+                                        "macos-arm64": ("arm64", "macOS")}[target]
                 neon = components.get("neon-engine", {}).get("selection", {}).get("commit")
                 expected_pg = {"path": pair["submodule_path"], "commit": pair["gitlink"], "role": "runtime"}
                 if (qualification["state"] != "probe-passed" or native.get("target") != target
                         or native.get("qualification") != "probe-passed"
                         or build.get("neon_commit") != neon or build.get("neon_dirty") is not False
                         or build.get("postgres_major") != 17
+                        or build.get("builder", {}).get("architecture") != architecture
+                        or not build.get("builder", {}).get("os", "").startswith(system)
                         or build.get("postgres_regression") != "passed"
                         or expected_pg not in build.get("sources", [])
                         or smoke.get("status") != "PASS" or smoke.get("neon_commit") != neon

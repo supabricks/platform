@@ -25,6 +25,8 @@ def verify(bundle, lock):
         raise ValueError("bundle Postgres source differs from the selected engine gitlink")
     inventory = manifest["bundle"]
     files, links = inventory["files"], inventory["symlinks"]
+    if files.keys() & links.keys():
+        raise ValueError("manifest lists a path as both file and symlink")
     required = {f"bin/{name}" for name in ("pageserver", "safekeeper", "storage_broker", "compute_ctl")}
     required |= {f"pg_install/v17/bin/{name}" for name in ("postgres", "psql", "initdb", "pg_ctl", "pg_dump")}
     if not required <= files.keys():

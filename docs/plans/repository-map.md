@@ -35,7 +35,7 @@ false in the organization listing. Treat it as retired by project convention.
 These are investigation pins, not the selected release combination. Record the
 qualified combination in the platform component lock after testing.
 
-E01 subsequently selected Neon `032d26fb628b4bddfa95e1ced4ffb9e415725bd9`
+E01 subsequently selected Neon `1c6fa095261112aae239beef5a221b484703d49a`
 and PG17.8 `56692dfb680281a963c7470fc7f0fec7f65ecfd4` on feature branches.
 [Neon PR #1](https://github.com/supabricks/neon/pull/1) owns native packaging and
 extension compatibility changes; platform owns the lock and its

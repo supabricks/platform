@@ -4,7 +4,7 @@
   "qualification": "probe-passed",
   "build": {
     "schema_version": 1,
-    "neon_commit": "032d26fb628b4bddfa95e1ced4ffb9e415725bd9",
+    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
     "neon_dirty": false,
     "postgres_major": 17,
     "sources": [
@@ -58,6 +58,7 @@
     "checks": [
       "relocated bundle with spaces",
       "PG17 SQL and exact decimals",
+      "startup with core dumps disabled",
       "explicit-LSN branch",
       "parent/child isolation",
       "graceful compute restart",
@@ -71,7 +72,7 @@
       "trusted local test credentials",
       "not a platform lifecycle test"
     ],
-    "neon_commit": "032d26fb628b4bddfa95e1ced4ffb9e415725bd9",
+    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
     "sources": [
       {
         "path": "vendor/postgres-v14",
@@ -96,16 +97,17 @@
     ]
   },
   "archive": {
-    "name": "supabricks-engine-032d26fb-linux.tar.gz",
-    "sha256": "ffb08ff712f2893a842067dcb475da2deb00942f4e58fed568819b0f00eb94a0",
-    "bytes": 167645849,
-    "distribution": "local developer artifact; no stable release URL"
+    "name": "supabricks-engine-1c6fa095-linux.tar.gz",
+    "sha256": "c2b677b1417a2f863a83a254fc4fd8290095e1c26237e11d87bb8e20a3d58828",
+    "bytes": 167654064,
+    "distribution": "local developer artifact; no stable release URL",
+    "loader_check": "passed without library-path overrides"
   },
   "commands": [
     "python3 scripts/native/build.py --jobs 8 --check",
-    "python3 scripts/native/bundle.py build/supabricks-engine-032d26fb-linux",
-    "python3 scripts/native/smoke.py build/supabricks-engine-032d26fb-linux --report build/native-smoke-032d26fb-linux.json",
-    "python components/verify-native-bundle.py ../neon/build/supabricks-engine-032d26fb-linux"
+    "python3 scripts/native/bundle.py build/supabricks-engine-1c6fa095-linux",
+    "python3 scripts/native/smoke.py build/supabricks-engine-1c6fa095-linux --report build/native-smoke-1c6fa095-linux.json",
+    "python components/verify-native-bundle.py ../neon/build/supabricks-engine-1c6fa095-linux"
   ],
   "limitations": [
     "Built and exercised on the same Linux host; not a clean-host or offline qualification.",
