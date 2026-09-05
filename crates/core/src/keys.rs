@@ -1,4 +1,4 @@
-//! Ed25519 compute-auth machinery (RFC 012 D7): the operator generates the
+//! Ed25519 compute-auth machinery (RFC 012 D7): the control plane generates the
 //! keypair, embeds the JWKS in every compute spec, and mints per-compute
 //! admin JWTs. Derivations must match the Day-2 recipe
 //! (spike/compose/mint-compute-jwt.sh): x = b64url(raw 32-byte pubkey),
@@ -51,7 +51,6 @@ impl ComputeKey {
 
     /// Admin-scoped token for a compute_ctl external API (verified Day 2).
     /// Consumed by the P3 suspend flow (`POST /terminate`).
-    #[allow(dead_code)]
     pub fn mint_admin_jwt(&self, ttl_secs: u64) -> anyhow::Result<String> {
         let mut header = Header::new(Algorithm::EdDSA);
         header.kid = Some(self.kid_b64url.clone());
@@ -68,9 +67,7 @@ impl ComputeKey {
     }
 
     /// The JWKS object embedded in every compute spec.
-    /// Spec render consumes x/kid directly today; kept for the P2 MCP
-    /// `capabilities` surface.
-    #[allow(dead_code)]
+    /// Spec rendering consumes x/kid directly.
     pub fn jwks(&self) -> serde_json::Value {
         serde_json::json!({
             "keys": [{
@@ -80,6 +77,13 @@ impl ComputeKey {
             }]
         })
     }
+}
+
+/// PG classic md5 credential: hex(md5(password + user)), no "md5" prefix —
+/// the format the compute spec's `encrypted_password` field expects.
+pub fn pg_md5(password: &str, user: &str) -> String {
+    use md5::Digest as _;
+    hex::encode(md5::Md5::digest(format!("{password}{user}")))
 }
 
 #[cfg(test)]

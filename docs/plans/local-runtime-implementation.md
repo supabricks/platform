@@ -656,3 +656,12 @@ in `components/`. The evidence is an engineering probe: macOS clean-host/offline
 qualification, current upstream minor integration, license notices
 and signing remain open. S3 and product lifecycle qualification remain P03.
 No platform CLI, installer or website is implemented yet.
+
+P01 extracts `supabricks-core` and introduces the configuration-only
+`supabricks-local` adapter. The operator consumes the shared spec, keys,
+validation and branch-ingestion logic while retaining its PG16 deployment
+profile. Native configuration selects the PG17 bundle path, loopback ports,
+fsync and compute_ctl development mode explicitly. Invalid LSNs now fail closed.
+Portable dependency checks and Linux/macOS contract tests run in CI alongside
+the existing operator deployment gate. See [the core contract](../../crates/core/README.md).
+Local state/ownership (P02) and storage/process lifecycle (P03) remain unimplemented.

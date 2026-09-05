@@ -29,6 +29,14 @@ just e2e                                      # the full acceptance suite
 
 ## What's here
 
+The native Supabricks runtime is being built alongside this Kubernetes profile;
+see the [implementation plan](docs/plans/local-runtime-implementation.md).
+
+- `crates/core` — portable compute configuration, authentication, validation,
+  identities and branch decisions. See the [core contract](crates/core/README.md).
+- `crates/local` — PG17 native compute configuration and launch planning;
+  daemon, process supervision and CLI follow in later slices.
+
 - `crates/operator` — CRDs (`Database`, `Branch`), reconcilers (tenant/timeline
   via the storage controller, compute pods running stock Neon images with
   compute_ctl as PID 1), lifecycle loop (idle-suspend via SQL activity +

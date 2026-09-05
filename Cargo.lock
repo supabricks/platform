@@ -2786,16 +2786,13 @@ dependencies = [
  "anyhow",
  "aws-lc-rs",
  "axum",
- "base64 0.23.1",
  "chrono",
  "futures",
  "hex",
  "http",
  "jsonschema",
- "jsonwebtoken",
  "k8s-openapi",
  "kube",
- "md-5 0.10.6",
  "mime_guess",
  "rand",
  "reqwest",
@@ -2806,6 +2803,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
+ "supabricks-core",
  "thiserror",
  "tokio",
  "tokio-postgres",
@@ -2862,6 +2860,31 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "supabricks-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-lc-rs",
+ "base64 0.23.1",
+ "hex",
+ "jsonwebtoken",
+ "md-5 0.10.6",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "supabricks-local"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "supabricks-core",
+]
 
 [[package]]
 name = "syn"
@@ -3298,6 +3321,18 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "uuid"
+version = "1.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5772d71c9be8a8a6ac2117d949c5b224c1b72241bb611d9a3012edcf8af7812"
+dependencies = [
+ "getrandom 0.4.3",
+ "js-sys",
+ "serde_core",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "uuid-simd"

@@ -110,8 +110,8 @@ All paths below are relative to `supabricks/platform`, not the old `sspc/platfor
 
 | Existing source | Useful behavior | Treatment |
 |---|---|---|
-| `crates/operator/src/spec.rs`, assets and golden fixture | Explicit compute identity and known-good spec rendering | Extract portable parts; parameterize local paths/ports and PG major |
-| `crates/operator/src/keys.rs` | Ed25519/JWKS/JWT machinery | Reuse; local private-file persistence replaces Kubernetes Secrets |
+| `crates/core/src/spec.rs`, assets and golden fixture | Explicit compute identity and known-good spec rendering | Extracted in P01; `crates/local` supplies PG17 bundle paths and loopback ports |
+| `crates/core/src/keys.rs` | Ed25519/JWKS/JWT machinery | Extracted in P01; local private-file persistence will replace Kubernetes Secrets |
 | `crates/operator/src/storcon.rs` | HTTP timeouts, error classification, timeline operations | Keep controller client for K8s; add a direct-pageserver adapter, not a URL-only substitution |
 | `crates/operator/src/reconcile.rs` | Ingestion wait, branch identity, deletion safety | Extract pure decisions; implement local durable operations instead of copying K8s reconciliation |
 | `crates/operator/src/lifecycle.rs` | Graceful termination, TTL, fresh-wake lessons | Adapt policy; local connection/work leases replace SQL idle polling |
