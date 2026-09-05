@@ -28,7 +28,7 @@ use serde_json::{Value, json};
 use tracing::info;
 
 use crate::crd::{Branch, Database, EnrolledDatabase, Phase};
-use crate::reconcile::{Ctx, WAKE_ANNOTATION, now_ts};
+use crate::reconcile::{Ctx, WAKE_ANNOTATION, lifecycle_event_ts};
 
 pub struct McpState {
     pub ctx: Arc<Ctx>,
@@ -633,7 +633,7 @@ async fn get_connection(state: &McpState, args: &Value) -> ToolResult {
     // The wake path (RFC 012 P3): a suspended endpoint gets a wake annotation;
     // the reconciler recreates the compute; we wait and report the wake time.
     let wake_patch = Patch::Merge(json!({
-        "metadata": {"annotations": {WAKE_ANNOTATION: now_ts()}}
+        "metadata": {"annotations": {WAKE_ANNOTATION: lifecycle_event_ts()}}
     }));
     let suspended = |s: &Option<crate::crd::EndpointStatus>| {
         s.as_ref().map(|s| s.phase) == Some(Some(Phase::Suspended))

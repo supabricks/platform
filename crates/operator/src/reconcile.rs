@@ -51,9 +51,14 @@ pub fn now_ts() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// Suspend-awareness: a resource runs unless it is Suspended with no wake
-/// request newer than the suspension. Fixed-format UTC RFC3339 strings
-/// compare chronologically, so this is monotonic with no annotation clearing.
+/// Wake and suspension events need subsecond precision: a wake can arrive in
+/// the same second that suspension completes (observed by the chaos gate).
+pub fn lifecycle_event_ts() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
+}
+
+/// A resource runs unless it is suspended without a newer wake. Parse timestamps
+/// so older second-resolution records and new fractional records compare by time.
 pub fn wants_running(
     meta: &kube::api::ObjectMeta,
     status: Option<&crate::crd::EndpointStatus>,
@@ -62,11 +67,18 @@ pub fn wants_running(
     if s.phase != Some(Phase::Suspended) {
         return true;
     }
-    let suspended_at = s.suspended_at.as_deref().unwrap_or("");
-    meta.annotations
+    let wake = meta
+        .annotations
         .as_ref()
         .and_then(|a| a.get(WAKE_ANNOTATION))
-        .is_some_and(|w| w.as_str() > suspended_at)
+        .and_then(|w| chrono::DateTime::parse_from_rfc3339(w).ok());
+    match (wake, s.suspended_at.as_deref()) {
+        (Some(wake), Some(suspended)) => {
+            chrono::DateTime::parse_from_rfc3339(suspended).is_ok_and(|suspended| wake > suspended)
+        }
+        (Some(_), None) => true,
+        _ => false,
+    }
 }
 
 pub struct Ctx {
@@ -855,6 +867,32 @@ mod tests {
                 "--config=/config/spec.json",
             ]
         );
+    }
+
+    #[test]
+    fn same_second_wake_is_ordered_with_legacy_and_precise_suspension() {
+        let wake = meta_with_wake(Some("2026-09-05T20:19:02.700000000Z"));
+        for suspended in ["2026-09-05T20:19:02Z", "2026-09-05T20:19:02.335675000Z"] {
+            assert!(wants_running(
+                &wake,
+                Some(&status(Phase::Suspended, Some(suspended)))
+            ));
+        }
+        for suspended in [
+            "2026-09-05T20:19:02.700000000Z",
+            "2026-09-05T20:19:02.900000000Z",
+            "2026-09-05T21:19:02.700000000+01:00",
+            "invalid",
+        ] {
+            assert!(!wants_running(
+                &wake,
+                Some(&status(Phase::Suspended, Some(suspended)))
+            ));
+        }
+        assert!(!wants_running(
+            &meta_with_wake(Some("invalid")),
+            Some(&status(Phase::Suspended, None))
+        ));
     }
 
     #[test]

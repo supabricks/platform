@@ -314,7 +314,7 @@ async fn maybe_suspend<K>(
                 format!("{name} suspended after {idle_secs}s idle — compute released"),
             )
             .await;
-            let mut st = json!({"phase": Phase::Suspended, "suspendedAt": now_ts()});
+            let mut st = json!({"phase": Phase::Suspended, "suspendedAt": crate::reconcile::lifecycle_event_ts()});
             if let Some(l) = lsn {
                 st["flushLsn"] = json!(l);
             }
