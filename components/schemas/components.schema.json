@@ -1,0 +1,321 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "targets": {
+      "const": [
+        "linux-x86_64",
+        "macos-arm64"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      },
+      "minItems": 1
+    },
+    "engine_pair": {
+      "type": "object",
+      "properties": {
+        "neon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "postgres": {
+          "type": "string",
+          "minLength": 1
+        },
+        "submodule_path": {
+          "const": "vendor/postgres-v16"
+        },
+        "gitlink": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "maintained_candidate": {
+          "type": "object",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "pattern": "^https://[^\\s]+$"
+            },
+            "ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          },
+          "required": [
+            "repository",
+            "ref",
+            "commit"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "neon",
+        "postgres",
+        "submodule_path",
+        "gitlink",
+        "maintained_candidate"
+      ],
+      "additionalProperties": false
+    },
+    "legacy_images": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "const": "chart/values.yaml"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reference": {
+                "type": "string",
+                "pattern": "^[^\\s@]+@sha256:[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "name",
+              "reference"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "source",
+        "images"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "targets",
+    "components",
+    "engine_pair",
+    "legacy_images"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supabricks component source inventory and qualification lock",
+  "$defs": {
+    "component": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "enum": [
+            "supabricks/platform",
+            "supabricks/neon",
+            "supabricks/postgres"
+          ]
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^https://[^\\s]+$"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selection": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "unselected"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "kind",
+                "reason"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "git"
+                },
+                "commit": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                }
+              },
+              "required": [
+                "kind",
+                "commit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "package"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[a-zA-Z0-9.+-]*)?$"
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "qualification": {
+          "type": "object",
+          "properties": {
+            "linux-x86_64": {
+              "$ref": "#/$defs/qualification"
+            },
+            "macos-arm64": {
+              "$ref": "#/$defs/qualification"
+            }
+          },
+          "required": [
+            "linux-x86_64",
+            "macos-arm64"
+          ],
+          "additionalProperties": false
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "owner",
+        "repository",
+        "license",
+        "selection",
+        "qualification",
+        "artifacts"
+      ],
+      "additionalProperties": false
+    },
+    "qualification": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "untested",
+            "probe-passed",
+            "qualified"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[^\\s]+$"
+          },
+          "uniqueItems": true
+        },
+        "remaining": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "state",
+        "evidence",
+        "remaining"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "probe-passed",
+                  "qualified"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "enum": [
+            "linux-x86_64",
+            "macos-arm64"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://[^\\s]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provenance": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[^\\s]+$"
+        }
+      },
+      "required": [
+        "target",
+        "url",
+        "sha256",
+        "provenance"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

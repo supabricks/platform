@@ -27,6 +27,17 @@ ui-build:
 
 verify-static: fmt-check test crd-check helm-lint ui-test ui-build
 
+# ---- local component baseline (separate native-baseline CI workflow) ----
+# Activate components/.venv first; see components/README.md.
+
+component-check:
+    python3 components/validate.py
+
+component-test:
+    python3 -m unittest discover -s components -p 'test_*.py' -v
+
+verify-native-baseline: component-check component-test
+
 # ---- runtime gates (CI parity: e2e job) ----
 
 e2e:

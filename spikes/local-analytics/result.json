@@ -1,0 +1,26 @@
+{
+  "scope": "synthetic Delta interoperability; not an OLTAP or durability test",
+  "platform": "Linux-7.0.0-30-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3",
+  "versions": {
+    "pysail": "0.7.1",
+    "pyspark-client": "4.2.0",
+    "deltalake": "1.6.3",
+    "pyarrow": "25.0.1",
+    "pandas": "2.3.3"
+  },
+  "checks": [
+    "Spark Connect SQL",
+    "DataFrame aggregation preserves decimal values",
+    "delta-rs update/delete/insert visible in Sail",
+    "historical DataFrame read",
+    "spark.table name bound through VERSION AS OF view",
+    "independent Delta reader agrees",
+    "no Java child process at measurement",
+    "fresh Sail engine reads current and historical versions"
+  ],
+  "server_start_to_first_query_seconds_excluding_imports": 0.062,
+  "child_processes_at_measurement": [],
+  "combined_python_client_server_writer_rss_mib": 275.9,
+  "status": "PASS"
+}
