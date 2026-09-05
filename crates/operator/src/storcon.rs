@@ -3,6 +3,7 @@
 
 use anyhow::{Context, bail};
 use serde_json::json;
+use supabricks_core::resource::PgMajor;
 
 /// A non-success storage-controller response with its HTTP status, so
 /// callers can classify user-error 4xx as terminal instead of retrying
@@ -24,13 +25,15 @@ impl std::error::Error for StorconHttp {}
 #[derive(Clone)]
 pub struct Storcon {
     base: String,
+    pg_major: PgMajor,
     http: reqwest::Client,
 }
 
 impl Storcon {
-    pub fn new(base: impl Into<String>) -> Self {
+    pub fn new(base: impl Into<String>, pg_major: PgMajor) -> Self {
         Self {
             base: base.into(),
+            pg_major,
             // Timeouts are mandatory (found live, review 003): a client with
             // none lets one hung request park an object's reconcile future
             // FOREVER — kube-rs dedups events for in-flight objects, so the
@@ -42,6 +45,10 @@ impl Storcon {
                 .build()
                 .expect("reqwest client"),
         }
+    }
+
+    pub fn pg_major(&self) -> PgMajor {
+        self.pg_major
     }
 
     pub async fn create_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
@@ -68,7 +75,8 @@ impl Storcon {
         ancestor: Option<&str>,
         ancestor_start_lsn: Option<&str>,
     ) -> anyhow::Result<()> {
-        let mut body = json!({"new_timeline_id": timeline_id, "pg_version": 16});
+        let mut body =
+            json!({"new_timeline_id": timeline_id, "pg_version": u16::from(self.pg_major)});
         if let Some(a) = ancestor {
             body["ancestor_timeline_id"] = json!(a);
         }

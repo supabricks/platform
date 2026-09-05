@@ -1,0 +1,46 @@
+{
+  "component": "process-compose",
+  "repository": "https://github.com/F1bonacc1/process-compose",
+  "release": "v1.122.0",
+  "source_commit": "23b0acacc937d745279fb1551337f4031c4fc865",
+  "source": "Downloaded release binaries declare this full Go vcs.revision on both targets; corresponding GitHub commit inspected",
+  "qualification": "untested",
+  "artifacts": [
+    {
+      "target": "linux-x86_64",
+      "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_linux_amd64.tar.gz",
+      "sha256": "9b6dbc38324c0b0481f1cd1dd828ffdc78117129ec797678f4bf8c4023311281",
+      "provenance": "components/provenance/process-compose.json"
+    },
+    {
+      "target": "macos-arm64",
+      "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_darwin_arm64.tar.gz",
+      "sha256": "eaa1238a1d6c300e928ef855d36a3d95aab8da64997104d74ea73d91d3cb6c60",
+      "provenance": "components/provenance/process-compose.json"
+    }
+  ],
+  "verification": {
+    "date": "2026-09-05",
+    "downloaded_sha256_verified": [
+      "linux-x86_64",
+      "macos-arm64"
+    ],
+    "linux_version_command": "passed",
+    "macos_execution": "not-run",
+    "runtime_lifecycle": "not-run",
+    "embedded_go_vcs": {
+      "targets": [
+        "linux-x86_64",
+        "macos-arm64"
+      ],
+      "revision": "23b0acacc937d745279fb1551337f4031c4fc865",
+      "modified": false
+    }
+  },
+  "release_tag": {
+    "object": "c1b34612c727e12ceeb0c7ae99a8ad838dceae21",
+    "commit": "673850dd20683ef14b33890444ca3416d02c751c",
+    "note": "Published binaries were built from the immediate child commit, which only updates default.nix version from 1.120.0 to 1.122.0. Selection records the binaries' declared source rather than the tag target.",
+    "comparison": "https://github.com/F1bonacc1/process-compose/commit/23b0acacc937d745279fb1551337f4031c4fc865"
+  }
+}

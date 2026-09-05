@@ -1,0 +1,367 @@
+{
+  "schema_version": 2,
+  "targets": [
+    "linux-x86_64",
+    "macos-arm64"
+  ],
+  "components": [
+    {
+      "id": "neon-engine",
+      "role": "pageserver, safekeeper, broker, compute_ctl and Neon PG extension",
+      "owner": "supabricks/neon",
+      "repository": "https://github.com/supabricks/neon",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "git",
+        "commit": "1c6fa095261112aae239beef5a221b484703d49a"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-linux.json"
+          ],
+          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+        },
+        "macos-arm64": {
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-macos.json"
+          ],
+          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "postgres17",
+      "role": "Patched PG17 compute and client utilities",
+      "owner": "supabricks/postgres",
+      "repository": "https://github.com/supabricks/postgres",
+      "license": "PostgreSQL",
+      "selection": {
+        "kind": "git",
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-linux.json"
+          ],
+          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+        },
+        "macos-arm64": {
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-macos.json"
+          ],
+          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "process-compose",
+      "role": "Native process supervisor",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/F1bonacc1/process-compose",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "git",
+        "commit": "23b0acacc937d745279fb1551337f4031c4fc865"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P03 dynamic compute lifecycle, deliberate stop, process groups and supervisor death"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P03 dynamic compute lifecycle, deliberate stop, process groups and supervisor death"
+        }
+      },
+      "artifacts": [
+        {
+          "target": "linux-x86_64",
+          "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_linux_amd64.tar.gz",
+          "sha256": "9b6dbc38324c0b0481f1cd1dd828ffdc78117129ec797678f4bf8c4023311281",
+          "provenance": "components/provenance/process-compose.json"
+        },
+        {
+          "target": "macos-arm64",
+          "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_darwin_arm64.tar.gz",
+          "sha256": "eaa1238a1d6c300e928ef855d36a3d95aab8da64997104d74ea73d91d3cb6c60",
+          "provenance": "components/provenance/process-compose.json"
+        }
+      ]
+    },
+    {
+      "id": "seaweedfs",
+      "role": "Single-process local S3 candidate",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/seaweedfs/seaweedfs",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "git",
+        "commit": "79b87202136cebdaaa7db4d94eaa5915ad381276"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P03 Neon S3 compatibility, disk exhaustion and acknowledged-write durability"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P03 Neon S3 compatibility, disk exhaustion and acknowledged-write durability"
+        }
+      },
+      "artifacts": [
+        {
+          "target": "linux-x86_64",
+          "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/linux_amd64.tar.gz",
+          "sha256": "c408894668aeaa74d4f251e20b350fd72195cbe596ddc3f48658709714f7be36",
+          "provenance": "components/provenance/seaweedfs.json"
+        },
+        {
+          "target": "macos-arm64",
+          "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/darwin_arm64.tar.gz",
+          "sha256": "e38ed55f9b9d59d926befcba05088010454551677547835ba154dbc2a2d8d4a4",
+          "provenance": "components/provenance/seaweedfs.json"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "role": "Local control metadata and operation journal",
+      "owner": "supabricks/platform",
+      "repository": "https://sqlite.org",
+      "license": "blessing",
+      "selection": {
+        "kind": "unselected",
+        "reason": "Choose bundled library version with Rust storage dependency in P02"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P02 migrations, restart recovery, locking and durable operation replay"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "P02 migrations, restart recovery, locking and durable operation replay"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "python",
+      "role": "Private analytical worker runtime",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/astral-sh/python-build-standalone",
+      "license": "PSF-2.0",
+      "selection": {
+        "kind": "unselected",
+        "reason": "Probe used system CPython 3.12.3; choose a relocatable distribution in R02"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "R02 full runtime dependency/license inventory, relocation and offline operation"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "R02 full runtime dependency/license inventory, relocation and offline operation"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "pysail",
+      "role": "Spark Connect analytical execution",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/lakehq/sail",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "package",
+        "name": "pysail",
+        "version": "0.7.1"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "spikes/local-analytics/result.json",
+            "spikes/local-analytics/requirements.txt"
+          ],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "pyspark-client",
+      "role": "Python Spark Connect client without JVM",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/apache/spark",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "package",
+        "name": "pyspark-client",
+        "version": "4.2.0"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "spikes/local-analytics/result.json",
+            "spikes/local-analytics/requirements.txt"
+          ],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "deltalake",
+      "role": "delta-rs analytical table writer",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/delta-io/delta-rs",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "package",
+        "name": "deltalake",
+        "version": "1.6.3"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "spikes/local-analytics/result.json",
+            "spikes/local-analytics/requirements.txt"
+          ],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "pyarrow",
+      "role": "Arrow/Parquet interchange",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/apache/arrow",
+      "license": "Apache-2.0",
+      "selection": {
+        "kind": "package",
+        "name": "pyarrow",
+        "version": "25.0.1"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "spikes/local-analytics/result.json",
+            "spikes/local-analytics/requirements.txt"
+          ],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        }
+      },
+      "artifacts": []
+    },
+    {
+      "id": "pandas",
+      "role": "Exercised PySpark compatibility dependency",
+      "owner": "supabricks/platform",
+      "repository": "https://github.com/pandas-dev/pandas",
+      "license": "BSD-3-Clause",
+      "selection": {
+        "kind": "package",
+        "name": "pandas",
+        "version": "2.3.3"
+      },
+      "qualification": {
+        "linux-x86_64": {
+          "state": "probe-passed",
+          "evidence": [
+            "spikes/local-analytics/result.json",
+            "spikes/local-analytics/requirements.txt"
+          ],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        },
+        "macos-arm64": {
+          "state": "untested",
+          "evidence": [],
+          "remaining": "A01\u2013A03 Postgres export/epochs/sessions and R02 private runtime on both targets"
+        }
+      },
+      "artifacts": []
+    }
+  ],
+  "engine_pair": {
+    "neon": "neon-engine",
+    "postgres": "postgres17",
+    "submodule_path": "vendor/postgres-v17",
+    "gitlink": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+    "maintained_candidate": {
+      "repository": "https://github.com/supabricks/postgres",
+      "ref": "sb/REL_17_STABLE",
+      "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4"
+    }
+  },
+  "legacy_images": {
+    "source": "chart/values.yaml",
+    "images": [
+      {
+        "name": "neon",
+        "reference": "ghcr.io/neondatabase/neon@sha256:7a4f124917bb929964b2d696d710f19584f80bb9bd51b2af4a6e2425434c761f"
+      },
+      {
+        "name": "compute",
+        "reference": "ghcr.io/neondatabase/compute-node-v16@sha256:b3e151661bd2ee11eb2843c8926001966cb23969227e9673c5f42fc3fbe14249"
+      },
+      {
+        "name": "postgres",
+        "reference": "postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777"
+      },
+      {
+        "name": "busybox",
+        "reference": "busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
+      },
+      {
+        "name": "minio",
+        "reference": "quay.io/minio/minio@sha256:df7363871efee5192fb5510ee80e10bb8c5cdc45c9301a825302b1d52c60ba64"
+      },
+      {
+        "name": "mc",
+        "reference": "minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727"
+      }
+    ]
+  }
+}

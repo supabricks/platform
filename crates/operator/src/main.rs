@@ -1,10 +1,8 @@
 mod crd;
-mod keys;
 mod lifecycle;
 mod mcp;
 mod ports;
 mod reconcile;
-mod spec;
 mod storcon;
 
 use std::sync::Arc;
@@ -15,7 +13,7 @@ use kube::api::{Api, PostParams};
 use kube::{Client, ResourceExt};
 use tracing::info;
 
-use keys::ComputeKey;
+use supabricks_core::keys::ComputeKey;
 
 const JWK_SECRET: &str = "sspc-compute-jwk";
 const MCP_TOKEN_SECRET: &str = "sspc-mcp-token";
@@ -142,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
 
     let ctx = Arc::new(reconcile::Ctx {
         client,
-        storcon: storcon::Storcon::new(storcon_url),
+        storcon: storcon::Storcon::new(storcon_url, supabricks_core::resource::PgMajor::V16),
         key,
         namespace,
         compute_image,

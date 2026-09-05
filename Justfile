@@ -8,7 +8,7 @@ fmt-check:
     cargo fmt -- --check
 
 test:
-    cargo test --locked
+    cargo test --locked --workspace
 
 crd-check:
     cargo run --locked --bin crdgen | diff -u chart/crds/sspc-crds.yaml -
@@ -26,6 +26,22 @@ ui-build:
     cd ui && npm run build
 
 verify-static: fmt-check test crd-check helm-lint ui-test ui-build
+
+# Portable contracts also run on Linux and macOS in CI.
+portable-check:
+    python3 scripts/check-portable-deps.py
+    cargo test --locked -p supabricks-core -p supabricks-local
+
+# ---- local component baseline (separate native-baseline CI workflow) ----
+# Activate components/.venv first; see components/README.md.
+
+component-check:
+    python3 components/validate.py
+
+component-test:
+    python3 -m unittest discover -s components -p 'test_*.py' -v
+
+verify-native-baseline: component-check component-test
 
 # ---- runtime gates (CI parity: e2e job) ----
 

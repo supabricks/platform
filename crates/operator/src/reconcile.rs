@@ -23,10 +23,24 @@ use sha2::{Digest, Sha256};
 use tracing::{info, warn};
 
 use crate::crd::{Branch, Database, Phase, Priority};
-use crate::keys::ComputeKey;
 use crate::ports;
-use crate::spec::{SpecParams, render};
 use crate::storcon::Storcon;
+use supabricks_core::branch::{HeadWait, head_wait_verdict};
+use supabricks_core::keys::{ComputeKey, pg_md5};
+use supabricks_core::spec::{ComputePaths, Settings, SpecParams, render};
+
+// Keep the existing image's paths and executable lookup at the K8s boundary.
+fn compute_command(name: &str) -> anyhow::Result<Vec<String>> {
+    let mut command = ComputePaths {
+        compute_ctl: "/usr/local/bin/compute_ctl".into(),
+        postgres: "/usr/local/bin/postgres".into(),
+        data: "/var/db/postgres/compute".into(),
+        config: "/config/spec.json".into(),
+    }
+    .command(name, "postgresql://cloud_admin@localhost:55433/postgres")?;
+    command[0] = "compute_ctl".into();
+    Ok(command)
+}
 
 pub const FINALIZER: &str = "sspc.io/cell-cleanup";
 pub const ENDPOINT_LABEL: &str = "sspc.io/endpoint";
@@ -37,9 +51,14 @@ pub fn now_ts() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// Suspend-awareness: a resource runs unless it is Suspended with no wake
-/// request newer than the suspension. Fixed-format UTC RFC3339 strings
-/// compare chronologically, so this is monotonic with no annotation clearing.
+/// Wake and suspension events need subsecond precision: a wake can arrive in
+/// the same second that suspension completes (observed by the chaos gate).
+pub fn lifecycle_event_ts() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
+}
+
+/// A resource runs unless it is suspended without a newer wake. Parse timestamps
+/// so older second-resolution records and new fractional records compare by time.
 pub fn wants_running(
     meta: &kube::api::ObjectMeta,
     status: Option<&crate::crd::EndpointStatus>,
@@ -48,11 +67,18 @@ pub fn wants_running(
     if s.phase != Some(Phase::Suspended) {
         return true;
     }
-    let suspended_at = s.suspended_at.as_deref().unwrap_or("");
-    meta.annotations
+    let wake = meta
+        .annotations
         .as_ref()
         .and_then(|a| a.get(WAKE_ANNOTATION))
-        .is_some_and(|w| w.as_str() > suspended_at)
+        .and_then(|w| chrono::DateTime::parse_from_rfc3339(w).ok());
+    match (wake, s.suspended_at.as_deref()) {
+        (Some(wake), Some(suspended)) => {
+            chrono::DateTime::parse_from_rfc3339(suspended).is_ok_and(|suspended| wake > suspended)
+        }
+        (Some(_), None) => true,
+        _ => false,
+    }
 }
 
 pub struct Ctx {
@@ -137,13 +163,6 @@ pub fn class_resources(cu_limit: i64, priority: Priority) -> (serde_json::Value,
     )
 }
 
-/// PG classic md5 credential: hex(md5(password + user)), no "md5" prefix —
-/// the format the compute spec's `encrypted_password` field expects.
-pub fn pg_md5(password: &str, user: &str) -> String {
-    use md5::Digest as _;
-    hex::encode(md5::Md5::digest(format!("{password}{user}")))
-}
-
 /// The endpoint's owner password from its credential Secret (RFC 014 H3).
 /// Review 001 P1-2: a missing/unreadable credential is an ERROR, never a
 /// silent fallback to a shared password — the reconciler mints the Secret
@@ -162,35 +181,6 @@ pub async fn endpoint_password(ctx: &Ctx, name: &str) -> anyhow::Result<String> 
         .and_then(|d| d.get("password"))
         .and_then(|b| String::from_utf8(b.0.clone()).ok())
         .with_context(|| format!("credential secret sspc-cred-{name} is malformed"))
-}
-
-/// Parse "0/29E2300" into a comparable number.
-fn lsn_num(lsn: &str) -> u64 {
-    let mut it = lsn.splitn(2, '/');
-    let hi = u64::from_str_radix(it.next().unwrap_or("0"), 16).unwrap_or(0);
-    let lo = u64::from_str_radix(it.next().unwrap_or("0"), 16).unwrap_or(0);
-    (hi << 32) | lo
-}
-
-/// The branch-at-head ingestion-wait decision, pure so review 002 P1's
-/// negative case is provable in a unit test: under sustained lag the verdict
-/// is NEVER `Ready` — the caller holds the branch (no timeline creation).
-#[derive(Debug, PartialEq)]
-pub enum HeadWait {
-    /// Ingestion caught up to the parent's flushed WAL — safe to branch.
-    Ready,
-    /// Still catching up, deadline not reached — keep polling.
-    KeepWaiting,
-    /// Deadline passed while lagging — hold the branch and requeue.
-    HoldAndRequeue,
-}
-
-pub fn head_wait_verdict(ingested: Option<&str>, flush: &str, deadline_passed: bool) -> HeadWait {
-    match ingested {
-        Some(i) if lsn_num(i) >= lsn_num(flush) => HeadWait::Ready,
-        _ if deadline_passed => HeadWait::HoldAndRequeue,
-        _ => HeadWait::KeepWaiting,
-    }
 }
 
 /// The parent compute's current flush LSN, via in-cluster SQL. `db_name` is
@@ -274,15 +264,23 @@ impl Ctx {
         let password = self.ensure_credential(obj, name).await?;
 
         // Spec ConfigMap
-        let spec_json = render(&SpecParams {
-            tenant_id: tenant,
-            timeline_id: timeline,
-            encrypted_password: &pg_md5(&password, "cloud_admin"),
-            jwks_x_b64url: &self.key.x_b64url,
-            jwks_kid_b64url: &self.key.kid_b64url,
-            safekeepers: &self.safekeepers,
-            pageserver_connstring: &self.pageserver_connstring,
-        })?;
+        let spec_json = render(
+            &SpecParams {
+                tenant_id: tenant,
+                timeline_id: timeline,
+                encrypted_password: &pg_md5(&password, "cloud_admin"),
+                jwks_x_b64url: &self.key.x_b64url,
+                jwks_kid_b64url: &self.key.kid_b64url,
+                safekeepers: &self.safekeepers,
+                pageserver_connstring: &self.pageserver_connstring,
+            },
+            &Settings {
+                port: 55433,
+                listen_addresses: "0.0.0.0",
+                fsync: false,
+                unix_socket_directories: None,
+            },
+        )?;
         let cm: ConfigMap = serde_json::from_value(json!({
             "apiVersion": "v1", "kind": "ConfigMap",
             "metadata": {"name": format!("{name}-spec"), "namespace": ns,
@@ -341,14 +339,7 @@ impl Ctx {
                         "allowPrivilegeEscalation": false,
                         "capabilities": {"drop": ["ALL"]},
                     },
-                    "command": [
-                        "compute_ctl",
-                        "--pgdata=/var/db/postgres/compute",
-                        "--connstr=postgresql://cloud_admin@localhost:55433/postgres",
-                        "--pgbin=/usr/local/bin/postgres",
-                        format!("--compute-id={name}"),
-                        "--config=/config/spec.json",
-                    ],
+                    "command": compute_command(name)?,
                     "resources": resources,
                     "ports": [{"containerPort": 55433}, {"containerPort": 3080}],
                     "volumeMounts": [{"name": "spec", "mountPath": "/config"}],
@@ -864,6 +855,47 @@ mod tests {
     }
 
     #[test]
+    fn compute_command_preserves_image_contract() {
+        assert_eq!(
+            compute_command("prod").unwrap(),
+            vec![
+                "compute_ctl",
+                "--pgdata=/var/db/postgres/compute",
+                "--connstr=postgresql://cloud_admin@localhost:55433/postgres",
+                "--pgbin=/usr/local/bin/postgres",
+                "--compute-id=prod",
+                "--config=/config/spec.json",
+            ]
+        );
+    }
+
+    #[test]
+    fn same_second_wake_is_ordered_with_legacy_and_precise_suspension() {
+        let wake = meta_with_wake(Some("2026-09-05T20:19:02.700000000Z"));
+        for suspended in ["2026-09-05T20:19:02Z", "2026-09-05T20:19:02.335675000Z"] {
+            assert!(wants_running(
+                &wake,
+                Some(&status(Phase::Suspended, Some(suspended)))
+            ));
+        }
+        for suspended in [
+            "2026-09-05T20:19:02.700000000Z",
+            "2026-09-05T20:19:02.900000000Z",
+            "2026-09-05T21:19:02.700000000+01:00",
+            "invalid",
+        ] {
+            assert!(!wants_running(
+                &wake,
+                Some(&status(Phase::Suspended, Some(suspended)))
+            ));
+        }
+        assert!(!wants_running(
+            &meta_with_wake(Some("invalid")),
+            Some(&status(Phase::Suspended, None))
+        ));
+    }
+
+    #[test]
     fn wake_wins_only_when_newer_than_suspension() {
         let m_none = meta_with_wake(None);
         let m_old = meta_with_wake(Some("2026-08-09T10:00:00Z"));
@@ -908,41 +940,6 @@ mod tests {
         assert_eq!(a, derive_id("uid-1", "tenant"), "replay converges");
         assert_ne!(a, b, "tenant and timeline differ");
         assert_ne!(a, c, "different CRs differ");
-    }
-
-    /// Review 002 P1's negative case: under sustained ingestion lag the
-    /// verdict is never Ready — past the deadline the branch is HELD (the
-    /// caller requeues before any timeline creation), not cut stale.
-    #[test]
-    fn head_wait_holds_on_sustained_lag() {
-        assert_eq!(
-            head_wait_verdict(Some("0/1000"), "0/2000", false),
-            HeadWait::KeepWaiting
-        );
-        assert_eq!(
-            head_wait_verdict(Some("0/1000"), "0/2000", true),
-            HeadWait::HoldAndRequeue
-        );
-        assert_eq!(
-            head_wait_verdict(None, "0/2000", true),
-            HeadWait::HoldAndRequeue
-        );
-    }
-
-    #[test]
-    fn head_wait_ready_only_at_or_past_flush() {
-        assert_eq!(
-            head_wait_verdict(Some("0/2000"), "0/2000", false),
-            HeadWait::Ready
-        );
-        assert_eq!(
-            head_wait_verdict(Some("1/0"), "0/FFFFFFFF", true),
-            HeadWait::Ready
-        );
-        assert_eq!(
-            head_wait_verdict(Some("0/1FFF"), "0/2000", false),
-            HeadWait::KeepWaiting
-        );
     }
 
     /// The review-002 retry-state regression: a requeued branch has

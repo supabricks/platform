@@ -1,0 +1,40 @@
+{
+  "component": "seaweedfs",
+  "repository": "https://github.com/seaweedfs/seaweedfs",
+  "release": "4.45",
+  "source_commit": "79b87202136cebdaaa7db4d94eaa5915ad381276",
+  "source": "Downloaded release binaries declare this full Go vcs.revision on both targets; corresponding GitHub commit inspected",
+  "qualification": "untested",
+  "artifacts": [
+    {
+      "target": "linux-x86_64",
+      "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/linux_amd64.tar.gz",
+      "sha256": "c408894668aeaa74d4f251e20b350fd72195cbe596ddc3f48658709714f7be36",
+      "provenance": "components/provenance/seaweedfs.json"
+    },
+    {
+      "target": "macos-arm64",
+      "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/darwin_arm64.tar.gz",
+      "sha256": "e38ed55f9b9d59d926befcba05088010454551677547835ba154dbc2a2d8d4a4",
+      "provenance": "components/provenance/seaweedfs.json"
+    }
+  ],
+  "verification": {
+    "date": "2026-09-05",
+    "downloaded_sha256_verified": [
+      "linux-x86_64",
+      "macos-arm64"
+    ],
+    "linux_version_command": "passed",
+    "macos_execution": "not-run",
+    "runtime_lifecycle": "not-run",
+    "embedded_go_vcs": {
+      "targets": [
+        "linux-x86_64",
+        "macos-arm64"
+      ],
+      "revision": "79b87202136cebdaaa7db4d94eaa5915ad381276",
+      "modified": false
+    }
+  }
+}

@@ -11,6 +11,9 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 | [dev-loop.md](dev-loop.md) | How do I build, test, and deploy a change — and what will bite me? |
 | [runbook.md](runbook.md) | It broke / I need to break it — what do I do and what should I see? |
 | [backlog.md](backlog.md) | Why isn't X built? Is that a gap or a decision? |
+| [Local runtime plan](../plans/local-runtime-implementation.md) | What are we building for the native Supabricks product, and in what order? |
+| [Repository map](../plans/repository-map.md) | Which organization repo owns each component and which sources have been inspected? |
+| [Component baseline](../../components/README.md) | Which sources are selected, what has been tested, and how do I validate the inventory? |
 
 ## Your first week
 
@@ -43,3 +46,5 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
   (`Chart.yaml`, `Cargo.toml`, `Dockerfile`, `README.md`); everything we
   name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
   `rfcs/business/vision.md`).
+
+Native runtime work: [local state and durable operations (P02)](local-state.md).
