@@ -645,9 +645,14 @@ passed in GitHub CI. RFC scope publication remains a separate repo change.
 E01 now has native build/packaging scripts and standalone Linux/macOS CI in
 [neon PR #1](https://github.com/supabricks/neon/pull/1). The selected PG17.8 pair
 passed 224 PostgreSQL regression tests and nine relocated runtime checks on
-Linux, including branch isolation, compute restart and lazy SLRU download.
+Linux x86_64 and macOS arm64, including branch isolation, compute restart,
+restricted core-dump policy and lazy SLRU download. Linux also passed inside a
+minimal userspace with no build tools or external networking. PG17 source CI and
+its pinned patch-ledger audit are in
+[Postgres PR #2](https://github.com/supabricks/postgres/pull/2), with the completed
+rationale inventory in [PR #1](https://github.com/supabricks/postgres/pull/1).
 Platform records source pins, helper archive checksums and bundle verification
-in `components/`. The evidence is an engineering probe: both-target and
-clean-host qualification, current upstream minor integration, license notices
+in `components/`. The evidence is an engineering probe: macOS clean-host/offline
+qualification, current upstream minor integration, license notices
 and signing remain open. S3 and product lifecycle qualification remain P03.
 No platform CLI, installer or website is implemented yet.

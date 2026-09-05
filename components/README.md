@@ -90,12 +90,25 @@ builds Linux x86_64 and macOS arm64 without private Neon credentials. Follow
 `scripts/native/README.md` there for build dependencies and commands. PG14–16
 headers remain build inputs; only PG17 compute and extensions are packaged.
 
-The [Linux report](provenance/native-linux.json) records 224 PostgreSQL regression
-tests and nine native runtime checks against the exact selected clean sources.
-The bundle was moved into a path containing spaces before ordinary `psql`,
-explicit-LSN branching, isolation, compute restart, concurrent GiST reads and
-lazy SLRU download checks. This used the LocalFs test remote backend on the build
-host. It does not establish S3 durability or clean-host/offline operation.
+The [Linux](provenance/native-linux.json) and [macOS](provenance/native-macos.json)
+reports record 224 PostgreSQL regressions and nine native runtime checks per
+target against the selected clean sources. The archives were moved into a path
+containing spaces before ordinary `psql`, explicit-LSN branching, isolation,
+compute restart, concurrent GiST reads and lazy SLRU download checks. Core dumps
+were disabled with a zero hard limit throughout the runtime tests.
+
+Linux also passed the same workflow inside minimal Ubuntu 24.04 userspace as an
+unprivileged user, without build tools or external networking. Its
+[package inventory](provenance/linux-runtime-packages.txt) records that environment.
+The tested Linux baseline is glibc 2.39; older distributions are unqualified.
+macOS 15 arm64 passed on a build-capable runner and still needs separate
+clean-host/offline qualification. All storage checks use the LocalFs test remote
+backend; they do not establish S3 or power-loss durability.
+
+The reports distinguish the immutable archive build from the corrected runtime
+qualification harness. Replaying an archive does not change its source identity.
+The [Postgres source-CI report](provenance/postgres-source-ci.json) separately
+records the branch-trigger fix, pinned PC ledger audit and 224 core regressions.
 
 With the Python environment above active, verify an unpacked engine archive:
 
@@ -121,6 +134,6 @@ Compose's release tag points to the immediately preceding commit, documented in
 its [provenance](provenance/process-compose.json). The validator rejects source
 or archive identities that disagree with these records. P03
 must still qualify supervisor ownership and the S3 backend. Current upstream
-PG17 minor integration, macOS and clean-host evidence, transitive license notices
+PG17 minor integration, macOS clean-host evidence, transitive license notices
 and release signing remain gates. No platform CLI or one-command installer is
 implemented by this slice.

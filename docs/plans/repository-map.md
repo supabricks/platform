@@ -39,7 +39,12 @@ E01 subsequently selected Neon `1c6fa095261112aae239beef5a221b484703d49a`
 and PG17.8 `56692dfb680281a963c7470fc7f0fec7f65ecfd4` on feature branches.
 [Neon PR #1](https://github.com/supabricks/neon/pull/1) owns native packaging and
 extension compatibility changes; platform owns the lock and its
-[Linux probe evidence](../../components/provenance/native-linux.json).
+[Linux](../../components/provenance/native-linux.json) and
+[macOS](../../components/provenance/native-macos.json) probe evidence.
+Postgres [PR #1](https://github.com/supabricks/postgres/pull/1) completes the PC
+rationale inventory; [PR #2](https://github.com/supabricks/postgres/pull/2) fixes
+the PG17 source workflow and audits a pinned ledger revision. These CI-only
+source changes do not alter the selected runtime gitlink.
 The tables below preserve the initial inspection, including the original
 gitlinks. They are not the current selected combination.
 
