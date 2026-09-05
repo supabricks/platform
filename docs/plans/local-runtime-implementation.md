@@ -44,7 +44,7 @@ for a general deployment abstraction or require a Kubernetes cluster.
 |---|---|---|
 | CLI, daemon, state, operations, gateway, materializer, Sail integration, agents, installer, website, integration tests | `platform/main` | Complete versioned Supabricks distribution |
 | Neon source/build changes, PG extension, native engine bundle, storage tests | `neon/sb/main` | Qualified engine bundle and provenance manifest |
-| PG core changes and regression validation | `postgres/sb/REL_16_STABLE` initially | Exact source commit/tag used by the Neon build |
+| PG core changes and regression validation | `postgres/sb/REL_17_STABLE` initially | Exact source commit/tag used by the Neon build |
 | PC ledger and branch documentation | `postgres/main` | Pinned audit manifest/ledger revision |
 | EC ledger | `neon/sb/main`, `docs/supabricks/engine-changes.md` | Change rationale, patch scope and verification |
 | Architecture 016, scope/requirements addenda, component evidence | `rfcs/main` | Decision record; no runtime/build dependency |
@@ -56,11 +56,17 @@ do not mix arbitrary PG or extension binaries. Platform records both source SHAs
 and artifact checksums. Source-build scripts and mirrors must be sufficient to
 reproduce the product without Neon-private CI services.
 
-Start by reproducing one PG16 combination because the current operator hardcodes
-major 16. The current Neon gitlink is older than `postgres/sb/REL_16_STABLE`.
-Test the currently pinned combination first, then qualify the maintained branch
-and supported minor before public preview. No forced PG18 migration in this
-workstream; reserve its existing EC-0001 scope as a subsequent build increment.
+**E01 decision, 2026-09-05:** target PG17 for the native runtime. The current
+operator's PG16 setting remains part of the existing Kubernetes profile. The
+Neon engine already implements PG17; PG18 requires additional version dispatch,
+WAL handling, bindings and compute-extension work, so its integration follows
+E01. First reproduce Neon's PG17 gitlink, then qualify the maintained branch and
+current upstream PG17 minor before public preview.
+
+The inherited Rust engine unconditionally generates bindings for PG14–17.
+Fetch exact source gitlinks and install headers for all four at build time;
+compile/package only PG17 compute and extensions. Removing the older header
+requirement is a later build simplification, not a storage rewrite.
 
 ## 3. Platform layout
 
@@ -173,9 +179,9 @@ checks remain available. This documentation step is not evidence of a runtime.
 `postgres` source-branch CI/ledger corrections as needed; `platform/components/`
 and qualification harness.
 
-1. Build the selected Neon + PG16 source combination on Linux x86_64 and macOS
+1. Build the selected Neon + PG17 source combination on Linux x86_64 and macOS
    arm64 without Neon-private credentials, container-image dependencies, or
-   recursive fetching of unused PG14/15/17 sources.
+   recursive fetching of unrelated sources (PG14–16 headers remain build inputs).
 2. Fix the inherited source-branch CI triggers. Document that PG `main` is not a
    build branch. Normalize PC trailer/ledger conventions and make audit CI read
    the appropriate pinned ledger; do not add behavioral patches with TODO-only
@@ -186,7 +192,7 @@ and qualification harness.
    bundled extension availability and macOS signing requirements.
 4. Pin and package Process Compose and the local S3 candidate separately; these
    belong in the platform component lock, not inside the PG source tree.
-5. Qualify the existing `sb/REL_16_STABLE` integration and a maintained PG minor
+5. Qualify the existing `sb/REL_17_STABLE` integration and a maintained PG minor
    separately from first reproduction. Update Neon gitlinks/version metadata
    together only after compatibility gates pass. Do not fetch floating branches
    at install time.
@@ -597,7 +603,7 @@ that changes both engine semantics and product lifecycle behavior.
 | Order | PR scope | Prerequisite | Concrete review result |
 |---|---|---|---|
 | 1 | Platform plan/map + imported analytical fixture; RFC scope update separately | None | Agreed file ownership, reusable experiment, measured baseline |
-| 2 | Neon native PG16 bundle recipe and standalone CI; PG source CI fixes separately | 1 | Reproducible candidate artifacts, clearly labeled qualification status |
+| 2 | Neon native PG17 bundle recipe and standalone CI; PG source CI fixes separately | 1 | Reproducible candidate artifacts, clearly labeled qualification status |
 | 3 | Extract portable keys/spec/validation with unchanged operator behavior | 1 | Shared code and regression evidence |
 | 4 | Local daemon skeleton, project paths, SQLite schema and operation journal | 3 | Restart-safe local ownership and idempotency tests |
 | 5 | Supervisor adapter + storage cell + direct-pageserver qualification | 2, 4 | Native create/write/restart and no-duplicate-writer evidence |
@@ -623,20 +629,25 @@ the product surface while data safety or native installation is unresolved.
 
 After preview usage, decide separately whether to add incremental decoding,
 more Spark functions/types, lakehouse-owned writes, analytical CoW branches,
-PGlite integration, PG17/18, distributed execution, a console, or Scintilla.
+PGlite integration, PG18, distributed execution, a console, or Scintilla.
 Each must solve a measured limitation. Upstream Postgres integration maintenance
 continues throughout, but replacing Neon storage is not a planned prerequisite.
 
 ## Status of this plan
 
-The platform portion of P00 is implemented locally: source/candidate inventory,
+The platform portion of P00 is in [PR #2](https://github.com/supabricks/platform/pull/2): source/candidate inventory,
 JSON Schema and semantic validation, qualification checks, imported analytical
 fixture, handbook links and a separate baseline CI workflow. See
 [components/README.md](../../components/README.md) for executable checks and their
-limits. The imported probe passed again on Linux; CI has been configured but
-has not yet run remotely. RFC scope publication remains a separate repo change.
+limits. Component validation, the analytical probe, operator unit tests and e2e
+passed in GitHub CI. RFC scope publication remains a separate repo change.
 
-No native runtime, engine build, installer or website is implemented yet. Next
-is E01: reproduce the selected Neon/PG16 pair as a native engine bundle. Track
-delivery with task IDs, owning-repo PRs, qualified component pins and attached
-test results.
+E01 now has native build/packaging scripts and standalone Linux/macOS CI in
+[neon PR #1](https://github.com/supabricks/neon/pull/1). The selected PG17.8 pair
+passed 224 PostgreSQL regression tests and eight relocated runtime checks on
+Linux, including branch isolation, compute restart and lazy SLRU download.
+Platform records source pins, helper archive checksums and bundle verification
+in `components/`. The evidence is an engineering probe: both-target and
+clean-host qualification, current upstream minor integration, license notices
+and signing remain open. S3 and product lifecycle qualification remain P03.
+No platform CLI, installer or website is implemented yet.

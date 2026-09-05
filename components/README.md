@@ -1,6 +1,6 @@
 # Local component baseline
 
-This is the first implementation slice (platform portion of **P00**) in the
+This tracks **P00** and native engine work in **E01** from the
 [local runtime plan](../docs/plans/local-runtime-implementation.md). The
 [lock](components.lock.json) records selected sources, unresolved candidates,
 owners and target-specific evidence. It is an engineering inventory, not an
@@ -36,8 +36,9 @@ current Justfile recipes.
 - `package` records the exact version exercised in the analytical fixture.
   The fixture's full dependency set is in its requirements file. These package
   versions alone are insufficient to reconstruct a shipped native environment.
-- `unselected` is explicit unresolved work. Process Compose, SeaweedFS, bundled
-  SQLite and a private Python distribution still need release/build selection.
+- `unselected` is explicit unresolved work. Bundled SQLite and a private Python
+  distribution still need release/build selection. Process Compose and SeaweedFS
+  have exact release archives pinned for both targets.
 - Each target is `untested`, `probe-passed`, or `qualified`. The historical
   Linux analytics report cannot establish native/macOS qualification, and its
   versions must match both the manifest and the fixture's requirements.
@@ -47,12 +48,14 @@ current Justfile recipes.
   provenance. License identifiers identify the primary component only; full
   bundled dependency notices and license review belong to E01/R02 packaging.
 
-The reproduction pair is Neon `d348114f6afc35bbe10e044003128674a6b2b79b`
-with its actual PG16 gitlink `a42351fcd41ea01edede1daed65f651e838988fc`.
-The newer `sb/REL_16_STABLE` candidate is recorded separately. An engine update
+The selected pair is Neon `032d26fb628b4bddfa95e1ced4ffb9e415725bd9`
+with PG17.8 gitlink `56692dfb680281a963c7470fc7f0fec7f65ecfd4` from
+`sb/REL_17_STABLE`. The original PG17.5 pair was reproduced first, then the Neon
+extension was adapted to the maintained fork's SLRU, block-LSN and lock hooks.
+No Postgres core patch was added. An engine update
 must change the selected PG pin and the recorded gitlink together after checking
-the actual Neon source tree. The validator checks local consistency; E01 must
-verify fetched Git objects and the source tree before building.
+the actual Neon source tree. The validator checks local consistency; the native
+builder checks fetched Git objects and source cleanliness before building.
 
 Legacy image digests are checked against [chart/values.yaml](../chart/values.yaml)
 and never used as native artifact checksums. The local-build operator image is
@@ -76,14 +79,44 @@ Native evidence should record the component source/artifact identities, target
 OS and architecture, build flags and dependencies, commands, results and limits.
 Remove the old synthetic report from a target's qualification evidence when
 promoting it and attach the new native report; preserve the historical fixture.
-Schema version 1 deliberately fixes the initial target/component scope. Change
+Schema version 2 deliberately fixes the initial target/component scope. Change
 the schema and validator together when introducing a new major or release profile.
 
-## Next slice: a native PG16 engine bundle (E01)
+## Native PG17 developer bundle (E01)
 
-Add source-build recipes in `supabricks/neon`, consume the exact reproduction
-pair above and return artifact/provenance records to this repo. Start with Linux
-x86_64, then macOS arm64. The first demonstration must launch the storage cell,
-write through ordinary `psql`, branch, terminate/restart compute and read the
-persisted data after moving the bundle. Qualify a maintained PG16 minor before
-public preview. No native runtime, CLI or installer is implemented in P00.
+Build and packaging recipes live in
+[supabricks/neon](https://github.com/supabricks/neon/pull/1). Its native workflow
+builds Linux x86_64 and macOS arm64 without private Neon credentials. Follow
+`scripts/native/README.md` there for build dependencies and commands. PG14–16
+headers remain build inputs; only PG17 compute and extensions are packaged.
+
+The [Linux report](provenance/native-linux.json) records 224 PostgreSQL regression
+tests and eight native runtime checks against the exact selected clean sources.
+The bundle was moved into a path containing spaces before ordinary `psql`,
+explicit-LSN branching, isolation, compute restart, concurrent GiST reads and
+lazy SLRU download checks. This used the LocalFs test remote backend on the build
+host. It does not establish S3 durability or clean-host/offline operation.
+
+With the Python environment above active, verify an unpacked engine archive:
+
+```sh
+python components/verify-native-bundle.py /path/to/unpacked-engine
+```
+
+The verifier checks source pins, clean-build metadata, required binaries, exact
+file inventory, checksums and symlink containment. It verifies an existing
+manifest's claims; it does not authenticate the publisher or run the engine.
+
+Fetch the separately pinned Process Compose and SeaweedFS archives:
+
+```sh
+python components/fetch-native-helpers.py linux-x86_64 /tmp/supabricks-helpers
+python components/fetch-native-helpers.py macos-arm64 /tmp/supabricks-helpers
+```
+
+Both target downloads have been checksum-verified, and the Linux binaries passed
+their version commands. Downloading does not install or launch services. P03
+must still qualify supervisor ownership and the S3 backend. Current upstream
+PG17 minor integration, macOS and clean-host evidence, transitive license notices
+and release signing remain gates. No platform CLI or one-command installer is
+implemented by this slice.

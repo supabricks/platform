@@ -26,9 +26,8 @@ class ComponentContractTests(unittest.TestCase):
         self.component("neon-engine")["selection"]["commit"] = "sb/main"
         self.assert_invalid("selection")
 
-    def test_postgres_cannot_silently_follow_maintained_branch(self):
-        self.component("postgres16")["selection"]["commit"] = self.manifest[
-            "engine_pair"]["maintained_candidate"]["commit"]
+    def test_postgres_source_must_match_engine_gitlink(self):
+        self.component("postgres17")["selection"]["commit"] = "1e01fcea2a6b38180021aa83e0051d95286d9096"
         self.assert_invalid("differs from Neon gitlink")
 
     def test_duplicate_or_missing_components_fail(self):
@@ -37,6 +36,15 @@ class ComponentContractTests(unittest.TestCase):
         self.manifest["components"] = [c for c in self.manifest["components"]
                                        if c["id"] != "seaweedfs"]
         self.assert_invalid("missing initial component: seaweedfs")
+
+    def test_native_probe_cannot_follow_a_source_change(self):
+        self.component("neon-engine")["selection"]["commit"] = "1" * 40
+        self.assert_invalid("claim exceeds the recorded native probe")
+
+    def test_native_probe_cannot_qualify_another_target(self):
+        qualification = self.component("neon-engine")["qualification"]
+        qualification["macos-arm64"] = copy.deepcopy(qualification["linux-x86_64"])
+        self.assert_invalid("neon-engine/macos-arm64: claim exceeds the recorded native probe")
 
     def test_probe_cannot_be_promoted_to_native_qualification(self):
         self.component("pysail")["qualification"]["linux-x86_64"]["state"] = "qualified"
@@ -92,6 +100,7 @@ class ComponentContractTests(unittest.TestCase):
 
     def test_structurally_qualified_record_requires_pin_and_evidence(self):
         component = self.component("process-compose")
+        component["selection"] = dict(kind="unselected", reason="test unresolved source")
         q = component["qualification"]["linux-x86_64"]
         q.update(state="qualified", evidence=["docs/plans/repository-map.md"])
         component["artifacts"] = [dict(target="linux-x86_64",

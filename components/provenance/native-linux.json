@@ -1,0 +1,116 @@
+{
+  "recorded_at": "2026-09-05",
+  "target": "linux-x86_64",
+  "qualification": "probe-passed",
+  "build": {
+    "schema_version": 1,
+    "neon_commit": "032d26fb628b4bddfa95e1ced4ffb9e415725bd9",
+    "neon_dirty": false,
+    "postgres_major": 17,
+    "sources": [
+      {
+        "path": "vendor/postgres-v14",
+        "commit": "2155cb165d05f617eb2c8ad7e43367189b627703",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v15",
+        "commit": "2aaab3bb4a13557aae05bb2ae0ef0a132d0c4f85",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v16",
+        "commit": "a42351fcd41ea01edede1daed65f651e838988fc",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v17",
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+        "role": "runtime"
+      }
+    ],
+    "cargo_lock_sha256": "20887cda0146a7c51e5a95060456ddf089d059af58840217a45e0943f525b5ae",
+    "builder": {
+      "os": "Linux-7.0.0-30-generic-x86_64-with-glibc2.39",
+      "architecture": "x86_64",
+      "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+      "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+    },
+    "build": {
+      "profile": "release",
+      "debug": false,
+      "jobs": 8,
+      "environment": {
+        "CFLAGS": "-I/tmp/supabricks-e01-deps/root/usr/include",
+        "LDFLAGS": "-L/tmp/supabricks-e01-deps/root/usr/lib/x86_64-linux-gnu",
+        "RUSTFLAGS": "",
+        "MACOSX_DEPLOYMENT_TARGET": ""
+      }
+    },
+    "postgres_regression": "passed",
+    "native_qualification": "not-run"
+  },
+  "postgres_regression_tests_passed": 224,
+  "smoke": {
+    "status": "PASS",
+    "postgres_version_num": 170008,
+    "branch_lsn": "0/2AF7020",
+    "checks": [
+      "relocated bundle with spaces",
+      "PG17 SQL and exact decimals",
+      "explicit-LSN branch",
+      "parent/child isolation",
+      "graceful compute restart",
+      "acknowledged writes survive abrupt compute restart",
+      "GiST index and concurrent reads after cache eviction/restart",
+      "lazy SLRU download exercised"
+    ],
+    "limits": [
+      "LocalFs test remote backend",
+      "no S3 or power-loss qualification",
+      "trusted local test credentials",
+      "not a platform lifecycle test"
+    ],
+    "neon_commit": "032d26fb628b4bddfa95e1ced4ffb9e415725bd9",
+    "sources": [
+      {
+        "path": "vendor/postgres-v14",
+        "commit": "2155cb165d05f617eb2c8ad7e43367189b627703",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v15",
+        "commit": "2aaab3bb4a13557aae05bb2ae0ef0a132d0c4f85",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v16",
+        "commit": "a42351fcd41ea01edede1daed65f651e838988fc",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v17",
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+        "role": "runtime"
+      }
+    ]
+  },
+  "archive": {
+    "name": "supabricks-engine-032d26fb-linux.tar.gz",
+    "sha256": "ffb08ff712f2893a842067dcb475da2deb00942f4e58fed568819b0f00eb94a0",
+    "bytes": 167645849,
+    "distribution": "local developer artifact; no stable release URL"
+  },
+  "commands": [
+    "python3 scripts/native/build.py --jobs 8 --check",
+    "python3 scripts/native/bundle.py build/supabricks-engine-032d26fb-linux",
+    "python3 scripts/native/smoke.py build/supabricks-engine-032d26fb-linux --report build/native-smoke-032d26fb-linux.json",
+    "python components/verify-native-bundle.py ../neon/build/supabricks-engine-032d26fb-linux"
+  ],
+  "limitations": [
+    "Built and exercised on the same Linux host; not a clean-host or offline qualification.",
+    "PG17.8 fork compatibility proven here; current upstream PG17 minor integration remains a preview gate.",
+    "S3 compatibility, storage-cell failure and power-loss durability remain P03 work.",
+    "Transitive license audit and release signing remain pending."
+  ]
+}

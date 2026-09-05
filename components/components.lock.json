@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "targets": [
     "linux-x86_64",
     "macos-arm64"
@@ -13,42 +13,46 @@
       "license": "Apache-2.0",
       "selection": {
         "kind": "git",
-        "commit": "d348114f6afc35bbe10e044003128674a6b2b79b"
+        "commit": "032d26fb628b4bddfa95e1ced4ffb9e415725bd9"
       },
       "qualification": {
         "linux-x86_64": {
-          "state": "untested",
-          "evidence": [],
-          "remaining": "E01 native build/relocation and P03 storage/lifecycle qualification"
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-linux.json"
+          ],
+          "remaining": "E01 macOS/clean-host packaging; current PG17 minor; P03 storage/lifecycle qualification; release license/signing audit"
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "E01 native build/relocation and P03 storage/lifecycle qualification"
+          "remaining": "E01 native build/relocation and clean-host qualification; current PG17 minor; P03 storage/lifecycle qualification"
         }
       },
       "artifacts": []
     },
     {
-      "id": "postgres16",
-      "role": "Patched PG16 compute and client utilities",
+      "id": "postgres17",
+      "role": "Patched PG17 compute and client utilities",
       "owner": "supabricks/postgres",
       "repository": "https://github.com/supabricks/postgres",
       "license": "PostgreSQL",
       "selection": {
         "kind": "git",
-        "commit": "a42351fcd41ea01edede1daed65f651e838988fc"
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4"
       },
       "qualification": {
         "linux-x86_64": {
-          "state": "untested",
-          "evidence": [],
-          "remaining": "Reproduce Neon gitlink first; then qualify maintained PG16 before preview"
+          "state": "probe-passed",
+          "evidence": [
+            "components/provenance/native-linux.json"
+          ],
+          "remaining": "E01 macOS/clean-host packaging; current PG17 minor; P03 storage/lifecycle qualification; release license/signing audit"
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "Reproduce Neon gitlink first; then qualify maintained PG16 before preview"
+          "remaining": "E01 native build/relocation and clean-host qualification; current PG17 minor; P03 storage/lifecycle qualification"
         }
       },
       "artifacts": []
@@ -60,8 +64,8 @@
       "repository": "https://github.com/F1bonacc1/process-compose",
       "license": "Apache-2.0",
       "selection": {
-        "kind": "unselected",
-        "reason": "Select an immutable release during E01 packaging"
+        "kind": "git",
+        "commit": "673850dd20683ef14b33890444ca3416d02c751c"
       },
       "qualification": {
         "linux-x86_64": {
@@ -75,7 +79,20 @@
           "remaining": "P03 dynamic compute lifecycle, deliberate stop, process groups and supervisor death"
         }
       },
-      "artifacts": []
+      "artifacts": [
+        {
+          "target": "linux-x86_64",
+          "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_linux_amd64.tar.gz",
+          "sha256": "9b6dbc38324c0b0481f1cd1dd828ffdc78117129ec797678f4bf8c4023311281",
+          "provenance": "components/provenance/process-compose.json"
+        },
+        {
+          "target": "macos-arm64",
+          "url": "https://github.com/F1bonacc1/process-compose/releases/download/v1.122.0/process-compose_darwin_arm64.tar.gz",
+          "sha256": "eaa1238a1d6c300e928ef855d36a3d95aab8da64997104d74ea73d91d3cb6c60",
+          "provenance": "components/provenance/process-compose.json"
+        }
+      ]
     },
     {
       "id": "seaweedfs",
@@ -84,8 +101,8 @@
       "repository": "https://github.com/seaweedfs/seaweedfs",
       "license": "Apache-2.0",
       "selection": {
-        "kind": "unselected",
-        "reason": "Select an immutable release during E01 packaging"
+        "kind": "git",
+        "commit": "79b87202136cebdaaa7db4d94eaa5915ad381276"
       },
       "qualification": {
         "linux-x86_64": {
@@ -99,7 +116,20 @@
           "remaining": "P03 Neon S3 compatibility, disk exhaustion and acknowledged-write durability"
         }
       },
-      "artifacts": []
+      "artifacts": [
+        {
+          "target": "linux-x86_64",
+          "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/linux_amd64.tar.gz",
+          "sha256": "c408894668aeaa74d4f251e20b350fd72195cbe596ddc3f48658709714f7be36",
+          "provenance": "components/provenance/seaweedfs.json"
+        },
+        {
+          "target": "macos-arm64",
+          "url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/darwin_arm64.tar.gz",
+          "sha256": "e38ed55f9b9d59d926befcba05088010454551677547835ba154dbc2a2d8d4a4",
+          "provenance": "components/provenance/seaweedfs.json"
+        }
+      ]
     },
     {
       "id": "sqlite",
@@ -292,13 +322,13 @@
   ],
   "engine_pair": {
     "neon": "neon-engine",
-    "postgres": "postgres16",
-    "submodule_path": "vendor/postgres-v16",
-    "gitlink": "a42351fcd41ea01edede1daed65f651e838988fc",
+    "postgres": "postgres17",
+    "submodule_path": "vendor/postgres-v17",
+    "gitlink": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
     "maintained_candidate": {
       "repository": "https://github.com/supabricks/postgres",
-      "ref": "sb/REL_16_STABLE",
-      "commit": "59027122a97c2d91c1acabd5aa512b4bf72f6281"
+      "ref": "sb/REL_17_STABLE",
+      "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4"
     }
   },
   "legacy_images": {

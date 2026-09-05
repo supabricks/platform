@@ -13,7 +13,7 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = Path(__file__).parent / "schemas/components.schema.json"
 REQUIRED_COMPONENTS = {
-    "neon-engine", "postgres16", "process-compose", "seaweedfs", "sqlite",
+    "neon-engine", "postgres17", "process-compose", "seaweedfs", "sqlite",
     "python", "pysail", "pyspark-client", "deltalake", "pyarrow", "pandas",
 }
 
@@ -77,7 +77,7 @@ def validate(manifest, root=ROOT, require_qualified=False):
         errors.append(f"missing initial component: {name}")
 
     pair = manifest["engine_pair"]
-    for field, expected in (("neon", "neon-engine"), ("postgres", "postgres16")):
+    for field, expected in (("neon", "neon-engine"), ("postgres", "postgres17")):
         name = pair[field]
         if name != expected or name not in components:
             errors.append(f"engine_pair/{field}: must reference {expected}")
@@ -86,6 +86,30 @@ def validate(manifest, root=ROOT, require_qualified=False):
     postgres = components.get(pair["postgres"], {})
     if postgres.get("selection", {}).get("commit") != pair["gitlink"]:
         errors.append("engine_pair: selected Postgres commit differs from Neon gitlink")
+
+    # A successful native probe applies only to the exact source pair and host
+    # in its report. Updating a pin must not silently carry old evidence forward.
+    for name in ("neon-engine", "postgres17"):
+        for target, qualification in components.get(name, {}).get("qualification", {}).items():
+            for evidence in qualification["evidence"]:
+                if evidence != "components/provenance/native-linux.json":
+                    continue
+                path = (root / evidence).resolve()
+                if not path.is_relative_to(root) or not path.is_file():
+                    continue  # Already reported by evidence_exists.
+                native = read_json(path)
+                build, smoke = native.get("build", {}), native.get("smoke", {})
+                neon = components.get("neon-engine", {}).get("selection", {}).get("commit")
+                expected_pg = {"path": pair["submodule_path"], "commit": pair["gitlink"], "role": "runtime"}
+                if (qualification["state"] != "probe-passed" or native.get("target") != target
+                        or native.get("qualification") != "probe-passed"
+                        or build.get("neon_commit") != neon or build.get("neon_dirty") is not False
+                        or build.get("postgres_major") != 17
+                        or build.get("postgres_regression") != "passed"
+                        or expected_pg not in build.get("sources", [])
+                        or smoke.get("status") != "PASS" or smoke.get("neon_commit") != neon
+                        or smoke.get("sources") != build.get("sources")):
+                    errors.append(f"{name}/{target}: claim exceeds the recorded native probe")
 
     # The chart intentionally keeps name+digest on one line for its installer.
     # Check the recorded legacy image identities without importing YAML or
