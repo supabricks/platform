@@ -1,6 +1,7 @@
 pub(crate) mod error;
 mod journal;
 mod migrations;
+mod native;
 mod ownership;
 mod work;
 pub use error::{Error, Result};

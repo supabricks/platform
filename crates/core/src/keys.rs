@@ -49,6 +49,32 @@ impl ComputeKey {
         &self.pkcs8
     }
 
+    /// Ed25519 SubjectPublicKeyInfo PEM accepted by the pinned storage engine.
+    pub fn public_pem(&self) -> String {
+        let mut der = vec![
+            0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0,
+        ];
+        der.extend(B64.decode(&self.x_b64url).expect("generated public key"));
+        format!(
+            "-----BEGIN PUBLIC KEY-----\n{}\n-----END PUBLIC KEY-----\n",
+            base64::engine::general_purpose::STANDARD.encode(der)
+        )
+    }
+
+    /// Separate storage protocol: compute-admin tokens cannot authorize storage.
+    pub fn mint_storage_jwt(&self, scope: StorageScope) -> anyhow::Result<String> {
+        let claims = match scope {
+            StorageScope::Pageserver => serde_json::json!({"scope":"pageserverapi"}),
+            StorageScope::Safekeeper => serde_json::json!({"scope":"safekeeperdata"}),
+            StorageScope::Tenant(id) => serde_json::json!({"scope":"tenant","tenant_id":id}),
+        };
+        Ok(encode(
+            &Header::new(Algorithm::EdDSA),
+            &claims,
+            &EncodingKey::from_ed_der(&self.pkcs8),
+        )?)
+    }
+
     /// Admin-scoped token for a compute_ctl external API (verified Day 2).
     /// Consumed by the P3 suspend flow (`POST /terminate`).
     pub fn mint_admin_jwt(&self, ttl_secs: u64) -> anyhow::Result<String> {
@@ -77,6 +103,12 @@ impl ComputeKey {
             }]
         })
     }
+}
+
+pub enum StorageScope {
+    Pageserver,
+    Safekeeper,
+    Tenant(crate::resource::TenantId),
 }
 
 /// PG classic md5 credential: hex(md5(password + user)), no "md5" prefix —

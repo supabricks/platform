@@ -1,8 +1,10 @@
 //! Native configuration, durable local state and the single-writer daemon.
 pub mod daemon;
+pub mod engine;
 pub mod operations;
 pub mod project;
 pub mod store;
+pub mod supervisor;
 use std::{net::SocketAddr, path::Path};
 use supabricks_core::{
     error::{OperationError, ValidationError},
@@ -100,6 +102,13 @@ pub fn plan_compute(
         .expect("rendered cluster object");
     for field in ["cluster_id", "name", "state"] {
         cluster.remove(field);
+    }
+    // The qualified E01 bundle ships Neon, but not the optional cloud
+    // pg_stat_statements preload. Never trigger a cloud extension download.
+    for setting in cluster["settings"].as_array_mut().expect("settings array") {
+        if setting["name"] == "shared_preload_libraries" {
+            setting["value"] = serde_json::json!("neon");
+        }
     }
     Ok(ComputePlan {
         pg_major: input.pg_major,

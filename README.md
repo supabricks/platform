@@ -34,9 +34,10 @@ see the [implementation plan](docs/plans/local-runtime-implementation.md).
 
 - `crates/core` — portable compute configuration, authentication, validation,
   identities and branch decisions. See the [core contract](crates/core/README.md).
-- `crates/local` — PG17 configuration planning and the local state daemon:
-  SQLite metadata, ownership, resumable operations and worktree selection.
-  See [local state](docs/handbook/local-state.md); engine supervision follows in P03.
+- `crates/local` — native PG17 cell and local state daemon: SQLite metadata,
+  resumable operations, worktree selection, Process Compose supervision and
+  SeaweedFS storage. See [native setup and qualification](e2e/native/README.md)
+  and [local state](docs/handbook/local-state.md).
 - `crates/operator` — CRDs (`Database`, `Branch`), reconcilers (tenant/timeline
   via the storage controller, compute pods running stock Neon images with
   compute_ctl as PID 1), lifecycle loop (idle-suspend via SQL activity +
