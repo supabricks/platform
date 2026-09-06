@@ -123,7 +123,12 @@ fn identities_credentials_worktrees_and_reservations_survive_restart() {
         before.branch.timeline_id
     );
     let target = store.connection(project.id, one.branch_id).unwrap();
-    assert_eq!(target.password, password);
+    assert_eq!(
+        target.password,
+        store.app_password(before.endpoint.id).unwrap()
+    );
+    assert_ne!(target.password, password);
+    assert_eq!(target.username, "supabricks_owner");
     assert_eq!(target.port, 5400);
     assert!(store.connection(ProjectId::new(), one.branch_id).is_err());
     let public = fs::read_to_string(a.path().join("supabricks.toml")).unwrap();
@@ -344,6 +349,7 @@ fn project_boundaries_parent_references_and_epoch_mappings_are_enforced() {
         .submit(b.id, "same-key", create("main", 5500))
         .unwrap();
     assert_ne!(first.id, second.id);
+    finish(&mut store, first.id);
     let mut child = create("child", 5600);
     if let Mutation::CreateBranch { parent_id, .. } = &mut child {
         *parent_id = Some(first.branch_id);

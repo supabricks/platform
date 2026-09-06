@@ -27,7 +27,7 @@ jobs:
             target: macos-arm64
             fault_flags: ''
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -55,6 +55,8 @@ jobs:
       - run: cargo build --locked -p supabricks-local
       - name: Native cell lifecycle, S3 and cold restore
         run: python e2e/native/cell.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-cell.json ${{ matrix.fault_flags }}
+      - name: Branches, credentials, TTL and interrupted cleanup
+        run: python e2e/native/branches.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-branches.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -62,4 +64,6 @@ jobs:
           path: |
             native-cell.json
             native-cell.log
+            native-branches.json
+            native-branches.log
             build/native/helper-build.json

@@ -5,7 +5,8 @@ storage readiness. `status` reports readiness, operation backlog and owned proce
 IDs without returning credentials. `down` stops the entire cell; when the daemon
 has died, it acquires the data-root lock and reconciles surviving processes directly.
 The engineering control socket still accepts P02 project and operation requests.
-Public database/branch commands and explicit-LSN child branching remain P04/P05.
+[P04](native-branches.md) adds native database and head/LSN/time branch operations.
+The stable connection gateway follows in P05 and public CLI/MCP commands in P06.
 
 ## Process ownership
 
@@ -45,7 +46,9 @@ The local profile starts Process Compose plus four storage processes: SeaweedFS
 in combined-server mode, storage broker, one safekeeper, and pageserver. Each compute
 adds compute_ctl and its PostgreSQL children. SeaweedFS internally runs its master,
 volume, filer and S3 services in the combined process. There is no controller,
-controller Postgres or notification sink in this single-owner profile.
+controller Postgres or notification sink in this single-owner profile. The daemon
+serves a narrow authenticated `/validate` callback so the pageserver deletion
+queue can check tenant ownership and generation before reclaiming S3 layers.
 
 All TCP listeners use generated, persisted loopback ports. The data root is private
 and exclusively locked; credentials and generated configuration are private files.
