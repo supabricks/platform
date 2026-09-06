@@ -99,7 +99,9 @@ including force, rejects parents with children not fully deleted or active
 branch operations. Teardown revokes/stops the compute, deletes the pageserver
 and safekeeper timelines, removes local compute/socket/spec files, and finally
 releases ports, credentials and worktree selections. Every step is replayable.
-Branch records and operation receipts remain for auditing and idempotency.
+Before interpreting a missing timeline, teardown reattaches its tenant from S3;
+losing the pageserver cache must not skip remote cleanup. Branch records and
+operation receipts remain for auditing and idempotency.
 
 The pageserver's queued S3 deletions require a generation-validation callback.
 The daemon provides only authenticated `POST /validate` on a private persisted
@@ -113,7 +115,8 @@ and secrets. The callback remains available during ordered shutdown.
 
 Compute restart and cell-owner recovery preserve SQLite, credentials, storage
 keys, safekeeper WAL and object storage. Losing SQLite is a different failure:
-startup refuses to initialize new metadata if engine state remains. Restore a
+startup refuses to initialize new metadata if engine state remains. An empty
+pre-mounted object directory is allowed for a fresh installation. Restore a
 complete, consistent stopped-cell backup containing metadata, keys and storage;
 S3 layers alone cannot reconstruct identities, credentials, leases or selections.
 The native test restores the original stopped SQLite file while all its matching

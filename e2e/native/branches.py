@@ -427,6 +427,13 @@ class BranchCell(Cell):
         )
         self.daemons[-1].kill()
         self.daemons[-1].wait(timeout=5)
+        # Fence surviving writers before losing only the pageserver's cache.
+        subprocess.run(
+            [str(self.binary), "down", "--data-dir", str(self.root)],
+            check=True,
+            timeout=60,
+        )
+        shutil.rmtree(self.root / "pageserver" / "tenants")
         self.start()
         wait(lambda: self.get(grandchild)["ports"] is None)
         assert not (
@@ -436,13 +443,15 @@ class BranchCell(Cell):
             / grandchild["branch"]["timeline_id"]
         ).exists()
         assert not (self.root / "computes" / grandchild["endpoint"]["id"]).exists()
-        assert (
-            self.app(child, "SELECT string_agg(id::text,',' ORDER BY id) FROM events")
+        wait(
+            lambda: self.app(
+                child, "SELECT string_agg(id::text,',' ORDER BY id) FROM events"
+            )
             == "1,2,4"
         )
-        assert self.connect(main)["password"] == c["password"]
+        wait(lambda: self.connect(main)["password"] == c["password"])
         self.checks.append(
-            "interrupted ordered teardown replays; unrelated data and application credentials survive restart"
+            "interrupted teardown reattaches after pageserver cache loss; unrelated data and credentials survive"
         )
         for b in [resumed, historical, exact, asleep, child]:
             self.state(self.get(b), "deleted")

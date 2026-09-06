@@ -523,6 +523,17 @@ mod tests {
         assert!(s.pending().unwrap().is_empty());
     }
     #[test]
+    fn empty_object_mount_allows_initialization_but_existing_objects_do_not() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir(root.path().join("objects")).unwrap();
+        let store = Store::open(root.path()).unwrap();
+        drop(store);
+        std::fs::remove_file(root.path().join("state.sqlite3")).unwrap();
+        std::fs::write(root.path().join("objects/acknowledged"), b"data").unwrap();
+        assert!(Store::open(root.path()).is_err());
+        assert!(!root.path().join("state.sqlite3").exists());
+    }
+    #[test]
     fn lost_control_state_is_not_silently_reconstructed_from_engine_files() {
         let (root, s, _) = setup();
         let path = s.root().to_owned();

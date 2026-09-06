@@ -57,11 +57,21 @@ impl Pageserver {
         }
         Ok(false)
     }
+    fn attach(&self, tenant: &supabricks_core::resource::TenantId) -> Result<bool> {
+        let (code, _) = self.request(
+            "PUT",
+            &format!("tenant/{tenant}/location_config"),
+            Some(&json!({
+                "mode":"AttachedSingle", "generation":self.generation,
+                "tenant_conf":{"lazy_slru_download":true,"checkpoint_timeout":"1s","compaction_period":"5s"}
+            })),
+        )?;
+        Ok((200..300).contains(&code))
+    }
     pub fn ensure(&self, b: &BranchRecord, parent: Option<&BranchRecord>) -> Result<bool> {
         let tenant = &b.branch.tenant_id;
         let timeline = &b.branch.timeline_id;
-        let (code,_)=self.request("PUT",&format!("tenant/{tenant}/location_config"),Some(&json!({"mode":"AttachedSingle","generation":self.generation,"tenant_conf":{"lazy_slru_download":true,"checkpoint_timeout":"1s","compaction_period":"5s"}})))?;
-        if !(200..300).contains(&code) {
+        if !self.attach(tenant)? {
             return Ok(false);
         }
         if b.timeline_created {
@@ -100,6 +110,11 @@ impl Pageserver {
         }
     }
     pub fn delete(&self, b: &BranchRecord) -> Result<bool> {
+        // A missing local tenant is not proof that its remote timeline is gone.
+        // Reattach before interpreting 404, including replay after cache loss.
+        if !self.attach(&b.branch.tenant_id)? {
+            return Ok(false);
+        }
         let path = format!(
             "tenant/{}/timeline/{}",
             b.branch.tenant_id, b.branch.timeline_id

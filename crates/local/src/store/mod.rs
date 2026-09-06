@@ -55,19 +55,23 @@ impl Store {
         let database = root.path.join("state.sqlite3");
         // A fresh journal cannot reconstruct credentials, leases or ownership
         // from engine files. Never implicitly initialize over surviving data.
+        let objects = root.path.join("objects");
+        // An empty pre-mounted object directory is a valid fresh installation.
+        let has_objects = objects.exists()
+            && (!objects.is_dir() || std::fs::read_dir(&objects)?.next().is_some());
         if (!database.exists() || database.metadata()?.len() == 0)
-            && [
-                "runtime.json",
-                "storage.pk8",
-                "storage.pub",
-                "safekeeper",
-                "launches",
-                "objects",
-                "pageserver",
-                "computes",
-            ]
-            .iter()
-            .any(|p| root.path.join(p).exists())
+            && (has_objects
+                || [
+                    "runtime.json",
+                    "storage.pk8",
+                    "storage.pub",
+                    "safekeeper",
+                    "launches",
+                    "pageserver",
+                    "computes",
+                ]
+                .iter()
+                .any(|p| root.path.join(p).exists()))
         {
             return Err(conflict(
                 "local control state is missing; restore a complete stopped-cell backup before startup",
