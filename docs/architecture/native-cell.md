@@ -100,3 +100,8 @@ power-loss guarantee. SeaweedFS's volume index, directory creation, deletion and
 compaction paths still require filesystem fault testing. P03 does not promote
 these engineering artifacts to a publicly qualified installer or change the
 existing PG17 minor-version/signing/licensing release gates.
+
+Safekeeper WAL is durable state, not an ordinary cache. The runtime preserves it
+on shutdown and crash recovery. Only the isolated cold-restore test removes it,
+after proving the fixture LSN is already durable in the object-store-backed
+pageserver image. Never apply that test cleanup procedure to a working cell.

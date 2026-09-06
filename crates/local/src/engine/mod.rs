@@ -38,6 +38,41 @@ pub struct RuntimeConfig {
     pub supervisor_token: String,
 }
 impl RuntimeConfig {
+    fn validate(&self) -> Result<()> {
+        let expected = [
+            "supervisor",
+            "broker",
+            "sk_pg",
+            "sk_http",
+            "ps_pg",
+            "ps_http",
+            "weed_master",
+            "weed_master_grpc",
+            "weed_volume",
+            "weed_volume_grpc",
+            "weed_filer",
+            "weed_filer_grpc",
+            "weed_s3",
+            "weed_s3_grpc",
+        ];
+        if self.version != 1
+            || self.ports.len() != expected.len()
+            || expected.iter().any(|p| !self.ports.contains_key(*p))
+            || self.ports.values().any(|p| *p == 0)
+            || self.ports.values().collect::<HashSet<_>>().len() != self.ports.len()
+            || [&self.bundle, &self.process_compose, &self.weed]
+                .iter()
+                .any(|p| !p.is_absolute())
+            || [&self.s3_access, &self.s3_secret, &self.supervisor_token]
+                .iter()
+                .any(|s| s.len() < 20)
+        {
+            return Err(invalid(
+                "invalid or unsupported native runtime configuration",
+            ));
+        }
+        Ok(())
+    }
     pub fn initialize(root: &Path, bundle: &Path, helpers: &Path) -> Result<()> {
         let path = root.join("runtime.json");
         if path.exists() {
@@ -122,9 +157,7 @@ impl Cell {
         Self::recover(store)?;
         let config: RuntimeConfig =
             serde_json::from_slice(&fs::read(store.root().join("runtime.json"))?)?;
-        if config.version != 1 || config.ports.values().any(|p| *p == 0) {
-            return Err(invalid("unsupported runtime configuration"));
-        }
+        config.validate()?;
         let root = store.root().to_owned();
         for name in [
             "logs",
@@ -236,7 +269,6 @@ impl Cell {
                 self.config.bundle.join("pg_install/v17/bin").display()
             ),
         );
-        env.insert("HOME".into(), self.root.to_string_lossy().into_owned());
         env.insert(
             "TMPDIR".into(),
             self.root.join("tmp").to_string_lossy().into_owned(),
@@ -496,6 +528,45 @@ impl Cell {
         }
         store.record_native_process(&supervisor::evidence(launch, pid)?)
     }
+    pub fn validate_mutation(&self, mutation: &crate::operations::Mutation) -> Result<()> {
+        if let crate::operations::Mutation::CreateBranch {
+            parent_id, ports, ..
+        } = mutation
+        {
+            if parent_id.is_some() {
+                return Err(invalid(
+                    "native child branches require the P04 explicit-LSN operation",
+                ));
+            }
+            if [ports.sql, ports.external_http, ports.internal_http]
+                .iter()
+                .any(|p| self.config.ports.values().any(|used| used == p))
+            {
+                return Err(conflict("compute port is reserved for local storage"));
+            }
+        }
+        Ok(())
+    }
+    fn delete_timeline(&self, branch: &BranchRecord) -> Result<bool> {
+        if !self.pageserver()?.delete(branch)? {
+            return Ok(false);
+        }
+        let token = self
+            .key
+            .mint_storage_jwt(StorageScope::Safekeeper)
+            .map_err(|_| conflict("storage token failed"))?;
+        let (code, _) = http::Http::default().json(
+            self.port("sk_http"),
+            "DELETE",
+            &format!(
+                "/v1/tenant/{}/timeline/{}",
+                branch.branch.tenant_id, branch.branch.timeline_id
+            ),
+            &[("Authorization", &format!("Bearer {token}"))],
+            None,
+        )?;
+        Ok(code == 200 || code == 404)
+    }
     fn compute_role(branch: &BranchRecord) -> String {
         format!("compute-{}", branch.endpoint.id)
     }
@@ -659,6 +730,7 @@ impl Cell {
         Ok(true)
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        self.storage_ready = false;
         if let Some(child) = &mut self.supervisor {
             let _ = child.try_wait()?;
         }
@@ -733,7 +805,7 @@ impl Cell {
                     self.ensure_timeline(&branch)? && self.ensure_compute(store, &branch)?
                 }
                 Step::StopCompute => self.stop_compute(store, &branch)?,
-                Step::DeleteTimeline => self.pageserver()?.delete(&branch)?,
+                Step::DeleteTimeline => self.delete_timeline(&branch)?,
             };
             if done {
                 store.checkpoint(&ticket, json!({"effect_key":ticket.idempotency_key()}))?;

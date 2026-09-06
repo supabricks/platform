@@ -193,7 +193,12 @@ impl Daemon {
                 project_id,
                 key,
                 mutation,
-            } => serde_json::to_value(self.store.submit(project_id, &key, mutation)?)?,
+            } => {
+                if let Some(cell) = &self.cell {
+                    cell.validate_mutation(&mutation)?;
+                }
+                serde_json::to_value(self.store.submit(project_id, &key, mutation)?)?
+            }
             Request::Operation { id } => serde_json::to_value(self.store.operation(id)?)?,
             Request::Pending => serde_json::to_value(self.store.pending()?)?,
             Request::Branch { id } => serde_json::to_value(self.store.branch(id)?)?,

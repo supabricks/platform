@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import re
 import shutil
 import signal
 import socket
@@ -216,8 +217,12 @@ class Cell:
 
     def exercise(self):
         self.start()
+        generation = self.request(method='status')['generation']
+        subprocess.run([str(self.binary),'up','--data-dir',str(self.root)],check=True,timeout=70)
+        assert self.request(method='status')['generation'] == generation
+        self.checks.append('up reconnects to the ready daemon without a second owner')
         # The private supervisor and S3 must reject unauthenticated clients.
-        for port, path in [('supervisor', '/processes'), ('weed_s3', '/supabricks')]:
+        for port, path in [('supervisor', '/processes'), ('weed_s3', '/supabricks'), ('ps_http','/v1/tenant'), ('sk_http','/v1/tenant/timeline')]:
             try:
                 urllib.request.urlopen(f"http://127.0.0.1:{self.config['ports'][port]}{path}", timeout=3)
                 raise AssertionError(f'{port} accepts unauthenticated requests')
@@ -245,6 +250,7 @@ class Cell:
         assert not any(r['branch'] and r['branch'][0] == other['branch']['id'] for r in self.records())
         other = self.state(other, 'running')
         self.state(other, 'deleted')
+        assert not (self.root/'safekeeper'/other['branch']['tenant_id']/other['branch']['timeline_id']).exists()
         assert storage == {r['role']: r['pid'] for r in self.records() if r['branch'] is None}
         self.checks.append('dynamic compute add, suspend, wake and delete leave storage PIDs unchanged')
         # Kill compute_ctl alone: its orphaned Postgres must be stopped before replacement.
@@ -281,9 +287,38 @@ class Cell:
         wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
         assert self.s3.get_object(Bucket='supabricks', Key='qualification/restart')['Body'].read() == b'acknowledged-object'
         self.checks.append('cold restore from SeaweedFS after removing pageserver tenants, safekeeper WAL and PGDATA')
+        self.daemons[-1].kill(); self.daemons[-1].wait(timeout=5)
+        subprocess.run([str(self.binary),'down','--data-dir',str(self.root)],check=True,timeout=60)
+        assert not self.records()
+        self.start()
+        wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
+        self.checks.append('down can reconcile orphaned services without starting a replacement daemon')
         self.stop()
         self.checks.append('all recorded children stopped; private control files retained')
         return dict(status='PASS', checks=self.checks, limits=['SIGKILL/restart evidence, not power-loss qualification', 'single safekeeper and single-owner host', 'engineering artifacts; no public installer'])
+
+    def diagnostics(self, destination):
+        secrets = []
+        for file in [self.root/'runtime.json', *self.root.glob('launches/*.json'), *self.root.glob('computes/*/spec.json')]:
+            if not file.exists(): continue
+            def collect(value, key=''):
+                if isinstance(value,dict):
+                    for k,v in value.items(): collect(v,k)
+                elif isinstance(value,list):
+                    for v in value: collect(v,key)
+                elif isinstance(value,str) and any(s in key.lower() for s in ['token','password','secret','access']):
+                    secrets.append(value)
+            collect(json.loads(file.read_text()))
+        chunks = []
+        for file in [self.root/'daemon.log', self.root/'logs/supervisor.log']:
+            if file.exists():
+                chunks.append(file.name+'\n'+'\n'.join(file.read_text(errors='replace').splitlines()[-120:]))
+        text = '\n'.join(chunks)
+        for secret in sorted(secrets,key=len,reverse=True):
+            if secret: text = text.replace(secret,'[redacted]')
+        text = re.sub(r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+','[redacted JWT]',text)
+        text = re.sub(r'md5[0-9a-fA-F]{32}','[redacted password hash]',text)
+        destination.write_text(text+'\n')
 
     def close(self):
         try:
@@ -322,6 +357,8 @@ def main():
     except BaseException:
         print(f'Failed native cell retained at {root}', flush=True)
         print('Completed checks:', cell.checks, flush=True)
+        args.report.write_text(json.dumps(dict(status='FAIL',checks=cell.checks),indent=2)+'\n')
+        cell.diagnostics(args.report.with_suffix('.log'))
         raise
     finally:
         cell.close()
