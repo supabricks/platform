@@ -215,6 +215,21 @@ pub fn members(record: &OwnedProcess) -> Result<Vec<u32>> {
 }
 
 pub fn stop(record: &OwnedProcess) -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        match stop_until(record, deadline) {
+            // Process metadata can become temporarily unavailable across exit
+            // on macOS. Retry the full verification; never turn an IO error
+            // into proof that the process is absent or safe to signal.
+            Err(crate::store::Error::Io(_)) if Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            result => return result,
+        }
+    }
+}
+
+fn stop_until(record: &OwnedProcess, deadline: Instant) -> Result<()> {
     // Stop the verified leader first. Neon's sandboxed WAL redo helpers clear
     // their environment; they exit when the pageserver's pipes close. Never
     // signal such an unmarked child merely because it shares a numeric PGID.
@@ -232,7 +247,6 @@ pub fn stop(record: &OwnedProcess) -> Result<()> {
             }
         }
     }
-    let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         match members(record) {
             Ok(members) if members.is_empty() => return Ok(()),

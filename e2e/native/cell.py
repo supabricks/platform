@@ -49,6 +49,25 @@ def lsn(s):
     return int(high, 16) * 2**32 + int(low, 16)
 
 
+def process_tree(roots):
+    # Postgres workers create their own sessions; PGID alone misses them.
+    rows = [line.split() for line in subprocess.check_output(
+        ['ps', '-axo', 'pid=,ppid=,stat='], text=True).splitlines()]
+    found = set(roots)
+    while True:
+        children = {int(pid) for pid, parent, _ in rows if int(parent) in found}
+        if children <= found:
+            return found
+        found |= children
+
+
+def assert_stopped(pids):
+    rows = [line.split() for line in subprocess.check_output(
+        ['ps', '-axo', 'pid=,stat='], text=True).splitlines()]
+    live = {int(pid) for pid, state in rows if not state.startswith('Z')}
+    assert not (live & pids), 'owned descendant survived cleanup, including across process groups'
+
+
 class Cell:
     def __init__(self, binary, bundle, helpers, root, disk_full=False):
         self.binary = root / 'supabricks'
@@ -159,6 +178,7 @@ class Cell:
             return json.load(response)
 
     def stop(self):
+        descendants = process_tree(r['pid'] for r in self.records())
         self.request(method='shutdown')
         wait(lambda: not (self.root / 'control.sock').exists(), timeout=60)
         for p in self.daemons:
@@ -166,6 +186,7 @@ class Cell:
                 p.wait(timeout=10)
             assert p.returncode == 0 or p.returncode == -signal.SIGKILL, 'daemon failed during shutdown'
         assert not self.records(), 'owned processes remain after shutdown'
+        assert_stopped(descendants)
 
     def s3_operations(self):
         b = 'supabricks'
@@ -256,18 +277,22 @@ class Cell:
         self.checks.append('dynamic compute add, suspend, wake and delete leave storage PIDs unchanged')
         # Kill compute_ctl alone: its orphaned Postgres must be stopped before replacement.
         compute = next(r for r in self.records() if r['branch'])
+        descendants = process_tree([compute['pid']])
         os.kill(compute['pid'], signal.SIGKILL)
         wait(lambda: any(r['branch'] and r['pid'] != compute['pid'] for r in self.records()))
+        assert_stopped(descendants)
         wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
         self.checks.append('orphaned Postgres descendants fenced after compute_ctl SIGKILL')
         for victim in ['supervisor', 'daemon']:
             before = self.records()
+            descendants = process_tree(r['pid'] for r in before)
             if victim == 'supervisor':
                 os.kill(next(r['pid'] for r in before if r['role'] == victim), signal.SIGKILL)
             else:
                 self.daemons[-1].kill(); self.daemons[-1].wait(timeout=5)
                 self.start()
             wait(lambda: all(r['pid'] not in {old['pid'] for old in before} for r in self.records()) and len(self.records()) >= 6)
+            assert_stopped(descendants)
             wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
             assert len([r for r in self.records() if r['branch']]) == 1
             groups = subprocess.check_output(['ps','-axo','pgid=,stat='],text=True)

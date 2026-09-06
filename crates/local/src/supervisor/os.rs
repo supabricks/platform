@@ -90,7 +90,7 @@ pub fn identity(pid: u32) -> Result<Option<Identity>> {
         libc::proc_pidinfo(
             pid as i32,
             libc::PROC_PIDTBSDINFO,
-            0,
+            1, // Include zombies: an exited process cannot own a writer.
             (&mut info as *mut libc::proc_bsdinfo).cast(),
             size,
         )
@@ -100,7 +100,7 @@ pub fn identity(pid: u32) -> Result<Option<Identity>> {
         if e.raw_os_error() == Some(libc::ESRCH) {
             return Ok(None);
         }
-        return Err(e.into());
+        return Err(io::Error::new(e.kind(), format!("proc_pidinfo({pid}): {e}")).into());
     }
     if n != size {
         return Err(conflict("incomplete process identity"));
@@ -120,7 +120,8 @@ pub fn group_pids(group: u32) -> Result<Vec<u32>> {
     // under macOS process protections even before querying its environment.
     let count = unsafe { libc::proc_listpgrppids(group as i32, std::ptr::null_mut(), 0) };
     if count < 0 {
-        return Err(io::Error::last_os_error().into());
+        let e = io::Error::last_os_error();
+        return Err(io::Error::new(e.kind(), format!("proc_listpgrppids({group}): {e}")).into());
     }
     let mut pids = vec![0i32; count as usize + 4096];
     let n = unsafe {
@@ -156,7 +157,8 @@ fn environment(pid: u32) -> Result<Vec<u8>> {
         )
     } != 0
     {
-        return Err(io::Error::last_os_error().into());
+        let e = io::Error::last_os_error();
+        return Err(io::Error::new(e.kind(), format!("KERN_PROCARGS2({pid}): {e}")).into());
     }
     bytes.truncate(size);
     // Skip argc, executable path, padding and exactly argc argv strings.

@@ -238,7 +238,8 @@ impl Cell {
             if record.root != store.root() {
                 return Err(conflict("process belongs to a different data root"));
             }
-            supervisor::stop(&record)?;
+            supervisor::stop(&record)
+                .map_err(|e| conflict(format!("cannot stop {}: {e}", record.role)))?;
             store.forget_native_process(&record)?;
         }
         if !store.processes()?.is_empty() {
