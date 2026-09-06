@@ -524,7 +524,9 @@ mod tests {
     }
     #[test]
     fn empty_object_mount_allows_initialization_but_existing_objects_do_not() {
+        use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         std::fs::create_dir(root.path().join("objects")).unwrap();
         let store = Store::open(root.path()).unwrap();
         drop(store);
