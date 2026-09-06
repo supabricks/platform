@@ -20,7 +20,7 @@ python3 components/verify-native-bundle.py /path/to/engine
 On Apple Silicon use `macos-arm64`. Preparing its SQLite-enabled SeaweedFS
 requires the Go version in `components/native-cell.lock.json`; the installed
 runtime does not require Go. This engineering setup consumes qualified CI engine
-archives. They expire; a signed, stable release channel belongs to P09.
+archives. They expire; a signed, stable release channel belongs to R01.
 
 Run the complete isolated qualification:
 
@@ -32,7 +32,7 @@ python3 e2e/native/cell.py --binary target/debug/supabricks \
 The test creates a fresh `/tmp/sb-p03-*` root and copies the executable there so
 concurrent development builds cannot replace a running daemon's executable.
 It tests SQL credentials, S3 upload/head/range/list/multipart/delete, dynamic
-compute lifecycle without storage restarts, abrupt compute/controller/supervisor
+compute lifecycle without storage restarts, abrupt compute_ctl/supervisor
 and daemon loss, and cold restore after deleting only disposable engine state.
 Object data and SQLite control state are retained. Failure roots stay available
 for inspection. Private configurations and service logs contain credentials;
