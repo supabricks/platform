@@ -202,6 +202,7 @@ impl Store {
         holder: &str,
         ttl: Duration,
     ) -> Result<Lease> {
+        self.accepting_work(branch)?;
         if self.branch(branch)?.endpoint.desired_state != DesiredState::Running {
             return Err(conflict("branch is not accepting new work"));
         }

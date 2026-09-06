@@ -47,4 +47,6 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
   name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
   `rfcs/business/vision.md`).
 
-Native runtime work: [local state and durable operations (P02)](local-state.md).
+Native runtime work: [local state and durable operations (P02)](local-state.md),
+[native storage cell (P03)](../architecture/native-cell.md), and
+[databases and branches (P04)](../architecture/native-branches.md).

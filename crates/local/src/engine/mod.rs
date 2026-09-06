@@ -1,7 +1,10 @@
 //! Native single-owner cell. Process Compose is an executor, never desired state.
+mod branches;
 mod http;
 mod pageserver;
 mod s3;
+mod sql;
+pub(crate) mod validation;
 use crate::{
     operations::Step,
     store::{
@@ -36,10 +39,47 @@ pub struct RuntimeConfig {
     pub s3_access: String,
     pub s3_secret: String,
     pub supervisor_token: String,
+    #[serde(default)]
+    pub validation_token: String,
 }
 impl RuntimeConfig {
+    pub(crate) fn load(store: &Store) -> Result<Self> {
+        let path = store.root().join("runtime.json");
+        let mut config: Self = serde_json::from_slice(&fs::read(&path)?)?;
+        if config.version == 1
+            && config.validation_token.is_empty()
+            && !config.ports.contains_key("validator")
+        {
+            let reserved: HashSet<u16> = store
+                .branches()?
+                .into_iter()
+                .filter_map(|b| b.ports)
+                .flat_map(|p| [p.sql, p.external_http, p.internal_http])
+                .collect();
+            let listener = loop {
+                let candidate = TcpListener::bind("127.0.0.1:0")?;
+                let candidate_port = candidate.local_addr()?.port();
+                if !reserved.contains(&candidate_port)
+                    && !config.ports.values().any(|p| *p == candidate_port)
+                {
+                    break candidate;
+                }
+            };
+            config
+                .ports
+                .insert("validator".into(), listener.local_addr()?.port());
+            config.validation_token = secret();
+            config.version = 2;
+            config.validate()?;
+            write_json(&path, &config)?;
+        }
+        config.validate()?;
+        Ok(config)
+    }
+
     fn validate(&self) -> Result<()> {
         let expected = [
+            "validator",
             "supervisor",
             "broker",
             "sk_pg",
@@ -55,7 +95,7 @@ impl RuntimeConfig {
             "weed_s3",
             "weed_s3_grpc",
         ];
-        if self.version != 1
+        if self.version != 2
             || self.ports.len() != expected.len()
             || expected.iter().any(|p| !self.ports.contains_key(*p))
             || self.ports.values().any(|p| *p == 0)
@@ -63,9 +103,14 @@ impl RuntimeConfig {
             || [&self.bundle, &self.process_compose, &self.weed]
                 .iter()
                 .any(|p| !p.is_absolute())
-            || [&self.s3_access, &self.s3_secret, &self.supervisor_token]
-                .iter()
-                .any(|s| s.len() < 20)
+            || [
+                &self.s3_access,
+                &self.s3_secret,
+                &self.supervisor_token,
+                &self.validation_token,
+            ]
+            .iter()
+            .any(|s| s.len() < 20)
         {
             return Err(invalid(
                 "invalid or unsupported native runtime configuration",
@@ -81,6 +126,7 @@ impl RuntimeConfig {
         let mut ports = BTreeMap::new();
         let mut listeners = Vec::new();
         for name in [
+            "validator",
             "supervisor",
             "broker",
             "sk_pg",
@@ -101,7 +147,7 @@ impl RuntimeConfig {
             listeners.push(socket);
         }
         let config = Self {
-            version: 1,
+            version: 2,
             bundle: bundle.canonicalize()?,
             process_compose: helpers.join("process-compose").canonicalize()?,
             weed: helpers.join("weed").canonicalize()?,
@@ -109,6 +155,7 @@ impl RuntimeConfig {
             s3_access: secret(),
             s3_secret: secret(),
             supervisor_token: secret(),
+            validation_token: secret(),
         };
         for executable in [
             config.bundle.join("bin/pageserver"),
@@ -148,6 +195,8 @@ pub struct Cell {
     bucket_ready: bool,
     storage_ready: bool,
     attached: HashSet<supabricks_core::resource::BranchId>,
+    sql: sql::Sql,
+    configured: HashSet<(String, u32)>,
     pub last_error: Option<String>,
 }
 impl Cell {
@@ -155,9 +204,7 @@ impl Cell {
         // Stop the old executor before inspecting its children: it must not be
         // able to race recovery by launching another generation of writers.
         Self::recover(store)?;
-        let config: RuntimeConfig =
-            serde_json::from_slice(&fs::read(store.root().join("runtime.json"))?)?;
-        config.validate()?;
+        let config = RuntimeConfig::load(store)?;
         let root = store.root().to_owned();
         for name in [
             "logs",
@@ -183,6 +230,8 @@ impl Cell {
             .map_err(|_| conflict("invalid storage key"))?;
         write_private(&root.join("storage.pub"), key.public_pem().as_bytes())?;
         let mut cell = Self {
+            sql: sql::Sql::new()?,
+            configured: HashSet::new(),
             config,
             root,
             generation: store.generation(),
@@ -457,12 +506,14 @@ impl Cell {
         ))?;
         write_private(&self.root.join("pageserver/identity.toml"), b"id = 1\n")?;
         let ps = format!(
-            "listen_pg_addr = {}\nlisten_http_addr = {}\npg_distrib_dir = {}\nbroker_endpoint = {}\npg_auth_type = \"NeonJWT\"\nhttp_auth_type = \"NeonJWT\"\nauth_validation_public_key_path = {}\ncontrol_plane_emergency_mode = true\ncontrol_plane_api = \"http://127.0.0.1:1\"\nvirtual_file_io_mode = \"buffered\"\nremote_storage = {{bucket_name = \"supabricks\", bucket_region = \"us-east-1\", endpoint = {}, prefix_in_bucket = \"pageserver\"}}\n",
+            "listen_pg_addr = {}\nlisten_http_addr = {}\npg_distrib_dir = {}\nbroker_endpoint = {}\npg_auth_type = \"NeonJWT\"\nhttp_auth_type = \"NeonJWT\"\nauth_validation_public_key_path = {}\ncontrol_plane_emergency_mode = true\ncontrol_plane_api = {}\ncontrol_plane_api_token = {}\nvirtual_file_io_mode = \"buffered\"\nremote_storage = {{bucket_name = \"supabricks\", bucket_region = \"us-east-1\", endpoint = {}, prefix_in_bucket = \"pageserver\"}}\n",
             json!(self.addr("ps_pg")),
             json!(self.addr("ps_http")),
             json!(self.config.bundle.join("pg_install")),
             json!(format!("http://{}", self.addr("broker"))),
             json!(self.root.join("storage.pub")),
+            json!(format!("http://{}", self.addr("validator"))),
+            json!(self.config.validation_token),
             json!(format!("http://{}", self.addr("weed_s3")))
         );
         write_private(&self.root.join("pageserver/pageserver.toml"), ps.as_bytes())?;
@@ -502,11 +553,16 @@ impl Cell {
             generation: self.generation,
         })
     }
-    fn ensure_timeline(&mut self, branch: &BranchRecord) -> Result<bool> {
+    fn ensure_timeline(&mut self, store: &Store, branch: &BranchRecord) -> Result<bool> {
         if self.attached.contains(&branch.branch.id) {
             return Ok(true);
         }
-        if self.pageserver()?.ensure(branch)? {
+        let parent = branch
+            .branch
+            .parent_id
+            .map(|id| store.branch(id))
+            .transpose()?;
+        if self.pageserver()?.ensure(branch, parent.as_ref())? {
             self.attached.insert(branch.branch.id);
             return Ok(true);
         }
@@ -530,21 +586,14 @@ impl Cell {
         store.record_native_process(&supervisor::evidence(launch, pid)?)
     }
     pub fn validate_mutation(&self, mutation: &crate::operations::Mutation) -> Result<()> {
-        if let crate::operations::Mutation::CreateBranch {
-            parent_id, ports, ..
-        } = mutation
-        {
-            if parent_id.is_some() {
-                return Err(invalid(
-                    "native child branches require the P04 explicit-LSN operation",
-                ));
-            }
-            if [ports.sql, ports.external_http, ports.internal_http]
+        if let crate::operations::Mutation::CreateBranch { ports, .. }
+        | crate::operations::Mutation::CreateDatabase { ports, .. }
+        | crate::operations::Mutation::BranchFrom { ports, .. } = mutation
+            && [ports.sql, ports.external_http, ports.internal_http]
                 .iter()
                 .any(|p| self.config.ports.values().any(|used| used == p))
-            {
-                return Err(conflict("compute port is reserved for local storage"));
-            }
+        {
+            return Err(conflict("compute port is reserved for local storage"));
         }
         Ok(())
     }
@@ -567,6 +616,27 @@ impl Cell {
             None,
         )?;
         Ok(code == 200 || code == 404)
+    }
+    pub fn connection_ready(&self, store: &Store, branch: &BranchRecord) -> Result<bool> {
+        if !self.storage_ready {
+            return Ok(false);
+        }
+        let role = Self::compute_role(branch);
+        let Some(record) = store
+            .native_processes()?
+            .into_iter()
+            .find(|p| p.role == role)
+        else {
+            return Ok(false);
+        };
+        if record.generation != store.generation()
+            || record.branch != Some((branch.branch.id, branch.revision))
+            || !self.configured.contains(&(role, record.pid))
+        {
+            return Ok(false);
+        }
+        Ok(supervisor::os::identity(record.pid)?
+            .is_some_and(|id| !id.zombie && id.start == record.start_identity))
     }
     fn compute_role(branch: &BranchRecord) -> String {
         format!("compute-{}", branch.endpoint.id)
@@ -604,7 +674,19 @@ impl Cell {
                 &[("Authorization", &format!("Bearer {token}"))],
                 None,
             )?;
-            return Ok(code == 200 && value["status"] == "running");
+            if code != 200 || value["status"] != "running" {
+                return Ok(false);
+            }
+            if !self.configured.contains(&(role.clone(), record.pid)) {
+                self.sql.provision(
+                    ports.sql,
+                    &store.endpoint_password(branch.endpoint.id)?,
+                    &store.app_password(branch.endpoint.id)?,
+                    branch.expired,
+                )?;
+                self.configured.insert((role, record.pid));
+            }
+            return Ok(true);
         }
         if self.launches.contains_key(&role) {
             return Ok(false);
@@ -694,6 +776,7 @@ impl Cell {
         let role = Self::compute_role(branch);
         // Revoke launch authorization first. A delayed helper cannot start after suspension.
         self.launches.remove(&role);
+        self.configured.retain(|(r, _)| r != &role);
         if let Some(record) = store
             .native_processes()?
             .into_iter()
@@ -795,18 +878,59 @@ impl Cell {
         if !self.storage_ready {
             return Ok(());
         }
+        store.reconcile_parent_pins()?;
+        store.mark_expired()?;
+        let mut busy = vec![];
+        for branch in store
+            .branches()?
+            .into_iter()
+            .filter(|b| b.expired && b.endpoint.desired_state == DesiredState::Running)
+        {
+            let drained = branch.ports.is_some_and(|ports| {
+                self.sql
+                    .drain(
+                        ports.sql,
+                        &store
+                            .endpoint_password(branch.endpoint.id)
+                            .unwrap_or_default(),
+                    )
+                    .unwrap_or(false)
+            });
+            if !drained {
+                busy.push(branch.branch.id);
+            }
+        }
+        store.expire_branches(&busy)?;
         for operation in store.pending()? {
             let Some(ticket) = store.ticket(operation.id)? else {
                 continue;
             };
             let branch = store.branch(ticket.branch_id)?;
-            let done = match ticket.step {
-                Step::EnsureTimeline => self.ensure_timeline(&branch)?,
-                Step::StartCompute => {
-                    self.ensure_timeline(&branch)? && self.ensure_compute(store, &branch)?
+            let effect = (|| -> Result<bool> {
+                Ok(match ticket.step {
+                    Step::CaptureBranchPoint => self.capture_point(store, &ticket, &branch)?,
+                    Step::EnsureTimeline => self.ensure_timeline(store, &branch)?,
+                    Step::StartCompute => {
+                        self.ensure_timeline(store, &branch)?
+                            && self.ensure_compute(store, &branch)?
+                    }
+                    Step::StopCompute => self.stop_compute(store, &branch)?,
+                    Step::DeleteTimeline => self.delete_timeline(&branch)?,
+                    Step::DeleteLocalFiles => self.delete_local_files(&branch)?,
+                })
+            })();
+            let done = match effect {
+                Ok(done) => done,
+                Err(e) => {
+                    let terminal = matches!(
+                        &e,
+                        crate::store::Error::Operation(
+                            supabricks_core::error::OperationError::InvalidInput(_)
+                        )
+                    );
+                    store.operation_error(operation.id,json!({"code":if terminal {"invalid_branch_point"} else {"unavailable"},"step":ticket.step,"message":e.to_string(),"retryable":!terminal}),terminal)?;
+                    continue;
                 }
-                Step::StopCompute => self.stop_compute(store, &branch)?,
-                Step::DeleteTimeline => self.delete_timeline(&branch)?,
             };
             if done {
                 store.checkpoint(&ticket, json!({"effect_key":ticket.idempotency_key()}))?;
@@ -816,7 +940,7 @@ impl Cell {
         for branch in store.branches()? {
             if branch.revision == branch.observed_revision
                 && branch.endpoint.desired_state == DesiredState::Running
-                && self.ensure_timeline(&branch)?
+                && self.ensure_timeline(store, &branch)?
             {
                 self.ensure_compute(store, &branch)?;
             }

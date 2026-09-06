@@ -1,6 +1,20 @@
 //! Durable intent and worker tickets. Engine adapters implement the effects in P03/P04.
 use serde::{Deserialize, Serialize};
+use supabricks_core::lsn::Lsn;
 use supabricks_core::resource::{BranchId, DesiredState, OperationId, ProjectId};
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum BranchPoint {
+    #[default]
+    Head,
+    Lsn {
+        lsn: Lsn,
+    },
+    Time {
+        timestamp: String,
+    },
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -22,6 +36,19 @@ impl Ports {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Mutation {
+    CreateDatabase {
+        name: String,
+        ports: Ports,
+    },
+    BranchFrom {
+        name: String,
+        parent_id: BranchId,
+        ports: Ports,
+        #[serde(default)]
+        point: BranchPoint,
+        #[serde(default = "branch_timeout")]
+        timeout_ms: u64,
+    },
     CreateBranch {
         name: String,
         parent_id: Option<BranchId>,
@@ -32,14 +59,28 @@ pub enum Mutation {
         expected_revision: i64,
         desired: DesiredState,
     },
+    SetTtl {
+        branch_id: BranchId,
+        expected_revision: i64,
+        expires_at_ms: Option<i64>,
+    },
+    SetDefault {
+        branch_id: BranchId,
+    },
+    ForceDelete {
+        branch_id: BranchId,
+        expected_revision: i64,
+    },
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Step {
+    CaptureBranchPoint,
     EnsureTimeline,
     StartCompute,
     StopCompute,
     DeleteTimeline,
+    DeleteLocalFiles,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -47,6 +88,7 @@ pub enum Status {
     Pending,
     Succeeded,
     Superseded,
+    Failed,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Operation {
@@ -58,6 +100,7 @@ pub struct Operation {
     pub steps: Vec<Step>,
     pub next_step: usize,
     pub results: Vec<serde_json::Value>,
+    pub error: Option<serde_json::Value>,
 }
 /// No database transaction is held while a ticket is executing. A worker must
 /// make its effect idempotent using resource identity and this stable step key.
@@ -76,4 +119,8 @@ impl WorkTicket {
     pub fn idempotency_key(&self) -> String {
         format!("{}:{}", self.operation_id, self.step_index)
     }
+}
+
+pub fn branch_timeout() -> u64 {
+    90_000
 }
