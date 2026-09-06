@@ -164,6 +164,7 @@ class Cell:
         for p in self.daemons:
             if p.poll() is None:
                 p.wait(timeout=10)
+            assert p.returncode == 0 or p.returncode == -signal.SIGKILL, 'daemon failed during shutdown'
         assert not self.records(), 'owned processes remain after shutdown'
 
     def s3_operations(self):
@@ -294,6 +295,12 @@ class Cell:
         wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
         self.checks.append('down can reconcile orphaned services without starting a replacement daemon')
         self.stop()
+        # Exercise normal process exit/inspection races repeatedly on both OSes.
+        for _ in range(3):
+            self.start()
+            wait(lambda: self.sql(main, 'SELECT count(*),sum(amount) FROM orders') == expected)
+            self.stop()
+        self.checks.append('repeated normal shutdown retains ownership until cleanup completes')
         self.checks.append('all recorded children stopped; private control files retained')
         return dict(status='PASS', checks=self.checks, limits=['SIGKILL/restart evidence, not power-loss qualification', 'single safekeeper and single-owner host', 'engineering artifacts; no public installer'])
 

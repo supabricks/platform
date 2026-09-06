@@ -1,6 +1,8 @@
 //! OS identity, independent of PID reuse. No signal is sent on ambiguous evidence.
 use crate::store::{Result, error::conflict};
-use std::{fs, io};
+#[cfg(target_os = "linux")]
+use std::fs;
+use std::io;
 
 pub struct Identity {
     pub pid: u32,
@@ -48,11 +50,29 @@ pub fn identity(pid: u32) -> Result<Option<Identity>> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn pids() -> Result<Vec<u32>> {
+pub fn group_pids(group: u32) -> Result<Vec<u32>> {
     fs::read_dir("/proc")?
         .filter_map(|e| match e {
             Ok(e) => e.file_name().to_str().and_then(|s| s.parse().ok()).map(Ok),
             Err(e) => Some(Err(e.into())),
+        })
+        .filter_map(|pid| match pid {
+            Ok(pid) => {
+                let actual = unsafe { libc::getpgid(pid as i32) };
+                if actual < 0 {
+                    let e = io::Error::last_os_error();
+                    if e.raw_os_error() == Some(libc::ESRCH) {
+                        None
+                    } else {
+                        Some(Err(e.into()))
+                    }
+                } else if actual as u32 == group {
+                    Some(Ok(pid))
+                } else {
+                    None
+                }
+            }
+            Err(e) => Some(Err(e)),
         })
         .collect()
 }
@@ -95,14 +115,22 @@ pub fn identity(pid: u32) -> Result<Option<Identity>> {
 }
 
 #[cfg(target_os = "macos")]
-pub fn pids() -> Result<Vec<u32>> {
-    let count = unsafe { libc::proc_listallpids(std::ptr::null_mut(), 0) };
-    if count <= 0 {
+pub fn group_pids(group: u32) -> Result<Vec<u32>> {
+    // Ask the kernel for this group. Inspecting every system PID can fail
+    // under macOS process protections even before querying its environment.
+    let count = unsafe { libc::proc_listpgrppids(group as i32, std::ptr::null_mut(), 0) };
+    if count < 0 {
         return Err(io::Error::last_os_error().into());
     }
     let mut pids = vec![0i32; count as usize + 4096];
-    let n = unsafe { libc::proc_listallpids(pids.as_mut_ptr().cast(), (pids.len() * 4) as i32) };
-    if n <= 0 || n as usize >= pids.len() {
+    let n = unsafe {
+        libc::proc_listpgrppids(
+            group as i32,
+            pids.as_mut_ptr().cast(),
+            (pids.len() * 4) as i32,
+        )
+    };
+    if n < 0 || n as usize >= pids.len() {
         return Err(conflict("cannot enumerate process groups"));
     }
     Ok(pids[..n as usize]

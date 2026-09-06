@@ -109,6 +109,10 @@ fn run() -> Result<()> {
             }
             std::thread::sleep(Duration::from_millis(100));
         }
+        // Socket disappearance can also mean a crashed daemon. Reacquire the
+        // ownership lock and account for every recorded writer before success.
+        let mut store = Store::open(&root)?;
+        supabricks_local::engine::Cell::recover(&mut store)?;
         println!("Supabricks stopped.");
         return Ok(());
     }

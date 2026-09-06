@@ -193,20 +193,7 @@ pub fn members(record: &OwnedProcess) -> Result<Vec<u32>> {
         )));
     }
     let mut members = Vec::new();
-    for pid in os::pids()? {
-        // Filter by the kernel group before asking for identity/environment.
-        // macOS protects metadata for some unrelated system processes.
-        let group = unsafe { libc::getpgid(pid as i32) };
-        if group < 0 {
-            let error = std::io::Error::last_os_error();
-            if error.raw_os_error() == Some(libc::ESRCH) {
-                continue;
-            }
-            return Err(error.into());
-        }
-        if group as u32 != record.pid {
-            continue;
-        }
+    for pid in os::group_pids(record.pid)? {
         let Some(id) = os::identity(pid)? else {
             continue;
         };

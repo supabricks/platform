@@ -115,8 +115,19 @@ impl Daemon {
             if std::time::Instant::now() >= next_tick {
                 if let Some(cell) = &mut self.cell {
                     if stopping {
-                        if cell.stop(&mut self.store)? {
-                            return Ok(());
+                        match cell.stop(&mut self.store) {
+                            Ok(true) => return Ok(()),
+                            Ok(false) => cell.last_error = None,
+                            Err(e) => {
+                                // Keep the lock/socket until every owned writer is gone.
+                                // Exiting here makes socket disappearance look like a
+                                // successful shutdown even though cleanup is incomplete.
+                                let detail = e.to_string();
+                                if cell.last_error.as_ref() != Some(&detail) {
+                                    eprintln!("shutdown cleanup pending: {detail}");
+                                }
+                                cell.last_error = Some(detail);
+                            }
                         }
                     } else {
                         match cell.tick(&mut self.store) {
