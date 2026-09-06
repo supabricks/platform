@@ -1,5 +1,5 @@
 //! Private, versioned local control socket. The daemon alone owns Store.
-//! This engineering API queues intent; no engine effects execute in P02.
+//! The daemon journals intent and authorizes native effects before execution.
 use crate::store::error::{conflict, invalid};
 use crate::{
     operations::Mutation,
@@ -61,17 +61,24 @@ pub enum Request {
         project_id: ProjectId,
     },
     Shutdown,
+    AuthorizeProcess {
+        role: String,
+        generation: i64,
+        token: String,
+        pid: u32,
+    },
 }
 
 pub struct Daemon {
     store: Store,
     listener: UnixListener,
     socket: PathBuf,
+    cell: Option<crate::engine::Cell>,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
         // Acquire ownership before touching a stale socket or migrating state.
-        let store = Store::open(root)?;
+        let mut store = Store::open(root)?;
         let socket = store.root().join("control.sock");
         match fs::symlink_metadata(&socket) {
             Ok(meta) if meta.file_type().is_socket() => fs::remove_file(&socket)?,
@@ -81,17 +88,54 @@ impl Daemon {
         }
         let listener = UnixListener::bind(&socket)?;
         fs::set_permissions(&socket, fs::Permissions::from_mode(0o600))?;
+        let cell = if store.root().join("runtime.json").exists() {
+            Some(crate::engine::Cell::open(&mut store)?)
+        } else {
+            None
+        };
         Ok(Self {
             store,
             listener,
             socket,
+            cell,
         })
     }
+    pub fn enable_engine(mut self, bundle: &Path, helpers: &Path) -> Result<Self> {
+        if self.cell.is_none() {
+            crate::engine::RuntimeConfig::initialize(self.store.root(), bundle, helpers)?;
+            self.cell = Some(crate::engine::Cell::open(&mut self.store)?);
+        }
+        Ok(self)
+    }
     pub fn serve(mut self) -> Result<()> {
+        self.listener.set_nonblocking(true)?;
+        let mut next_tick = std::time::Instant::now();
+        let mut stopping = false;
         loop {
+            if std::time::Instant::now() >= next_tick {
+                if let Some(cell) = &mut self.cell {
+                    if stopping {
+                        if cell.stop(&mut self.store)? {
+                            return Ok(());
+                        }
+                    } else {
+                        match cell.tick(&mut self.store) {
+                            Ok(()) => cell.last_error = None,
+                            Err(e) => cell.last_error = Some(e.to_string()),
+                        }
+                    }
+                } else if stopping {
+                    return Ok(());
+                }
+                next_tick = std::time::Instant::now() + Duration::from_millis(200);
+            }
             let (mut stream, _) = match self.listener.accept() {
                 Ok(pair) => pair,
                 Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(Duration::from_millis(20));
+                    continue;
+                }
                 Err(e) => return Err(e.into()),
             };
             // A probe may close immediately after connect. Socket setup errors
@@ -117,6 +161,9 @@ impl Daemon {
                 if envelope.version != 1 {
                     return Err(invalid("unsupported local API version"));
                 }
+                if stopping && !matches!(envelope.request, Request::Status | Request::Shutdown) {
+                    return Err(conflict("daemon is stopping"));
+                }
                 self.handle(envelope.request)
             });
             let response = match result {
@@ -129,14 +176,14 @@ impl Daemon {
             // A client disappearing must not take down the single writer.
             let _ = writeln!(stream, "{response}");
             if shutdown {
-                return Ok(());
+                stopping = true;
             }
         }
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
             Request::Status => {
-                json!({"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":false})
+                json!({"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -170,6 +217,18 @@ impl Daemon {
                 json!({"branch_id":self.store.selected_branch(&path,project_id)?})
             }
             Request::Shutdown => json!({"stopping":true}),
+            Request::AuthorizeProcess {
+                role,
+                generation,
+                token,
+                pid,
+            } => {
+                self.cell
+                    .as_ref()
+                    .ok_or_else(|| conflict("engine is disabled"))?
+                    .authorize(&mut self.store, &role, generation, &token, pid)?;
+                json!({"authorized":true})
+            }
         })
     }
 }

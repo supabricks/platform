@@ -1,0 +1,21 @@
+{
+  "format_version": 1,
+  "purpose": "P03 engineering qualification; not a public installer channel",
+  "engine": {
+    "repository": "supabricks/neon",
+    "run_id": 33985043318,
+    "archives": {
+      "linux-x86_64": "deaad0ddf7d3d71a167fad00399693fdee3a743a36be7e4980afbc5894c04776",
+      "macos-arm64": "a816615c2bb65956ef85f8233232f8accec406763d7f51f215b2fd30d011f760"
+    }
+  },
+  "seaweedfs_sqlite": {
+    "commit": "79b87202136cebdaaa7db4d94eaa5915ad381276",
+    "source_url": "https://codeload.github.com/seaweedfs/seaweedfs/tar.gz/79b87202136cebdaaa7db4d94eaa5915ad381276",
+    "source_sha256": "d577baa0509178554b35350be261e8a6bebf440c51f0cfb1532a075cf843f1dd",
+    "linux_url": "https://github.com/seaweedfs/seaweedfs/releases/download/4.45/linux_amd64_full.tar.gz",
+    "linux_sha256": "66691d884e28a0a5584fdd1a5aebf82c5cc889854dc64323211291be3ad0cda4",
+    "macos_build": {"go": "1.27.1", "tags": ["sqlite"], "CGO_ENABLED": "0"},
+    "reason": "The default release omits SQLite; LevelDB metadata writes do not request synchronous commits. Linux uses the upstream full release, macOS builds unmodified upstream source with its existing sqlite tag."
+  }
+}
