@@ -132,8 +132,29 @@ their version commands. Downloading does not install or launch services. Platfor
 uses the binaries' embedded Go source revisions for the helper pins; Process
 Compose's release tag points to the immediately preceding commit, documented in
 its [provenance](provenance/process-compose.json). The validator rejects source
-or archive identities that disagree with these records. P03
-must still qualify supervisor ownership and the S3 backend. Current upstream
+or archive identities that disagree with these records. These are the original
+P00 helper probes. P03 uses a different SeaweedFS build, described below. Current upstream
 PG17 minor integration, macOS clean-host evidence, transitive license notices
 and release signing remain gates. No platform CLI or one-command installer is
-implemented by this slice.
+implemented by E01.
+
+## Native cell helpers (P03)
+
+The [native cell lock](native-cell.lock.json) pins the engineering engine archives
+and SQLite-enabled SeaweedFS variant used by P03. Process Compose remains pinned
+by the original component manifest. The default SeaweedFS archive omits SQLite;
+its LevelDB metadata path does not request synchronous writes. The native profile
+uses the upstream Linux `full` archive or builds unchanged upstream source with
+its `sqlite` tag on Apple Silicon. No storage implementation was rewritten.
+
+```sh
+python components/prepare-native-cell.py linux-x86_64 /tmp/sb-helpers
+```
+
+Use `macos-arm64` with the pinned Go build toolchain on an Apple Silicon build
+host. Go is not a runtime dependency. The script verifies archive checksums and
+writes `helper-build.json` with source and binary identities. The
+[native qualification suite](../e2e/native/README.md) exercises supervision,
+authentication, actual S3 operations, disk-full behavior and cold restore.
+These engineering archives still need a stable release channel and separate
+power-loss qualification before public durability or installer claims.

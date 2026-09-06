@@ -251,6 +251,12 @@ resources; incomplete cleanup survives restart; migrations never discard data.
 
 ### P03 — Run the local storage cell and qualify supervision
 
+**Implementation:** [native cell architecture](../architecture/native-cell.md),
+[setup and qualification](../../e2e/native/README.md), and
+[platform PR #6](https://github.com/supabricks/platform/pull/6).
+The qualified profile selects SeaweedFS's existing SQLite backend and HashiCorp
+Raft implementation; the original default helper archive is insufficient.
+
 **Changes:** `supervisor/`, `engine/`, private runtime templates, `e2e/native/`.
 
 The daemon owns desired state. Process Compose supplies execution, probes and

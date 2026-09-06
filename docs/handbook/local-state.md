@@ -1,9 +1,11 @@
-# Local state and operations (P02)
+# Local state and operations
 
-P02 adds a single-writer state daemon to `supabricks-local`. It persists local
-identity and intent and supplies a resumable worker protocol. Engine execution,
-process supervision and usable database commands follow in P03/P04. The daemon
-reports `engine_execution: false`; a queued creation is not a running database.
+P02 added a single-writer state daemon to `supabricks-local`, with durable local
+identity, intent and a resumable worker protocol. P03 connects that journal to the
+[native storage cell](../architecture/native-cell.md). An unconfigured daemon
+still reports `engine_execution: false` and only queues intent. Use the
+[native setup instructions](../../e2e/native/README.md) to enable engine execution.
+Public database/branch commands and explicit-LSN child branching follow in P04/P05.
 
 From the repository root:
 
@@ -66,12 +68,12 @@ step is retried. P02 does not provide exactly-once external execution.
 A new suspend/delete intent increments the branch revision and supersedes pending
 older operations. Checkpoints from old revisions or owner generations are rejected.
 A replayed checkpoint is accepted only with the same result. Metadata fencing
-cannot stop an external process that is already running: P03 must inspect surviving
-process ownership before allowing a replacement writer.
+cannot stop an external process that is already running: the P03 supervisor adapter
+verifies surviving OS process ownership before allowing a replacement writer.
 
 The journal currently describes ensure-timeline/start-compute and
-stop-compute/delete-timeline effects. These are worker contracts, not engine
-implementations. Parent branch references are persisted; P04 must resolve and
+stop-compute/delete-timeline effects. The native adapter executes these effects
+for root timelines. Parent branch references are persisted; P04 must resolve and
 record a safe branch boundary before executing a child timeline creation.
 Lifecycle revisions fence runtime changes; a display-name rename does not
 invalidate work in progress.
@@ -87,13 +89,15 @@ Active work leases block suspend/delete; expired leases cannot be renewed.
 Embedded migrations run together in one transaction using SQLite `user_version`.
 Version 1 contains projects, branches, endpoints/ports, credentials, checkout
 selections and the operation journal. Version 2 adds process evidence, epochs,
-table mappings and work leases. A newer schema is rejected without resetting data;
+table mappings and work leases. Version 3 adds native process evidence for shared
+storage services and their supervisor, alongside endpoint process records.
+A newer schema is rejected without resetting data;
 a failed migration rolls back all its changes, including the version marker.
 
 Process records include endpoint, role, owner generation, resource revision, PID,
 process group and OS start identity. Recording a replacement cannot overwrite old
-evidence. Removing a record requires matching its complete identity; P03 is
-responsible for verifying that exact OS process has stopped. A shutdown checkpoint
+evidence. Removing a record requires matching its complete identity; the native
+adapter also verifies that its entire OS process group has stopped. A shutdown checkpoint
 is refused while its endpoint still has process records.
 
 Epoch IDs, source LSNs and table mappings are immutable metadata. They do not mean
@@ -108,7 +112,9 @@ and metadata garbage collection are later work.
 `control.sock` accepts one newline-terminated JSON request per connection, up to
 64 KiB, with a two-second read/write timeout. This is a same-user engineering API,
 not the public CLI/MCP contract. It exposes registration, intent submission,
-operation/branch inspection, rename, checkout selection and shutdown. Workers
+operation/branch inspection, rename, checkout selection and shutdown. Native
+children also use a private launch-authorization request; their identity commits
+before they receive permission to execute. Workers
 cannot acknowledge effects through the socket; checkpointing is an internal API.
 
 For example, while the daemon runs:
@@ -138,5 +144,7 @@ race daemon startup, send eight simultaneous duplicate requests, kill/restart th
 daemon, and check migration rollback, stale workers, leases, process evidence,
 worktree isolation, credentials, port reservations and cleanup.
 
-These tests qualify the state/journal protocol. Neon process lifecycle, S3 durability
-and power-loss recovery still require the P03 native storage qualification suite.
+These tests qualify the state/journal protocol. The separate
+[native suite](../../e2e/native/README.md) covers real Neon processes, S3 operations,
+SQL authentication, crash recovery and cold restore; Linux CI also injects actual
+ENOSPC on a bounded filesystem. These are not power-loss guarantees.
