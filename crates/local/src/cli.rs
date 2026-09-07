@@ -260,19 +260,9 @@ pub fn run() -> Result<u8> {
                 println!("{session}");
                 return Ok(7);
             }
-            let config: Value =
-                serde_json::from_slice(&std::fs::read(root.join("analytics.json"))?)?;
-            let worker = PathBuf::from(
-                config["worker"]
-                    .as_str()
-                    .ok_or_else(|| invalid("missing worker path"))?,
-            )
-            .with_file_name("shell.py");
-            let mut cmd = std::process::Command::new(
-                config["python"]
-                    .as_str()
-                    .ok_or_else(|| invalid("missing Python path"))?,
-            );
+            let (python, exporter) = crate::installation::analytical_worker(&root)?;
+            let worker = exporter.with_file_name("shell.py");
+            let mut cmd = std::process::Command::new(python);
             cmd.arg(worker)
                 .arg("--endpoint")
                 .arg(session["endpoint"].as_str().unwrap())
@@ -287,7 +277,7 @@ pub fn run() -> Result<u8> {
             }
             Ok(cmd.status()?.code().unwrap_or(1).clamp(0, 255) as u8)
         })();
-        let cleanup = c.call(Action::AnalyticsClose { id });
+        let cleanup = close_analytics(&c, id);
         return match result {
             Ok(code) => {
                 cleanup?;
@@ -344,7 +334,7 @@ pub fn run() -> Result<u8> {
             Ok(if result["state"] == "complete" { 0 } else { 7 })
         })();
         if owned {
-            let cleanup = c.call(Action::AnalyticsClose { id });
+            let cleanup = close_analytics(&c, id);
             if result.is_ok() {
                 cleanup?;
             }
@@ -354,9 +344,9 @@ pub fn run() -> Result<u8> {
     let wait = a.flag("--wait");
     if wait
         && !(command == "analytics"
-            && a.pos
-                .get(1)
-                .is_some_and(|v| matches!(v.as_str(), "refresh" | "open")))
+            && a.pos.get(1).is_some_and(|v| {
+                matches!(v.as_str(), "refresh" | "open" | "close" | "cancel-session")
+            }))
         && !(matches!(command.as_str(), "database" | "branch")
             && a.pos.get(1).is_some_and(|v| {
                 matches!(
@@ -737,7 +727,7 @@ pub fn run() -> Result<u8> {
     let result = c.call(action)?;
     if wait && command == "analytics" {
         let id = serde_json::from_value(result["id"].clone())?;
-        let action = if a.pos[1] == "open" {
+        let action = if matches!(a.pos[1].as_str(), "open" | "close" | "cancel-session") {
             Action::AnalyticsSession { id }
         } else {
             Action::AnalyticsStatus { id }
@@ -745,7 +735,10 @@ pub fn run() -> Result<u8> {
         let result = wait_analytics(&c, action, 600000)?;
         println!("{result}");
         return Ok(
-            if matches!(result["state"].as_str(), Some("ready" | "published")) {
+            if matches!(
+                result["state"].as_str(),
+                Some("ready" | "published" | "closed")
+            ) {
                 0
             } else {
                 7
@@ -808,6 +801,17 @@ fn sql_argument(a: &mut Args) -> Result<String> {
         _ => Err(invalid("provide exactly one of --sql or --file")),
     }
 }
+fn close_analytics(c: &Client, id: OperationId) -> Result<()> {
+    c.call(Action::AnalyticsClose { id })?;
+    // Auto-owned CLI sessions must release admission before the next command.
+    // The API remains asynchronous and retains its reference until worker death.
+    let result = wait_analytics(c, Action::AnalyticsSession { id }, 60000)?;
+    if !matches!(result["state"].as_str(), Some("closed" | "failed")) {
+        return Err(invalid("analytical session cleanup has not completed"));
+    }
+    Ok(())
+}
+
 fn wait_analytics(c: &Client, action: Action, timeout_ms: u64) -> Result<Value> {
     let deadline = Instant::now() + Duration::from_millis(timeout_ms);
     let mut previous = String::new();

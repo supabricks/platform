@@ -39,6 +39,12 @@ stopped installation is relocated. It rejects custom configuration rather than
 silently accepting settings it would ignore. Existing R01 data-root identity
 checks still reject switching release versions; R02 does not introduce upgrades.
 
+CLI SQL and Spark shell now wait for their automatically owned session to close
+before returning. This prevents consecutive commands from exhausting the two
+worker slots while previous workers are still shutting down. Explicit
+`analytics close ID --wait` and `cancel-session ID --wait` provide the same
+completion boundary; the underlying API remains asynchronous.
+
 ## Qualification
 
 `install/native/qualify.py --benchmarks` drives the real signed curl-to-Bash

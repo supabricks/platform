@@ -214,7 +214,7 @@ def qualify(args):
             cli('analytics', 'refresh', '--branch', 'main', '--wait')
         assert analytics('SELECT sum(total_cents) FROM public.orders', session=first['id'])['rows'] == [['1299']]
         assert analytics('SELECT sum(total_cents) FROM public.orders')['rows'] == [['2599']]
-        cli('analytics', 'close', first['id'])
+        cli('analytics', 'close', first['id'], '--wait')
         script = workspace / 'dataframe.py'
         script.write_text("assert spark.table('public.orders').first().total_cents == 2599\nassert epoch['epoch_id']\n")
         run([binary, 'spark', 'shell', '--branch', 'main', '--file', script, '--project', project], env=env)
