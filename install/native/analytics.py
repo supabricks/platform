@@ -28,6 +28,22 @@ def fetch(url, sha256, path):
         raise ValueError('analytical build input checksum mismatch: ' + path.name)
 
 
+def macho_dependencies(load_commands):
+    # LC_ID_DYLIB identifies the object itself; only load commands and rpaths
+    # participate in finding dependencies. otool -L also prints IDs and fat
+    # binary section headings, which must not be mistaken for library loads.
+    commands = {'LC_LOAD_DYLIB', 'LC_LOAD_WEAK_DYLIB', 'LC_REEXPORT_DYLIB',
+                'LC_LOAD_UPWARD_DYLIB', 'LC_LAZY_LOAD_DYLIB', 'LC_RPATH'}
+    current = None
+    for line in load_commands.splitlines():
+        command = re.match(r'\s*cmd (LC_\w+)$', line)
+        if command:
+            current = command[1]
+        value = re.match(r'\s*(?:name|path) (.*?) \(offset [0-9]+\)', line)
+        if current in commands and value:
+            yield value[1]
+
+
 def check_loaders(runtime, destination, target):
     inspected = 0
     copied = {}
@@ -66,13 +82,10 @@ def check_loaders(runtime, destination, target):
                         shutil.copy2(notice, notices / (match[1] + '.txt'))
             inspected += 1
         elif target == 'macos-arm64' and magic in (b'\xcf\xfa\xed\xfe', b'\xca\xfe\xba\xbe'):
-            listing = subprocess.check_output(['otool', '-L', str(path)], text=True)
-            for line in listing.splitlines()[1:]:
-                if line.rstrip().endswith(':'):
-                    continue  # otool repeats the filename for each universal-binary architecture.
-                dependency = line.strip().split(' (', 1)[0]
+            listing = subprocess.check_output(['otool', '-l', str(path)], text=True)
+            for dependency in macho_dependencies(listing):
                 if dependency.startswith('/') and not dependency.startswith(('/usr/lib/', '/System/Library/')):
-                    raise ValueError('analytical library outside release: ' + dependency)
+                    raise ValueError('analytical dependency outside release: ' + str(path) + ': ' + dependency)
             inspected += 1
     if target == 'linux-x86_64':
         allowed = {'libc.so.6', 'libm.so.6', 'libpthread.so.0', 'libdl.so.2', 'librt.so.1', 'libutil.so.1', 'libresolv.so.2'}

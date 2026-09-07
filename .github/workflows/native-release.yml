@@ -60,7 +60,9 @@ jobs:
           python components/prepare-native-cell.py ${{ matrix.target }} build/native --offline-runtime --engine-archive build/engine-archive/supabricks-engine-${{ matrix.target }}.tar.gz
       - run: cargo build --locked --release -p supabricks-local
       - name: Installer signature, corruption, traversal and repeat-install contracts
-        run: python install/native/test_installer.py
+        run: |
+          python install/native/test_installer.py
+          python install/native/test_analytics.py
       - name: Assemble exact native release
         run: |
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
