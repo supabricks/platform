@@ -1,4 +1,4 @@
-# Native cell and branch qualification (P03/P04)
+# Native cell and branch qualification (P03/P04/P05)
 
 This suite runs the real Rust daemon, authenticated Process Compose, one broker,
 one safekeeper, a directly attached pageserver, native PG17.8 computes and
@@ -68,3 +68,21 @@ credentials; raw roots remain private. These tests do not establish power-loss
 safety or a supported backup product.
 
 See [the branch API and recovery contract](../../docs/architecture/native-branches.md).
+
+P05 adds real client-driver qualification:
+
+```sh
+npm ci --prefix e2e/native/drivers --no-audit --no-fund
+python3 e2e/native/connections.py --binary target/debug/supabricks \
+  --bundle /path/to/engine --helpers /tmp/sb-helpers --report native-connections.json
+```
+
+The Python requirements above include psycopg. Node `pg` and `pg-copy-streams`
+are locked in `drivers/package-lock.json`; Node and these packages are test
+prerequisites, not runtime dependencies. The isolated `/tmp/sb-p05-*` suite covers
+psql/Python/Node authentication, transactions, prepared queries, COPY and
+cancellation; 24 simultaneous wakes; connection-limit overflow; idle pools,
+compute loss, TTL and internal leases; accepts racing suspension; owner loss
+before/after the terminate receipt; persisted-port conflicts; startup timeout
+and disconnect; and certificate-verified TLS across fresh-directory wake. The
+workflow runs all three native suites on both supported architectures.

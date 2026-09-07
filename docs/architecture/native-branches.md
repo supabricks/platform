@@ -28,9 +28,10 @@ ID. Poll `{"method":"operation","id":"<operation UUID>"}` until `succeeded`,
 | `set_default` | `branch_id` | Designate a live branch without a TTL as project default |
 | `force_delete` | `branch_id`, `expected_revision` | Explicitly cancel work leases and permit deleting the default |
 
-`ports` supplies distinct available loopback `sql`, `external_http` and
-`internal_http` ports. Storage ports cannot be reused. Port selection and stable
-connection routing will move behind the public interface in P05/P06. The legacy
+`ports` supplies distinct available private compute `sql`, `external_http` and
+`internal_http` ports. Storage and public listener ports cannot be reused.
+[P05](native-connections.md) allocates the stable public branch listener;
+compute port selection will move behind the public interface in P06. The legacy
 `create_branch` request remains compatible; root branches made with it do not
 implicitly become defaults.
 
@@ -44,10 +45,11 @@ WAL position.
 
 Read requests use `project_id`: `list_branches` (optional `include_deleted`),
 `get_branch` with `id`, and `connection` with `id`. Connection results include
-`host`, `port`, `database`, `username` and `password`, and are returned only for a
-live, configured running compute accepting work. They contain secrets and must
-not be logged. P04 connects directly to the compute; stable addresses and wake on
-connection belong to P05.
+`host`, `port`, `database`, `username`, `password`, and (since P05) an ordinary
+PostgreSQL `uri`. These fields contain secrets and must not be logged. P05 returns
+the persisted listener for running or suspended branches accepting work; opening
+a connection acquires a lease and wakes compute as necessary. See the
+[connection contract](native-connections.md).
 
 `acquire_lease` takes `project_id`, `branch_id`, `holder`, `ttl_ms`.
 `renew_lease` takes `project_id`, the returned `lease`, and `ttl_ms`;

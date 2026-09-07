@@ -35,6 +35,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix e2e/native/drivers --no-audit --no-fund
       - uses: actions/setup-go@v5
         if: runner.os == 'macOS'
         with:
@@ -57,6 +61,8 @@ jobs:
         run: python e2e/native/cell.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-cell.json ${{ matrix.fault_flags }}
       - name: Branches, credentials, TTL and interrupted cleanup
         run: python e2e/native/branches.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-branches.json
+      - name: Stable connections, real drivers and wake/suspend races
+        run: python e2e/native/connections.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-connections.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -66,4 +72,6 @@ jobs:
             native-cell.log
             native-branches.json
             native-branches.log
+            native-connections.json
+            native-connections.log
             build/native/helper-build.json

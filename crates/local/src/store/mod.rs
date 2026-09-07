@@ -1,4 +1,5 @@
 mod branches;
+mod connections;
 pub(crate) mod error;
 mod journal;
 mod migrations;
@@ -39,6 +40,8 @@ pub struct BranchRecord {
     pub expired: bool,
     pub is_default: bool,
     pub timeline_created: bool,
+    pub suspend_lsn: Option<supabricks_core::lsn::Lsn>,
+    pub suspend_revision: Option<i64>,
 }
 // Deliberately no Debug/Serialize: callers must consciously handle credentials.
 pub struct ConnectionTarget {
@@ -281,6 +284,8 @@ fn branch(db: &Connection, id: BranchId) -> Result<BranchRecord> {
         ports,
         expires_at_ms: db.query_row("SELECT expires_at_ms FROM branches WHERE id=?1", [id.to_string()], |r| r.get(0))?,
         expired: db.query_row("SELECT expired OR (expires_at_ms IS NOT NULL AND expires_at_ms<=?2) FROM branches WHERE id=?1", params![id.to_string(),now_ms()?], |r| r.get(0))?,
+        suspend_lsn: db.query_row("SELECT suspend_lsn FROM branches WHERE id=?1",[id.to_string()],|r|r.get::<_,Option<String>>(0))?.as_deref().map(parse).transpose()?,
+        suspend_revision: db.query_row("SELECT suspend_revision FROM branches WHERE id=?1",[id.to_string()],|r|r.get(0))?,
         timeline_created: db.query_row("SELECT timeline_created FROM branches WHERE id=?1",[id.to_string()],|r|r.get(0))?,
         is_default: db.prepare("SELECT 1 FROM project_defaults WHERE branch_id=?1")?.exists([id.to_string()])?,
     })

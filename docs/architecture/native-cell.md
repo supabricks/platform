@@ -6,7 +6,8 @@ IDs without returning credentials. `down` stops the entire cell; when the daemon
 has died, it acquires the data-root lock and reconciles surviving processes directly.
 The engineering control socket still accepts P02 project and operation requests.
 [P04](native-branches.md) adds native database and head/LSN/time branch operations.
-The stable connection gateway follows in P05 and public CLI/MCP commands in P06.
+[P05](native-connections.md) supplies stable connection addresses and wake on
+connection. Public CLI/MCP commands follow in P06.
 
 ## Process ownership
 

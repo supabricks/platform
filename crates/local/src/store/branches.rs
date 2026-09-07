@@ -146,7 +146,7 @@ impl Store {
             if b.revision == revision && b.endpoint.desired_state == DesiredState::Running {
                 // Existing protected work may defer restoration. Never override
                 // a later explicit lifecycle decision with a stale internal wake.
-                if !self.leases(id)?.is_empty() {
+                if !self.leases(id)?.is_empty() || self.connection_count(id)? > 0 {
                     continue;
                 }
                 self.submit(
@@ -263,6 +263,10 @@ mod tests {
         while let Some(t) = s.ticket(id).unwrap() {
             if t.step == Step::CaptureBranchPoint {
                 s.pin_lsn(&t, "0/2000".parse().unwrap()).unwrap();
+            }
+            if t.step == Step::CaptureSuspend {
+                s.capture_suspend_lsn(&t, "0/2000".parse().unwrap())
+                    .unwrap();
             }
             s.checkpoint(&t, json!({"effect":t.idempotency_key()}))
                 .unwrap();

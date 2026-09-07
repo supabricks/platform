@@ -41,6 +41,11 @@ fn finish(store: &mut Store, id: OperationId) {
         // transaction. Production workers never open this connection.
         let db = rusqlite::Connection::open(store.root().join("state.sqlite3")).unwrap();
         db.execute_batch("BEGIN IMMEDIATE; ROLLBACK;").unwrap();
+        if ticket.step == supabricks_local::operations::Step::CaptureSuspend {
+            store
+                .capture_suspend_lsn(&ticket, "0/2000".parse().unwrap())
+                .unwrap();
+        }
         let result = json!({"key":ticket.idempotency_key()});
         store.checkpoint(&ticket, result.clone()).unwrap();
         store.checkpoint(&ticket, result).unwrap();
@@ -196,6 +201,11 @@ fn stale_workers_cannot_revive_a_suspended_or_deleted_branch() {
     let mut wrong = ticket.clone();
     wrong.step_index += 1;
     assert!(store.checkpoint(&wrong, json!({})).is_err());
+    if ticket.step == supabricks_local::operations::Step::CaptureSuspend {
+        store
+            .capture_suspend_lsn(&ticket, "0/2000".parse().unwrap())
+            .unwrap();
+    }
     store.checkpoint(&ticket, json!({"stopped":true})).unwrap();
     assert!(store.checkpoint(&ticket, json!({"stopped":false})).is_err());
     assert!(
@@ -288,6 +298,12 @@ fn epochs_leases_and_process_evidence_are_retained_and_fenced() {
     let suspend = store.submit(project.id, "suspend", suspend).unwrap();
     let ticket = store.ticket(suspend.id).unwrap().unwrap();
     assert!(store.checkpoint(&ticket, json!({})).is_err());
+    store
+        .capture_suspend_lsn(&ticket, "0/2000".parse().unwrap())
+        .unwrap();
+    store.checkpoint(&ticket, json!({})).unwrap();
+    let stop = store.ticket(suspend.id).unwrap().unwrap();
+    assert!(store.checkpoint(&stop, json!({})).is_err());
     let mut wrong = process.clone();
     wrong.start_identity = "reused pid".into();
     assert!(store.forget_process(&wrong).is_err());

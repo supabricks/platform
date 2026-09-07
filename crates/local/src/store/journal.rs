@@ -138,6 +138,11 @@ impl Store {
                         "incomplete child branch must finish creation or be deleted",
                     ));
                 }
+                if desired == DesiredState::Running && record.observed_revision != record.revision {
+                    return Err(conflict(
+                        "wait for the current lifecycle operation before requesting running state",
+                    ));
+                }
                 if desired == DesiredState::Running && record.expired {
                     return Err(conflict("expired branch is draining"));
                 }
@@ -155,7 +160,7 @@ impl Store {
                 if !forced
                     && desired != DesiredState::Running
                     && tx
-                        .prepare("SELECT 1 FROM leases WHERE branch_id=?1 AND expires_at_ms>?2")?
+                        .prepare("SELECT 1 FROM leases WHERE branch_id=?1 AND expires_at_ms>?2 UNION ALL SELECT 1 FROM connection_leases WHERE branch_id=?1")?
                         .exists(params![branch_id.to_string(), now_ms()?])?
                 {
                     return Err(conflict("branch has active work leases"));
@@ -163,36 +168,53 @@ impl Store {
                 if desired == DesiredState::Deleted && tx.prepare("SELECT 1 FROM branches WHERE parent_id=?1 AND (desired!='deleted' OR observed_revision!=revision)")?.exists([branch_id.to_string()])? {
                     return Err(conflict("delete child branches before their parent"));
                 }
-                let revision = record
-                    .revision
-                    .checked_add(1)
-                    .ok_or_else(|| conflict("resource revision exhausted"))?;
-                if forced {
+                if desired == DesiredState::Running
+                    && record.endpoint.desired_state == DesiredState::Running
+                {
+                    (*branch_id, record.revision, vec![])
+                } else {
+                    let revision = record
+                        .revision
+                        .checked_add(1)
+                        .ok_or_else(|| conflict("resource revision exhausted"))?;
+                    if forced {
+                        tx.execute(
+                            "DELETE FROM leases WHERE branch_id=?1",
+                            [branch_id.to_string()],
+                        )?;
+                        tx.execute(
+                            "DELETE FROM project_defaults WHERE branch_id=?1",
+                            [branch_id.to_string()],
+                        )?;
+                    }
+                    let state = serde_json::to_value(desired)?;
                     tx.execute(
-                        "DELETE FROM leases WHERE branch_id=?1",
-                        [branch_id.to_string()],
+                        "UPDATE branches SET desired=?1,revision=?2 WHERE id=?3",
+                        params![state.as_str(), revision, branch_id.to_string()],
                     )?;
-                    tx.execute(
-                        "DELETE FROM project_defaults WHERE branch_id=?1",
-                        [branch_id.to_string()],
-                    )?;
+                    tx.execute("UPDATE operations SET status='superseded' WHERE branch_id=?1 AND status='pending'", [branch_id.to_string()])?;
+                    let steps = match desired {
+                        DesiredState::Running => {
+                            let mut steps = vec![Step::EnsureTimeline, Step::StartCompute];
+                            // A branch suspended by P04 retained its compute directory.
+                            if record.endpoint.desired_state == DesiredState::Suspended
+                                && record.suspend_revision != Some(record.revision)
+                            {
+                                steps.insert(0, Step::RetireCompute);
+                            }
+                            steps
+                        }
+                        DesiredState::Suspended => {
+                            vec![Step::CaptureSuspend, Step::StopCompute, Step::RetireCompute]
+                        }
+                        DesiredState::Deleted => vec![
+                            Step::StopCompute,
+                            Step::DeleteTimeline,
+                            Step::DeleteLocalFiles,
+                        ],
+                    };
+                    (*branch_id, revision, steps)
                 }
-                let state = serde_json::to_value(desired)?;
-                tx.execute(
-                    "UPDATE branches SET desired=?1,revision=?2 WHERE id=?3",
-                    params![state.as_str(), revision, branch_id.to_string()],
-                )?;
-                tx.execute("UPDATE operations SET status='superseded' WHERE branch_id=?1 AND status='pending'", [branch_id.to_string()])?;
-                let steps = match desired {
-                    DesiredState::Running => vec![Step::EnsureTimeline, Step::StartCompute],
-                    DesiredState::Suspended => vec![Step::StopCompute],
-                    DesiredState::Deleted => vec![
-                        Step::StopCompute,
-                        Step::DeleteTimeline,
-                        Step::DeleteLocalFiles,
-                    ],
-                };
-                (*branch_id, revision, steps)
             }
         };
         let id = OperationId::new();
@@ -272,6 +294,10 @@ impl Store {
         if ticket.step_index != op.next_step || op.status != Status::Pending {
             return Err(conflict("checkpoint is out of order"));
         }
+        if ticket.step == Step::CaptureSuspend && record.timeline_created
+            && !tx.prepare("SELECT 1 FROM branches WHERE id=?1 AND suspend_revision=?2 AND suspend_lsn IS NOT NULL")?.exists(params![record.branch.id.to_string(),record.revision])? {
+            return Err(conflict("suspension boundary must be persisted before checkpoint"));
+        }
         if ticket.step == Step::EnsureTimeline {
             tx.execute(
                 "UPDATE branches SET timeline_created=1 WHERE id=?1",
@@ -285,7 +311,7 @@ impl Store {
         )?;
         if matches!(
             ticket.step,
-            Step::StopCompute | Step::DeleteTimeline | Step::DeleteLocalFiles
+            Step::StopCompute | Step::RetireCompute | Step::DeleteTimeline | Step::DeleteLocalFiles
         ) && tx
             .prepare("SELECT 1 FROM processes WHERE endpoint_id=?1")?
             .exists([record.endpoint.id.to_string()])?
@@ -331,6 +357,10 @@ impl Store {
                 tx.execute(
                     "DELETE FROM app_credentials WHERE endpoint_id=?1",
                     [record.endpoint.id.to_string()],
+                )?;
+                tx.execute(
+                    "DELETE FROM connection_endpoints WHERE branch_id=?1",
+                    [op.branch_id.to_string()],
                 )?;
                 tx.execute(
                     "DELETE FROM worktrees WHERE branch_id=?1",
@@ -413,6 +443,16 @@ fn create_branch(
         if parent.revision != parent.observed_revision {
             return Err(conflict("parent operation has not converged"));
         }
+    }
+    if [ports.sql, ports.external_http, ports.internal_http]
+        .iter()
+        .any(|p| {
+            tx.prepare("SELECT 1 FROM connection_endpoints WHERE port=?1")
+                .and_then(|mut q| q.exists([p]))
+                .unwrap_or(true)
+        })
+    {
+        return Err(conflict("compute port is reserved for a branch listener"));
     }
     let id = BranchId::new();
     let endpoint = EndpointId::new();
