@@ -396,6 +396,8 @@ impl Store {
           AND NOT EXISTS(SELECT 1 FROM snapshot_heads h WHERE h.epoch_id=r.epoch_id)
           AND NOT EXISTS(SELECT 1 FROM snapshot_leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)
           AND NOT EXISTS(SELECT 1 FROM leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)
+          AND NOT EXISTS(SELECT 1 FROM analytical_sessions a WHERE a.epoch_id=r.epoch_id AND a.state IN ('waiting','starting','ready','closing'))
+          AND NOT EXISTS(SELECT 1 FROM analytical_sessions a JOIN publications p ON p.export_id=a.refresh_id WHERE p.epoch_id=r.epoch_id AND a.state='waiting')
           LIMIT 256")?.query_map(params![branch.to_string(),keep as i64,now_ms()?],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
         let mut selected: Vec<EpochId> = Vec::new();
         for (id, export) in rows {

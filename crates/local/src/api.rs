@@ -36,6 +36,48 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    AnalyticsRefresh {
+        branch: String,
+        key: String,
+        #[serde(default)]
+        limits: crate::store::ExportLimits,
+    },
+    AnalyticsStatus {
+        id: OperationId,
+    },
+    AnalyticsCancelRefresh {
+        id: OperationId,
+    },
+    AnalyticsOpen {
+        branch: Option<String>,
+        epoch: Option<EpochId>,
+        key: String,
+        #[serde(default = "session_ttl")]
+        ttl_ms: u64,
+    },
+    AnalyticsSession {
+        id: OperationId,
+    },
+    AnalyticsClose {
+        id: OperationId,
+    },
+    AnalyticsSql {
+        id: OperationId,
+        sql: String,
+        #[serde(default = "rows")]
+        max_rows: usize,
+        #[serde(default = "analytical_bytes")]
+        max_bytes: usize,
+        #[serde(default = "timeout")]
+        timeout_ms: u64,
+    },
+    AnalyticsQuery {
+        id: OperationId,
+        query: OperationId,
+    },
+    AnalyticsCancel {
+        id: OperationId,
+    },
     PublishExport {
         id: OperationId,
     },
@@ -160,6 +202,12 @@ pub enum Action {
         timeout_ms: u64,
     },
 }
+fn session_ttl() -> u64 {
+    900_000
+}
+fn analytical_bytes() -> usize {
+    262144
+}
 fn required_nullable<'de, D: serde::Deserializer<'de>>(
     d: D,
 ) -> std::result::Result<Option<i64>, D::Error> {
@@ -180,8 +228,8 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":false,"unpublished_exports":true,"atomic_snapshots":true},
-        "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"active_branches":32,"connections":256,"connections_per_branch":64},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true},
+        "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"analytical_sessions":2,"analytical_session_ttl_ms":3600000,"analytical_sql_rows":1000,"analytical_sql_result_bytes":262144,"analytical_sql_timeout_ms":30000,"active_branches":32,"connections":256,"connections_per_branch":64},
         "sql":{"read_only_default":true,"statements_per_call":1,"values":"PostgreSQL text or null","writes":"explicit read_only=false; no automatic retry"}})
 }
 pub(crate) fn resolve(store: &Store, binding: &Binding, target: Option<&str>) -> Result<BranchId> {
@@ -213,6 +261,62 @@ pub(crate) fn handle(
     let project = binding.project_id;
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
+        Action::AnalyticsRefresh {
+            branch,
+            key,
+            limits,
+        } => return crate::sessions::Sessions::refresh(store, cell, binding, branch, key, limits),
+        Action::AnalyticsStatus { id } => return store.refresh_status(project, id),
+        Action::AnalyticsCancelRefresh { id } => {
+            return crate::sessions::Sessions::cancel_refresh(store, project, id);
+        }
+        Action::AnalyticsOpen {
+            branch,
+            epoch,
+            key,
+            ttl_ms,
+        } => {
+            return crate::sessions::Sessions::open(
+                store, cell, binding, branch, epoch, key, ttl_ms,
+            );
+        }
+        Action::AnalyticsSession { id } => {
+            let session = store.analytical_session(project, id)?;
+            let observed = session
+                .metadata
+                .as_ref()
+                .and_then(|m| m["observed_at_ms"].as_i64());
+            let mut value = json!(session);
+            value["snapshot_age_ms"] =
+                json!(observed.map(|t| (chrono::Utc::now().timestamp_millis() - t).max(0)));
+            return Ok(value);
+        }
+        Action::AnalyticsClose { id } => {
+            return Ok(json!(
+                store.close_analytical_session(project, id, "closed")?
+            ));
+        }
+        Action::AnalyticsCancel { id } => {
+            return Ok(json!(store.close_analytical_session(
+                project,
+                id,
+                "cancelled"
+            )?));
+        }
+        Action::AnalyticsSql {
+            id,
+            sql,
+            max_rows,
+            max_bytes,
+            timeout_ms,
+        } => {
+            return crate::sessions::Sessions::query(
+                store, project, id, sql, max_rows, max_bytes, timeout_ms,
+            );
+        }
+        Action::AnalyticsQuery { id, query } => {
+            return crate::sessions::Sessions::query_status(store, project, id, query);
+        }
         Action::Capabilities => return Ok(capabilities(binding)),
         Action::PublishExport { id } => return Ok(json!(store.publish_export(project, id)?)),
         Action::GetPublication { id } => {

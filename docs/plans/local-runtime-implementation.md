@@ -458,6 +458,8 @@ unreferenced staging data; out-of-space errors preserve the previous snapshot.
 
 ### A03 — Sail sessions and the analytical user surface
 
+Implementation and commands: [A03 analytical sessions](../architecture/a03-analytical-sessions.md).
+
 **Changes:** worker bootstrap, session operations, CLI/MCP analytics methods.
 
 Create a bounded on-demand Sail worker/catalog per analytical session initially.

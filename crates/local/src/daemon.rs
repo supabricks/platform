@@ -104,6 +104,7 @@ pub enum Request {
 
 pub struct Daemon {
     publisher: crate::analytics::Publisher,
+    sessions: crate::sessions::Sessions,
     store: Store,
     listener: UnixListener,
     socket: PathBuf,
@@ -139,9 +140,11 @@ impl Daemon {
             .as_ref()
             .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
             .transpose()?;
+        let sessions = crate::sessions::Sessions::recover(&mut store)?;
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
             publisher,
+            sessions,
             queries: Vec::new(),
             gateway,
             validator,
@@ -181,17 +184,36 @@ impl Daemon {
             }
             if std::time::Instant::now() >= next_tick {
                 if !stopping {
+                    self.sessions.last_error = self
+                        .sessions
+                        .tick(&mut self.store)
+                        .err()
+                        .map(|e| e.to_string());
                     self.publisher.last_error = self
                         .publisher
                         .tick(&mut self.store)
                         .err()
                         .map(|e| e.to_string());
                 }
+                let analytical_stopped = if stopping {
+                    match self.sessions.stop(&mut self.store) {
+                        Ok(()) => {
+                            self.sessions.last_error = None;
+                            true
+                        }
+                        Err(error) => {
+                            self.sessions.last_error = Some(error.to_string());
+                            false
+                        }
+                    }
+                } else {
+                    true
+                };
                 if let Some(validator) = &self.validator {
                     validator.refresh(&self.store)?;
                 }
                 if let Some(cell) = &mut self.cell {
-                    if stopping {
+                    if stopping && analytical_stopped {
                         match cell.stop(&mut self.store) {
                             Ok(true) => return Ok(()),
                             Ok(false) => cell.last_error = None,
@@ -206,13 +228,13 @@ impl Daemon {
                                 cell.last_error = Some(detail);
                             }
                         }
-                    } else {
+                    } else if !stopping {
                         match cell.tick(&mut self.store) {
                             Ok(()) => cell.last_error = None,
                             Err(e) => cell.last_error = Some(e.to_string()),
                         }
                     }
-                } else if stopping {
+                } else if stopping && analytical_stopped {
                     return Ok(());
                 }
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
@@ -332,7 +354,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;

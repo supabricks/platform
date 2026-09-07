@@ -76,6 +76,14 @@ See the [delta-rs filesystem API](https://delta-io.github.io/delta-rs/api/delta_
 for custom filesystem semantics; the observation does not establish the root
 cause of every upstream shutdown report.
 
+## Managed sessions
+
+[A03 analytical sessions](../../docs/architecture/a03-analytical-sessions.md) use
+`session.py` and `shell.py` alongside the configured A01 exporter. The A03 native
+suite found lossy decimal min/max statistics in delta-rs 1.6.3 that the earlier
+multi-row A00 fixture did not expose. New exports disable column statistics;
+older decimal epochs with those statistics require a refresh before Sail access.
+
 ## Evidence and measurement boundaries
 
 Recorded passing reports for both native targets are in [`evidence/`](evidence/README.md).

@@ -11,6 +11,7 @@ pub mod operations;
 pub mod project;
 mod query;
 mod runtime_cli;
+pub mod sessions;
 pub mod store;
 pub mod supervisor;
 use std::{net::SocketAddr, path::Path};

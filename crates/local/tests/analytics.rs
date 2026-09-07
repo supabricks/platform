@@ -638,3 +638,270 @@ fn stopped_analytical_bundle_keeps_identity_pointers_and_leases_when_copied() {
     fs::remove_file(restored.join("state.sqlite3")).unwrap();
     assert!(Store::open(&restored).is_err());
 }
+
+#[test]
+fn analytical_session_references_survive_expiry_and_closing_until_verified_recovery() {
+    use supabricks_local::sessions::Sessions;
+    let root = root();
+    let path = root.path().join("state");
+    let mut store = Store::open(&path).unwrap();
+    let (project, branch) = parent(&mut store);
+    let mut publisher = Publisher::recover(&mut store).unwrap();
+    let a = complete_export(&mut store, project, branch, 31);
+    let first = publish(&mut store, &mut publisher, project, a);
+    let request = json!({"branch":branch,"ttl_ms":10000});
+    let session = store
+        .admit_analytical_session(
+            project,
+            branch,
+            "reader",
+            request.clone(),
+            Some(first),
+            None,
+            10000,
+        )
+        .unwrap();
+    assert_eq!(
+        session.id,
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "reader",
+                request.clone(),
+                Some(first),
+                None,
+                10000
+            )
+            .unwrap()
+            .id
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "reader",
+                json!({}),
+                Some(first),
+                None,
+                10000
+            )
+            .is_err()
+    );
+    assert!(
+        store
+            .analytical_session(ProjectId::new(), session.id)
+            .is_err()
+    );
+    let b = complete_export(&mut store, project, branch, 32);
+    publish(&mut store, &mut publisher, project, b);
+    // Advance the durable session deadline without actually sleeping. The GC
+    // reference must not depend on clocks or an orphan worker renewing a lease.
+    let db = rusqlite::Connection::open(path.join("state.sqlite3")).unwrap();
+    db.execute("UPDATE analytical_sessions SET expires_at_ms=0", [])
+        .unwrap();
+    assert_eq!(
+        store.collect_snapshots(project, branch, 1).unwrap()["deleting"],
+        json!([])
+    );
+    store
+        .close_analytical_session(project, session.id, "cancelled")
+        .unwrap();
+    assert_eq!(
+        store.collect_snapshots(project, branch, 1).unwrap()["deleting"],
+        json!([])
+    );
+    drop(db);
+    drop(store);
+    let mut store = Store::open(&path).unwrap();
+    assert_eq!(
+        store.collect_snapshots(project, branch, 1).unwrap()["deleting"],
+        json!([])
+    );
+    // No native process was launched in this fixture. Recovery proves there is
+    // no surviving worker before making its reference collectible.
+    Sessions::recover(&mut store).unwrap();
+    assert_eq!(
+        store.analytical_session(project, session.id).unwrap().state,
+        "failed"
+    );
+    assert_eq!(
+        store.collect_snapshots(project, branch, 1).unwrap()["deleting"],
+        json!([first])
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "too-late",
+                json!({}),
+                Some(first),
+                None,
+                10000
+            )
+            .is_err()
+    );
+}
+
+#[test]
+fn analytical_session_admission_is_bounded_and_epoch_selection_is_project_scoped() {
+    let root = root();
+    let mut store = Store::open(&root.path().join("state")).unwrap();
+    let (project, branch) = parent(&mut store);
+    let mut publisher = Publisher::recover(&mut store).unwrap();
+    let a = complete_export(&mut store, project, branch, 41);
+    let epoch = publish(&mut store, &mut publisher, project, a);
+    assert!(
+        store
+            .admit_analytical_session(project, branch, "short", json!({}), Some(epoch), None, 1)
+            .is_err()
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "long",
+                json!({}),
+                Some(epoch),
+                None,
+                3600001
+            )
+            .is_err()
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                ProjectId::new(),
+                branch,
+                "other",
+                json!({}),
+                Some(epoch),
+                None,
+                60000
+            )
+            .is_err()
+    );
+    for key in ["one", "two"] {
+        store
+            .admit_analytical_session(project, branch, key, json!({}), Some(epoch), None, 60000)
+            .unwrap();
+    }
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "three",
+                json!({}),
+                Some(epoch),
+                None,
+                60000
+            )
+            .is_err()
+    );
+    let old = store
+        .session_for_key(project, "one", &json!({}))
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        store
+            .admit_analytical_session(project, branch, "one", json!({}), Some(epoch), None, 60000)
+            .unwrap()
+            .id,
+        old.id
+    );
+    assert!(
+        supabricks_local::sessions::Sessions::query(
+            &mut store,
+            project,
+            old.id,
+            "SELECT 1".into(),
+            1001,
+            262144,
+            10000
+        )
+        .is_err()
+    );
+    assert!(
+        supabricks_local::sessions::Sessions::query(
+            &mut store,
+            project,
+            old.id,
+            "SELECT 1".into(),
+            1,
+            262145,
+            10000
+        )
+        .is_err()
+    );
+    assert!(
+        supabricks_local::sessions::Sessions::query(
+            &mut store,
+            project,
+            old.id,
+            "SELECT 1".into(),
+            1,
+            262144,
+            30001
+        )
+        .is_err()
+    );
+    assert!(
+        supabricks_local::sessions::Sessions::query(
+            &mut store,
+            project,
+            old.id,
+            "SELECT 1".into(),
+            1,
+            262144,
+            10000
+        )
+        .is_err()
+    ); // not ready
+}
+
+#[test]
+fn refresh_status_distinguishes_standalone_exports_and_cancelled_refreshes() {
+    use supabricks_local::sessions::Sessions;
+    let root = root();
+    let path = root.path().join("state");
+    let mut store = Store::open(&path).unwrap();
+    let (project, branch) = parent(&mut store);
+    let mut publisher = Publisher::recover(&mut store).unwrap();
+    let a = complete_export(&mut store, project, branch, 51);
+    assert_eq!(
+        store.refresh_status(project, a).unwrap()["state"],
+        "complete"
+    );
+    let epoch = publish(&mut store, &mut publisher, project, a);
+    let b = complete_export(&mut store, project, branch, 52);
+    let db = rusqlite::Connection::open(path.join("state.sqlite3")).unwrap();
+    db.execute(
+        "INSERT INTO analytical_refreshes(export_id) VALUES (?1)",
+        [b.to_string()],
+    )
+    .unwrap();
+    assert_eq!(
+        store.refresh_status(project, b).unwrap()["state"],
+        "awaiting_publication"
+    );
+    let result = Sessions::cancel_refresh(&mut store, project, b).unwrap();
+    assert_eq!(result["state"], "cancelled");
+    assert_eq!(
+        Sessions::cancel_refresh(&mut store, project, b).unwrap()["state"],
+        "cancelled"
+    );
+    publisher.tick(&mut store).unwrap();
+    assert!(!path.join(format!("analytics/staging/{b}")).exists());
+    assert_eq!(
+        store
+            .current_snapshot(project, branch)
+            .unwrap()
+            .publication
+            .epoch_id,
+        epoch
+    );
+}
