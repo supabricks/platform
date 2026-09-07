@@ -85,6 +85,12 @@ print('PASS')
         assert types==[['True','9223372036854775807','héllo','2024-02-29','2024-02-29 12:34:56.123456','2024-02-29 07:34:56.123456'],[None]*6],types
         self.raw(first,1)
         self.checks.append(dict(name='first_access_sql_dataframe_and_epoch_discovery',status='PASS'))
+        cancelled=self.api('analytics_refresh',branch='main',key=str(uuid.uuid4()))
+        assert self.api('analytics_cancel_refresh',id=cancelled['id'])['state']=='cancelled'
+        self.terminal(cancelled['export'],'cancelled')
+        assert self.api('analytics_status',id=cancelled['id'])['state']=='cancelled'
+        assert self.api('current_snapshot',branch='main')['publication']['epoch_id']==first['epoch_id']
+        self.checks.append(dict(name='refresh_cancellation_preserves_published_snapshot',status='PASS'))
         slow=self.root/'slow-client.py';marker=self.root/'query-entered'
         slow.write_text(f"from pathlib import Path\nimport time\nfrom pyspark.sql import SparkSession\nspark=SparkSession.builder.remote({first['endpoint']!r}).getOrCreate()\ndef hold(value):\n Path({str(marker)!r}).write_text('executing')\n time.sleep(12)\n return value\nspark.udf.register('hold_epoch',hold,'int')\nassert [r.id for r in spark.sql('SELECT hold_epoch(id) AS id FROM public.orders').collect()]==[1]\nprint('PINNED_QUERY_PASS')\n")
         log=(self.root/'slow-client.log').open('w')

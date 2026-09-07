@@ -216,24 +216,25 @@ impl Store {
             }
             Err(e) => return Err(e),
         };
-        let error: Option<String> = self
+        let refresh: Option<Option<String>> = self
             .db
             .query_row(
                 "SELECT error FROM analytical_refreshes WHERE export_id=?1",
                 [id.to_string()],
                 |r| r.get(0),
             )
-            .optional()?
-            .flatten();
+            .optional()?;
+        let tracked = refresh.is_some();
+        let error = refresh.flatten();
         let state = publication.as_ref().map(|p| p.state.as_str()).unwrap_or(
-            if export.state == "complete" {
+            if export.state == "complete" && tracked {
                 "awaiting_publication"
             } else {
                 export.state.as_str()
             },
         );
         Ok(
-            json!({"id":id,"state":if error.is_some(){"failed"}else{state},"error":error,"export":export,"publication":publication}),
+            json!({"id":id,"state":if error.as_deref()==Some("cancelled"){"cancelled"}else if error.is_some(){"failed"}else{state},"error":error,"export":export,"publication":publication}),
         )
     }
 }

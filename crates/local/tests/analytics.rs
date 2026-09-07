@@ -862,3 +862,46 @@ fn analytical_session_admission_is_bounded_and_epoch_selection_is_project_scoped
         .is_err()
     ); // not ready
 }
+
+#[test]
+fn refresh_status_distinguishes_standalone_exports_and_cancelled_refreshes() {
+    use supabricks_local::sessions::Sessions;
+    let root = root();
+    let path = root.path().join("state");
+    let mut store = Store::open(&path).unwrap();
+    let (project, branch) = parent(&mut store);
+    let mut publisher = Publisher::recover(&mut store).unwrap();
+    let a = complete_export(&mut store, project, branch, 51);
+    assert_eq!(
+        store.refresh_status(project, a).unwrap()["state"],
+        "complete"
+    );
+    let epoch = publish(&mut store, &mut publisher, project, a);
+    let b = complete_export(&mut store, project, branch, 52);
+    let db = rusqlite::Connection::open(path.join("state.sqlite3")).unwrap();
+    db.execute(
+        "INSERT INTO analytical_refreshes(export_id) VALUES (?1)",
+        [b.to_string()],
+    )
+    .unwrap();
+    assert_eq!(
+        store.refresh_status(project, b).unwrap()["state"],
+        "awaiting_publication"
+    );
+    let result = Sessions::cancel_refresh(&mut store, project, b).unwrap();
+    assert_eq!(result["state"], "cancelled");
+    assert_eq!(
+        Sessions::cancel_refresh(&mut store, project, b).unwrap()["state"],
+        "cancelled"
+    );
+    publisher.tick(&mut store).unwrap();
+    assert!(!path.join(format!("analytics/staging/{b}")).exists());
+    assert_eq!(
+        store
+            .current_snapshot(project, branch)
+            .unwrap()
+            .publication
+            .epoch_id,
+        epoch
+    );
+}
