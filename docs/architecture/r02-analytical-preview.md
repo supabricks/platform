@@ -43,7 +43,9 @@ CLI SQL and Spark shell now wait for their automatically owned session to close
 before returning. This prevents consecutive commands from exhausting the two
 worker slots while previous workers are still shutting down. Explicit
 `analytics close ID --wait` and `cancel-session ID --wait` provide the same
-completion boundary; the underlying API remains asynchronous.
+completion boundary; the underlying API remains asynchronous. Refresh waits use
+the requested export timeout plus one minute for cleanup/publication, instead
+of ending at ten minutes while a longer export is still running.
 
 The local object store permits 256 volumes of 64 MB (roughly 16 GB total)
 and stops accepting writes below the smaller of 1% or 1 GiB free disk space. The prior engineering
@@ -51,7 +53,9 @@ profile allowed only 16 volumes and used a percentage reserve; the 1 GB load
 probe exhausted that small profile before a frozen branch could publish. This
 change raises the bounded capacity without preallocating it. PostgreSQL WAL,
 local pageserver layers, compute caches and retained analytical generations use
-additional disk; source payload size is not total installation disk usage.
+additional disk; source payload size is not total installation disk usage. Budget
+at least 20 GiB free disk for the 1 GB qualification sequence and installer
+staging. Linux CI removes unused runner SDKs before that sequence.
 
 ## Qualification
 
@@ -77,6 +81,8 @@ and omit short-lived peaks. Idle CPU is measured over five seconds. Hosted CI
 machine measurements must not be described as measurements on a named 16 GiB
 laptop; hardware-specific qualification remains explicit in the evidence.
 
-Qualification results and an initial measured ceiling will be recorded after
-both exact archives pass. No capacity or public release readiness is inferred
-from successful assembly alone.
+Exact-archive reports are retained as `native-release` artifacts; PR and release
+notes identify the qualified build and its measured scope. Linux measures the size sequence in a separate
+16 GiB / four-CPU container with networking denied, without the syscall tracer
+used by the network-attempt audit. No capacity or public release readiness is
+inferred from successful assembly alone.

@@ -724,6 +724,10 @@ pub fn run() -> Result<u8> {
         }
         _ => return Err(invalid("unknown command; use --help")),
     };
+    let analytical_wait_ms = match &action {
+        Action::AnalyticsRefresh { limits, .. } => limits.timeout_ms.saturating_add(60000),
+        _ => 600000,
+    };
     let result = c.call(action)?;
     if wait && command == "analytics" {
         let id = serde_json::from_value(result["id"].clone())?;
@@ -732,7 +736,7 @@ pub fn run() -> Result<u8> {
         } else {
             Action::AnalyticsStatus { id }
         };
-        let result = wait_analytics(&c, action, 600000)?;
+        let result = wait_analytics(&c, action, analytical_wait_ms)?;
         println!("{result}");
         return Ok(
             if matches!(

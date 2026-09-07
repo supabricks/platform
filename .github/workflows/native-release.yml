@@ -84,6 +84,12 @@ jobs:
         with:
           name: release-linux-x86_64
           path: build/releases
+      - name: Free disk for the 1 GB snapshot and its WAL/storage copies
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
       - run: docker build -f install/native/Dockerfile.qualify -t supabricks-release-test .
       - name: Real installer and app workflow without external networking or build tools
         run: |
@@ -93,10 +99,17 @@ jobs:
             -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
             supabricks-release-test \
             strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
-            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host --benchmarks \
+            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
         run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
+      - name: Measure full snapshots offline without syscall tracing overhead
+        run: |
+          docker run --rm --network=none --memory=16g --cpus=4 --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
+            supabricks-release-test \
+            python3 /harness/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
+            --network-evidence 'Ubuntu 24.04 unprivileged container; network=none; 16 GiB and 4 CPU limits; no syscall tracing during measurements'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
