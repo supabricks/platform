@@ -184,6 +184,14 @@ print('PASS')
         self.configure(worker);self.refresh()
         s=self.opened();self.raw(s,2);self.close(s)
         self.checks.append(dict(name='legacy_decimal_statistics_rejected_and_refresh_repairs',status='PASS'))
+        app=self.create('orders-app')
+        migration=Path(__file__).resolve().parents[2]/'examples/orders/migrations/001-orders.sql'
+        self.sql(app,migration.read_text())
+        self.sql(app,"INSERT INTO orders(customer,total_cents) VALUES('Ada',1299),('Ada',501)")
+        s=self.ready(self.api('analytics_open',branch='orders-app',key=str(uuid.uuid4())))
+        assert self.query(s,'SELECT customer,sum(total_cents) FROM public.orders GROUP BY customer')['rows']==[['Ada','1800']]
+        self.close(s)
+        self.checks.append(dict(name='orders_example_schema_queryable_without_changes',status='PASS'))
         self.stop()
 
     def session_records(self):
