@@ -239,7 +239,9 @@ def main():
     for name in ('binary','bundle','helpers','python','worker','report'):
         parser.add_argument('--'+name,type=Path,required=True)
     args=parser.parse_args()
-    root=Path(tempfile.mkdtemp(prefix='sb-a01-'))
+    # macOS TMPDIR is too long for PostgreSQL's Unix socket path. Match the
+    # existing native harnesses and canonicalize /tmp -> /private/tmp there.
+    root=Path(tempfile.mkdtemp(prefix='sb-a01-',dir='/tmp')).resolve()
     cell=Exports(args.binary.resolve(),args.bundle.resolve(),args.helpers.resolve(),root)
     report=dict(status='FAIL',checks=cell.checks)
     try:
