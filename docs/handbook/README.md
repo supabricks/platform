@@ -51,3 +51,6 @@ Native runtime work: [local state and durable operations (P02)](local-state.md),
 [native storage cell (P03)](../architecture/native-cell.md), and
 [databases and branches (P04)](../architecture/native-branches.md), and
 [stable connections and suspension (P05)](../architecture/native-connections.md).
+The [local application and agent workflow (P06)](local-workflow.md) is the native
+CLI/MCP entry point; the first-week Kubernetes instructions above describe the
+older operator deployment.

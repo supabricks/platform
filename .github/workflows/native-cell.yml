@@ -7,6 +7,8 @@ on:
       - 'Cargo.lock'
       - 'components/**'
       - 'e2e/native/**'
+      - 'examples/orders/**'
+      - 'agents/**'
       - '.github/workflows/native-cell.yml'
   workflow_dispatch:
 
@@ -63,6 +65,10 @@ jobs:
         run: python e2e/native/branches.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-branches.json
       - name: Stable connections, real drivers and wake/suspend races
         run: python e2e/native/connections.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-connections.json
+      - name: Public CLI, MCP and orders application workflow
+        run: python e2e/native/workflow.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-workflow.json
+      - name: Coding-agent setup adapter contracts
+        run: python agents/test-setup.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,4 +80,6 @@ jobs:
             native-branches.log
             native-connections.json
             native-connections.log
+            native-workflow.json
+            native-workflow.log
             build/native/helper-build.json

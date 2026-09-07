@@ -1,9 +1,15 @@
 //! Native configuration, durable local state and the single-writer daemon.
+pub mod api;
+pub mod cli;
+pub mod client;
 mod connections;
 pub mod daemon;
 pub mod engine;
+pub mod mcp;
 pub mod operations;
 pub mod project;
+mod query;
+mod runtime_cli;
 pub mod store;
 pub mod supervisor;
 use std::{net::SocketAddr, path::Path};

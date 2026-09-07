@@ -1,0 +1,294 @@
+//! Stdio MCP adapter. It cannot change its project/worktree binding or stop the cell.
+use crate::{
+    api::Action,
+    client::{Client, diagnostic},
+    store::Result,
+};
+use serde_json::{Value, json};
+use std::io::{BufRead, Read, Write};
+
+pub fn tools() -> Value {
+    let string = json!({"type":"string"});
+    let branch = json!({"type":"string","description":"Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection."});
+    let key = json!({"type":"string","minLength":1,"maxLength":256,"description":"Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID."});
+    let revision = json!({"type":"integer","minimum":1,"description":"Revision returned by get_branch. Stale mutations fail with conflict."});
+    let defs = vec![
+        (
+            "capabilities",
+            "Report this session's project/worktree, local API version, features and hard limits.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "list_branches",
+            "List databases and branches in this project with identity, ancestry, revisions and desired/observed state.",
+            json!({"include_deleted":{"type":"boolean"}}),
+            vec![],
+            true,
+        ),
+        (
+            "get_branch",
+            "Inspect one branch, including lifecycle revision and default/TTL protections.",
+            json!({"branch":branch}),
+            vec!["branch"],
+            true,
+        ),
+        (
+            "selection",
+            "Inspect this worktree's explicitly selected branch.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "select_branch",
+            "Persist this worktree's branch selection; other worktrees are unchanged.",
+            json!({"branch":branch}),
+            vec!["branch"],
+            false,
+        ),
+        (
+            "create_database",
+            "Create an independent PG17 database root. Returns an operation immediately; poll get_operation until succeeded.",
+            json!({"name":string,"key":key}),
+            vec!["name", "key"],
+            false,
+        ),
+        (
+            "create_branch",
+            "Fork an explicit parent at head, exact LSN or retained timestamp. Returns a durable operation; poll get_operation.",
+            json!({"name":string,"parent":branch,"key":key,"point":{"oneOf":[{"type":"object","properties":{"kind":{"const":"head"}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"lsn"},"lsn":string},"required":["kind","lsn"],"additionalProperties":false},{"type":"object","properties":{"kind":{"const":"time"},"timestamp":string},"required":["kind","timestamp"],"additionalProperties":false}]}}),
+            vec!["name", "parent", "key"],
+            false,
+        ),
+        (
+            "set_state",
+            "Request running or suspended for a named branch at its current revision. Active connections/pins block suspension. Returns an operation.",
+            json!({"branch":branch,"expected_revision":revision,"desired":{"enum":["running","suspended"]},"key":key}),
+            vec!["branch", "expected_revision", "desired", "key"],
+            false,
+        ),
+        (
+            "delete_branch",
+            "Permanently remove a named branch and its data. Children always block deletion; force also disconnects clients and removes default protection. Returns an operation.",
+            json!({"branch":branch,"expected_revision":revision,"key":key,"force":{"type":"boolean","default":false}}),
+            vec!["branch", "expected_revision", "key"],
+            false,
+        ),
+        (
+            "rename_branch",
+            "Rename a named branch; its stable connection and lifecycle revision remain valid.",
+            json!({"branch":branch,"name":string}),
+            vec!["branch", "name"],
+            false,
+        ),
+        (
+            "set_default",
+            "Change this project's protected default branch. Does not change any worktree selection.",
+            json!({"branch":branch,"key":key}),
+            vec!["branch", "key"],
+            false,
+        ),
+        (
+            "set_ttl",
+            "Set a future expiration in Unix milliseconds or null to clear. Default branches reject TTL; expiry drains clients then deletes data.",
+            json!({"branch":branch,"expected_revision":revision,"expires_at_ms":{"type":["integer","null"]},"key":key}),
+            vec!["branch", "expected_revision", "expires_at_ms", "key"],
+            false,
+        ),
+        (
+            "get_operation",
+            "Observe a durable operation's status, step checkpoints and diagnostic error. Pending acceptance is not completion.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "connect",
+            "Return a stable PostgreSQL URI and application credentials. Treat output as secret; SQL connection wakes compute.",
+            json!({"branch":branch}),
+            vec![],
+            true,
+        ),
+        (
+            "catalog",
+            "Discover tables and columns using the application role and SQL limits. Wakes the selected or explicit branch.",
+            json!({"branch":branch}),
+            vec![],
+            true,
+        ),
+        (
+            "sql",
+            "Execute one bounded PostgreSQL statement. Read-only by default; migrations require read_only=false and an explicit branch. Returns text values and column types. Never automatically retry writes.",
+            json!({"branch":branch,"sql":{"type":"string","minLength":1,"maxLength":32768},"read_only":{"type":"boolean","default":true},"max_rows":{"type":"integer","minimum":1,"maximum":1000,"default":200},"timeout_ms":{"type":"integer","minimum":100,"maximum":30000,"default":10000}}),
+            vec!["sql"],
+            false,
+        ),
+    ];
+    Value::Array(defs.into_iter().map(|(name,description,properties,required,read)|json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"outputSchema":output_schema(name),"annotations":{"readOnlyHint":read,"destructiveHint":!read,"openWorldHint":false}})).collect())
+}
+fn output_schema(name: &str) -> Value {
+    let string = json!({"type":"string"});
+    let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
+    let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
+    let success = match name {
+        "create_database" | "create_branch" | "set_state" | "delete_branch" | "set_default"
+        | "set_ttl" | "get_operation" => operation,
+        "get_branch" | "rename_branch" => branch,
+        "list_branches" => {
+            json!({"type":"object","properties":{"branches":{"type":"array","items":branch}},"required":["branches"]})
+        }
+        "select_branch" | "selection" => {
+            json!({"type":"object","properties":{"branch_id":string},"required":["branch_id"]})
+        }
+        "connect" => {
+            json!({"type":"object","properties":{"branch_id":string,"uri":string,"host":string,"port":{"type":"integer"},"username":string,"password":string,"database":string},"required":["branch_id","uri","host","port","username","password","database"]})
+        }
+        "sql" | "catalog" => {
+            json!({"type":"object","properties":{"branch_id":string,"columns":{"type":"array","items":{"type":"object","required":["name","type","oid"]}},"rows":{"type":"array","items":{"type":"array","items":{"type":["string","null"]}}},"affected_rows":{"type":"integer"},"read_only":{"type":"boolean"}},"required":["branch_id","columns","rows","affected_rows","read_only"]})
+        }
+        _ => {
+            json!({"type":"object","required":["api","api_version","project_id","worktree","features","limits"]})
+        }
+    };
+    json!({"type":"object","oneOf":[success,{"type":"object","properties":{"error":{"type":"object","required":["code","message","hint","retryable","exit_code"]}},"required":["error"]}]})
+}
+fn rpc_error(id: Value, code: i32, message: &str) -> Value {
+    json!({"jsonrpc":"2.0","id":id,"error":{"code":code,"message":message}})
+}
+#[derive(Default)]
+pub struct Session {
+    initialized: bool,
+    ready: bool,
+}
+impl Session {
+    pub fn dispatch(&mut self, client: &Client, value: Value) -> Option<Value> {
+        let id = value.get("id").cloned();
+        if value["jsonrpc"] != "2.0"
+            || !value["method"].is_string()
+            || id.as_ref().is_some_and(|v| !v.is_string() && !v.is_i64())
+        {
+            return Some(rpc_error(
+                id.unwrap_or(Value::Null),
+                -32600,
+                "invalid JSON-RPC request",
+            ));
+        }
+        let method = value["method"].as_str().unwrap();
+        if id.is_none() {
+            if method == "notifications/initialized" && self.initialized {
+                self.ready = true;
+            }
+            return None;
+        }
+        let id = id.unwrap();
+        let params = value.get("params").cloned().unwrap_or(json!({}));
+        let result = match method {
+            "initialize" if !self.initialized => {
+                if !params["protocolVersion"].is_string()
+                    || !params["clientInfo"].is_object()
+                    || !params["capabilities"].is_object()
+                {
+                    return Some(rpc_error(
+                        id,
+                        -32602,
+                        "initialize requires protocolVersion, clientInfo and capabilities",
+                    ));
+                }
+                self.initialized = true;
+                json!({"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"supabricks-local","version":env!("CARGO_PKG_VERSION")},"instructions":"Project/worktree binding is fixed. Discover capabilities, inspect branch revisions, poll durable operations. Branch before migrations; verify parent isolation. Connection outputs contain secrets."})
+            }
+            "ping" => json!({}),
+            _ if !self.ready => {
+                return Some(rpc_error(
+                    id,
+                    -32600,
+                    "initialize and notifications/initialized are required",
+                ));
+            }
+            "tools/list" => {
+                if params.get("cursor").is_some() {
+                    return Some(rpc_error(
+                        id,
+                        -32602,
+                        "this tool list has no pagination cursor",
+                    ));
+                }
+                json!({"tools":tools()})
+            }
+            "tools/call" => {
+                let name = params["name"].as_str().unwrap_or("");
+                if !tools()
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|t| t["name"] == name)
+                {
+                    return Some(rpc_error(id, -32602, "unknown local tool"));
+                }
+                let mut args = params.get("arguments").cloned().unwrap_or(json!({}));
+                if !args.is_object() || args.get("action").is_some() {
+                    return Some(rpc_error(
+                        id,
+                        -32602,
+                        "tool arguments must be an object without action",
+                    ));
+                }
+                args["action"] = json!(name);
+                let action = match serde_json::from_value::<Action>(args) {
+                    Ok(a) => a,
+                    Err(_) => {
+                        return Some(rpc_error(
+                            id,
+                            -32602,
+                            "invalid tool arguments; consult inputSchema",
+                        ));
+                    }
+                };
+                let (body, error) = match client.call(action) {
+                    Ok(v) => (v, false),
+                    Err(e) => (json!({"error":diagnostic(&e)}), true),
+                };
+                json!({"content":[{"type":"text","text":body.to_string()}],"structuredContent":body,"isError":error})
+            }
+            _ => return Some(rpc_error(id, -32601, "method not found")),
+        };
+        Some(json!({"jsonrpc":"2.0","id":id,"result":result}))
+    }
+}
+pub fn serve(client: Client) -> Result<()> {
+    let stdin = std::io::stdin();
+    let mut input = stdin.lock();
+    let stdout = std::io::stdout();
+    let mut output = stdout.lock();
+    let mut session = Session::default();
+    loop {
+        let mut bytes = Vec::new();
+        let n = (&mut input).take(65537).read_until(b'\n', &mut bytes)?;
+        if n == 0 {
+            return Ok(());
+        }
+        if bytes.len() > 65536 || bytes.last() != Some(&b'\n') {
+            writeln!(
+                output,
+                "{}",
+                rpc_error(
+                    Value::Null,
+                    -32600,
+                    "request exceeds 64 KiB or lacks newline"
+                )
+            )?;
+            output.flush()?;
+            return Ok(());
+        }
+        let reply = match serde_json::from_slice(&bytes) {
+            Ok(value) => session.dispatch(&client, value),
+            Err(_) => Some(rpc_error(Value::Null, -32700, "invalid JSON")),
+        };
+        if let Some(reply) = reply {
+            writeln!(output, "{reply}")?;
+            output.flush()?;
+        }
+    }
+}
