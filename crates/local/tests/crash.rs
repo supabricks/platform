@@ -27,6 +27,8 @@ fn effect(root: &Path, ticket: &WorkTicket) -> serde_json::Value {
     let timeline = root.join(format!("{}-timeline", ticket.branch_id));
     let compute = root.join(format!("{}-compute", ticket.branch_id));
     match ticket.step {
+        Step::CaptureBranchPoint => panic!("root fixture has no ancestor"),
+        Step::DeleteLocalFiles => {}
         Step::EnsureTimeline | Step::StartCompute => {
             let path = if ticket.step == Step::EnsureTimeline {
                 timeline
@@ -104,7 +106,7 @@ fn crash_worker() {
 #[test]
 fn kill_at_every_create_and_delete_checkpoint_converges_without_duplicates() {
     for deletion in [false, true] {
-        for step in 0..2 {
+        for step in 0..if deletion { 3 } else { 2 } {
             for point in ["before_effect", "after_effect", "after_checkpoint"] {
                 let root = tempfile::Builder::new()
                     .prefix("sb-crash-")

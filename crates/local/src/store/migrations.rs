@@ -4,6 +4,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0001_state.sql"),
     include_str!("migrations/0002_work.sql"),
     include_str!("migrations/0003_native_processes.sql"),
+    include_str!("migrations/0004_branches.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 

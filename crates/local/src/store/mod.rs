@@ -1,3 +1,4 @@
+mod branches;
 pub(crate) mod error;
 mod journal;
 mod migrations;
@@ -34,6 +35,10 @@ pub struct BranchRecord {
     pub observed_revision: i64,
     /// Released only after all deletion checkpoints complete.
     pub ports: Option<Ports>,
+    pub expires_at_ms: Option<i64>,
+    pub expired: bool,
+    pub is_default: bool,
+    pub timeline_created: bool,
 }
 // Deliberately no Debug/Serialize: callers must consciously handle credentials.
 pub struct ConnectionTarget {
@@ -48,6 +53,30 @@ impl Store {
     pub fn open(path: &Path) -> Result<Self> {
         let root = ownership::DataRoot::acquire(path)?;
         let database = root.path.join("state.sqlite3");
+        // A fresh journal cannot reconstruct credentials, leases or ownership
+        // from engine files. Never implicitly initialize over surviving data.
+        let objects = root.path.join("objects");
+        // An empty pre-mounted object directory is a valid fresh installation.
+        let has_objects = objects.exists()
+            && (!objects.is_dir() || std::fs::read_dir(&objects)?.next().is_some());
+        if (!database.exists() || database.metadata()?.len() == 0)
+            && (has_objects
+                || [
+                    "runtime.json",
+                    "storage.pk8",
+                    "storage.pub",
+                    "safekeeper",
+                    "launches",
+                    "pageserver",
+                    "computes",
+                ]
+                .iter()
+                .any(|p| root.path.join(p).exists()))
+        {
+            return Err(conflict(
+                "local control state is missing; restore a complete stopped-cell backup before startup",
+            ));
+        }
         ownership::private_file(&database)?.sync_all()?;
         let mut db = Connection::open_with_flags(
             &database,
@@ -172,6 +201,7 @@ impl Store {
         if record.branch.project_id != project {
             return Err(missing("branch in project"));
         }
+        self.accepting_work(id)?;
         if record.endpoint.desired_state != DesiredState::Running
             || record.observed_revision != record.revision
         {
@@ -180,17 +210,17 @@ impl Store {
             )
             .into());
         }
-        let (username, password) = self.db.query_row(
-            "SELECT username,password FROM credentials WHERE endpoint_id=?1",
+        let password = self.db.query_row(
+            "SELECT password FROM app_credentials WHERE endpoint_id=?1",
             [record.endpoint.id.to_string()],
-            |r| Ok((r.get(0)?, r.get(1)?)),
+            |r| r.get(0),
         )?;
         Ok(ConnectionTarget {
             branch_id: id,
             endpoint_id: record.endpoint.id,
             host: "127.0.0.1".into(),
             port: record.ports.ok_or_else(|| missing("endpoint ports"))?.sql,
-            username,
+            username: "supabricks_owner".into(),
             password,
         })
     }
@@ -237,7 +267,7 @@ fn branch(db: &Connection, id: BranchId) -> Result<BranchRecord> {
             tenant_id: parse(&row.2)?,
             timeline_id: parse(&row.3)?,
             parent_id: row.4.as_deref().map(parse).transpose()?,
-            ancestor_lsn: None,
+            ancestor_lsn: db.query_row("SELECT ancestor_lsn FROM branches WHERE id=?1", [id.to_string()], |r| r.get::<_,Option<String>>(0))?.as_deref().map(parse).transpose()?,
         },
         endpoint: Endpoint {
             id: parse(&row.8)?,
@@ -249,6 +279,10 @@ fn branch(db: &Connection, id: BranchId) -> Result<BranchRecord> {
         revision: row.5,
         observed_revision: row.7,
         ports,
+        expires_at_ms: db.query_row("SELECT expires_at_ms FROM branches WHERE id=?1", [id.to_string()], |r| r.get(0))?,
+        expired: db.query_row("SELECT expired OR (expires_at_ms IS NOT NULL AND expires_at_ms<=?2) FROM branches WHERE id=?1", params![id.to_string(),now_ms()?], |r| r.get(0))?,
+        timeline_created: db.query_row("SELECT timeline_created FROM branches WHERE id=?1",[id.to_string()],|r|r.get(0))?,
+        is_default: db.prepare("SELECT 1 FROM project_defaults WHERE branch_id=?1")?.exists([id.to_string()])?,
     })
 }
 fn canonical_name(name: &str) -> Result<String> {

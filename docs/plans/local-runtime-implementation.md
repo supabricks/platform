@@ -292,6 +292,9 @@ native process runner. Do not adopt Neon's test-only LocalFs as durable storage.
 
 ### P04 — Database and branch operations
 
+**Implementation:** [native branch architecture and engineering API](../architecture/native-branches.md)
+and [native qualification](../../e2e/native/README.md).
+
 **Changes:** database/branch operations, native compute specs, storage cleanup.
 
 Implement create/get/list/delete with operation IDs and explicit tenant/timeline

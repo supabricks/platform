@@ -2,7 +2,8 @@
 
 P02 added a single-writer state daemon to `supabricks-local`, with durable local
 identity, intent and a resumable worker protocol. P03 connects that journal to the
-[native storage cell](../architecture/native-cell.md). An unconfigured daemon
+[native storage cell](../architecture/native-cell.md); P04 adds
+[database and exact-position branch operations](../architecture/native-branches.md). An unconfigured daemon
 still reports `engine_execution: false` and only queues intent. Use the
 [native setup instructions](../../e2e/native/README.md) to enable engine execution.
 Public database/branch commands and explicit-LSN child branching follow in P04/P05.

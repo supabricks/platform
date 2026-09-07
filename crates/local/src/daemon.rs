@@ -60,6 +60,34 @@ pub enum Request {
         path: PathBuf,
         project_id: ProjectId,
     },
+    ListBranches {
+        project_id: ProjectId,
+        #[serde(default)]
+        include_deleted: bool,
+    },
+    GetBranch {
+        project_id: ProjectId,
+        id: BranchId,
+    },
+    Connection {
+        project_id: ProjectId,
+        id: BranchId,
+    },
+    AcquireLease {
+        project_id: ProjectId,
+        branch_id: BranchId,
+        holder: String,
+        ttl_ms: u64,
+    },
+    ReleaseLease {
+        project_id: ProjectId,
+        lease: crate::store::Lease,
+    },
+    RenewLease {
+        project_id: ProjectId,
+        lease: crate::store::Lease,
+        ttl_ms: u64,
+    },
     Shutdown,
     AuthorizeProcess {
         role: String,
@@ -74,6 +102,7 @@ pub struct Daemon {
     listener: UnixListener,
     socket: PathBuf,
     cell: Option<crate::engine::Cell>,
+    validator: Option<crate::engine::validation::Validator>,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -93,7 +122,13 @@ impl Daemon {
         } else {
             None
         };
+        let validator = if cell.is_some() {
+            Some(crate::engine::validation::Validator::bind(&store)?)
+        } else {
+            None
+        };
         Ok(Self {
+            validator,
             store,
             listener,
             socket,
@@ -104,6 +139,7 @@ impl Daemon {
         if self.cell.is_none() {
             crate::engine::RuntimeConfig::initialize(self.store.root(), bundle, helpers)?;
             self.cell = Some(crate::engine::Cell::open(&mut self.store)?);
+            self.validator = Some(crate::engine::validation::Validator::bind(&self.store)?);
         }
         Ok(self)
     }
@@ -113,6 +149,9 @@ impl Daemon {
         let mut stopping = false;
         loop {
             if std::time::Instant::now() >= next_tick {
+                if let Some(validator) = &self.validator {
+                    validator.refresh(&self.store)?;
+                }
                 if let Some(cell) = &mut self.cell {
                     if stopping {
                         match cell.stop(&mut self.store) {
@@ -232,6 +271,53 @@ impl Daemon {
             Request::Selection { path, project_id } => {
                 json!({"branch_id":self.store.selected_branch(&path,project_id)?})
             }
+            Request::ListBranches {
+                project_id,
+                include_deleted,
+            } => json!(self.store.list_branches(project_id, include_deleted)?),
+            Request::GetBranch { project_id, id } => {
+                json!(self.store.branch_in_project(project_id, id)?)
+            }
+            Request::Connection { project_id, id } => {
+                let connection = self.store.connection_json(project_id, id)?;
+                let branch = self.store.branch_in_project(project_id, id)?;
+                if !self.cell.as_ref().is_some_and(|cell| {
+                    cell.connection_ready(&self.store, &branch).unwrap_or(false)
+                }) {
+                    return Err(conflict("branch compute is not ready"));
+                }
+                connection
+            }
+            Request::AcquireLease {
+                project_id,
+                branch_id,
+                holder,
+                ttl_ms,
+            } => {
+                self.store.branch_in_project(project_id, branch_id)?;
+                json!(self.store.acquire_lease(
+                    branch_id,
+                    None,
+                    &holder,
+                    Duration::from_millis(ttl_ms)
+                )?)
+            }
+            Request::ReleaseLease { project_id, lease } => {
+                self.store.branch_in_project(project_id, lease.branch_id)?;
+                self.store.release_lease(&lease)?;
+                json!({"released":true})
+            }
+            Request::RenewLease {
+                project_id,
+                lease,
+                ttl_ms,
+            } => {
+                self.store.branch_in_project(project_id, lease.branch_id)?;
+                json!(
+                    self.store
+                        .renew_lease(&lease, Duration::from_millis(ttl_ms))?
+                )
+            }
             Request::Shutdown => json!({"stopping":true}),
             Request::AuthorizeProcess {
                 role,
@@ -250,6 +336,8 @@ impl Daemon {
 }
 impl Drop for Daemon {
     fn drop(&mut self) {
+        // Revoke generation validation before releasing installation ownership.
+        self.validator.take();
         // Drop runs while Store still holds the installation lock.
         let _ = fs::remove_file(&self.socket);
     }

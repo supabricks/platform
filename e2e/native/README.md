@@ -1,4 +1,4 @@
-# Native cell qualification (P03)
+# Native cell and branch qualification (P03/P04)
 
 This suite runs the real Rust daemon, authenticated Process Compose, one broker,
 one safekeeper, a directly attached pageserver, native PG17.8 computes and
@@ -48,3 +48,23 @@ SIGKILL, disk-full and restart tests do not establish power-loss safety. In
 particular, directory-entry persistence, volume-index repair and delete/compaction
 ordering still need a dedicated filesystem fault qualification before a public
 durability claim. See [the architecture notes](../../docs/architecture/native-cell.md).
+
+Run P04 branch qualification with the same prepared engine and helpers:
+
+```sh
+python3 e2e/native/branches.py --binary target/debug/supabricks \
+  --bundle /path/to/engine --helpers /tmp/sb-helpers --report native-branches.json
+```
+
+This uses a separate `/tmp/sb-p04-*` root. It checks concurrent duplicate creation,
+application/control credential separation, immediate-write head branching,
+parent/child isolation, branch-of-branch, suspended-parent wake/restore, explicit
+LSN and RFC3339 time, interrupted creation at a persisted LSN, ingestion outage,
+invalid history, default/parent protection, TTL admission and SQL/lease draining,
+interrupted deletion, S3 reclamation, runtime configuration migration, and refusal
+to invent control metadata over surviving engine files. Both suites run on Linux
+x86_64 and macOS arm64 in `native-cell.yml`. Failure artifacts redact private
+credentials; raw roots remain private. These tests do not establish power-loss
+safety or a supported backup product.
+
+See [the branch API and recovery contract](../../docs/architecture/native-branches.md).
