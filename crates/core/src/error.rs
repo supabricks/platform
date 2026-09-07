@@ -27,6 +27,8 @@ pub enum OperationError {
     Conflict(String),
     #[error("temporarily unavailable: {0}")]
     Unavailable(String),
+    #[error("SQL {sqlstate}: {message}")]
+    Query { sqlstate: String, message: String },
 }
 impl OperationError {
     pub fn retryable(&self) -> bool {

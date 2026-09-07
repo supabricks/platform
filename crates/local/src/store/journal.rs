@@ -6,6 +6,23 @@ use serde_json::Value;
 use supabricks_core::resource::*;
 
 impl Store {
+    pub(crate) fn request_for_key(
+        &self,
+        project: ProjectId,
+        key: &str,
+    ) -> Result<Option<Mutation>> {
+        let request: Option<String> = self
+            .db
+            .query_row(
+                "SELECT request FROM operations WHERE project_id=?1 AND request_key=?2",
+                params![project.to_string(), key],
+                |r| r.get(0),
+            )
+            .optional()?;
+        request
+            .map(|s| serde_json::from_str(&s).map_err(Into::into))
+            .transpose()
+    }
     /// Intent, identities, credentials and reservations commit together before
     /// any worker can see the operation. Keys are scoped to a project.
     pub fn submit(

@@ -30,6 +30,11 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    Api {
+        api_version: u32,
+        binding: crate::api::Binding,
+        action: crate::api::Action,
+    },
     Status,
     RegisterProject {
         config: ProjectConfig,
@@ -104,6 +109,7 @@ pub struct Daemon {
     cell: Option<crate::engine::Cell>,
     validator: Option<crate::engine::validation::Validator>,
     gateway: Option<crate::connections::Gateway>,
+    queries: Vec<std::thread::JoinHandle<()>>,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -133,6 +139,7 @@ impl Daemon {
             .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
             .transpose()?;
         Ok(Self {
+            queries: Vec::new(),
             gateway,
             validator,
             store,
@@ -158,6 +165,7 @@ impl Daemon {
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
         loop {
+            self.queries.retain(|t| !t.is_finished());
             if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
                 if stopping {
                     if !gateway.stop(&mut self.store)? {
@@ -234,15 +242,68 @@ impl Daemon {
                 if stopping && !matches!(envelope.request, Request::Status | Request::Shutdown) {
                     return Err(conflict("daemon is stopping"));
                 }
-                self.handle(envelope.request)
-            });
-            let response = match result {
-                Ok(value) => json!({"version":1,"result":value}),
-                Err(Error::Operation(error)) => json!({"version":1,"error":error}),
-                Err(_) => {
-                    json!({"version":1,"error":{"code":"internal","detail":"local state request failed"}})
+                if let Request::Api {
+                    api_version,
+                    binding,
+                    action,
+                } = envelope.request
+                {
+                    if api_version != crate::api::VERSION {
+                        return Err(invalid("unsupported application API version"));
+                    }
+                    binding.validate(&mut self.store)?;
+                    let (branch, query) = match action {
+                        crate::api::Action::Sql {
+                            branch,
+                            sql,
+                            read_only,
+                            max_rows,
+                            timeout_ms,
+                        } => (
+                            branch,
+                            crate::query::Query {
+                                sql,
+                                read_only,
+                                max_rows,
+                                timeout_ms,
+                            },
+                        ),
+                        crate::api::Action::Catalog { branch } => {
+                            (branch, crate::query::Query::catalog())
+                        }
+                        other => return self.public_action(binding, other).map(Some),
+                    };
+                    query.validate()?;
+                    if !query.read_only && branch.is_none() {
+                        return Err(invalid("SQL writes require an explicit branch"));
+                    }
+                    if self.queries.len() >= crate::query::WORKERS {
+                        return Err(supabricks_core::error::OperationError::Unavailable(
+                            "all four SQL workers are busy".into(),
+                        )
+                        .into());
+                    }
+                    let id = crate::api::resolve(&self.store, &binding, branch.as_deref())?;
+                    let target = self.handle(Request::Connection {
+                        project_id: binding.project_id,
+                        id,
+                    })?;
+                    let mut reply = stream.try_clone()?;
+                    self.queries
+                        .push(std::thread::Builder::new().name("app-sql".into()).spawn(
+                            move || {
+                                let response = response(query.run(target));
+                                let _ = writeln!(reply, "{response}");
+                            },
+                        )?);
+                    return Ok(None);
                 }
-            };
+                self.handle(envelope.request).map(Some)
+            });
+            if matches!(result, Ok(None)) {
+                continue;
+            }
+            let response = response(result.map(Option::unwrap));
             // A client disappearing must not take down the single writer.
             let _ = writeln!(stream, "{response}");
             if shutdown {
@@ -252,8 +313,13 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::Api { .. } => {
+                return Err(invalid(
+                    "application request must use the versioned dispatcher",
+                ));
+            }
             Request::Status => {
-                json!({"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -355,6 +421,29 @@ impl Daemon {
                 json!({"authorized":true})
             }
         })
+    }
+    fn public_action(
+        &mut self,
+        binding: crate::api::Binding,
+        action: crate::api::Action,
+    ) -> Result<Value> {
+        if let crate::api::Action::Connect { branch } = action {
+            let id = crate::api::resolve(&self.store, &binding, branch.as_deref())?;
+            return self.handle(Request::Connection {
+                project_id: binding.project_id,
+                id,
+            });
+        }
+        crate::api::handle(&mut self.store, self.cell.as_ref(), &binding, action)
+    }
+}
+fn response(result: Result<Value>) -> Value {
+    match result {
+        Ok(value) => json!({"version":1,"result":value}),
+        Err(Error::Operation(error)) => json!({"version":1,"error":error}),
+        Err(_) => {
+            json!({"version":1,"error":{"code":"unavailable","detail":"local request failed; check project path and daemon diagnostics"}})
+        }
     }
 }
 impl Drop for Daemon {

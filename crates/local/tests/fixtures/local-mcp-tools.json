@@ -1,0 +1,1522 @@
+[
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Report this session's project/worktree, local API version, features and hard limits.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "capabilities",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api",
+            "api_version",
+            "project_id",
+            "worktree",
+            "features",
+            "limits"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List databases and branches in this project with identity, ancestry, revisions and desired/observed state.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "include_deleted": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "list_branches",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branches": {
+              "items": {
+                "properties": {
+                  "branch": {
+                    "required": [
+                      "id",
+                      "project_id",
+                      "name",
+                      "parent_id"
+                    ],
+                    "type": "object"
+                  },
+                  "endpoint": {
+                    "required": [
+                      "id",
+                      "desired_state"
+                    ],
+                    "type": "object"
+                  },
+                  "expired": {
+                    "type": "boolean"
+                  },
+                  "is_default": {
+                    "type": "boolean"
+                  },
+                  "observed_revision": {
+                    "type": "integer"
+                  },
+                  "revision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "branch",
+                  "endpoint",
+                  "revision",
+                  "observed_revision",
+                  "is_default",
+                  "expired"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "branches"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect one branch, including lifecycle revision and default/TTL protections.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch"
+      ],
+      "type": "object"
+    },
+    "name": "get_branch",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch": {
+              "required": [
+                "id",
+                "project_id",
+                "name",
+                "parent_id"
+              ],
+              "type": "object"
+            },
+            "endpoint": {
+              "required": [
+                "id",
+                "desired_state"
+              ],
+              "type": "object"
+            },
+            "expired": {
+              "type": "boolean"
+            },
+            "is_default": {
+              "type": "boolean"
+            },
+            "observed_revision": {
+              "type": "integer"
+            },
+            "revision": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "branch",
+            "endpoint",
+            "revision",
+            "observed_revision",
+            "is_default",
+            "expired"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect this worktree's explicitly selected branch.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "selection",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "branch_id"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Persist this worktree's branch selection; other worktrees are unchanged.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch"
+      ],
+      "type": "object"
+    },
+    "name": "select_branch",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "branch_id"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Create an independent PG17 database root. Returns an operation immediately; poll get_operation until succeeded.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "create_database",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Fork an explicit parent at head, exact LSN or retained timestamp. Returns a durable operation; poll get_operation.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "parent": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "point": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "head"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "lsn"
+                },
+                "lsn": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "lsn"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "time"
+                },
+                "timestamp": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "timestamp"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "parent",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "create_branch",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Request running or suspended for a named branch at its current revision. Active connections/pins block suspension. Returns an operation.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "desired": {
+          "enum": [
+            "running",
+            "suspended"
+          ]
+        },
+        "expected_revision": {
+          "description": "Revision returned by get_branch. Stale mutations fail with conflict.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "expected_revision",
+        "desired",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "set_state",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Permanently remove a named branch and its data. Children always block deletion; force also disconnects clients and removes default protection. Returns an operation.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "expected_revision": {
+          "description": "Revision returned by get_branch. Stale mutations fail with conflict.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "force": {
+          "default": false,
+          "type": "boolean"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "expected_revision",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "delete_branch",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Rename a named branch; its stable connection and lifecycle revision remain valid.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "rename_branch",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch": {
+              "required": [
+                "id",
+                "project_id",
+                "name",
+                "parent_id"
+              ],
+              "type": "object"
+            },
+            "endpoint": {
+              "required": [
+                "id",
+                "desired_state"
+              ],
+              "type": "object"
+            },
+            "expired": {
+              "type": "boolean"
+            },
+            "is_default": {
+              "type": "boolean"
+            },
+            "observed_revision": {
+              "type": "integer"
+            },
+            "revision": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "branch",
+            "endpoint",
+            "revision",
+            "observed_revision",
+            "is_default",
+            "expired"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Change this project's protected default branch. Does not change any worktree selection.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "set_default",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Set a future expiration in Unix milliseconds or null to clear. Default branches reject TTL; expiry drains clients then deletes data.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "expected_revision": {
+          "description": "Revision returned by get_branch. Stale mutations fail with conflict.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "expires_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "expected_revision",
+        "expires_at_ms",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "set_ttl",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Observe a durable operation's status, step checkpoints and diagnostic error. Pending acceptance is not completion.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "get_operation",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "error": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "next_step": {
+              "type": "integer"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "results": {
+              "type": "array"
+            },
+            "revision": {
+              "type": "integer"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "superseded"
+              ]
+            },
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "project_id",
+            "branch_id",
+            "revision",
+            "status",
+            "steps",
+            "next_step",
+            "results",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Return a stable PostgreSQL URI and application credentials. Treat output as secret; SQL connection wakes compute.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "connect",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "database": {
+              "type": "string"
+            },
+            "host": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "port": {
+              "type": "integer"
+            },
+            "uri": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "branch_id",
+            "uri",
+            "host",
+            "port",
+            "username",
+            "password",
+            "database"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Discover tables and columns using the application role and SQL limits. Wakes the selected or explicit branch.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "catalog",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "affected_rows": {
+              "type": "integer"
+            },
+            "branch_id": {
+              "type": "string"
+            },
+            "columns": {
+              "items": {
+                "required": [
+                  "name",
+                  "type",
+                  "oid"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "read_only": {
+              "type": "boolean"
+            },
+            "rows": {
+              "items": {
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "type": "array"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "branch_id",
+            "columns",
+            "rows",
+            "affected_rows",
+            "read_only"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Execute one bounded PostgreSQL statement. Read-only by default; migrations require read_only=false and an explicit branch. Returns text values and column types. Never automatically retry writes.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "max_rows": {
+          "default": 200,
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "read_only": {
+          "default": true,
+          "type": "boolean"
+        },
+        "sql": {
+          "maxLength": 32768,
+          "minLength": 1,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "default": 10000,
+          "maximum": 30000,
+          "minimum": 100,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sql"
+      ],
+      "type": "object"
+    },
+    "name": "sql",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "affected_rows": {
+              "type": "integer"
+            },
+            "branch_id": {
+              "type": "string"
+            },
+            "columns": {
+              "items": {
+                "required": [
+                  "name",
+                  "type",
+                  "oid"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "read_only": {
+              "type": "boolean"
+            },
+            "rows": {
+              "items": {
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "type": "array"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "branch_id",
+            "columns",
+            "rows",
+            "affected_rows",
+            "read_only"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  }
+]

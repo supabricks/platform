@@ -348,6 +348,9 @@ suspend/accept/delete/TTL. Every successful wake sees previously committed data.
 
 ### P06 — Complete the first application and agent workflow
 
+Implementation and qualification: [local workflow](../handbook/local-workflow.md),
+[P06 evidence and remaining real-agent usability check](../architecture/p06-qualification.md).
+
 **Changes:** CLI, local socket API/MCP, `agents/`, `examples/orders/`, handbook.
 
 Expose `init`, `up`, `down`, `status`, `doctor`, `connect`, and database/branch
