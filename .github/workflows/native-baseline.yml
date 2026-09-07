@@ -43,6 +43,8 @@ jobs:
         run: |
           uv export --project python/analytics --locked --format requirements-txt --no-emit-project --output-file python/analytics/requirements.lock > /dev/null
           git diff --exit-code -- python/analytics/requirements.lock
+      - name: Exporter failure boundaries
+        run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py' -v
       - name: Synthetic Sail and Delta qualification
         run: |
           set -o pipefail
