@@ -378,6 +378,9 @@ a real-agent smoke is a separately recorded usability check, not a replacement.
 
 ### A00 — Retain and qualify the off-the-shelf analytical fixture
 
+Implementation: [locked environment and native qualification](../../python/analytics/README.md).
+The original probe is preserved; current CI runs the extended fixture on both native targets.
+
 **Changes:** `spikes/local-analytics/`, then `python/analytics/` dependency lock.
 
 Import the already executed Sail/delta-rs probe without claiming it is the
