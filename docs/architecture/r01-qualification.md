@@ -62,6 +62,14 @@ the private socket as the sole URI authority. A parser regression test asserts
 one Unix host and exactly the allocated port. The packaged Linux workflow passed
 after this fix, including a listening 5432 socket and relocation.
 
+Native macOS testing also exposed a control-socket portability defect. BSD
+accept inherits the listener's nonblocking mode; the daemon used blocking
+request framing without clearing that flag. A client sending after accept could
+receive an unavailable response or a closed socket. Accepted control streams now
+explicitly use blocking mode with the existing bounded read/write deadlines. A
+regression test connects, delays, and sends a fragmented request. Redacted OS and
+SQLite diagnostics now accompany unexpected unavailable responses in daemon.log.
+
 Initial local development artifact: 263,544,433 compressed bytes; 714,464,465
 unpacked bytes. These are engineering measurements, not published release sizes.
 The installer completed in 16.26 seconds on the development host's loopback
