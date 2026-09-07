@@ -76,6 +76,8 @@ jobs:
         run: uv sync --project python/analytics --locked --managed-python
       - name: Frozen export correctness, isolation and interrupted cleanup
         run: python e2e/native/exports.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-exports.json
+      - name: Atomic epochs, durable reader leases and retained recovery
+        run: python e2e/native/epochs.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-epochs.json
       - name: Coding-agent setup adapter contracts
         run: python agents/test-setup.py
       - uses: actions/upload-artifact@v4
@@ -93,4 +95,6 @@ jobs:
             native-workflow.log
             native-exports.json
             native-exports.log
+            native-epochs.json
+            native-epochs.log
             build/native/helper-build.json

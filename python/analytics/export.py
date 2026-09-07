@@ -165,6 +165,7 @@ def export(config):
         actual = conn.execute("SELECT current_setting('neon.tenant_id'),current_setting('neon.timeline_id'),pg_backend_pid(),pg_current_snapshot()::text,(SELECT oid FROM pg_database WHERE datname=current_database())").fetchone()
         if actual[:2] != (config['source']['tenant_id'], config['source']['export_timeline_id']):
             raise Rejected('compute identity differs from pinned export branch')
+        observed_at_ms = round(time.time() * 1000)
         tables, omitted = discover(conn)
         # Every catalog read and table scan above/below shares this transaction.
         for oid, namespace, name, schema, columns in tables:
@@ -216,7 +217,7 @@ def export(config):
         conn.execute('COMMIT')
     manifest = {'format_version': 1, 'status': 'files_complete', 'published': False,
         'id': config['id'], 'source': config['source'], 'database': 'postgres',
-        'database_oid': actual[4], 'backend_pid': actual[2], 'transaction_snapshot': actual[3],
+        'database_oid': actual[4], 'observed_at_ms': observed_at_ms, 'backend_pid': actual[2], 'transaction_snapshot': actual[3],
         'transaction': 'REPEATABLE READ READ ONLY', 'target': target, 'versions': versions,
         'tables': tables_report, 'omitted_relations': omitted,
         'text_semantics': 'UTF-8 values preserved; PostgreSQL collation/order/equality semantics are not reproduced',

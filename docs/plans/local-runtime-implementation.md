@@ -429,6 +429,8 @@ storage impact. Parent activity and a failed export cannot corrupt each other.
 
 ### A02 — Atomic analytical epochs, retention and failure recovery
 
+Implementation and recovery contract: [A02 analytical epochs](../architecture/a02-analytical-epochs.md).
+
 **Changes:** epoch/catalog tables and migrations, publisher, manifests, GC.
 
 Define an epoch by installation/project/database/branch/timeline identity,

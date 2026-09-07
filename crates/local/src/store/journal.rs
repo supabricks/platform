@@ -224,7 +224,7 @@ impl Store {
                         .ok_or_else(|| conflict("resource revision exhausted"))?;
                     if forced {
                         tx.execute(
-                            "DELETE FROM leases WHERE branch_id=?1",
+                            "DELETE FROM leases WHERE branch_id=?1 AND epoch_id IS NULL",
                             [branch_id.to_string()],
                         )?;
                         tx.execute(

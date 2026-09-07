@@ -10,7 +10,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{collections::HashSet, net::TcpListener, path::PathBuf};
-use supabricks_core::resource::{BranchId, DesiredState, OperationId, ProjectId};
+use supabricks_core::resource::{BranchId, DesiredState, EpochId, LeaseId, OperationId, ProjectId};
 
 pub const VERSION: u32 = 1;
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -36,6 +36,43 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    PublishExport {
+        id: OperationId,
+    },
+    GetPublication {
+        id: OperationId,
+    },
+    DiscardExport {
+        id: OperationId,
+    },
+    CurrentSnapshot {
+        branch: String,
+    },
+    ListSnapshots {
+        branch: String,
+        #[serde(default)]
+        before: Option<i64>,
+        #[serde(default = "snapshot_page_size")]
+        limit: usize,
+    },
+    GetSnapshot {
+        id: EpochId,
+    },
+    PinSnapshot {
+        id: EpochId,
+        ttl_ms: u64,
+    },
+    RenewSnapshotLease {
+        id: LeaseId,
+        ttl_ms: u64,
+    },
+    ReleaseSnapshotLease {
+        id: LeaseId,
+    },
+    CollectSnapshots {
+        branch: String,
+        keep: usize,
+    },
     ConfigureAnalytics {
         python: PathBuf,
         worker: PathBuf,
@@ -128,6 +165,9 @@ fn required_nullable<'de, D: serde::Deserializer<'de>>(
 ) -> std::result::Result<Option<i64>, D::Error> {
     Option::<i64>::deserialize(d)
 }
+fn snapshot_page_size() -> usize {
+    100
+}
 fn yes() -> bool {
     true
 }
@@ -140,7 +180,7 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":false,"unpublished_exports":true},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":false,"unpublished_exports":true,"atomic_snapshots":true},
         "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"active_branches":32,"connections":256,"connections_per_branch":64},
         "sql":{"read_only_default":true,"statements_per_call":1,"values":"PostgreSQL text or null","writes":"explicit read_only=false; no automatic retry"}})
 }
@@ -174,6 +214,49 @@ pub(crate) fn handle(
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
         Action::Capabilities => return Ok(capabilities(binding)),
+        Action::PublishExport { id } => return Ok(json!(store.publish_export(project, id)?)),
+        Action::GetPublication { id } => {
+            return Ok(json!(store.publication_in_project(project, id)?));
+        }
+        Action::DiscardExport { id } => return store.discard_export(project, id),
+        Action::CurrentSnapshot { branch } => {
+            return Ok(json!(store.current_snapshot(
+                project,
+                resolve(store, binding, Some(&branch))?
+            )?));
+        }
+        Action::ListSnapshots {
+            branch,
+            before,
+            limit,
+        } => {
+            let snapshots = store.snapshot_history(
+                project,
+                resolve(store, binding, Some(&branch))?,
+                before,
+                limit,
+            )?;
+            let next_before = if snapshots.len() == limit {
+                snapshots.last().map(|s| s.publication.ordinal)
+            } else {
+                None
+            };
+            return Ok(json!({"snapshots":snapshots,"next_before":next_before}));
+        }
+        Action::GetSnapshot { id } => return Ok(json!(store.snapshot(project, id)?)),
+        Action::PinSnapshot { id, ttl_ms } => {
+            return Ok(json!(store.pin_snapshot(project, id, ttl_ms)?));
+        }
+        Action::RenewSnapshotLease { id, ttl_ms } => {
+            return Ok(json!(store.renew_snapshot_lease(project, id, ttl_ms)?));
+        }
+        Action::ReleaseSnapshotLease { id } => {
+            store.release_snapshot_lease(project, id)?;
+            return Ok(json!({"released":true}));
+        }
+        Action::CollectSnapshots { branch, keep } => {
+            return store.collect_snapshots(project, resolve(store, binding, Some(&branch))?, keep);
+        }
         Action::ConfigureAnalytics { python, worker } => {
             return cell
                 .ok_or_else(|| invalid("engine is disabled"))?
