@@ -156,7 +156,7 @@ security boundary. The old operator HTTP/MCP API remains separate and unchanged.
 The [agent adapter and manual setup](../../agents/README.md) launch
 `supabricks mcp --project PATH --data-dir PATH`. The process has a fixed binding;
 it checks it again for every request and reconnects to the daemon after restart.
-There are 16 discoverable tools, including capabilities, catalog, SQL, selection,
+There are 25 discoverable tools, including capabilities, catalog, SQL, selection,
 connections, metadata operations and operation polling. The MCP protocol revision
 is 2025-06-18. Tools return matching text and structured JSON; tool failures use
 `isError`, while malformed protocol/arguments use JSON-RPC errors. No tool shuts

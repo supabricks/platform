@@ -50,8 +50,9 @@ The database requires no model credentials. To work with a coding agent, see
 
 ## Query an analytical snapshot
 
-With the [locked analytical worker configured](../../docs/architecture/a01-frozen-exports.md#developer-setup),
-query the application's tables through Sail. First access creates a frozen
+The R02 installer includes analytics automatically. Source builds need the
+[locked analytical worker configured](../../docs/architecture/a01-frozen-exports.md#developer-setup).
+Query the application's tables through Sail. First access creates a frozen
 snapshot while the application continues using Postgres:
 
 ```sh
@@ -65,5 +66,4 @@ Inside the shell, `spark.table("public.orders")` is an ordinary DataFrame and
 new snapshot with `supabricks analytics refresh --branch main --wait`. Existing
 shells keep their original snapshot; new sessions select the refreshed one.
 See [analytical sessions](../../docs/architecture/a03-analytical-sessions.md) for
-historical epochs, limits and cancellation. Worker packaging into the curl
-installer remains release work.
+historical epochs, limits and cancellation. The complete localhost installer bundles the worker and its Python dependencies.

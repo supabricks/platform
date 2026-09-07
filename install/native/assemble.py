@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build an immutable local Postgres release; Python/compiler tools are builder-only."""
+"""Build the complete immutable local analytical preview on the target machine."""
 import argparse
 import hashlib
 import importlib.util
@@ -116,6 +116,9 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
                 record['notices'].append(str(target.relative_to(destination)))
         packages.append(record)
     (destination / 'provenance/platform-dependencies.json').write_text(json.dumps(packages, indent=2) + '\n')
+    if not args.postgres_only:
+        from analytics import assemble_analytics
+        assemble_analytics(destination, args.target)
     provenance = dict(
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
@@ -136,7 +139,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
             path.chmod(0o755 if executable else 0o644)
             files[str(path.relative_to(destination))] = dict(sha256=digest(path), executable=executable)
     manifest = dict(format_version=1, version=args.version, target=args.target,
-                    profile='local-postgres-alpha', provenance=provenance, files=files)
+                    profile='local-postgres-alpha' if args.postgres_only else 'local-analytical-preview', provenance=provenance, files=files)
     (destination / 'release.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     subprocess.run([str(destination / 'bin/supabricks'), 'installation', 'verify'], check=True)
     subprocess.run([str(destination / 'bin/psql'), '--version'], check=True)
@@ -158,7 +161,8 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.1')
+    parser.add_argument('--version', default='v0.1.0-alpha.2')
+    parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)
     assemble(parser.parse_args())

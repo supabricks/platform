@@ -7,6 +7,7 @@ on:
       - 'Cargo.lock'
       - 'components/**'
       - 'install/native/**'
+      - 'python/analytics/**'
       - 'examples/orders/**'
       - 'agents/**'
       - 'LICENSE'
@@ -70,7 +71,7 @@ jobs:
   clean-linux:
     needs: assemble
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -86,7 +87,7 @@ jobs:
             -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
             supabricks-release-test \
             strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
-            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
+            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host --benchmarks \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
         run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
@@ -99,7 +100,7 @@ jobs:
   isolated-macos:
     needs: assemble
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -118,7 +119,7 @@ jobs:
           sandbox-exec -f install/native/offline-macos.sb \
             /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             "$(command -v python)" install/native/qualify.py --directory build/releases \
-            --report build/reports/qualification.json \
+            --report build/reports/qualification.json --benchmarks \
             --network-evidence 'Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac'
       - uses: actions/upload-artifact@v4
         if: always()

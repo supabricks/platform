@@ -512,6 +512,8 @@ machine evidence; a containerized Linux test does not qualify macOS packaging.
 
 ### R02 — Assemble the full analytical developer preview
 
+Implementation and qualification: [R02 analytical preview](../architecture/r02-analytical-preview.md).
+
 **Changes:** analytics component bundles, private Python runtime, full example.
 
 Add the qualified Python/Sail/delta-rs environment to the distribution. The

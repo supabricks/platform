@@ -57,12 +57,30 @@ impl Installation {
             "unsupported"
         };
         if manifest.format_version != 1
-            || manifest.profile != "local-postgres-alpha"
+            || !matches!(
+                manifest.profile.as_str(),
+                "local-postgres-alpha" | "local-analytical-preview"
+            )
             || manifest.target != target
             || !manifest.files.contains_key("bin/supabricks")
         {
             return Err(invalid(
                 "invalid or incompatible Supabricks release manifest",
+            ));
+        }
+        if manifest.profile == "local-analytical-preview"
+            && [
+                "python/analytics/python",
+                "python/runtime/bin/python3.12",
+                "python/analytics/export.py",
+                "python/analytics/session.py",
+                "python/analytics/shell.py",
+            ]
+            .iter()
+            .any(|name| !manifest.files.contains_key(*name))
+        {
+            return Err(invalid(
+                "analytical preview manifest is missing its private worker",
             ));
         }
         Ok(Some(Self {
@@ -78,6 +96,15 @@ impl Installation {
 
     pub fn helpers(&self) -> PathBuf {
         self.root.join("helpers")
+    }
+
+    pub fn analytical_worker(&self) -> Option<(PathBuf, PathBuf)> {
+        (self.manifest.profile == "local-analytical-preview").then(|| {
+            (
+                self.root.join("python/analytics/python"),
+                self.root.join("python/analytics/export.py"),
+            )
+        })
     }
 
     /// Used before installer activation and before starting a packaged daemon.
@@ -120,6 +147,35 @@ impl Installation {
     }
 }
 
+/// Installed workers are bound to this release and discovered after relocation.
+/// Source builds and the explicitly smaller PG profile retain developer setup.
+pub fn analytical_worker(root: &Path) -> Result<(PathBuf, PathBuf)> {
+    let configured = Installation::discover()?.and_then(|i| i.analytical_worker());
+    let (python, worker) = match configured {
+        Some(paths) => paths,
+        None => {
+            let value: serde_json::Value = serde_json::from_slice(&fs::read(root.join("analytics.json"))
+                .map_err(|_| invalid("install the analytical preview or run analytics configure with the locked Python environment"))?)?;
+            let field = |name| {
+                value[name]
+                    .as_str()
+                    .map(PathBuf::from)
+                    .ok_or_else(|| invalid("invalid analytical worker configuration"))
+            };
+            (field("python")?, field("worker")?)
+        }
+    };
+    if !python.is_absolute()
+        || !worker.is_absolute()
+        || !python.is_file()
+        || !worker.is_file()
+        || python.metadata()?.permissions().mode() & 0o111 == 0
+    {
+        return Err(invalid("analytical Python executable or worker is missing"));
+    }
+    Ok((python, worker))
+}
+
 fn inventory(
     root: &Path,
     directory: &Path,
@@ -149,6 +205,42 @@ fn inventory(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn analytical_profile_requires_worker_inventory_and_resolves_from_release() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("bin")).unwrap();
+        let target = if cfg!(target_os = "macos") {
+            "macos-arm64"
+        } else {
+            "linux-x86_64"
+        };
+        let mut manifest = serde_json::json!({"format_version":1,"version":"v0.1.0-alpha.2",
+            "target":target,"profile":"local-analytical-preview","provenance":{},
+            "files":{"bin/supabricks":{"sha256":"unused","executable":true}}});
+        let path = root.path().join("release.json");
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        let exe = root.path().join("bin/supabricks");
+        assert!(Installation::at_executable(&exe).is_err());
+        for name in [
+            "python/analytics/python",
+            "python/runtime/bin/python3.12",
+            "python/analytics/export.py",
+            "python/analytics/session.py",
+            "python/analytics/shell.py",
+        ] {
+            manifest["files"][name] = serde_json::json!({"sha256":"unused","executable":true});
+        }
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        let installed = Installation::at_executable(&exe).unwrap().unwrap();
+        assert_eq!(
+            installed.analytical_worker(),
+            Some((
+                root.path().join("python/analytics/python"),
+                root.path().join("python/analytics/export.py")
+            ))
+        );
+    }
 
     #[test]
     fn release_integrity_rejects_mutations_extra_files_and_symlinks() {

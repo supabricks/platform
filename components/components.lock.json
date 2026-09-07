@@ -166,8 +166,9 @@
       "repository": "https://github.com/astral-sh/python-build-standalone",
       "license": "PSF-2.0",
       "selection": {
-        "kind": "unselected",
-        "reason": "Probe used system CPython 3.12.3; choose a relocatable distribution in R02"
+        "kind": "package",
+        "name": "python-build-standalone",
+        "version": "3.12.13+20260610"
       },
       "qualification": {
         "linux-x86_64": {
@@ -181,7 +182,20 @@
           "remaining": "R02 full runtime dependency/license inventory, relocation and offline operation"
         }
       },
-      "artifacts": []
+      "artifacts": [
+        {
+          "target": "linux-x86_64",
+          "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260610/cpython-3.12.13%2B20260610-x86_64-unknown-linux-gnu-install_only.tar.gz",
+          "sha256": "c218f50baeb2c06a30c2f03db5986b2bad6ab7c8a52faad2d5a59bda0677b93a",
+          "provenance": "components/analytical-runtime.lock.json"
+        },
+        {
+          "target": "macos-arm64",
+          "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260610/cpython-3.12.13%2B20260610-aarch64-apple-darwin-install_only.tar.gz",
+          "sha256": "e18ddd4c1e8f4a1d6c4590b37f423d76aec734447edc20ed08e93983d95f2132",
+          "provenance": "components/analytical-runtime.lock.json"
+        }
+      ]
     },
     {
       "id": "pysail",
