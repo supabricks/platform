@@ -46,8 +46,9 @@ fn accepted_control_connection_waits_for_delayed_fragmented_request() {
         .prefix("sb-framing-")
         .tempdir_in("/tmp")
         .unwrap();
-    let _daemon = start(temp.path());
-    let mut stream = UnixStream::connect(temp.path().join("control.sock")).unwrap();
+    let root = temp.path().join("state");
+    let _daemon = start(&root);
+    let mut stream = UnixStream::connect(root.join("control.sock")).unwrap();
     stream
         .set_read_timeout(Some(Duration::from_secs(5)))
         .unwrap();
