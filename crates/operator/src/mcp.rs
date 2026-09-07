@@ -289,6 +289,22 @@ async fn uri(state: &McpState, name: &str, port: i32) -> Result<String, ToolErro
     ))
 }
 
+// Kubernetes can retain Ready=True throughout a pod's deletion grace period.
+// That pod has already been terminated by the lifecycle manager and cannot
+// satisfy a wake request, even if the endpoint still has its stable port.
+fn compute_ready(pod: &k8s_openapi::api::core::v1::Pod) -> bool {
+    pod.metadata.deletion_timestamp.is_none()
+        && pod
+            .status
+            .as_ref()
+            .and_then(|s| s.conditions.as_ref())
+            .is_some_and(|conditions| {
+                conditions
+                    .iter()
+                    .any(|c| c.type_ == "Ready" && c.status == "True")
+            })
+}
+
 /// Wait until the CR has a port and its compute pod is Ready. Bounded; on
 /// timeout we return state honestly rather than hang (001 §5.2 "predictably
 /// async" — M1's cheap version).
@@ -307,13 +323,13 @@ async fn await_ready(state: &McpState, name: &str, secs: u64) -> Option<i32> {
             None
         };
         if let Some(p) = port {
-            let ready = pods.get_opt(name).await.ok().flatten().is_some_and(|pod| {
-                pod.status
-                    .and_then(|s| s.conditions)
-                    .unwrap_or_default()
-                    .iter()
-                    .any(|c| c.type_ == "Ready" && c.status == "True")
-            });
+            let ready = pods
+                .get_opt(name)
+                .await
+                .ok()
+                .flatten()
+                .as_ref()
+                .is_some_and(compute_ready);
             if ready {
                 return Some(p);
             }
@@ -1048,6 +1064,25 @@ fn tool_defs() -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn terminating_compute_cannot_satisfy_wake_readiness() {
+        let mut pod: k8s_openapi::api::core::v1::Pod = serde_json::from_value(json!({
+            "metadata": {"name": "wake-race"},
+            "status": {"conditions": [{"type": "Ready", "status": "True"}]}
+        }))
+        .unwrap();
+        assert!(compute_ready(&pod));
+        pod.metadata.deletion_timestamp =
+            Some(serde_json::from_value(json!("2026-09-07T22:39:54Z")).unwrap());
+        assert!(
+            !compute_ready(&pod),
+            "the old pod remains Ready during graceful deletion"
+        );
+        pod.metadata.deletion_timestamp = None;
+        pod.status = None;
+        assert!(!compute_ready(&pod), "replacement must finish startup");
+    }
 
     /// T2 (RFC 012, landed by RFC 014 PR B): the tool schema is the agent
     /// contract — unintentional drift fails CI. Intentional change?
