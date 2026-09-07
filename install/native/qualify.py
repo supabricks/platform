@@ -39,6 +39,10 @@ def run(argv, env=None, cwd=None, timeout=180):
 
 
 def qualify(args):
+    if args.minimal_host:
+        available = [tool for tool in ['cargo', 'rustc', 'go', 'gcc', 'cc', 'clang', 'docker', 'java'] if shutil.which(tool)]
+        assert not available, f'clean qualification contains build/cloud tooling: {available}'
+        assert '16.' in run(['/usr/bin/psql', '--version']), 'clean fixture must include an existing system PostgreSQL client'
     workspace = Path(tempfile.mkdtemp(prefix='sb-r01-', dir='/tmp'))
     prefix = workspace / "programs ' with spaces"
     data = workspace / 'data'
@@ -204,5 +208,6 @@ if __name__ == '__main__':
     parser.add_argument('--version', default='v0.1.0-alpha.1')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
+    parser.add_argument('--minimal-host', action='store_true', help='assert no build tools and an existing system psql 16')
     parser.add_argument('--network-evidence', default='not externally isolated; see separate observation report')
     qualify(parser.parse_args())

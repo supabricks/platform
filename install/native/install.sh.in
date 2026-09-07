@@ -17,7 +17,7 @@ replace_link() {
 main() {
     local version='@VERSION@' base='@BASE_URL@'
     local system architecture target protocols prefix stage='' lock='' archive expected actual
-    local destination existing entry profile env_line quoted_prefix
+    local destination entry profile env_line quoted_prefix
     umask 077
     for executable in curl tar openssl awk sed uname mktemp; do
         command -v "$executable" >/dev/null || fail "required system tool missing: $executable"

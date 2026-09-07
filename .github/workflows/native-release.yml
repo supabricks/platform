@@ -47,12 +47,12 @@ jobs:
           repository: supabricks/neon
           run-id: 33985043318
           name: native-engine-${{ matrix.target }}
-          path: engine-archive
+          path: build/engine-archive
           github-token: ${{ github.token }}
       - name: Verify engine and build helpers with updates disabled
         run: |
           python -m pip install -r components/requirements.txt
-          python components/prepare-native-cell.py ${{ matrix.target }} build/native --offline-runtime --engine-archive engine-archive/supabricks-engine-${{ matrix.target }}.tar.gz
+          python components/prepare-native-cell.py ${{ matrix.target }} build/native --offline-runtime --engine-archive build/engine-archive/supabricks-engine-${{ matrix.target }}.tar.gz
       - run: cargo build --locked --release -p supabricks-local
       - name: Installer signature, corruption, traversal and repeat-install contracts
         run: python install/native/test_installer.py
@@ -86,7 +86,7 @@ jobs:
             -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
             supabricks-release-test \
             strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
-            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json \
+            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
         run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
