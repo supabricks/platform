@@ -1,6 +1,517 @@
 [
   {
     "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Export a frozen Postgres branch and atomically publish a new analytical epoch. Returns an ID; poll analytics_status. Existing sessions remain pinned.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_refresh",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect refresh progress from frozen export through complete epoch publication.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_status",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Cancel a refresh and reclaim unpublished data. Published snapshots use retention instead.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_cancel_refresh",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Open a bounded Sail session on a selected epoch or current branch snapshot. First access automatically refreshes if no snapshot exists. Poll analytics_session until ready for the Spark Connect endpoint.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "epoch": {
+          "type": "string"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "ttl_ms": {
+          "default": 900000,
+          "maximum": 3600000,
+          "minimum": 10000,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_open",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect session lifecycle, Spark Connect endpoint and pinned epoch metadata. Raw PySpark can query _supabricks.epoch.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_session",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Close an analytical session, stop its worker, and release its epoch reference after confirmed process cleanup.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_close",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Submit one SELECT/WITH/EXPLAIN read query to a ready analytical session. Returns a query ID; poll analytics_query. Results are bounded text values or null, preserving exact decimals. Only the latest result is retained.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "max_bytes": {
+          "default": 262144,
+          "maximum": 262144,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_rows": {
+          "default": 200,
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "sql": {
+          "maxLength": 32768,
+          "minLength": 1,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "default": 10000,
+          "maximum": 30000,
+          "minimum": 100,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "sql"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_sql",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read the latest query status and bounded result for a session. Starting another request replaces the previous result.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_query",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Cancel all execution in a session by closing its worker. This also disconnects raw Spark Connect clients and releases the epoch reference after confirmed cleanup.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "analytics_cancel",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
       "destructiveHint": false,
       "openWorldHint": false,
       "readOnlyHint": true

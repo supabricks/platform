@@ -30,6 +30,19 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   branch list | get NAME | use NAME | rename NAME NEW_NAME
   branch suspend NAME | resume NAME | delete NAME [--force]
   branch default NAME | ttl NAME --expires-at-ms TIMESTAMP_OR_none
+  analytics configure --python PATH --worker PATH  Configure the A01 developer worker
+  analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
+  analytics status ID | cancel ID
+  analytics refresh --branch NAME [--key KEY] [--wait]
+  analytics open [--branch NAME] [--epoch ID] [--ttl-ms 900000] [--wait]
+  analytics session ID | close ID | cancel-session ID
+  analytics sql --sql SQL [--session ID | --branch NAME] [--max-rows 200]
+  analytics query SESSION_ID QUERY_ID
+  spark shell [--branch NAME] [--epoch ID] [--file SCRIPT.py]
+  analytics publish EXPORT_ID | publication EXPORT_ID | discard EXPORT_ID
+  analytics snapshot --branch NAME | epochs --branch NAME | epoch EPOCH_ID
+  analytics pin EPOCH_ID | renew LEASE_ID [--ttl-ms 60000] | unpin LEASE_ID
+  analytics gc --branch NAME [--keep 2]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
   catalog [--branch NAME]       Discover application tables and columns
@@ -221,8 +234,129 @@ pub fn run() -> Result<u8> {
         crate::mcp::serve(c)?;
         return Ok(0);
     }
+    if command == "spark" {
+        if a.required(1)? != "shell" {
+            return Err(invalid("use spark shell"));
+        }
+        let branch = a.take("--branch");
+        let epoch = a
+            .take("--epoch")
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|_| invalid("invalid epoch ID"))?;
+        let ttl_ms = a.number("--ttl-ms", 900000)?;
+        let file = a.take("--file");
+        a.finish(2)?;
+        let session = c.call(Action::AnalyticsOpen {
+            branch,
+            epoch,
+            key: OperationId::new().to_string(),
+            ttl_ms,
+        })?;
+        let id = serde_json::from_value(session["id"].clone())?;
+        let result = (|| {
+            let session = wait_analytics(&c, Action::AnalyticsSession { id }, 120_000 + ttl_ms)?;
+            if session["state"] != "ready" {
+                println!("{session}");
+                return Ok(7);
+            }
+            let config: Value =
+                serde_json::from_slice(&std::fs::read(root.join("analytics.json"))?)?;
+            let worker = PathBuf::from(
+                config["worker"]
+                    .as_str()
+                    .ok_or_else(|| invalid("missing worker path"))?,
+            )
+            .with_file_name("shell.py");
+            let mut cmd = std::process::Command::new(
+                config["python"]
+                    .as_str()
+                    .ok_or_else(|| invalid("missing Python path"))?,
+            );
+            cmd.arg(worker)
+                .arg("--endpoint")
+                .arg(session["endpoint"].as_str().unwrap())
+                .arg("--root")
+                .arg(&root)
+                .arg("--binding")
+                .arg(serde_json::to_string(&c.binding)?)
+                .arg("--session")
+                .arg(id.to_string());
+            if let Some(file) = file {
+                cmd.arg("--file").arg(file);
+            }
+            Ok(cmd.status()?.code().unwrap_or(1).clamp(0, 255) as u8)
+        })();
+        let cleanup = c.call(Action::AnalyticsClose { id });
+        return match result {
+            Ok(code) => {
+                cleanup?;
+                Ok(code)
+            }
+            Err(e) => Err(e),
+        };
+    }
+    if command == "analytics" && a.required(1)? == "sql" {
+        let sql = sql_argument(&mut a)?;
+        let session = a
+            .take("--session")
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|_| invalid("invalid session ID"))?;
+        let branch = a.take("--branch");
+        if session.is_some() && branch.is_some() {
+            return Err(invalid("choose --session or --branch"));
+        }
+        let max_rows = a.number("--max-rows", 200)?;
+        let max_bytes = a.number("--max-bytes", 262144)?;
+        let timeout_ms = a.number("--timeout-ms", 10000)?;
+        a.finish(2)?;
+        let owned = session.is_none();
+        let id = match session {
+            Some(id) => id,
+            None => serde_json::from_value(
+                c.call(Action::AnalyticsOpen {
+                    branch,
+                    epoch: None,
+                    key: OperationId::new().to_string(),
+                    ttl_ms: 600000,
+                })?["id"]
+                    .clone(),
+            )?,
+        };
+        let result = (|| {
+            let session = wait_analytics(&c, Action::AnalyticsSession { id }, 600000)?;
+            if session["state"] != "ready" {
+                println!("{session}");
+                return Ok(7);
+            }
+            let accepted = c.call(Action::AnalyticsSql {
+                id,
+                sql,
+                max_rows,
+                max_bytes,
+                timeout_ms,
+            })?;
+            let query = serde_json::from_value(accepted["id"].clone())?;
+            let result =
+                wait_analytics(&c, Action::AnalyticsQuery { id, query }, timeout_ms + 15000)?;
+            println!("{result}");
+            Ok(if result["state"] == "complete" { 0 } else { 7 })
+        })();
+        if owned {
+            let cleanup = c.call(Action::AnalyticsClose { id });
+            if result.is_ok() {
+                cleanup?;
+            }
+        }
+        return result;
+    }
     let wait = a.flag("--wait");
     if wait
+        && !(command == "analytics"
+            && a.pos
+                .get(1)
+                .is_some_and(|v| matches!(v.as_str(), "refresh" | "open")))
         && !(matches!(command.as_str(), "database" | "branch")
             && a.pos.get(1).is_some_and(|v| {
                 matches!(
@@ -234,6 +368,186 @@ pub fn run() -> Result<u8> {
         return Err(invalid("--wait requires a lifecycle operation"));
     }
     let action = match command.as_str() {
+        "analytics" => match a.required(1)?.as_str() {
+            "open" => {
+                let branch = a.take("--branch");
+                let epoch = a
+                    .take("--epoch")
+                    .map(|s| s.parse())
+                    .transpose()
+                    .map_err(|_| invalid("invalid epoch ID"))?;
+                let key = a
+                    .take("--key")
+                    .unwrap_or_else(|| OperationId::new().to_string());
+                let ttl_ms = a.number("--ttl-ms", 900000)?;
+                a.finish(2)?;
+                Action::AnalyticsOpen {
+                    branch,
+                    epoch,
+                    key,
+                    ttl_ms,
+                }
+            }
+            verb @ ("session" | "close" | "cancel-session" | "cancel-refresh") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid analytical ID"))?;
+                a.finish(3)?;
+                match verb {
+                    "session" => Action::AnalyticsSession { id },
+                    "close" => Action::AnalyticsClose { id },
+                    "cancel-refresh" => Action::AnalyticsCancelRefresh { id },
+                    _ => Action::AnalyticsCancel { id },
+                }
+            }
+            "query" => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid session ID"))?;
+                let query = a
+                    .required(3)?
+                    .parse()
+                    .map_err(|_| invalid("invalid query ID"))?;
+                a.finish(4)?;
+                Action::AnalyticsQuery { id, query }
+            }
+            verb @ ("publish" | "publication" | "discard") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid export ID"))?;
+                a.finish(3)?;
+                match verb {
+                    "publish" => Action::PublishExport { id },
+                    "publication" => Action::GetPublication { id },
+                    _ => Action::DiscardExport { id },
+                }
+            }
+            verb @ ("snapshot" | "epochs" | "gc") => {
+                let branch = a
+                    .take("--branch")
+                    .ok_or_else(|| invalid("--branch is required"))?;
+                let keep = if verb == "gc" {
+                    a.number("--keep", 2)?
+                } else {
+                    2
+                };
+                let before = if verb == "epochs" {
+                    a.take("--before")
+                        .map(|s| s.parse())
+                        .transpose()
+                        .map_err(|_| invalid("invalid history cursor"))?
+                } else {
+                    None
+                };
+                let limit = if verb == "epochs" {
+                    a.number("--limit", 100)?
+                } else {
+                    100
+                };
+                a.finish(2)?;
+                match verb {
+                    "snapshot" => Action::CurrentSnapshot { branch },
+                    "epochs" => Action::ListSnapshots {
+                        branch,
+                        before,
+                        limit,
+                    },
+                    _ => Action::CollectSnapshots { branch, keep },
+                }
+            }
+            verb @ ("epoch" | "pin") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid epoch ID"))?;
+                let ttl_ms = if verb == "pin" {
+                    a.number("--ttl-ms", 60000)?
+                } else {
+                    60000
+                };
+                a.finish(3)?;
+                if verb == "epoch" {
+                    Action::GetSnapshot { id }
+                } else {
+                    Action::PinSnapshot { id, ttl_ms }
+                }
+            }
+            verb @ ("renew" | "unpin") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid lease ID"))?;
+                let ttl_ms = if verb == "renew" {
+                    a.number("--ttl-ms", 60000)?
+                } else {
+                    60000
+                };
+                a.finish(3)?;
+                if verb == "renew" {
+                    Action::RenewSnapshotLease { id, ttl_ms }
+                } else {
+                    Action::ReleaseSnapshotLease { id }
+                }
+            }
+            "configure" => {
+                let python = a
+                    .take("--python")
+                    .ok_or_else(|| invalid("--python is required"))?;
+                let worker = a
+                    .take("--worker")
+                    .ok_or_else(|| invalid("--worker is required"))?;
+                a.finish(2)?;
+                Action::ConfigureAnalytics {
+                    python: PathBuf::from(python),
+                    worker: PathBuf::from(worker),
+                }
+            }
+            verb @ ("export" | "refresh") => {
+                let branch = a
+                    .take("--branch")
+                    .ok_or_else(|| invalid("--branch is required"))?;
+                let key = a
+                    .take("--key")
+                    .unwrap_or_else(|| OperationId::new().to_string());
+                let defaults = crate::store::ExportLimits::default();
+                let limits = crate::store::ExportLimits {
+                    max_bytes: a.number("--max-bytes", defaults.max_bytes)?,
+                    timeout_ms: a.number("--timeout-ms", defaults.timeout_ms)?,
+                };
+                a.finish(2)?;
+                if verb == "refresh" {
+                    Action::AnalyticsRefresh {
+                        branch,
+                        key,
+                        limits,
+                    }
+                } else {
+                    Action::Export {
+                        branch,
+                        key,
+                        limits,
+                    }
+                }
+            }
+            verb @ ("status" | "cancel") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid export ID"))?;
+                a.finish(3)?;
+                if verb == "status" {
+                    Action::AnalyticsStatus { id }
+                } else {
+                    Action::CancelExport { id }
+                }
+            }
+            _ => {
+                return Err(invalid("unknown analytics command; use --help"));
+            }
+        },
         "capabilities" => {
             a.finish(1)?;
             Action::Capabilities
@@ -421,6 +735,23 @@ pub fn run() -> Result<u8> {
         _ => return Err(invalid("unknown command; use --help")),
     };
     let result = c.call(action)?;
+    if wait && command == "analytics" {
+        let id = serde_json::from_value(result["id"].clone())?;
+        let action = if a.pos[1] == "open" {
+            Action::AnalyticsSession { id }
+        } else {
+            Action::AnalyticsStatus { id }
+        };
+        let result = wait_analytics(&c, action, 600000)?;
+        println!("{result}");
+        return Ok(
+            if matches!(result["state"].as_str(), Some("ready" | "published")) {
+                0
+            } else {
+                7
+            },
+        );
+    }
     if wait {
         eprintln!("{}", json!({"accepted":result}));
         let id = serde_json::from_value(result["id"].clone())
@@ -459,6 +790,48 @@ fn wait_operation(c: &Client, id: OperationId, timeout: u64) -> Result<u8> {
                 json!({"operation":op,"waiting":true,"hint":"operation continues; resume with operation wait ID"})
             );
             return Ok(8);
+        }
+        std::thread::sleep(Duration::from_millis(200));
+    }
+}
+
+fn sql_argument(a: &mut Args) -> Result<String> {
+    match (a.take("--sql"), a.take("--file")) {
+        (Some(sql), None) => Ok(sql),
+        (None, Some(file)) => {
+            let mut s = String::new();
+            std::fs::File::open(file)?
+                .take(32769)
+                .read_to_string(&mut s)?;
+            Ok(s)
+        }
+        _ => Err(invalid("provide exactly one of --sql or --file")),
+    }
+}
+fn wait_analytics(c: &Client, action: Action, timeout_ms: u64) -> Result<Value> {
+    let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+    let mut previous = String::new();
+    loop {
+        let value = c.call(action.clone())?;
+        let state = value["state"].as_str().unwrap_or("unknown");
+        if matches!(
+            state,
+            "ready" | "published" | "complete" | "failed" | "closed" | "cancelled"
+        ) {
+            return Ok(value);
+        }
+        if state != previous {
+            eprintln!(
+                "{}",
+                json!({"id":value["id"],"state":state,"refresh_id":value["refresh_id"]})
+            );
+            previous = state.into();
+        }
+        if Instant::now() >= deadline {
+            return Err(supabricks_core::error::OperationError::Unavailable(
+                "analytical wait deadline; inspect status or cancel the returned ID".into(),
+            )
+            .into());
         }
         std::thread::sleep(Duration::from_millis(200));
     }

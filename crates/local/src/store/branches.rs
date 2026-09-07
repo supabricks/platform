@@ -34,7 +34,7 @@ pub(super) fn validate_point(point: &BranchPoint) -> Result<()> {
 impl Store {
     pub fn accepting_work(&self, id: BranchId) -> Result<()> {
         let b = self.branch(id)?;
-        if b.expired || b.endpoint.desired_state == DesiredState::Deleted {
+        if self.is_export(id)? || b.expired || b.endpoint.desired_state == DesiredState::Deleted {
             return Err(conflict("branch is not accepting new work"));
         }
         Ok(())
@@ -60,6 +60,7 @@ impl Store {
             .into_iter()
             .filter(|b| {
                 b.branch.project_id == project
+                    && !self.is_export(b.branch.id).unwrap_or(true)
                     && (include_deleted || b.endpoint.desired_state != DesiredState::Deleted)
             })
             .collect())
@@ -209,7 +210,7 @@ impl Store {
         id: BranchId,
     ) -> Result<super::BranchRecord> {
         let b = branch(&self.db, id)?;
-        if b.branch.project_id != project {
+        if b.branch.project_id != project || self.is_export(id)? {
             return Err(missing("branch in project"));
         }
         Ok(b)

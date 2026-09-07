@@ -138,6 +138,9 @@ impl Gateway {
         self.errors.clear();
         let branches = store.branches()?;
         for b in &branches {
+            if store.is_export(b.branch.id)? {
+                continue;
+            }
             let id = b.branch.id;
             if b.endpoint.desired_state == DesiredState::Deleted {
                 self.listeners.remove(&id);

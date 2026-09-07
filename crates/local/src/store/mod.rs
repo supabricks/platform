@@ -1,12 +1,18 @@
+mod analytics;
 mod branches;
 mod connections;
 pub(crate) mod error;
+mod exports;
 mod journal;
 mod migrations;
 mod native;
 mod ownership;
+mod sessions;
+pub use sessions::AnalyticalSession;
 mod work;
+pub use analytics::{Publication, Snapshot, SnapshotLease};
 pub use error::{Error, Result};
+pub use exports::{ExportLimits, ExportRecord};
 pub use migrations::SCHEMA_VERSION;
 pub use work::{Epoch, Lease, ProcessRecord, TableMapping};
 
@@ -66,6 +72,7 @@ impl Store {
             && (has_objects
                 || [
                     "runtime.json",
+                    "analytics",
                     "storage.pk8",
                     "storage.pub",
                     "safekeeper",
@@ -135,6 +142,9 @@ impl Store {
         branch(&self.db, id)
     }
     pub fn rename_branch(&mut self, project: ProjectId, id: BranchId, name: &str) -> Result<()> {
+        if self.is_export(id)? {
+            return Err(conflict("internal export branch"));
+        }
         let name = canonical_name(name)?;
         let record = self.branch(id)?;
         if record.branch.project_id != project
@@ -160,6 +170,9 @@ impl Store {
         let config = ProjectConfig::read(directory)?;
         if config.id != project {
             return Err(conflict("worktree belongs to another project"));
+        }
+        if self.is_export(branch_id)? {
+            return Err(conflict("internal export branch"));
         }
         let record = self.branch(branch_id)?;
         if record.branch.project_id != project

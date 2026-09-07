@@ -2,10 +2,12 @@
 """Validate the component inventory offline; never download or execute artifacts."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
 import sys
+import tomllib
 
 from jsonschema import Draft202012Validator
 
@@ -155,6 +157,55 @@ def validate(manifest, root=ROOT, require_qualified=False):
                     or version is None or report.get("versions", {}).get(name) != version
                     or pins.get(name) != version):
                 errors.append(f"{name}/{target}: claim exceeds the recorded analytic probe")
+
+    # A00 evidence applies only to its exact native target, environment and
+    # exercised code. A lock/fixture change must not inherit an old passing claim.
+    for target in manifest["targets"]:
+        evidence = f"python/analytics/evidence/{target}.json"
+        for component in components.values():
+            for reference in component["qualification"][target]["evidence"]:
+                if reference.startswith("python/analytics/evidence/") and reference != evidence:
+                    errors.append(f"{component['id']}/{target}: A00 evidence belongs to another target")
+        claims = [component for component in components.values()
+                  if evidence in component["qualification"][target]["evidence"]]
+        if not claims:
+            continue
+        evidence_path = (root / evidence).resolve()
+        if not evidence_path.is_relative_to(root) or not evidence_path.is_file():
+            continue  # Already reported by evidence_exists.
+        native = read_json(evidence_path)
+        input_paths = [
+            "python/analytics/pyproject.toml", "python/analytics/.python-version",
+            "python/analytics/uv.lock", "python/analytics/requirements.lock",
+            "python/analytics/qualify.py", "python/analytics/read_delta.py",
+            "spikes/local-analytics/smoke.py",
+        ]
+        hashes = {relative: hashlib.sha256((root / relative).read_bytes()).hexdigest()
+                  for relative in input_paths}
+        lock = tomllib.loads((root / "python/analytics/uv.lock").read_text())
+        versions = {p["name"]: p["version"] for p in lock["package"]
+                    if "registry" in p["source"]}
+        python = (root / "python/analytics/.python-version").read_text().strip()
+        machine, system = {"linux-x86_64": ("x86_64", "Linux"),
+                           "macos-arm64": ("arm64", "macOS")}[target]
+        fixture = native.get("fixture", {})
+        valid = (
+            native.get("schema_version") == 1 and native.get("status") == "PASS"
+            and native.get("target") == target and native.get("machine") == machine
+            and native.get("platform", "").startswith(system)
+            and native.get("python") == python and native.get("versions") == versions
+            and native.get("source_dirty") is False
+            and re.fullmatch(r"[0-9a-f]{40}", native.get("source_commit", "")) is not None
+            and native.get("input_sha256") == hashes
+            and native.get("worker_exit_code") == 0 and fixture.get("status") == "PASS"
+        )
+        for component in claims:
+            name, selection = component["id"], component["selection"]
+            if (not valid or component["qualification"][target]["state"] != "probe-passed"
+                    or selection.get("kind") != "package" or selection.get("name") != name
+                    or selection.get("version") != versions.get(name)
+                    or fixture.get("versions", {}).get(name) != versions.get(name)):
+                errors.append(f"{name}/{target}: claim exceeds the recorded A00 qualification")
     return errors
 
 

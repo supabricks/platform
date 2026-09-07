@@ -141,7 +141,7 @@ def qualify(args):
                     assert select.select([mcp.stdout], [], [], 15)[0]
                     response = json.loads(mcp.stdout.readline())
                     assert 'error' not in response, response
-            assert len(response['result']['tools']) == 16
+            assert len(response['result']['tools']) == 25
             checks.append('installed MCP initialization and complete tool discovery')
         finally:
             mcp.stdin.close()

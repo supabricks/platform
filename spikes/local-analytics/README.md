@@ -6,17 +6,14 @@ It uses synthetic data, with no running Postgres, Kubernetes or cloud account.
 
 ## Reproduce
 
-From this directory, using uv and Python 3.12:
+The maintained A00 environment and qualification command are documented in
+[`python/analytics`](../../python/analytics/README.md). It locks CPython and all
+transitive dependencies, runs this fixture in a supervised child process, and
+qualifies native Linux x86_64 and macOS arm64 in CI.
 
-```sh
-uv venv --python 3.12 .venv
-uv pip install --python .venv/bin/python -r requirements.txt
-.venv/bin/python smoke.py
-```
-
-Installation needs network access or a populated package cache. The smoke script
-uses only local files and loopback. It chooses a temporary data directory and
-ephemeral server ports, then stops the servers and removes its test data.
+`requirements.txt` and `result.json` below preserve the original investigation.
+Use the new lock for current work; the historical report describes the original
+fixture, not every check subsequently added by A00.
 
 ## What it proves
 
@@ -59,6 +56,7 @@ pins have been certified across platforms.
 ## Recorded result
 
 See [result.json](result.json) for the original September 5 investigation run.
-The fixture was copied from the retired SSPC checkout without changing its
-script, dependency pins or recorded result. New runs print JSON to stdout; they
-do not overwrite that historical observation.
+The fixture was originally copied from the retired SSPC checkout. A00 extends
+the script with additional decimal, snapshot-binding, cross-engine write and
+process-exit checks. The original dependency pins and report are unchanged.
+Current runs do not overwrite that historical observation.
