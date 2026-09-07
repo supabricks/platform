@@ -438,3 +438,106 @@ fn project_boundaries_parent_references_and_epoch_mappings_are_enforced() {
     duplicate.tables[1].source_oid = 2;
     store.put_epoch(&duplicate).unwrap();
 }
+
+#[test]
+fn export_admission_is_atomic_private_and_idempotent() {
+    use supabricks_local::store::ExportLimits;
+    let root = temp_root();
+    let mut store = Store::open(root.path()).unwrap();
+    let project = config();
+    store.register_project(&project).unwrap();
+    let parent = store
+        .submit(project.id, "parent", create("main", 5600))
+        .unwrap();
+    finish(&mut store, parent.id);
+    let request = Mutation::Export {
+        parent_id: parent.branch_id,
+        ports: Ports {
+            sql: 5700,
+            external_http: 5701,
+            internal_http: 5702,
+        },
+        limits: ExportLimits::default(),
+    };
+    let op = store.submit(project.id, "export", request.clone()).unwrap();
+    assert_eq!(
+        store
+            .submit(project.id, "export", request.clone())
+            .unwrap()
+            .id,
+        op.id
+    );
+    assert!(store.is_export(op.branch_id).unwrap());
+    assert_eq!(store.list_branches(project.id, true).unwrap().len(), 1);
+    assert!(store.branch_in_project(project.id, op.branch_id).is_err());
+    assert!(store.accepting_work(op.branch_id).is_err());
+    assert!(store.export_in_project(ProjectId::new(), op.id).is_err());
+    assert!(
+        store
+            .submit(
+                project.id,
+                "mutate",
+                Mutation::ForceDelete {
+                    branch_id: op.branch_id,
+                    expected_revision: 1,
+                }
+            )
+            .is_err()
+    );
+    assert!(
+        store
+            .submit(
+                project.id,
+                "default",
+                Mutation::SetDefault {
+                    branch_id: op.branch_id
+                }
+            )
+            .is_err()
+    );
+    assert!(
+        store
+            .submit(
+                project.id,
+                "nested",
+                Mutation::BranchFrom {
+                    name: "nested".into(),
+                    parent_id: op.branch_id,
+                    ports: Ports {
+                        sql: 5800,
+                        external_http: 5801,
+                        internal_http: 5802
+                    },
+                    point: Default::default(),
+                    timeout_ms: 30_000,
+                }
+            )
+            .is_err()
+    );
+    let second = Mutation::Export {
+        parent_id: parent.branch_id,
+        ports: Ports {
+            sql: 5800,
+            external_http: 5801,
+            internal_http: 5802,
+        },
+        limits: ExportLimits::default(),
+    };
+    assert!(store.submit(project.id, "second", second).is_err());
+    // A rejected export does not consume its proposed ports or create a child.
+    store
+        .submit(project.id, "ordinary", create("ordinary", 5800))
+        .unwrap();
+    assert_eq!(store.active_exports().unwrap().len(), 1);
+    assert_eq!(
+        store
+            .cancel_export(project.id, op.id)
+            .unwrap()
+            .cancel_requested,
+        true
+    );
+    drop(store);
+    let store = Store::open(root.path()).unwrap();
+    assert!(store.export(op.id).unwrap().cancel_requested);
+    assert_eq!(store.active_exports().unwrap().len(), 1);
+}

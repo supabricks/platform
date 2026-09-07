@@ -206,6 +206,15 @@ impl Store {
         if self.branch(branch)?.endpoint.desired_state != DesiredState::Running {
             return Err(conflict("branch is not accepting new work"));
         }
+        if let Some(id) = epoch {
+            if self
+                .db
+                .prepare("SELECT 1 FROM snapshots WHERE epoch_id=?1 AND state!='available'")?
+                .exists([id.to_string()])?
+            {
+                return Err(conflict("snapshot is unavailable for new readers"));
+            }
+        }
         if holder.is_empty() {
             return Err(invalid("lease holder is required"));
         }

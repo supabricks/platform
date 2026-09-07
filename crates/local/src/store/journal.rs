@@ -29,8 +29,35 @@ impl Store {
         &mut self,
         project: ProjectId,
         key: &str,
-        mut request: Mutation,
+        request: Mutation,
     ) -> Result<Operation> {
+        self.submit_impl(project, key, request, false)
+    }
+    pub(super) fn submit_impl(
+        &mut self,
+        project: ProjectId,
+        key: &str,
+        mut request: Mutation,
+        internal: bool,
+    ) -> Result<Operation> {
+        if !internal {
+            let target = match &request {
+                Mutation::SetState { branch_id, .. }
+                | Mutation::SetTtl { branch_id, .. }
+                | Mutation::SetDefault { branch_id }
+                | Mutation::ForceDelete { branch_id, .. } => Some(*branch_id),
+                _ => None,
+            };
+            if target.is_some_and(|id| self.is_export(id).unwrap_or(true)) {
+                return Err(conflict("internal export branches cannot be mutated"));
+            }
+        }
+        if let Mutation::Export { limits, ports, .. } = &request {
+            limits.validate()?;
+            if !ports.valid() {
+                return Err(invalid("ports must be distinct and nonzero"));
+            }
+        }
         if key.is_empty() || key.len() > 256 {
             return Err(invalid("idempotency key must contain 1–256 bytes"));
         }
@@ -80,7 +107,8 @@ impl Store {
         let (branch_id, revision, steps) = match &request {
             Mutation::CreateBranch { .. }
             | Mutation::CreateDatabase { .. }
-            | Mutation::BranchFrom { .. } => create_branch(&tx, project, &request)?,
+            | Mutation::BranchFrom { .. }
+            | Mutation::Export { .. } => create_branch(&tx, project, &request)?,
             Mutation::SetDefault { branch_id } => {
                 let record = branch(&tx, *branch_id)?;
                 if record.branch.project_id != project
@@ -196,7 +224,7 @@ impl Store {
                         .ok_or_else(|| conflict("resource revision exhausted"))?;
                     if forced {
                         tx.execute(
-                            "DELETE FROM leases WHERE branch_id=?1",
+                            "DELETE FROM leases WHERE branch_id=?1 AND epoch_id IS NULL",
                             [branch_id.to_string()],
                         )?;
                         tx.execute(
@@ -236,6 +264,32 @@ impl Store {
         };
         let id = OperationId::new();
         tx.execute("INSERT INTO operations(id,project_id,request_key,request,branch_id,revision,steps) VALUES (?1,?2,?3,?4,?5,?6,?7)", params![id.to_string(),project.to_string(),key,request_json,branch_id.to_string(),revision,serde_json::to_string(&steps)?])?;
+        if let Mutation::Export {
+            parent_id, limits, ..
+        } = &request
+        {
+            if tx
+                .prepare(
+                    "SELECT 1 FROM exports WHERE state IN ('preparing','exporting','cleaning')",
+                )?
+                .exists([])?
+            {
+                return Err(conflict("one export at a time is allowed per installation"));
+            }
+            let lease = LeaseId::new();
+            tx.execute(
+                "INSERT INTO leases VALUES (?1,?2,NULL,?3,?4,?5)",
+                params![
+                    lease.to_string(),
+                    branch_id.to_string(),
+                    format!("export:{id}"),
+                    self.generation,
+                    now_ms()? + 60_000
+                ],
+            )?;
+            tx.execute("INSERT INTO exports(id,project_id,source_id,child_id,limits,deadline_ms,lease_id) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+                params![id.to_string(),project.to_string(),parent_id.to_string(),branch_id.to_string(),serde_json::to_string(limits)?,now_ms()?+limits.timeout_ms as i64,lease.to_string()])?;
+        }
         if steps.is_empty() {
             tx.execute(
                 "UPDATE operations SET status='succeeded' WHERE id=?1",
@@ -431,6 +485,7 @@ fn create_branch(
     request: &Mutation,
 ) -> Result<(BranchId, i64, Vec<Step>)> {
     let head = BranchPoint::Head;
+    let export_name = format!("export-{}", BranchId::new());
     let (name, parent_id, ports, point, default, timeout_ms) = match request {
         Mutation::CreateBranch {
             name,
@@ -445,6 +500,18 @@ fn create_branch(
             point,
             timeout_ms,
         } => (name, Some(*parent_id), *ports, point, false, *timeout_ms),
+        Mutation::Export {
+            parent_id,
+            ports,
+            limits,
+        } => (
+            &export_name,
+            Some(*parent_id),
+            *ports,
+            &head,
+            false,
+            limits.timeout_ms.min(300_000),
+        ),
         _ => return Err(invalid("expected branch creation")),
     };
     if let Some(id) = parent_id {
@@ -453,6 +520,12 @@ fn create_branch(
             || parent.endpoint.desired_state == DesiredState::Deleted
         {
             return Err(missing("live parent in project"));
+        }
+        if tx
+            .prepare("SELECT 1 FROM exports WHERE child_id=?1")?
+            .exists([id.to_string()])?
+        {
+            return Err(conflict("cannot branch from an internal export"));
         }
         if parent.expired {
             return Err(conflict("expired parent is draining"));

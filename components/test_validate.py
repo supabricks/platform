@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from validate import ROOT, read_json, unique_object, validate
 
@@ -66,6 +67,36 @@ class ComponentContractTests(unittest.TestCase):
         q = self.component("pysail")["qualification"]
         q["macos-arm64"] = copy.deepcopy(q["linux-x86_64"])
         self.assert_invalid("pysail/macos-arm64: claim exceeds")
+
+    def test_a00_evidence_cannot_follow_version_or_target_changes(self):
+        self.component("pysail")["selection"]["version"] = "0.7.2"
+        self.assert_invalid("pysail/macos-arm64: claim exceeds the recorded A00")
+        self.component("pysail")["selection"]["version"] = "0.7.1"
+        q = self.component("pysail")["qualification"]["macos-arm64"]
+        q["evidence"] = ["python/analytics/evidence/linux-x86_64.json"]
+        self.assert_invalid("A00 evidence belongs to another target")
+
+    def test_a00_claim_requires_clean_successful_exact_inputs(self):
+        report_path = ROOT / "python/analytics/evidence/macos-arm64.json"
+        original = read_json(report_path)
+        mutations = [
+            {"status": "FAIL"}, {"source_dirty": True}, {"worker_exit_code": -6},
+            {"machine": "x86_64"}, {"python": "3.12.3"}, {"versions": {}},
+            {"input_sha256": {}}, {"source_commit": "unknown"},
+            {"fixture": {"status": "FAIL"}},
+        ]
+        hashes = copy.deepcopy(original["input_sha256"])
+        hashes["spikes/local-analytics/smoke.py"] = "0" * 64
+        mutations.append({"input_sha256": hashes})
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                modified = {**original, **mutation}
+
+                def read_with_modified_evidence(path):
+                    return modified if path == report_path else read_json(path)
+
+                with patch("validate.read_json", side_effect=read_with_modified_evidence):
+                    self.assert_invalid("pysail/macos-arm64: claim exceeds the recorded A00")
 
     def test_unknown_fields_and_targets_fail(self):
         self.component("neon-engine")["qualifed"] = True

@@ -150,12 +150,20 @@ pub fn evidence(launch: &Launch, pid: u32) -> Result<OwnedProcess> {
 /// Used only for Process Compose itself. Its stdin pipe closes on daemon death;
 /// before authorization it cannot execute, afterwards its identity is durable.
 pub fn start_supervisor(store: &mut Store, launch: &Launch, file: &Path) -> Result<Child> {
+    start_owned(
+        store,
+        launch,
+        file,
+        &store.root().join("logs/supervisor.log"),
+    )
+}
+pub fn start_owned(store: &mut Store, launch: &Launch, file: &Path, log: &Path) -> Result<Child> {
     write_json(file, launch)?;
     let log = OpenOptions::new()
         .create(true)
         .append(true)
         .mode(0o600)
-        .open(store.root().join("logs/supervisor.log"))?;
+        .open(log)?;
     let mut child = Command::new(std::env::current_exe()?)
         .args(["child", "--launch"])
         .arg(file)

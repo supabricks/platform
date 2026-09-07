@@ -39,6 +39,32 @@ fn action(v: Value) -> Action {
     serde_json::from_value(v).unwrap()
 }
 #[test]
+fn accepted_control_connection_waits_for_delayed_fragmented_request() {
+    use std::io::{BufRead, BufReader, Write};
+    use std::os::unix::net::UnixStream;
+    let temp = tempfile::Builder::new()
+        .prefix("sb-framing-")
+        .tempdir_in("/tmp")
+        .unwrap();
+    let root = temp.path().join("state");
+    let _daemon = start(&root);
+    let mut stream = UnixStream::connect(root.join("control.sock")).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    // A connected client need not have a complete request queued at accept.
+    // macOS used to inherit nonblocking mode and reply with EAGAIN here.
+    std::thread::sleep(Duration::from_millis(150));
+    stream.write_all(b"{\"version\":1,\"request\":").unwrap();
+    std::thread::sleep(Duration::from_millis(150));
+    stream.write_all(b"{\"method\":\"status\"}}\n").unwrap();
+    let mut line = String::new();
+    BufReader::new(stream).read_line(&mut line).unwrap();
+    let response: Value = serde_json::from_str(&line).unwrap();
+    assert!(response.get("error").is_none(), "{response}");
+    assert_eq!(response["result"]["engine_execution"], false);
+}
+#[test]
 fn public_contract_replays_allocations_scopes_operations_and_fixes_worktree_binding() {
     let temp = tempfile::Builder::new()
         .prefix("sb-api-")
@@ -186,7 +212,7 @@ fn mcp_contract_is_separate_strict_and_negotiated() {
             json!({"jsonrpc":"2.0","id":3,"method":"tools/list"}),
         )
         .unwrap();
-    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 16);
+    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 25);
     for args in [
         json!({"branch":"main","project_id":"other"}),
         json!({"action":"delete_branch"}),

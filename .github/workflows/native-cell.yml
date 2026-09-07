@@ -6,6 +6,7 @@ on:
       - 'crates/local/**'
       - 'Cargo.lock'
       - 'components/**'
+      - 'python/analytics/**'
       - 'e2e/native/**'
       - 'examples/orders/**'
       - 'agents/**'
@@ -67,6 +68,20 @@ jobs:
         run: python e2e/native/connections.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-connections.json
       - name: Public CLI, MCP and orders application workflow
         run: python e2e/native/workflow.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-workflow.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+          enable-cache: false
+      - name: Install locked exporter environment
+        run: uv sync --project python/analytics --locked --managed-python
+      - name: Frozen export correctness, isolation and interrupted cleanup
+        run: python e2e/native/exports.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-exports.json
+      - name: Atomic epochs, durable reader leases and retained recovery
+        run: python e2e/native/epochs.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-epochs.json
+      - name: Sail sessions, analytical SQL and Spark Connect ownership
+        run: python e2e/native/sessions.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-sessions.json
+      - name: Analytical worker boundary tests
+        run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py'
       - name: Coding-agent setup adapter contracts
         run: python agents/test-setup.py
       - uses: actions/upload-artifact@v4
@@ -82,4 +97,10 @@ jobs:
             native-connections.log
             native-workflow.json
             native-workflow.log
+            native-exports.json
+            native-exports.log
+            native-epochs.json
+            native-epochs.log
+            native-sessions.json
+            native-sessions.log
             build/native/helper-build.json

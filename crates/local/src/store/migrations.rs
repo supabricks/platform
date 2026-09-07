@@ -6,6 +6,9 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0003_native_processes.sql"),
     include_str!("migrations/0004_branches.sql"),
     include_str!("migrations/0005_connections.sql"),
+    include_str!("migrations/0006_exports.sql"),
+    include_str!("migrations/0007_analytics.sql"),
+    include_str!("migrations/0008_sessions.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 

@@ -1,5 +1,6 @@
 //! Native single-owner cell. Process Compose is an executor, never desired state.
 mod branches;
+mod exports;
 mod http;
 mod lifecycle;
 mod pageserver;
@@ -310,7 +311,11 @@ impl Cell {
         Ok(cell)
     }
     pub fn recover(store: &mut Store) -> Result<()> {
-        let mut records = store.native_processes()?;
+        let mut records: Vec<_> = store
+            .native_processes()?
+            .into_iter()
+            .filter(|p| !p.role.starts_with("analytics-session-"))
+            .collect();
         records.sort_by_key(|p| {
             if p.role == "supervisor" {
                 0
@@ -328,6 +333,7 @@ impl Cell {
                 .map_err(|e| conflict(format!("cannot stop {}: {e}", record.role)))?;
             store.forget_native_process(&record)?;
         }
+        store.interrupt_exports()?;
         if !store.processes()?.is_empty() {
             return Err(conflict(
                 "unverified legacy process records prevent engine startup",
@@ -629,9 +635,11 @@ impl Cell {
         std::time::Duration::from_millis(self.config.connection_startup_timeout_ms)
     }
     pub fn validate_mutation(&self, mutation: &crate::operations::Mutation) -> Result<()> {
+        self.validate_export(mutation)?;
         if let crate::operations::Mutation::CreateBranch { ports, .. }
         | crate::operations::Mutation::CreateDatabase { ports, .. }
-        | crate::operations::Mutation::BranchFrom { ports, .. } = mutation
+        | crate::operations::Mutation::BranchFrom { ports, .. }
+        | crate::operations::Mutation::Export { ports, .. } = mutation
             && [ports.sql, ports.external_http, ports.internal_http]
                 .iter()
                 .any(|p| self.config.ports.values().any(|used| used == p))
@@ -685,6 +693,7 @@ impl Cell {
         format!("compute-{}", branch.endpoint.id)
     }
     fn ensure_compute(&mut self, store: &mut Store, branch: &BranchRecord) -> Result<bool> {
+        let export = store.is_export(branch.branch.id)?;
         let role = Self::compute_role(branch);
         let ports = branch
             .ports
@@ -721,12 +730,21 @@ impl Cell {
                 return Ok(false);
             }
             if !self.configured.contains(&(role.clone(), record.pid)) {
-                self.sql.provision(
-                    ports.sql,
-                    &store.endpoint_password(branch.endpoint.id)?,
-                    &store.app_password(branch.endpoint.id)?,
-                    branch.expired,
-                )?;
+                if export {
+                    self.sql.provision_export(
+                        &Self::export_user(branch),
+                        ports.sql,
+                        &store.endpoint_password(branch.endpoint.id)?,
+                        &store.app_password(branch.endpoint.id)?,
+                    )?;
+                } else {
+                    self.sql.provision(
+                        ports.sql,
+                        &store.endpoint_password(branch.endpoint.id)?,
+                        &store.app_password(branch.endpoint.id)?,
+                        branch.expired,
+                    )?;
+                }
                 self.configured.insert((role, record.pid));
             }
             return Ok(true);
@@ -763,7 +781,11 @@ impl Cell {
         }
         dir(&sockets)?;
         let hba = root.join("pg_hba.conf");
-        write_private(&hba,b"local all cloud_admin trust\nlocal all all reject\nhost all all 127.0.0.1/32 md5\nhost replication all 127.0.0.1/32 md5\n")?;
+        if export {
+            write_private(&hba,format!("local all cloud_admin trust\nlocal all all reject\nhost postgres cloud_admin,{} 127.0.0.1/32 md5\nhost all all 0.0.0.0/0 reject\n",Self::export_user(branch)).as_bytes())?;
+        } else {
+            write_private(&hba,b"local all cloud_admin trust\nlocal all all reject\nhost all all 127.0.0.1/32 md5\nhost replication all 127.0.0.1/32 md5\n")?;
+        }
         let mut plan = crate::plan_compute(
             &crate::ComputeInput {
                 pg_major: branch.endpoint.pg_major,
@@ -788,6 +810,22 @@ impl Cell {
         for setting in settings.iter_mut() {
             if setting["name"] == "unix_socket_directories" {
                 setting["value"] = json!(sockets);
+            }
+        }
+        if export {
+            for setting in settings.iter_mut() {
+                if setting["name"] == "shared_preload_libraries" {
+                    setting["value"] = json!("neon");
+                }
+            }
+            for (name, value) in [
+                ("autovacuum", "off"),
+                ("max_logical_replication_workers", "0"),
+                ("cron.launch_active_jobs", "off"),
+                ("session_preload_libraries", ""),
+                ("local_preload_libraries", ""),
+            ] {
+                settings.push(json!({"name":name,"value":value,"vartype":"string"}));
             }
         }
         settings.push(json!({"name":"hba_file","value":hba,"vartype":"string"}));
@@ -863,6 +901,8 @@ impl Cell {
         Ok(true)
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        // Cancellation and deadlines fence workers even while shared storage is down.
+        self.control_exports(store)?;
         self.storage_ready = false;
         if let Some(child) = &mut self.supervisor {
             let _ = child.try_wait()?;
@@ -880,7 +920,8 @@ impl Cell {
             return Ok(());
         }
         for record in store.native_processes()? {
-            if record.branch.is_none()
+            if !record.role.starts_with("analytics-session-")
+                && record.branch.is_none()
                 && record.role != "supervisor"
                 && supervisor::os::identity(record.pid)?.is_none_or(|id| id.zombie)
             {
@@ -927,6 +968,7 @@ impl Cell {
         if !self.storage_ready {
             return Ok(());
         }
+        self.tick_exports(store)?;
         store.reconcile_parent_pins()?;
         store.mark_expired()?;
         let mut busy = vec![];

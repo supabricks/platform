@@ -378,6 +378,9 @@ a real-agent smoke is a separately recorded usability check, not a replacement.
 
 ### A00 — Retain and qualify the off-the-shelf analytical fixture
 
+Implementation: [locked environment and native qualification](../../python/analytics/README.md).
+The original probe is preserved; current CI runs the extended fixture on both native targets.
+
 **Changes:** `spikes/local-analytics/`, then `python/analytics/` dependency lock.
 
 Import the already executed Sail/delta-rs probe without claiming it is the
@@ -393,6 +396,8 @@ startup and memory with measurement boundaries. Retain regressions for unsafe
 snapshot binding forms; passing SQL parsing is not proof of pinned reads.
 
 ### A01 — Export a frozen Postgres branch
+
+Implementation and developer commands: [A01 frozen exports](../architecture/a01-frozen-exports.md).
 
 **Changes:** export operations and a small Python worker using maintained PG,
 Arrow and delta-rs libraries. Depends on P04, P05 and A00.
@@ -424,6 +429,8 @@ storage impact. Parent activity and a failed export cannot corrupt each other.
 
 ### A02 — Atomic analytical epochs, retention and failure recovery
 
+Implementation and recovery contract: [A02 analytical epochs](../architecture/a02-analytical-epochs.md).
+
 **Changes:** epoch/catalog tables and migrations, publisher, manifests, GC.
 
 Define an epoch by installation/project/database/branch/timeline identity,
@@ -450,6 +457,8 @@ publish out of order. Restart preserves referenced history; cancellation cleans
 unreferenced staging data; out-of-space errors preserve the previous snapshot.
 
 ### A03 — Sail sessions and the analytical user surface
+
+Implementation and commands: [A03 analytical sessions](../architecture/a03-analytical-sessions.md).
 
 **Changes:** worker bootstrap, session operations, CLI/MCP analytics methods.
 

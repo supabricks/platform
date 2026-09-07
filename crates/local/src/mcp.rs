@@ -14,6 +14,69 @@ pub fn tools() -> Value {
     let revision = json!({"type":"integer","minimum":1,"description":"Revision returned by get_branch. Stale mutations fail with conflict."});
     let defs = vec![
         (
+            "analytics_refresh",
+            "Export a frozen Postgres branch and atomically publish a new analytical epoch. Returns an ID; poll analytics_status. Existing sessions remain pinned.",
+            json!({"branch":branch,"key":key}),
+            vec!["branch", "key"],
+            false,
+        ),
+        (
+            "analytics_status",
+            "Inspect refresh progress from frozen export through complete epoch publication.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "analytics_cancel_refresh",
+            "Cancel a refresh and reclaim unpublished data. Published snapshots use retention instead.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "analytics_open",
+            "Open a bounded Sail session on a selected epoch or current branch snapshot. First access automatically refreshes if no snapshot exists. Poll analytics_session until ready for the Spark Connect endpoint.",
+            json!({"branch":branch,"epoch":string,"key":key,"ttl_ms":{"type":"integer","minimum":10000,"maximum":3600000,"default":900000}}),
+            vec!["key"],
+            false,
+        ),
+        (
+            "analytics_session",
+            "Inspect session lifecycle, Spark Connect endpoint and pinned epoch metadata. Raw PySpark can query _supabricks.epoch.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "analytics_close",
+            "Close an analytical session, stop its worker, and release its epoch reference after confirmed process cleanup.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "analytics_sql",
+            "Submit one SELECT/WITH/EXPLAIN read query to a ready analytical session. Returns a query ID; poll analytics_query. Results are bounded text values or null, preserving exact decimals. Only the latest result is retained.",
+            json!({"id":string,"sql":{"type":"string","minLength":1,"maxLength":32768},"max_rows":{"type":"integer","minimum":1,"maximum":1000,"default":200},"max_bytes":{"type":"integer","minimum":1024,"maximum":262144,"default":262144},"timeout_ms":{"type":"integer","minimum":100,"maximum":30000,"default":10000}}),
+            vec!["id", "sql"],
+            false,
+        ),
+        (
+            "analytics_query",
+            "Read the latest query status and bounded result for a session. Starting another request replaces the previous result.",
+            json!({"id":string,"query":string}),
+            vec!["id", "query"],
+            true,
+        ),
+        (
+            "analytics_cancel",
+            "Cancel all execution in a session by closing its worker. This also disconnects raw Spark Connect clients and releases the epoch reference after confirmed cleanup.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
             "capabilities",
             "Report this session's project/worktree, local API version, features and hard limits.",
             json!({}),
@@ -133,6 +196,15 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "analytics_refresh"
+        | "analytics_status"
+        | "analytics_cancel_refresh"
+        | "analytics_open"
+        | "analytics_session"
+        | "analytics_close"
+        | "analytics_sql"
+        | "analytics_query"
+        | "analytics_cancel" => json!({"type":"object","required":["id","state"]}),
         "create_database" | "create_branch" | "set_state" | "delete_branch" | "set_default"
         | "set_ttl" | "get_operation" => operation,
         "get_branch" | "rename_branch" => branch,
