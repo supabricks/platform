@@ -1,4 +1,5 @@
 //! Native configuration, durable local state and the single-writer daemon.
+pub mod analytics;
 pub mod api;
 pub mod cli;
 pub mod client;

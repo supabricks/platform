@@ -1,3 +1,4 @@
+mod analytics;
 mod branches;
 mod connections;
 pub(crate) mod error;
@@ -7,6 +8,7 @@ mod migrations;
 mod native;
 mod ownership;
 mod work;
+pub use analytics::{Publication, Snapshot, SnapshotLease};
 pub use error::{Error, Result};
 pub use exports::{ExportLimits, ExportRecord};
 pub use migrations::SCHEMA_VERSION;
@@ -68,6 +70,7 @@ impl Store {
             && (has_objects
                 || [
                     "runtime.json",
+                    "analytics",
                     "storage.pk8",
                     "storage.pub",
                     "safekeeper",

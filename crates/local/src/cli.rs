@@ -32,6 +32,10 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics configure --python PATH --worker PATH  Configure the A01 developer worker
   analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
   analytics status ID | cancel ID
+  analytics publish EXPORT_ID | publication EXPORT_ID | discard EXPORT_ID
+  analytics snapshot --branch NAME | epochs --branch NAME | epoch EPOCH_ID
+  analytics pin EPOCH_ID | renew LEASE_ID [--ttl-ms 60000] | unpin LEASE_ID
+  analytics gc --branch NAME [--keep 2]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
   catalog [--branch NAME]       Discover application tables and columns
@@ -223,6 +227,85 @@ pub fn run() -> Result<u8> {
     }
     let action = match command.as_str() {
         "analytics" => match a.required(1)?.as_str() {
+            verb @ ("publish" | "publication" | "discard") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid export ID"))?;
+                a.finish(3)?;
+                match verb {
+                    "publish" => Action::PublishExport { id },
+                    "publication" => Action::GetPublication { id },
+                    _ => Action::DiscardExport { id },
+                }
+            }
+            verb @ ("snapshot" | "epochs" | "gc") => {
+                let branch = a
+                    .take("--branch")
+                    .ok_or_else(|| invalid("--branch is required"))?;
+                let keep = if verb == "gc" {
+                    a.number("--keep", 2)?
+                } else {
+                    2
+                };
+                let before = if verb == "epochs" {
+                    a.take("--before")
+                        .map(|s| s.parse())
+                        .transpose()
+                        .map_err(|_| invalid("invalid history cursor"))?
+                } else {
+                    None
+                };
+                let limit = if verb == "epochs" {
+                    a.number("--limit", 100)?
+                } else {
+                    100
+                };
+                a.finish(2)?;
+                match verb {
+                    "snapshot" => Action::CurrentSnapshot { branch },
+                    "epochs" => Action::ListSnapshots {
+                        branch,
+                        before,
+                        limit,
+                    },
+                    _ => Action::CollectSnapshots { branch, keep },
+                }
+            }
+            verb @ ("epoch" | "pin") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid epoch ID"))?;
+                let ttl_ms = if verb == "pin" {
+                    a.number("--ttl-ms", 60000)?
+                } else {
+                    60000
+                };
+                a.finish(3)?;
+                if verb == "epoch" {
+                    Action::GetSnapshot { id }
+                } else {
+                    Action::PinSnapshot { id, ttl_ms }
+                }
+            }
+            verb @ ("renew" | "unpin") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid lease ID"))?;
+                let ttl_ms = if verb == "renew" {
+                    a.number("--ttl-ms", 60000)?
+                } else {
+                    60000
+                };
+                a.finish(3)?;
+                if verb == "renew" {
+                    Action::RenewSnapshotLease { id, ttl_ms }
+                } else {
+                    Action::ReleaseSnapshotLease { id }
+                }
+            }
             "configure" => {
                 let python = a
                     .take("--python")
@@ -268,9 +351,7 @@ pub fn run() -> Result<u8> {
                 }
             }
             _ => {
-                return Err(invalid(
-                    "analytics supports configure, export, status and cancel",
-                ));
+                return Err(invalid("unknown analytics command; use --help"));
             }
         },
         "capabilities" => {
