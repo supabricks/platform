@@ -1,0 +1,12 @@
+;; Qualification harness policy only. This is not installed with the runtime.
+(version 1)
+(allow default)
+(deny network*)
+(allow network* (local ip "localhost:*"))
+(allow network* (remote ip "localhost:*"))
+(allow network* (local unix-socket))
+(allow network* (remote unix-socket))
+;; A release must resolve bundled libraries, not Homebrew build dependencies.
+(deny file-read* (subpath "/opt/homebrew"))
+(deny file-read* (subpath "/usr/local/Cellar"))
+(deny file-read* (subpath "/usr/local/opt"))

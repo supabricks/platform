@@ -5,6 +5,7 @@ pub mod client;
 mod connections;
 pub mod daemon;
 pub mod engine;
+pub mod installation;
 pub mod mcp;
 pub mod operations;
 pub mod project;
