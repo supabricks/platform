@@ -3,7 +3,8 @@
 Supabricks code is licensed under [Apache 2.0](LICENSE). Bundled third-party
 components retain their own licenses.
 
-The native local Postgres alpha now has a [localhost curl installer](install/native/README.md).
+The native local analytical preview has a [localhost curl installer](install/native/README.md)
+that bundles Postgres, Sail and the private Python runtime.
 It bundles PG17.8, branching, CLI and MCP without requiring Kubernetes or Docker
 on the target machine. Public hosting at `supabricks.io` is deferred.
 

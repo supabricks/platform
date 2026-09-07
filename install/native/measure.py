@@ -41,7 +41,10 @@ def sample(args):
         samples += 1
         time.sleep(0.2)
     elapsed = time.monotonic() - start
+    memory_limit = Path('/sys/fs/cgroup/memory.max')
+    limit = memory_limit.read_text().strip() if memory_limit.exists() else ''
     args.report.write_text(json.dumps(dict(host=platform.platform(), machine=platform.machine(),
+        cgroup_memory_limit_bytes=int(limit) if limit.isdigit() else None,
         logical_cpus=os.cpu_count(), host_memory_bytes=psutil.virtual_memory().total,
         duration_seconds=elapsed, peak_rss_bytes=peak_rss, cpu_seconds=cpu_seconds,
         mean_cpu_percent_one_core=100 * cpu_seconds / elapsed, samples=samples,

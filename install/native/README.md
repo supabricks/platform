@@ -36,6 +36,9 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
+R02 uses version `v0.1.0-alpha.2`. Existing R01 installations need separate
+program and data directories for this preview; in-place upgrades remain R03.
+
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before
 piping into Bash to change the former; use `SUPABRICKS_DATA_DIR` or `--data-dir`

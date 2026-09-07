@@ -68,6 +68,8 @@ def check_loaders(runtime, destination, target):
         elif target == 'macos-arm64' and magic in (b'\xcf\xfa\xed\xfe', b'\xca\xfe\xba\xbe'):
             listing = subprocess.check_output(['otool', '-L', str(path)], text=True)
             for line in listing.splitlines()[1:]:
+                if line.rstrip().endswith(':'):
+                    continue  # otool repeats the filename for each universal-binary architecture.
                 dependency = line.strip().split(' (', 1)[0]
                 if dependency.startswith('/') and not dependency.startswith(('/usr/lib/', '/System/Library/')):
                     raise ValueError('analytical library outside release: ' + dependency)

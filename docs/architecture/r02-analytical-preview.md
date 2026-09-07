@@ -45,6 +45,14 @@ worker slots while previous workers are still shutting down. Explicit
 `analytics close ID --wait` and `cancel-session ID --wait` provide the same
 completion boundary; the underlying API remains asynchronous.
 
+The local object store permits 256 volumes of 64 MB (roughly 16 GB total)
+and stops accepting writes below the smaller of 1% or 1 GiB free disk space. The prior engineering
+profile allowed only 16 volumes and used a percentage reserve; the 1 GB load
+probe exhausted that small profile before a frozen branch could publish. This
+change raises the bounded capacity without preallocating it. PostgreSQL WAL,
+local pageserver layers, compute caches and retained analytical generations use
+additional disk; source payload size is not total installation disk usage.
+
 ## Qualification
 
 `install/native/qualify.py --benchmarks` drives the real signed curl-to-Bash

@@ -10,7 +10,7 @@ existing sessions and their running queries keep their original table versions.
 Keep the [A01 locked worker environment](a01-frozen-exports.md#developer-setup)
 configured. `session.py` and `shell.py` live beside the configured `export.py`.
 No extra dependency installation happens on session startup. Packaging these
-files and the private Python environment into the installer remains R02.
+files and the private Python environment is implemented by [R02](r02-analytical-preview.md).
 
 ```sh
 # First access automatically exports and publishes if no snapshot exists.
