@@ -152,6 +152,9 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
             time.sleep(.05)
         result=self.terminal(e)
         generation,manifest=self.manifest(result)
+        assert len(manifest['tables']) == 5
+        assert {(r['schema'],r['name']) for r in manifest['omitted_relations']
+                if r['reason']=='engine control relation'} == {('public','health_check'),('neon_migration','migration_id')}
         assert self.values(generation,manifest,'orders') == [dict(id=1,amount='123456789012345678901234567890.12345678',note='updated')]
         assert self.values(generation,manifest,'payments') == [dict(id=1,amount='123456789012345678901234567890.12345678')]
         assert self.values(generation,manifest,'empty') == []
@@ -174,6 +177,11 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
             parent_probe_count=len(latencies),parent_probe_max_ms=round(max(latencies,default=0)*1000,3),
             parent_last_record_lsn_before=before['last_record_lsn'],parent_last_record_lsn_after=after['last_record_lsn'],
             export_compute_scans=manifest['export_compute_scans'],output_bytes=result['outcome']['bytes']))
+        limited = self.root/'limited.py'
+        limited.write_text(f"import sys\nsys.path.insert(0,{str(worker.parent)!r})\nimport export\nexport.MAX_BATCHES=2\nsys.exit(export.main())\n")
+        self.configure(limited)
+        assert 'metadata budget' in self.terminal(self.begin(),'failed')['outcome']['message']
+        self.checks.append(dict(name='metadata_budget',status='PASS'))
         self.configure(worker)
         # Each failure must retire compute, lease, credentials and unpublished files.
         for name,ddl in [

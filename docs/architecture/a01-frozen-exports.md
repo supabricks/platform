@@ -71,7 +71,10 @@ shutdown also interrupts an active export; cleanup resumes on the next startup.
 ## Initial data contract
 
 Only ordinary permanent tables in `postgres` are exported. Views, sequences and
-extension-owned relations are listed as omitted. Partitioning, inheritance,
+extension-owned relations are listed as omitted. The engine-owned
+`public.health_check` and `neon_migration.migration_id` are also explicitly
+omitted: compute_ctl mutates this control state after branching. Application
+ownership of those reserved names is rejected. Partitioning, inheritance,
 foreign/materialized tables, RLS and unsupported column names are rejected.
 Limits are 256 discovered relations, 128 exported tables and 128 columns/table.
 
@@ -97,7 +100,9 @@ and equality semantics are **not** reproduced by the analytical engine.
 
 Defaults: one active export, 1 GiB output and five minutes total. Admission accepts
 16 MiB–16 GiB and 10–1800 seconds. The worker caps rows at 256 KiB, pending batches
-at 8 MiB/4096 rows, and fetches 32 rows at a time. It checks output use and free
+at 8 MiB/4096 rows, and fetches 32 rows at a time. A generation may create at
+most 1024 Delta batches, bounding retained file-action metadata as well as row
+buffers; larger sources fail explicitly even if their byte budget remains. It checks output use and free
 space before/after each batch, conservatively reserves encoding/metadata space,
 and leaves 64 MiB free. These are application budgets, not filesystem quotas;
 other processes can consume disk concurrently. PostgreSQL statements have a

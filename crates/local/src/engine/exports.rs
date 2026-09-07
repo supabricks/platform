@@ -187,6 +187,8 @@ impl Cell {
                     && result["source"]["branch_id"] == json!(e.source_id)
                     && result["source"]["project_id"] == json!(e.project_id)
                     && result["source"]["timeline_id"] == json!(source.branch.timeline_id)
+                    && result["source"]["tenant_id"] == json!(branch.branch.tenant_id)
+                    && result["source"]["export_branch_id"] == json!(e.child_id)
                     && result["source"]["export_timeline_id"] == json!(branch.branch.timeline_id)
                     && result["source"]["lsn"] == json!(branch.branch.ancestor_lsn)
                     && result["bytes"]

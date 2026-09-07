@@ -17,6 +17,9 @@ from qualify import environment
 ROW_BYTES = 256 * 1024
 BATCH_BYTES = 8 * 1024 * 1024
 BATCH_ROWS = 4096
+# delta-rs retains file actions while reopening an append target. Bound this
+# metadata too, not just row/Arrow buffers, across the entire generation.
+MAX_BATCHES = 1024
 FREE_RESERVE = 64 * 1024 * 1024
 
 
@@ -82,7 +85,8 @@ def discover(conn):
         SELECT c.oid,n.nspname,c.relname,c.relkind,c.relpersistence,c.relrowsecurity,
                c.relispartition, EXISTS(SELECT 1 FROM pg_depend d WHERE
                  d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e'),
-               EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid)
+               EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid),
+               c.relowner=(SELECT oid FROM pg_roles WHERE rolname='cloud_admin')
         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
           AND c.relkind IN ('r','p','f','m','v','S') ORDER BY c.oid LIMIT 257
@@ -90,7 +94,14 @@ def discover(conn):
     if len(relations) > 256:
         raise Rejected('at most 256 user relations per export')
     tables, omitted = [], []
-    for oid, namespace, name, kind, persistence, rls, partition, extension, inherits in relations:
+    for oid, namespace, name, kind, persistence, rls, partition, extension, inherits, engine_owner in relations:
+        # compute_ctl updates these after branching. They are control-plane
+        # state, not application data at the captured source boundary.
+        if (namespace, name) in (('public', 'health_check'), ('neon_migration', 'migration_id')):
+            if not engine_owner:
+                raise Rejected('application ownership collides with an engine control relation')
+            omitted.append({'schema': namespace, 'name': name, 'reason': 'engine control relation'})
+            continue
         if extension or kind in ('v', 'S'):
             omitted.append({'schema': namespace, 'name': name, 'reason': 'extension-owned' if extension else 'view/sequence; table data only'})
             continue
@@ -145,6 +156,7 @@ def export(config):
                '-c search_path=pg_catalog -c client_encoding=UTF8 -c TimeZone=UTC -c DateStyle=ISO,YMD '
                '-c statement_timeout=30000 -c lock_timeout=2000 -c row_security=off')
     tables_report = []
+    total_batches = 0
     with psycopg.connect(host='127.0.0.1', port=config['port'], dbname='postgres',
                         user=config['username'], password=config['password'],
                         application_name=f"supabricks-export-{config['id']}",
@@ -161,7 +173,9 @@ def export(config):
             pending, pending_bytes = [], 0
 
             def flush():
-                nonlocal rows, batches, peak, pending, pending_bytes
+                nonlocal rows, batches, peak, pending, pending_bytes, total_batches
+                if total_batches >= MAX_BATCHES:
+                    raise Rejected('export exceeds 1024 Delta batches; metadata budget exhausted')
                 batch = pa.Table.from_pylist(pending, schema=schema)
                 # One unpartitioned bounded batch per Delta commit. Reserve ample
                 # metadata/encoding space BEFORE writing; confirm actual use after.
@@ -174,6 +188,7 @@ def export(config):
                 boundary(config, root)
                 rows += len(pending)
                 batches += 1
+                total_batches += 1
                 peak = max(peak, batch.nbytes)
                 pending, pending_bytes = [], 0
 
