@@ -218,9 +218,12 @@ impl Daemon {
             };
             // A probe may close immediately after connect. Socket setup errors
             // belong to that client, not to the daemon's ownership lifetime.
-            if stream
-                .set_read_timeout(Some(Duration::from_secs(2)))
-                .is_err()
+            // BSD/macOS accept inherits the listener's O_NONBLOCK flag;
+            // Linux does not. Request framing uses bounded blocking I/O.
+            if stream.set_nonblocking(false).is_err()
+                || stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .is_err()
                 || stream
                     .set_write_timeout(Some(Duration::from_secs(2)))
                     .is_err()
