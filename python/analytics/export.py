@@ -183,6 +183,10 @@ def export(config):
                 reserve = 4 * batch.nbytes + 4 * 1024 * 1024
                 boundary(config, root, reserve)
                 write_deltalake(path, batch, mode='append' if batches else 'error',
+                    # delta-rs 1.6.3 emits lossy floating-point decimal min/max
+                    # statistics. Sail can substitute those for actual values
+                    # or prune valid rows. Keep exact Parquet values authoritative.
+                    configuration={'delta.dataSkippingNumIndexedCols': '0'},
                     writer_properties=WriterProperties(compression='UNCOMPRESSED',
                         max_row_group_size=BATCH_ROWS, data_page_size_limit=64 * 1024),
                     target_file_size=64 * 1024 * 1024)

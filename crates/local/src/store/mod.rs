@@ -7,6 +7,8 @@ mod journal;
 mod migrations;
 mod native;
 mod ownership;
+mod sessions;
+pub use sessions::AnalyticalSession;
 mod work;
 pub use analytics::{Publication, Snapshot, SnapshotLease};
 pub use error::{Error, Result};

@@ -311,7 +311,11 @@ impl Cell {
         Ok(cell)
     }
     pub fn recover(store: &mut Store) -> Result<()> {
-        let mut records = store.native_processes()?;
+        let mut records: Vec<_> = store
+            .native_processes()?
+            .into_iter()
+            .filter(|p| !p.role.starts_with("analytics-session-"))
+            .collect();
         records.sort_by_key(|p| {
             if p.role == "supervisor" {
                 0
@@ -916,7 +920,8 @@ impl Cell {
             return Ok(());
         }
         for record in store.native_processes()? {
-            if record.branch.is_none()
+            if !record.role.starts_with("analytics-session-")
+                && record.branch.is_none()
                 && record.role != "supervisor"
                 && supervisor::os::identity(record.pid)?.is_none_or(|id| id.zombie)
             {

@@ -122,3 +122,10 @@ counter deltas across the worker and cleanup interval. Parent probes include
 process launch overhead and concurrent SQL writes. Shared storage is still shared: exporting can contend for pageserver,
 CPU and disk resources. These synthetic observations are not an isolation or
 throughput guarantee.
+
+## A03 query compatibility
+
+New exports omit Delta column statistics (`delta.dataSkippingNumIndexedCols=0`)
+to avoid lossy decimal min/max statistics influencing Sail reads. This does not
+change the Parquet schema or values. See [A03 decimal statistics](a03-analytical-sessions.md#decimal-statistics-compatibility)
+for the reproducer, older-epoch behavior and pruning tradeoff.
