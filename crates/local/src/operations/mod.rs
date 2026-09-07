@@ -36,6 +36,11 @@ impl Ports {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Mutation {
+    Export {
+        parent_id: BranchId,
+        ports: Ports,
+        limits: crate::store::ExportLimits,
+    },
     CreateDatabase {
         name: String,
         ports: Ports,

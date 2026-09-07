@@ -36,6 +36,22 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    ConfigureAnalytics {
+        python: PathBuf,
+        worker: PathBuf,
+    },
+    Export {
+        branch: String,
+        key: String,
+        #[serde(default)]
+        limits: crate::store::ExportLimits,
+    },
+    GetExport {
+        id: OperationId,
+    },
+    CancelExport {
+        id: OperationId,
+    },
     Capabilities,
     ListBranches {
         #[serde(default)]
@@ -124,7 +140,7 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":false},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":false,"unpublished_exports":true},
         "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"active_branches":32,"connections":256,"connections_per_branch":64},
         "sql":{"read_only_default":true,"statements_per_call":1,"values":"PostgreSQL text or null","writes":"explicit read_only=false; no automatic retry"}})
 }
@@ -158,6 +174,32 @@ pub(crate) fn handle(
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
         Action::Capabilities => return Ok(capabilities(binding)),
+        Action::ConfigureAnalytics { python, worker } => {
+            return cell
+                .ok_or_else(|| invalid("engine is disabled"))?
+                .configure_exporter(store, python, worker);
+        }
+        Action::GetExport { id } => return Ok(json!(store.export_in_project(project, id)?)),
+        Action::CancelExport { id } => return Ok(json!(store.cancel_export(project, id)?)),
+        Action::Export {
+            branch,
+            key,
+            limits,
+        } => {
+            if cell.is_none() {
+                return Err(invalid("engine is disabled"));
+            }
+            let parent_id = resolve(store, binding, Some(&branch))?;
+            let ports = allocate(store, cell, project, &key, &mut held_ports)?;
+            (
+                key,
+                Mutation::Export {
+                    parent_id,
+                    ports,
+                    limits,
+                },
+            )
+        }
         Action::ListBranches { include_deleted } => {
             return Ok(json!({"branches":store.list_branches(project,include_deleted)?}));
         }
@@ -277,11 +319,16 @@ pub(crate) fn handle(
     if let Some(cell) = cell {
         cell.validate_mutation(&mutation)?;
     }
+    let export = matches!(mutation, Mutation::Export { .. });
     let op = store.submit(project, &key, mutation)?;
     // OS sockets stay bound through the durable port reservation. Native startup
     // rechecks ownership; another program taking a port afterwards fails closed.
     drop(held_ports);
-    let mut result = json!(op);
+    let mut result = if export {
+        json!(store.export(op.id)?)
+    } else {
+        json!(op)
+    };
     result["key"] = json!(key);
     Ok(result)
 }
@@ -296,7 +343,8 @@ fn allocate(
         match request {
             Mutation::CreateDatabase { ports, .. }
             | Mutation::CreateBranch { ports, .. }
-            | Mutation::BranchFrom { ports, .. } => return Ok(ports),
+            | Mutation::BranchFrom { ports, .. }
+            | Mutation::Export { ports, .. } => return Ok(ports),
             _ => {
                 return Err(crate::store::error::conflict(
                     "idempotency key already used by another operation",

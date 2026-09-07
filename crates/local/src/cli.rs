@@ -29,6 +29,9 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   branch list | get NAME | use NAME | rename NAME NEW_NAME
   branch suspend NAME | resume NAME | delete NAME [--force]
   branch default NAME | ttl NAME --expires-at-ms TIMESTAMP_OR_none
+  analytics configure --python PATH --worker PATH  Configure the A01 developer worker
+  analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
+  analytics status ID | cancel ID
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
   catalog [--branch NAME]       Discover application tables and columns
@@ -219,6 +222,57 @@ pub fn run() -> Result<u8> {
         return Err(invalid("--wait requires a lifecycle operation"));
     }
     let action = match command.as_str() {
+        "analytics" => match a.required(1)?.as_str() {
+            "configure" => {
+                let python = a
+                    .take("--python")
+                    .ok_or_else(|| invalid("--python is required"))?;
+                let worker = a
+                    .take("--worker")
+                    .ok_or_else(|| invalid("--worker is required"))?;
+                a.finish(2)?;
+                Action::ConfigureAnalytics {
+                    python: PathBuf::from(python),
+                    worker: PathBuf::from(worker),
+                }
+            }
+            "export" => {
+                let branch = a
+                    .take("--branch")
+                    .ok_or_else(|| invalid("--branch is required"))?;
+                let key = a
+                    .take("--key")
+                    .unwrap_or_else(|| OperationId::new().to_string());
+                let defaults = crate::store::ExportLimits::default();
+                let limits = crate::store::ExportLimits {
+                    max_bytes: a.number("--max-bytes", defaults.max_bytes)?,
+                    timeout_ms: a.number("--timeout-ms", defaults.timeout_ms)?,
+                };
+                a.finish(2)?;
+                Action::Export {
+                    branch,
+                    key,
+                    limits,
+                }
+            }
+            verb @ ("status" | "cancel") => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid export ID"))?;
+                a.finish(3)?;
+                if verb == "status" {
+                    Action::GetExport { id }
+                } else {
+                    Action::CancelExport { id }
+                }
+            }
+            _ => {
+                return Err(invalid(
+                    "analytics supports configure, export, status and cancel",
+                ));
+            }
+        },
         "capabilities" => {
             a.finish(1)?;
             Action::Capabilities

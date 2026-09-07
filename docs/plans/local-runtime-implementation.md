@@ -397,6 +397,8 @@ snapshot binding forms; passing SQL parsing is not proof of pinned reads.
 
 ### A01 — Export a frozen Postgres branch
 
+Implementation and developer commands: [A01 frozen exports](../architecture/a01-frozen-exports.md).
+
 **Changes:** export operations and a small Python worker using maintained PG,
 Arrow and delta-rs libraries. Depends on P04, P05 and A00.
 
