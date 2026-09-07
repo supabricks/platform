@@ -1,4 +1,5 @@
 //! Native configuration, durable local state and the single-writer daemon.
+mod connections;
 pub mod daemon;
 pub mod engine;
 pub mod operations;

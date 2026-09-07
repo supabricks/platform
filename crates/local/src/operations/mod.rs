@@ -78,7 +78,9 @@ pub enum Step {
     CaptureBranchPoint,
     EnsureTimeline,
     StartCompute,
+    CaptureSuspend,
     StopCompute,
+    RetireCompute,
     DeleteTimeline,
     DeleteLocalFiles,
 }

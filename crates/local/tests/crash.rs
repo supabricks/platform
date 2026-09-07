@@ -28,7 +28,7 @@ fn effect(root: &Path, ticket: &WorkTicket) -> serde_json::Value {
     let compute = root.join(format!("{}-compute", ticket.branch_id));
     match ticket.step {
         Step::CaptureBranchPoint => panic!("root fixture has no ancestor"),
-        Step::DeleteLocalFiles => {}
+        Step::DeleteLocalFiles | Step::CaptureSuspend | Step::RetireCompute => {}
         Step::EnsureTimeline | Step::StartCompute => {
             let path = if ticket.step == Step::EnsureTimeline {
                 timeline

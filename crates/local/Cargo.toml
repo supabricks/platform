@@ -17,9 +17,10 @@ hmac = "0.13.0"
 sha2 = "0.11.0"
 hex = "0.4.3"
 percent-encoding = "2.3.2"
-tokio = { version = "1.53.1", features = ["rt", "time", "net"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "net", "io-util", "sync", "macros"] }
 tokio-postgres = "0.7.18"
 tiny_http = "0.12.0"
+socket2 = "0.6.5"
 
 [dev-dependencies]
 tempfile = "3.27.0"

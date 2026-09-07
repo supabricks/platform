@@ -321,6 +321,9 @@ reconstruction from ordinary compute restart.
 
 ### P05 — Stable connections, wake and suspension
 
+**Implementation:** [stable connections and suspension](../architecture/native-connections.md)
+and [native driver qualification](../../e2e/native/README.md).
+
 **Changes:** `connections/`, lifecycle operations and driver tests.
 
 Persist one loopback listener address per branch; return ordinary PG URIs.

@@ -1,6 +1,7 @@
 //! Native single-owner cell. Process Compose is an executor, never desired state.
 mod branches;
 mod http;
+mod lifecycle;
 mod pageserver;
 mod s3;
 mod sql;
@@ -30,6 +31,13 @@ use supabricks_core::{
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ComputeTls {
+    pub certificate: PathBuf,
+    pub key: PathBuf,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimeConfig {
     pub version: u32,
     pub bundle: PathBuf,
@@ -41,6 +49,13 @@ pub struct RuntimeConfig {
     pub supervisor_token: String,
     #[serde(default)]
     pub validation_token: String,
+    #[serde(default = "connection_timeout")]
+    pub connection_startup_timeout_ms: u64,
+    #[serde(default)]
+    pub compute_tls: Option<ComputeTls>,
+}
+fn connection_timeout() -> u64 {
+    30_000
 }
 impl RuntimeConfig {
     pub(crate) fn load(store: &Store) -> Result<Self> {
@@ -50,12 +65,13 @@ impl RuntimeConfig {
             && config.validation_token.is_empty()
             && !config.ports.contains_key("validator")
         {
-            let reserved: HashSet<u16> = store
+            let mut reserved: HashSet<u16> = store
                 .branches()?
                 .into_iter()
                 .filter_map(|b| b.ports)
                 .flat_map(|p| [p.sql, p.external_http, p.internal_http])
                 .collect();
+            reserved.extend(store.connection_ports()?.into_iter().map(|(_, port)| port));
             let listener = loop {
                 let candidate = TcpListener::bind("127.0.0.1:0")?;
                 let candidate_port = candidate.local_addr()?.port();
@@ -95,7 +111,13 @@ impl RuntimeConfig {
             "weed_s3",
             "weed_s3_grpc",
         ];
-        if self.version != 2
+        if self.compute_tls.as_ref().is_some_and(|tls| {
+            !tls.certificate.is_absolute()
+                || !tls.key.is_absolute()
+                || !tls.certificate.is_file()
+                || !tls.key.is_file()
+        }) || !(100..=120_000).contains(&self.connection_startup_timeout_ms)
+            || self.version != 2
             || self.ports.len() != expected.len()
             || expected.iter().any(|p| !self.ports.contains_key(*p))
             || self.ports.values().any(|p| *p == 0)
@@ -118,11 +140,19 @@ impl RuntimeConfig {
         }
         Ok(())
     }
-    pub fn initialize(root: &Path, bundle: &Path, helpers: &Path) -> Result<()> {
+    pub fn initialize(store: &Store, bundle: &Path, helpers: &Path) -> Result<()> {
+        let root = store.root();
         let path = root.join("runtime.json");
         if path.exists() {
             return Ok(());
         }
+        let mut reserved: HashSet<u16> = store
+            .branches()?
+            .into_iter()
+            .filter_map(|b| b.ports)
+            .flat_map(|p| [p.sql, p.external_http, p.internal_http])
+            .collect();
+        reserved.extend(store.connection_ports()?.into_iter().map(|(_, port)| port));
         let mut ports = BTreeMap::new();
         let mut listeners = Vec::new();
         for name in [
@@ -142,7 +172,12 @@ impl RuntimeConfig {
             "weed_s3",
             "weed_s3_grpc",
         ] {
-            let socket = TcpListener::bind("127.0.0.1:0")?;
+            let socket = loop {
+                let candidate = TcpListener::bind("127.0.0.1:0")?;
+                if !reserved.contains(&candidate.local_addr()?.port()) {
+                    break candidate;
+                }
+            };
             ports.insert(name.into(), socket.local_addr()?.port());
             listeners.push(socket);
         }
@@ -156,6 +191,8 @@ impl RuntimeConfig {
             s3_secret: secret(),
             supervisor_token: secret(),
             validation_token: secret(),
+            connection_startup_timeout_ms: connection_timeout(),
+            compute_tls: None,
         };
         for executable in [
             config.bundle.join("bin/pageserver"),
@@ -585,6 +622,12 @@ impl Cell {
         }
         store.record_native_process(&supervisor::evidence(launch, pid)?)
     }
+    pub(crate) fn reserved_port(&self, port: u16) -> bool {
+        self.config.ports.values().any(|p| *p == port)
+    }
+    pub(crate) fn connection_timeout(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.config.connection_startup_timeout_ms)
+    }
     pub fn validate_mutation(&self, mutation: &crate::operations::Mutation) -> Result<()> {
         if let crate::operations::Mutation::CreateBranch { ports, .. }
         | crate::operations::Mutation::CreateDatabase { ports, .. }
@@ -748,6 +791,12 @@ impl Cell {
             }
         }
         settings.push(json!({"name":"hba_file","value":hba,"vartype":"string"}));
+        if let Some(tls) = &self.config.compute_tls {
+            settings.push(json!({"name":"ssl","value":"on","vartype":"enum"}));
+            settings
+                .push(json!({"name":"ssl_cert_file","value":tls.certificate,"vartype":"string"}));
+            settings.push(json!({"name":"ssl_key_file","value":tls.key,"vartype":"string"}));
+        }
         let socket_url = percent_encoding::utf8_percent_encode(
             &path(&sockets)?,
             percent_encoding::NON_ALPHANUMERIC,
@@ -914,7 +963,9 @@ impl Cell {
                         self.ensure_timeline(store, &branch)?
                             && self.ensure_compute(store, &branch)?
                     }
+                    Step::CaptureSuspend => self.capture_suspend(store, &ticket, &branch)?,
                     Step::StopCompute => self.stop_compute(store, &branch)?,
+                    Step::RetireCompute => self.delete_local_files(&branch)?,
                     Step::DeleteTimeline => self.delete_timeline(&branch)?,
                     Step::DeleteLocalFiles => self.delete_local_files(&branch)?,
                 })

@@ -103,6 +103,7 @@ pub struct Daemon {
     socket: PathBuf,
     cell: Option<crate::engine::Cell>,
     validator: Option<crate::engine::validation::Validator>,
+    gateway: Option<crate::connections::Gateway>,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -127,7 +128,12 @@ impl Daemon {
         } else {
             None
         };
+        let gateway = cell
+            .as_ref()
+            .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
+            .transpose()?;
         Ok(Self {
+            gateway,
             validator,
             store,
             listener,
@@ -137,9 +143,13 @@ impl Daemon {
     }
     pub fn enable_engine(mut self, bundle: &Path, helpers: &Path) -> Result<Self> {
         if self.cell.is_none() {
-            crate::engine::RuntimeConfig::initialize(self.store.root(), bundle, helpers)?;
+            crate::engine::RuntimeConfig::initialize(&self.store, bundle, helpers)?;
             self.cell = Some(crate::engine::Cell::open(&mut self.store)?);
             self.validator = Some(crate::engine::validation::Validator::bind(&self.store)?);
+            self.gateway = Some(crate::connections::Gateway::new(
+                &mut self.store,
+                self.cell.as_ref().unwrap().connection_timeout(),
+            )?);
         }
         Ok(self)
     }
@@ -148,6 +158,16 @@ impl Daemon {
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
         loop {
+            if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
+                if stopping {
+                    if !gateway.stop(&mut self.store)? {
+                        std::thread::sleep(Duration::from_millis(10));
+                        continue;
+                    }
+                } else {
+                    gateway.tick(&mut self.store, cell)?;
+                }
+            }
             if std::time::Instant::now() >= next_tick {
                 if let Some(validator) = &self.validator {
                     validator.refresh(&self.store)?;
@@ -233,7 +253,7 @@ impl Daemon {
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
             Request::Status => {
-                json!({"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?})
+                json!({"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -279,14 +299,17 @@ impl Daemon {
                 json!(self.store.branch_in_project(project_id, id)?)
             }
             Request::Connection { project_id, id } => {
-                let connection = self.store.connection_json(project_id, id)?;
-                let branch = self.store.branch_in_project(project_id, id)?;
-                if !self.cell.as_ref().is_some_and(|cell| {
-                    cell.connection_ready(&self.store, &branch).unwrap_or(false)
-                }) {
-                    return Err(conflict("branch compute is not ready"));
-                }
-                connection
+                self.store.branch_in_project(project_id, id)?;
+                self.store.accepting_work(id)?;
+                let cell = self
+                    .cell
+                    .as_ref()
+                    .ok_or_else(|| conflict("engine is disabled"))?;
+                self.gateway
+                    .as_mut()
+                    .ok_or_else(|| conflict("connection gateway unavailable"))?
+                    .ensure_listener(&mut self.store, cell, id)?;
+                self.store.stable_connection_json(project_id, id)?
             }
             Request::AcquireLease {
                 project_id,
@@ -336,6 +359,8 @@ impl Daemon {
 }
 impl Drop for Daemon {
     fn drop(&mut self) {
+        // Close client sockets before releasing installation ownership.
+        self.gateway.take();
         // Revoke generation validation before releasing installation ownership.
         self.validator.take();
         // Drop runs while Store still holds the installation lock.

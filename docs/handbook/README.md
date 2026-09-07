@@ -49,4 +49,5 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 
 Native runtime work: [local state and durable operations (P02)](local-state.md),
 [native storage cell (P03)](../architecture/native-cell.md), and
-[databases and branches (P04)](../architecture/native-branches.md).
+[databases and branches (P04)](../architecture/native-branches.md), and
+[stable connections and suspension (P05)](../architecture/native-connections.md).
