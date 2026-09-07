@@ -66,7 +66,7 @@ with psycopg.connect(os.environ['DATABASE_URL'], autocommit=True) as connection:
     expression = ' || '.join("md5(g::text || ':" + str(j) + "')" for j in range(32))
     rows = int(os.environ['BENCH_ROWS'])
     for first in range(1, rows + 1, 10000):
-        connection.execute('INSERT INTO payload SELECT g, ' + expression + ' FROM generate_series(%s, %s) g', (first, min(rows, first + 9999)))
+        connection.execute('INSERT INTO payload SELECT g, ' + expression + ' FROM generate_series(%s::bigint, %s::bigint) g', (first, min(rows, first + 9999)))
 """)
     for size in (10_000_000, 100_000_000, 1_000_000_000):
         rows = size // 1024
@@ -318,7 +318,7 @@ def qualify(args):
                       checks=checks, measurements=measurements, network_qualification=args.network_evidence)
     except BaseException as error:
         report = dict(status='failed', host=platform.platform(), workspace=str(workspace), checks=checks,
-                      error=str(error), network_qualification=args.network_evidence)
+                      error=str(error), measurements=measurements, network_qualification=args.network_evidence)
         raise
     finally:
         for sampler, stop in samplers:
