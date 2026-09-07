@@ -116,6 +116,7 @@ jobs:
           mkdir -p build/reports
           ulimit -c 0
           sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             "$(command -v python)" install/native/qualify.py --directory build/releases \
             --report build/reports/qualification.json \
             --network-evidence 'Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac'

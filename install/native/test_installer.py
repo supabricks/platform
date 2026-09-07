@@ -24,7 +24,7 @@ class Handler(SimpleHTTPRequestHandler):
 class Installer(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='sb-installer-')
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.web = self.root / 'web'; self.web.mkdir()
         self.key = self.root / 'signing.pem'
         subprocess.run(['openssl', 'genpkey', '-algorithm', 'RSA', '-pkeyopt', 'rsa_keygen_bits:2048', '-out', str(self.key)], check=True, capture_output=True)
