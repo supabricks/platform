@@ -354,9 +354,16 @@ impl Ctx {
                 "volumes": [{"name": "spec", "configMap": {"name": format!("{name}-spec")}}],
             },
         }))?;
-        Api::<Pod>::namespaced(self.client.clone(), ns)
+        let applied = Api::<Pod>::namespaced(self.client.clone(), ns)
             .patch(name, &pp, &Patch::Apply(&pod))
             .await?;
+        // Applying a pod with the same name does not cancel pending deletion.
+        // Retry through the controller's error policy until the old pod is gone,
+        // rather than reporting Active and delaying replacement for five minutes.
+        anyhow::ensure!(
+            applied.metadata.deletion_timestamp.is_none(),
+            "compute {name} is still terminating; retrying replacement"
+        );
 
         Ok(port)
     }

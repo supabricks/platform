@@ -476,7 +476,24 @@ fn response(result: Result<Value>) -> Value {
     match result {
         Ok(value) => json!({"version":1,"result":value}),
         Err(Error::Operation(error)) => json!({"version":1,"error":error}),
-        Err(_) => {
+        Err(error) => {
+            // Keep request contents, SQL, credentials and filesystem paths out
+            // of diagnostics, but preserve OS/SQLite codes for an unavailable
+            // response. Previously daemon.log stayed empty for these failures.
+            let cause = match &error {
+                Error::Io(error) => {
+                    json!({"kind":"io","os_code":error.raw_os_error(),"category":format!("{:?}", error.kind())})
+                }
+                Error::Sql(rusqlite::Error::SqliteFailure(code, _)) => {
+                    json!({"kind":"sqlite","code":format!("{:?}",code.code),"extended_code":code.extended_code})
+                }
+                Error::Sql(_) => json!({"kind":"sqlite_conversion"}),
+                Error::Json(error) => {
+                    json!({"kind":"json","category":format!("{:?}",error.classify())})
+                }
+                _ => json!({"kind":"local_configuration"}),
+            };
+            eprintln!("{}", json!({"event":"local_request_failed","cause":cause}));
             json!({"version":1,"error":{"code":"unavailable","detail":"local request failed; check project path and daemon diagnostics"}})
         }
     }

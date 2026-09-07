@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# Supabricks local Postgres alpha. Rendered by stage.py; no target-side compiler.
+# The whole script is parsed before main runs, including when piped into bash.
+set -euo pipefail
+
+fail() { printf 'Supabricks: %s\n' "$*" >&2; exit 1; }
+fetch() {
+    curl --fail --silent --show-error --location --retry 3 --connect-timeout 15 \
+        --max-time 900 --proto "$protocols" --proto-redir "$protocols" "$1" -o "$2"
+}
+hash_file() { openssl dgst -sha256 -r "$1" | awk '{print $1}'; }
+shell_quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+replace_link() {
+    if [ "$system" = Darwin ]; then mv -fh "$1" "$2"; else mv -fT "$1" "$2"; fi
+}
+
+main() {
+    local version='@VERSION@' base='@BASE_URL@'
+    local system architecture target protocols prefix stage='' lock='' archive expected actual
+    local destination entry profile env_line quoted_prefix
+    umask 077
+    for executable in curl tar openssl awk sed uname mktemp; do
+        command -v "$executable" >/dev/null || fail "required system tool missing: $executable"
+    done
+    [ "$(id -u)" != 0 ] || fail 'run as your ordinary user; sudo/root is not needed'
+    system=$(uname -s); architecture=$(uname -m)
+    case "$system/$architecture" in
+        Linux/x86_64)
+            target=linux-x86_64
+            local glibc
+            glibc=$(getconf GNU_LIBC_VERSION 2>/dev/null) || fail 'Linux requires glibc 2.39 or newer (Ubuntu 24.04 baseline)'
+            printf '%s\n' "$glibc" | awk '{split($2,v,"."); exit !(v[1]>2 || (v[1]==2 && v[2]>=39))}' || fail 'Linux requires glibc 2.39 or newer'
+            ;;
+        Darwin/arm64)
+            target=macos-arm64
+            [ "$(sw_vers -productVersion | cut -d . -f 1)" -ge 15 ] || fail 'macOS 15 or newer is required'
+            ;;
+        *) fail "unsupported system: $system/$architecture; supported: Linux x86_64 and macOS arm64" ;;
+    esac
+    case "$base" in
+        https://*) protocols='=https' ;;
+        http://127.0.0.1:*|http://localhost:*) protocols='=http,https' ;;
+        *) fail 'release URL must use HTTPS (HTTP is allowed only for the rendered localhost preview)' ;;
+    esac
+    prefix=${SUPABRICKS_INSTALL_DIR:-"$HOME/.local/share/supabricks"}
+    case "$prefix" in /*) ;; *) fail 'SUPABRICKS_INSTALL_DIR must be absolute' ;; esac
+    case "$prefix" in *$'\n'*|*$'\r'*|*:*) fail 'installation path cannot contain newlines or colons' ;; esac
+    [ ! -L "$prefix" ] || fail 'installation directory must not be a symlink'
+    mkdir -p "$prefix"
+    prefix=$(cd "$prefix" && pwd -P)
+    for entry in releases bin; do
+        [ ! -L "$prefix/$entry" ] || fail "refusing symlinked installation directory: $entry"
+    done
+    lock="$prefix/.install-lock"
+    mkdir "$lock" 2>/dev/null || fail "another installer owns $lock; if it was interrupted, remove the empty lock directory before retrying"
+    # Trap values are expanded now: main's locals are gone when EXIT executes.
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap "rmdir $(shell_quote "$lock") 2>/dev/null || true" EXIT
+    stage=$(mktemp -d "$prefix/.stage.XXXXXXXX")
+    trap "rm -rf $(shell_quote "$stage"); rmdir $(shell_quote "$lock") 2>/dev/null || true" EXIT
+    cat > "$stage/release.pub" <<'SUPABRICKS_RELEASE_KEY'
+@PUBLIC_KEY@
+SUPABRICKS_RELEASE_KEY
+    archive="supabricks-$version-$target.tar.gz"
+    printf 'Installing Supabricks %s (%s) into %s\n' "$version" "$target" "$prefix"
+    fetch "$base/$archive.sha256" "$stage/checksum"
+    fetch "$base/$archive.sha256.sig" "$stage/checksum.sig"
+    openssl dgst -sha256 -verify "$stage/release.pub" -signature "$stage/checksum.sig" "$stage/checksum" >/dev/null 2>&1 || fail 'release signature verification failed'
+    expected=$(awk -v name="$archive" 'NF == 2 && $2 == name {print $1}' "$stage/checksum")
+    [[ "$expected" =~ ^[0-9a-f]{64}$ ]] || fail 'invalid signed checksum'
+    destination="$prefix/releases/$version"
+    if [ -e "$prefix/current" ] || [ -L "$prefix/current" ]; then
+        [ -L "$prefix/current" ] || fail 'current is not an installer-owned symlink'
+        [ "$(readlink "$prefix/current")" = "releases/$version" ] || fail 'this alpha supports repeat installation of the same release; upgrades require separate qualification'
+    fi
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+        [ ! -L "$destination" ] && [ -f "$destination.sha256" ] || fail 'existing release is not installer-owned'
+        [ "$(cat "$destination.sha256")" = "$expected" ] || fail 'release version already exists with different bytes'
+        "$destination/bin/supabricks" installation verify >/dev/null || fail 'existing release is damaged; retain data and reinstall into a new installation directory'
+        printf 'Verified existing installation.\n'
+    else
+        fetch "$base/$archive" "$stage/release.tar.gz"
+        actual=$(hash_file "$stage/release.tar.gz")
+        [ "$actual" = "$expected" ] || fail 'release checksum verification failed'
+        # Packages contain only directories and regular files. Reject links,
+        # special files and path traversal before extracting any payload.
+        tar -tzf "$stage/release.tar.gz" > "$stage/paths"
+        awk 'BEGIN {bad=0} !/^supabricks\// || /(^|\/)\.\.?($|\/)/ || /[\\\r]/ {bad=1} END {exit bad}' "$stage/paths" || fail 'unsafe release archive paths'
+        tar -tvzf "$stage/release.tar.gz" > "$stage/types"
+        awk 'substr($0,1,1)!="-" && substr($0,1,1)!="d" {exit 1}' "$stage/types" || fail 'release archive contains links or special files'
+        mkdir "$stage/unpack"
+        tar -xzf "$stage/release.tar.gz" -C "$stage/unpack"
+        "$stage/unpack/supabricks/bin/supabricks" installation verify >/dev/null || fail 'release inventory verification failed'
+        mkdir -p "$prefix/releases"
+        printf '%s\n' "$expected" > "$stage/archive.sha256"
+        mv "$stage/archive.sha256" "$destination.sha256"
+        mv "$stage/unpack/supabricks" "$destination"
+    fi
+    mkdir -p "$prefix/bin"
+    for entry in supabricks psql; do
+        if [ -e "$prefix/bin/$entry" ] || [ -L "$prefix/bin/$entry" ]; then
+            [ -L "$prefix/bin/$entry" ] && [ "$(readlink "$prefix/bin/$entry")" = "../current/bin/$entry" ] || fail "refusing to replace $prefix/bin/$entry"
+        fi
+    done
+    ln -s "releases/$version" "$stage/current"
+    replace_link "$stage/current" "$prefix/current"
+    for entry in supabricks psql; do
+        ln -s "../current/bin/$entry" "$stage/$entry"
+        replace_link "$stage/$entry" "$prefix/bin/$entry"
+    done
+    quoted_prefix=$(shell_quote "$prefix/bin")
+    printf 'export PATH=%s:"$PATH"\n' "$quoted_prefix" > "$stage/env"
+    mv "$stage/env" "$prefix/env"
+    env_line=". $(shell_quote "$prefix/env") # Supabricks PATH"
+    if [ "${SUPABRICKS_NO_MODIFY_PATH:-0}" != 1 ]; then
+        local profiles=("$HOME/.profile" "$HOME/.bashrc" "${ZDOTDIR:-$HOME}/.zshrc")
+        # Bash login shells ignore .profile when either of these already exists.
+        if [ -f "$HOME/.bash_profile" ]; then profiles+=("$HOME/.bash_profile")
+        elif [ -f "$HOME/.bash_login" ]; then profiles+=("$HOME/.bash_login"); fi
+        for profile in "${profiles[@]}"; do
+            if [ -L "$profile" ]; then
+                printf 'Skipped symlinked shell profile %s; source the env file manually.\n' "$profile" >&2
+                continue
+            fi
+            if [ ! -f "$profile" ] || ! grep -Fqx "$env_line" "$profile"; then
+                printf '\n%s\n' "$env_line" >> "$profile"
+            fi
+        done
+    fi
+    printf '\nInstalled. In this terminal, run:\n\n  . %s\n  supabricks up\n\n' "$(shell_quote "$prefix/env")"
+    printf 'Then, in your app directory:\n  supabricks init my-app\n  supabricks database create main --wait\n  supabricks connect main --uri\n\n'
+    printf 'Data defaults to ~/.supabricks; override with SUPABRICKS_DATA_DIR or --data-dir.\n'
+}
+
+main "$@"

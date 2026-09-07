@@ -30,6 +30,8 @@ def main():
     parser.add_argument('target', choices=['linux-x86_64', 'macos-arm64'])
     parser.add_argument('output', type=Path)
     parser.add_argument('--engine-archive', type=Path)
+    parser.add_argument('--offline-runtime', action='store_true',
+                        help='build Process Compose with upstream background update checks disabled (requires pinned Go)')
     args = parser.parse_args()
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     lock = json.loads((ROOT/'components/native-cell.lock.json').read_text())
@@ -44,6 +46,13 @@ def main():
         archive = output/'seaweedfs-full.tar.gz'
         fetch_module.fetch(weed['linux_url'], weed['linux_sha256'], archive)
         extract(archive, output)
+        # The full binary archive omits its license. Read it from the exact
+        # checksum-pinned upstream source archive, never a floating branch.
+        source_archive = output/'seaweedfs-source.tar.gz'
+        fetch_module.fetch(weed['source_url'], weed['source_sha256'], source_archive)
+        with tarfile.open(source_archive) as tar:
+            license_file = tar.extractfile('seaweedfs-' + weed['commit'] + '/LICENSE')
+            (output/'SEAWEEDFS-LICENSE').write_bytes(license_file.read())
     else:
         if platform.system() != 'Darwin' or platform.machine() != 'arm64':
             parser.error('macOS helper build must run natively on Apple Silicon')
@@ -59,7 +68,28 @@ def main():
                         '-ldflags=-s -w -X github.com/seaweedfs/seaweedfs/weed/util/version.COMMIT='+weed['commit'],
                         '-o', str(output/'weed'), './weed'], cwd=source, env=env, check=True)
         shutil.copy2(source/'LICENSE', output/'SEAWEEDFS-LICENSE')
-    report = dict(target=args.target, source_commit=weed['commit'],
+    pc_build = None
+    if args.offline_runtime:
+        release_lock = json.loads((ROOT/'components/release-build.lock.json').read_text())
+        version = subprocess.check_output(['go', 'version'], text=True).split()[2]
+        if version != 'go' + release_lock['go']:
+            parser.error('Go toolchain does not match release helper recipe')
+        pin = release_lock['process_compose']
+        archive = output/'process-compose-source.tar.gz'
+        fetch_module.fetch(pin['source_url'], pin['source_sha256'], archive)
+        extract(archive, output)
+        source = output / ('process-compose-' + pin['commit'])
+        env = dict(os.environ, CGO_ENABLED='0', GOTOOLCHAIN='local', GOTELEMETRY='off')
+        flags = '-s -w -X github.com/f1bonacc1/process-compose/src/config.Version=' + pin['version']
+        flags += ' -X github.com/f1bonacc1/process-compose/src/config.Commit=' + pin['commit']
+        flags += ' -X github.com/f1bonacc1/process-compose/src/config.CheckForUpdates=false'
+        subprocess.run(['go', 'build', '-mod=readonly', '-trimpath', '-buildvcs=false',
+                        '-ldflags=' + flags, '-o', str(output/'process-compose'), '.'],
+                       cwd=source, env=env, check=True)
+        shutil.copy2(source/'LICENSE', output/'LICENSE')
+        pc_build = dict(source_commit=pin['commit'], source_sha256=pin['source_sha256'],
+                        go=version, check_for_updates=False, ldflags=flags)
+    report = dict(target=args.target, source_commit=weed['commit'], process_compose_build=pc_build,
                   binaries={name: hashlib.sha256((output/name).read_bytes()).hexdigest() for name in ['weed', 'process-compose']})
     (output/'helper-build.json').write_text(json.dumps(report, indent=2)+'\n')
     if args.engine_archive:

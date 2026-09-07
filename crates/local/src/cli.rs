@@ -19,7 +19,8 @@ const HELP: &str = r#"Supabricks local (PG17)
 Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
 
   init NAME                    Write retry-safe public supabricks.toml (offline)
-  up [--bundle PATH --helpers PATH]  Start/reconnect; first up needs engine parts
+  up                           Start/reconnect using the installed native bundle
+      [--bundle PATH --helpers PATH]  Override parts for source development
   down                         Stop the cell, retain all data
   status | doctor              Runtime status / actionable diagnostics
   capabilities                 Project binding, features and resource limits
@@ -48,6 +49,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sql --sql SQL | --file PATH [--branch NAME] [--write]
       [--max-rows 200] [--timeout-ms 10000]
   mcp --project PATH            MCP stdio; explicit fixed worktree required
+  installation verify          Verify all installed files against the manifest
 
 JSON is the default. Branch mutations return a durable operation immediately;
 --wait polls with JSON progress on stderr, and never retries the mutation.
@@ -140,7 +142,20 @@ pub fn run() -> Result<u8> {
         return Ok(0);
     }
     if raw == ["--version"] {
-        println!("supabricks {} (local API 1)", env!("CARGO_PKG_VERSION"));
+        let version = crate::installation::Installation::discover()?
+            .map(|i| i.manifest.version)
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").into());
+        println!("supabricks {version} (local API 1)");
+        return Ok(0);
+    }
+    if raw == ["installation", "verify"] {
+        let installed = crate::installation::Installation::discover()?
+            .ok_or_else(|| invalid("this binary is not in an installed release"))?;
+        installed.verify()?;
+        println!(
+            "{}",
+            json!({"verified":true,"version":installed.manifest.version,"identity":installed.identity,"root":installed.root})
+        );
         return Ok(0);
     }
     let mut a = Args::parse(raw)?;
@@ -194,7 +209,7 @@ pub fn run() -> Result<u8> {
                 .is_none_or(|p| p.get("error").is_none());
         println!(
             "{}",
-            json!({"healthy":healthy,"data_dir":root,"project":project_check,"runtime":status.unwrap_or_else(|e|json!({"error":client::diagnostic(&e)})),"hint":"first startup needs --bundle and --helpers; run operation get ID for branch progress; daemon.log is private"})
+            json!({"healthy":healthy,"data_dir":root,"project":project_check,"runtime":status.unwrap_or_else(|e|json!({"error":client::diagnostic(&e)})),"hint":"run supabricks up; source builds need --bundle and --helpers; run operation get ID for branch progress; daemon.log is private"})
         );
         return Ok(if healthy { 0 } else { 5 });
     }

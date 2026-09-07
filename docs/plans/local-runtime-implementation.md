@@ -486,6 +486,11 @@ an independent Delta reader reproduces selected table versions from the manifest
 
 ### R01 — Installable local Postgres alpha
 
+The first delivery is explicitly hosted on localhost; public domain deployment
+is deferred. See [installer instructions](../../install/native/README.md) and
+[qualification boundaries](../architecture/r01-qualification.md). The release
+assembly and bootstrap are the same ones intended for the later HTTPS endpoint.
+
 **Changes:** `components/`, `install/native/`, release assembly, native CI.
 
 Begin assembly tooling during E01; complete this slice once P06 works. Produce

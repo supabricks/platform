@@ -22,7 +22,17 @@ pub fn run(
     bundle: Option<PathBuf>,
     helpers: Option<PathBuf>,
 ) -> Result<()> {
+    let installed = if matches!(command, "up" | "daemon") && bundle.is_none() {
+        crate::installation::Installation::discover()?
+    } else {
+        None
+    };
+    let bundle = bundle.or_else(|| installed.as_ref().map(|i| i.bundle()));
+    let helpers = helpers.or_else(|| installed.as_ref().map(|i| i.helpers()));
     if command == "daemon" {
+        if let Some(installed) = crate::installation::Installation::discover()? {
+            installed.verify()?;
+        }
         let daemon = Daemon::bind(&root)?;
         return if let (Some(bundle), Some(helpers)) = (bundle, helpers) {
             daemon.enable_engine(&bundle, &helpers)?.serve()
@@ -89,7 +99,7 @@ pub fn run(
     }
     if !root.join("runtime.json").exists() && bundle.is_none() {
         return Err(crate::store::error::invalid(
-            "first up requires --bundle and --helpers",
+            "no installed engine found; source builds require --bundle and --helpers",
         ));
     }
     fs::DirBuilder::new()

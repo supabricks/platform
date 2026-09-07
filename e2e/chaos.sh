@@ -91,8 +91,10 @@ for i in $(seq 1 60); do
 done
 [ -n "$ok" ] || fail "active database never recovered after reboot"
 # The platform still does its whole job post-reboot: lifecycle + wake.
-mcp get_connection '{"name":"e2ec1"}' >/dev/null || fail "get_connection broken after reboot"
-psql_run e2ec1 "select count(*) from c" | grep -qx 1 || fail "e2ec1 data lost across reboot"
+mkdir -p "$ART"
+mcp get_connection '{"name":"e2ec1"}' | tee "$ART/chaos-reboot-connection.json" | jq -e '.connection_uri' >/dev/null || fail "get_connection did not return a ready endpoint after reboot"
+psql_run e2ec1 "select count(*) from c" > "$ART/chaos-reboot-read.txt" || fail "e2ec1 query unavailable after reboot (see chaos-reboot-read.txt)"
+grep -qx 1 "$ART/chaos-reboot-read.txt" || fail "e2ec1 row count changed across reboot (see chaos-reboot-read.txt)"
 
 step "cleanup"
 mcp delete_database '{"name":"e2ec1"}' >/dev/null

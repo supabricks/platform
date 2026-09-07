@@ -44,6 +44,8 @@ pub struct RuntimeConfig {
     pub bundle: PathBuf,
     pub process_compose: PathBuf,
     pub weed: PathBuf,
+    #[serde(default)]
+    pub installation_identity: Option<String>,
     pub ports: BTreeMap<String, u16>,
     pub s3_access: String,
     pub s3_secret: String,
@@ -62,6 +64,22 @@ impl RuntimeConfig {
     pub(crate) fn load(store: &Store) -> Result<Self> {
         let path = store.root().join("runtime.json");
         let mut config: Self = serde_json::from_slice(&fs::read(&path)?)?;
+        if let Some(identity) = &config.installation_identity {
+            let installed = crate::installation::Installation::discover()?
+                .ok_or_else(|| invalid("this data root requires its installed release"))?;
+            if &installed.identity != identity {
+                return Err(conflict(
+                    "this data root belongs to a different release; automatic upgrades/downgrades are not supported by this alpha",
+                ));
+            }
+            // Recovery has fenced old children. Moving the same immutable
+            // release changes paths, never ports, credentials or data identity.
+            config.bundle = installed.bundle();
+            config.process_compose = installed.helpers().join("process-compose");
+            config.weed = installed.helpers().join("weed");
+            config.validate()?;
+            write_json(&path, &config)?;
+        }
         if config.version == 1
             && config.validation_token.is_empty()
             && !config.ports.contains_key("validator")
@@ -187,6 +205,9 @@ impl RuntimeConfig {
             bundle: bundle.canonicalize()?,
             process_compose: helpers.join("process-compose").canonicalize()?,
             weed: helpers.join("weed").canonicalize()?,
+            installation_identity: crate::installation::Installation::discover()?
+                .filter(|i| i.bundle() == bundle && i.helpers() == helpers)
+                .map(|i| i.identity),
             ports,
             s3_access: secret(),
             s3_secret: secret(),
@@ -835,17 +856,9 @@ impl Cell {
                 .push(json!({"name":"ssl_cert_file","value":tls.certificate,"vartype":"string"}));
             settings.push(json!({"name":"ssl_key_file","value":tls.key,"vartype":"string"}));
         }
-        let socket_url = percent_encoding::utf8_percent_encode(
-            &path(&sockets)?,
-            percent_encoding::NON_ALPHANUMERIC,
-        )
-        .to_string();
         for arg in &mut plan.command {
             if arg.starts_with("--connstr=") {
-                *arg = format!(
-                    "--connstr=postgresql://cloud_admin@localhost/postgres?host={socket_url}&port={}",
-                    ports.sql
-                );
+                *arg = format!("--connstr={}", maintenance_uri(&sockets, ports.sql)?);
             }
         }
         write_json(&spec_file, &plan.config)?;
@@ -1069,5 +1082,38 @@ impl Cell {
             json!({"supervisor":"process-compose","object_store":"seaweedfs-sqlite","ready":self.storage_ready,"last_error":self.last_error,
             "processes":records.iter().map(|p|json!({"role":p.role,"pid":p.pid,"generation":p.generation})).collect::<Vec<_>>() }),
         )
+    }
+}
+
+fn maintenance_uri(sockets: &Path, port: u16) -> Result<String> {
+    let encoded = percent_encoding::utf8_percent_encode(
+        sockets
+            .to_str()
+            .ok_or_else(|| invalid("socket path must be UTF-8"))?,
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    // tokio-postgres appends query-string hosts/ports to authority hosts/ports.
+    // A localhost authority plus ?host=/socket&port=N tries localhost:5432
+    // first, which can hang or connect to an unrelated system Postgres.
+    Ok(format!(
+        "postgresql://cloud_admin@{encoded}:{port}/postgres"
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn maintenance_connection_has_only_its_private_unix_socket() {
+        let sockets = Path::new("/tmp/supabricks ' with spaces/socket");
+        let config: tokio_postgres::Config =
+            maintenance_uri(sockets, 41059).unwrap().parse().unwrap();
+        assert_eq!(
+            config.get_hosts(),
+            &[tokio_postgres::config::Host::Unix(sockets.into())]
+        );
+        assert_eq!(config.get_ports(), &[41059]);
+        assert_eq!(config.get_user(), Some("cloud_admin"));
+        assert_eq!(config.get_dbname(), Some("postgres"));
     }
 }
