@@ -78,6 +78,7 @@ cause of every upstream shutdown report.
 
 ## Evidence and measurement boundaries
 
+Recorded passing reports for both native targets are in [`evidence/`](evidence/README.md).
 Each CI target uploads `analytical-qualification.json` and its process log.
 The JSON includes target/OS, Python build, all package versions, Git revision and
 working-tree state, hashes of the fixture/environment inputs, individual checks,
