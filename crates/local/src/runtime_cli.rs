@@ -37,7 +37,8 @@ pub fn run(
     if command == "down" {
         if request(&root, Request::Shutdown).is_err() {
             if root.exists() {
-                let mut store = Store::open(&root)?;
+                let mut store =
+                    acquire_after_shutdown(&root, Instant::now() + Duration::from_secs(60))?;
                 crate::engine::Cell::recover(&mut store)?;
                 let socket = store.root().join("control.sock");
                 if fs::symlink_metadata(&socket).is_ok_and(|m| m.file_type().is_socket()) {
@@ -67,7 +68,7 @@ pub fn run(
         }
         // Socket disappearance can also mean a crashed daemon. Reacquire the
         // ownership lock and account for every recorded writer before success.
-        let mut store = Store::open(&root)?;
+        let mut store = acquire_after_shutdown(&root, deadline)?;
         crate::engine::Cell::recover(&mut store)?;
         println!(
             "{}",
@@ -116,6 +117,34 @@ pub fn run(
     }
     let mut child = cmd.spawn()?;
     wait_ready(&root, Some(&mut child))
+}
+fn acquire_after_shutdown(root: &std::path::Path, deadline: Instant) -> Result<Store> {
+    let mut progress = Instant::now();
+    loop {
+        match Store::open(root) {
+            Ok(store) => return Ok(store),
+            Err(Error::Operation(supabricks_core::error::OperationError::Conflict(message)))
+                if message == "another daemon owns this data root" =>
+            {
+                // Drop unlinks the socket before SQLite's final close/fsync
+                // and the ownership lock release. Unlink is not completion.
+                if Instant::now() >= deadline {
+                    return Err(error(
+                        "shutdown ownership release is still pending; inspect daemon.log",
+                    ));
+                }
+                if progress.elapsed() >= Duration::from_secs(1) {
+                    eprintln!(
+                        "{}",
+                        serde_json::json!({"progress":"waiting for shutdown ownership release","data_dir":root})
+                    );
+                    progress = Instant::now();
+                }
+                std::thread::sleep(Duration::from_millis(25));
+            }
+            Err(error) => return Err(error),
+        }
+    }
 }
 fn wait_ready(root: &std::path::Path, mut child: Option<&mut std::process::Child>) -> Result<()> {
     let deadline = Instant::now() + Duration::from_secs(60);

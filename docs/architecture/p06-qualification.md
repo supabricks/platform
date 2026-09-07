@@ -13,7 +13,8 @@ remain errors, branch/operation lookups stay project-scoped, worktree selection
 is independent, changed project identity invalidates a live client, stale
 revisions/default deletion fail, SQL writes need explicit branch selection,
 unknown local versions/arguments fail, and the MCP schema is separately pinned.
-They also check the 32-active-branch admission limit and retries at that limit.
+They also check the 32-active-branch admission limit, retries at that limit, and
+shutdown waiting for ownership release after the daemon socket disappears.
 
 The native `e2e/native/workflow.py` runs an independent CLI and generic stdio MCP
 client against the actual cell, with no private SQL or state access for workflow
@@ -24,7 +25,7 @@ status, suspension/wake, persistent worktree selection and stable connections
 across down/up, then named child deletion with parent data intact. Both native CI
 architectures run this alongside P03, P04 and P05 qualification.
 
-Local Linux qualification on 2026-09-07 passed all **60 workspace tests**, local
+Local Linux qualification on 2026-09-07 passed all **61 workspace tests**, local
 all-target Clippy with warnings denied, formatting and the portable dependency
 gate. The native reports passed P03 (11 checks; disk-full is exercised in Linux
 CI), P04 (12), P05 (9) and P06 (6). Logs/reports were retained privately because

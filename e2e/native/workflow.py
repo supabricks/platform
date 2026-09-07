@@ -143,15 +143,20 @@ class Workflow(Cell):
         )
 
         # Run the actual sample app against the URI returned to an application.
+        app_log = self.root / "orders-app.log"
+        app_stderr = app_log.open("w")
         app = subprocess.Popen(
             [sys.executable, str(self.worktree / "app.py"), "--port", "0"],
             env=dict(self.env, DATABASE_URL=uri),
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=app_stderr,
             text=True,
         )
         try:
-            assert select.select([app.stdout], [], [], 10)[0]
+            assert select.select([app.stdout], [], [], 10)[0], (
+                f"orders app readiness deadline; exit={app.poll()}; "
+                f"stderr={app_log.read_text()}"
+            )
             url = app.stdout.readline().strip().split(" on ", 1)[1]
             with urllib.request.urlopen(url, timeout=10) as response:
                 assert json.load(response)["orders"][0]["customer"] == "Ada"
@@ -168,6 +173,7 @@ class Workflow(Cell):
         finally:
             app.terminate()
             app.wait(timeout=5)
+            app_stderr.close()
         self.checks.append(
             "orders HTTP GET and parameterized POST through the stable application URI"
         )

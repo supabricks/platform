@@ -5,8 +5,18 @@ import argparse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
+from socketserver import TCPServer
 import psycopg
 from psycopg.rows import dict_row
+
+
+class LocalServer(HTTPServer):
+    def server_bind(self):
+        # HTTPServer.server_bind calls getfqdn(), which can block on macOS DNS
+        # even for 127.0.0.1. This local example needs no reverse lookup.
+        TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
 
 
 class Orders(BaseHTTPRequestHandler):
@@ -68,6 +78,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not os.environ.get("DATABASE_URL"):
         parser.error("set DATABASE_URL using supabricks connect --uri")
-    server = HTTPServer(("127.0.0.1", args.port), Orders)
+    server = LocalServer(("127.0.0.1", args.port), Orders)
     print(f"Orders ready on http://127.0.0.1:{server.server_port}/orders", flush=True)
     server.serve_forever()

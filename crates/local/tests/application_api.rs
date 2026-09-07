@@ -238,3 +238,70 @@ fn cli_input_errors_are_machine_readable_and_do_not_create_state() {
     }
     assert!(!temp.path().join("state").exists());
 }
+
+#[test]
+fn down_waits_for_ownership_release_after_the_socket_disappears() {
+    use std::{
+        io::{BufRead, BufReader, Write},
+        os::unix::net::UnixListener,
+    };
+    let temp = tempfile::Builder::new()
+        .prefix("sb-stop-")
+        .tempdir_in("/tmp")
+        .unwrap();
+    let root = temp.path().join("state");
+    let server_root = root.clone();
+    let (ready, started) = std::sync::mpsc::channel();
+    let (unlinked, missing_socket) = std::sync::mpsc::channel();
+    let server = std::thread::spawn(move || {
+        let store = supabricks_local::store::Store::open(&server_root).unwrap();
+        let socket = server_root.join("control.sock");
+        let listener = UnixListener::bind(&socket).unwrap();
+        ready.send(()).unwrap();
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut line = String::new();
+        BufReader::new(stream.try_clone().unwrap())
+            .read_line(&mut line)
+            .unwrap();
+        let request: Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(request["request"]["method"], "shutdown");
+        writeln!(
+            stream,
+            "{}",
+            json!({"version":1,"result":{"stopping":true}})
+        )
+        .unwrap();
+        std::fs::remove_file(socket).unwrap();
+        unlinked.send(()).unwrap();
+        std::thread::sleep(Duration::from_millis(400));
+        drop(store);
+    });
+    started.recv_timeout(Duration::from_secs(5)).unwrap();
+    let first = Command::new(env!("CARGO_BIN_EXE_supabricks"))
+        .args(["down", "--data-dir"])
+        .arg(&root)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    missing_socket.recv_timeout(Duration::from_secs(5)).unwrap();
+    let second = Command::new(env!("CARGO_BIN_EXE_supabricks"))
+        .args(["down", "--data-dir"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    let output = first.wait_with_output().unwrap();
+    server.join().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["status"], "stopped");
+    assert!(
+        second.status.success(),
+        "{}",
+        String::from_utf8_lossy(&second.stderr)
+    );
+}
