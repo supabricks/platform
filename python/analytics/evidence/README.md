@@ -1,8 +1,8 @@
 # A00 recorded native qualification
 
-Both reports come from [native-baseline run 34142183348](https://github.com/supabricks/platform/actions/runs/34142183348)
-on September 7, 2026, for PR #11 head `3aa64f0`. Actions checked out the clean
-synthetic PR merge tree `3e36e957be8a026839e86c7aed9131d3e6593076`.
+Both reports come from [native-baseline run 34152360809](https://github.com/supabricks/platform/actions/runs/34152360809)
+on September 7, 2026, for A01 PR #12 head `b3583d6` (the added Psycopg dependency). Actions checked out the clean
+synthetic PR merge tree `e2e015562ddbeee2f39efa43ac3502baf860d253`.
 The original JSON artifacts are retained verbatim. Each report binds the exact
 fixture and environment files by SHA-256; `components/validate.py` rejects
 mismatched inputs, versions, targets, dirty source or failed worker exits.
@@ -12,11 +12,11 @@ mismatched inputs, versions, targets, dirty source or failed worker exits.
 | Native runner | Ubuntu 24.04 / glibc 2.39 | macOS 15.7.9 |
 | CPython | 3.12.13 | 3.12.13 |
 | Correctness groups | 15 passed | 15 passed |
-| Process launch → first SQL, including imports/setup | 2.047 s | 2.694 s |
-| Server start → first SQL, excluding imports/setup | 0.403 s | 0.536 s |
-| Sampled peak fixture process-tree RSS | 606.7 MiB | 355.8 MiB |
-| Main-process RSS after workload | 395.1 MiB | 245.1 MiB |
-| Fixture process wall time | 2.946 s | 3.674 s |
+| Process launch → first SQL, including imports/setup | 1.738 s | 2.929 s |
+| Server start → first SQL, excluding imports/setup | 0.313 s | 0.619 s |
+| Sampled peak fixture process-tree RSS | 614.7 MiB | 357.5 MiB |
+| Main-process RSS after workload | 387.0 MiB | 246.2 MiB |
+| Fixture process wall time | 2.636 s | 4.619 s |
 | Worker exit code | 0 | 0 |
 
 The process-tree peak includes the separate reader, Python, Spark client, Sail,

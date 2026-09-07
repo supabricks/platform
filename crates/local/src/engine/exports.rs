@@ -74,7 +74,7 @@ impl Cell {
         }
         Ok(())
     }
-    pub(super) fn tick_exports(&mut self, store: &mut Store) -> Result<()> {
+    pub(super) fn control_exports(&mut self, store: &mut Store) -> Result<()> {
         for mut e in store.active_exports()? {
             let now = chrono::Utc::now().timestamp_millis();
             if e.state != "cleaning" {
@@ -85,6 +85,14 @@ impl Cell {
                 }
                 e = store.export(e.id)?;
             }
+            if e.state == "cleaning" {
+                self.stop_export_worker(store, &e)?;
+            }
+        }
+        Ok(())
+    }
+    pub(super) fn tick_exports(&mut self, store: &mut Store) -> Result<()> {
+        for mut e in store.active_exports()? {
             let workspace = self.root.join("export-work").join(e.id.to_string());
             let output = self.root.join("analytics/staging").join(e.id.to_string());
             if e.state == "cleaning" {

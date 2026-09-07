@@ -897,6 +897,8 @@ impl Cell {
         Ok(true)
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        // Cancellation and deadlines fence workers even while shared storage is down.
+        self.control_exports(store)?;
         self.storage_ready = false;
         if let Some(child) = &mut self.supervisor {
             let _ = child.try_wait()?;

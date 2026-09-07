@@ -39,7 +39,8 @@ absent from the export, even if committed later on the parent.
 
 The child is hidden from application branch listing, selection, connect and
 lifecycle mutations. A generated, nonowner role inherits `pg_read_all_data` and
-has read-only sessions by default. Its credential and the input protocol live
+has read-only sessions by default. Provisioning revokes inherited PUBLIC table
+and column privileges on the child; its SELECT access comes from `pg_read_all_data`. Its credential and the input protocol live
 in the daemon's private state directory. HBA admits only this exporter and the
 compute-control role on the child. Application-owner login is disabled. Compute
 settings disable autovacuum, logical replication workers and inherited preload

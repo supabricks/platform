@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import signal
 import sqlite3
@@ -86,6 +87,8 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
         self.parent = parent
         self.sql(parent, """
             CREATE TABLE orders(id int PRIMARY KEY, amount numeric(38,8), note text);
+            ALTER TABLE orders OWNER TO supabricks_owner;
+            GRANT INSERT,UPDATE,DELETE ON orders TO PUBLIC; GRANT UPDATE(note) ON orders TO PUBLIC;
             CREATE TABLE payments(id int PRIMARY KEY, amount numeric(38,8));
             INSERT INTO orders VALUES (1,123456789012345678901234567890.12345678,'before'),(2,2,'delete');
             INSERT INTO payments SELECT id,amount FROM orders;
@@ -140,6 +143,7 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
             ALTER TABLE orders ADD COLUMN later text; ALTER TABLE orders DROP COLUMN note;
             ALTER TABLE payments ALTER COLUMN amount TYPE text;
             CREATE TABLE later(id int); DROP TABLE empty;""")
+        parent_scans_before=self.sql(parent,"SELECT seq_scan FROM pg_stat_user_tables WHERE relname='bulk'")
         storage_before=self.storage_metrics()
         gate.touch()
         latencies=[]
@@ -162,9 +166,10 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
         assert bulk['max_arrow_batch_bytes'] <= 8*1024*1024
         after=self.ps(parent)
         storage_after=self.storage_metrics()
+        assert self.sql(parent,"SELECT seq_scan FROM pg_stat_user_tables WHERE relname='bulk'")==parent_scans_before
         self.checks.append(dict(name='frozen_snapshot',status='PASS',source=manifest['source'],
             parent_baseline_max_ms=round(max(baseline)*1000,3),
-            shared_storage_counter_deltas={k:round(v-storage_before.get(k,0),6) for k,v in storage_after.items()},
+            shared_storage_counter_deltas={k:round(v-storage_before.get(k,0),6) for k,v in storage_after.items() if v != storage_before.get(k,0)},
             measurement_scope='whole pageserver during worker plus cleanup; parent probes include psql launch and writes',
             parent_probe_count=len(latencies),parent_probe_max_ms=round(max(latencies,default=0)*1000,3),
             parent_last_record_lsn_before=before['last_record_lsn'],parent_last_record_lsn_after=after['last_record_lsn'],
@@ -195,6 +200,23 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
         e=self.begin(); wait(lambda:(self.root/'export-work'/e['id']/'input.json').exists())
         self.api('cancel_export',id=e['id']); self.terminal(e,'cancelled')
         self.checks.append(dict(name='cancel_running_worker',status='PASS'))
+        e=self.begin(limits=dict(max_bytes=64*1024*1024,timeout_ms=10000))
+        assert self.terminal(e,'failed')['outcome']['code']=='deadline'
+        self.checks.append(dict(name='worker_deadline',status='PASS'))
+        e=self.begin(); wait(lambda:any(r['role']=='export-'+e['id'] for r in self.records()))
+        worker_pid=next(r['pid'] for r in self.records() if r['role']=='export-'+e['id'])
+        os.kill(worker_pid,signal.SIGKILL)
+        assert self.terminal(e,'failed')['outcome']['code']=='worker_exit'
+        self.checks.append(dict(name='worker_exit_cleanup',status='PASS'))
+        e=self.begin(); wait(lambda:any(r['role']=='export-'+e['id'] for r in self.records()))
+        storage_pid=next(r['pid'] for r in self.records() if r['role']=='pageserver')
+        os.kill(storage_pid,signal.SIGSTOP)
+        try:
+            self.api('cancel_export',id=e['id'])
+            wait(lambda:not any(r['role']=='export-'+e['id'] for r in self.records()),timeout=20)
+        finally:os.kill(storage_pid,signal.SIGCONT)
+        self.terminal(e,'cancelled')
+        self.checks.append(dict(name='cancel_while_storage_unavailable',status='PASS'))
         e=self.begin(); wait(lambda:any(r['role']=='export-'+e['id'] for r in self.records()))
         self.daemons[-1].kill(); self.daemons[-1].wait(timeout=10)
         self.start(); self.terminal(e,'failed')
