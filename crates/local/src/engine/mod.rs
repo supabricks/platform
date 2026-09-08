@@ -351,11 +351,14 @@ impl Cell {
         Ok(cell)
     }
     pub fn recover(store: &mut Store) -> Result<()> {
+        crate::ingest::recover(store)?;
         let mut records: Vec<_> = store
             .native_processes()?
             .into_iter()
             .filter(|p| {
-                !p.role.starts_with("analytics-session-") && !p.role.starts_with("console-")
+                !p.role.starts_with("analytics-session-")
+                    && !p.role.starts_with("console-")
+                    && !p.role.starts_with("ingest-")
             })
             .collect();
         records.sort_by_key(|p| {

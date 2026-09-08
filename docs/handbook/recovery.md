@@ -1,8 +1,9 @@
 # Back up, restore and upgrade the localhost preview
 
-R03 uses `v0.1.0-alpha.3`. Linux x86_64 and Apple Silicon macOS use their own native
-bundles. The supported upgrade predecessor is the complete R02 alpha.2 preview
-with unchanged engine/storage/analytical components.
+I00 uses `v0.1.0-alpha.6` with catalog 9. Linux x86_64 and Apple Silicon macOS
+use their own native bundles. The catalog-8 predecessor qualified by the release
+gate is R03 alpha.3, with unchanged engine/storage/analytical components. See the
+[I00 contract](../architecture/i00-ingestion.md) for migration and source recovery.
 
 ## Make a recovery bundle
 
@@ -37,22 +38,23 @@ analytical epochs before retiring any original data. Existing target directories
 are refused. A failed restore is never merged into an existing cell: use another
 new destination and retain the partial directory until you have inspected it.
 
-## Upgrade R02 to R03
+## Upgrade catalog 8 to I00
 
-Serve the prepared alpha.3 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.6 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh
 curl -fsSL http://127.0.0.1:8080/install.sh |
   SUPABRICKS_UPGRADE=1 \
-  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha3" bash
+  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha6" bash
 supabricks up
 ```
 
 Set `SUPABRICKS_INSTALL_DIR` and `SUPABRICKS_DATA_DIR` on that Bash invocation if
 you used custom directories. The installer verifies the new release, stops the
 old cell, backs it up and activates the candidate. The runtime stays stopped until
-`up`. An incompatible engine, dependency set, schema, target, profile or downgrade
+`up`. The verified stopped backup precedes the explicit catalog-8-to-9 migration.
+Any other incompatible schema, engine, dependency set, target, profile or downgrade
 is rejected. This is a platform upgrade with the same PG17 engine.
 
 For an interrupted activation, rerun the same installer and options. Never delete
@@ -61,7 +63,9 @@ may leave `.install-lock` and `.stage.*` inside the program directory. First con
 that the installer and all its child processes have stopped; remove only that
 empty lock directory, then retry. Partial stage directories are not active releases.
 If a prepared backup is incomplete or the old cell was used after interruption,
-use a new `SUPABRICKS_BACKUP_DIR`; retain the earlier backup/partial copy.
+use a new `SUPABRICKS_BACKUP_DIR` while the catalog is still 8; retain the earlier
+backup/partial copy. Once migration has committed, the original verified backup
+is required to finish activation.
 
 ## Return to the pre-upgrade state
 
@@ -71,11 +75,11 @@ data root:
 
 ```sh
 supabricks down
-supabricks backup restore "$HOME/supabricks-before-alpha3" \
-  --release "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.2" \
-  --data-dir "$HOME/.supabricks-before-alpha3-restored"
-"$HOME/.local/share/supabricks/releases/v0.1.0-alpha.2/bin/supabricks" up \
-  --data-dir "$HOME/.supabricks-before-alpha3-restored"
+supabricks backup restore "$HOME/supabricks-before-alpha6" \
+  --release "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.3" \
+  --data-dir "$HOME/.supabricks-before-alpha6-restored"
+"$HOME/.local/share/supabricks/releases/v0.1.0-alpha.3/bin/supabricks" up \
+  --data-dir "$HOME/.supabricks-before-alpha6-restored"
 ```
 
 ## Uninstall and failure diagnosis

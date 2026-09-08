@@ -38,7 +38,7 @@ impl Query {
         Ok(())
     }
     pub fn catalog() -> Self {
-        Self {sql:"SELECT table_schema, table_name, column_name, data_type, is_nullable, ordinal_position::text FROM information_schema.columns WHERE table_schema NOT IN ('pg_catalog','information_schema') ORDER BY table_schema,table_name,ordinal_position".into(),read_only:true,max_rows:1000,timeout_ms:10000}
+        Self {sql:"SELECT table_schema, table_name, column_name, data_type, is_nullable, ordinal_position::text FROM information_schema.columns WHERE table_schema NOT IN ('pg_catalog','information_schema','_supabricks') ORDER BY table_schema,table_name,ordinal_position".into(),read_only:true,max_rows:1000,timeout_ms:10000}
     }
     pub fn run(self, target: Value) -> Result<Value> {
         self.validate()?;

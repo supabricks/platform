@@ -98,6 +98,8 @@ directory=$(cd -P "$(dirname "$self")" && pwd)
 exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 ''')
     (destination / 'bin/psql').chmod(0o755)
+    (destination / 'share/ingest').mkdir(parents=True)
+    shutil.copy2(ROOT / 'crates/local/src/ingest/receipt.sql', destination / 'share/ingest/receipt.sql')
     shutil.copy2(ROOT / 'LICENSE', destination / 'licenses/platform.txt')
     shutil.copy2(args.helpers / 'LICENSE', destination / 'licenses/process-compose.txt')
     shutil.copy2(args.helpers / 'SEAWEEDFS-LICENSE', destination / 'licenses/seaweedfs.txt')
@@ -147,7 +149,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     provenance = dict(
         console=dict(api_version=1, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
-        data_formats=dict(local_catalog=8, runtime_config=2, postgres_major=17, analytical_snapshot=1),
+        data_formats=dict(local_catalog=9, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),
@@ -189,7 +191,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.5')
+    parser.add_argument('--version', default='v0.1.0-alpha.6')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

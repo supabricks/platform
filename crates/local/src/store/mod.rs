@@ -3,8 +3,9 @@ mod branches;
 mod connections;
 pub(crate) mod error;
 mod exports;
+mod ingest;
 mod journal;
-mod migrations;
+pub(crate) mod migrations;
 mod native;
 pub(crate) mod ownership;
 mod sessions;
@@ -73,6 +74,7 @@ impl Store {
             && (has_objects
                 || [
                     "runtime.json",
+                    "ingest",
                     "analytics",
                     "storage.pk8",
                     "storage.pub",
@@ -95,9 +97,9 @@ impl Store {
                 OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
             )?;
             let version: u32 = preview.pragma_query_value(None, "user_version", |r| r.get(0))?;
-            if version > SCHEMA_VERSION {
+            if version != SCHEMA_VERSION {
                 return Err(conflict(
-                    "state schema is newer than this Supabricks binary",
+                    "catalog requires an explicit backed-up upgrade with its installed release",
                 ));
             }
         }

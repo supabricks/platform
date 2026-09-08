@@ -7,6 +7,7 @@ mod connections;
 pub mod console;
 pub mod daemon;
 pub mod engine;
+pub mod ingest;
 pub mod installation;
 pub mod mcp;
 pub mod operations;

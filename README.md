@@ -14,7 +14,8 @@ on the target machine. Public hosting at `supabricks.io` is deferred.
 The [console and ingestion implementation plan](docs/plans/console-ingestion-implementation.md)
 includes the [PostgreSQL database workspace](docs/handbook/database-workspace.md)
 with branch controls, SQL and saved queries. CSV/JSON/Parquet ingestion remains
-in later slices. See the [architecture](docs/architecture/local-console-ingestion.md).
+in later slices. [I00](docs/architecture/i00-ingestion.md) adds durable import
+contracts and the explicit catalog-8-to-9 upgrade. See the [architecture](docs/architecture/local-console-ingestion.md).
 
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres

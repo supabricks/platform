@@ -5,6 +5,7 @@ No power-loss or OS-reboot claim: the kernel and its caches remain alive.
 Every mutation and signal is confined to this harness's fresh private root.
 """
 import argparse
+import hashlib
 from functools import partial
 from http.server import ThreadingHTTPServer
 import json
@@ -55,7 +56,7 @@ def qualify(args):
     checks = Checks()
     report = dict(status='failed', checks=checks, network_qualification=args.network_evidence,
                   limits=['process-failure recovery; no kernel reboot or power-loss qualification',
-                          'same-target physical restore and platform-only upgrades; identical engine/dependency inventories'])
+                          'same-target physical restore and catalog-8-to-9 upgrade; identical engine/dependency inventories'])
     binary = prefix / 'bin/supabricks'
     roots = [data]
     identify = workspace / 'identify-process.py'
@@ -148,7 +149,7 @@ print(json.dumps(pid))
             assert analytic_count(branch) == [['2']]
         credentials = (data / 'storage.pk8').read_bytes()
         before = {branch: sql('SELECT * FROM recovery_rows ORDER BY id', branch) for branch in epochs}
-        checks.append('actual R02 archive creates acknowledged parent/child data and both analytical epochs')
+        checks.append('actual R03 archive creates acknowledged parent/child data and both analytical epochs')
         install('new', upgrade=True)
         assert (prefix / 'current').resolve() != old_release
         current_release = (prefix / 'current').resolve()
@@ -157,6 +158,36 @@ print(json.dumps(pid))
         assert saved['release']['identity'] == old_identity and saved['consistency'] == 'stopped-cell'
         assert not (data / 'upgrade.json').exists()
         cli('backup', 'verify', workspace / 'upgrade-backup')
+        assert saved['schema_version'] == 8
+        # Reconstruct exact persisted interruption boundaries while stopped.
+        # These exercise the real signed installer/candidate, not a mock migrator.
+        completed = json.loads((data / 'last-upgrade.json').read_text())
+        journal = dict(version=1, previous=str(old_release), prefix=str(prefix),
+                       backup=str(workspace / 'upgrade-backup'),
+                       **{'from': completed['from'], 'to': completed['to']},
+                       database_sha256=saved['files']['state.sqlite3']['sha256'])
+        for phase in ['before_migration', 'after_migration', 'runtime_rebound', 'current_activated']:
+            (data / 'upgrade.json').write_text(json.dumps(journal))
+            (data / 'upgrade.json').chmod(0o600)
+            if phase == 'before_migration':
+                shutil.copy2(workspace / 'upgrade-backup/data/state.sqlite3', data / 'state.sqlite3')
+            if phase in ('before_migration', 'after_migration'):
+                shutil.copy2(workspace / 'upgrade-backup/data/runtime.json', data / 'runtime.json')
+            if phase != 'current_activated':
+                (prefix / 'current').unlink()
+                (prefix / 'current').symlink_to(Path('releases') / args.previous_version)
+            blocked = subprocess.run([str(current_release / 'bin/supabricks'), 'up', '--data-dir', str(data)], env=env, capture_output=True, timeout=90)
+            assert blocked.returncode != 0, 'pending migration must block startup'
+            install('new', upgrade=True)
+            with sqlite3.connect(data / 'state.sqlite3') as db:
+                assert db.execute('PRAGMA user_version').fetchone()[0] == 9
+                assert db.execute('SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=9').fetchone() == (journal['database_sha256'], identity)
+            assert not (data / 'upgrade.json').exists()
+        before_hash = hashlib.sha256((data / 'state.sqlite3').read_bytes()).hexdigest()
+        blocked = subprocess.run([str(old_release / 'bin/supabricks'), 'up', '--data-dir', str(data)], env=env, capture_output=True, timeout=90)
+        assert blocked.returncode != 0
+        assert hashlib.sha256((data / 'state.sqlite3').read_bytes()).hexdigest() == before_hash
+        checks.append('catalog 8-to-9 resumes before/after migration and both activation boundaries; old binary refuses migrated root')
         cli('up')
         for branch in epochs:
             assert sql('SELECT * FROM recovery_rows ORDER BY id', branch) == before[branch]
@@ -166,6 +197,12 @@ print(json.dumps(pid))
         assert cli('connect', 'experiment')['uri'] == branch_uri
         assert (data / 'storage.pk8').read_bytes() == credentials
         checks.append(f'signed curl upgrade {args.previous_version} to {args.version} creates verified backup, preserves credentials/URIs, branches and epochs')
+
+        receipt = json.loads(run([current_release / 'python/analytics/python', Path(__file__).with_name('receipt_fixture.py'), binary, data, project], env=env, timeout=600))
+        assert receipt['status'] == 'passed'
+        checks.extend(receipt['checks'])
+        # Restore the expected two-row published fixture after the receipt test.
+        cli('analytics', 'refresh', '--branch', 'main', '--wait')
 
         # Each commit is acknowledged immediately before a targeted SIGKILL.
         # No explicit CHECKPOINT or remote-consistent-LSN wait is inserted.
@@ -215,7 +252,7 @@ print(json.dumps(pid))
             got = cli('sql', '--branch', branch, '--sql', 'SELECT * FROM recovery_rows ORDER BY id', executable=old_release / 'bin/supabricks', root=rollback)['rows']
             assert got == before[branch]
         cli('down', executable=old_release / 'bin/supabricks', root=rollback)
-        checks.append('R02 recovery bundle restores using R03 tooling and runs under the exact retained R02 release')
+        checks.append('catalog-8 backup restores under the exact retained R03 release')
 
         # Interrupted/corrupt restore never opens an incomplete new root.
         corrupt = backup / 'data/storage.pk8'; saved_key = corrupt.read_bytes(); corrupt.write_bytes(b'corrupt')
@@ -276,8 +313,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.5')
-    parser.add_argument('--previous-version', default='v0.1.0-alpha.2')
+    parser.add_argument('--version', default='v0.1.0-alpha.6')
+    parser.add_argument('--previous-version', default='v0.1.0-alpha.3')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')
     parser.add_argument('--keep', action='store_true')

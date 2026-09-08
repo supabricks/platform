@@ -134,6 +134,7 @@ impl Daemon {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
         let consoles = crate::console::Consoles::recover(&mut store)?;
+        crate::ingest::recover(&mut store)?;
         let socket = store.root().join("control.sock");
         match fs::symlink_metadata(&socket) {
             Ok(meta) if meta.file_type().is_socket() => fs::remove_file(&socket)?,
@@ -193,6 +194,7 @@ impl Daemon {
             self.queries.retain(|t| !t.is_finished());
             if stopping {
                 self.console_queries.cancel_all();
+                crate::ingest::recover(&mut self.store)?;
             }
             self.console_queries.tick();
             if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
@@ -213,6 +215,7 @@ impl Daemon {
                 };
                 self.consoles.last_error = console_result.err().map(|e| e.to_string());
                 if !stopping {
+                    self.store.cleanup_ingest()?;
                     self.sessions.last_error = self
                         .sessions
                         .tick(&mut self.store)

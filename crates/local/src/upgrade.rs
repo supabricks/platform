@@ -114,7 +114,28 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     let old = installed(&previous)?;
     old.verify()?;
     let from = Release::of(&old)?;
-    compatible(&from, &to)?;
+    let source_formats = recovery::formats(&old);
+    let target_formats = recovery::formats(&candidate);
+    let source_schema = source_formats["local_catalog"]
+        .as_u64()
+        .and_then(|n| u32::try_from(n).ok())
+        .ok_or_else(|| conflict("invalid source catalog format"))?;
+    if target_formats
+        != json!({"local_catalog":SCHEMA_VERSION,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1})
+    {
+        return Err(conflict(
+            "candidate format declaration does not match this binary",
+        ));
+    }
+    let migration = source_schema == 8;
+    let mut normalized = source_formats.clone();
+    normalized["local_catalog"] = json!(SCHEMA_VERSION);
+    if migration && normalized == target_formats {
+        // Compare the full original inventory with ONLY the named catalog format changed.
+        compatible(&Release::with_formats(&old, normalized)?, &to)?;
+    } else {
+        compatible(&from, &to)?;
+    }
     if old.root != prefix.join("releases").join(&from.version) {
         return Err(invalid("previous release is outside this installation"));
     }
@@ -145,7 +166,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NOFOLLOW,
     )?;
     let schema: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-    if schema != SCHEMA_VERSION
+    if (schema != source_schema && !(existing.is_some() && schema == SCHEMA_VERSION))
         || db
             .prepare("SELECT 1 FROM endpoints WHERE pg_major!=17")?
             .exists([])?
@@ -172,11 +193,11 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         }
     }
     // The lock also excludes a daemon starting between shutdown and acquisition.
-    let stopped = Stopped::open(&root)?;
+    let mut stopped = Stopped::open_schema(&root, schema)?;
     let mut cfg = read_runtime(&root)?;
     let current_hash = recovery::file_hash(&root.join("state.sqlite3"))?;
     let journal = if let Some(mut j) = existing {
-        if j.backup != backup && same_runtime(&cfg, &from) {
+        if j.backup != backup && same_runtime(&cfg, &from) && schema == source_schema {
             // An explicit new backup path can refresh a prepared transaction if
             // the old release was used after an interrupted preflight.
             if backup.exists() {
@@ -186,7 +207,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             j.database_sha256 = current_hash.clone();
             recovery::atomic_json(&journal_path, &j)?;
         }
-        if j.backup != backup || j.database_sha256 != current_hash {
+        if j.backup != backup || (schema == source_schema && j.database_sha256 != current_hash) {
             return Err(conflict(
                 "data changed since upgrade preparation; retry with a new backup path while still on the old release",
             ));
@@ -209,7 +230,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         j
     };
     if !backup.exists() {
-        if !same_runtime(&cfg, &from) {
+        if !same_runtime(&cfg, &from) || schema != source_schema {
             return Err(conflict(
                 "pre-upgrade backup is missing after rebinding; recover that bundle before completing this transaction",
             ));
@@ -227,6 +248,33 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     }
     if !same_runtime(&cfg, &from) && !same_runtime(&cfg, &to) {
         return Err(conflict("runtime changed during upgrade"));
+    }
+    if migration {
+        if schema == 8 {
+            crate::store::migrations::ingest_upgrade(
+                &mut stopped.db,
+                &journal.database_sha256,
+                &to.identity,
+            )?;
+        } else {
+            let marker: (String, String) = stopped.db.query_row(
+                "SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=9",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )?;
+            if marker != (journal.database_sha256.clone(), to.identity.clone()) {
+                return Err(conflict(
+                    "catalog migration does not match the verified upgrade journal",
+                ));
+            }
+        }
+        let busy: i64 = stopped
+            .db
+            .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))?;
+        if busy != 0 {
+            return Err(conflict("migration checkpoint is busy; retry upgrade"));
+        }
+        recovery::sync_dir(&root)?;
     }
     cfg["installation_identity"] = json!(to.identity);
     cfg["bundle"] = json!(candidate.bundle());
