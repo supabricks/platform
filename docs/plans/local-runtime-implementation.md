@@ -13,6 +13,13 @@ upstream work are recorded in the [repository map](repository-map.md). This plan
 is based on `platform/main@070903f1db5d7510572af3845c7efbf9d8bc36f4`.
 Task IDs below are plan identifiers, not GitHub issues or completed PRs.
 
+**Next phase, 2026-09-08:** R03 has landed in PR #17. The
+[console and ingestion architecture](../architecture/local-console-ingestion.md)
+and [implementation plan](console-ingestion-implementation.md) extend the product
+with a local browser console and file imports. The console exclusion below
+records the original runtime-phase boundary; it does not exclude this newly
+requested phase. Reboot/power-loss and public-distribution gates remain open.
+
 ## 1. Outcome and scope
 
 A developer installs Supabricks on macOS arm64 or Linux x86_64, initializes a
