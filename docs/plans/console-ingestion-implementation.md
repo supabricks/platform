@@ -9,6 +9,10 @@ behavior, browser boundaries, type mapping, commit reconciliation and recovery.
 This plan owns implementation order and evidence required to finish each slice.
 IDs are planning identifiers, not existing issues or completion claims.
 
+Implementation: [C01 console contract and qualification](../architecture/c01-console.md)
+and [console runbook](../handbook/local-console.md). C01 supplies launch and the
+read-only overview; the SQL workspace and ingestion slices below remain separate.
+
 The first milestone is a real installed browser demo: **import CSV -> query ->
 branch -> mutate the branch -> verify the unchanged parent**. JSON/Parquet and
 analytical queries extend that workflow. A VS Code extension and direct

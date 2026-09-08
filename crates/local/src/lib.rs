@@ -4,6 +4,7 @@ pub mod api;
 pub mod cli;
 pub mod client;
 mod connections;
+pub mod console;
 pub mod daemon;
 pub mod engine;
 pub mod installation;

@@ -23,6 +23,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
       [--bundle PATH --helpers PATH]  Override parts for source development
   down                         Stop the cell, retain all data
   status | doctor              Runtime status / actionable diagnostics
+  console [--no-open]           Open the local project overview in your browser
   capabilities                 Project binding, features and resource limits
   database create NAME [--key KEY] [--wait]
   database list
@@ -78,7 +79,13 @@ impl Args {
             if arg.starts_with("--") {
                 let value = if matches!(
                     arg.as_str(),
-                    "--json" | "--wait" | "--write" | "--force" | "--uri" | "--include-deleted"
+                    "--json"
+                        | "--wait"
+                        | "--write"
+                        | "--force"
+                        | "--uri"
+                        | "--include-deleted"
+                        | "--no-open"
                 ) {
                     "true".into()
                 } else {
@@ -182,6 +189,21 @@ pub fn run() -> Result<u8> {
     };
     let project = a.take("--project").map(PathBuf::from);
     a.flag("--json");
+    if command == "console-serve" {
+        let config = a
+            .take("--config")
+            .ok_or_else(|| invalid("missing console config"))?;
+        a.finish(1)?;
+        crate::console::serve(PathBuf::from(config).as_path())?;
+        return Ok(0);
+    }
+    if command == "console" {
+        let no_open = a.flag("--no-open");
+        a.finish(1)?;
+        let directory = client::project_directory(project.as_deref())?;
+        println!("{}", crate::console::launch(root, directory, no_open)?);
+        return Ok(0);
+    }
     if command == "backup" {
         let action = a.required(1)?;
         let path = PathBuf::from(a.required(2)?);

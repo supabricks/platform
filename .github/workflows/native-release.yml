@@ -8,6 +8,7 @@ on:
       - 'components/**'
       - 'install/native/**'
       - 'python/analytics/**'
+      - 'console/**'
       - 'examples/orders/**'
       - 'agents/**'
       - 'LICENSE'
@@ -41,6 +42,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build locked console assets
+        run: |
+          npm ci --prefix console --no-audit --no-fund
+          npm run build --prefix console
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
@@ -202,3 +210,64 @@ jobs:
         with:
           name: release-recovery-${{ matrix.target }}
           path: build/reports/*.json
+
+  release-console:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/console-browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked browser test machinery before network isolation
+        run: |
+          npm ci --prefix console --no-audit --no-fund
+          npm exec --prefix console -- playwright install --with-deps chromium
+          mkdir -p build/console-reports
+      - name: Installed browser workflow in an isolated Linux network namespace
+        if: runner.os == 'Linux'
+        run: |
+          node_path=$(command -v node)
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              PLAYWRIGHT_BROWSERS_PATH="$2" \
+              SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
+              "$3" install/native/qualify_console.py --directory build/releases \
+              --report build/console-reports/console.json --node "$4" \
+              --harness console/scripts/qualify.mjs
+          ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$python_path" "$node_path"
+      - name: Installed browser workflow on macOS with external network denied
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "$(command -v python)" install/native/qualify_console.py --directory build/releases \
+            --report build/console-reports/console.json --node "$(command -v node)" \
+            --harness console/scripts/qualify.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-console-${{ matrix.target }}
+          path: build/console-reports/*

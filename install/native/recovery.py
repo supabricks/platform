@@ -165,7 +165,7 @@ print(json.dumps(pid))
         assert cli('connect', 'main')['uri'] == parent_uri
         assert cli('connect', 'experiment')['uri'] == branch_uri
         assert (data / 'storage.pk8').read_bytes() == credentials
-        checks.append('signed curl upgrade R02 to R03 creates verified backup, preserves credentials/URIs, branches and epochs')
+        checks.append(f'signed curl upgrade {args.previous_version} to {args.version} creates verified backup, preserves credentials/URIs, branches and epochs')
 
         # Each commit is acknowledged immediately before a targeted SIGKILL.
         # No explicit CHECKPOINT or remote-consistent-LSN wait is inserted.
@@ -276,7 +276,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.3')
+    parser.add_argument('--version', default='v0.1.0-alpha.4')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.2')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')

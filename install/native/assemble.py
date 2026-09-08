@@ -35,6 +35,15 @@ def assemble(args):
     native = 'macos-arm64' if (platform.system(), platform.machine()) == ('Darwin', 'arm64') else 'linux-x86_64'
     if args.target != native:
         raise ValueError('assembly and loader checks must run on the target architecture')
+    console = ROOT / 'console/dist'
+    if not (console / 'console.json').is_file():
+        raise ValueError('build the console first: npm ci --prefix console && npm run build --prefix console')
+    console_manifest = json.loads((console / 'console.json').read_text())
+    if console_manifest.get('api_version') != 1 or 'index.html' not in console_manifest.get('files', {}):
+        raise ValueError('console build is missing its API 1 manifest or entry point')
+    console_files = {str(p.relative_to(console)): digest(p) for p in console.rglob('*') if p.is_file() and p.name != 'console.json'}
+    if any(p.is_symlink() for p in console.rglob('*')) or console_files != console_manifest['files']:
+        raise ValueError('console build inventory differs from its manifest')
     lock = json.loads((ROOT / 'components/components.lock.json').read_text())
     verify.verify(args.engine, lock)
     helper_report = json.loads((args.helpers / 'helper-build.json').read_text())
@@ -56,6 +65,7 @@ def assemble(args):
     (destination / 'bin').mkdir()
     (destination / 'helpers').mkdir()
     (destination / 'licenses').mkdir()
+    shutil.copytree(console, destination / 'share/console')
     shutil.copy2(args.binary, destination / 'bin/supabricks')
     for name in ['weed', 'process-compose']:
         shutil.copy2(args.helpers / name, destination / 'helpers' / name)
@@ -100,6 +110,20 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     for name in ['components.lock.json', 'native-cell.lock.json', 'release-build.lock.json']:
         shutil.copy2(ROOT / 'components' / name, destination / 'provenance' / name)
     shutil.copy2(ROOT / 'Cargo.lock', destination / 'provenance/platform-Cargo.lock')
+    shutil.copy2(ROOT / 'console/package-lock.json', destination / 'provenance/console-package-lock.json')
+    shutil.copy2(ROOT / 'console/package.json', destination / 'provenance/console-package.json')
+    # Include Vite's notice for its generated module loader as well as React.
+    # Node and build/test tools themselves are not shipped.
+    for name in ['react', 'react-dom', 'scheduler', 'vite']:
+        package = ROOT / 'console/node_modules' / name
+        target = destination / 'licenses/console' / name
+        target.mkdir(parents=True)
+        notices = list(package.glob('LICENSE*'))
+        if not notices:
+            raise ValueError('console package is missing its license notice: ' + name)
+        for notice in notices:
+            shutil.copy2(notice, target / notice.name)
+        shutil.copy2(package / 'package.json', target / 'package.json')
     shutil.copy2(args.helpers / 'helper-build.json', destination / 'provenance/helper-build.json')
     # Preserve declared licenses, exact sources and package identities even for
     # dependencies whose redistribution notices still need public-release audit.
@@ -121,6 +145,8 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         from analytics import assemble_analytics
         assemble_analytics(destination, args.target)
     provenance = dict(
+        console=dict(api_version=1, manifest_sha256=digest(console / 'console.json'),
+                     package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
         data_formats=dict(local_catalog=8, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
@@ -163,7 +189,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.3')
+    parser.add_argument('--version', default='v0.1.0-alpha.4')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

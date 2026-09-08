@@ -13,6 +13,7 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 | [backlog.md](backlog.md) | Why isn't X built? Is that a gap or a decision? |
 | [Local runtime plan](../plans/local-runtime-implementation.md) | What are we building for the native Supabricks product, and in what order? |
 | [Console and ingestion architecture](../architecture/local-console-ingestion.md) | What should the local browser console and shared file importer do? |
+| [Local console](local-console.md) | How do I launch the project overview and recover an expired browser session? |
 | [Console and ingestion plan](../plans/console-ingestion-implementation.md) | Which PR slices build the first file-import and branching demo? |
 | [Repository map](../plans/repository-map.md) | Which organization repo owns each component and which sources have been inspected? |
 | [Component baseline](../../components/README.md) | Which sources are selected, what has been tested, and how do I validate the inventory? |
