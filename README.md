@@ -13,8 +13,8 @@ on the target machine. Public hosting at `supabricks.io` is deferred.
 `supabricks console` opens the [local project and branch overview](docs/handbook/local-console.md).
 The [console and ingestion implementation plan](docs/plans/console-ingestion-implementation.md)
 includes the [PostgreSQL database workspace](docs/handbook/database-workspace.md)
-with branch controls, SQL and saved queries. CSV/JSON/Parquet ingestion remains
-in later slices. [I00](docs/architecture/i00-ingestion.md) adds durable import
+with branch controls, SQL and saved queries. [CSV/TSV ingestion](docs/handbook/csv-ingestion.md)
+is available through CLI/MCP; browser uploads and JSON/Parquet follow in later slices. [I00](docs/architecture/i00-ingestion.md) adds durable import
 contracts and the explicit catalog-8-to-9 upgrade. See the [architecture](docs/architecture/local-console-ingestion.md).
 
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that

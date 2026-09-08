@@ -83,6 +83,20 @@ impl Installation {
                 "analytical preview manifest is missing its private worker",
             ));
         }
+        if let Some(ingestion) = manifest.provenance.get("ingestion") {
+            if ingestion["protocol_version"] != crate::ingest::VERSION
+                || !manifest.files.contains_key("python/ingest/worker.py")
+                || ingestion["worker_sha256"].as_str()
+                    != manifest
+                        .files
+                        .get("python/ingest/worker.py")
+                        .map(|f| f.sha256.as_str())
+            {
+                return Err(invalid(
+                    "ingestion release manifest is missing its compatible worker inventory",
+                ));
+            }
+        }
         if let Some(console) = manifest.provenance.get("console") {
             if console["api_version"] != crate::console::assets::VERSION
                 || !manifest.files.contains_key("share/console/console.json")
@@ -250,6 +264,17 @@ mod tests {
                 root.path().join("python/analytics/export.py")
             ))
         );
+        manifest["provenance"]["ingestion"] =
+            serde_json::json!({"protocol_version":1,"worker_sha256":"csv-worker"});
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_err());
+        manifest["files"]["python/ingest/worker.py"] =
+            serde_json::json!({"sha256":"wrong-worker","executable":false});
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_err());
+        manifest["files"]["python/ingest/worker.py"]["sha256"] = serde_json::json!("csv-worker");
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_ok());
         manifest["provenance"]["console"] = serde_json::json!({"api_version":1});
         fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
         assert!(Installation::at_executable(&exe).is_err());

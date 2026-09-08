@@ -49,6 +49,11 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog [--branch NAME]       Discover application tables and columns
   sql --sql SQL | --file PATH [--branch NAME] [--write]
       [--max-rows 200] [--timeout-ms 10000]
+  ingest inspect FILE [--delimiter ,] [--no-header] [--null-strings JSON]
+  ingest load [FILE | --source ID] --branch NAME --table NAME --schema-file PATH
+      [--schema public] [--key KEY] [--wait]
+  ingest source ID | status ID | list [--branch NAME] [--limit 20]
+  ingest cancel ID | retry ID [--wait] | dispose SOURCE_ID
   mcp --project PATH            MCP stdio; explicit fixed worktree required
   backup create PATH           Stop and capture a verified private recovery bundle
   backup verify PATH           Verify every recovery file without starting runtime
@@ -86,6 +91,7 @@ impl Args {
                         | "--uri"
                         | "--include-deleted"
                         | "--no-open"
+                        | "--no-header"
                 ) {
                     "true".into()
                 } else {
@@ -413,6 +419,9 @@ pub fn run() -> Result<u8> {
             }
         }
         return result;
+    }
+    if command == "ingest" {
+        return ingest_cli(&mut a, &c);
     }
     let wait = a.flag("--wait");
     if wait
@@ -916,4 +925,226 @@ fn wait_analytics(c: &Client, action: Action, timeout_ms: u64) -> Result<Value> 
         }
         std::thread::sleep(Duration::from_millis(200));
     }
+}
+
+fn wait_ingest(c: &Client, mut value: Value, source: bool) -> Result<Value> {
+    let deadline = Instant::now() + Duration::from_secs(650);
+    loop {
+        let state = if source {
+            value["source"]["state"].as_str()
+        } else {
+            value["state"].as_str()
+        };
+        if if source {
+            state != Some("receiving")
+        } else {
+            matches!(state, Some("succeeded" | "failed" | "cancelled"))
+        } {
+            return Ok(value);
+        }
+        if Instant::now() >= deadline {
+            return Err(invalid(
+                "ingestion wait expired; inspect the retained source/job ID before retrying",
+            ));
+        }
+        std::thread::sleep(Duration::from_millis(250));
+        value = if source {
+            c.call(Action::IngestSource {
+                id: serde_json::from_value(value["source"]["id"].clone())?,
+            })?
+        } else {
+            c.call(Action::IngestStatus {
+                id: serde_json::from_value(value["id"].clone())?,
+            })?
+        };
+    }
+}
+fn ingest_cli(a: &mut Args, c: &Client) -> Result<u8> {
+    use crate::ingest::{JobId, Load, Mapping, SourceId};
+    let verb = a.required(1)?;
+    let wait = a.flag("--wait");
+    if wait && !matches!(verb.as_str(), "load" | "retry" | "cancel") {
+        return Err(invalid("--wait requires load, retry or cancel"));
+    }
+    let value = match verb.as_str() {
+        "inspect" => {
+            let path = std::path::absolute(PathBuf::from(a.required(2)?))?;
+            let delimiter = a.take("--delimiter").unwrap_or_else(|| {
+                if path.extension().is_some_and(|e| e == "tsv") {
+                    "\t".into()
+                } else {
+                    ",".into()
+                }
+            });
+            let header = !a.flag("--no-header");
+            let null_strings =
+                serde_json::from_str(&a.take("--null-strings").unwrap_or("[]".into()))?;
+            let branch = a.take("--branch");
+            a.finish(3)?;
+            if let Some(branch) = branch {
+                c.call(Action::GetBranch { branch })?;
+            }
+            let accepted = c.call(Action::IngestInspect {
+                path,
+                delimiter,
+                header,
+                null_strings,
+            })?;
+            eprintln!("{}", json!({"accepted_source":accepted["source"]["id"]}));
+            let result = wait_ingest(c, accepted, true)?;
+            if result["source"]["state"] != "staged" {
+                println!("{result}");
+                return Ok(7);
+            }
+            result
+        }
+        "load" => {
+            let source = a.take("--source");
+            let path = if source.is_none() {
+                Some(std::path::absolute(PathBuf::from(a.required(2)?))?)
+            } else {
+                None
+            };
+            let branch = a
+                .take("--branch")
+                .ok_or_else(|| invalid("load requires an explicit --branch"))?;
+            let schema = a.take("--schema").unwrap_or("public".into());
+            let table = a
+                .take("--table")
+                .ok_or_else(|| invalid("load requires --table for a new table"))?;
+            let file = a.take("--schema-file").ok_or_else(|| {
+                invalid("inspect first, approve its mapping and supply --schema-file")
+            })?;
+            let key = a
+                .take("--key")
+                .unwrap_or_else(|| OperationId::new().to_string());
+            let mut bytes = Vec::new();
+            std::fs::File::open(file)?
+                .take(32769)
+                .read_to_end(&mut bytes)?;
+            if bytes.len() > 32768 {
+                return Err(invalid("mapping file exceeds 32 KiB"));
+            }
+            let mapping: Mapping = serde_json::from_slice(&bytes)?;
+            mapping.fingerprint()?;
+            a.finish(if path.is_some() { 3 } else { 2 })?;
+            let b = c.call(Action::GetBranch {
+                branch: branch.clone(),
+            })?;
+            let prior = c.call(Action::IngestFind {
+                branch,
+                key: key.clone(),
+            })?;
+            let staged = if let Some(path) = path {
+                let accepted = c.call(Action::IngestInspect {
+                    path,
+                    delimiter: mapping.delimiter.clone(),
+                    header: mapping.header,
+                    null_strings: mapping.null_strings.clone(),
+                })?;
+                eprintln!("{}", json!({"accepted_source":accepted["source"]["id"]}));
+                let result = wait_ingest(c, accepted, true)?;
+                if result["source"]["state"] != "staged" {
+                    println!("{result}");
+                    return Ok(7);
+                }
+                Some(result)
+            } else {
+                None
+            };
+            let source_value = if let Some(v) = &staged {
+                v.clone()
+            } else {
+                c.call(Action::IngestSource {
+                    id: source
+                        .unwrap()
+                        .parse::<SourceId>()
+                        .map_err(|_| invalid("invalid source ID"))?,
+                })?
+            };
+            let mut load = Load {
+                version: 1,
+                project_id: c.binding.project_id,
+                branch_id: serde_json::from_value(b["branch"]["id"].clone())?,
+                branch_revision: b["revision"]
+                    .as_i64()
+                    .ok_or_else(|| invalid("missing branch revision"))?,
+                source_id: serde_json::from_value(source_value["source"]["id"].clone())?,
+                source_sha256: source_value["source"]["sha256"]
+                    .as_str()
+                    .ok_or_else(|| invalid("source is not staged"))?
+                    .into(),
+                mapping,
+                schema,
+                table,
+            };
+            // Repeating FILE verifies new bytes, then reuses the original source
+            // identity only if the entire approved request still matches.
+            if staged.is_some() && !prior.is_null() {
+                let old: Load = serde_json::from_value(prior["load"].clone())?;
+                let temporary = load.source_id;
+                load.source_id = old.source_id;
+                load.branch_revision = old.branch_revision;
+                c.call(Action::IngestDispose { id: temporary })?;
+                if load != old {
+                    return Err(invalid(
+                        "idempotency key already binds different file or mapping input",
+                    ));
+                }
+            }
+            let accepted = c.call(Action::IngestLoad { load, key })?;
+            eprintln!("{}", json!({"accepted_job":accepted["id"]}));
+            if wait {
+                wait_ingest(c, accepted, false)?
+            } else {
+                accepted
+            }
+        }
+        "source" | "dispose" => {
+            let id = a
+                .required(2)?
+                .parse::<SourceId>()
+                .map_err(|_| invalid("invalid source ID"))?;
+            a.finish(3)?;
+            c.call(if verb == "source" {
+                Action::IngestSource { id }
+            } else {
+                Action::IngestDispose { id }
+            })?
+        }
+        "status" | "cancel" | "retry" => {
+            let id = a
+                .required(2)?
+                .parse::<JobId>()
+                .map_err(|_| invalid("invalid job ID"))?;
+            a.finish(3)?;
+            let accepted = c.call(match verb.as_str() {
+                "status" => Action::IngestStatus { id },
+                "cancel" => Action::IngestCancel { id },
+                _ => Action::IngestRetry { id },
+            })?;
+            if wait {
+                wait_ingest(c, accepted, false)?
+            } else {
+                accepted
+            }
+        }
+        "list" => {
+            let branch = a.take("--branch");
+            let limit = a.number("--limit", 20)? as usize;
+            a.finish(2)?;
+            c.call(Action::IngestList { branch, limit })?
+        }
+        _ => return Err(invalid("unknown ingestion command")),
+    };
+    println!("{value}");
+    Ok(
+        if matches!(verb.as_str(), "load" | "retry")
+            && matches!(value["state"].as_str(), Some("failed" | "cancelled"))
+        {
+            7
+        } else {
+            0
+        },
+    )
 }

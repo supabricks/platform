@@ -45,6 +45,8 @@ jobs:
           git diff --exit-code -- python/analytics/requirements.lock
       - name: Exporter failure boundaries
         run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py' -v
+      - name: CSV parser and conversion boundaries
+        run: python/analytics/.venv/bin/python -m unittest discover -s python/ingest -p 'test_*.py' -v
       - name: Synthetic Sail and Delta qualification
         run: |
           set -o pipefail

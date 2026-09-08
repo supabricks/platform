@@ -146,6 +146,9 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     if not args.postgres_only:
         from analytics import assemble_analytics
         assemble_analytics(destination, args.target)
+    if not args.postgres_only:
+        (destination / 'python/ingest').mkdir()
+        shutil.copy2(ROOT / 'python/ingest/worker.py', destination / 'python/ingest/worker.py')
     provenance = dict(
         console=dict(api_version=1, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
@@ -160,6 +163,8 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         minimum_os='glibc 2.39' if args.target == 'linux-x86_64' else 'macOS 15 arm64',
         distribution='localhost engineering alpha; public redistribution audit and publisher signing provisioning pending',
     )
+    if not args.postgres_only:
+        provenance['ingestion'] = dict(protocol_version=1, worker_sha256=digest(ROOT / 'python/ingest/worker.py'))
     files = {}
     for path in sorted(destination.rglob('*')):
         if path.is_symlink():
@@ -191,7 +196,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.6')
+    parser.add_argument('--version', default='v0.1.0-alpha.7')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

@@ -5,6 +5,704 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
+    "description": "Copy and inspect an explicitly requested absolute local CSV/TSV file. Returns a source ID immediately; poll ingest_source. Preview is a sample, text mappings preserve leading zeros. No database write.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "delimiter": {
+          "enum": [
+            ",",
+            "\t",
+            ";",
+            "|"
+          ]
+        },
+        "header": {
+          "default": true,
+          "type": "boolean"
+        },
+        "null_strings": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_inspect",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "source",
+            "inspection",
+            "error",
+            "progress"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read source status and bounded inspection. Preview samples are ephemeral; staged bytes remain private and immutable.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_source",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "source",
+            "inspection",
+            "error",
+            "progress"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Load a staged source into a NEW PostgreSQL table using an explicitly approved mapping and branch revision. Obtain write authorization naming the branch/table. Returns durable job; poll ingest_status. Never infer schema silently.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "load": {
+          "additionalProperties": false,
+          "properties": {
+            "branch_id": {
+              "type": "string"
+            },
+            "branch_revision": {
+              "description": "Revision returned by get_branch. Stale mutations fail with conflict.",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "mapping": {
+              "additionalProperties": false,
+              "description": "Explicitly approved inspection mapping. Inputs are zero-based source index strings, each used once. Text preserves leading zeros; typed conversions reject overflow or rounding.",
+              "properties": {
+                "columns": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data_type": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "enum": [
+                                  "text",
+                                  "boolean",
+                                  "smallint",
+                                  "integer",
+                                  "bigint",
+                                  "double",
+                                  "date",
+                                  "timestamp",
+                                  "timestamp_tz"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "decimal"
+                              },
+                              "precision": {
+                                "maximum": 38,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "scale": {
+                                "maximum": 38,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "precision",
+                              "scale"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "input": {
+                        "pattern": "^[0-9]+$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 63,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "nullable": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "input",
+                      "name",
+                      "data_type",
+                      "nullable"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 256,
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "delimiter": {
+                  "enum": [
+                    ",",
+                    "\t",
+                    ";",
+                    "|"
+                  ]
+                },
+                "format": {
+                  "const": "csv"
+                },
+                "header": {
+                  "type": "boolean"
+                },
+                "null_strings": {
+                  "items": {
+                    "maxLength": 256,
+                    "type": "string"
+                  },
+                  "maxItems": 16,
+                  "type": "array"
+                },
+                "version": {
+                  "const": 1
+                }
+              },
+              "required": [
+                "version",
+                "format",
+                "delimiter",
+                "header",
+                "null_strings",
+                "columns"
+              ],
+              "type": "object"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            },
+            "source_id": {
+              "type": "string"
+            },
+            "source_sha256": {
+              "type": "string"
+            },
+            "table": {
+              "type": "string"
+            },
+            "version": {
+              "const": 1
+            }
+          },
+          "required": [
+            "version",
+            "project_id",
+            "branch_id",
+            "branch_revision",
+            "source_id",
+            "source_sha256",
+            "schema",
+            "table",
+            "mapping"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "load",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_load",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "load",
+            "state",
+            "parsed_rows",
+            "copied_rows",
+            "committed_rows",
+            "source"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read the durable import outcome, source and progress; reconciling is not a safe retry.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_status",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "load",
+            "state",
+            "parsed_rows",
+            "copied_rows",
+            "committed_rows",
+            "source"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List recent project-bound imports, optionally filtered by branch.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "limit": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "ingest_list",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "jobs": {
+              "items": {
+                "required": [
+                  "id",
+                  "load",
+                  "state"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "jobs"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Find a retained import by explicit branch and idempotency key before deciding whether to retry.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
+          "type": "string"
+        },
+        "key": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_find",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "job": {
+              "type": [
+                "object",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "job"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Cancel an import. A commit in flight remains reconciling until its receipt is resolved; poll ingest_status.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_cancel",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "load",
+            "state",
+            "parsed_rows",
+            "copied_rows",
+            "committed_rows",
+            "source"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Explicitly retry a failed import only after proven rollback, with its unchanged approved mapping/source and branch revision.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_retry",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "load",
+            "state",
+            "parsed_rows",
+            "copied_rows",
+            "committed_rows",
+            "source"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Dispose an inactive staged source and revoke retained retry references. Active imports prevent disposal; the original device file is untouched.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "ingest_dispose",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "disposed",
+            "source_id"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
     "description": "Export a frozen Postgres branch and atomically publish a new analytical epoch. Returns an ID; poll analytics_status. Existing sessions remain pinned.",
     "inputSchema": {
       "additionalProperties": false,

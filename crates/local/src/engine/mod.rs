@@ -961,6 +961,7 @@ impl Cell {
         }
         for record in store.native_processes()? {
             if !record.role.starts_with("analytics-session-")
+                && !record.role.starts_with("ingest-")
                 && !record.role.starts_with("console-")
                 && record.branch.is_none()
                 && record.role != "supervisor"

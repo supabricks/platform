@@ -4,7 +4,7 @@ use crate::{
     project::ProjectConfig,
     store::{
         Result, Store,
-        error::{invalid, missing},
+        error::{conflict, invalid, missing},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -36,6 +36,43 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    IngestInspect {
+        path: std::path::PathBuf,
+        #[serde(default = "ingest_delimiter")]
+        delimiter: String,
+        #[serde(default = "ingest_header")]
+        header: bool,
+        #[serde(default)]
+        null_strings: Vec<String>,
+    },
+    IngestSource {
+        id: crate::ingest::SourceId,
+    },
+    IngestLoad {
+        load: crate::ingest::Load,
+        key: String,
+    },
+    IngestStatus {
+        id: crate::ingest::JobId,
+    },
+    IngestList {
+        branch: Option<String>,
+        #[serde(default = "ingest_limit")]
+        limit: usize,
+    },
+    IngestFind {
+        branch: String,
+        key: String,
+    },
+    IngestCancel {
+        id: crate::ingest::JobId,
+    },
+    IngestRetry {
+        id: crate::ingest::JobId,
+    },
+    IngestDispose {
+        id: crate::ingest::SourceId,
+    },
     AnalyticsRefresh {
         branch: String,
         key: String,
@@ -228,8 +265,9 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"ingestion":false},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"ingestion":true},
         "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"analytical_sessions":2,"analytical_session_ttl_ms":3600000,"analytical_sql_rows":1000,"analytical_sql_result_bytes":262144,"analytical_sql_timeout_ms":30000,"active_branches":32,"connections":256,"connections_per_branch":64},
+        "ingestion":{"formats":["csv","tsv"],"new_tables_only":true,"approved_mapping_required":true,"source_bytes":104857600,"decoded_bytes":536870912,"sampled_rss_bytes":536870912,"preview_rows":100,"preview_bytes":262144,"active_imports":1,"deadline_ms":600000},
         "sql":{"read_only_default":true,"statements_per_call":1,"values":"PostgreSQL text or null","writes":"explicit read_only=false; no automatic retry"}})
 }
 pub(crate) fn resolve(store: &Store, binding: &Binding, target: Option<&str>) -> Result<BranchId> {
@@ -261,6 +299,68 @@ pub(crate) fn handle(
     let project = binding.project_id;
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
+        Action::IngestInspect { .. } => {
+            return Err(invalid("inspection requires daemon worker service"));
+        }
+        Action::IngestSource { id } => {
+            return crate::ingest::service::source_status(store, project, id);
+        }
+        Action::IngestLoad { load, key } => {
+            crate::ingest::service::worker(store)?;
+            if load.project_id != project {
+                return Err(conflict("ingestion project differs from session binding"));
+            }
+            load.validate()?;
+            if load.mapping.format != crate::ingest::Format::Csv
+                || load
+                    .mapping
+                    .columns
+                    .iter()
+                    .any(|c| matches!(c.data_type, crate::ingest::DataType::Jsonb))
+            {
+                return Err(invalid("I01 supports CSV/TSV and scalar columns"));
+            }
+            if store
+                .ingest_for_key(project, load.branch_id, &key)?
+                .is_none()
+            {
+                store.connection(project, load.branch_id)?;
+            }
+            let j = store.create_ingest(&key, load)?;
+            return crate::ingest::service::status(store, project, j.id);
+        }
+        Action::IngestStatus { id } => return crate::ingest::service::status(store, project, id),
+        Action::IngestFind { branch, key } => {
+            let branch = resolve(store, binding, Some(&branch))?;
+            return Ok(json!(store.ingest_for_key(project, branch, &key)?));
+        }
+        Action::IngestList { branch, limit } => {
+            let branch = branch
+                .map(|b| resolve(store, binding, Some(&b)))
+                .transpose()?;
+            let mut jobs = Vec::new();
+            let mut bytes = 0;
+            for job in store.ingest_list(project, branch, limit)? {
+                bytes += serde_json::to_vec(&job)?.len();
+                if bytes > 1024 * 1024 {
+                    break;
+                }
+                jobs.push(job);
+            }
+            return Ok(json!(jobs));
+        }
+        Action::IngestCancel { id } => {
+            store.cancel_ingest(project, id)?;
+            return crate::ingest::service::status(store, project, id);
+        }
+        Action::IngestRetry { id } => {
+            store.retry_ingest(project, id)?;
+            return crate::ingest::service::status(store, project, id);
+        }
+        Action::IngestDispose { id } => {
+            store.dispose_source(project, id, false)?;
+            return Ok(json!({"disposed":true,"source_id":id}));
+        }
         Action::AnalyticsRefresh {
             branch,
             key,
@@ -571,4 +671,14 @@ fn allocate(
     Err(crate::store::error::conflict(
         "could not allocate three compute ports",
     ))
+}
+
+fn ingest_delimiter() -> String {
+    ",".into()
+}
+fn ingest_header() -> bool {
+    true
+}
+fn ingest_limit() -> usize {
+    20
 }

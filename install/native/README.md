@@ -1,4 +1,4 @@
-# Native local analytical preview (C02)
+# Native local analytical preview (I01)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
@@ -37,7 +37,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-C02 uses version `v0.1.0-alpha.6`. It adds a PostgreSQL database workspace to
+I01 uses version `v0.1.0-alpha.7`. It adds a PostgreSQL database workspace to
 R03's coordinated backup/restore and explicit platform upgrades. See the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
@@ -46,7 +46,7 @@ profile conversion and engine upgrades are not qualified.
 `supabricks console` starts/reconnects the runtime and opens the current project's
 overview. `--no-open` returns a private, single-use browser launch URL as JSON.
 The [console runbook](../../docs/handbook/local-console.md) covers source builds,
-session expiry and browser support. The [database workspace guide](../../docs/handbook/database-workspace.md) covers branch controls, SQL and saved queries. File ingestion follows in the I01–I02 slices.
+session expiry and browser support. The [database workspace guide](../../docs/handbook/database-workspace.md) covers branch controls, SQL and saved queries. [CSV/TSV ingestion](../../docs/handbook/csv-ingestion.md) is available through CLI/MCP; the browser picker follows in I02.
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before
@@ -136,4 +136,4 @@ power-loss qualification remain required before public durability claims. See th
 which clean-host/offline tests have actually run.
 
 I00 uses catalog 9. Existing catalog-8 roots require the explicit backed-up
-[upgrade workflow](../../docs/handbook/recovery.md); ingestion commands arrive in I01.
+[upgrade workflow](../../docs/handbook/recovery.md); [ingestion commands](../../docs/handbook/csv-ingestion.md) use the same catalog in I01.

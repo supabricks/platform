@@ -158,6 +158,16 @@ pub fn start_supervisor(store: &mut Store, launch: &Launch, file: &Path) -> Resu
     )
 }
 pub fn start_owned(store: &mut Store, launch: &Launch, file: &Path, log: &Path) -> Result<Child> {
+    start_owned_before(store, launch, file, log, |_, _| Ok(()))
+}
+/// Commit domain ownership before the execution gate opens.
+pub(crate) fn start_owned_before(
+    store: &mut Store,
+    launch: &Launch,
+    file: &Path,
+    log: &Path,
+    before: impl FnOnce(&mut Store, &OwnedProcess) -> Result<()>,
+) -> Result<Child> {
     write_json(file, launch)?;
     let log = OpenOptions::new()
         .create(true)
@@ -178,12 +188,21 @@ pub fn start_owned(store: &mut Store, launch: &Launch, file: &Path, log: &Path) 
     let result = (|| {
         let record = evidence(launch, child.id())?;
         store.record_native_process(&record)?;
+        before(store, &record)?;
         child.stdin.take().unwrap().write_all(&[1])?;
         Ok(())
     })();
     if let Err(e) = result {
         let _ = child.kill();
         let _ = child.wait();
+        if let Some(record) = store
+            .native_processes()?
+            .into_iter()
+            .find(|p| p.role == launch.role && p.token == launch.token)
+        {
+            stop(&record)?;
+            store.forget_native_process(&record)?;
+        }
         return Err(e);
     }
     Ok(child)

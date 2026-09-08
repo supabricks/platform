@@ -129,6 +129,7 @@ pub struct Daemon {
     gateway: Option<crate::connections::Gateway>,
     queries: Vec<std::thread::JoinHandle<()>>,
     ingest_error: Option<String>,
+    ingestion: crate::ingest::service::Service,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -168,6 +169,7 @@ impl Daemon {
             sessions,
             queries: Vec::new(),
             ingest_error: None,
+            ingestion: Default::default(),
             gateway,
             validator,
             store,
@@ -196,9 +198,6 @@ impl Daemon {
             self.queries.retain(|t| !t.is_finished());
             if stopping {
                 self.console_queries.cancel_all();
-                self.ingest_error = crate::ingest::recover(&mut self.store)
-                    .err()
-                    .map(|e| e.to_string());
             }
             self.console_queries.tick();
             if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
@@ -212,6 +211,16 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
+                    Ok(done) => {
+                        self.ingest_error = None;
+                        done
+                    }
+                    Err(e) => {
+                        self.ingest_error = Some(e.to_string());
+                        false
+                    }
+                };
                 let console_result = if stopping {
                     self.consoles.stop(&mut self.store)
                 } else {
@@ -219,7 +228,6 @@ impl Daemon {
                 };
                 self.consoles.last_error = console_result.err().map(|e| e.to_string());
                 if !stopping {
-                    self.ingest_error = self.store.cleanup_ingest().err().map(|e| e.to_string());
                     self.sessions.last_error = self
                         .sessions
                         .tick(&mut self.store)
@@ -253,6 +261,7 @@ impl Daemon {
                         && analytical_stopped
                         && self.consoles.last_error.is_none()
                         && self.ingest_error.is_none()
+                        && ingestion_stopped
                     {
                         match cell.stop(&mut self.store) {
                             Ok(true) => return Ok(()),
@@ -268,7 +277,7 @@ impl Daemon {
                                 cell.last_error = Some(detail);
                             }
                         }
-                    } else if !stopping {
+                    } else if !stopping || !ingestion_stopped {
                         match cell.tick(&mut self.store) {
                             Ok(()) => cell.last_error = None,
                             Err(e) => cell.last_error = Some(e.to_string()),
@@ -278,6 +287,7 @@ impl Daemon {
                     && analytical_stopped
                     && self.consoles.last_error.is_none()
                     && self.ingest_error.is_none()
+                    && ingestion_stopped
                 {
                     return Ok(());
                 }
@@ -649,6 +659,22 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::IngestInspect {
+            path,
+            delimiter,
+            header,
+            null_strings,
+        } = action
+        {
+            return self.ingestion.inspect(
+                &mut self.store,
+                &binding,
+                path,
+                delimiter,
+                header,
+                null_strings,
+            );
+        }
         if let crate::api::Action::Connect { branch } = action {
             let id = crate::api::resolve(&self.store, &binding, branch.as_deref())?;
             return self.handle(Request::Connection {

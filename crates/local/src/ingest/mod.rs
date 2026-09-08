@@ -1,4 +1,5 @@
-//! I00 contracts. File readers, COPY execution and public ingestion adapters land in I01.
+//! Durable ingestion contracts and the I01 owned CSV service.
+pub(crate) mod service;
 use crate::store::{Result, error::invalid};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,6 +21,12 @@ macro_rules! id {
         impl $name {
             pub fn new() -> Self {
                 Self(OperationId::new())
+            }
+        }
+        impl std::str::FromStr for $name {
+            type Err = <OperationId as std::str::FromStr>::Err;
+            fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+                Ok(Self(s.parse()?))
             }
         }
         impl Default for $name {
@@ -244,6 +251,7 @@ pub struct Job {
     pub state: State,
     pub attempt: u32,
     pub generation: i64,
+    #[serde(skip_serializing)]
     pub worker: Option<crate::supervisor::OwnedProcess>,
     pub cancel_requested: bool,
     pub parsed_rows: u64,
@@ -283,5 +291,24 @@ pub(crate) fn recover(store: &mut crate::store::Store) -> Result<()> {
         crate::supervisor::stop(&process)?;
         store.forget_native_process(&process)?;
     }
-    store.interrupt_ingest()
+    store.interrupt_ingest()?;
+    let tmp = store.root().join("tmp");
+    if tmp.exists() {
+        if !std::fs::symlink_metadata(&tmp)?.is_dir() {
+            return Err(crate::store::error::conflict("invalid temporary workspace"));
+        }
+        for entry in std::fs::read_dir(&tmp)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            let id = name
+                .strip_prefix("ingest-source-")
+                .or_else(|| name.strip_prefix("ingest-check-"))
+                .or_else(|| name.strip_prefix("ingest-"));
+            if id.is_some_and(|s| s.parse::<OperationId>().is_ok()) && entry.file_type()?.is_dir() {
+                std::fs::remove_dir_all(entry.path())?;
+            }
+        }
+    }
+    Ok(())
 }
