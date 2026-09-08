@@ -58,6 +58,24 @@ def qualify(args):
                           'same-target physical restore and platform-only upgrades; identical engine/dependency inventories'])
     binary = prefix / 'bin/supabricks'
     roots = [data]
+    identify = workspace / 'identify-process.py'
+    identify.write_text("""import json, os, sys
+import psutil
+root, value = sys.argv[1:]
+if value == 'daemon':
+    matches = [p.info['pid'] for p in psutil.process_iter(['pid','cmdline'])
+               if 'daemon' in (p.info['cmdline'] or []) and '--data-dir' in (p.info['cmdline'] or [])
+               and root in (p.info['cmdline'] or [])]
+    assert len(matches) == 1, 'daemon identity is ambiguous'
+    pid = matches[0]
+else:
+    pid = int(value)
+process = psutil.Process(pid)
+assert process.uids().effective == os.geteuid(), 'process belongs to another user'
+assert root in ' '.join(process.cmdline()), 'process is outside disposable root'
+assert process.status() != psutil.STATUS_ZOMBIE, 'process is already a zombie'
+print(json.dumps(pid))
+""")
 
     def install(channel, upgrade=False):
         install_env = dict(env)
@@ -93,11 +111,7 @@ def qualify(args):
         assert data.name == 'data' and data.parent.name.startswith('sb-r03-')
         status = cli('status')
         if role == 'daemon':
-            listing = run(['ps', '-axo', 'pid=,command='])
-            found = [int(line.strip().split(None, 1)[0]) for line in listing.splitlines()
-                     if f'daemon --data-dir {data}' in line]
-            assert len(found) == 1, 'daemon identity ambiguous'
-            pid = found[0]
+            pid = 'daemon'
         else:
             records = status['runtime']['processes']
             if role in ('compute', 'postgres'):
@@ -110,9 +124,10 @@ def qualify(args):
                     assert os.getpgid(pid) == record['pid'], 'postmaster outside its owned process group'
             else:
                 pid = next(p['pid'] for p in records if p['role'] == role)
-        command = run(['ps', '-p', str(pid), '-o', 'command='])
-        assert str(data) in command, 'refusing signal: process no longer belongs to disposable data root'
-        return pid
+        # macOS Seatbelt can refuse execution of the system ps binary. The
+        # bundled psutil reads native process identity without weakening sandbox
+        # rules or relying on host Python packages.
+        return json.loads(run([prefix / 'current/python/analytics/python', identify, data, str(pid)], env=env))
 
     try:
         install('old')
