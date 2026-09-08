@@ -468,3 +468,191 @@ fn independent_project_sessions_and_expired_links_are_refused() {
     }
     assert_eq!(login(&origin, &expired).status, 401);
 }
+
+#[test]
+fn workspace_commands_enforce_csrf_revisions_private_saved_files_and_backup() {
+    use std::os::unix::fs::MetadataExt;
+    use supabricks_core::resource::OperationId;
+    let f = Fixture::new();
+    let (origin, token) = parts(&f.open());
+    let auth = login(&origin, &token);
+    let cookie = auth
+        .headers
+        .lines()
+        .find_map(|l| {
+            l.to_lowercase().starts_with("set-cookie:").then(|| {
+                l.split_once(':')
+                    .unwrap()
+                    .1
+                    .trim()
+                    .split(';')
+                    .next()
+                    .unwrap()
+                    .to_owned()
+            })
+        })
+        .unwrap();
+    let csrf = serde_json::from_slice::<Value>(&auth.body).unwrap()["csrf"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let headers = [
+        ("Origin", origin.as_str()),
+        ("X-Supabricks-Console", "1"),
+        ("Content-Type", "application/json"),
+        ("Cookie", cookie.as_str()),
+        ("X-Supabricks-CSRF", csrf.as_str()),
+    ];
+    let call = |value: Value| {
+        http(
+            &origin,
+            "POST",
+            "/api/workspace",
+            &headers,
+            &value.to_string(),
+        )
+    };
+    assert_eq!(
+        http(
+            &origin,
+            "POST",
+            "/api/workspace",
+            &headers[..4],
+            "{\"action\":\"saved_list\"}"
+        )
+        .status,
+        403
+    );
+    assert_eq!(
+        call(json!({"action":"select_branch","branch":"main"})).status,
+        400
+    );
+    let created = call(json!({"action":"create_database","name":"main","key":"saved-main"}));
+    assert_eq!(
+        created.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&created.body)
+    );
+    let op: Value = serde_json::from_slice::<Value>(&created.body).unwrap()["value"].clone();
+    let target = json!({"branch":op["branch_id"],"revision":op["revision"]});
+    let id = OperationId::new();
+    let saved = json!({"action":"saved_put","id":id,"expected_revision":0,"target":target,"title":"Private example","sql":"SELECT 9007199254740993::bigint"});
+    assert_eq!(call(saved.clone()).status, 200);
+    assert_eq!(call(saved).status, 409);
+    let got = call(json!({"action":"saved_get","id":id}));
+    assert_eq!(got.status, 200);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&got.body).unwrap()["value"]["sql"],
+        "SELECT 9007199254740993::bigint"
+    );
+    let relative = format!("queries/{}/{id}.json", f.binding().project_id);
+    let path = f.root.join(&relative);
+    assert_eq!(fs::metadata(&path).unwrap().mode() & 0o777, 0o600);
+    let mut wrong = target.clone();
+    wrong["revision"] = json!(999);
+    assert_eq!(call(json!({"action":"saved_put","id":id,"expected_revision":1,"target":wrong,"title":"bad","sql":"SELECT 1"})).status,409);
+    assert_eq!(
+        call(json!({"action":"saved_delete","id":id,"expected_revision":9})).status,
+        409
+    );
+    // Traversal is rejected by UUID parsing, and symlinked saved records fail closed.
+    assert_eq!(
+        call(json!({"action":"saved_get","id":"../../runtime.json"})).status,
+        400
+    );
+    let symlink_id = OperationId::new();
+    let link = path.parent().unwrap().join(format!("{symlink_id}.json"));
+    symlink(&path, &link).unwrap();
+    assert_eq!(
+        call(json!({"action":"saved_get","id":symlink_id})).status,
+        400
+    );
+    fs::remove_file(link).unwrap();
+    let generation = request(&f.root, Request::Status).unwrap()["generation"]
+        .as_i64()
+        .unwrap();
+    assert!(
+        request(
+            &f.root,
+            Request::ConsoleAction {
+                binding: f.binding(),
+                generation: generation - 1,
+                owner: format!("{}:{}", OperationId::new(), "a".repeat(64)),
+                action: serde_json::from_value(json!({"action":"saved_list"})).unwrap()
+            }
+        )
+        .is_err()
+    );
+    let escaped_id = OperationId::new();
+    let escaped_sql = format!("SELECT '{}'", "\\".repeat(22000));
+    assert_eq!(call(json!({"action":"saved_put","id":escaped_id,"expected_revision":0,"target":target,"title":"Escaped SQL","sql":escaped_sql})).status,200);
+    let escaped = call(json!({"action":"saved_get","id":escaped_id}));
+    assert_eq!(escaped.status, 200);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&escaped.body).unwrap()["value"]["sql"],
+        escaped_sql
+    );
+    let other = f.temp.path().join("other-project");
+    fs::create_dir(&other).unwrap();
+    let other_config = ProjectConfig::initialize(&other, "other-project").unwrap();
+    let other_binding = Binding {
+        project_id: other_config.id,
+        worktree: other,
+    };
+    let owner = format!("console-{}:{}", OperationId::new(), "b".repeat(64));
+    let other_saved = request(
+        &f.root,
+        Request::ConsoleAction {
+            binding: other_binding.clone(),
+            generation,
+            owner: owner.clone(),
+            action: serde_json::from_value(json!({"action":"saved_get","id":id})).unwrap(),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        supabricks_local::client::diagnostic(&other_saved)["code"],
+        "not_found"
+    );
+    let foreign=request(&f.root,Request::ConsoleAction{binding:other_binding,generation,owner,action:serde_json::from_value(json!({"action":"query","id":OperationId::new(),"target":target,"sql":"SELECT 1","read_only":true,"max_rows":200,"timeout_ms":10000})).unwrap()}).unwrap_err();
+    assert_eq!(
+        supabricks_local::client::diagnostic(&foreign)["code"],
+        "not_found"
+    );
+    let backup = f.temp.path().join("workspace-backup");
+    let out = Command::new(env!("CARGO_BIN_EXE_supabricks"))
+        .args(["backup", "create"])
+        .arg(&backup)
+        .arg("--data-dir")
+        .arg(&f.root)
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(
+        fs::read(backup.join("data").join(&relative)).unwrap(),
+        fs::read(&path).unwrap()
+    );
+    assert!(!backup.join("data/tmp").exists());
+    let restored = f.temp.path().join("restored");
+    let out = Command::new(env!("CARGO_BIN_EXE_supabricks"))
+        .args(["backup", "restore"])
+        .arg(&backup)
+        .arg("--data-dir")
+        .arg(&restored)
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(
+        fs::read(restored.join(&relative)).unwrap(),
+        fs::read(&path).unwrap()
+    );
+}

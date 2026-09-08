@@ -242,6 +242,55 @@ impl State {
                 "Console session expired; run supabricks console to reconnect",
             );
         };
+        if request.method() == Method::POST
+            && single(request.headers(), "x-supabricks-csrf") != Some(csrf.as_str())
+        {
+            return fail(403, "Invalid CSRF token");
+        }
+        if path == "/api/workspace" && request.method() == Method::POST {
+            if single(request.headers(), "content-type") != Some("application/json") {
+                return fail(415, "Expected application/json");
+            }
+            let bytes = match Limited::new(request.into_body(), 60000).collect().await {
+                Ok(body) => body.to_bytes(),
+                Err(_) => return fail(413, "Workspace request exceeds 60 KB"),
+            };
+            let action: super::workspace::Command = match serde_json::from_slice(&bytes) {
+                Ok(action) => action,
+                Err(_) => return fail(400, "Invalid workspace command"),
+            };
+            let config = self.config.clone();
+            let result = tokio::task::spawn_blocking(move || {
+                client::request_timeout(
+                    &config.root,
+                    Request::ConsoleAction {
+                        binding: config.binding,
+                        generation: config.generation,
+                        owner: format!("{}:{id}", config.instance),
+                        action,
+                    },
+                    Duration::from_secs(2),
+                )
+            })
+            .await;
+            return match result {
+                Ok(Ok(value)) => json_response(200, json!({"api_version":VERSION,"value":value})),
+                Ok(Err(error)) => {
+                    let diagnostic = crate::client::diagnostic(&error);
+                    let status = match diagnostic["code"].as_str() {
+                        Some("invalid_input") => 400,
+                        Some("not_found") => 404,
+                        Some("conflict") => 409,
+                        _ => 503,
+                    };
+                    json_response(status, json!({"api_version":VERSION,"error":diagnostic}))
+                }
+                Err(_) => fail(
+                    503,
+                    "Workspace worker unavailable; inspect operation before retrying",
+                ),
+            };
+        }
         if path == "/api/logout" && request.method() == Method::POST {
             if single(request.headers(), "x-supabricks-csrf") != Some(csrf.as_str()) {
                 return fail(403, "Invalid CSRF token");

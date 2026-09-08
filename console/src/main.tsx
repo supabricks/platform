@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { authenticate, overview, logout, ApiError, type Overview } from "./api";
 import "./style.css";
+import { Workspace } from "./workspace";
 
 // A launch secret is single-use. Remove it before any API call or UI rendering.
 const launch = new URLSearchParams(location.hash.slice(1)).get("launch");
@@ -28,6 +29,7 @@ function Mark() {
   );
 }
 function App() {
+  const [view, setView] = useState("overview");
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -116,9 +118,19 @@ function App() {
           </div>
         </div>
         <nav aria-label="Project navigation">
-          <a href="#main" aria-current="page">
+          <a
+            href="#main"
+            aria-current={view === "overview" ? "page" : undefined}
+            onClick={() => setView("overview")}
+          >
             <span aria-hidden="true">▦</span> Overview
           </a>
+          <button
+            className={view === "workspace" ? "active" : ""}
+            onClick={() => setView("workspace")}
+          >
+            Database workspace
+          </button>
         </nav>
         <div className="sidebar-bottom">
           <span className="local-pill">
@@ -173,212 +185,236 @@ function App() {
             )}
           </div>
         </header>
-        <main id="main">
-          <div className="page-heading">
-            <div>
-              <span className="eyebrow">PROJECT OVERVIEW</span>
-              <h1>A home for your local data.</h1>
-              <p>Your branches and runtime, together in one place.</p>
+        <main
+          id="main"
+          className={view === "workspace" ? "workspace-main" : undefined}
+        >
+          <div hidden={view !== "overview"}>
+            <div className="page-heading">
+              <div>
+                <span className="eyebrow">PROJECT OVERVIEW</span>
+                <h1>A home for your local data.</h1>
+                <p>Your branches and runtime, together in one place.</p>
+              </div>
+              {authenticated && (
+                <button
+                  className="button"
+                  disabled={busy}
+                  onClick={() => void refresh()}
+                >
+                  {busy ? "Refreshing…" : "↻  Refresh"}
+                </button>
+              )}
             </div>
-            {authenticated && (
-              <button
-                className="button"
-                disabled={busy}
-                onClick={() => void refresh()}
-              >
-                {busy ? "Refreshing…" : "↻  Refresh"}
-              </button>
+            {error && (
+              <div className="notice" role="alert">
+                <strong>Let’s reconnect.</strong>
+                <p>{error}</p>
+                <code>supabricks console</code>
+              </div>
             )}
-          </div>
-          {error && (
-            <div className="notice" role="alert">
-              <strong>Let’s reconnect.</strong>
-              <p>{error}</p>
-              <code>supabricks console</code>
-            </div>
-          )}
-          {!data && !error && (
-            <div className="loading" role="status">
-              Connecting to your local project…
-            </div>
-          )}
-          {data && (
-            <>
-              <section className="stats" aria-label="Project summary">
-                <article>
-                  <span className="eyebrow">BRANCHES</span>
-                  <div className="stat-value">
-                    {data.branches.length.toString().padStart(2, "0")}
-                    <span className="stat-icon" aria-hidden="true">
-                      ⑂
-                    </span>
-                  </div>
-                  <p>Independent places to build</p>
-                </article>
-                <article>
-                  <span className="eyebrow">DATABASE ENGINE</span>
-                  <div className="stat-value engine-value">
-                    Postgres <span>{data.runtime.postgres_major}</span>
-                  </div>
-                  <p>Native on your machine</p>
-                </article>
-                <article>
-                  <span className="eyebrow">LOCAL RUNTIME</span>
-                  <div
-                    className={`stat-value runtime-value ${ready ? "healthy" : ""}`}
-                  >
-                    <i />
-                    {ready ? "Ready" : error ? "Unavailable" : "Starting"}
-                  </div>
-                  <p>
-                    {ready
-                      ? "Available for your applications"
-                      : "Run supabricks doctor for details"}
-                  </p>
-                </article>
-              </section>
-              <section className="branch-panel" aria-labelledby="branch-title">
-                <div className="panel-heading">
-                  <div>
-                    <h2 id="branch-title">
-                      Branches <span>{data.branches.length}</span>
-                    </h2>
-                    <p>Each branch is a separate version of your database.</p>
-                  </div>
-                  {data.branches.length > 0 && (
-                    <label className="search">
-                      <span className="sr-only">Find a branch</span>
-                      <input
-                        placeholder="Find a branch…"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                      />
-                    </label>
-                  )}
-                </div>
-                {data.branches.length === 0 ? (
-                  <div className="empty">
-                    <span className="empty-mark" aria-hidden="true">
-                      ⑂
-                    </span>
-                    <h3>Your first branch starts here.</h3>
-                    <p>
-                      Create a database in this project, then refresh to see it
-                      here.
-                    </p>
-                    <div className="command">
-                      <code>{createCommand}</code>
-                      <button
-                        aria-label="Copy create database command"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(createCommand);
-                            setCopied(true);
-                          } catch {
-                            setCopied(false);
-                          }
-                        }}
-                      >
-                        {copied ? "Copied" : "Copy"}
-                      </button>
+            {!data && !error && (
+              <div className="loading" role="status">
+                Connecting to your local project…
+              </div>
+            )}
+            {data && (
+              <>
+                <section className="stats" aria-label="Project summary">
+                  <article>
+                    <span className="eyebrow">BRANCHES</span>
+                    <div className="stat-value">
+                      {data.branches.length.toString().padStart(2, "0")}
+                      <span className="stat-icon" aria-hidden="true">
+                        ⑂
+                      </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Branch</th>
-                          <th>Parent</th>
-                          <th>Desired state</th>
-                          <th>Revision</th>
-                          <th>Identity</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {branches.map((b) => (
-                          <tr
-                            key={b.id}
-                            className={selection === b.id ? "selected" : ""}
-                          >
-                            <td>
-                              <button
-                                className="branch-name"
-                                onClick={() =>
-                                  setSelection(selection === b.id ? null : b.id)
-                                }
-                                aria-expanded={selection === b.id}
-                              >
-                                <span aria-hidden="true">⑂</span>
-                                {b.name}
-                              </button>
-                              {b.is_default && (
-                                <span className="default-tag">Default</span>
-                              )}
-                            </td>
-                            <td>
-                              {b.parent_id ? (
-                                (data.branches.find((p) => p.id === b.parent_id)
-                                  ?.name ?? b.parent_id.slice(0, 8))
-                              ) : (
-                                <span className="muted">Root database</span>
-                              )}
-                            </td>
-                            <td>
-                              <span
-                                className={`state ${b.desired_state === "running" ? "running" : ""}`}
-                              >
-                                <i />
-                                {b.expired ? "Expired" : b.desired_state}
-                              </span>
-                            </td>
-                            <td className="mono">{b.revision}</td>
-                            <td className="mono muted">{b.id.slice(0, 8)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {branches.length === 0 && (
-                      <p className="no-match">No branches match “{filter}”.</p>
+                    <p>Independent places to build</p>
+                  </article>
+                  <article>
+                    <span className="eyebrow">DATABASE ENGINE</span>
+                    <div className="stat-value engine-value">
+                      Postgres <span>{data.runtime.postgres_major}</span>
+                    </div>
+                    <p>Native on your machine</p>
+                  </article>
+                  <article>
+                    <span className="eyebrow">LOCAL RUNTIME</span>
+                    <div
+                      className={`stat-value runtime-value ${ready ? "healthy" : ""}`}
+                    >
+                      <i />
+                      {ready ? "Ready" : error ? "Unavailable" : "Starting"}
+                    </div>
+                    <p>
+                      {ready
+                        ? "Available for your applications"
+                        : "Run supabricks doctor for details"}
+                    </p>
+                  </article>
+                </section>
+                <section
+                  className="branch-panel"
+                  aria-labelledby="branch-title"
+                >
+                  <div className="panel-heading">
+                    <div>
+                      <h2 id="branch-title">
+                        Branches <span>{data.branches.length}</span>
+                      </h2>
+                      <p>Each branch is a separate version of your database.</p>
+                    </div>
+                    {data.branches.length > 0 && (
+                      <label className="search">
+                        <span className="sr-only">Find a branch</span>
+                        <input
+                          placeholder="Find a branch…"
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value)}
+                        />
+                      </label>
                     )}
                   </div>
-                )}
-                {selected && (
-                  <div className="branch-detail">
-                    <strong>{selected.name}</strong>
-                    <code>{selected.id}</code>
-                    <span>Selection is local to this console.</span>
+                  {data.branches.length === 0 ? (
+                    <div className="empty">
+                      <span className="empty-mark" aria-hidden="true">
+                        ⑂
+                      </span>
+                      <h3>Your first branch starts here.</h3>
+                      <p>
+                        Create a database in this project, then refresh to see
+                        it here.
+                      </p>
+                      <div className="command">
+                        <code>{createCommand}</code>
+                        <button
+                          aria-label="Copy create database command"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                createCommand,
+                              );
+                              setCopied(true);
+                            } catch {
+                              setCopied(false);
+                            }
+                          }}
+                        >
+                          {copied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Branch</th>
+                            <th>Parent</th>
+                            <th>Desired state</th>
+                            <th>Revision</th>
+                            <th>Identity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {branches.map((b) => (
+                            <tr
+                              key={b.id}
+                              className={selection === b.id ? "selected" : ""}
+                            >
+                              <td>
+                                <button
+                                  className="branch-name"
+                                  onClick={() =>
+                                    setSelection(
+                                      selection === b.id ? null : b.id,
+                                    )
+                                  }
+                                  aria-expanded={selection === b.id}
+                                >
+                                  <span aria-hidden="true">⑂</span>
+                                  {b.name}
+                                </button>
+                                {b.is_default && (
+                                  <span className="default-tag">Default</span>
+                                )}
+                              </td>
+                              <td>
+                                {b.parent_id ? (
+                                  (data.branches.find(
+                                    (p) => p.id === b.parent_id,
+                                  )?.name ?? b.parent_id.slice(0, 8))
+                                ) : (
+                                  <span className="muted">Root database</span>
+                                )}
+                              </td>
+                              <td>
+                                <span
+                                  className={`state ${b.desired_state === "running" ? "running" : ""}`}
+                                >
+                                  <i />
+                                  {b.expired ? "Expired" : b.desired_state}
+                                </span>
+                              </td>
+                              <td className="mono">{b.revision}</td>
+                              <td className="mono muted">{b.id.slice(0, 8)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {branches.length === 0 && (
+                        <p className="no-match">
+                          No branches match “{filter}”.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {selected && (
+                    <div className="branch-detail">
+                      <strong>{selected.name}</strong>
+                      <code>{selected.id}</code>
+                      <span>Selection is local to this console.</span>
+                    </div>
+                  )}
+                  <div className="panel-footer">
+                    <span>
+                      <i className="live-dot" />
+                      {error
+                        ? "Showing last received state"
+                        : "Connected to local runtime"}
+                    </span>
+                    <span>Updated {updated}</span>
                   </div>
-                )}
-                <div className="panel-footer">
-                  <span>
-                    <i className="live-dot" />
-                    {error
-                      ? "Showing last received state"
-                      : "Connected to local runtime"}
-                  </span>
-                  <span>Updated {updated}</span>
-                </div>
-              </section>
-              <section
-                className="project-details"
-                aria-label="Project location"
-              >
-                <div>
-                  <span className="eyebrow">PROJECT DIRECTORY</span>
-                  <code>{data.worktree}</code>
-                </div>
-                <div>
-                  <span className="eyebrow">PROJECT ID</span>
-                  <code>{data.project.id}</code>
-                </div>
-              </section>
-            </>
+                </section>
+                <section
+                  className="project-details"
+                  aria-label="Project location"
+                >
+                  <div>
+                    <span className="eyebrow">PROJECT DIRECTORY</span>
+                    <code>{data.worktree}</code>
+                  </div>
+                  <div>
+                    <span className="eyebrow">PROJECT ID</span>
+                    <code>{data.project.id}</code>
+                  </div>
+                </section>
+              </>
+            )}
+            <footer>
+              Built for the work in front of you.
+              <span>Supabricks local preview</span>
+            </footer>
+          </div>
+          {authenticated && data && (
+            <Workspace
+              data={data}
+              selectedId={selection}
+              onSelect={setSelection}
+              onRefresh={refresh}
+              visible={view === "workspace"}
+            />
           )}
-          <footer>
-            Built for the work in front of you.
-            <span>Supabricks local preview</span>
-          </footer>
         </main>
       </div>
     </div>

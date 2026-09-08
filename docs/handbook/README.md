@@ -57,3 +57,5 @@ Native runtime work: [local state and durable operations (P02)](local-state.md),
 The [local application and agent workflow (P06)](local-workflow.md) is the native
 CLI/MCP entry point; the first-week Kubernetes instructions above describe the
 older operator deployment.
+
+- [PostgreSQL database workspace](database-workspace.md): branch controls, SQL, cancellation and saved queries.

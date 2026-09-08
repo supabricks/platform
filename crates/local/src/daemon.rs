@@ -30,6 +30,12 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    ConsoleAction {
+        binding: crate::api::Binding,
+        generation: i64,
+        owner: String,
+        action: crate::console::workspace::Command,
+    },
     ConsoleOpen {
         binding: crate::api::Binding,
         assets: PathBuf,
@@ -112,6 +118,7 @@ pub enum Request {
 
 pub struct Daemon {
     consoles: crate::console::Consoles,
+    console_queries: crate::console::workspace::Queries,
     publisher: crate::analytics::Publisher,
     sessions: crate::sessions::Sessions,
     store: Store,
@@ -154,6 +161,7 @@ impl Daemon {
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
             consoles,
+            console_queries: Default::default(),
             publisher,
             sessions,
             queries: Vec::new(),
@@ -183,6 +191,10 @@ impl Daemon {
         let mut stopping = false;
         loop {
             self.queries.retain(|t| !t.is_finished());
+            if stopping {
+                self.console_queries.cancel_all();
+            }
+            self.console_queries.tick();
             if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
                 if stopping {
                     if !gateway.stop(&mut self.store)? {
@@ -329,7 +341,7 @@ impl Daemon {
                     if !query.read_only && branch.is_none() {
                         return Err(invalid("SQL writes require an explicit branch"));
                     }
-                    if self.queries.len() >= crate::query::WORKERS {
+                    if self.queries.len() + self.console_queries.active() >= crate::query::WORKERS {
                         return Err(supabricks_core::error::OperationError::Unavailable(
                             "all four SQL workers are busy".into(),
                         )
@@ -365,6 +377,30 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::ConsoleAction {
+                binding,
+                generation,
+                owner,
+                action,
+            } => {
+                binding.validate(&mut self.store)?;
+                if generation != self.store.generation() {
+                    return Err(conflict(
+                        "console belongs to a prior daemon generation; query outcomes may be unknown",
+                    ));
+                }
+                let valid_owner = owner.split_once(':').is_some_and(|(instance, session)| {
+                    instance
+                        .strip_prefix("console-")
+                        .is_some_and(|id| id.parse::<OperationId>().is_ok())
+                        && session.len() == 64
+                        && session.bytes().all(|b| b.is_ascii_hexdigit())
+                });
+                if !valid_owner {
+                    return Err(invalid("invalid console session identity"));
+                }
+                self.workspace(binding, owner, action)?
+            }
             Request::ConsoleOpen { binding, assets } => {
                 self.consoles.open(&mut self.store, binding, assets)?
             }
@@ -392,7 +428,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":false,"ingestion":false},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":false},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -401,7 +437,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -503,6 +539,95 @@ impl Daemon {
                 json!({"authorized":true})
             }
         })
+    }
+    fn workspace(
+        &mut self,
+        binding: crate::api::Binding,
+        owner: String,
+        action: crate::console::workspace::Command,
+    ) -> Result<Value> {
+        use crate::console::workspace::{Command as C, identifier};
+        let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
+        let (id, target, query) = match action {
+            C::Query {
+                id,
+                target,
+                sql,
+                read_only,
+                max_rows,
+                timeout_ms,
+            } => (
+                id,
+                target,
+                crate::query::Query {
+                    sql,
+                    read_only,
+                    max_rows,
+                    timeout_ms,
+                },
+            ),
+            C::Catalog { id, target } => (id, target, crate::query::Query::catalog()),
+            C::Preview {
+                id,
+                target,
+                schema,
+                table,
+            } => (
+                id,
+                target,
+                crate::query::Query {
+                    sql: format!(
+                        "SELECT * FROM {}.{} LIMIT 200",
+                        identifier(&schema)?,
+                        identifier(&table)?
+                    ),
+                    read_only: true,
+                    max_rows: 200,
+                    timeout_ms: 10000,
+                },
+            ),
+            C::QueryStatus { id } => return self.console_queries.status(&scope, id, false),
+            C::CancelQuery { id } => return self.console_queries.status(&scope, id, true),
+            C::Connect { target } => {
+                target.validate(&self.store, &binding)?;
+                return self.handle(Request::Connection {
+                    project_id: binding.project_id,
+                    id: target.branch,
+                });
+            }
+            command @ (C::SavedList
+            | C::SavedGet { .. }
+            | C::SavedPut { .. }
+            | C::SavedDelete { .. }) => {
+                return crate::console::workspace::saved(&self.store, &binding, command);
+            }
+            other => {
+                let action = other.mutation(&self.store, &binding)?;
+                return self
+                    .public_action(binding, action)
+                    .map(crate::console::workspace::operation);
+            }
+        };
+        query.validate()?;
+        if let Some(value) = self.console_queries.existing(&scope, id, &target, &query)? {
+            return Ok(value);
+        }
+        target.validate(&self.store, &binding)?;
+        if self.queries.len() + self.console_queries.active() >= crate::query::WORKERS {
+            return Err(conflict("all four SQL workers are busy"));
+        }
+        let connection = self.handle(Request::Connection {
+            project_id: binding.project_id,
+            id: target.branch,
+        })?;
+        self.console_queries.start(
+            scope,
+            id,
+            target,
+            query,
+            connection,
+            self.store.generation(),
+        )
     }
     fn public_action(
         &mut self,

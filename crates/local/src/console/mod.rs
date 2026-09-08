@@ -1,6 +1,7 @@
 //! Project-bound browser bridge. The daemon owns children; HTTP never opens Store.
 pub mod assets;
 mod server;
+pub mod workspace;
 use crate::{
     api::Binding,
     client,

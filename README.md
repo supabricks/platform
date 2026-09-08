@@ -12,8 +12,9 @@ on the target machine. Public hosting at `supabricks.io` is deferred.
 
 `supabricks console` opens the [local project and branch overview](docs/handbook/local-console.md).
 The [console and ingestion implementation plan](docs/plans/console-ingestion-implementation.md)
-adds the SQL workspace and CSV/JSON/Parquet imports in later slices; those features
-are not yet implemented. See the [architecture](docs/architecture/local-console-ingestion.md).
+includes the [PostgreSQL database workspace](docs/handbook/database-workspace.md)
+with branch controls, SQL and saved queries. CSV/JSON/Parquet ingestion remains
+in later slices. See the [architecture](docs/architecture/local-console-ingestion.md).
 
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres

@@ -10,12 +10,14 @@ use std::{
 };
 use supabricks_core::error::OperationError;
 use tokio::{
-    io::{AsyncRead, AsyncWrite, ReadBuf},
+    io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf},
     net::TcpStream,
 };
 use tokio_postgres::{Config, NoTls, SimpleQueryMessage};
 pub const WORKERS: usize = 4;
 const BYTES: usize = 262144;
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct Query {
     pub sql: String,
     pub read_only: bool,
@@ -45,7 +47,25 @@ impl Query {
             .build()?
             .block_on(self.execute(target))
     }
+    pub fn run_cancellable(
+        self,
+        target: Value,
+        cancel: tokio::sync::watch::Receiver<bool>,
+    ) -> Result<Value> {
+        self.validate()?;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(self.execute_cancellable(target, Some(cancel)))
+    }
     async fn execute(self, target: Value) -> Result<Value> {
+        self.execute_cancellable(target, None).await
+    }
+    async fn execute_cancellable(
+        self,
+        target: Value,
+        mut cancellation: Option<tokio::sync::watch::Receiver<bool>>,
+    ) -> Result<Value> {
         let started = std::time::Instant::now();
         let connect = async {
             let port = target["port"]
@@ -59,11 +79,11 @@ impl Query {
                     .connect_raw(FramedSocket::new(socket),NoTls).await.map_err(db_error)?;
             Ok::<_, crate::store::Error>((client, ConnectionTask(tokio::spawn(connection))))
         };
-        let (client, _connection) = tokio::time::timeout(Duration::from_secs(32), connect)
-            .await
-            .map_err(|_| {
-                OperationError::Unavailable("SQL connection deadline exceeded".into())
-            })??;
+        let (client, _connection) = tokio::select! {
+            biased;
+            _ = cancelled(&mut cancellation) => return Err(cancel_error()),
+            result = tokio::time::timeout(Duration::from_secs(32), connect) => result.map_err(|_| OperationError::Unavailable("SQL connection deadline exceeded".into()))??,
+        };
         let cancel = client.cancel_token();
         let run = async {
             client
@@ -113,7 +133,11 @@ impl Query {
         };
         let budget = Duration::from_millis(self.timeout_ms)
             .min(Duration::from_secs(44).saturating_sub(started.elapsed()));
-        let result = tokio::time::timeout(budget, run).await;
+        let result = tokio::select! {
+            biased;
+            result = tokio::time::timeout(budget, run) => result,
+            _ = cancelled(&mut cancellation) => Ok(Err(cancel_error())),
+        };
         if !matches!(&result, Ok(Ok(_))) {
             // Independent cancellation plus connection-task drop closes the
             // session even if SQL resets statement_timeout. No write replay.
@@ -122,12 +146,31 @@ impl Query {
                     TcpStream::connect(("127.0.0.1", target["port"].as_u64().unwrap() as u16))
                         .await
                         .map_err(|_| ())?;
-                cancel.cancel_query_raw(socket, NoTls).await.map_err(|_| ())
+                let mut socket = CancelSocket(socket);
+                cancel
+                    .cancel_query_raw(&mut socket, NoTls)
+                    .await
+                    .map_err(|_| ())?;
+                // Keep the cancel socket open until PostgreSQL closes it. An
+                // early EOF can reach the gateway before its route is ready,
+                // causing the startup buffer (and cancel packet) to be discarded.
+                socket.read(&mut [0; 1]).await.map(|_| ()).map_err(|_| ())
             })
             .await;
         }
         result.map_err(|_|OperationError::Query {sqlstate:"57014".into(),message:"SQL deadline exceeded; transaction aborted unless commit was already acknowledged by PostgreSQL".into()})?
     }
+}
+async fn cancelled(receiver: &mut Option<tokio::sync::watch::Receiver<bool>>) {
+    match receiver {
+        Some(rx) => {
+            let _ = rx.wait_for(|v| *v).await;
+        }
+        None => std::future::pending::<()>().await,
+    }
+}
+fn cancel_error() -> crate::store::Error {
+    OperationError::Query { sqlstate: "57014".into(), message: "Cancellation requested; a write interrupted near COMMIT may have committed. Inspect the database before retrying; no automatic replay.".into() }.into()
 }
 fn limit() -> crate::store::Error {
     OperationError::Query {
@@ -148,6 +191,34 @@ fn db_error(e: tokio_postgres::Error) -> crate::store::Error {
         .into()
     } else {
         OperationError::Unavailable("SQL connection failed or PostgreSQL response exceeded the 1 MiB frame limit; inspect doctor before retrying writes".into()).into()
+    }
+}
+/// tokio-postgres half-closes the cancel socket after sending its packet.
+/// The gateway may still be routing that startup packet. Keep both directions
+/// open until the server closes or the bounded cancellation deadline expires.
+struct CancelSocket(TcpStream);
+impl AsyncRead for CancelSocket {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().0).poll_read(cx, buf)
+    }
+}
+impl AsyncWrite for CancelSocket {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.get_mut().0).poll_write(cx, buf)
+    }
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.get_mut().0).poll_flush(cx)
+    }
+    fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Poll::Ready(Ok(()))
     }
 }
 struct ConnectionTask(tokio::task::JoinHandle<std::result::Result<(), tokio_postgres::Error>>);

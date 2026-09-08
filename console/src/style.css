@@ -116,12 +116,16 @@ nav a {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  background: #dfe8da;
-  border: 1px solid #d4dfce;
+  background: transparent;
+  border: 1px solid transparent;
   padding: 12px;
   border-radius: 6px;
   font-weight: 550;
   color: #3f583e;
+}
+nav a[aria-current="page"] {
+  background: #dfe8da;
+  border-color: #d4dfce;
 }
 nav a > span {
   font-size: 20px;
@@ -711,4 +715,386 @@ footer {
   .crumb span {
     margin: 0 8px;
   }
+}
+
+/* PostgreSQL workspace */
+[hidden] {
+  display: none !important;
+}
+nav > button {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  color: inherit;
+  margin-top: 6px;
+}
+nav > button.active {
+  background: #dfe8d8;
+  font-weight: 600;
+}
+.database-workspace {
+  min-width: 0;
+}
+.database-workspace .panel {
+  background: white;
+  border: 1px solid #dfe5dd;
+  border-radius: 8px;
+}
+.database-workspace button:not(.primary):not(.danger) {
+  color: #315446;
+}
+.database-workspace label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+.database-workspace input:not([type="checkbox"]),
+.database-workspace select {
+  border: 1px solid #d4ded2;
+  border-radius: 5px;
+  background: #fafbf8;
+  color: #23332e;
+  padding: 9px;
+  max-width: 100%;
+  min-width: 0;
+}
+.workspace-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.branch-management,
+.connection-reveal,
+.operation-status,
+.operation-key {
+  width: 100%;
+}
+.branch-management summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.branch-management form {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 12px 0;
+}
+.connection-reveal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.connection-reveal code {
+  overflow-wrap: anywhere;
+}
+.operation-status {
+  padding: 10px;
+  background: #f0f3ed;
+  overflow-wrap: anywhere;
+}
+.operation-key {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.database-columns {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.explorer {
+  padding: 16px;
+  min-width: 0;
+}
+.explorer .panel-heading {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.explorer h2 {
+  font-size: 14px;
+  margin: 0;
+}
+.explorer button {
+  background: transparent;
+  border: 1px solid #dfe5dd;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.explorer details {
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.explorer summary {
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.explorer ul {
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+}
+.explorer li {
+  padding: 5px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.explorer li span {
+  color: #73806e;
+}
+.saved-heading {
+  margin-top: 28px;
+}
+.saved-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0;
+}
+.saved-entry button:first-child {
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.sql-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+.sql-tabs {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px;
+  gap: 5px;
+  border-bottom: 1px solid #dfe5dd;
+}
+.sql-tabs button {
+  padding: 9px 12px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+}
+.sql-tabs button[aria-selected="true"] {
+  background: #e9f0e3;
+  font-weight: 600;
+}
+.sql-empty {
+  padding: 40px;
+}
+.sql-empty h2 {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 400;
+}
+.query-binding {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  font-size: 11px;
+  background: #fafbf8;
+}
+.query-binding code {
+  overflow-wrap: anywhere;
+}
+.query-binding button,
+.query-status button,
+.save-query button {
+  border: 1px solid #dfe5dd;
+  background: white;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.editor-label {
+  padding: 14px 16px 8px;
+}
+.editor-label span {
+  color: #73806e;
+  font-size: 11px;
+}
+#sql-editor {
+  width: 100%;
+  height: 220px;
+  resize: vertical;
+  border: 0;
+  border-top: 1px solid #eef1e9;
+  border-bottom: 1px solid #dfe5dd;
+  padding: 18px;
+  font:
+    13px/1.65 "SFMono-Regular",
+    Consolas,
+    monospace;
+  background: #fcfdfb;
+  color: #23332e;
+  tab-size: 2;
+}
+.query-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+}
+.query-toolbar .write-toggle {
+  flex-direction: row;
+  align-items: center;
+  margin-right: auto;
+  align-self: center;
+}
+.query-toolbar input[type="number"] {
+  width: 100px;
+}
+.database-workspace .primary {
+  background: #27664e;
+  color: white;
+  border: 1px solid #27664e;
+}
+.database-workspace .danger {
+  color: #a33434;
+  border-color: #d8aaaa;
+}
+.query-limits {
+  padding: 0 16px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #687766;
+}
+.save-query {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #eef1e9;
+  font-size: 11px;
+}
+.query-status,
+.results-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  font-size: 12px;
+  border-top: 1px solid #dfe5dd;
+}
+.query-status code {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.sql-panel .notice {
+  margin: 12px;
+}
+.result-viewport {
+  max-height: 460px;
+  overflow: auto;
+}
+.result-viewport table {
+  width: 100%;
+  border-collapse: collapse;
+  font:
+    12px "SFMono-Regular",
+    Consolas,
+    monospace;
+}
+.result-viewport thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f0f3ed;
+}
+.result-viewport th {
+  padding: 10px 12px;
+  text-align: left;
+  min-width: 130px;
+}
+.result-viewport th small {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  color: #73806e;
+}
+.result-viewport td {
+  height: 34px;
+  padding: 0;
+  border-bottom: 1px solid #eef1e9;
+}
+.result-viewport td.spacer {
+  padding: 0;
+  border: 0;
+}
+.result-cell {
+  display: block;
+  text-align: left;
+  padding: 8px 12px;
+  width: 100%;
+  max-width: 420px;
+  height: 33px;
+  border: 0;
+  background: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+}
+.result-cell:hover {
+  background: #eaf1e5;
+}
+.result-cell.sql-null {
+  color: #899183 !important;
+  font-style: italic;
+}
+@media (max-width: 1100px) {
+  .database-columns {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .database-columns {
+    display: flex;
+    flex-direction: column;
+  }
+  .explorer,
+  .sql-panel {
+    width: 100%;
+  }
+  .query-binding {
+    gap: 8px;
+  }
+  .workspace-controls > label {
+    width: 100%;
+  }
+}
+
+.workspace-main {
+  padding-top: 28px;
+}
+.database-workspace .page-heading {
+  margin-bottom: 20px;
+}
+.database-workspace h1 {
+  font-size: 30px;
+  margin: 8px 0;
+}
+.database-workspace #sql-editor {
+  height: 140px;
+}
+.database-workspace .save-query {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
