@@ -20,7 +20,7 @@ if (!options["--binary"] || !options["--report"])
 const binary = resolve(options["--binary"]);
 const workspace = await mkdtemp("/tmp/sb-c01-");
 const data = join(workspace, "data"),
-  project = join(workspace, "app");
+  project = join(workspace, "app ' with spaces");
 await mkdir(project, { mode: 0o700 });
 const env = { ...process.env, SUPABRICKS_DATA_DIR: data };
 for (const key of Object.keys(env))
@@ -46,7 +46,11 @@ const report = {
 };
 async function cli(...args) {
   try {
-    const result = await exec(binary, [...args, "--project", project], {
+    const scoped =
+      args[0] === "installation" && args[1] === "verify"
+        ? args
+        : [...args, "--project", project];
+    const result = await exec(binary, scoped, {
       env,
       timeout: 120000,
       maxBuffer: 2 * 1024 * 1024,
@@ -110,7 +114,17 @@ try {
     data: { token: new URL(first.url).hash.slice("#launch=".length) },
   });
   expect(replay.status()).toBe(401);
-  await cli("database", "create", "main", "--wait");
+  const createCommand = await page.locator(".command code").textContent();
+  expect(createCommand).toContain("--project");
+  expect(createCommand).toContain("--data-dir");
+  await exec("/bin/bash", ["-c", createCommand], {
+    env: { ...env, PATH: `${dirname(binary)}:${env.PATH}` },
+    cwd: "/tmp",
+    timeout: 120000,
+  });
+  checks.push(
+    "empty-project command creates the correct database from another directory, including quoted project paths and a custom data root",
+  );
   await cli("branch", "use", "main");
   await cli("branch", "create", "experiment", "--from", "main", "--wait");
   await expect(

@@ -12,6 +12,7 @@ export interface Overview {
   api_version: 1;
   project: { id: string; name: string };
   worktree: string;
+  data_dir: string;
   branches: Branch[];
   runtime: {
     ready: boolean;

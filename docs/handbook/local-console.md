@@ -39,6 +39,8 @@ supabricks branch create experiment --from main --wait
 ```
 
 The overview refreshes every five seconds while visible, or with Refresh. It
+includes explicit project/data paths in its copyable first-database command, so
+that command can be run from another terminal directory. It
 shows each branch's desired state, parent, revision and identity. Desired state
 is not proof of an accepting PostgreSQL connection. Click a name to inspect its
 full identity; this selection does not change the CLI's worktree selection.

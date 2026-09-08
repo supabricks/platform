@@ -388,7 +388,7 @@ impl Daemon {
                         "expired":b.expired})
                 }).collect();
                 json!({"api_version":crate::console::assets::VERSION,"project":{"id":config.id,"name":config.name},
-                    "worktree":binding.worktree,"branches":branches,
+                    "worktree":binding.worktree,"data_dir":self.store.root(),"branches":branches,
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},

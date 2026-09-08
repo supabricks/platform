@@ -88,6 +88,11 @@ function App() {
       b.name.toLowerCase().includes(filter.toLowerCase()),
     ) ?? [];
   const selected = data?.branches.find((b) => b.id === selection);
+  const shellQuote = (value: string) =>
+    "'" + value.split("'").join("'\\''") + "'";
+  const createCommand = data
+    ? `supabricks database create main --wait --project ${shellQuote(data.worktree)} --data-dir ${shellQuote(data.data_dir)}`
+    : "";
   return (
     <div className="shell">
       <a className="skip" href="#main">
@@ -262,14 +267,12 @@ function App() {
                       here.
                     </p>
                     <div className="command">
-                      <code>supabricks database create main --wait</code>
+                      <code>{createCommand}</code>
                       <button
                         aria-label="Copy create database command"
                         onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(
-                              "supabricks database create main --wait",
-                            );
+                            await navigator.clipboard.writeText(createCommand);
                             setCopied(true);
                           } catch {
                             setCopied(false);

@@ -66,7 +66,8 @@ and file sizes, and serves only loaded asset keys. It holds a bounded in-memory
 asset snapshot; URL paths never become filesystem reads.
 
 Assembly copies the assets into `share/console`, records the frontend lock and
-manifest hashes, includes React/React DOM/Scheduler notices and inventories every
+manifest hashes, includes React/React DOM/Scheduler and generated Vite-loader
+notices and inventories every
 file in the signed release. Node and browser automation are build/test tools.
 All runtime fonts and assets are local; no CDN or first-load package download is
 needed. The portable Rust crates retain their no-operator/no-Kubernetes/no-UI-build

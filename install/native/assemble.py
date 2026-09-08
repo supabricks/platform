@@ -112,12 +112,17 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'Cargo.lock', destination / 'provenance/platform-Cargo.lock')
     shutil.copy2(ROOT / 'console/package-lock.json', destination / 'provenance/console-package-lock.json')
     shutil.copy2(ROOT / 'console/package.json', destination / 'provenance/console-package.json')
-    # Keep exact production-package notices; Node and build/test tools are not shipped.
-    for name in ['react', 'react-dom', 'scheduler']:
+    # Include Vite's notice for its generated module loader as well as React.
+    # Node and build/test tools themselves are not shipped.
+    for name in ['react', 'react-dom', 'scheduler', 'vite']:
         package = ROOT / 'console/node_modules' / name
         target = destination / 'licenses/console' / name
         target.mkdir(parents=True)
-        shutil.copy2(package / 'LICENSE', target / 'LICENSE')
+        notices = list(package.glob('LICENSE*'))
+        if not notices:
+            raise ValueError('console package is missing its license notice: ' + name)
+        for notice in notices:
+            shutil.copy2(notice, target / notice.name)
         shutil.copy2(package / 'package.json', target / 'package.json')
     shutil.copy2(args.helpers / 'helper-build.json', destination / 'provenance/helper-build.json')
     # Preserve declared licenses, exact sources and package identities even for
