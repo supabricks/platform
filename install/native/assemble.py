@@ -95,6 +95,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copytree(ROOT / 'agents', destination / 'agents', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(ROOT / 'docs/handbook/local-workflow.md', destination / 'WORKFLOW.md')
     shutil.copy2(ROOT / 'install/native/README.md', destination / 'INSTALL.md')
+    shutil.copy2(ROOT / 'docs/handbook/recovery.md', destination / 'RECOVERY.md')
     shutil.copytree(ROOT / 'components/provenance', destination / 'provenance/engine-and-helpers')
     for name in ['components.lock.json', 'native-cell.lock.json', 'release-build.lock.json']:
         shutil.copy2(ROOT / 'components' / name, destination / 'provenance' / name)
@@ -120,6 +121,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         from analytics import assemble_analytics
         assemble_analytics(destination, args.target)
     provenance = dict(
+        data_formats=dict(local_catalog=8, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),
@@ -161,7 +163,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.2')
+    parser.add_argument('--version', default='v0.1.0-alpha.3')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

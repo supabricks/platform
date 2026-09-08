@@ -17,7 +17,8 @@ replace_link() {
 main() {
     local version='@VERSION@' base='@BASE_URL@'
     local system architecture target protocols prefix stage='' lock='' archive expected actual
-    local destination entry profile env_line quoted_prefix
+    local destination entry profile env_line quoted_prefix upgrading=0 data_root
+    data_root=${SUPABRICKS_DATA_DIR:-"$HOME/.supabricks"}
     umask 077
     for executable in curl tar openssl awk sed uname mktemp; do
         command -v "$executable" >/dev/null || fail "required system tool missing: $executable"
@@ -72,7 +73,11 @@ SUPABRICKS_RELEASE_KEY
     destination="$prefix/releases/$version"
     if [ -e "$prefix/current" ] || [ -L "$prefix/current" ]; then
         [ -L "$prefix/current" ] || fail 'current is not an installer-owned symlink'
-        [ "$(readlink "$prefix/current")" = "releases/$version" ] || fail 'this alpha supports repeat installation of the same release; upgrades require separate qualification'
+        if [ "$(readlink "$prefix/current")" != "releases/$version" ] || [ -f "$data_root/upgrade.json" ]; then
+            [ "${SUPABRICKS_UPGRADE:-0}" = 1 ] || fail 'release change requires SUPABRICKS_UPGRADE=1 and SUPABRICKS_BACKUP_DIR for a coordinated backup'
+            [ -n "${SUPABRICKS_BACKUP_DIR:-}" ] || fail 'set SUPABRICKS_BACKUP_DIR to a new private recovery directory'
+            upgrading=1
+        fi
     fi
     if [ -e "$destination" ] || [ -L "$destination" ]; then
         [ ! -L "$destination" ] && [ -f "$destination.sha256" ] || fail 'existing release is not installer-owned'
@@ -103,8 +108,14 @@ SUPABRICKS_RELEASE_KEY
             [ -L "$prefix/bin/$entry" ] && [ "$(readlink "$prefix/bin/$entry")" = "../current/bin/$entry" ] || fail "refusing to replace $prefix/bin/$entry"
         fi
     done
-    ln -s "releases/$version" "$stage/current"
-    replace_link "$stage/current" "$prefix/current"
+    if [ "$upgrading" = 1 ]; then
+        "$destination/bin/supabricks" installation upgrade --prefix "$prefix" \
+            --previous "$prefix/current" --backup "$SUPABRICKS_BACKUP_DIR" --data-dir "$data_root" || \
+            fail 'upgrade did not complete; source data and any verified backup are retained; rerun these options to resume'
+    else
+        ln -s "releases/$version" "$stage/current"
+        replace_link "$stage/current" "$prefix/current"
+    fi
     for entry in supabricks psql; do
         ln -s "../current/bin/$entry" "$stage/$entry"
         replace_link "$stage/$entry" "$prefix/bin/$entry"

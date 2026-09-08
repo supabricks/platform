@@ -822,7 +822,7 @@ impl Cell {
                 "data root is too long for private PostgreSQL sockets",
             ));
         }
-        dir(&sockets)?;
+        prepare_compute_sockets(&sockets, ports.sql)?;
         let hba = root.join("pg_hba.conf");
         if export {
             write_private(&hba,format!("local all cloud_admin trust\nlocal all all reject\nhost postgres cloud_admin,{} 127.0.0.1/32 md5\nhost all all 0.0.0.0/0 reject\n",Self::export_user(branch)).as_bytes())?;
@@ -1107,6 +1107,60 @@ impl Cell {
     }
 }
 
+/// Called only after the previous launch/group was fenced and forgotten. A
+/// zombie can still satisfy Postgres's kill(pid, 0) lock-file check under a
+/// non-reaping PID 1, even though it cannot serve a connection or write data.
+fn prepare_compute_sockets(directory: &Path, port: u16) -> Result<()> {
+    use std::os::unix::fs::{FileTypeExt, MetadataExt};
+    if !directory.exists() {
+        dir(directory)?;
+    }
+    let metadata = fs::symlink_metadata(directory)?;
+    if !metadata.is_dir() || metadata.uid() != unsafe { libc::geteuid() } {
+        return Err(conflict("invalid compute socket directory"));
+    }
+    let lock = directory.join(format!(".s.PGSQL.{port}.lock"));
+    if let Ok(meta) = fs::symlink_metadata(&lock) {
+        if !meta.is_file() || meta.nlink() != 1 || meta.len() > 4096 {
+            return Err(conflict("unexpected compute socket lock"));
+        }
+        let pid = fs::read_to_string(&lock)?
+            .lines()
+            .next()
+            .and_then(|s| s.parse::<u32>().ok())
+            .filter(|p| *p > 0)
+            .ok_or_else(|| conflict("invalid compute socket lock identity"))?;
+        if supervisor::os::identity(pid)?.is_some_and(|p| !p.zombie) {
+            return Err(conflict(
+                "compute socket lock references a live process; refusing cleanup",
+            ));
+        }
+    }
+    let socket = directory.join(format!(".s.PGSQL.{port}"));
+    if let Ok(meta) = fs::symlink_metadata(&socket) {
+        if !meta.file_type().is_socket() {
+            return Err(conflict("unexpected compute socket file"));
+        }
+        // The old owned group is gone. An unknown listener must still never be
+        // removed merely because it uses this filesystem name.
+        let probe = socket2::Socket::new(socket2::Domain::UNIX, socket2::Type::STREAM, None)?;
+        probe.set_nonblocking(true)?;
+        let gone = probe
+            .connect(&socket2::SockAddr::unix(&socket)?)
+            .is_err_and(|e| matches!(e.raw_os_error(), Some(libc::ECONNREFUSED | libc::ENOENT)));
+        if !gone {
+            return Err(conflict(
+                "compute socket may still accept connections; refusing cleanup",
+            ));
+        }
+        fs::remove_file(socket)?;
+    }
+    if lock.exists() {
+        fs::remove_file(lock)?;
+    }
+    Ok(())
+}
+
 fn maintenance_uri(sockets: &Path, port: u16) -> Result<String> {
     let encoded = percent_encoding::utf8_percent_encode(
         sockets
@@ -1124,6 +1178,24 @@ fn maintenance_uri(sockets: &Path, port: u16) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn stale_compute_socket_cleanup_preserves_live_or_unknown_owners() {
+        use std::os::unix::net::UnixListener;
+        let root = tempfile::tempdir().unwrap();
+        let port = 54321;
+        let socket = root.path().join(format!(".s.PGSQL.{port}"));
+        let lock = root.path().join(format!(".s.PGSQL.{port}.lock"));
+        let listener = UnixListener::bind(&socket).unwrap();
+        std::fs::write(&lock, format!("{}\n", std::process::id())).unwrap();
+        assert!(super::prepare_compute_sockets(root.path(), port).is_err());
+        assert!(lock.exists());
+        std::fs::write(&lock, "2147483647\n").unwrap();
+        assert!(super::prepare_compute_sockets(root.path(), port).is_err());
+        assert!(socket.exists());
+        drop(listener);
+        super::prepare_compute_sockets(root.path(), port).unwrap();
+        assert!(!lock.exists() && !socket.exists());
+    }
     use super::*;
     #[test]
     fn maintenance_connection_has_only_its_private_unix_socket() {

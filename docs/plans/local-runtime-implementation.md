@@ -534,6 +534,9 @@ restart needs no package registry, website, provider control plane or model.
 
 ### R03 — Recovery, upgrade and public release qualification
 
+Implementation: [R03 recovery and upgrades](../architecture/r03-recovery-upgrades.md).
+Operational commands: [recovery runbook](../handbook/recovery.md).
+
 **Changes:** native failure suite, recovery tooling, upgrade checks, runbook.
 
 Port SSPC's core data-safety scenarios to isolated native roots. Distinguish

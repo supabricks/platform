@@ -355,7 +355,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.2')
+    parser.add_argument('--version', default='v0.1.0-alpha.3')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

@@ -11,10 +11,12 @@ pub mod mcp;
 pub mod operations;
 pub mod project;
 mod query;
+pub mod recovery;
 mod runtime_cli;
 pub mod sessions;
 pub mod store;
 pub mod supervisor;
+mod upgrade;
 use std::{net::SocketAddr, path::Path};
 use supabricks_core::{
     error::{OperationError, ValidationError},

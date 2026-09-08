@@ -12,7 +12,7 @@ from stage import stage
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.2')
+    parser.add_argument('--version', default='v0.1.0-alpha.3')
     parser.add_argument('--port', type=int, default=8080)
     args = parser.parse_args()
     directory = args.directory.resolve(strict=True)
