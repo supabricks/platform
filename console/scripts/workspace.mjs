@@ -305,6 +305,45 @@ export async function qualifyWorkspace({
     data: { action: "saved_list", padding: "x".repeat(61000) },
   });
   expect(tooLarge.status()).toBe(413);
+  await page
+    .getByRole("tab", { name: "Exact numbers · main", exact: true })
+    .click();
+  const lostSql =
+    "UPDATE console_numbers SET note=COALESCE(note, '') || 'once' RETURNING note";
+  let writeRequests = 0;
+  const loseResponse = async (route) => {
+    const body = route.request().postDataJSON();
+    if (body.action === "query" && body.sql === lostSql) {
+      writeRequests++;
+      await route.fetch();
+      await route.abort("failed");
+    } else await route.continue();
+  };
+  await page.route("**/api/workspace", loseResponse);
+  try {
+    await run(lostSql, { writes: true, state: "failed" });
+    await expect(
+      page.getByRole("alert").filter({ hasText: "was not replayed" }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Check query status", exact: true })
+      .click();
+    await expect(status).toHaveText("succeeded", { timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: "note, row 1: once", exact: true }),
+    ).toBeVisible();
+    expect(writeRequests).toBe(1);
+  } finally {
+    await page.unroute("**/api/workspace", loseResponse);
+  }
+  await run("SELECT note FROM console_numbers");
+  await expect(
+    page.getByRole("button", { name: "note, row 1: once", exact: true }),
+  ).toBeVisible();
+  await run("UPDATE console_numbers SET note=NULL", { writes: true });
+  record(
+    "a dropped HTTP response after an accepted write surfaces uncertainty; status recovers its original result and actual data proves no SQL replay",
+  );
   const overview = await (
     await context.request.get(origin + "/api/overview", {
       headers: { "X-Supabricks-Console": "1" },
