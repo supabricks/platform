@@ -83,6 +83,16 @@ impl Installation {
                 "analytical preview manifest is missing its private worker",
             ));
         }
+        if let Some(console) = manifest.provenance.get("console") {
+            if console["api_version"] != crate::console::assets::VERSION
+                || !manifest.files.contains_key("share/console/console.json")
+                || !manifest.files.contains_key("share/console/index.html")
+            {
+                return Err(invalid(
+                    "console release manifest is missing its compatible asset inventory",
+                ));
+            }
+        }
         Ok(Some(Self {
             root: root.to_owned(),
             identity: hex::encode(Sha256::digest(&bytes)),
@@ -240,6 +250,17 @@ mod tests {
                 root.path().join("python/analytics/export.py")
             ))
         );
+        manifest["provenance"]["console"] = serde_json::json!({"api_version":1});
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_err());
+        for name in ["share/console/console.json", "share/console/index.html"] {
+            manifest["files"][name] = serde_json::json!({"sha256":"unused","executable":false});
+        }
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_ok());
+        manifest["provenance"]["console"]["api_version"] = serde_json::json!(2);
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(Installation::at_executable(&exe).is_err());
     }
 
     #[test]

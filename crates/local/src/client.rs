@@ -15,13 +15,16 @@ use std::{
 use supabricks_core::error::OperationError;
 pub const RESPONSE_LIMIT: u64 = 2 * 1024 * 1024;
 pub fn request(root: &Path, request: Request) -> Result<Value> {
+    request_timeout(root, request, Duration::from_secs(50))
+}
+pub(crate) fn request_timeout(root: &Path, request: Request, timeout: Duration) -> Result<Value> {
     let mut stream = UnixStream::connect(root.join("control.sock")).map_err(|_| {
         OperationError::Unavailable(
             "daemon unavailable; run supabricks up or doctor with the same data directory".into(),
         )
     })?;
-    stream.set_read_timeout(Some(Duration::from_secs(50)))?;
-    stream.set_write_timeout(Some(Duration::from_secs(5)))?;
+    stream.set_read_timeout(Some(timeout))?;
+    stream.set_write_timeout(Some(timeout.min(Duration::from_secs(5))))?;
     let wire = serde_json::to_vec(&Envelope {
         version: 1,
         request,

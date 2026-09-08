@@ -354,7 +354,9 @@ impl Cell {
         let mut records: Vec<_> = store
             .native_processes()?
             .into_iter()
-            .filter(|p| !p.role.starts_with("analytics-session-"))
+            .filter(|p| {
+                !p.role.starts_with("analytics-session-") && !p.role.starts_with("console-")
+            })
             .collect();
         records.sort_by_key(|p| {
             if p.role == "supervisor" {
@@ -956,6 +958,7 @@ impl Cell {
         }
         for record in store.native_processes()? {
             if !record.role.starts_with("analytics-session-")
+                && !record.role.starts_with("console-")
                 && record.branch.is_none()
                 && record.role != "supervisor"
                 && supervisor::os::identity(record.pid)?.is_none_or(|id| id.zombie)

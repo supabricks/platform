@@ -49,6 +49,11 @@ jobs:
 
       - name: UI tests + build
         run: cd ui && npm ci --no-audit --no-fund && npm test && npm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Local console typecheck and locked asset build
+        run: npm ci --prefix console --no-audit --no-fund && npm run build --prefix console
 
   e2e:
     runs-on: ubuntu-latest

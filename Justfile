@@ -25,7 +25,11 @@ ui-test:
 ui-build:
     cd ui && npm run build
 
-verify-static: fmt-check test crd-check helm-lint ui-test ui-build
+console-build:
+    npm ci --prefix console --no-audit --no-fund
+    npm run build --prefix console
+
+verify-static: fmt-check test crd-check helm-lint ui-test ui-build console-build
 
 # Portable contracts also run on Linux and macOS in CI.
 portable-check:

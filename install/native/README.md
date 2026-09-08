@@ -1,4 +1,4 @@
-# Native local analytical preview (R03)
+# Native local analytical preview (C01)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
@@ -21,6 +21,7 @@ curl -fsSL http://127.0.0.1:8080/install.sh | bash
 supabricks up
 supabricks init my-app
 supabricks database create main --wait
+supabricks console
 supabricks connect main --uri
 supabricks sql --branch main --write --sql 'CREATE TABLE orders(id int, amount numeric(12,2))'
 supabricks sql --branch main --write --sql 'INSERT INTO orders VALUES (1, 12.99)'
@@ -36,11 +37,16 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-R03 uses version `v0.1.0-alpha.3`. It adds coordinated backup/restore and an
-explicit platform upgrade from the full R02 alpha.2 bundle. See the
+C01 uses version `v0.1.0-alpha.4`. It adds a packaged local browser overview to
+R03's coordinated backup/restore and explicit platform upgrades. See the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
 profile conversion and engine upgrades are not qualified.
+
+`supabricks console` starts/reconnects the runtime and opens the current project's
+overview. `--no-open` returns a private, single-use browser launch URL as JSON.
+The [console runbook](../../docs/handbook/local-console.md) covers source builds,
+session expiry and browser support. SQL editing and file ingestion are later slices.
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before
@@ -70,6 +76,8 @@ No Go compiler is shipped or required by the installer. Then:
 
 ```sh
 cargo build --locked --release -p supabricks-local
+npm ci --prefix console --no-audit --no-fund
+npm run build --prefix console
 python3 components/prepare-native-cell.py linux-x86_64 build/native --offline-runtime
 python3 install/native/assemble.py --target linux-x86_64 \
   --binary target/release/supabricks \

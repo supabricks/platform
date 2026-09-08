@@ -30,6 +30,14 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    ConsoleOpen {
+        binding: crate::api::Binding,
+        assets: PathBuf,
+    },
+    ConsoleOverview {
+        binding: crate::api::Binding,
+        generation: i64,
+    },
     Api {
         api_version: u32,
         binding: crate::api::Binding,
@@ -103,6 +111,7 @@ pub enum Request {
 }
 
 pub struct Daemon {
+    consoles: crate::console::Consoles,
     publisher: crate::analytics::Publisher,
     sessions: crate::sessions::Sessions,
     store: Store,
@@ -117,6 +126,7 @@ impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
+        let consoles = crate::console::Consoles::recover(&mut store)?;
         let socket = store.root().join("control.sock");
         match fs::symlink_metadata(&socket) {
             Ok(meta) if meta.file_type().is_socket() => fs::remove_file(&socket)?,
@@ -143,6 +153,7 @@ impl Daemon {
         let sessions = crate::sessions::Sessions::recover(&mut store)?;
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
+            consoles,
             publisher,
             sessions,
             queries: Vec::new(),
@@ -183,6 +194,12 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                let console_result = if stopping {
+                    self.consoles.stop(&mut self.store)
+                } else {
+                    self.consoles.tick(&mut self.store)
+                };
+                self.consoles.last_error = console_result.err().map(|e| e.to_string());
                 if !stopping {
                     self.sessions.last_error = self
                         .sessions
@@ -213,7 +230,7 @@ impl Daemon {
                     validator.refresh(&self.store)?;
                 }
                 if let Some(cell) = &mut self.cell {
-                    if stopping && analytical_stopped {
+                    if stopping && analytical_stopped && self.consoles.last_error.is_none() {
                         match cell.stop(&mut self.store) {
                             Ok(true) => return Ok(()),
                             Ok(false) => cell.last_error = None,
@@ -234,7 +251,7 @@ impl Daemon {
                             Err(e) => cell.last_error = Some(e.to_string()),
                         }
                     }
-                } else if stopping && analytical_stopped {
+                } else if stopping && analytical_stopped && self.consoles.last_error.is_none() {
                     return Ok(());
                 }
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
@@ -348,13 +365,43 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::ConsoleOpen { binding, assets } => {
+                self.consoles.open(&mut self.store, binding, assets)?
+            }
+            Request::ConsoleOverview {
+                binding,
+                generation,
+            } => {
+                binding.validate(&mut self.store)?;
+                if generation != self.store.generation() {
+                    return Err(conflict("console belongs to a prior daemon generation"));
+                }
+                let config = ProjectConfig::read(&binding.worktree)?;
+                let runtime = self
+                    .cell
+                    .as_ref()
+                    .map(|c| c.status(&self.store))
+                    .transpose()?;
+                let branches: Vec<_> = self.store.list_branches(binding.project_id, false)?.into_iter().map(|b| {
+                    json!({"id":b.branch.id,"name":b.branch.name,"parent_id":b.branch.parent_id,
+                        "desired_state":b.endpoint.desired_state,"revision":b.revision,"observed_revision":b.observed_revision,"is_default":b.is_default,
+                        "expired":b.expired})
+                }).collect();
+                json!({"api_version":crate::console::assets::VERSION,"project":{"id":config.id,"name":config.name},
+                    "worktree":binding.worktree,"branches":branches,
+                    "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
+                        "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
+                        "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
+                    "capabilities":{"overview":true,"sql":false,"ingestion":false},
+                    "limits":{"active_branches":32}})
+            }
             Request::Api { .. } => {
                 return Err(invalid(
                     "application request must use the versioned dispatcher",
                 ));
             }
             Request::Status => {
-                json!({"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
