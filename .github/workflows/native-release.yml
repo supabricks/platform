@@ -303,10 +303,10 @@ jobs:
             set -euo pipefail
             ip link set lo up
             mount --make-rprivate /
-            mkdir -p build/ingest-pressure
-            mount -t tmpfs -o size=80m,mode=1777 tmpfs build/ingest-pressure
+            pressure_mount=$(mktemp -d /tmp/sb-i01-volume.XXXXXX)
+            mount -t tmpfs -o size=80m,mode=1777 tmpfs "$pressure_mount"
             exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-              SUPABRICKS_INGEST_PRESSURE_DIR="$PWD/build/ingest-pressure" \
+              SUPABRICKS_INGEST_PRESSURE_DIR="$pressure_mount" \
               SUPABRICKS_INGEST_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
               "$2" install/native/qualify_ingest.py --directory build/releases \
               --report build/ingest-reports/ingest.json \
@@ -315,13 +315,13 @@ jobs:
       - name: Installed ingestion workflow on macOS with external network denied
         if: runner.os == 'macOS'
         run: |
-          mkdir -p build/ingest-pressure
+          pressure_mount=$(mktemp -d /tmp/sb-i01-volume.XXXXXX)
           hdiutil create -size 100m -fs HFS+ -volname SupabricksPressure build/ingest-pressure.dmg
-          hdiutil attach build/ingest-pressure.dmg -mountpoint "$PWD/build/ingest-pressure" -nobrowse
-          trap 'hdiutil detach "$PWD/build/ingest-pressure"' EXIT
+          hdiutil attach build/ingest-pressure.dmg -mountpoint "$pressure_mount" -nobrowse
+          trap 'hdiutil detach "$pressure_mount"; rmdir "$pressure_mount"' EXIT
           sandbox-exec -f install/native/offline-macos.sb \
             /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            SUPABRICKS_INGEST_PRESSURE_DIR="$PWD/build/ingest-pressure" \
+            SUPABRICKS_INGEST_PRESSURE_DIR="$pressure_mount" \
             SUPABRICKS_INGEST_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
             "$(command -v python)" install/native/qualify_ingest.py --directory build/releases \
             --report build/ingest-reports/ingest.json \
