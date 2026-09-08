@@ -275,6 +275,11 @@ fn resumes_both_activation_boundaries_and_blocks_startup_during_transaction() {
         assert!(!f.root.join("upgrade.json").exists());
     }
     f.pending("runtime_rebound");
+    let retained = f._tmp.path().join("retained-backup");
+    fs::rename(&f.backup, &retained).unwrap();
+    f.upgrade(false);
+    assert!(!f.backup.exists());
+    fs::rename(retained, &f.backup).unwrap();
     fs::write(f.backup.join("data/runtime.json"), b"corrupt").unwrap();
     f.upgrade(false);
     assert!(f.root.join("upgrade.json").exists());

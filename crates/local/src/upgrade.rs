@@ -209,6 +209,11 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         j
     };
     if !backup.exists() {
+        if !same_runtime(&cfg, &from) {
+            return Err(conflict(
+                "pre-upgrade backup is missing after rebinding; recover that bundle before completing this transaction",
+            ));
+        }
         recovery::create_locked(&stopped, &backup, Some(from.clone()))?;
     }
     let saved = recovery::verify(&backup)?;

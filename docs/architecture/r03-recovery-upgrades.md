@@ -117,6 +117,11 @@ parent/child data and epochs, credential restoration into a new root, continued
 writes, restoration for the old release, corrupt-backup rejection and uninstall.
 All runtime operations run with external networking denied.
 
+After fencing a compute group, startup removes its dead Unix socket/lock. It
+refuses cleanup for a live PID, an accepting socket or unexpected file type. This
+also handles orphan zombies under a container PID 1, which otherwise satisfy
+PostgreSQL's stale-lock PID check and prevent the replacement compute starting.
+
 Each process-failure probe inserts and acknowledges a new row immediately before
 SIGKILL of Postgres, compute_ctl, pageserver, safekeeper, object storage, supervisor
 or daemon. It checks the acknowledged rows, branch isolation and the retained

@@ -378,6 +378,11 @@ pub(crate) fn create_locked(
         if cfg.version != 2 {
             return Err(conflict("unsupported runtime format"));
         }
+        if cfg.installation_identity.as_deref() != release.as_ref().map(|r| r.identity.as_str()) {
+            return Err(conflict(
+                "recovery source no longer matches the release being backed up",
+            ));
+        }
         if let Some(tls) = cfg.compute_tls {
             for path in [tls.certificate, tls.key] {
                 if !path.canonicalize()?.starts_with(&stopped.root) {
@@ -443,6 +448,16 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     walk(&data, &data, &mut dirs, &mut files, None, false, 0)?;
     if dirs != manifest.directories || files != manifest.files {
         return Err(invalid("recovery inventory checksum mismatch"));
+    }
+    if manifest.files.contains_key("runtime.json") {
+        let runtime: crate::engine::RuntimeConfig =
+            serde_json::from_slice(&fs::read(data.join("runtime.json"))?)?;
+        if runtime.version != 2
+            || runtime.installation_identity.as_deref()
+                != manifest.release.as_ref().map(|r| r.identity.as_str())
+        {
+            return Err(invalid("recovery runtime and release identities disagree"));
+        }
     }
     Ok(manifest)
 }
