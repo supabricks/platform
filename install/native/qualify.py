@@ -34,12 +34,24 @@ class Handler(SimpleHTTPRequestHandler):
 def run(argv, env=None, cwd=None, timeout=180):
     p = subprocess.run(list(map(str, argv)), env=env, cwd=cwd, capture_output=True, text=True, timeout=timeout)
     if p.returncode:
-        # Never include arguments or stdout here: connect returns credentials.
-        raise AssertionError(f'{Path(str(argv[0])).name}: exit {p.returncode}: {p.stderr[-3000:]}')
+        # Connect can return credentials. Preserve only explicit error/status
+        # fields so failed exports remain diagnosable after container teardown.
+        diagnostic = {}
+        try:
+            value = json.loads(p.stdout)
+            diagnostic = {key: value[key] for key in ('state', 'error') if key in value}
+            if isinstance(value.get('export'), dict):
+                diagnostic['export_outcome'] = value['export'].get('outcome')
+        except (ValueError, TypeError, AttributeError):
+            pass
+        raise AssertionError(f'{Path(str(argv[0])).name}: exit {p.returncode}: {p.stderr[-3000:]} {json.dumps(diagnostic)}')
     return p.stdout
 
 
 def benchmark(binary, prefix, env, project, workspace, measurements, measured):
+    available = shutil.disk_usage(workspace).free
+    if available < 20 * 1024**3:
+        raise AssertionError(f'1 GB qualification needs 20 GiB free scratch space before loading; available={available} bytes')
     def cli(*args):
         return json.loads(run([binary, *args, '--project', project], env=env, timeout=1900))
 

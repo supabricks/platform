@@ -54,8 +54,8 @@ probe exhausted that small profile before a frozen branch could publish. This
 change raises the bounded capacity without preallocating it. PostgreSQL WAL,
 local pageserver layers, compute caches and retained analytical generations use
 additional disk; source payload size is not total installation disk usage. Budget
-at least 20 GiB free disk for the 1 GB qualification sequence and installer
-staging. Linux CI removes unused runner SDKs before that sequence.
+at least 25 GiB free disk for the 1 GB qualification sequence and installer
+staging. The harness requires 20 GiB still free before the size sequence begins. Linux CI removes unused runner SDKs before that sequence.
 
 ## Qualification
 
