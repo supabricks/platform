@@ -265,7 +265,7 @@ def qualify(args):
                 (pressure/'synthetic-fill').unlink(missing_ok=True)
                 pressure_cli('down');daemon.wait(timeout=30)
                 shutil.rmtree(pressure)
-        report['status']='passed' 
+        report['status']='passed'
     except BaseException as error:
         report['error']=str(error)
         try:
