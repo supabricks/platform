@@ -1,6 +1,7 @@
 # Supabricks local console
 
-C01 provides the packaged local project/branch overview. It is separate from the
+C01 provides the packaged local project/branch overview; C02 adds the
+[PostgreSQL workspace](../docs/handbook/database-workspace.md). It is separate from the
 Kubernetes UI in `../ui`. Runtime commands and browser support are documented in
 the [console runbook](../docs/handbook/local-console.md); the
 [C01 contract](../docs/architecture/c01-console.md) describes authentication,

@@ -1,5 +1,6 @@
 // Real browser + native runtime. Every mutation is confined to a new /tmp root.
 import { chromium, expect } from "@playwright/test";
+import { qualifyWorkspace, verifySavedAfterRestart } from "./workspace.mjs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
@@ -28,7 +29,7 @@ for (const key of Object.keys(env))
 const checks = [],
   external = [],
   errors = [];
-let browser;
+let browser, page;
 const occupied = createServer();
 await new Promise((resolve) => {
   occupied.once("error", resolve);
@@ -95,8 +96,15 @@ try {
     }
     return route.continue();
   });
-  const page = await context.newPage();
+  page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (msg) => {
+    if (
+      msg.type() === "error" &&
+      /Content Security Policy|violates.*policy/i.test(msg.text())
+    )
+      errors.push(msg.text());
+  });
   await page.goto(first.url);
   await expect(
     page.getByRole("heading", { name: "Your first branch starts here." }),
@@ -160,6 +168,14 @@ try {
   checks.push(
     "reload uses authenticated session; repeated CLI launch reuses the bound bridge with a fresh one-use ticket",
   );
+  await qualifyWorkspace({
+    page,
+    context,
+    origin,
+    cli,
+    checks,
+    screenshot: options["--screenshot"],
+  });
   if (options["--screenshot"]) {
     await mkdir(dirname(resolve(options["--screenshot"])), { recursive: true });
     await page.screenshot({
@@ -173,7 +189,7 @@ try {
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "Refresh", exact: false }).focus();
+  await page.getByRole("button", { name: "↻ Refresh", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("button", { name: "main", exact: true }),
@@ -214,6 +230,7 @@ try {
   checks.push(
     "whole-cell shutdown and console-driven restart retain branches and issue fresh browser sessions",
   );
+  await verifySavedAfterRestart(page, checks);
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("alert")).toContainText("Session closed");
   await page.reload();
@@ -246,7 +263,12 @@ try {
 } catch (e) {
   report.status = "failed";
   // Assertion diagnostics may contain launch URLs. Redact fragment credentials.
-  report.error = String(e.message)
+  const notices =
+    (await page
+      ?.locator(".notice:visible")
+      .allTextContents()
+      .catch(() => [])) ?? [];
+  report.error = (String(e.message) + "\n" + notices.join("\n"))
     .replace(/#launch=[a-f0-9]+/g, "#launch=REDACTED")
     .replace(/postgres(?:ql)?:\/\/[^\s]+/g, "postgresql://REDACTED")
     .slice(-3000);

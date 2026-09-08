@@ -1,4 +1,4 @@
-# Native local analytical preview (C01)
+# Native local analytical preview (C02)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
@@ -37,7 +37,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-C01 uses version `v0.1.0-alpha.4`. It adds a packaged local browser overview to
+C02 uses version `v0.1.0-alpha.5`. It adds a PostgreSQL database workspace to
 R03's coordinated backup/restore and explicit platform upgrades. See the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
@@ -46,7 +46,7 @@ profile conversion and engine upgrades are not qualified.
 `supabricks console` starts/reconnects the runtime and opens the current project's
 overview. `--no-open` returns a private, single-use browser launch URL as JSON.
 The [console runbook](../../docs/handbook/local-console.md) covers source builds,
-session expiry and browser support. SQL editing and file ingestion are later slices.
+session expiry and browser support. The [database workspace guide](../../docs/handbook/database-workspace.md) covers branch controls, SQL and saved queries. File ingestion follows in the I00–I02 slices.
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before

@@ -1,10 +1,11 @@
 # Open the local console
 
-The C01 alpha.4 distribution includes a browser console for project identity,
+The C02 alpha.5 distribution includes a browser console for project identity,
 runtime readiness and branch inventory. It needs no Node, system Python, cloud
 account or frontend development server on the target machine. The initial UI
-is a read-only overview: create/change branches using the CLI until C02 lands.
-SQL editing and file ingestion follow in separate slices.
+includes the overview and [PostgreSQL database workspace](database-workspace.md):
+branch controls, catalog browsing, SQL and explicitly saved queries. File ingestion
+follows in the I00–I02 slices.
 
 From an existing application project containing `supabricks.toml`:
 
