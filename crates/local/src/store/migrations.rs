@@ -9,6 +9,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0006_exports.sql"),
     include_str!("migrations/0007_analytics.sql"),
     include_str!("migrations/0008_sessions.sql"),
+    include_str!("migrations/0009_ingest.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -96,4 +97,24 @@ mod tests {
             1
         );
     }
+}
+
+/// Only the stopped, backed-up upgrade path may call this for an existing v8 root.
+pub(crate) fn ingest_upgrade(db: &mut Connection, source: &str, release: &str) -> Result<()> {
+    let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let version: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
+    if version != 8 {
+        return Err(conflict("ingestion migration requires catalog 8"));
+    }
+    tx.execute_batch(MIGRATIONS[8])?;
+    tx.execute(
+        "INSERT INTO catalog_migrations VALUES (9,?1,?2)",
+        [source, release],
+    )?;
+    tx.pragma_update(None, "user_version", 9)?;
+    if tx.prepare("PRAGMA foreign_key_check")?.exists([])? {
+        return Err(conflict("migration contains invalid resource references"));
+    }
+    tx.commit()?;
+    Ok(())
 }

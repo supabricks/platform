@@ -31,6 +31,9 @@ pub struct Release {
 }
 impl Release {
     pub(crate) fn of(i: &Installation) -> Result<Self> {
+        Self::with_formats(i, formats(i))
+    }
+    pub(crate) fn with_formats(i: &Installation, formats: Value) -> Result<Self> {
         // Exact engine/library inventory includes PG catalog and extension code;
         // worker lock binds Delta/Arrow/Python dependencies. No guessed engine
         // format compatibility, cross-target restore or major-version upgrade.
@@ -59,10 +62,14 @@ impl Release {
             target: i.manifest.target.clone(),
             profile: i.manifest.profile.clone(),
             compatibility: hash(&serde_json::to_vec(
-                &json!({"files":files,"formats":i.manifest.provenance.get("data_formats").cloned().unwrap_or_else(||json!({"local_catalog":8,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1}))}),
+                &json!({"files":files,"formats":formats}),
             )?),
         })
     }
+}
+pub(crate) fn formats(i: &Installation) -> Value {
+    i.manifest.provenance.get("data_formats").cloned().unwrap_or_else(||
+        json!({"local_catalog":8,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1}))
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -266,11 +273,17 @@ fn walk(
 /// checkpointing and reading every byte; never snapshot SQLite under a writer.
 pub(crate) struct Stopped {
     pub root: PathBuf,
-    db: Connection,
+    pub(crate) db: Connection,
     _owner: DataRoot,
 }
 impl Stopped {
     pub(crate) fn open(root: &Path) -> Result<Self> {
+        Self::open_schema(root, SCHEMA_VERSION)
+    }
+    pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
+        if !matches!(expected, 8 | 9) {
+            return Err(conflict("unsupported recovery schema"));
+        }
         let root = private_root(root)?;
         let owner = DataRoot::acquire(&root)?;
         let path = root.join("state.sqlite3");
@@ -283,7 +296,7 @@ impl Stopped {
             OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NOFOLLOW,
         )?;
         let schema: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if schema != SCHEMA_VERSION {
+        if schema != expected {
             return Err(conflict(
                 "recovery requires the supported catalog schema; no implicit migration",
             ));
@@ -307,6 +320,12 @@ impl Stopped {
             return Err(conflict(
                 "analytical sessions remain; complete shutdown first",
             ));
+        }
+        if schema == 9 && db.prepare("SELECT 1 FROM ingest_jobs WHERE state IN ('loading','reconciling') OR worker IS NOT NULL")?.exists([])? {
+            return Err(conflict("imports require receipt reconciliation before backup; reopen the owning runtime and resolve pending jobs"));
+        }
+        if schema == 9 {
+            validate_ingest(&root, &db)?;
         }
         db.pragma_update(None, "synchronous", "FULL")?;
         let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))?;
@@ -402,7 +421,9 @@ pub(crate) fn create_locked(
         id: supabricks_core::resource::OperationId::new().to_string(),
         consistency: "stopped-cell".into(),
         source_root: stopped.root.clone(),
-        schema_version: SCHEMA_VERSION,
+        schema_version: stopped
+            .db
+            .pragma_query_value(None, "user_version", |r| r.get(0))?,
         release,
         directories: vec![],
         files: BTreeMap::new(),
@@ -430,7 +451,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     }
     let manifest: Manifest = serde_json::from_slice(&fs::read(manifest_file)?)?;
     if manifest.format_version != 1
-        || manifest.schema_version != SCHEMA_VERSION
+        || !matches!(manifest.schema_version, 8 | 9)
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()
     {
@@ -449,6 +470,36 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     if dirs != manifest.directories || files != manifest.files {
         return Err(invalid("recovery inventory checksum mismatch"));
     }
+    // A sealed, checkpointed bundle has no WAL. Immutable mode prevents SQLite
+    // from creating WAL/SHM sidecars while verifying the backup inventory.
+    let uri = format!(
+        "file:{}?immutable=1",
+        percent_encoding::utf8_percent_encode(
+            data.join("state.sqlite3")
+                .to_str()
+                .ok_or_else(|| invalid("backup path must be UTF-8"))?,
+            percent_encoding::NON_ALPHANUMERIC
+        )
+    );
+    let db = Connection::open_with_flags(
+        uri,
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_URI
+            | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+    )?;
+    if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?
+        != manifest.schema_version
+        || db.query_row("PRAGMA quick_check", [], |r| r.get::<_, String>(0))? != "ok"
+        || db.prepare("PRAGMA foreign_key_check")?.exists([])?
+    {
+        return Err(invalid(
+            "recovery catalog format or integrity differs from its manifest",
+        ));
+    }
+    if manifest.schema_version == 9 {
+        validate_ingest(&data, &db)?;
+    }
+    drop(db);
     if manifest.files.contains_key("runtime.json") {
         let runtime: crate::engine::RuntimeConfig =
             serde_json::from_slice(&fs::read(data.join("runtime.json"))?)?;
@@ -483,6 +534,16 @@ pub fn restore_with_release(
                 "restore requires the exact source release and target; restore first, then upgrade",
             ));
         }
+    }
+    if installed
+        .as_ref()
+        .map(|i| formats(i)["local_catalog"].as_u64())
+        .unwrap_or(Some(SCHEMA_VERSION as u64))
+        != Some(manifest.schema_version as u64)
+    {
+        return Err(conflict(
+            "backup catalog differs from its source release format",
+        ));
     }
     let destination = new_destination(destination, &backup)?;
     private_dir(&destination)?;
@@ -547,4 +608,34 @@ pub fn restore_with_release(
 
 pub(crate) fn file_hash(path: &Path) -> Result<String> {
     Ok(entry(path, None)?.sha256)
+}
+
+/// Payloads are durable data, not optional cache. Validate every staged reference
+/// before publishing a stopped backup and again before restoring one.
+fn validate_ingest(root: &Path, db: &Connection) -> Result<()> {
+    if db.prepare("SELECT 1 FROM ingest_sources WHERE state='receiving' UNION ALL SELECT 1 FROM ingest_jobs WHERE state IN ('loading','reconciling') OR worker IS NOT NULL")?.exists([])? {
+        return Err(conflict("interrupted acquisition or import requires owning-runtime recovery before backup"));
+    }
+    if db.prepare("SELECT 1 FROM ingest_jobs j JOIN ingest_sources s ON s.id=j.source_id WHERE j.source_released=0 AND s.state!='staged'")?.exists([])? {
+        return Err(conflict("retained ingestion job is missing its immutable source"));
+    }
+    let mut q = db.prepare("SELECT id,bytes,sha256 FROM ingest_sources WHERE state='staged'")?;
+    let rows = q.query_map([], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, i64>(1)?,
+            r.get::<_, String>(2)?,
+        ))
+    })?;
+    for row in rows {
+        let (id, bytes, sha) = row?;
+        let id: supabricks_core::resource::OperationId =
+            id.parse().map_err(|_| invalid("invalid source ID"))?;
+        let path = root.join("ingest/sources").join(format!("{id}.source"));
+        let value = entry(&path, None)?;
+        if value.bytes != bytes as u64 || value.sha256 != sha {
+            return Err(conflict("staged source content differs from catalog"));
+        }
+    }
+    Ok(())
 }

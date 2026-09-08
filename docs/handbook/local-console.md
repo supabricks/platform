@@ -1,6 +1,6 @@
 # Open the local console
 
-The C02 alpha.5 distribution includes a browser console for project identity,
+The alpha.6 distribution includes a browser console for project identity,
 runtime readiness and branch inventory. It needs no Node, system Python, cloud
 account or frontend development server on the target machine. The initial UI
 includes the overview and [PostgreSQL database workspace](database-workspace.md):

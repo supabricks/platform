@@ -104,7 +104,7 @@ async fn execute(
             client.batch_execute(r#"DO $$ DECLARE rel record; cols text; BEGIN
                 FOR rel IN SELECT c.oid,n.nspname,c.relname FROM pg_class c
                   JOIN pg_namespace n ON n.oid=c.relnamespace
-                  WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
+                  WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname NOT IN ('information_schema', '_supabricks')
                     AND c.relkind IN ('r','p','f','m','v') LOOP
                   EXECUTE format('REVOKE ALL PRIVILEGES ON TABLE %I.%I FROM PUBLIC',rel.nspname,rel.relname);
                   SELECT string_agg(quote_ident(attname),',') INTO cols FROM pg_attribute

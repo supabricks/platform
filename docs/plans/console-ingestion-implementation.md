@@ -12,7 +12,8 @@ IDs are planning identifiers, not existing issues or completion claims.
 Implementation: [C01 console contract and qualification](../architecture/c01-console.md)
 and [console runbook](../handbook/local-console.md). C01 supplies launch and the
 read-only overview. [C02](../architecture/c02-workspace.md) supplies the PostgreSQL
-workspace; ingestion slices below remain separate.
+workspace. [I00](../architecture/i00-ingestion.md) supplies durable ingestion
+contracts and the explicit catalog migration; the first importer remains I01.
 
 The first milestone is a real installed browser demo: **import CSV -> query ->
 branch -> mutate the branch -> verify the unchanged parent**. JSON/Parquet and
@@ -337,5 +338,5 @@ solo-contributor protection rule or merging unrelated PR #1.
 
 Review each implementation PR with a concrete before/after behavior, its exact
 validation and remaining limits. Update capability documentation as slices land.
-The next coding slice is **C01**, with a real project overview in the installed
-browser console as its reviewable outcome.
+The next coding slice after I00 is **I01**, the CSV service and its real commit/
+retry qualification through shared CLI/MCP adapters.

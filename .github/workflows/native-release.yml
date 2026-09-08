@@ -172,11 +172,11 @@ jobs:
         with:
           name: release-${{ matrix.target }}
           path: build/releases
-      - name: Download the exact qualified R02 predecessor
+      - name: Download the exact qualified R03 predecessor
         uses: actions/download-artifact@v4
         with:
           repository: supabricks/platform
-          run-id: 34172472770
+          run-id: 34184744702
           name: release-${{ matrix.target }}
           path: build/previous
           github-token: ${{ github.token }}
@@ -190,7 +190,7 @@ jobs:
             -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
             supabricks-recovery-test \
             python3 /harness/recovery.py --directory /releases --previous-directory /previous \
-            --report /reports/recovery.json --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; exact R02 and R03 archives'
+            --report /reports/recovery.json --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; exact R03 and I00 archives'
       - if: runner.os == 'macOS'
         uses: actions/setup-python@v5
         with:
@@ -204,7 +204,7 @@ jobs:
             "$(command -v python)" install/native/recovery.py \
             --directory build/releases --previous-directory build/previous \
             --report build/reports/recovery.json \
-            --network-evidence 'Separate macOS 15 arm64 runner; external networking and Homebrew denied; exact R02 and R03 archives'
+            --network-evidence 'Separate macOS 15 arm64 runner; external networking and Homebrew denied; exact R03 and I00 archives'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

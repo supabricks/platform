@@ -88,7 +88,7 @@ def discover(conn):
                EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid),
                c.relowner=(SELECT oid FROM pg_roles WHERE rolname='cloud_admin')
         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-        WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
+        WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname NOT IN ('information_schema', '_supabricks')
           AND c.relkind IN ('r','p','f','m','v','S') ORDER BY c.oid LIMIT 257
     """).fetchall()
     if len(relations) > 256:

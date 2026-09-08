@@ -191,6 +191,9 @@ impl Store {
                 if desired == DesiredState::Running && record.expired {
                     return Err(conflict("expired branch is draining"));
                 }
+                if desired != DesiredState::Running && tx.prepare("SELECT 1 FROM ingest_jobs WHERE branch_id=?1 AND state IN ('queued','loading','reconciling')")?.exists([branch_id.to_string()])? {
+                    return Err(conflict("branch has an active import; cancel and reconcile it before lifecycle changes"));
+                }
                 if desired == DesiredState::Deleted && record.is_default && !forced {
                     return Err(conflict(
                         "default branch is protected; choose another default or explicitly force deletion",
