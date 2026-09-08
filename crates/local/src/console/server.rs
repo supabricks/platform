@@ -148,6 +148,7 @@ impl State {
             return fail(403, "Console writes require their exact browser origin");
         }
         if path == "/api/session" && request.method() == Method::POST {
+            let existing = self.authenticated(request.headers());
             if single(request.headers(), "content-type") != Some("application/json") {
                 return fail(415, "Expected application/json");
             }
@@ -195,14 +196,21 @@ impl State {
             }
             let mut sessions = self.sessions.lock().unwrap();
             sessions.retain(|_, s| s.expires > Instant::now());
-            if sessions.len() >= 32 {
+            let existing = existing.filter(|(id, _)| sessions.contains_key(id));
+            if sessions.len() >= 32 && existing.is_none() {
                 return fail(
                     429,
                     "Console session limit reached; close sessions or restart the cell",
                 );
             }
-            let (Ok(id), Ok(csrf)) = (secret(), secret()) else {
-                return fail(500, "Session creation failed");
+            // Reopening in the same browser renews its session instead of leaking
+            // an unreachable session slot or invalidating other tabs' CSRF tokens.
+            let (id, csrf) = match existing {
+                Some(pair) => pair,
+                None => match (secret(), secret()) {
+                    (Ok(id), Ok(csrf)) => (id, csrf),
+                    _ => return fail(500, "Session creation failed"),
+                },
             };
             if fs::remove_file(ticket_path).is_err() {
                 return fail(401, "Launch link already consumed");

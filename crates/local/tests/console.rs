@@ -254,6 +254,26 @@ fn launch_is_single_use_and_browser_requests_are_scoped_and_bounded() {
         .unwrap();
     assert!(session.headers.contains("HttpOnly; SameSite=Strict"));
     let auth = [("Cookie", cookie), ("X-Supabricks-Console", "1")];
+    // Repeated CLI launches in one browser must not exhaust the 32-session cap.
+    for _ in 0..33 {
+        let (_, ticket) = parts(&fixture.open());
+        let renewal = http(
+            &origin,
+            "POST",
+            "/api/session",
+            &[
+                ("Cookie", cookie),
+                ("Origin", &origin),
+                ("X-Supabricks-Console", "1"),
+                ("Content-Type", "application/json"),
+            ],
+            &json!({"token":ticket}).to_string(),
+        );
+        assert_eq!(renewal.status, 200);
+        let renewed: Value = serde_json::from_slice(&renewal.body).unwrap();
+        let original: Value = serde_json::from_slice(&session.body).unwrap();
+        assert_eq!(renewed["csrf"], original["csrf"]);
+    }
     let overview = http(&origin, "GET", "/api/overview", &auth, "");
     assert_eq!(overview.status, 200);
     let overview: Value = serde_json::from_slice(&overview.body).unwrap();
