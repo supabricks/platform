@@ -7,6 +7,7 @@ import io
 import os
 from pathlib import Path
 import platform
+import signal
 import subprocess
 import tarfile
 import tempfile
@@ -17,6 +18,17 @@ from stage import stage
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == getattr(self.server, 'pause_path', None):
+            self.send_response(200)
+            self.send_header('Content-Length', '1000000')
+            self.end_headers()
+            self.wfile.write(b'x'); self.wfile.flush()
+            self.server.paused.set()
+            self.server.release.wait(timeout=15)
+            return
+        super().do_GET()
+
     def log_message(self, *args):
         pass
 
@@ -115,6 +127,51 @@ class Installer(unittest.TestCase):
         self.assertIn('refusing to replace', self.install(False).stderr)
         self.assertEqual((self.prefix / 'bin/supabricks').read_text(), 'user owned')
         self.assertFalse((self.prefix / 'current').exists())
+
+
+    def test_truncated_download_never_activates(self):
+        self.package()
+        content = self.archive.read_bytes()
+        self.archive.write_bytes(content[:len(content)//2])
+        self.assertIn('checksum verification failed', self.install(False).stderr)
+        self.assertFalse((self.prefix / 'current').exists())
+        self.assertFalse((self.prefix / '.install-lock').exists())
+
+    def test_release_change_requires_upgrade_and_backup_options(self):
+        self.package(); self.install(True)
+        current = os.readlink(self.prefix / 'current')
+        self.version = 'v0.1.0-alpha.2'
+        self.archive = self.archive.with_name(self.archive.name.replace('alpha.1', 'alpha.2'))
+        self.package()
+        self.assertIn('SUPABRICKS_UPGRADE=1', self.install(False).stderr)
+        self.env['SUPABRICKS_UPGRADE'] = '1'
+        self.assertIn('SUPABRICKS_BACKUP_DIR', self.install(False).stderr)
+        self.assertEqual(os.readlink(self.prefix / 'current'), current)
+
+    def test_sigkill_during_upgrade_download_keeps_previous_release_and_data(self):
+        self.package(); self.install(True)
+        current = os.readlink(self.prefix / 'current')
+        data = self.root / 'data'; data.mkdir(); (data / 'sentinel').write_text('retained')
+        self.version = 'v0.1.0-alpha.2'
+        self.archive = self.archive.with_name(self.archive.name.replace('alpha.1', 'alpha.2'))
+        self.package()
+        self.env.update(SUPABRICKS_UPGRADE='1', SUPABRICKS_BACKUP_DIR=str(self.root / 'backup'), SUPABRICKS_DATA_DIR=str(data))
+        self.server.pause_path = '/' + self.archive.name
+        self.server.paused = threading.Event(); self.server.release = threading.Event()
+        child = subprocess.Popen(['bash', str(self.web / 'install.sh')], env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        try:
+            self.assertTrue(self.server.paused.wait(timeout=10), 'installer never reached payload download')
+            os.killpg(child.pid, signal.SIGKILL); child.wait(timeout=5)
+        finally:
+            self.server.release.set()
+            if child.poll() is None:
+                os.killpg(child.pid, signal.SIGKILL); child.wait(timeout=5)
+        self.assertEqual(os.readlink(self.prefix / 'current'), current)
+        self.assertEqual((data / 'sentinel').read_text(), 'retained')
+        self.assertFalse((self.prefix / 'releases' / self.version).exists())
+        # SIGKILL cannot run shell traps. Recovery is explicit and scoped to the
+        # dead installer; never automatically remove another installer's lock.
+        self.assertTrue((self.prefix / '.install-lock').exists())
 
 
 if __name__ == '__main__':

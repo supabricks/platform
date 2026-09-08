@@ -545,7 +545,7 @@ mod tests {
         let (root, s, _) = setup();
         let path = s.root().to_owned();
         drop(s);
-        std::fs::write(path.join("runtime.json"), "{}").unwrap();
+        std::fs::write(path.join("runtime.json"), r#"{"version":2}"#).unwrap();
         std::fs::rename(
             path.join("state.sqlite3"),
             root.path().join("saved.sqlite3"),

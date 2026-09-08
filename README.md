@@ -5,6 +5,8 @@ components retain their own licenses.
 
 The native local analytical preview has a [localhost curl installer](install/native/README.md)
 that bundles Postgres, Sail and the private Python runtime.
+The [recovery runbook](docs/handbook/recovery.md) covers coordinated backups,
+restoring into a new root and explicit platform upgrades.
 It bundles PG17.8, branching, CLI and MCP without requiring Kubernetes or Docker
 on the target machine. Public hosting at `supabricks.io` is deferred.
 

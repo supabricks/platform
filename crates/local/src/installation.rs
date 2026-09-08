@@ -39,7 +39,7 @@ impl Installation {
         Self::at_executable(&std::env::current_exe()?.canonicalize()?)
     }
 
-    fn at_executable(exe: &Path) -> Result<Option<Self>> {
+    pub(crate) fn at_executable(exe: &Path) -> Result<Option<Self>> {
         let Some(root) = exe.parent().and_then(Path::parent) else {
             return Ok(None);
         };
@@ -284,4 +284,36 @@ mod tests {
         std::os::unix::fs::symlink("/bin/sh", &exe).unwrap();
         assert!(installed.verify().is_err());
     }
+}
+
+/// Fail before opening SQLite, incrementing ownership or launching recovery.
+/// Release changes require the explicit, backed-up upgrade transaction.
+pub(crate) fn check_data_root(root: &Path) -> Result<()> {
+    if root.join("restore-incomplete").exists() {
+        return Err(crate::store::error::conflict(
+            "incomplete restore; restore the verified backup into another new directory",
+        ));
+    }
+    if root.join("upgrade.json").exists() {
+        return Err(crate::store::error::conflict(
+            "interrupted upgrade; rerun the staged installer with the same upgrade and backup options",
+        ));
+    }
+    let path = root.join("runtime.json");
+    if path.exists() {
+        let runtime: serde_json::Value = serde_json::from_slice(&fs::read(path)?)?;
+        if !matches!(runtime["version"].as_u64(), Some(1 | 2)) {
+            return Err(invalid("unsupported native runtime format"));
+        }
+        if let Some(expected) = runtime["installation_identity"].as_str() {
+            let installed = Installation::discover()?
+                .ok_or_else(|| invalid("this data root requires its installed release"))?;
+            if installed.identity != expected {
+                return Err(crate::store::error::conflict(
+                    "release mismatch; use the explicit backup and upgrade workflow before opening this data root",
+                ));
+            }
+        }
+    }
+    Ok(())
 }

@@ -1,4 +1,4 @@
-# Native local analytical preview (R02)
+# Native local analytical preview (R03)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
@@ -36,8 +36,11 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-R02 uses version `v0.1.0-alpha.2`. Existing R01 installations need separate
-program and data directories for this preview; in-place upgrades remain R03.
+R03 uses version `v0.1.0-alpha.3`. It adds coordinated backup/restore and an
+explicit platform upgrade from the full R02 alpha.2 bundle. See the
+[recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
+Postgres-only installations still require separate program/data directories;
+profile conversion and engine upgrades are not qualified.
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before
@@ -100,7 +103,10 @@ files. Concurrent installers fail without replacing an active release. Failed
 downloads leave the previous release active. An uncatchable interruption can
 leave `.stage.*` and an empty `.install-lock`; remove those staging items only
 after confirming no installer is running. Database files are never install inputs.
-Automatic release upgrades/downgrades are intentionally rejected until R03.
+Version changes require `SUPABRICKS_UPGRADE=1` and `SUPABRICKS_BACKUP_DIR`.
+The candidate checks compatibility, stops the previous release, creates a verified
+recovery bundle, and activates through a resumable transaction. Downgrades use
+restore into a new data root with the exact source release; see the runbook.
 
 After `supabricks down`, the same immutable installation directory can be moved.
 Run the moved `bin/supabricks up`; it discovers the engine relative to itself and
@@ -117,6 +123,6 @@ and configure HTTPS hosting. Primary licenses, platform Cargo dependency notices
 and pinned source/build inventories are included now; they are not a completed
 redistribution audit. macOS ad-hoc executable signatures are inherited from
 native packaging; Developer ID/notarization and downloaded-file Gatekeeper
-behavior need separate public-distribution qualification. R03 owns upgrade,
-backup/restore and public durability claims. See the qualification report for
+behavior need separate public-distribution qualification. R03 provides platform upgrades and stopped backup/restore. Actual OS reboot and
+power-loss qualification remain required before public durability claims. See the qualification report for
 which clean-host/offline tests have actually run.

@@ -39,7 +39,7 @@ def stage(directory, version, base_url, key):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.2')
+    parser.add_argument('--version', default='v0.1.0-alpha.3')
     parser.add_argument('--base-url', required=True)
     parser.add_argument('--signing-key', required=True, type=Path)
     args = parser.parse_args()

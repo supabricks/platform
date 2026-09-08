@@ -49,7 +49,13 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sql --sql SQL | --file PATH [--branch NAME] [--write]
       [--max-rows 200] [--timeout-ms 10000]
   mcp --project PATH            MCP stdio; explicit fixed worktree required
+  backup create PATH           Stop and capture a verified private recovery bundle
+  backup verify PATH           Verify every recovery file without starting runtime
+  backup restore PATH [--release PATH]  Restore into a new --data-dir with source release
   installation verify          Verify all installed files against the manifest
+  installation upgrade --prefix PATH --previous PATH --backup PATH
+                               Run from the staged candidate; retain source backup
+  installation uninstall       Stop this cell; remove command links, retain data/versions
 
 JSON is the default. Branch mutations return a durable operation immediately;
 --wait polls with JSON progress on stderr, and never retries the mutation.
@@ -176,6 +182,51 @@ pub fn run() -> Result<u8> {
     };
     let project = a.take("--project").map(PathBuf::from);
     a.flag("--json");
+    if command == "backup" {
+        let action = a.required(1)?;
+        let path = PathBuf::from(a.required(2)?);
+        let source_release = if action == "restore" {
+            a.take("--release").map(PathBuf::from)
+        } else {
+            None
+        };
+        a.finish(3)?;
+        let result = match action.as_str() {
+            "create" => crate::recovery::create(&root, &path)?,
+            "verify" => {
+                let m = crate::recovery::verify(&path)?;
+                json!({"verified":true,"id":m.id,"files":m.files.len(),"contains_credentials":true})
+            }
+            "restore" => {
+                crate::recovery::restore_with_release(&path, &root, source_release.as_deref())?
+            }
+            _ => return Err(invalid("use backup create, verify or restore")),
+        };
+        println!("{result}");
+        return Ok(0);
+    }
+    if command == "installation" {
+        let action = a.required(1)?;
+        let result = if action == "upgrade" {
+            let mut required = |name| {
+                a.take(name)
+                    .map(PathBuf::from)
+                    .ok_or_else(|| invalid(format!("missing {name}")))
+            };
+            let prefix = required("--prefix")?;
+            let previous = required("--previous")?;
+            let backup = required("--backup")?;
+            a.finish(2)?;
+            crate::upgrade::run(&root, &prefix, &previous, &backup)?
+        } else if action == "uninstall" {
+            a.finish(2)?;
+            crate::upgrade::uninstall(&root)?
+        } else {
+            return Err(invalid("use installation verify, upgrade or uninstall"));
+        };
+        println!("{result}");
+        return Ok(0);
+    }
     if matches!(command.as_str(), "daemon" | "up" | "down" | "status") {
         let bundle = a.take("--bundle").map(PathBuf::from);
         let helpers = a.take("--helpers").map(PathBuf::from);

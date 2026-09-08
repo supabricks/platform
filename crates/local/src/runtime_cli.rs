@@ -22,6 +22,9 @@ pub fn run(
     bundle: Option<PathBuf>,
     helpers: Option<PathBuf>,
 ) -> Result<()> {
+    if matches!(command, "up" | "daemon") {
+        crate::installation::check_data_root(&root)?;
+    }
     let installed = if matches!(command, "up" | "daemon") && bundle.is_none() {
         crate::installation::Installation::discover()?
     } else {
@@ -45,41 +48,7 @@ pub fn run(
         return Ok(());
     }
     if command == "down" {
-        if request(&root, Request::Shutdown).is_err() {
-            if root.exists() {
-                let mut store =
-                    acquire_after_shutdown(&root, Instant::now() + Duration::from_secs(60))?;
-                crate::engine::Cell::recover(&mut store)?;
-                let socket = store.root().join("control.sock");
-                if fs::symlink_metadata(&socket).is_ok_and(|m| m.file_type().is_socket()) {
-                    fs::remove_file(socket)?;
-                }
-            }
-            println!(
-                "{}",
-                serde_json::json!({"status":"stopped","data_retained":true})
-            );
-            return Ok(());
-        }
-        let deadline = Instant::now() + Duration::from_secs(60);
-        let mut progress = Instant::now();
-        while root.join("control.sock").exists() {
-            if Instant::now() >= deadline {
-                return Err(error("shutdown is still pending; inspect daemon.log"));
-            }
-            if progress.elapsed() >= Duration::from_secs(1) {
-                eprintln!(
-                    "{}",
-                    serde_json::json!({"progress":"waiting for runtime; status and doctor remain available","data_dir":root})
-                );
-                progress = Instant::now();
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-        // Socket disappearance can also mean a crashed daemon. Reacquire the
-        // ownership lock and account for every recorded writer before success.
-        let mut store = acquire_after_shutdown(&root, deadline)?;
-        crate::engine::Cell::recover(&mut store)?;
+        shutdown(&root)?;
         println!(
             "{}",
             serde_json::json!({"status":"stopped","data_retained":true})
@@ -181,4 +150,40 @@ fn wait_ready(root: &std::path::Path, mut child: Option<&mut std::process::Child
         }
         std::thread::sleep(Duration::from_millis(100));
     }
+}
+
+pub(crate) fn shutdown(root: &std::path::Path) -> Result<()> {
+    if request(root, Request::Shutdown).is_err() {
+        if root.exists() {
+            let mut store = acquire_after_shutdown(root, Instant::now() + Duration::from_secs(60))?;
+            crate::engine::Cell::recover(&mut store)?;
+            crate::sessions::Sessions::recover(&mut store)?.stop(&mut store)?;
+            let socket = store.root().join("control.sock");
+            if fs::symlink_metadata(&socket).is_ok_and(|m| m.file_type().is_socket()) {
+                fs::remove_file(socket)?;
+            }
+        }
+        return Ok(());
+    }
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let mut progress = Instant::now();
+    while root.join("control.sock").exists() {
+        if Instant::now() >= deadline {
+            return Err(error("shutdown is still pending; inspect daemon.log"));
+        }
+        if progress.elapsed() >= Duration::from_secs(1) {
+            eprintln!(
+                "{}",
+                serde_json::json!({"progress":"waiting for runtime; status and doctor remain available","data_dir":root})
+            );
+            progress = Instant::now();
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    // Socket disappearance can also mean a crashed daemon. Reacquire the
+    // ownership lock and account for every recorded writer before success.
+    let mut store = acquire_after_shutdown(root, deadline)?;
+    crate::engine::Cell::recover(&mut store)?;
+    crate::sessions::Sessions::recover(&mut store)?.stop(&mut store)?;
+    return Ok(());
 }

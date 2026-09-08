@@ -6,7 +6,7 @@ mod exports;
 mod journal;
 mod migrations;
 mod native;
-mod ownership;
+pub(crate) mod ownership;
 mod sessions;
 pub use sessions::AnalyticalSession;
 mod work;
@@ -61,6 +61,7 @@ pub struct ConnectionTarget {
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
         let root = ownership::DataRoot::acquire(path)?;
+        crate::installation::check_data_root(&root.path)?;
         let database = root.path.join("state.sqlite3");
         // A fresh journal cannot reconstruct credentials, leases or ownership
         // from engine files. Never implicitly initialize over surviving data.
@@ -88,6 +89,18 @@ impl Store {
             ));
         }
         ownership::private_file(&database)?.sync_all()?;
+        if database.metadata()?.len() > 0 {
+            let preview = Connection::open_with_flags(
+                &database,
+                OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+            )?;
+            let version: u32 = preview.pragma_query_value(None, "user_version", |r| r.get(0))?;
+            if version > SCHEMA_VERSION {
+                return Err(conflict(
+                    "state schema is newer than this Supabricks binary",
+                ));
+            }
+        }
         let mut db = Connection::open_with_flags(
             &database,
             OpenFlags::SQLITE_OPEN_READ_WRITE
