@@ -162,7 +162,7 @@ impl Fixture {
             serde_json::from_slice(&fs::read(self.root.join("last-upgrade.json")).unwrap())
                 .unwrap();
         let saved = recovery::verify(&self.backup).unwrap();
-        let j = json!({"version":1,"previous":self.old,"prefix":self.prefix,"backup":self.backup,"from":completed["from"],"to":completed["to"],"database_sha256":saved.files["state.sqlite3"].sha256});
+        let j = json!({"version":1,"previous":self.old.canonicalize().unwrap(),"prefix":self.prefix.canonicalize().unwrap(),"backup":self.backup.canonicalize().unwrap(),"from":completed["from"],"to":completed["to"],"database_sha256":saved.files["state.sqlite3"].sha256});
         if phase == "prepared" {
             fs::copy(
                 self.backup.join("data/runtime.json"),

@@ -216,6 +216,24 @@ def qualify(args):
                       upgrade_backup_id=saved['id'])
     except BaseException as error:
         report['error'] = str(error)
+        # Public reports contain bounded status/journal fields, not raw SQL,
+        # credentials, process environments or private engine logs.
+        try:
+            status = cli('status')
+            report['diagnostics'] = dict(generation=status.get('generation'),
+                pending_operations=status.get('pending_operations'),
+                sql_workers_active=status.get('sql_workers_active'),
+                analytical_sessions_active=status.get('analytical_sessions_active'),
+                runtime_ready=(status.get('runtime') or {}).get('ready'),
+                processes=(status.get('runtime') or {}).get('processes'))
+        except Exception as diagnostic_error:
+            report['diagnostics'] = dict(status_unavailable=type(diagnostic_error).__name__)
+        try:
+            with sqlite3.connect(f'file:{data / "state.sqlite3"}?mode=ro', uri=True) as db:
+                report['journal'] = [dict(id=row[0], next_step=row[1], step_count=row[2])
+                    for row in db.execute("SELECT id,next_step,json_array_length(steps) FROM operations WHERE next_step < json_array_length(steps) LIMIT 50")]
+        except Exception as diagnostic_error:
+            report['journal_unavailable'] = type(diagnostic_error).__name__
         raise
     finally:
         for root in roots:
@@ -226,7 +244,12 @@ def qualify(args):
                 engine = Path(config['bundle'])
                 cleanup_binary = engine.parent / 'bin/supabricks'
                 if cleanup_binary.exists():
-                    subprocess.run([str(cleanup_binary), 'down', '--data-dir', str(root)], env=env, capture_output=True, timeout=90)
+                    try:
+                        result = subprocess.run([str(cleanup_binary), 'down', '--data-dir', str(root)], env=env, capture_output=True, timeout=90)
+                        if result.returncode:
+                            report.setdefault('cleanup_errors', []).append(dict(root=root.name, exit_code=result.returncode))
+                    except subprocess.TimeoutExpired:
+                        report.setdefault('cleanup_errors', []).append(dict(root=root.name, timeout=True))
         server.shutdown(); server.server_close(); key.unlink(missing_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + '\n')
         if report['status'] == 'passed' and not args.keep:
