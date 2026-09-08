@@ -25,6 +25,14 @@ impl Cell {
         python: PathBuf,
         worker: PathBuf,
     ) -> Result<Value> {
+        if crate::installation::Installation::discover()?
+            .and_then(|i| i.analytical_worker())
+            .is_some()
+        {
+            return Err(conflict(
+                "the analytical preview uses its bundled worker; custom configuration is for source builds",
+            ));
+        }
         if !store.active_exports()?.is_empty() {
             return Err(conflict(
                 "wait for export cleanup before changing the worker",
@@ -51,9 +59,8 @@ impl Cell {
         Ok(json!({"configured":true,"published":false}))
     }
     fn exporter(&self) -> Result<WorkerConfig> {
-        let data = fs::read(self.root.join("analytics.json"))
-            .map_err(|_| invalid("configure the A01 worker with analytics configure first"))?;
-        Ok(serde_json::from_slice(&data)?)
+        let (python, worker) = crate::installation::analytical_worker(&self.root)?;
+        Ok(WorkerConfig { python, worker })
     }
     fn export_role(e: &ExportRecord) -> String {
         format!("export-{}", e.id)

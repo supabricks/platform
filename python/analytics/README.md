@@ -1,9 +1,10 @@
 # A00 analytical component environment
 
 This is the developer qualification environment for the off-the-shelf Sail and
-Delta stack. It is not yet included in the Supabricks installer. Postgres export,
+Delta stack. R02 bundles this locked environment in the default Supabricks installer. Postgres export,
 atomic epochs and managed query sessions belong to A01–A03; private Python
-redistribution and offline end-user packaging belong to R02.
+redistribution and offline end-user packaging are described in
+[the R02 contract](../../docs/architecture/r02-analytical-preview.md).
 
 ## Reproduce
 

@@ -7,11 +7,16 @@ on:
       - 'Cargo.lock'
       - 'components/**'
       - 'install/native/**'
+      - 'python/analytics/**'
       - 'examples/orders/**'
       - 'agents/**'
       - 'LICENSE'
       - '.github/workflows/native-release.yml'
   workflow_dispatch:
+
+concurrency:
+  group: native-release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -55,7 +60,9 @@ jobs:
           python components/prepare-native-cell.py ${{ matrix.target }} build/native --offline-runtime --engine-archive build/engine-archive/supabricks-engine-${{ matrix.target }}.tar.gz
       - run: cargo build --locked --release -p supabricks-local
       - name: Installer signature, corruption, traversal and repeat-install contracts
-        run: python install/native/test_installer.py
+        run: |
+          python install/native/test_installer.py
+          python install/native/test_analytics.py
       - name: Assemble exact native release
         run: |
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
@@ -70,13 +77,19 @@ jobs:
   clean-linux:
     needs: assemble
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-linux-x86_64
           path: build/releases
+      - name: Free disk for the 1 GB snapshot and its WAL/storage copies
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
       - run: docker build -f install/native/Dockerfile.qualify -t supabricks-release-test .
       - name: Real installer and app workflow without external networking or build tools
         run: |
@@ -90,6 +103,13 @@ jobs:
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
         run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
+      - name: Measure full snapshots offline without syscall tracing overhead
+        run: |
+          docker run --rm --network=none --memory=16g --cpus=4 --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
+            supabricks-release-test \
+            python3 /harness/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
+            --network-evidence 'Ubuntu 24.04 unprivileged container; network=none; 16 GiB and 4 CPU limits; no syscall tracing during measurements'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -99,7 +119,7 @@ jobs:
   isolated-macos:
     needs: assemble
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -118,7 +138,7 @@ jobs:
           sandbox-exec -f install/native/offline-macos.sb \
             /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             "$(command -v python)" install/native/qualify.py --directory build/releases \
-            --report build/reports/qualification.json \
+            --report build/reports/qualification.json --benchmarks \
             --network-evidence 'Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac'
       - uses: actions/upload-artifact@v4
         if: always()

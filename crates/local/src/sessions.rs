@@ -48,21 +48,8 @@ fn bounded_json(path: &Path) -> Result<Value> {
     Ok(serde_json::from_slice(&data)?)
 }
 pub fn worker_config(store: &Store) -> Result<(PathBuf, PathBuf)> {
-    let config: Value =
-        serde_json::from_slice(&fs::read(store.root().join("analytics.json")).map_err(|_| {
-            invalid("run analytics configure with the locked Python environment first")
-        })?)?;
-    let python = PathBuf::from(
-        config["python"]
-            .as_str()
-            .ok_or_else(|| invalid("invalid analytical Python path"))?,
-    );
-    let worker = PathBuf::from(
-        config["worker"]
-            .as_str()
-            .ok_or_else(|| invalid("invalid exporter path"))?,
-    )
-    .with_file_name("session.py");
+    let (python, exporter) = crate::installation::analytical_worker(store.root())?;
+    let worker = exporter.with_file_name("session.py");
     if !python.is_absolute() || !python.is_file() || !worker.is_absolute() || !worker.is_file() {
         return Err(invalid(
             "session.py must be installed beside the configured export.py",

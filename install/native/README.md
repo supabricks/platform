@@ -1,8 +1,9 @@
-# Native local Postgres alpha (R01)
+# Native local analytical preview (R02)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
-This is a Postgres-only engineering alpha; analytics is a later distribution.
+The default distribution includes the private analytical runtime. `--postgres-only`
+selects the smaller Postgres alpha during assembly.
 
 ## Try the staged installer
 
@@ -21,6 +22,10 @@ supabricks up
 supabricks init my-app
 supabricks database create main --wait
 supabricks connect main --uri
+supabricks sql --branch main --write --sql 'CREATE TABLE orders(id int, amount numeric(12,2))'
+supabricks sql --branch main --write --sql 'INSERT INTO orders VALUES (1, 12.99)'
+supabricks analytics sql --branch main --sql 'SELECT sum(amount) FROM public.orders'
+supabricks spark shell --branch main
 ```
 
 The installer needs the OS's Bash, curl, OpenSSL, tar and standard shell utilities.
@@ -30,6 +35,9 @@ and Apple Silicon macOS 15+. Intel Macs, Linux arm64, musl and Windows are not
 supported. Installed runtime operation uses loopback and needs no external service.
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
+
+R02 uses version `v0.1.0-alpha.2`. Existing R01 installations need separate
+program and data directories for this preview; in-place upgrades remain R03.
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before
@@ -66,6 +74,11 @@ python3 install/native/assemble.py --target linux-x86_64 \
   --helpers build/native --output build/releases
 python3 install/native/serve.py --directory build/releases
 ```
+
+Assembly also downloads the checksum-pinned Python distribution and locked
+package wheels, prebuilds Spark Connect on the builder, and checks analytical
+library dependencies. Users do not supply Python or install packages. See
+[the R02 contract](../../docs/architecture/r02-analytical-preview.md).
 
 The manifest records source identities, build environment, helper hashes, OS
 baseline, and every shipped file's digest and executable mode. Engine loader

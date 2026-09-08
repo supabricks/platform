@@ -258,6 +258,25 @@ pub struct Cell {
     configured: HashSet<(String, u32)>,
     pub last_error: Option<String>,
 }
+// Retain the percentage reserve on small filesystems (including bounded
+// ENOSPC fixtures), but do not reserve tens of GiB on a large developer disk.
+fn object_store_reserve(path: &Path) -> Result<&'static str> {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt};
+    let path = CString::new(path.as_os_str().as_bytes())
+        .map_err(|_| invalid("invalid object-store path"))?;
+    let mut stat = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+    if unsafe { libc::statvfs(path.as_ptr(), stat.as_mut_ptr()) } != 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let stat = unsafe { stat.assume_init() };
+    let bytes = stat.f_blocks as u128 * stat.f_frsize as u128;
+    Ok(if bytes > 100 * 1024_u128.pow(3) {
+        "1GiB"
+    } else {
+        "1"
+    })
+}
+
 impl Cell {
     pub fn open(store: &mut Store) -> Result<Self> {
         // Stop the old executor before inspecting its children: it must not be
@@ -498,8 +517,11 @@ impl Cell {
             "-master.telemetry=false".into(),
             "-master.raftHashicorp=true".into(),
             "-master.volumeSizeLimitMB=64".into(),
-            "-volume.max=16".into(),
-            "-volume.minFreeSpace=1".into(),
+            "-volume.max=256".into(),
+            format!(
+                "-volume.minFreeSpace={}",
+                object_store_reserve(&self.root.join("objects"))?
+            ),
             "-s3.port.iceberg=0".into(),
             "-s3.port.lance=0".into(),
             "-s3.iam=false".into(),

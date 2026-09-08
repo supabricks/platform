@@ -9,18 +9,19 @@ import re
 
 def inspect(trace):
     calls = 0
-    violations = []
-    for line in trace.read_text(errors='replace').splitlines():
-        if not re.search(r'\b(connect|sendto|sendmsg|sendmmsg)\(', line):
-            continue
-        for address in re.findall(r'inet_addr\("([^"]+)"\)|inet_pton\(AF_INET6, "([^"]+)"', line):
-            calls += 1
-            value = next(a for a in address if a)
-            address = ipaddress.ip_address(value)
-            if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
-                address = address.ipv4_mapped
-            if not address.is_loopback:
-                violations.append(value)
+    violations = set()
+    with trace.open(errors='replace') as stream:
+        for line in stream:
+            if not re.search(r'\b(connect|sendto|sendmsg|sendmmsg)\(', line):
+                continue
+            for address in re.findall(r'inet_addr\("([^"]+)"\)|inet_pton\(AF_INET6, "([^"]+)"', line):
+                calls += 1
+                value = next(a for a in address if a)
+                address = ipaddress.ip_address(value)
+                if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+                    address = address.ipv4_mapped
+                if not address.is_loopback:
+                    violations.add(value)
     if calls == 0:
         raise ValueError('no network destination evidence; trace is incomplete')
     result = dict(status='failed' if violations else 'passed', observed_destinations=calls,
