@@ -145,6 +145,15 @@ from the future runtime console. If a website/console repo is created later,
 move frontend source there and consume versioned assets/contracts; native
 runtime builds must not depend on private business documents or website access.
 
+**Console phase update, 2026-09-08:** new local console work is now planned in
+`platform/console/`, with ingestion and its daemon integration in `platform` and
+a later extension in `platform/extensions/vscode/`. Keep the existing `ui/`
+operator contract separate; PR #1 remains open at this reinspection. This updates
+the earlier proposal of a separate console repository. See the
+[architecture](../architecture/local-console-ingestion.md) and
+[PR sequence](console-ingestion-implementation.md). The earlier source inventory
+above remains a dated baseline, not a claim that the local runtime is absent.
+
 ## Ownership rule
 
 **Product behavior and assembled releases live in `platform`.** A source patch
