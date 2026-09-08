@@ -300,18 +300,21 @@ impl Service {
                     > Duration::from_secs(if t.mode == "reconcile" { 22 } else { 600 });
             let exit_status = t.child.try_wait()?;
             let ended = exit_status.is_some();
-            if !ended && !force {
-                if t.mode == "load" && t.workspace.join("progress.json").exists() {
-                    let value = read(&t.workspace.join("progress.json"))?;
-                    if let (Some(parsed), Some(copied)) =
-                        (value["parsed_rows"].as_u64(), value["copied_rows"].as_u64())
-                    {
-                        let j = store.ingest_job(t.project, t.job.unwrap())?;
-                        if j.state == State::Loading {
-                            store.ingest_progress(t.project, j.id, &t.process, parsed, copied)?;
-                        }
+            // A short COPY can finish between ticks. Consume its last bounded
+            // sample before fencing. Missing/unreadable samples do not block it.
+            if t.mode == "load"
+                && let Ok(value) = read(&t.workspace.join("progress.json"))
+            {
+                if let (Some(parsed), Some(copied)) =
+                    (value["parsed_rows"].as_u64(), value["copied_rows"].as_u64())
+                {
+                    let j = store.ingest_job(t.project, t.job.unwrap())?;
+                    if j.state == State::Loading {
+                        store.ingest_progress(t.project, j.id, &t.process, parsed, copied)?;
                     }
                 }
+            }
+            if !ended && !force {
                 continue;
             }
             supervisor::stop(&t.process)?;
