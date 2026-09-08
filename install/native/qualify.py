@@ -255,7 +255,7 @@ def qualify(args):
                     assert select.select([mcp.stdout], [], [], 15)[0]
                     response = json.loads(mcp.stdout.readline())
                     assert 'error' not in response, response
-            assert len(response['result']['tools']) == 25
+            assert len(response['result']['tools']) == 34
             def call_tool(name, arguments):
                 mcp.stdin.write(json.dumps(dict(jsonrpc='2.0', id=3, method='tools/call',
                     params=dict(name=name, arguments=arguments))) + '\n')
