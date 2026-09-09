@@ -201,7 +201,14 @@ impl Uploads {
                     .as_mut()
                     .ok_or_else(|| conflict("upload is closed"))?;
                 reserve(file, bytes.len() as u64)?;
-                file.write_all(&bytes)?;
+                if let Err(error) = file.write_all(&bytes) {
+                    // A failed write may already have advanced the descriptor.
+                    // Never allow a chunk retry against an uncertain offset.
+                    drop(slot.file.take());
+                    store.abandon_source(project, source)?;
+                    store.dispose_source(project, source, false)?;
+                    return Err(error.into());
+                }
                 slot.received += bytes.len() as u64;
                 slot.touched = Instant::now();
                 Ok(json!({"received":slot.received}))
@@ -213,8 +220,13 @@ impl Uploads {
                     return Err(conflict("upload incomplete"));
                 }
                 if let Some(f) = slot.file.take() {
-                    f.sync_all()?;
+                    let synced = f.sync_all();
                     drop(f);
+                    if let Err(error) = synced {
+                        store.abandon_source(project, source)?;
+                        store.dispose_source(project, source, false)?;
+                        return Err(error.into());
+                    }
                 }
                 let value = service.inspect_uploaded(store, binding, source, mapping)?;
                 slot.preview += 1;
@@ -403,6 +415,36 @@ mod tests {
         drop(slot.file.take());
         slot.touched = Instant::now() - Duration::from_secs(31);
         uploads.tick(&mut store, false).unwrap();
+        assert!(!store.source_path(id, "part").unwrap().exists());
+    }
+    #[test]
+    fn write_failure_closes_and_disposes_the_slot_before_any_retry() {
+        let (_root, mut store, binding, mut uploads, id) = fixture();
+        let slot = uploads.slots.get_mut(&id.to_string()).unwrap();
+        // A real read-only descriptor produces a real I/O failure, without
+        // mocking the store or weakening production admission.
+        slot.file = Some(File::open(store.source_path(id, "part").unwrap()).unwrap());
+        let mut service = ingest::service::Service::default();
+        assert!(
+            uploads
+                .handle(
+                    &mut store,
+                    &mut service,
+                    &binding,
+                    "session",
+                    Command::Chunk {
+                        source: id,
+                        offset: 0,
+                        hex: hex::encode(b"a,b\n")
+                    }
+                )
+                .is_err()
+        );
+        assert!(uploads.slots[&id.to_string()].file.is_none());
+        assert_eq!(
+            store.ingest_source(binding.project_id, id).unwrap().state,
+            "disposed"
+        );
         assert!(!store.source_path(id, "part").unwrap().exists());
     }
     #[test]
