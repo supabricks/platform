@@ -20,6 +20,12 @@ with a local browser console and file imports. The console exclusion below
 records the original runtime-phase boundary; it does not exclude this newly
 requested phase. Reboot/power-loss and public-distribution gates remain open.
 
+**Notebook phase, 2026-09-09:** I02 is merged in PR #23 at `d18aae7`; the installed
+CSV and branching demo is implemented. The requested
+[notebook architecture](../architecture/local-notebooks.md) and
+[N00-N05 plan](notebook-implementation.md) add embedded Jupyter over the existing
+analytical services. Notebooks remain proposed; I03, C03 and R04 remain open.
+
 ## 1. Outcome and scope
 
 A developer installs Supabricks on macOS arm64 or Linux x86_64, initializes a
