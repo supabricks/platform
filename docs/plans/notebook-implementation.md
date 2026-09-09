@@ -79,7 +79,7 @@ dependency changes; validate relative links and review status claims.
 
 ### N01 — Qualify the component and packaged kernel stack
 
-Implementation in qualification: [N01 decision and evidence](../architecture/n01-notebook-qualification.md),
+Qualified on Linux x86_64 and macOS arm64: [N01 decision and evidence](../architecture/n01-notebook-qualification.md),
 [reproducible probe](../../e2e/native/notebooks/README.md). No product feature is enabled yet.
 
 **Depends on:** N00. **Touch:** isolated reproducible probe under `examples/` or

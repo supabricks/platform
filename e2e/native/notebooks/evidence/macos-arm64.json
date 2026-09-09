@@ -1,0 +1,432 @@
+{
+  "workflow_url": "https://github.com/supabricks/platform/actions/runs/34380444801",
+  "tested_head": "5cf135110f8f984bbae2109862a4f5cf78cb32d2",
+  "checkout_commit": "2ed6fa575409db547571a222f2a9611890e6ffae",
+  "inventory_sha256": "d4fa211f7dd60663bca81bef10f6f78084d0993b16d19fbc1f584e2e3824091b",
+  "packaging": {
+    "archive_sha256": "891f9d6a6311f2ad5db43d50d77172f21366b551ae3f6ae35b91696d551d3da3",
+    "compressed_bytes": 249788936,
+    "baseline_component_compressed_bytes": 231824105,
+    "compressed_component_delta_bytes": 17964831
+  },
+  "loader_adjustments": [
+    {
+      "path": "python/runtime/lib/python3.12/site-packages/zmq/.dylibs/libsodium.26.dylib",
+      "removed_rpath": "/tmp/zmq/lib",
+      "signature": "ad-hoc"
+    }
+  ],
+  "candidate": {
+    "candidate": "@datalayer/jupyter-react",
+    "version": "2.0.14",
+    "build_exit": 1,
+    "decision": "reject-unmodified-candidate",
+    "node": "v22.23.2",
+    "locked_packages": 997,
+    "reason": "Notebook entry imports a JupyterLite service-worker ?text module unsupported by the existing Vite configuration; no overrides applied."
+  },
+  "qualification": {
+    "status": "passed",
+    "checks": [
+      "relocated_probe_inventory_verified",
+      "real_A03_admission_precedes_kernel_launch",
+      "kernel_shutdown_closes_Sail_and_releases_process",
+      "standard_notebook_roundtrip_without_credentials"
+    ],
+    "network_evidence": "macOS 15 arm64; Seatbelt denies external networking and Homebrew",
+    "baseline_release_sha256": "8da6c137a473f7b3709db9e7e30fa8fb027245a1ce72656eb7e57d380d826e13",
+    "probe": {
+      "target": "macos-arm64",
+      "frontend_bytes": 3223917,
+      "packages": {
+        "anyio": "4.15.1",
+        "appnope": "1.0.0",
+        "argon2-cffi": "25.1.0",
+        "argon2-cffi-bindings": "26.1.0",
+        "arro3-core": "0.8.2",
+        "arrow": "1.4.0",
+        "asttokens": "3.0.2",
+        "attrs": "26.1.0",
+        "beautifulsoup4": "4.15.0",
+        "bleach": "6.4.0",
+        "cffi": "2.1.1",
+        "comm": "0.2.3",
+        "debugpy": "1.8.21",
+        "defusedxml": "0.7.1",
+        "deltalake": "1.6.3",
+        "deprecated": "1.3.1",
+        "executing": "2.2.1",
+        "fastjsonschema": "2.22.2",
+        "fqdn": "1.5.1",
+        "googleapis-common-protos": "1.75.3",
+        "grpcio": "1.83.1",
+        "grpcio-status": "1.83.1",
+        "idna": "3.19",
+        "ipykernel": "7.3.0",
+        "ipython": "9.17.1",
+        "ipython-pygments-lexers": "1.1.1",
+        "isoduration": "20.11.0",
+        "jedi": "0.20.0",
+        "jinja2": "3.1.6",
+        "jsonpointer": "3.1.1",
+        "jsonschema": "4.26.0",
+        "jsonschema-specifications": "2025.9.1",
+        "jupyter-client": "8.10.0",
+        "jupyter-core": "5.9.1",
+        "jupyter-events": "0.12.1",
+        "jupyter-server": "2.21.0",
+        "jupyter-server-terminals": "0.5.4",
+        "jupyterlab-pygments": "0.3.0",
+        "lark": "1.3.1",
+        "markupsafe": "3.0.3",
+        "matplotlib-inline": "0.2.2",
+        "mistune": "3.3.4",
+        "nbclient": "0.11.0",
+        "nbconvert": "7.17.1",
+        "nbformat": "5.11.1",
+        "nest-asyncio2": "1.7.2",
+        "numpy": "2.5.2",
+        "packaging": "25.0",
+        "pandas": "2.3.3",
+        "pandocfilters": "1.5.1",
+        "parso": "0.8.7",
+        "pexpect": "4.9.0",
+        "platformdirs": "4.11.8",
+        "prometheus-client": "0.26.0",
+        "prompt-toolkit": "3.0.53",
+        "protobuf": "7.36.1",
+        "psutil": "7.2.2",
+        "psycopg": "3.3.5",
+        "psycopg-binary": "3.3.5",
+        "ptyprocess": "0.7.0",
+        "pure-eval": "0.2.3",
+        "pyarrow": "25.0.1",
+        "pycparser": "3.0",
+        "pygments": "2.21.0",
+        "pysail": "0.7.1",
+        "pyspark-client": "4.2.0",
+        "python-dateutil": "2.9.0.post0",
+        "python-json-logger": "4.2.0",
+        "pytz": "2026.3.post1",
+        "pyyaml": "6.0.3",
+        "pyzmq": "27.2.0",
+        "referencing": "0.37.0",
+        "rfc3339-validator": "0.1.4",
+        "rfc3986-validator": "0.1.1",
+        "rfc3987-syntax": "1.1.0",
+        "rpds-py": "2026.6.3",
+        "send2trash": "2.1.0",
+        "setuptools": "80.9.0",
+        "six": "1.17.0",
+        "soupsieve": "2.9.2",
+        "stack-data": "0.6.3",
+        "terminado": "0.18.1",
+        "tinycss2": "1.5.1",
+        "tornado": "6.5.8",
+        "traitlets": "5.16.1",
+        "typing-extensions": "4.16.0",
+        "tzdata": "2026.3",
+        "uri-template": "1.3.0",
+        "wcwidth": "0.8.3",
+        "webcolors": "25.10.0",
+        "webencodings": "0.6.1",
+        "websocket-client": "1.9.2",
+        "wheel": "0.45.1",
+        "wrapt": "2.4.0",
+        "zstandard": "0.25.0"
+      }
+    },
+    "server_start_seconds": 3.745237541999984,
+    "server_idle_rss_bytes": 86671360,
+    "browser": {
+      "checks": [
+        "no_automatic_kernel_or_execution",
+        "untrusted_stored_outputs_sanitized",
+        "HTTP_cookie_Host_Origin_CSRF_launch_replay_and_route_boundary",
+        "failed_start_compensates_before_retry",
+        "embedded_notebook_Python_Sail_table_Markdown_static_image",
+        "binary_WebSocket_protocol_single_use_ticket_and_origin",
+        "save_reload_reconnect_without_replay",
+        "Python_interrupt_preserves_working_Spark_binding",
+        "Spark_inflight_interrupt_followed_by_owned_shutdown",
+        "explicit_restart_clears_variables_and_queries_same_snapshot",
+        "revoked_session_rejected"
+      ],
+      "errors": [],
+      "external": [],
+      "observations": {
+        "contents_save": "Upstream accepts stale saves; expected-hash conflict adapter required in N03",
+        "stdout": {
+          "bytes": 262160,
+          "messages": 1
+        },
+        "output_policy": "2 MiB frame cap configured on both transport legs; aggregate output and queued execution admission remain N02 work",
+        "spark_interrupt": "no-reply-within-5s"
+      },
+      "version": "153.0.8010.12",
+      "kernel_start_seconds": 6.993412958,
+      "kernel_idle_rss_bytes": 177553408,
+      "first_run_seconds": 0.4230998330000002,
+      "status": "passed"
+    },
+    "ownership": [
+      {
+        "event": "admitting",
+        "time": 1788973638.4882948,
+        "identity": "882c1f8f-2e72-4f25-9fd4-962773b1f367"
+      },
+      {
+        "event": "admitted",
+        "time": 1788973650.280871,
+        "identity": "882c1f8f-2e72-4f25-9fd4-962773b1f367",
+        "session_id": "89cbbbb0-d0a2-46b7-95b1-06c270c0d2e1",
+        "epoch_id": "12a5dde2-df61-44d8-9cfa-b5044b661f99"
+      },
+      {
+        "event": "start_failed",
+        "time": 1788973650.642538,
+        "identity": "882c1f8f-2e72-4f25-9fd4-962773b1f367"
+      },
+      {
+        "event": "admitting",
+        "time": 1788973650.729286,
+        "identity": "d99b1f9b-1f11-44b5-a979-c1fdf746672d"
+      },
+      {
+        "event": "admitted",
+        "time": 1788973653.619224,
+        "identity": "d99b1f9b-1f11-44b5-a979-c1fdf746672d",
+        "session_id": "24cb0b61-9828-407a-b106-6cb13787d71b",
+        "epoch_id": "12a5dde2-df61-44d8-9cfa-b5044b661f99"
+      },
+      {
+        "event": "launched",
+        "time": 1788973653.651595,
+        "identity": "d99b1f9b-1f11-44b5-a979-c1fdf746672d",
+        "kernel_id": "0812594d-4582-446d-afc8-090e388cd396",
+        "session_id": "24cb0b61-9828-407a-b106-6cb13787d71b",
+        "pid": 14582
+      },
+      {
+        "event": "stopped",
+        "time": 1788973666.361711,
+        "kernel_id": "0812594d-4582-446d-afc8-090e388cd396",
+        "session_id": "24cb0b61-9828-407a-b106-6cb13787d71b",
+        "peak_rss_bytes": 199393280
+      },
+      {
+        "event": "admitting",
+        "time": 1788973666.797483,
+        "identity": "ab2feed5-674b-4909-a41e-a0dff00778aa"
+      },
+      {
+        "event": "admitted",
+        "time": 1788973669.525343,
+        "identity": "ab2feed5-674b-4909-a41e-a0dff00778aa",
+        "session_id": "dc3fad9a-52b5-44d3-b041-370a6b717989",
+        "epoch_id": "12a5dde2-df61-44d8-9cfa-b5044b661f99"
+      },
+      {
+        "event": "launched",
+        "time": 1788973669.546261,
+        "identity": "ab2feed5-674b-4909-a41e-a0dff00778aa",
+        "kernel_id": "dbd6100a-4402-4e58-8452-4e5b7494a54b",
+        "session_id": "dc3fad9a-52b5-44d3-b041-370a6b717989",
+        "pid": 15110
+      },
+      {
+        "event": "stopped",
+        "time": 1788973673.81993,
+        "kernel_id": "dbd6100a-4402-4e58-8452-4e5b7494a54b",
+        "session_id": "dc3fad9a-52b5-44d3-b041-370a6b717989",
+        "peak_rss_bytes": 182763520
+      }
+    ],
+    "routes": [
+      {
+        "method": "GET",
+        "path": "api/kernelspecs"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/contents/orders.ipynb"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernelspecs"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "POST",
+        "path": "api/kernels"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "POST",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "WS",
+        "path": "api/kernels/0812594d-4582-446d-afc8-090e388cd396/channels",
+        "protocol": "v1.kernel.websocket.jupyter.org"
+      },
+      {
+        "method": "PATCH",
+        "path": "api/sessions/3d0fbf53-b748-4de5-893a-47336f0f77be"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "PATCH",
+        "path": "api/sessions/3d0fbf53-b748-4de5-893a-47336f0f77be"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "PUT",
+        "path": "api/contents/orders.ipynb"
+      },
+      {
+        "method": "WS",
+        "path": "api/kernels/0812594d-4582-446d-afc8-090e388cd396/channels",
+        "protocol": "v1.kernel.websocket.jupyter.org"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernelspecs"
+      },
+      {
+        "method": "GET",
+        "path": "api/contents/orders.ipynb"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernelspecs"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "WS",
+        "path": "api/kernels/0812594d-4582-446d-afc8-090e388cd396/channels",
+        "protocol": "v1.kernel.websocket.jupyter.org"
+      },
+      {
+        "method": "GET",
+        "path": "api/contents/orders.ipynb"
+      },
+      {
+        "method": "PUT",
+        "path": "api/contents/orders.ipynb"
+      },
+      {
+        "method": "POST",
+        "path": "api/kernels/0812594d-4582-446d-afc8-090e388cd396/interrupt"
+      },
+      {
+        "method": "POST",
+        "path": "api/kernels/0812594d-4582-446d-afc8-090e388cd396/interrupt"
+      },
+      {
+        "method": "DELETE",
+        "path": "api/sessions/3d0fbf53-b748-4de5-893a-47336f0f77be"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "POST",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "WS",
+        "path": "api/kernels/dbd6100a-4402-4e58-8452-4e5b7494a54b/channels",
+        "protocol": "v1.kernel.websocket.jupyter.org"
+      },
+      {
+        "method": "PATCH",
+        "path": "api/sessions/201274aa-c007-4d76-a5ed-4c053c92a87e"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      },
+      {
+        "method": "PATCH",
+        "path": "api/sessions/201274aa-c007-4d76-a5ed-4c053c92a87e"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "DELETE",
+        "path": "api/sessions/201274aa-c007-4d76-a5ed-4c053c92a87e"
+      },
+      {
+        "method": "GET",
+        "path": "api/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "api/kernels"
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # N01: notebook component and kernel qualification
 
-*Status: In qualification · Date: 2026-09-09*
+*Status: Qualified for N02 integration · Date: 2026-09-09*
 
 N01 implements the isolated [notebook probe](../../e2e/native/notebooks/README.md)
 from the [implementation plan](../plans/notebook-implementation.md). It uses the
@@ -12,7 +12,7 @@ are not enabled in the product by this PR.
 
 Select a thin React adapter over upstream JupyterLab's notebook widget for the
 first Supabricks notebook. Keep Jupyter Server and ipykernel as the native Python
-execution stack. Final adoption requires the two native CI reports below.
+execution stack. Both targets passed the native qualification below.
 
 | Candidate | Exact input | Observation |
 | --- | --- | --- |
@@ -100,8 +100,41 @@ with external network access denied. Each target retains:
 - `probe.json`: inventory, source identity, package licenses and native loaders.
 - Archive SHA-256 and component size comparison.
 
-Native CI results and measured values will be recorded here after qualification.
-Do not interpret this pending evidence section as a completed N01 exit gate.
+Both jobs passed in [native notebook run 34380444801](https://github.com/supabricks/platform/actions/runs/34380444801)
+at PR head `5cf135110f8f984bbae2109862a4f5cf78cb32d2` (the checkout merge identity
+is retained in each report). Each target passes 11 browser scenarios and four
+native checks, with zero browser errors or external browser requests. Exact
+measurements, archive hashes, candidate rejection, route inventory and ownership
+events are checked in as [Linux evidence](../../e2e/native/notebooks/evidence/linux-x86_64.json)
+and [macOS evidence](../../e2e/native/notebooks/evidence/macos-arm64.json).
+
+| Measurement | Ubuntu 24.04 x86_64 | macOS 15 arm64 |
+| --- | --- | --- |
+| Jupyter startup | 2.23 s | 3.75 s |
+| Jupyter idle RSS | 71.29 MiB | 82.66 MiB |
+| Kernel start to first reply | 5.24 s | 6.99 s |
+| Kernel idle RSS | 172.34 MiB | 169.33 MiB |
+| First notebook run | 0.24 s | 0.42 s |
+| Frontend assets | 3.07 MiB | 3.07 MiB |
+| Compressed probe archive | 441.95 MiB | 238.22 MiB |
+| Compressed component delta | 18.14 MiB | 17.13 MiB |
+
+Measurements are single CI observations, not performance guarantees. Startup
+uses a fresh server/kernel process; builder and OS caches are not flushed.
+Kernel timing includes admission and waits for an actual kernel-info reply;
+idle RSS is sampled through bundled psutil before user cells execute. Server RSS
+excludes the bridge, Sail and PostgreSQL. The component delta compares equivalent
+baseline Python/libraries/notices and the candidate at gzip level 1; the standalone
+probe deliberately duplicates the baseline environment. It is not a measured
+increase to the final installer. Artifact hashes identify these exact builds,
+not byte-for-byte reproducibility across timestamps or CI machines.
+
+Both targets observe 262,160 bytes of stdout in one stream message and the
+five-second Spark interrupt timeout followed by successful owned shutdown.
+All three admitted analytical sessions (including the injected failed start)
+are closed, both launched kernels exit, and the saved notebook validates with
+nbformat. macOS additionally verifies the targeted ZeroMQ library relocation.
+The test workspace uses a short `/tmp` root to fit PostgreSQL Unix socket paths.
 
 ## Work carried into N02-N05
 
