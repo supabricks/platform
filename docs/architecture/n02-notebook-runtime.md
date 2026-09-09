@@ -69,7 +69,9 @@ and two requested subprotocols: `v1.kernel.websocket.jupyter.org` and the ticket
 `sb.auth.*` authorization protocol. Only the Jupyter protocol is negotiated back.
 Credentials are never placed in query strings. Paths, upstream host and kernel
 identity are constructed by the bridge; arbitrary proxy targets are unavailable.
-The bridge checks session and generation throughout an open connection. Logout
+The bridge waits for a protocol ping acknowledgment after Jupyter's asynchronous
+channel setup before exposing the connection. Unfinished setup is bounded and
+cancelled on disconnect. The bridge checks session and generation throughout an open connection. Logout
 cancels existing sockets immediately; expiry and daemon/session loss close them.
 Console session exchange optionally accepts `lifetime_seconds` from 10 to 28800
 (default 28800), allowing callers to choose a shorter authenticated lifetime.
@@ -99,7 +101,8 @@ idle replies. A full history requires an explicit restart.
 These are enforcement ceilings, not performance promises. Group RSS can count
 shared pages more than once and is sampled, so it can temporarily exceed its
 ceiling. Native qualification records observed Jupyter RSS separately for each
-target. Protocol frames are validated before the upstream offset decoder can
+target. Daemon status retains sixteen bounded server termination events with
+exit/signal and RSS details; raw logs remain private. Protocol frames are validated before the upstream offset decoder can
 allocate from an untrusted count. Oversized kernel output terminates at the
 sender as well as being checked in the Jupyter monitor and browser bridge.
 

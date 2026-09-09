@@ -212,6 +212,20 @@ try {
  await page.evaluate(()=>{window.n02flood=window.n02execute("import sys\nwhile True: sys.stdout.write('x'*10000); sys.stdout.flush()").catch(()=>({closed:true}));});
  notebook=await waitState(notebook,['failed']);assert.equal(notebook.error,'output_limit');
  report.checks.push('stdout_flood_is_bounded_and_control_remains_responsive');
+ notebook=await start('disconnected-buffers');await connect(notebook);
+ const bufferMarker=launch.project+'/.n02-buffer-ready',bufferGo=launch.project+'/.n02-buffer-go';
+ const buffered="from pathlib import Path\nimport time\nPath("+JSON.stringify(bufferMarker)+").write_text('ready')\nwhile not Path("+JSON.stringify(bufferGo)+").exists(): time.sleep(.05)\nk=get_ipython().kernel\nk.session.send(k.iopub_socket,'display_data',content={'data':{},'metadata':{}},parent=k.get_parent(),buffers=[memoryview(bytearray(1500000))])";
+ await page.evaluate(code=>{window.n02buffer=window.n02execute(code).catch(()=>({closed:true}));},buffered);
+ const bufferEnd=Date.now()+10000;
+ while(await readFile(bufferMarker,'utf8').catch(()=>'')!=='ready'){assert.ok(Date.now()<bufferEnd);await new Promise(r=>setTimeout(r,100));}
+ await page.evaluate(()=>window.n02socket.close());
+ while(true){
+   const status=await (await context.request.get(origin+`/api/notebooks/${notebook.id}/${notebook.generation}/kernel`,{headers})).json();
+   if(status.connections===0)break;
+   assert.ok(Date.now()<bufferEnd);await new Promise(r=>setTimeout(r,100));
+ }
+ await writeFile(bufferGo,'go');notebook=await waitState(notebook,['failed']);assert.equal(notebook.error,'output_limit');
+ report.checks.push('binary_output_is_bounded_without_a_browser_connection');
  notebook=await start('memory',{kernel_rss_bytes:256*1024*1024});await connect(notebook);
  await page.evaluate(()=>{window.n02memory=window.n02execute("allocation=bytearray(300*1024*1024)\nimport time; time.sleep(60)").catch(()=>({closed:true}));});
  notebook=await waitState(notebook,['failed']);assert.equal(notebook.error,'memory_limit');
@@ -280,7 +294,7 @@ try {
  assert.ok(!recovered.processes.some(p=>p.role.startsWith('notebook-')));
  report.checks.push('daemon_crash_reconciles_all_notebook_children_and_admissions');
  report.status='passed';
-} catch(error){await fixture('diagnostics').catch(()=>{});report.status='failed';report.error=error.message;throw error;
+} catch(error){report.diagnostics=await fixture('diagnostics').catch(()=>({}));report.server_events=(await cli('status').catch(()=>({}))).notebook_events;report.status='failed';report.error=error.message;throw error;
 } finally {
  clearTimeout(timeout);await browser.close();
  if(ownedRoot){

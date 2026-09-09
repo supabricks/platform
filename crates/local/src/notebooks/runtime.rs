@@ -2,9 +2,10 @@ use super::*;
 use crate::supervisor::OwnedProcess;
 use std::{
     fs,
-    io::Read,
+    io::{Read, Seek, SeekFrom},
     net::TcpListener,
     os::unix::fs::{DirBuilderExt, MetadataExt},
+    os::unix::process::ExitStatusExt,
     path::Path,
 };
 
@@ -407,12 +408,33 @@ impl Notebooks {
         self.owners.retain(|_, t| *t > now());
         let mut failed_servers = Vec::new();
         for (path, server) in &mut self.servers {
-            let dead = server.child.try_wait()?.is_some();
-            if dead
+            let exited = server.child.try_wait()?;
+            let resident = if exited.is_some() {
+                0
+            } else {
+                rss(store, &server.role)?
+            };
+            if exited.is_some()
                 || !alive(store, &server.role)?
-                || rss(store, &server.role)? > contract::SERVER_RSS_BYTES
+                || resident > contract::SERVER_RSS_BYTES
                 || (server.port.is_none() && now() - server.started > 30_000)
             {
+                self.events.push(json!({"role":server.role,"exit_code":exited.and_then(|s|s.code()),"signal":exited.and_then(|s|s.signal()),"rss_bytes":resident,"rss_limit_bytes":contract::SERVER_RSS_BYTES}));
+                if self.events.len() > 16 {
+                    self.events.remove(0);
+                }
+                // Keep one bounded private failure log until down/recovery;
+                // never copy its text into API status or release artifacts.
+                if let Ok(mut log) = fs::File::open(server.dir.join("server.log")) {
+                    let length = log.metadata()?.len();
+                    log.seek(SeekFrom::Start(length.saturating_sub(65536)))?;
+                    let mut bytes = Vec::new();
+                    log.take(65536).read_to_end(&mut bytes)?;
+                    supervisor::write_private(
+                        &store.root().join("notebook-work/last-server-failure.log"),
+                        &bytes,
+                    )?;
+                }
                 failed_servers.push(path.clone());
                 continue;
             }

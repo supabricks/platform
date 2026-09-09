@@ -276,7 +276,7 @@ impl State {
             tokio_tungstenite::connect_async_with_config(upstream, Some(limits()), false),
         )
         .await;
-        let (upstream, reply) = match upstream {
+        let (mut upstream, reply) = match upstream {
             Ok(Ok(pair)) => pair,
             _ => return fail(503, "Notebook channel could not connect"),
         };
@@ -287,6 +287,30 @@ impl State {
             != Some(PROTOCOL)
         {
             return fail(503, "Jupyter protocol negotiation differed");
+        }
+        // HTTP 101 precedes Jupyter's asynchronous ZMQ subscription setup.
+        // Tornado starts reading frames after open() completes. A protocol ping
+        // therefore proves readiness before exposing the browser connection;
+        // rapidly abandoned browser handshakes cannot strand half-open nudges.
+        let ready = tokio::time::timeout(Duration::from_secs(3), async {
+            let nonce = Bytes::from_static(b"supabricks-channel-ready");
+            upstream
+                .send(tungstenite::Message::Ping(nonce.clone()))
+                .await
+                .ok()?;
+            for _ in 0..64 {
+                match upstream.next().await? {
+                    Ok(tungstenite::Message::Pong(value)) if value == nonce => return Some(()),
+                    Ok(tungstenite::Message::Close(_)) | Err(_) => return None,
+                    _ => {}
+                }
+            }
+            None
+        })
+        .await;
+        if !matches!(ready, Ok(Some(()))) {
+            let _ = tokio::time::timeout(Duration::from_secs(1), upstream.close(None)).await;
+            return fail(503, "Notebook channel did not become ready");
         }
         let cancel = {
             self.sessions

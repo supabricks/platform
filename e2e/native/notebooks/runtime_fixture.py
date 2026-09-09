@@ -19,11 +19,18 @@ db = sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro', uri=True)
 records = [json.loads(row[0]) for row in db.execute('SELECT record_json FROM native_processes')]
 if action == 'diagnostics':
     # Private, bounded failure evidence survives daemon down; never upload it.
-    for index, path in enumerate((root / 'notebook-work').glob('*/server.log')):
+    paths = list((root / 'notebook-work').glob('*/server.log')) + list((root / 'notebook-work').glob('last-server-failure.log'))
+    classes = set()
+    for index, path in enumerate(paths):
         with path.open('rb') as stream:
             stream.seek(max(0, path.stat().st_size - 65536))
-            (root.parent / f'private-server-{index}.log').write_bytes(stream.read(65536))
-    print('{}')
+            content = stream.read(65536)
+            (root.parent / f'private-server-{index}.log').write_bytes(content)
+            import re
+            classes.update(re.findall(r'(?m)^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception)):', content.decode(errors='replace')))
+            if b'Assertion failed:' in content:
+                classes.add('NativeAssertionFailure')
+    print(json.dumps({'server_error_classes': sorted(classes)}))
 elif action == 'snapshot':
     processes = []
     for record in records:

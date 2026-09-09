@@ -72,7 +72,7 @@ def observe(kernel, message, size):
         if record['state'] == 'idle' and parent == record['executing']:
             record['executing'] = None
         record['activity_ms'] = now()
-    elif kind in {'stream', 'display_data', 'update_display_data', 'execute_result', 'error'}:
+    elif not kind.endswith('_reply'):
         record['output_bytes'] += size
         record['total_output_bytes'] += size
         record['output_messages'] += 1
@@ -100,6 +100,27 @@ class GatedKernel(ServerKernelManager):
 
 class BoundedChannels(ZMQChannelsWebsocketConnection):
     pending_bytes = 0
+    connecting = None
+    disconnected = False
+
+    def connect(self):
+        self.connecting = super().connect()
+        async def ready():
+            try:
+                if self.connecting is not None:
+                    await asyncio.wait_for(self.connecting, 5)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                self.disconnect()
+                self.websocket_handler.close(1013, 'Notebook channel readiness timed out')
+        return asyncio.create_task(ready())
+
+    def disconnect(self):
+        if self.disconnected:
+            return
+        self.disconnected = True
+        if self.connecting is not None and not self.connecting.done():
+            self.connecting.cancel()
+        super().disconnect()
 
     def write_message(self, message, binary=False):
         size = len(message) if isinstance(message, (bytes, str)) else len(json.dumps(message))
@@ -213,7 +234,8 @@ async def monitor(kernel, client):
     while kernel in RECORDS:
         try:
             message = await client.get_iopub_msg(timeout=1)
-            observe(kernel, message, len(json.dumps(message, default=str)))
+            observe(kernel, message, len(json.dumps(message, default=str))
+                    + sum(memoryview(buffer).nbytes for buffer in message.get('buffers', [])))
         except asyncio.CancelledError:
             raise
         except Exception as error:

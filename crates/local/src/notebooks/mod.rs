@@ -84,6 +84,7 @@ pub struct Notebooks {
     servers: BTreeMap<PathBuf, Server>,
     owners: BTreeMap<String, i64>,
     pub last_error: Option<String>,
+    pub events: Vec<Value>,
 }
 impl Notebooks {
     pub fn recover(store: &mut Store) -> Result<Self> {
