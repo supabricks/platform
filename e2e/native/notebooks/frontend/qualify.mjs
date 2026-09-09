@@ -96,7 +96,7 @@ try {
  // Observe streaming without accumulating the output in the notebook document.
  report.observations.stdout=await page.evaluate(async()=>{let bytes=0,messages=0;const f=window.n01.session.session.kernel.requestExecute({code:"for _ in range(16): print('x'*16384)"});f.onIOPub=m=>{if(m.header.msg_type==='stream'){bytes+=m.content.text.length;messages++;}};await f.done;return {bytes,messages};});
  assert.equal(report.observations.stdout.bytes,16*16385);
- report.observations.output_policy='Frame cap exercised by transport; aggregate output and queued execution admission remain N02 work';
+ report.observations.output_policy='2 MiB frame cap configured on both transport legs; aggregate output and queued execution admission remain N02 work';
  await page.evaluate(()=>{const f=window.n01.session.session.kernel.requestExecute({code:'import time\nwhile True: time.sleep(0.1)'});window.n01Pending=f.done.then(r=>r.content.status);});
  await page.waitForFunction(()=>window.n01.session.session.kernel.status==='busy');
  await page.getByRole('button',{name:'Interrupt',exact:true}).click();

@@ -38,6 +38,13 @@ compatibility result. The selected adapter uses upstream
 and the [v1 kernel WebSocket protocol](https://jupyter-server.readthedocs.io/en/latest/developers/websocket-protocols.html).
 No custom execution protocol or Jupyter/Sail fork is introduced.
 
+The macOS pyzmq 27.2.0 universal2 wheel contains an unused `/tmp/zmq/lib`
+LC_RPATH in `zmq/.dylibs/libsodium.26.dylib`. Inspection of both Mach-O slices
+shows system dependencies and existing `@loader_path` links to bundled ZeroMQ
+libraries. Assembly removes only this known RPATH and applies/verifies an ad-hoc
+signature on the changed library; all other external paths remain errors.
+This is a packaging relocation adjustment, not publisher signing/notarization.
+
 ## Integration findings
 
 | Area | Observed behavior and next implementation requirement |

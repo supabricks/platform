@@ -141,6 +141,8 @@ class Channel(websocket.WebSocketHandler):
         if self.request.headers.get('Origin') != self.state.config['origin']:
             raise web.HTTPError(403)
         protocols = self.request.headers.get('Sec-WebSocket-Protocol', '').split(',')
+        if 'v1.kernel.websocket.jupyter.org' not in [p.strip() for p in protocols]:
+            raise web.HTTPError(403)
         tickets = [p.strip()[8:] for p in protocols if p.strip().startswith('sb.auth.')]
         if len(tickets) != 1 or tickets[0] not in self.state.tickets:
             raise web.HTTPError(403)

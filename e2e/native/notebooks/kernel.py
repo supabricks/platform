@@ -20,7 +20,12 @@ def record(event, **fields):
 async def cli(*args):
     proc = await asyncio.create_subprocess_exec(CONFIG['binary'], *args, '--project', CONFIG['project'],
         '--data-dir', CONFIG['data'], stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-    stdout, stderr = await asyncio.wait_for(proc.communicate(), 180)
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), 180)
+    except BaseException:
+        if proc.returncode is None: proc.kill()
+        await proc.communicate()
+        raise
     if proc.returncode:
         raise RuntimeError('owned analytical action failed: ' + stderr.decode()[-500:])
     return json.loads(stdout.decode().splitlines()[-1])
@@ -56,10 +61,10 @@ class OwnedKernels(AsyncMappingKernelManager):
             kernel.sb_session = session['id']
             kernel.sb_context = context
             kernel.sb_peak_rss = 0
+            process=psutil.Process(kernel.provisioner.pid)
             async def measure():
-                while True:
+                while process.is_running():
                     try:
-                        process=psutil.Process(kernel.provisioner.pid)
                         kernel.sb_peak_rss=max(kernel.sb_peak_rss,process.memory_info().rss)
                     except psutil.NoSuchProcess: return
                     await asyncio.sleep(.2)

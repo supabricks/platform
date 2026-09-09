@@ -59,6 +59,7 @@ def assemble(args):
     # Baseline ELF files already have qualified relative loader paths. Repatching
     # those binary layouts is unnecessary; only added wheel objects need paths.
     loaders = []
+    loader_adjustments = []
     allowed = {'libc.so.6','libm.so.6','libpthread.so.0','libdl.so.2','librt.so.1','libutil.so.1','libresolv.so.2'}
     for path in runtime.rglob('*'):
         if not path.is_file(): continue
@@ -76,6 +77,18 @@ def assemble(args):
             loaders.append(str(path.relative_to(destination)))
         elif args.target == 'macos-arm64' and magic in (b'\xcf\xfa\xed\xfe',b'\xca\xfe\xba\xbe'):
             listing=subprocess.check_output(['otool','-l',str(path)],text=True)
+            # The hash-locked pyzmq 27.2.0 universal2 wheel leaves an unused
+            # build RPATH in libsodium; its dependencies use /usr/lib and the
+            # other wheel libraries already use @loader_path. Remove only this
+            # known RPATH, then restore an ad-hoc signature on the changed file.
+            if path.relative_to(runtime).as_posix() == 'lib/python3.12/site-packages/zmq/.dylibs/libsodium.26.dylib' and '/tmp/zmq/lib' in set(macho_dependencies(listing)):
+                assert path.relative_to(destination) not in original_files
+                assert versions['pyzmq'] == '27.2.0'
+                subprocess.run(['install_name_tool','-delete_rpath','/tmp/zmq/lib',str(path)],check=True)
+                subprocess.run(['codesign','--force','--sign','-',str(path)],check=True)
+                subprocess.run(['codesign','--verify','--strict',str(path)],check=True)
+                loader_adjustments.append(dict(path=str(path.relative_to(destination)),removed_rpath='/tmp/zmq/lib',signature='ad-hoc'))
+                listing=subprocess.check_output(['otool','-l',str(path)],text=True)
             for dependency in macho_dependencies(listing):
                 if dependency.startswith('/') and not dependency.startswith(('/usr/lib/','/System/Library/')):
                     raise ValueError('unbundled dependency: '+dependency)
@@ -106,7 +119,7 @@ def assemble(args):
     files = {str(p.relative_to(destination)):digest(p) for p in sorted(destination.rglob('*')) if p.is_file()}
     report = dict(target=args.target, platform_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(), baseline_component_compressed_bytes=baseline_compressed_bytes, frontend_notices=frontend_notices, baseline_release_sha256=digest(args.release/'release.json'),
         analytical_versions_unchanged=prior, packages=selected_versions, added_packages=sorted(extra & set(applicable)),
-        loader_check=loaders, files=files, frontend_bytes=sum(p.stat().st_size for p in (destination/'assets').rglob('*') if p.is_file()))
+        loader_check=loaders, loader_adjustments=loader_adjustments, files=files, frontend_bytes=sum(p.stat().st_size for p in (destination/'assets').rglob('*') if p.is_file()))
     (destination/'probe.json').write_text(json.dumps(report,indent=2)+'\n')
     archive = destination.with_suffix('.tar.gz')
     with tarfile.open(archive,'w:gz',compresslevel=1) as tar:
