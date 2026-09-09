@@ -1,0 +1,98 @@
+name: notebook-probe
+on:
+  pull_request:
+    paths:
+      - 'e2e/native/notebooks/**'
+      - '.github/workflows/notebook-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: notebook-probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  notebook-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/notebook-browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+          enable-cache: false
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34301230539
+          name: release-${{ matrix.target }}
+          path: build/notebook-baseline-archives
+          github-token: ${{ github.token }}
+      - name: Verify locks and compare frontend candidates
+        run: |
+          uv export --project e2e/native/notebooks/python --locked --format requirements-txt --no-emit-project --output-file e2e/native/notebooks/python/requirements.lock > /dev/null
+          git diff --exit-code -- e2e/native/notebooks/python/requirements.lock
+          python e2e/native/notebooks/candidate.py --report build/notebook-reports/datalayer.json
+          npm ci --prefix e2e/native/notebooks/frontend --no-audit --no-fund
+          npm run build --prefix e2e/native/notebooks/frontend
+          npm exec --prefix e2e/native/notebooks/frontend -- playwright install --with-deps chromium
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y patchelf
+      - name: Assemble and relocate the isolated dependency probe
+        run: |
+          python e2e/native/notebooks/prepare.py --directory build/notebook-baseline-archives --target ${{ matrix.target }} --output build/notebook-package
+      - name: Native browser and kernel qualification with loopback only
+        if: runner.os == 'Linux'
+        run: |
+          node_path=$(command -v node)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              PLAYWRIGHT_BROWSERS_PATH="$2" \
+              SB_N01_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated loopback-only network namespace" \
+              "build/notebook-package/relocated probe/python/runtime/bin/python3.12" \
+              "build/notebook-package/relocated probe/python/notebooks/run.py" \
+              --release build/notebook-package/baseline/supabricks \
+              --probe "build/notebook-package/relocated probe" \
+              --node "$3" --harness e2e/native/notebooks/frontend/qualify.mjs \
+              --report build/notebook-reports/notebooks.json
+          ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$node_path"
+      - name: Native browser and kernel qualification with external networking denied
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_N01_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "build/notebook-package/relocated probe/python/runtime/bin/python3.12" \
+            "build/notebook-package/relocated probe/python/notebooks/run.py" \
+            --release build/notebook-package/baseline/supabricks \
+            --probe "build/notebook-package/relocated probe" \
+            --node "$(command -v node)" --harness e2e/native/notebooks/frontend/qualify.mjs \
+            --report build/notebook-reports/notebooks.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-probe-${{ matrix.target }}
+          path: |
+            build/notebook-reports/*
+            build/notebook-package/relocated probe/probe.json
+            build/notebook-package/*.sha256
+            build/notebook-package/*.size.json
+          if-no-files-found: error
