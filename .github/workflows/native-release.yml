@@ -8,6 +8,7 @@ on:
       - 'components/**'
       - 'install/native/**'
       - 'python/analytics/**'
+      - 'python/ingest/**'
       - 'console/**'
       - 'examples/orders/**'
       - 'agents/**'
@@ -271,3 +272,62 @@ jobs:
         with:
           name: release-console-${{ matrix.target }}
           path: build/console-reports/*
+
+  release-ingest:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: mkdir -p build/ingest-reports
+      - name: Installed ingestion workflow in an isolated Linux network namespace
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net --mount /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            mount --make-rprivate /
+            pressure_mount=$(mktemp -d /tmp/sb-i01-volume.XXXXXX)
+            mount -t tmpfs -o size=80m,mode=1777 tmpfs "$pressure_mount"
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SUPABRICKS_INGEST_PRESSURE_DIR="$pressure_mount" \
+              SUPABRICKS_INGEST_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
+              "$2" install/native/qualify_ingest.py --directory build/releases \
+              --report build/ingest-reports/ingest.json \
+              --harness python/ingest/qualify.py
+          ' bash "$(id -un)" "$python_path"
+      - name: Installed ingestion workflow on macOS with external network denied
+        if: runner.os == 'macOS'
+        run: |
+          pressure_mount=$(mktemp -d /tmp/sb-i01-volume.XXXXXX)
+          hdiutil create -size 100m -fs HFS+ -volname SupabricksPressure build/ingest-pressure.dmg
+          hdiutil attach build/ingest-pressure.dmg -mountpoint "$pressure_mount" -nobrowse
+          trap 'hdiutil detach "$pressure_mount"; rmdir "$pressure_mount"' EXIT
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_INGEST_PRESSURE_DIR="$pressure_mount" \
+            SUPABRICKS_INGEST_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "$(command -v python)" install/native/qualify_ingest.py --directory build/releases \
+            --report build/ingest-reports/ingest.json \
+            --harness python/ingest/qualify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-ingest-${{ matrix.target }}
+          path: build/ingest-reports/*

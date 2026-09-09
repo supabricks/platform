@@ -170,6 +170,10 @@ first importer relies on it. An empty scaffold alone does not complete I00.
 
 ### I01 — CSV ingestion through CLI and shared service
 
+Implementation: [I01 service](../architecture/i01-ingestion.md),
+[CLI/MCP workflow](../handbook/csv-ingestion.md). Native release qualification is
+required on both targets before this slice is ready to merge.
+
 **Depends on:** I00. **Touch:** `python/ingest/`, Rust coordinator, CLI/MCP,
 bundled-worker inventory and real native ingestion tests.
 

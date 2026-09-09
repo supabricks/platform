@@ -12,7 +12,73 @@ pub fn tools() -> Value {
     let branch = json!({"type":"string","description":"Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection."});
     let key = json!({"type":"string","minLength":1,"maxLength":256,"description":"Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID."});
     let revision = json!({"type":"integer","minimum":1,"description":"Revision returned by get_branch. Stale mutations fail with conflict."});
+    let data_type = json!({"oneOf":[{"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["text","boolean","smallint","integer","bigint","double","date","timestamp","timestamp_tz"]}},"required":["kind"]},{"type":"object","additionalProperties":false,"properties":{"kind":{"const":"decimal"},"precision":{"type":"integer","minimum":1,"maximum":38},"scale":{"type":"integer","minimum":0,"maximum":38}},"required":["kind","precision","scale"]}]});
+    let mapping = json!({"type":"object","additionalProperties":false,"description":"Explicitly approved inspection mapping. Inputs are zero-based source index strings, each used once. Text preserves leading zeros; typed conversions reject overflow or rounding.","properties":{"version":{"const":1},"format":{"const":"csv"},"delimiter":{"enum":[",","\t",";","|"]},"header":{"type":"boolean"},"null_strings":{"type":"array","maxItems":16,"items":{"type":"string","maxLength":256}},"columns":{"type":"array","minItems":1,"maxItems":256,"items":{"type":"object","additionalProperties":false,"properties":{"input":{"type":"string","pattern":"^[0-9]+$"},"name":{"type":"string","minLength":1,"maxLength":63},"data_type":data_type,"nullable":{"type":"boolean"}},"required":["input","name","data_type","nullable"]}}},"required":["version","format","delimiter","header","null_strings","columns"]});
+    let load = json!({"type":"object","additionalProperties":false,"properties":{"version":{"const":1},"project_id":string,"branch_id":string,"branch_revision":revision,"source_id":string,"source_sha256":string,"schema":string,"table":string,"mapping":mapping},"required":["version","project_id","branch_id","branch_revision","source_id","source_sha256","schema","table","mapping"]});
     let defs = vec![
+        (
+            "ingest_inspect",
+            "Copy and inspect an explicitly requested absolute local CSV/TSV file. Returns a source ID immediately; poll ingest_source. Preview is a sample, text mappings preserve leading zeros. No database write.",
+            json!({"path":string,"delimiter":{"enum":[",","\t",";","|"]},"header":{"type":"boolean","default":true},"null_strings":{"type":"array","items":string,"maxItems":16}}),
+            vec!["path"],
+            false,
+        ),
+        (
+            "ingest_source",
+            "Read source status and bounded inspection. Preview samples are ephemeral; staged bytes remain private and immutable.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "ingest_load",
+            "Load a staged source into a NEW PostgreSQL table using an explicitly approved mapping and branch revision. Obtain write authorization naming the branch/table. Returns durable job; poll ingest_status. Never infer schema silently.",
+            json!({"load":load,"key":{"type":"string","minLength":1,"maxLength":128}}),
+            vec!["load", "key"],
+            false,
+        ),
+        (
+            "ingest_status",
+            "Read the durable import outcome, source and progress; reconciling is not a safe retry.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "ingest_list",
+            "List recent project-bound imports, optionally filtered by branch.",
+            json!({"branch":branch,"limit":{"type":"integer","minimum":1,"maximum":100,"default":20}}),
+            vec![],
+            true,
+        ),
+        (
+            "ingest_find",
+            "Find a retained import by explicit branch and idempotency key before deciding whether to retry.",
+            json!({"branch":branch,"key":{"type":"string","minLength":1,"maxLength":128}}),
+            vec!["branch", "key"],
+            true,
+        ),
+        (
+            "ingest_cancel",
+            "Cancel an import. A commit in flight remains reconciling until its receipt is resolved; poll ingest_status.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "ingest_retry",
+            "Explicitly retry a failed import only after proven rollback, with its unchanged approved mapping/source and branch revision.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "ingest_dispose",
+            "Dispose an inactive staged source and revoke retained retry references. Active imports prevent disposal; the original device file is untouched.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
         (
             "analytics_refresh",
             "Export a frozen Postgres branch and atomically publish a new analytical epoch. Returns an ID; poll analytics_status. Existing sessions remain pinned.",
@@ -196,6 +262,19 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "ingest_inspect" | "ingest_source" => {
+            json!({"type":"object","required":["source","inspection","error","progress"]})
+        }
+        "ingest_load" | "ingest_status" | "ingest_cancel" | "ingest_retry" => {
+            json!({"type":"object","required":["id","load","state","parsed_rows","copied_rows","committed_rows","source"]})
+        }
+        "ingest_list" => {
+            json!({"type":"object","properties":{"jobs":{"type":"array","items":{"type":"object","required":["id","load","state"]}}},"required":["jobs"]})
+        }
+        "ingest_find" => {
+            json!({"type":"object","properties":{"job":{"type":["object","null"]}},"required":["job"]})
+        }
+        "ingest_dispose" => json!({"type":"object","required":["disposed","source_id"]}),
         "analytics_refresh"
         | "analytics_status"
         | "analytics_cancel_refresh"
@@ -319,7 +398,14 @@ impl Session {
                     }
                 };
                 let (body, error) = match client.call(action) {
-                    Ok(v) => (v, false),
+                    Ok(v) => (
+                        match name {
+                            "ingest_list" => json!({"jobs":v}),
+                            "ingest_find" => json!({"job":v}),
+                            _ => v,
+                        },
+                        false,
+                    ),
                     Err(e) => (json!({"error":diagnostic(&e)}), true),
                 };
                 json!({"content":[{"type":"text","text":body.to_string()}],"structuredContent":body,"isError":error})

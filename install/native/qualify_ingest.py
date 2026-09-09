@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the exact archive via signed localhost curl, then qualify in Chromium."""
+"""Install the exact archive via signed localhost curl, then qualify CSV ingestion."""
 import argparse
 from functools import partial
 from http.server import ThreadingHTTPServer
@@ -15,7 +15,7 @@ from stage import stage
 
 
 def qualify(args):
-    workspace = Path(tempfile.mkdtemp(prefix='sb-c01-release-', dir='/tmp'))
+    workspace = Path(tempfile.mkdtemp(prefix='sb-i01-release-', dir='/tmp'))
     web = workspace / 'web'
     web.mkdir()
     prefix = workspace / "programs ' with spaces"
@@ -38,15 +38,15 @@ def qualify(args):
         curl.stdout.close()
         curl.wait(timeout=10)
         if curl.returncode or bash.returncode:
-            raise RuntimeError('signed console installer failed: ' + bash.stderr[-1500:])
-        subprocess.run([args.node, args.harness, '--binary', str(prefix / 'bin/supabricks'),
-                        '--report', str(args.report), '--screenshot', str(args.report.with_suffix('.png'))], check=True, env=env)
+            raise RuntimeError('signed ingestion installer failed: ' + bash.stderr[-1500:])
+        subprocess.run([str(prefix / 'current/python/analytics/python'), args.harness,
+                        '--binary', str(prefix / 'bin/supabricks'), '--report', str(args.report)], check=True, env=env)
         succeeded = True
     finally:
         if server:
             server.shutdown()
             server.server_close()
-        # The browser harness owns/stops its own separate data root.
+        # The ingestion harness owns/stops its own separate data root.
         key.unlink(missing_ok=True)
         if succeeded:
             shutil.rmtree(workspace)
@@ -57,6 +57,5 @@ if __name__ == '__main__':
     parser.add_argument('--directory', type=Path, required=True)
     parser.add_argument('--version', default='v0.1.0-alpha.7')
     parser.add_argument('--report', type=Path, required=True)
-    parser.add_argument('--node', required=True)
     parser.add_argument('--harness', required=True)
     qualify(parser.parse_args())

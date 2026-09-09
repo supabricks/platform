@@ -54,7 +54,7 @@ impl Store {
     pub fn ingest_source(&self, project: ProjectId, id: SourceId) -> Result<Source> {
         self.db.query_row("SELECT generation,display_name,state,bytes,sha256,expires_at_ms FROM ingest_sources WHERE id=?1 AND project_id=?2",params![id.to_string(),project.to_string()],|r|Ok(Source{id,project_id:project,generation:r.get(0)?,display_name:r.get(1)?,state:r.get(2)?,bytes:r.get::<_,i64>(3)? as u64,sha256:r.get(4)?,expires_at_ms:r.get(5)?})).optional()?.ok_or_else(||missing("source in project"))
     }
-    fn source_path(&self, id: SourceId, suffix: &str) -> Result<PathBuf> {
+    pub(crate) fn source_path(&self, id: SourceId, suffix: &str) -> Result<PathBuf> {
         let parent = self.root().join("ingest");
         directory(&parent)?;
         let sources = parent.join("sources");
@@ -129,6 +129,39 @@ impl Store {
         }
         f.sync_all()?;
         drop(f);
+        self.seal_source_verified(project, id, bytes, &hex::encode(hash.finalize()))
+    }
+    /// The owned staging worker hashed/synced these bytes before it was fenced.
+    /// The loader independently checks this digest again before opening COPY.
+    pub(crate) fn seal_source_verified(
+        &mut self,
+        project: ProjectId,
+        id: SourceId,
+        bytes: u64,
+        sha: &str,
+    ) -> Result<Source> {
+        let s = self.ingest_source(project, id)?;
+        if s.state != "receiving"
+            || s.generation != self.generation()
+            || s.expires_at_ms <= now_ms()?
+            || bytes > SOURCE_BYTES
+            || sha.len() != 64
+            || !sha
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(conflict("invalid staging worker result"));
+        }
+        let path = self.source_path(id, "part")?;
+        let meta = fs::symlink_metadata(&path)?;
+        if !meta.is_file()
+            || meta.nlink() != 1
+            || meta.uid() != unsafe { libc::geteuid() }
+            || meta.mode() & 0o077 != 0
+            || meta.len() != bytes
+        {
+            return Err(conflict("staged file differs from worker evidence"));
+        }
         let target = self.source_path(id, "source")?;
         // Never replace an existing immutable payload (including a crash orphan).
         fs::hard_link(&path, &target)?;
@@ -136,7 +169,7 @@ impl Store {
         fs::File::open(target.parent().unwrap())?.sync_all()?;
         self.db.execute(
             "UPDATE ingest_sources SET state='staged',bytes=?2,sha256=?3 WHERE id=?1",
-            params![id.to_string(), bytes as i64, hex::encode(hash.finalize())],
+            params![id.to_string(), bytes as i64, sha],
         )?;
         self.ingest_source(project, id)
     }
@@ -287,7 +320,7 @@ impl Store {
                         "receipt or target identity differs; manual reconciliation required",
                     ));
                 }
-                self.db.execute("UPDATE ingest_jobs SET state='succeeded',committed_rows=?2,receipt=?3,source_released=1,retryable=0,updated_at_ms=?4 WHERE id=?1",params![id.to_string(),receipt.committed_rows as i64,to_string(&receipt)?,now_ms()?])?;
+                self.db.execute("UPDATE ingest_jobs SET state='succeeded',parsed_rows=max(parsed_rows,?2),copied_rows=max(copied_rows,?2),committed_rows=?2,receipt=?3,source_released=1,retryable=0,updated_at_ms=?4 WHERE id=?1",params![id.to_string(),receipt.committed_rows as i64,to_string(&receipt)?,now_ms()?])?;
             }
             Reconciliation::Absent { target_exists } => {
                 if target_exists {
@@ -342,6 +375,102 @@ impl Store {
         )?;
         tx.execute("UPDATE ingest_jobs SET state='reconciling',worker=NULL WHERE state='loading' OR (state='reconciling' AND worker IS NOT NULL)",[])?;
         tx.commit()?;
+        Ok(())
+    }
+    pub(crate) fn abandon_source(&mut self, project: ProjectId, id: SourceId) -> Result<()> {
+        self.ingest_source(project, id)?;
+        if self
+            .native_processes()?
+            .iter()
+            .any(|p| p.role == format!("ingest-source-{id}"))
+        {
+            return Err(conflict("fence source worker first"));
+        }
+        self.db.execute(
+            "UPDATE ingest_sources SET state='interrupted' WHERE id=?1 AND state='receiving'",
+            [id.to_string()],
+        )?;
+        Ok(())
+    }
+    pub(crate) fn ingest_active(&self) -> Result<Vec<Job>> {
+        self.ingest_select(None, None, 100, true)
+    }
+    pub fn ingest_list(
+        &self,
+        project: ProjectId,
+        branch: Option<supabricks_core::resource::BranchId>,
+        limit: usize,
+    ) -> Result<Vec<Job>> {
+        if !(1..=100).contains(&limit) {
+            return Err(invalid("ingestion list limit requires 1..100"));
+        }
+        self.ingest_select(Some(project), branch, limit, false)
+    }
+    fn ingest_select(
+        &self,
+        project: Option<ProjectId>,
+        branch: Option<supabricks_core::resource::BranchId>,
+        limit: usize,
+        active: bool,
+    ) -> Result<Vec<Job>> {
+        let mut q=self.db.prepare("SELECT project_id,id FROM ingest_jobs WHERE (?1 IS NULL OR project_id=?1) AND (?2 IS NULL OR branch_id=?2) AND (?3=0 OR state IN ('queued','loading','reconciling')) ORDER BY updated_at_ms DESC,id LIMIT ?4")?;
+        let ids = q
+            .query_map(
+                params![
+                    project.map(|p| p.to_string()),
+                    branch.map(|b| b.to_string()),
+                    active,
+                    limit as i64
+                ],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+            )?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        ids.into_iter()
+            .map(|(p, id)| {
+                self.ingest_job(
+                    super::parse(&p)?,
+                    id.parse().map_err(|_| invalid("invalid ingestion ID"))?,
+                )
+            })
+            .collect()
+    }
+    pub(crate) fn ingest_for_key(
+        &self,
+        project: ProjectId,
+        branch: supabricks_core::resource::BranchId,
+        key: &str,
+    ) -> Result<Option<Job>> {
+        let id=self.db.query_row("SELECT id FROM ingest_jobs WHERE project_id=?1 AND branch_id=?2 AND request_key=?3",params![project.to_string(),branch.to_string(),key],|r|r.get::<_,String>(0)).optional()?;
+        id.map(|id| self.ingest_job(project, id.parse().map_err(|_| invalid("invalid job ID"))?))
+            .transpose()
+    }
+    /// A fenced, owned loader explicitly proved it rejected a preexisting target
+    /// before issuing target DDL/COPY. This is not inferred from network failure.
+    pub(crate) fn reject_ingest_before_load(
+        &mut self,
+        project: ProjectId,
+        id: JobId,
+    ) -> Result<()> {
+        let j = self.ingest_job(project, id)?;
+        if j.state != State::Reconciling || j.worker.is_some() {
+            return Err(conflict(
+                "fence loader before recording its preflight rejection",
+            ));
+        }
+        self.db.execute(
+            "UPDATE ingest_jobs SET state='failed',retryable=0,updated_at_ms=?2 WHERE id=?1",
+            params![id.to_string(), now_ms()?],
+        )?;
+        Ok(())
+    }
+    pub(crate) fn fail_queued_ingest(&mut self, project: ProjectId, id: JobId) -> Result<()> {
+        let j = self.ingest_job(project, id)?;
+        if j.state == State::Queued {
+            self.db.execute(
+                "UPDATE ingest_jobs SET state='failed',retryable=1,updated_at_ms=?2 WHERE id=?1",
+                params![id.to_string(), now_ms()?],
+            )?;
+        }
         Ok(())
     }
     /// Bounded daemon maintenance. Failed jobs retain their source until expiry;
@@ -402,6 +531,14 @@ impl Store {
                 Err(e) => return Err(e.into()),
             }
             fs::File::open(path.parent().unwrap())?.sync_all()?;
+        }
+        // Ephemeral previews contain device data and expire with the payload.
+        let preview = self.root().join("tmp").join(format!("ingest-source-{id}"));
+        match fs::symlink_metadata(&preview) {
+            Ok(m) if m.is_dir() => fs::remove_dir_all(&preview)?,
+            Ok(_) => return Err(invalid("unexpected source preview type")),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.into()),
         }
         self.db.execute(
             "UPDATE ingest_sources SET payload_deleted=1 WHERE id=?1",
