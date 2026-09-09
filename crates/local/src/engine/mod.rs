@@ -356,9 +356,11 @@ impl Cell {
             .native_processes()?
             .into_iter()
             .filter(|p| {
+                // These services have their own ownership/recovery barriers.
                 !p.role.starts_with("analytics-session-")
                     && !p.role.starts_with("console-")
                     && !p.role.starts_with("ingest-")
+                    && !p.role.starts_with("notebook-")
             })
             .collect();
         records.sort_by_key(|p| {

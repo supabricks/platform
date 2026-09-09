@@ -48,6 +48,31 @@ fn wait_file(path: &Path) {
     }
 }
 #[test]
+fn engine_recovery_leaves_notebooks_to_their_own_recovery_barrier() {
+    let temp = tempfile::tempdir().unwrap();
+    fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    let mut store = Store::open(temp.path()).unwrap();
+    let mut children = Vec::new();
+    for role in ["fixture", "notebook-server-test", "notebook-kernel-test"] {
+        let mut l = launch(&store, vec!["/bin/sleep".into(), "30".into()]);
+        l.role = role.into();
+        let mut child = gated(&l);
+        let record = supervisor::evidence(&l, child.id()).unwrap();
+        store.record_native_process(&record).unwrap();
+        child.stdin.take().unwrap().write_all(&[1]).unwrap();
+        children.push(child);
+    }
+    supabricks_local::engine::Cell::recover(&mut store).unwrap();
+    children[0].wait().unwrap();
+    assert!(children[1].try_wait().unwrap().is_none());
+    assert!(children[2].try_wait().unwrap().is_none());
+    assert_eq!(store.native_processes().unwrap().len(), 2);
+    supabricks_local::notebooks::Notebooks::recover(&mut store).unwrap();
+    children[1].wait().unwrap();
+    children[2].wait().unwrap();
+    assert!(store.native_processes().unwrap().is_empty());
+}
+#[test]
 fn no_engine_effect_can_happen_before_durable_launch_authorization() {
     let temp = tempfile::tempdir().unwrap();
     fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
