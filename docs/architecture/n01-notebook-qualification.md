@@ -53,12 +53,12 @@ This is a packaging relocation adjustment, not publisher signing/notarization.
 | CSP | Set a nonce on Typestyle's actual `typestyle/lib` instance before loading the widget, and supply CodeMirror's CSP nonce extension; allow layout style attributes and local data images; retain strict script policy |
 | HTML output | Force untrusted rendering even for newly executed outputs, so pandas output style tags and notebook scripts are sanitized; omit JavaScript/SVG renderers |
 | Authentication | Proxy REST and binary WS through one origin; keep upstream token server-side, validate Host/Origin/session/CSRF, consume a handshake ticket once and reject replay |
-| Kernel discovery | `kernel_dirs` is not a configurable trait in the selected Jupyter client; explicitly set the private kernelspec manager's registry and disable native fallback |
+| Kernel discovery | `kernel_dirs` is not a configurable trait in the selected Jupyter client; explicitly set the private kernelspec manager's registry and disable native fallback and automatic kernel restart |
 | Admission | A Jupyter manager hook can await a real A03 session before kernel launch and compensate if launch fails |
 | Saving | Default contents API accepts a stale write; an expected-hash/file identity adapter is required in N03 |
 | Reconnect | Reattach to the same live session by notebook path; explicitly assert a Python counter did not increment on reload |
 | Restart | Shutdown and a new admission clear Python variables while retaining the notebook and querying the same current epoch |
-| Interrupt | Python-only interruption is effective; a running Sail UDF did not return a Python reply within five seconds of interrupt in the local run; owned shutdown closes its A03 session |
+| Interrupt | Python-only interruption is effective; a running Sail UDF did not return a Python reply within five seconds of interrupt in qualification; owned shutdown closes its A03 session |
 | Protocol/outputs | v1 binary channels carry actual results; frame bounds and stream observations do not constitute aggregate output/queue enforcement |
 | Ownership | Fixture-owned Jupyter plus Jupyter-owned Python demonstrates hooks; durable daemon registration, generation fencing and multi-client isolation remain N02 |
 
@@ -66,6 +66,21 @@ The fixture passes the complete endpoint from A03, including session parameters,
 and verifies `epoch_id` in Python before displaying data. It never substitutes a
 fresh Spark session with an unbound catalog. Tests use an isolated project and
 native PostgreSQL table with two exact decimal amounts totaling 19.75.
+
+The observed REST inventory is `GET api/kernelspecs`, `GET api/kernels`,
+`POST api/kernels` (the failure injection), `GET/POST api/sessions`,
+`PATCH/DELETE api/sessions/{id}`, `GET/PUT api/contents/orders.ipynb`, and
+`POST api/kernels/{id}/interrupt`, beneath the private `/jupyter/` prefix.
+Channels use `api/kernels/{id}/channels` with
+`v1.kernel.websocket.jupyter.org`. The retained route report contains actual
+requests. Production routing must additionally bind each ID to its console
+session and daemon record; a path allowlist alone is insufficient.
+
+CSS uses upstream theme/notebook classes plus a wrapper for fixture layout.
+It is not isolated in a shadow root: theme variables and upstream rules enter
+the document globally. N03 must check coexistence with the console's styles.
+The component loads lazily after authentication; the fixture is a separate React
+entry, so N03 still needs to measure the integrated console bundle.
 
 ## Evidence and measurements
 

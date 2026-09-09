@@ -59,8 +59,8 @@ try {
  report.kernel_start_seconds=(performance.now()-start)/1000;
  const events=(await readFile(config.journal,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
  const kernelPid=events.findLast(event=>event.event==='launched').pid;
- const rss=await promisify(execFile)('/bin/ps',['-o','rss=','-p',String(kernelPid)]);
- report.kernel_idle_rss_bytes=Number(rss.stdout.trim())*1024;
+ const rss=await promisify(execFile)(config.python,['-I','-B','-c','import psutil,sys; print(psutil.Process(int(sys.argv[1])).memory_info().rss)',String(kernelPid)]);
+ report.kernel_idle_rss_bytes=Number(rss.stdout.trim());
  assert.ok(report.kernel_idle_rss_bytes>0);
  const started=performance.now();
  await page.getByRole('button',{name:'Run all',exact:true}).click();
@@ -73,6 +73,11 @@ try {
  await page.getByRole('button',{name:'Save notebook',exact:true}).click();
  await expect(page.getByText('Saved',{exact:true})).toBeVisible();
  const saved=JSON.parse(await readFile(config.notebooks+'/orders.ipynb','utf8'));
+ const outputs=saved.cells.flatMap(cell=>cell.outputs??[]);
+ assert.deepEqual(outputs.filter(output=>output.output_type==='error'),[]);
+ const html=outputs.map(output=>output.data?.['text/html']??'').map(value=>Array.isArray(value)?value.join(''):value).join('');
+ assert.ok(html.includes('<table') && html.includes('12.50') && html.includes('7.25'));
+ await expect(page.locator('.jp-RenderedImage img')).toHaveJSProperty('naturalWidth',1);
  const savedKernel=await page.evaluate(()=>window.n01.session.session.kernel.id);
  // Exercise the binary protocol with an additional short-lived channel and ticket replay.
  const cookie=(await context.cookies()).map(c=>c.name+'='+c.value).join('; ');
