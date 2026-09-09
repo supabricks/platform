@@ -82,6 +82,10 @@ jobs:
       - name: Assemble exact native release
         run: |
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
+      - name: Reject unqualified notebook package changes
+        run: |
+          release="build/releases/supabricks-v0.1.0-alpha.8-${{ matrix.target }}"
+          "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.target }}
