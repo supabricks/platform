@@ -64,10 +64,17 @@ elif action == 'snapshot':
     for record in records:
         try:
             process = psutil.Process(record['pid'])
-            rss = sum(p.memory_info().rss for p in [process, *process.children(recursive=True)]
-                      if p.is_running() and os.getpgid(p.pid) == record['pid'])
+            members = [process, *process.children(recursive=True)]
         except psutil.NoSuchProcess:
-            rss = 0
+            members = []
+        rss = 0
+        for process in members:
+            try:
+                if os.getpgid(process.pid) == record['pid']:
+                    rss += process.memory_info().rss
+            except (psutil.NoSuchProcess, ProcessLookupError):
+                # Exit can race either OS lookup; retain other live members.
+                continue
         processes.append({'role': record['role'], 'pid': record['pid'], 'rss': rss})
     active = db.execute("SELECT count(*) FROM analytical_sessions WHERE state NOT IN ('closed','failed')").fetchone()[0]
     print(json.dumps({'processes': processes, 'active_sessions': active}))
