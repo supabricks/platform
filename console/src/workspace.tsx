@@ -1,3 +1,4 @@
+import { Importer } from "./importer";
 import { useEffect, useRef, useState } from "react";
 import {
   workspace,
@@ -673,6 +674,37 @@ export function Workspace({
           </span>
         )}
       </div>
+      {data.capabilities.ingestion && (
+        <Importer
+          data={data}
+          selected={selected}
+          onOpen={(job) => {
+            const branch = data.branches.find(
+              (b) => b.id === job.load.branch_id,
+            );
+            if (!branch) {
+              setError("The imported branch has been deleted.");
+              return;
+            }
+            const target = targetOf(branch);
+            const t = addTab(
+              target,
+              branch.name,
+              `SELECT * FROM ${quote(job.load.schema)}.${quote(job.load.table)} LIMIT 200`,
+              `${job.load.schema}.${job.load.table}`,
+            );
+            if (t)
+              void run(t, {
+                action: "preview",
+                id: uuid(),
+                target,
+                schema: job.load.schema,
+                table: job.load.table,
+              });
+            void loadCatalog();
+          }}
+        />
+      )}
       <div className="database-columns">
         <aside className="explorer panel" aria-label="Data explorer">
           <div className="panel-heading">

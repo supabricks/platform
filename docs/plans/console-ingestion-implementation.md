@@ -203,6 +203,11 @@ completed job through CLI and MCP. Qualify or lower the provisional 100 MiB sour
 
 ### I02 — File picker and browser import wizard
 
+Implementation: [I02 contract](../architecture/i02-console-ingestion.md),
+[browser runbook](../handbook/browser-imports.md), and
+[synthetic demo](../../examples/console/README.md). Native preview alpha.8;
+catalog 9 and the shared ingestion contracts remain unchanged.
+
 **Depends on:** C02, I01. **Touch:** console importer, loopback upload stream,
 source/admission actions and browser acceptance fixtures.
 

@@ -1,11 +1,11 @@
 # Open the local console
 
-The alpha.6 distribution includes a browser console for project identity,
+The alpha.8 distribution includes a browser console for project identity,
 runtime readiness and branch inventory. It needs no Node, system Python, cloud
 account or frontend development server on the target machine. The initial UI
 includes the overview and [PostgreSQL database workspace](database-workspace.md):
-branch controls, catalog browsing, SQL and explicitly saved queries. File ingestion
-follows in the I00–I02 slices.
+branch controls, catalog browsing, SQL, explicitly saved queries and
+[browser CSV/TSV imports](browser-imports.md).
 
 From an existing application project containing `supabricks.toml`:
 

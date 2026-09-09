@@ -37,8 +37,9 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-I01 uses version `v0.1.0-alpha.7`. It adds a PostgreSQL database workspace to
-R03's coordinated backup/restore and explicit platform upgrades. See the
+I02 uses version `v0.1.0-alpha.8`. It adds browser CSV/TSV imports to the
+PostgreSQL workspace and I01 ingestion service, alongside R03's coordinated
+backup/restore and explicit platform upgrades. See the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
 profile conversion and engine upgrades are not qualified.
@@ -46,7 +47,7 @@ profile conversion and engine upgrades are not qualified.
 `supabricks console` starts/reconnects the runtime and opens the current project's
 overview. `--no-open` returns a private, single-use browser launch URL as JSON.
 The [console runbook](../../docs/handbook/local-console.md) covers source builds,
-session expiry and browser support. The [database workspace guide](../../docs/handbook/database-workspace.md) covers branch controls, SQL and saved queries. [CSV/TSV ingestion](../../docs/handbook/csv-ingestion.md) is available through CLI/MCP; the browser picker follows in I02.
+session expiry and browser support. The [database workspace guide](../../docs/handbook/database-workspace.md) covers branch controls, SQL and saved queries. [CSV/TSV ingestion](../../docs/handbook/csv-ingestion.md) is available through CLI/MCP and the [browser import wizard](../../docs/handbook/browser-imports.md). Try the [synthetic CSV/branch walkthrough](../../examples/console/README.md).
 
 The default program directory is `~/.local/share/supabricks`, separate from the
 data root `~/.supabricks`. Set `SUPABRICKS_INSTALL_DIR` to an absolute path before

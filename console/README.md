@@ -1,6 +1,6 @@
 # Supabricks local console
 
-C01 provides the packaged local project/branch overview; C02 adds the
+I02 adds [CSV/TSV ingestion](../docs/handbook/browser-imports.md). C01 provides the packaged local project/branch overview; C02 adds the
 [PostgreSQL workspace](../docs/handbook/database-workspace.md). It is separate from the
 Kubernetes UI in `../ui`. Runtime commands and browser support are documented in
 the [console runbook](../docs/handbook/local-console.md); the
@@ -23,6 +23,7 @@ Run the real browser workflow against a source binary and qualified native parts
 npm exec --prefix console -- playwright install chromium
 node console/scripts/qualify.mjs --binary target/debug/supabricks \
   --bundle /absolute/native-engine --helpers /absolute/helpers \
+  --python "$PWD/python/analytics/.venv/bin/python" --worker "$PWD/python/analytics/export.py" \
   --report /tmp/console-report.json --screenshot /tmp/console-overview.png
 ```
 

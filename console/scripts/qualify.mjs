@@ -1,4 +1,5 @@
 // Real browser + native runtime. Every mutation is confined to a new /tmp root.
+import { qualifyIngestion } from "./ingestion.mjs";
 import { chromium, expect } from "@playwright/test";
 import { qualifyWorkspace, verifySavedAfterRestart } from "./workspace.mjs";
 import { execFile } from "node:child_process";
@@ -76,6 +77,15 @@ try {
       resolve(options["--bundle"]),
       "--helpers",
       resolve(options["--helpers"]),
+    );
+  if (options["--python"])
+    await cli(
+      "analytics",
+      "configure",
+      "--python",
+      resolve(options["--python"]),
+      "--worker",
+      resolve(options["--worker"]),
     );
   // Installed mode deliberately starts the runtime through console, without a preceding up.
   const first = await launch();
@@ -174,6 +184,19 @@ try {
     origin,
     cli,
     checks,
+    screenshot: options["--screenshot"],
+  });
+  await qualifyIngestion({
+    page,
+    context,
+    browser,
+    origin,
+    cli,
+    checks,
+    workspace,
+    data,
+    project,
+    launch,
     screenshot: options["--screenshot"],
   });
   if (options["--screenshot"]) {

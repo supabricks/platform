@@ -1098,3 +1098,108 @@ nav > button.active {
   padding-top: 8px;
   padding-bottom: 8px;
 }
+
+.importer {
+  margin: 20px 0;
+  padding: 24px;
+}
+.importer h2,
+.importer h3 {
+  margin: 0 0 10px;
+}
+.importer .panel-heading {
+  align-items: center;
+}
+.import-drop {
+  border: 1px dashed var(--muted, #657a73);
+  border-radius: 10px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+.importer label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.importer input:not([type="checkbox"]),
+.importer select {
+  padding: 8px;
+  max-width: 100%;
+}
+.importer fieldset {
+  border: 1px solid #d7dfda;
+  border-radius: 8px;
+  margin: 20px 0;
+  padding: 16px;
+  min-width: 0;
+}
+.importer legend {
+  padding: 0 8px;
+  font-weight: 600;
+}
+.import-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+.import-options label {
+  flex-direction: column;
+  align-items: start;
+}
+.import-grid {
+  overflow: auto;
+  max-height: 340px;
+  margin: 16px 0;
+}
+.import-grid table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.import-grid td,
+.import-grid th {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #d7dfda;
+  white-space: pre-wrap;
+  min-width: 80px;
+  max-width: 340px;
+  overflow-wrap: anywhere;
+}
+.import-grid input[type="number"] {
+  width: 70px;
+}
+.import-source {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.import-hash,
+.import-job small {
+  overflow-wrap: anywhere;
+}
+.import-approval {
+  margin: 16px 0;
+}
+.import-jobs {
+  margin-top: 20px;
+}
+.import-job {
+  padding: 16px 0;
+  border-top: 1px solid #d7dfda;
+}
+.import-job button {
+  margin: 12px 8px 0 0;
+}
+.importer,
+.importer .import-job,
+.importer fieldset {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.importer .panel-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
