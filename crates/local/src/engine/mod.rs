@@ -233,6 +233,13 @@ impl RuntimeConfig {
 fn secret() -> String {
     format!("{}{}", OperationId::new(), OperationId::new())
 }
+fn engine_role(role: &str) -> bool {
+    // Health checks and recovery must use the same ownership boundary. A
+    // notebook kernel can exit between its owner's tick and the engine tick.
+    !["analytics-session-", "console-", "ingest-", "notebook-"]
+        .iter()
+        .any(|prefix| role.starts_with(prefix))
+}
 fn path(p: &Path) -> Result<String> {
     p.to_str()
         .map(str::to_owned)
@@ -355,13 +362,7 @@ impl Cell {
         let mut records: Vec<_> = store
             .native_processes()?
             .into_iter()
-            .filter(|p| {
-                // These services have their own ownership/recovery barriers.
-                !p.role.starts_with("analytics-session-")
-                    && !p.role.starts_with("console-")
-                    && !p.role.starts_with("ingest-")
-                    && !p.role.starts_with("notebook-")
-            })
+            .filter(|p| engine_role(&p.role))
             .collect();
         records.sort_by_key(|p| {
             if p.role == "supervisor" {
@@ -962,9 +963,7 @@ impl Cell {
             return Ok(());
         }
         for record in store.native_processes()? {
-            if !record.role.starts_with("analytics-session-")
-                && !record.role.starts_with("ingest-")
-                && !record.role.starts_with("console-")
+            if engine_role(&record.role)
                 && record.branch.is_none()
                 && record.role != "supervisor"
                 && supervisor::os::identity(record.pid)?.is_none_or(|id| id.zombie)

@@ -122,7 +122,8 @@ No document, executed source, browser token or live notebook handle is restored
 from the catalog. Recovery fences Jupyter servers before kernels, verifies owned
 process groups have stopped, and closes even waiting notebook A03 admissions.
 Ordinary waiting CLI admissions retain their existing recovery behavior.
-Engine recovery excludes notebook roles; both offline `down` fallback paths
+Engine health checks and recovery exclude notebook roles, so a kernel exiting
+between daemon ticks cannot trigger a database-cell restart. Both offline `down` fallback paths
 invoke notebook recovery explicitly before recovering the engine and sessions.
 
 `down` waits for notebook cleanup before completing analytical shutdown. Backup

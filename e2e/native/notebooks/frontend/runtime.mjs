@@ -63,6 +63,7 @@ try {
  assert.equal(notebook.state,'ready',JSON.stringify(notebook));
  report.checks.push('owned_kernel_bootstrap');
  const initial=await fixture('snapshot');
+ const engineSupervisor=initial.processes.find(p=>p.role==='supervisor').pid;
  report.observed_server_rss_bytes=Math.max(...initial.processes.filter(p=>p.role.startsWith('notebook-server-')).map(p=>p.rss));
  assert.ok(report.observed_server_rss_bytes>0 && report.observed_server_rss_bytes<=512*1024*1024);
  assert.ok(initial.processes.some(p=>p.role==='notebook-kernel-'+notebook.session_id));
@@ -207,6 +208,7 @@ try {
  // Both large single output and sustained output must close their A03 context.
  await page.evaluate(()=>{window.n02flood=window.n02execute("print('x'*3000000)").catch(()=>({closed:true}));});
  notebook=await waitState(notebook,['failed','lost']);assert.equal(notebook.error,'output_limit');
+ assert.equal((await fixture('snapshot')).processes.find(p=>p.role==='supervisor')?.pid,engineSupervisor);
  report.checks.push('oversized_output_fences_kernel');
  notebook=await start('flood');await connect(notebook);
  await page.evaluate(()=>{window.n02flood=window.n02execute("import sys\nwhile True: sys.stdout.write('x'*10000); sys.stdout.flush()").catch(()=>({closed:true}));});
@@ -295,6 +297,9 @@ try {
  await page.waitForFunction(()=>window.n02socket.readyState===WebSocket.CLOSED,{},{timeout:35000});
  assert.equal((await context.request.get(origin+'/api/overview',{headers})).status(),401);
  await new Promise(r=>setTimeout(r,3000));assert.equal((await fixture('snapshot')).active_sessions,0);
+ assert.equal((await fixture('snapshot')).processes.find(p=>p.role==='supervisor')?.pid,engineSupervisor);
+ await cli('sql','--branch','main','--sql','SELECT count(*) FROM public.orders');
+ report.checks.push('notebook_failures_do_not_restart_engine_or_interrupt_Postgres');
  report.checks.push('console_expiry_revokes_open_channel_and_epoch_lease');
  const finalLaunch=(await cli('console','--no-open')).url;
  const finalLogin=await context.request.post(origin+'/api/session',{headers:{Origin:origin,'X-Supabricks-Console':'1'},data:{token:new URL(finalLaunch).hash.slice(8)}});
