@@ -135,6 +135,10 @@ All three admitted analytical sessions (including the injected failed start)
 are closed, both launched kernels exit, and the saved notebook validates with
 nbformat. macOS additionally verifies the targeted ZeroMQ library relocation.
 The test workspace uses a short `/tmp` root to fit PostgreSQL Unix socket paths.
+A subsequent rerun timed out without a browser checkpoint. The hardened harness
+retains progress after every scenario and bounds stalled calls. It also removes
+a race in the Python interrupt test by waiting for an execution marker before
+sending the interrupt, rather than accepting a potentially stale busy status.
 
 ## Work carried into N02-N05
 

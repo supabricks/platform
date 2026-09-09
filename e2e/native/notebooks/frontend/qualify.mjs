@@ -9,12 +9,20 @@ const args=Object.fromEntries(process.argv.slice(2).reduce((a,x,i,s)=>{if(i%2===
 const launch=JSON.parse(await readFile(args['--launch'],'utf8'));
 const config=JSON.parse(await readFile(launch.config,'utf8'));
 const origin=new URL(launch.url).origin;
-const report={checks:[],errors:[],external:[],observations:{}};
+const report={status:'running',checks:[],errors:[],external:[],observations:{}};
 const browser=await chromium.launch({headless:true,args:['--disable-background-networking','--disable-component-update']});
 report.version=browser.version();
+async function passed(...checks) {
+ report.checks.push(...checks);
+ await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');
+}
+// Close the browser on an unresponsive protocol call so finally retains progress.
+const watchdog=setTimeout(()=>{report.timeout=true;void browser.close();},240000);
+
 function handshake(path, headers) {
  return new Promise((resolve,reject)=>{
    const req=request(origin+path,{headers:{Connection:'Upgrade',Upgrade:'websocket','Sec-WebSocket-Version':'13','Sec-WebSocket-Key':randomBytes(16).toString('base64'),...headers}});
+   req.setTimeout(10000,()=>req.destroy(new Error('N01 handshake timed out')));
    req.on('upgrade',(_,socket)=>{socket.destroy();resolve(101);});
    req.on('response',r=>{r.resume();resolve(r.statusCode);});req.on('error',reject);req.end();
  });
@@ -44,12 +52,12 @@ try {
  assert.equal((await context.request.get(origin+'/jupyter/api/kernels',{headers:{Host:'localhost:'+new URL(origin).port}})).status(),403);
  assert.equal((await context.request.get(origin+'/jupyter/api/terminals',{headers})).status(),403);
  assert.equal((await context.request.post(origin+'/launch',{headers,data:{launch:new URL(launch.url).hash.slice(8)}})).status(),403);
- report.checks.push('no_automatic_kernel_or_execution','untrusted_stored_outputs_sanitized','HTTP_cookie_Host_Origin_CSRF_launch_replay_and_route_boundary');
+ await passed('no_automatic_kernel_or_execution','untrusted_stored_outputs_sanitized','HTTP_cookie_Host_Origin_CSRF_launch_replay_and_route_boundary');
  // Inject a fixture-owned failure after A03 admission, before Python starts.
  await writeFile(config.runtime+'/fail-next','1');
  assert.equal((await context.request.post(origin+'/jupyter/api/kernels',{headers,data:{name:'supabricks-probe'}})).status(),500);
  assert.deepEqual(await (await context.request.get(origin+'/jupyter/api/kernels',{headers})).json(),[]);
- report.checks.push('failed_start_compensates_before_retry');
+ await passed('failed_start_compensates_before_retry');
  const start=performance.now();
  await page.getByRole('button',{name:'Start kernel',exact:true}).click();
  await page.waitForFunction(() => /^(Ready|Error:)/.test(document.querySelector('[role=status]').textContent),null,{timeout:120000});
@@ -69,7 +77,7 @@ try {
  await expect(page.locator('.jp-RenderedImage img')).toHaveCount(1);
  await expect(page.locator('.jp-RenderedMarkdown h1')).toContainText('Orders on a pinned snapshot');
  report.first_run_seconds=(performance.now()-started)/1000;
- report.checks.push('embedded_notebook_Python_Sail_table_Markdown_static_image');
+ await passed('embedded_notebook_Python_Sail_table_Markdown_static_image');
  await page.getByRole('button',{name:'Save notebook',exact:true}).click();
  await expect(page.getByText('Saved',{exact:true})).toBeVisible();
  const saved=JSON.parse(await readFile(config.notebooks+'/orders.ipynb','utf8'));
@@ -88,7 +96,7 @@ try {
  assert.equal(await handshake(path,{...wsHeaders,'Sec-WebSocket-Protocol':'v1.kernel.websocket.jupyter.org, sb.auth.invalid'}),403);
  assert.equal(await handshake(path,wsHeaders),101);
  assert.equal(await handshake(path,wsHeaders),403);
- report.checks.push('binary_WebSocket_protocol_single_use_ticket_and_origin');
+ await passed('binary_WebSocket_protocol_single_use_ticket_and_origin');
  await page.reload();
  await page.getByRole('button',{name:'Open notebook',exact:true}).click();
  await page.waitForFunction(()=>window.n01?.session.session?.kernel?.connectionStatus==='connected',null,{timeout:30000});
@@ -98,7 +106,7 @@ try {
    return page.evaluate(async code=>{const future=window.n01.session.session.kernel.requestExecute({code});const reply=await future.done;return {status:reply.content.status,error:reply.content.ename};},code);
  }
  assert.equal((await execute('assert n01_counter == 1')).status,'ok');
- report.checks.push('save_reload_reconnect_without_replay');
+ await passed('save_reload_reconnect_without_replay');
  // Observe upstream Contents behavior; N03 must add an expected-hash adapter.
  const document=await (await context.request.get(origin+'/jupyter/api/contents/orders.ipynb',{headers})).json();
  const external=structuredClone(saved);external.metadata.n01_external_edit=true;
@@ -111,12 +119,14 @@ try {
  report.observations.stdout=await page.evaluate(async()=>{let bytes=0,messages=0;const f=window.n01.session.session.kernel.requestExecute({code:"for _ in range(16): print('x'*16384)"});f.onIOPub=m=>{if(m.header.msg_type==='stream'){bytes+=m.content.text.length;messages++;}};await f.done;return {bytes,messages};});
  assert.equal(report.observations.stdout.bytes,16*16385);
  report.observations.output_policy='2 MiB frame cap configured on both transport legs; aggregate output and queued execution admission remain N02 work';
- await page.evaluate(()=>{const f=window.n01.session.session.kernel.requestExecute({code:'import time\nwhile True: time.sleep(0.1)'});window.n01Pending=f.done.then(r=>r.content.status);});
- await page.waitForFunction(()=>window.n01.session.session.kernel.status==='busy');
+ const pythonMarker=config.project+'/.n01-python-entered';
+ const pythonLoop="from pathlib import Path\nimport time\nPath("+JSON.stringify(pythonMarker)+").write_text('entered')\nwhile True: time.sleep(0.1)";
+ await page.evaluate(code=>{const f=window.n01.session.session.kernel.requestExecute({code});window.n01Pending=f.done.then(r=>r.content.status);},pythonLoop);
+ await expect.poll(async()=>readFile(pythonMarker,'utf8').catch(()=>''),{timeout:30000}).toBe('entered');
  await page.getByRole('button',{name:'Interrupt',exact:true}).click();
- assert.equal(await page.evaluate(()=>window.n01Pending),'error');
+ assert.equal(await page.evaluate(()=>Promise.race([window.n01Pending,new Promise(r=>setTimeout(()=>r('interrupt-timeout'),10000))])),'error');
  assert.equal((await execute('assert spark.table("public.orders").count() == 2')).status,'ok');
- report.checks.push('Python_interrupt_preserves_working_Spark_binding');
+ await passed('Python_interrupt_preserves_working_Spark_binding');
  // A real Sail Python UDF establishes that work entered the engine before cancellation.
  const marker=config.project+'/.n01-spark-entered';
  const slow="from pathlib import Path\nimport time\ndef n01_hold(value):\n    Path("+JSON.stringify(marker)+").write_text('entered')\n    time.sleep(30)\n    return value\nspark.udf.register('n01_hold', n01_hold, 'int')\nspark.sql('SELECT n01_hold(id) FROM public.orders').collect()";
@@ -126,7 +136,7 @@ try {
  report.observations.spark_interrupt=await page.evaluate(()=>Promise.race([window.n01Pending,new Promise(r=>setTimeout(()=>r('no-reply-within-5s'),5000))]));
  await page.getByRole('button',{name:'Shutdown',exact:true}).click();
  await expect(page.getByRole('status')).toHaveText('Kernel stopped',{timeout:30000});
- report.checks.push('Spark_inflight_interrupt_followed_by_owned_shutdown');
+ await passed('Spark_inflight_interrupt_followed_by_owned_shutdown');
  await page.getByRole('button',{name:'Start kernel',exact:true}).click();
  await page.waitForFunction(()=>window.n01.session.session?.kernel?.connectionStatus==='connected',null,{timeout:60000});
  assert.equal((await execute("assert 'n01_counter' not in globals()\nassert spark.table('public.orders').count()==2")).status,'ok');
@@ -135,12 +145,12 @@ try {
  await page.screenshot({path:args['--report'].replace('.json','.png'),fullPage:true});
  await page.getByRole('button',{name:'Shutdown',exact:true}).click();
  await expect(page.getByRole('status')).toHaveText('Kernel stopped',{timeout:30000});
- report.checks.push('explicit_restart_clears_variables_and_queries_same_snapshot');
+ await passed('explicit_restart_clears_variables_and_queries_same_snapshot');
  assert.equal((await context.request.post(origin+'/logout',{headers})).status(),200);
  assert.equal((await context.request.get(origin+'/jupyter/api/kernels',{headers})).status(),401);
  assert.equal(await handshake(path,wsHeaders),403);
- report.checks.push('revoked_session_rejected');
+ await passed('revoked_session_rejected');
  assert.deepEqual(report.external,[]);
  assert.deepEqual(report.errors,[]);
  report.status='passed';
-} finally {await browser.close();await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');}
+} finally {clearTimeout(watchdog);await browser.close();await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');}

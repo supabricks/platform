@@ -85,7 +85,9 @@ def main(args):
         report['server_idle_rss_bytes']=psutil.Process(children[0].pid).memory_info().rss
         launch=root/'launch.json';launch.write_text(json.dumps(dict(url=config['origin']+'/#launch='+config['launch'],project=str(project),config=str(conf))));launch.chmod(0o600)
         browser_report=args.report.with_suffix('.browser.json')
-        subprocess.run([args.node,str(args.harness),'--launch',str(launch),'--report',str(browser_report)],check=True,env=env,timeout=300)
+        browser_process=subprocess.Popen([args.node,str(args.harness),'--launch',str(launch),'--report',str(browser_report)],env=env,start_new_session=True)
+        children.append(browser_process)
+        if browser_process.wait(timeout=300):raise RuntimeError('N01 browser qualification failed; inspect the public checkpoint report')
         browser=json.loads(browser_report.read_text());report['browser']=browser
         saved=nbformat.read(notebooks/'orders.ipynb',as_version=4);nbformat.validate(saved)
         assert any(c.get('outputs') for c in saved.cells)

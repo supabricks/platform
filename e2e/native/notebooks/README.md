@@ -74,7 +74,10 @@ API paths/protocol, lifecycle events and resource measurements.
   Jupyter; Jupyter owns Python; A03 owns Sail. Production daemon process records,
   crash fencing, browser-session ownership and admission races remain N02.
 - `run.py` creates synthetic database/notebook files and runs the browser checks.
-  Saved documents are validated with nbformat. Private runtime files, launch
+  Saved documents are validated with nbformat. Browser checkpoints are written
+  after each scenario; a watchdog bounds stalled protocol calls. Interrupt tests
+  wait for execution markers rather than potentially stale kernel status. The
+  driver owns the browser process group and stops it on timeout. Private runtime files, launch
   secrets and logs remain under a mode-0700 temporary root; successful runs
   remove it. Failure workspaces are retained locally for diagnosis and must not
   be uploaded wholesale. CI uploads only the designated reports and screenshot.
