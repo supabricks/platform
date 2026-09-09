@@ -24,6 +24,20 @@ ROOT = Path(SETTINGS['workspace'])
 RECORDS = {}
 TASKS = set()
 FRAME = SETTINGS['frame_bytes']
+SIGNALS = []
+
+
+def audit_signal(event, args):
+    # Retain only bounded numeric evidence, never request contents or credentials.
+    # This distinguishes Jupyter teardown signals from external process death.
+    if event in {'os.kill', 'os.killpg'}:
+        SIGNALS.append({'operation': event, 'target': args[0], 'signal': args[1],
+                        'server_pid': os.getpid(), 'server_pgid': os.getpgrp()})
+        del SIGNALS[:-16]
+        print('SUPABRICKS_SIGNAL ' + json.dumps(SIGNALS[-1]), file=sys.stderr, flush=True)
+
+
+sys.addaudithook(audit_signal)
 
 
 def now():

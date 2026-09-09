@@ -21,6 +21,7 @@ if action == 'diagnostics':
     # Private, bounded failure evidence survives daemon down; never upload it.
     paths = list((root / 'notebook-work').glob('*/server.log')) + list((root / 'notebook-work').glob('last-server-failure.log'))
     classes = set()
+    signals = []
     for index, path in enumerate(paths):
         with path.open('rb') as stream:
             stream.seek(max(0, path.stat().st_size - 65536))
@@ -30,7 +31,10 @@ if action == 'diagnostics':
             classes.update(re.findall(r'(?m)^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception)):', content.decode(errors='replace')))
             if b'Assertion failed:' in content:
                 classes.add('NativeAssertionFailure')
-    print(json.dumps({'server_error_classes': sorted(classes)}))
+            for line in content.decode(errors='replace').splitlines():
+                if line.startswith('SUPABRICKS_SIGNAL '):
+                    signals.append(json.loads(line.removeprefix('SUPABRICKS_SIGNAL ')))
+    print(json.dumps({'server_error_classes': sorted(classes), 'server_signals': signals[-16:]}))
 elif action == 'snapshot':
     processes = []
     for record in records:
