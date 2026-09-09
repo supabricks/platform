@@ -2,6 +2,7 @@
 //! Durable native process evidence and A03 references fence all execution. Handles
 //! are intentionally lost across daemon restart; no code or live endpoint is restored.
 pub mod contract;
+pub mod files;
 mod runtime;
 use crate::{
     api::Binding,
