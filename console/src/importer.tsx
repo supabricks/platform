@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ingest,
+  ApiError,
   upload,
   type Overview,
   type Branch,
@@ -154,12 +155,29 @@ export function Importer({
     if (!file || busy) return;
     setError("");
     setApproved(false);
-    setUncertain(false);
-    sessionStorage.removeItem(pendingKey);
     if (!file.size || file.size > 100 * 1024 * 1024) {
       setError("Select a nonempty CSV or TSV file up to 100 MiB.");
       return;
     }
+    let parser: Mapping;
+    try {
+      const values: unknown = JSON.parse(nulls);
+      if (!Array.isArray(values) || !values.every((v) => typeof v === "string"))
+        throw new Error("Enter an array of null strings");
+      parser = {
+        ...mapping,
+        null_strings: values,
+        delimiter:
+          /\.tsv$/i.test(file.name) && mapping.delimiter === ","
+            ? "\t"
+            : mapping.delimiter,
+      };
+    } catch (e) {
+      setError(message(e));
+      return;
+    }
+    setUncertain(false);
+    sessionStorage.removeItem(pendingKey);
     setBusy("Uploading");
     setBytes(0);
     setTotal(file.size);
@@ -183,10 +201,6 @@ export function Importer({
       setSource(null);
       await upload(slot.source.id, file, setBytes, abort.signal);
       setBusy("Inspecting");
-      const parser = {
-        ...mapping,
-        delimiter: /\.tsv$/i.test(file.name) ? "\t" : mapping.delimiter,
-      };
       await ingest({
         action: "inspect",
         source: slot.source.id,
@@ -253,9 +267,16 @@ export function Importer({
       setApproved(false);
       await refresh();
     } catch (e) {
-      setError(
-        `${message(e)}. Inspect recent imports before submitting another request.`,
-      );
+      if (e instanceof ApiError && e.status < 500) {
+        sessionStorage.removeItem(pendingKey);
+        setUncertain(false);
+        setApproved(false);
+        setError(message(e));
+      } else {
+        setError(
+          `${message(e)}. Inspect recent imports before submitting another request.`,
+        );
+      }
     } finally {
       setBusy("");
     }

@@ -269,15 +269,15 @@ def qualify(args):
                 console=wait(open_console,20)
                 url=urlsplit(console['url']);origin=f'http://127.0.0.1:{url.port}'
                 headers={'Origin':origin,'X-Supabricks-Console':'1','Content-Type':'application/json'}
-                def http(path,payload):
+                def browser_http(path,payload):
                     conn=http.client.HTTPConnection('127.0.0.1',url.port,timeout=10)
                     conn.request('POST',path,body=json.dumps(payload),headers=headers)
                     response=conn.getresponse();value=json.loads(response.read());cookie=response.getheader('Set-Cookie');code=response.status;conn.close()
                     return code,value,cookie
-                code,session,cookie=http('/api/session',dict(token=url.fragment.removeprefix('launch=')))
+                code,session,cookie=browser_http('/api/session',dict(token=url.fragment.removeprefix('launch=')))
                 assert code==200,session
                 headers.update({'Cookie':cookie.split(';')[0],'X-Supabricks-CSRF':session['csrf']})
-                def browser(command):return http('/api/workspace',dict(action='ingest',command=command))[:2]
+                def browser(command):return browser_http('/api/workspace',dict(action='ingest',command=command))[:2]
                 disk=os.statvfs(pressure)
                 free=disk.f_bavail*disk.f_frsize
                 assert 8*1024**2<free<160*1024**2,'pressure fixture must be a separate bounded volume'

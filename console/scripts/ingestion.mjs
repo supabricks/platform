@@ -159,6 +159,7 @@ export async function qualifyIngestion({
   );
   const original = join(workspace, "device-orders.csv");
   await writeFile(original, fixture);
+  await page.getByLabel("Null strings", { exact: true }).fill('["NULL"]');
   const picker = page.getByLabel("Choose CSV or TSV");
   await picker.focus();
   const chooserPromise = page.waitForEvent("filechooser");
@@ -181,6 +182,7 @@ export async function qualifyIngestion({
     (s) => s.source.display_name === "device-orders.csv",
   );
   let preview = await api({ action: "source", source: staged.source.id });
+  expect(preview.status.inspection.mapping.null_strings).toEqual(["NULL"]);
   await api({
     action: "inspect",
     source: staged.source.id,
@@ -226,6 +228,27 @@ export async function qualifyIngestion({
   await expect(page.getByLabel("Column 3 type")).toHaveValue("text");
   await page.getByLabel("Column 3 type").selectOption("decimal");
   await page.getByLabel("Column 4 type").selectOption("boolean");
+  await page.getByLabel("Import schema", { exact: true }).fill("_supabricks");
+  await page
+    .getByLabel("I approve these columns and this destination.")
+    .check();
+  await page
+    .getByRole("button", { name: "Create table and import", exact: true })
+    .click();
+  await expect(page.locator(".importer .notice")).toContainText(
+    "invalid ingestion destination",
+  );
+  await page.getByLabel("Import schema", { exact: true }).fill("public");
+  expect(
+    await page.evaluate(() =>
+      Object.keys(sessionStorage).some((k) => k.includes("import.pending")),
+    ),
+  ).toBe(false);
+  if (screenshot)
+    await page.screenshot({
+      path: join(dirname(screenshot), "import-preview.png"),
+      fullPage: true,
+    });
   await page
     .getByLabel("I approve these columns and this destination.")
     .check();
@@ -354,7 +377,11 @@ export async function qualifyIngestion({
     await ongoing
       .getByRole("button", { name: "Cancel import", exact: true })
       .click();
-    process.kill(-held, "SIGCONT");
+    try {
+      process.kill(-held, "SIGCONT");
+    } catch (e) {
+      if (e.code !== "ESRCH") throw e;
+    }
     held = null;
     await expect(ongoing).toContainText("cancelled", { timeout: 30000 });
     expect(
