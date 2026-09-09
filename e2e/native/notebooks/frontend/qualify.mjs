@@ -54,6 +54,8 @@ try {
  await page.getByRole('button',{name:'Start kernel',exact:true}).click();
  await page.waitForFunction(() => /^(Ready|Error:)/.test(document.querySelector('[role=status]').textContent),null,{timeout:120000});
  await expect(page.getByRole('status')).toHaveText('Ready');
+ // Session creation precedes Python readiness; wait for a real kernel reply.
+ await page.evaluate(async()=>{await window.n01.session.session.kernel.requestKernelInfo();});
  report.kernel_start_seconds=(performance.now()-start)/1000;
  const events=(await readFile(config.journal,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
  const kernelPid=events.findLast(event=>event.event==='launched').pid;
