@@ -118,6 +118,8 @@ custom editor/runtime. The probe does not expose an unfinished product feature.
 
 ### N02 — Add owned notebook runtime and authenticated transport
 
+Runtime design and API: [N02 ownership contract](../architecture/n02-notebook-runtime.md).
+
 **Depends on:** accepted N01 decision. **Touch:** coordinator, daemon/supervisor,
 console bridge, Jupyter hooks/bootstrap, capabilities and recovery contracts.
 

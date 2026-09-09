@@ -40,6 +40,19 @@ def environment():
     normalize = lambda name: name.lower().replace("_", "-").replace(".", "-")
     installed = {normalize(d.metadata["Name"]): d.version
                  for d in importlib.metadata.distributions()}
+    if installed != expected and "jupyter-server" in installed:
+        # The notebook runtime is an exact qualified superset. Keep the analytical
+        # lock and every existing version unchanged for data compatibility.
+        from packaging.requirements import Requirement
+        notebook = ENV.parent / "notebooks"
+        superset = tomllib.loads((notebook / "uv.lock").read_text())
+        versions = {p["name"]: p["version"] for p in superset["package"] if "registry" in p["source"]}
+        if any(versions.get(name) != version for name, version in expected.items()):
+            raise RuntimeError("notebook lock changed analytical package versions")
+        requirements = [Requirement(line.split(chr(92))[0].strip())
+                        for line in (notebook / "requirements.lock").read_text().splitlines()
+                        if line and line[0].isalnum() and "==" in line]
+        expected = {r.name: versions[r.name] for r in requirements if r.marker is None or r.marker.evaluate()}
     if installed != expected:
         raise RuntimeError(f"environment differs from lock: expected {expected}, got {installed}")
     inventory = json.loads((ROOT / "components/components.lock.json").read_text())

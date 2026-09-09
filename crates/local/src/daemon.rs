@@ -30,6 +30,18 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    NotebookTransport {
+        binding: crate::api::Binding,
+        generation: i64,
+        owner: String,
+        event: crate::notebooks::contract::Transport,
+    },
+    NotebookHeartbeat {
+        binding: crate::api::Binding,
+        generation: i64,
+        instance: String,
+        sessions: Vec<String>,
+    },
     ConsoleAction {
         binding: crate::api::Binding,
         generation: i64,
@@ -117,6 +129,7 @@ pub enum Request {
 }
 
 pub struct Daemon {
+    notebooks: crate::notebooks::Notebooks,
     consoles: crate::console::Consoles,
     console_queries: crate::console::workspace::Queries,
     publisher: crate::analytics::Publisher,
@@ -136,6 +149,7 @@ impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
+        let notebooks = crate::notebooks::Notebooks::recover(&mut store)?;
         let consoles = crate::console::Consoles::recover(&mut store)?;
         crate::ingest::recover(&mut store)?;
         let socket = store.root().join("control.sock");
@@ -164,6 +178,7 @@ impl Daemon {
         let sessions = crate::sessions::Sessions::recover(&mut store)?;
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
+            notebooks,
             consoles,
             console_queries: Default::default(),
             publisher,
@@ -224,6 +239,21 @@ impl Daemon {
                         false
                     }
                 };
+                let notebooks_stopped = match self.notebooks.tick(
+                    &mut self.store,
+                    &mut self.sessions,
+                    self.cell.as_ref(),
+                    stopping,
+                ) {
+                    Ok(()) => {
+                        self.notebooks.last_error = None;
+                        true
+                    }
+                    Err(error) => {
+                        self.notebooks.last_error = Some(error.to_string());
+                        false
+                    }
+                };
                 let console_result = if stopping {
                     self.consoles.stop(&mut self.store)
                 } else {
@@ -242,7 +272,7 @@ impl Daemon {
                         .err()
                         .map(|e| e.to_string());
                 }
-                let analytical_stopped = if stopping {
+                let analytical_stopped = if stopping && notebooks_stopped {
                     match self.sessions.stop(&mut self.store) {
                         Ok(()) => {
                             self.sessions.last_error = None;
@@ -262,6 +292,7 @@ impl Daemon {
                 if let Some(cell) = &mut self.cell {
                     if stopping
                         && analytical_stopped
+                        && notebooks_stopped
                         && self.consoles.last_error.is_none()
                         && self.ingest_error.is_none()
                         && ingestion_stopped
@@ -288,6 +319,7 @@ impl Daemon {
                     }
                 } else if stopping
                     && analytical_stopped
+                    && notebooks_stopped
                     && self.consoles.last_error.is_none()
                     && self.ingest_error.is_none()
                     && ingestion_stopped
@@ -419,6 +451,42 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::NotebookTransport {
+                binding,
+                generation,
+                owner,
+                event,
+            } => {
+                binding.validate(&mut self.store)?;
+                if generation != self.store.generation() {
+                    return Err(conflict(
+                        "notebook console generation changed; execution is lost",
+                    ));
+                }
+                let (instance, session) = owner
+                    .split_once(':')
+                    .ok_or_else(|| invalid("invalid notebook owner"))?;
+                if session.len() != 64 || !session.bytes().all(|b| b.is_ascii_hexdigit()) {
+                    return Err(invalid("invalid notebook owner"));
+                }
+                self.consoles.owns(&binding, instance)?;
+                self.notebooks
+                    .transport(&self.store, &binding, &owner, event)?
+            }
+            Request::NotebookHeartbeat {
+                binding,
+                generation,
+                instance,
+                sessions,
+            } => {
+                binding.validate(&mut self.store)?;
+                if generation != self.store.generation() {
+                    return Err(conflict("notebook console generation changed"));
+                }
+                self.consoles.owns(&binding, &instance)?;
+                self.notebooks.heartbeat(&instance, &sessions)?;
+                json!({"accepted":true})
+            }
             Request::ConsoleAction {
                 binding,
                 generation,
@@ -470,7 +538,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":false,"notebook_runtime":1},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -479,7 +547,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -574,10 +642,15 @@ impl Daemon {
                 token,
                 pid,
             } => {
-                self.cell
-                    .as_ref()
-                    .ok_or_else(|| conflict("engine is disabled"))?
-                    .authorize(&mut self.store, &role, generation, &token, pid)?;
+                if role.starts_with("notebook-kernel-") {
+                    self.notebooks
+                        .authorize(&mut self.store, &role, generation, &token, pid)?;
+                } else {
+                    self.cell
+                        .as_ref()
+                        .ok_or_else(|| conflict("engine is disabled"))?
+                        .authorize(&mut self.store, &role, generation, &token, pid)?;
+                }
                 json!({"authorized":true})
             }
         })
@@ -591,6 +664,20 @@ impl Daemon {
         use crate::console::workspace::{Command as C, identifier};
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
+            C::Notebook { command } => {
+                let instance = owner
+                    .split_once(':')
+                    .ok_or_else(|| invalid("invalid notebook owner"))?
+                    .0;
+                self.consoles.owns(&binding, instance)?;
+                return self.notebooks.handle(
+                    &mut self.store,
+                    self.cell.as_ref(),
+                    &binding,
+                    &owner,
+                    command,
+                );
+            }
             C::Ingest { command } => {
                 return self.uploads.handle(
                     &mut self.store,

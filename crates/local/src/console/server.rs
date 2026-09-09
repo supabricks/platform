@@ -1,3 +1,4 @@
+mod notebooks;
 use super::{
     Config,
     assets::{Assets, VERSION},
@@ -30,6 +31,7 @@ use tokio::{net::TcpListener, sync::Semaphore};
 
 type Reply = Response<Full<Bytes>>;
 struct Session {
+    cancel: tokio::sync::watch::Sender<bool>,
     csrf: String,
     expires: Instant,
 }
@@ -40,11 +42,14 @@ struct State {
     cookie: String,
     assets: Assets,
     sessions: Mutex<BTreeMap<String, Session>>,
+    tickets: Mutex<BTreeMap<String, notebooks::Ticket>>,
+    channels: Arc<Semaphore>,
     exchange: Mutex<()>,
 }
 fn response(status: u16, mime: &str, bytes: impl Into<Bytes>) -> Reply {
     Response::builder().status(status)
         .header("Content-Type", mime)
+        .header("Connection", "close")
         .header("Cache-Control", "no-store")
         .header("X-Content-Type-Options", "nosniff")
         .header("Referrer-Policy", "no-referrer")
@@ -194,6 +199,9 @@ impl State {
                 None => fail(404, "Console asset not found"),
             };
         }
+        if path.starts_with("/api/notebooks/") && path.ends_with("/channels") {
+            return self.notebook_ws(request).await;
+        }
         if single(request.headers(), "x-supabricks-console") != Some("1") {
             return fail(
                 409,
@@ -216,11 +224,16 @@ impl State {
             #[serde(deny_unknown_fields)]
             struct Exchange {
                 token: String,
+                lifetime_seconds: Option<u64>,
             }
             let body: Exchange = match serde_json::from_slice(&bytes) {
                 Ok(body) => body,
                 Err(_) => return fail(400, "Invalid launch request"),
             };
+            let lifetime = body.lifetime_seconds.unwrap_or(28800);
+            if !(10..=28800).contains(&lifetime) {
+                return fail(400, "Console session lifetime requires 10–28800 seconds");
+            }
             if body.token.len() != 64 || !body.token.bytes().all(|c| c.is_ascii_hexdigit()) {
                 return fail(
                     401,
@@ -271,11 +284,16 @@ impl State {
             if fs::remove_file(ticket_path).is_err() {
                 return fail(401, "Launch link already consumed");
             }
+            let cancel = sessions
+                .get(&id)
+                .map(|s| s.cancel.clone())
+                .unwrap_or_else(|| tokio::sync::watch::channel(false).0);
             sessions.insert(
                 id.clone(),
                 Session {
+                    cancel,
                     csrf: csrf.clone(),
-                    expires: Instant::now() + Duration::from_secs(28800),
+                    expires: Instant::now() + Duration::from_secs(lifetime),
                 },
             );
             let mut reply = json_response(
@@ -285,7 +303,7 @@ impl State {
             reply.headers_mut().insert(
                 "Set-Cookie",
                 HeaderValue::from_str(&format!(
-                    "{}={id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800",
+                    "{}={id}; HttpOnly; SameSite=Strict; Path=/; Max-Age={lifetime}",
                     self.cookie
                 ))
                 .unwrap(),
@@ -302,6 +320,9 @@ impl State {
             && single(request.headers(), "x-supabricks-csrf") != Some(csrf.as_str())
         {
             return fail(403, "Invalid CSRF token");
+        }
+        if path.starts_with("/api/notebooks/") {
+            return self.notebook_http(&id, request).await;
         }
         if let Some(source) = path.strip_prefix("/api/upload/") {
             if request.method() != Method::POST
@@ -375,7 +396,18 @@ impl State {
             if single(request.headers(), "x-supabricks-csrf") != Some(csrf.as_str()) {
                 return fail(403, "Invalid CSRF token");
             }
-            self.sessions.lock().unwrap().remove(&id);
+            if let Some(session) = self.sessions.lock().unwrap().remove(&id) {
+                session.cancel.send_replace(true);
+            }
+            self.tickets
+                .lock()
+                .unwrap()
+                .retain(|_, ticket| ticket.owner != id);
+            // Revoke sockets immediately; the daemon fences kernels even if this
+            // request is lost, through its six-second owner heartbeat lease.
+            let _ = self
+                .notebook_request(&id, crate::notebooks::contract::Transport::Revoke)
+                .await;
             let mut reply = json_response(200, json!({"api_version":VERSION,"closed":true}));
             reply.headers_mut().insert(
                 "Set-Cookie",
@@ -423,6 +455,8 @@ pub(super) async fn serve(config: Config) -> Result<()> {
         config: config.clone(),
         assets,
         sessions: Mutex::new(BTreeMap::new()),
+        tickets: Mutex::new(BTreeMap::new()),
+        channels: Arc::new(Semaphore::new(4)),
         exchange: Mutex::new(()),
     });
     supervisor::write_json(
@@ -436,7 +470,7 @@ pub(super) async fn serve(config: Config) -> Result<()> {
         tokio::select! {
             _ = heartbeat.tick() => {
                 // Fail closed on daemon death/replacement or project-file changes.
-                if state.overview().await.is_err() { failures += 1; } else { failures = 0; }
+                if state.overview().await.is_err() || state.notebook_heartbeat().await.is_err() { failures += 1; } else { failures = 0; }
                 if failures >= 2 { return Ok(()); }
             }
             accept = listener.accept() => {
@@ -453,9 +487,9 @@ pub(super) async fn serve(config: Config) -> Result<()> {
                         }
                     });
                     let mut builder = hyper::server::conn::http1::Builder::new();
-                    builder.keep_alive(false).max_buf_size(16384).max_headers(32)
+                    builder.keep_alive(true).max_buf_size(16384).max_headers(32)
                         .timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(3));
-                    let _ = tokio::time::timeout(Duration::from_secs(615), builder.serve_connection(TokioIo::new(stream), service)).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(615), builder.serve_connection(TokioIo::new(stream), service).with_upgrades()).await;
                 });
             }
         }

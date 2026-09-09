@@ -9,6 +9,8 @@ on:
       - 'install/native/**'
       - 'python/analytics/**'
       - 'python/ingest/**'
+      - 'python/notebooks/**'
+      - 'e2e/native/notebooks/**'
       - 'console/**'
       - 'examples/orders/**'
       - 'examples/console/**'
@@ -41,6 +43,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+          enable-cache: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -332,3 +338,64 @@ jobs:
         with:
           name: release-ingest-${{ matrix.target }}
           path: build/ingest-reports/*
+
+  release-notebooks:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/notebook-browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked browser test machinery before network isolation
+        run: |
+          npm ci --prefix e2e/native/notebooks/frontend --no-audit --no-fund
+          npm exec --prefix e2e/native/notebooks/frontend -- playwright install --with-deps chromium
+          mkdir -p build/notebook-reports
+      - name: Installed browser workflow in an isolated Linux network namespace
+        if: runner.os == 'Linux'
+        run: |
+          node_path=$(command -v node)
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              PLAYWRIGHT_BROWSERS_PATH="$2" \
+              SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
+              "$3" install/native/qualify_console.py --directory build/releases \
+              --report build/notebook-reports/notebooks.json --node "$4" \
+              --harness e2e/native/notebooks/frontend/runtime.mjs
+          ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$python_path" "$node_path"
+      - name: Installed browser workflow on macOS with external network denied
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "$(command -v python)" install/native/qualify_console.py --directory build/releases \
+            --report build/notebook-reports/notebooks.json --node "$(command -v node)" \
+            --harness e2e/native/notebooks/frontend/runtime.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-notebooks-${{ matrix.target }}
+          path: build/notebook-reports/*

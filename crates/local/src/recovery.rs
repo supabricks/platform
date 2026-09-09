@@ -195,7 +195,10 @@ fn excluded(name: &str) -> bool {
             | "restore-incomplete"
             | "process-compose.json"
             | "supervisor.token"
-    ) || matches!(name.split('/').next(), Some("logs" | "tmp" | "launches"))
+    ) || matches!(
+        name.split('/').next(),
+        Some("logs" | "tmp" | "launches" | "notebook-work")
+    )
 }
 fn walk(
     root: &Path,

@@ -203,3 +203,45 @@ pub fn has_token(id: &Identity, token: &str) -> Result<bool> {
         && identity(id.pid)?
             .is_some_and(|i| i.start == id.start && i.group == id.group && i.uid == id.uid))
 }
+
+/// Sample resident memory without launching host utilities (macOS Seatbelt may
+/// refuse privileged system ps). A vanished process contributes zero.
+#[cfg(target_os = "linux")]
+pub fn rss(pid: u32) -> Result<u64> {
+    let text = match fs::read_to_string(format!("/proc/{pid}/statm")) {
+        Ok(s) => s,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(0),
+        Err(e) => return Err(e.into()),
+    };
+    let pages: u64 = text
+        .split_whitespace()
+        .nth(1)
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| conflict("invalid process RSS"))?;
+    let size = unsafe { libc::sysconf(libc::_SC_PAGESIZE) };
+    if size <= 0 {
+        return Err(conflict("invalid process page size"));
+    }
+    Ok(pages.saturating_mul(size as u64))
+}
+#[cfg(target_os = "macos")]
+pub fn rss(pid: u32) -> Result<u64> {
+    let mut info: libc::proc_taskinfo = unsafe { std::mem::zeroed() };
+    let size = std::mem::size_of_val(&info) as i32;
+    let n = unsafe {
+        libc::proc_pidinfo(
+            pid as i32,
+            libc::PROC_PIDTASKINFO,
+            0,
+            &mut info as *mut _ as *mut libc::c_void,
+            size,
+        )
+    };
+    if n == size {
+        return Ok(info.pti_resident_size);
+    }
+    if identity(pid)?.is_none() {
+        return Ok(0);
+    }
+    Err(io::Error::last_os_error().into())
+}
