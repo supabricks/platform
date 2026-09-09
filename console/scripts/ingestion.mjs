@@ -161,9 +161,12 @@ export async function qualifyIngestion({
   await writeFile(original, fixture);
   await page.getByLabel("Null strings", { exact: true }).fill('["NULL"]');
   const picker = page.getByLabel("Choose CSV or TSV");
-  await picker.focus();
+  // A prior isolated browser context can leave the page without activation on
+  // headless Linux. Exercise the native keyboard control on the active page.
+  await page.bringToFront();
+  await expect(picker).toBeEnabled();
   const chooserPromise = page.waitForEvent("filechooser");
-  await page.keyboard.press("Enter");
+  await picker.press("Enter");
   const chooser = await chooserPromise;
   await chooser.setFiles(original);
   await expect(page.getByRole("table", { name: "Column mapping" })).toBeVisible(
