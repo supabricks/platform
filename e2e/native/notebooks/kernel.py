@@ -45,10 +45,10 @@ class OwnedKernels(AsyncMappingKernelManager):
             await cli('analytics', 'close', session['id'], '--wait')
             raise HTTPError(503, 'Analytical session did not become ready')
         context = Path(CONFIG['runtime']) / (identity + '.json')
-        context.write_text(json.dumps(dict(endpoint=session['endpoint'], epoch_id=session['epoch_id'])))
-        context.chmod(0o600)
-        record('admitted', identity=identity, session_id=session['id'], epoch_id=session['epoch_id'])
         try:
+            context.write_text(json.dumps(dict(endpoint=session['endpoint'], epoch_id=session['epoch_id'])))
+            context.chmod(0o600)
+            record('admitted', identity=identity, session_id=session['id'], epoch_id=session['epoch_id'])
             fail_next = Path(CONFIG['runtime']) / 'fail-next'
             if fail_next.exists():
                 fail_next.unlink()
@@ -58,6 +58,7 @@ class OwnedKernels(AsyncMappingKernelManager):
             kwargs['cwd'] = CONFIG['project']
             result = await super().start_kernel(**kwargs)
             kernel = self.get_kernel(result)
+            assert not kernel.autorestart, 'Kernel must not restart outside owned admission'
             kernel.sb_session = session['id']
             kernel.sb_context = context
             kernel.sb_peak_rss = 0

@@ -35,7 +35,8 @@ def wait(test, seconds=120):
 
 
 def main(args):
-    root=Path(tempfile.mkdtemp(prefix='sb-n01-'))
+    # macOS TMPDIR exceeds PostgreSQL's Unix socket path limit.
+    root=Path(tempfile.mkdtemp(prefix='sb-n01-',dir='/tmp')).resolve()
     root.chmod(0o700)
     project=root/'project';project.mkdir()
     notebooks=project/'notebooks';notebooks.mkdir()
@@ -93,6 +94,9 @@ def main(args):
         report['ownership']=events;report['routes']=json.loads((root/'routes.json').read_text())
         launched=[e for e in events if e['event']=='launched'];stopped=[e for e in events if e['event']=='stopped']
         assert launched and len(launched)==len(stopped)
+        for event in events:
+            if event['event']=='admitted':
+                state=cli('analytics','session',event['session_id']);assert state['state']=='closed',state['state']
         for event in launched:
             assert any(e['event']=='admitted' and e['session_id']==event['session_id'] and e['time']<=event['time'] for e in events)
             assert not psutil.pid_exists(event['pid'])
