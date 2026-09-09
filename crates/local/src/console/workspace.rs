@@ -45,6 +45,9 @@ pub enum Command {
     Notebook {
         command: crate::notebooks::contract::Command,
     },
+    NotebookFiles {
+        command: crate::notebooks::files::Command,
+    },
     Ingest {
         command: super::ingestion::Command,
     },

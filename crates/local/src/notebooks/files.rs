@@ -139,6 +139,90 @@ pub fn save(path: &Path, value: &Value) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Command {
+    List,
+    Get {
+        path: String,
+    },
+    Save {
+        path: String,
+        document: Value,
+        expected_mtime_ns: Option<u128>,
+    },
+}
+
+pub fn handle(worktree: &Path, command: Command) -> Result<Value> {
+    let base = root(worktree);
+    match command {
+        Command::List => {
+            let mut files = Vec::new();
+            if base.exists() {
+                let mut pending = vec![base.clone()];
+                while let Some(directory) = pending.pop() {
+                    for entry in fs::read_dir(&directory)? {
+                        let entry = entry?;
+                        let file_type = entry.file_type()?;
+                        if file_type.is_symlink() {
+                            return Err(conflict("notebook tree contains a symlink"));
+                        }
+                        if file_type.is_dir() {
+                            pending.push(entry.path());
+                            continue;
+                        }
+                        if file_type.is_file() {
+                            let entry_path = entry.path();
+                            let relative = entry_path
+                                .strip_prefix(&base)
+                                .map_err(|_| invalid("invalid notebook path"))?;
+                            let path = relative
+                                .to_str()
+                                .ok_or_else(|| invalid("notebook path is not UTF-8"))?;
+                            relative_path(path)?;
+                            files.push(path.to_owned());
+                        }
+                    }
+                }
+            }
+            files.sort();
+            Ok(serde_json::json!({"files": files}))
+        }
+        Command::Get { path } => {
+            let relative = relative_path(&path)?;
+            let full = base.join(relative);
+            let document = load(&full)?;
+            let metadata = fs::symlink_metadata(&full)?;
+            Ok(
+                serde_json::json!({"path": path, "document": document, "mtime_ns": metadata.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_nanos())}),
+            )
+        }
+        Command::Save {
+            path,
+            document,
+            expected_mtime_ns,
+        } => {
+            let relative = relative_path(&path)?;
+            let full = base.join(relative);
+            if let Some(expected) = expected_mtime_ns {
+                let actual = fs::symlink_metadata(&full)
+                    .ok()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| d.as_nanos());
+                if actual != Some(expected) {
+                    return Err(conflict("notebook changed on disk; reload before saving"));
+                }
+            }
+            save(&full, &document)?;
+            let metadata = fs::symlink_metadata(&full)?;
+            Ok(
+                serde_json::json!({"path": path, "saved": true, "mtime_ns": metadata.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_nanos())}),
+            )
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
