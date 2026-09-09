@@ -12,7 +12,7 @@ import psycopg
 from psycopg import sql
 import pyarrow as pa
 from deltalake import DeltaTable, WriterProperties, write_deltalake
-from qualify import environment
+from runtime_environment import environment
 
 ROW_BYTES = 256 * 1024
 BATCH_BYTES = 8 * 1024 * 1024

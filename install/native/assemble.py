@@ -146,6 +146,8 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     if not args.postgres_only:
         from analytics import assemble_analytics
         assemble_analytics(destination, args.target)
+        from notebooks import assemble_notebooks
+        notebook_provenance = assemble_notebooks(destination, args.target)
     if not args.postgres_only:
         (destination / 'python/ingest').mkdir()
         shutil.copy2(ROOT / 'python/ingest/worker.py', destination / 'python/ingest/worker.py')
@@ -165,6 +167,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     )
     if not args.postgres_only:
         provenance['ingestion'] = dict(protocol_version=1, worker_sha256=digest(ROOT / 'python/ingest/worker.py'))
+        provenance['notebooks'] = notebook_provenance
     files = {}
     for path in sorted(destination.rglob('*')):
         if path.is_symlink():

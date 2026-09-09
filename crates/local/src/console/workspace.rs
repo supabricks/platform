@@ -42,6 +42,9 @@ impl Target {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Notebook {
+        command: crate::notebooks::contract::Command,
+    },
     Ingest {
         command: super::ingestion::Command,
     },

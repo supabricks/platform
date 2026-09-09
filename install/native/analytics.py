@@ -165,7 +165,7 @@ def assemble_analytics(destination, target):
     (site / 'sitecustomize.py').write_text('import sys\nsys.dont_write_bytecode = True\n')
     worker = destination / 'python/analytics'
     worker.mkdir()
-    for name in ['export.py', 'session.py', 'shell.py', 'qualify.py', 'read_delta.py',
+    for name in ['export.py', 'session.py', 'shell.py', 'qualify.py', 'runtime_environment.py', 'read_delta.py',
                  'uv.lock', 'requirements.lock', '.python-version']:
         shutil.copy2(ROOT / 'python/analytics' / name, worker / name)
     (destination / 'components').mkdir(exist_ok=True)
@@ -180,7 +180,7 @@ exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
 ''')
     wrapper.chmod(0o755)
     probe = worker / 'check_environment.py'
-    probe.write_text('from qualify import environment\nimport json\nprint(json.dumps(environment()))\n')
+    probe.write_text('from runtime_environment import environment\nimport json\nprint(json.dumps(environment()))\n')
     subprocess.run([str(wrapper), str(probe)], env=env, check=True)
     # Preserve upstream license texts, wheel provenance and the built client
     # digest. Wheel .dist-info licenses remain in the actual installed tree.

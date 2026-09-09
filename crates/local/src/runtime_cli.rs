@@ -156,6 +156,7 @@ pub(crate) fn shutdown(root: &std::path::Path) -> Result<()> {
     if request(root, Request::Shutdown).is_err() {
         if root.exists() {
             let mut store = acquire_after_shutdown(root, Instant::now() + Duration::from_secs(60))?;
+            crate::notebooks::Notebooks::recover(&mut store)?;
             crate::console::Consoles::recover(&mut store)?;
             crate::engine::Cell::recover(&mut store)?;
             crate::sessions::Sessions::recover(&mut store)?.stop(&mut store)?;
@@ -184,6 +185,7 @@ pub(crate) fn shutdown(root: &std::path::Path) -> Result<()> {
     // Socket disappearance can also mean a crashed daemon. Reacquire the
     // ownership lock and account for every recorded writer before success.
     let mut store = acquire_after_shutdown(root, deadline)?;
+    crate::notebooks::Notebooks::recover(&mut store)?;
     crate::console::Consoles::recover(&mut store)?;
     crate::engine::Cell::recover(&mut store)?;
     crate::sessions::Sessions::recover(&mut store)?.stop(&mut store)?;

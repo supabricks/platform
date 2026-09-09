@@ -83,6 +83,28 @@ impl Installation {
                 "analytical preview manifest is missing its private worker",
             ));
         }
+        if let Some(notebooks) = manifest.provenance.get("notebooks") {
+            if notebooks["protocol_version"] != crate::notebooks::contract::PROTOCOL
+                || [
+                    "python/notebooks/server.py",
+                    "python/notebooks/kernel.py",
+                    "python/notebooks/bootstrap.py",
+                    "python/notebooks/uv.lock",
+                    "python/notebooks/requirements.lock",
+                ]
+                .iter()
+                .any(|name| !manifest.files.contains_key(*name))
+                || notebooks["uv_lock_sha256"].as_str()
+                    != manifest
+                        .files
+                        .get("python/notebooks/uv.lock")
+                        .map(|f| f.sha256.as_str())
+            {
+                return Err(invalid(
+                    "notebook manifest is missing its qualified worker inventory",
+                ));
+            }
+        }
         if let Some(ingestion) = manifest.provenance.get("ingestion") {
             if ingestion["protocol_version"] != crate::ingest::VERSION
                 || !manifest.files.contains_key("python/ingest/worker.py")

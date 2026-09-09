@@ -656,3 +656,50 @@ fn workspace_commands_enforce_csrf_revisions_private_saved_files_and_backup() {
         fs::read(&path).unwrap()
     );
 }
+
+#[test]
+fn notebook_routes_require_browser_identity_and_short_session_lifetimes_are_bounded() {
+    let fixture = Fixture::new();
+    let (origin, token) = parts(&fixture.open());
+    let headers = [
+        ("Origin", origin.as_str()),
+        ("X-Supabricks-Console", "1"),
+        ("Content-Type", "application/json"),
+    ];
+    for lifetime in [0, 9, 28801, u64::MAX] {
+        assert_eq!(
+            http(
+                &origin,
+                "POST",
+                "/api/session",
+                &headers,
+                &json!({"token":token,"lifetime_seconds":lifetime}).to_string()
+            )
+            .status,
+            400
+        );
+    }
+    let reply = http(
+        &origin,
+        "POST",
+        "/api/session",
+        &headers,
+        &json!({"token":token,"lifetime_seconds":10}).to_string(),
+    );
+    assert_eq!(reply.status, 200);
+    assert!(reply.headers.contains("Max-Age=10"));
+    let route = format!(
+        "/api/notebooks/{}/1/channels",
+        supabricks_core::resource::OperationId::new()
+    );
+    assert_eq!(http(&origin, "GET", &route, &[], "").status, 403);
+    assert_eq!(
+        http(&origin, "GET", &route, &[("Origin", origin.as_str())], "").status,
+        401
+    );
+    assert_eq!(
+        http(&origin, "POST", "/api/notebooks/ticket", &headers, "{}").status,
+        401
+    );
+    assert!(!reply.headers.to_lowercase().contains("connection: upgrade"));
+}

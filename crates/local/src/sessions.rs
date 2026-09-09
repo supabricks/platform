@@ -76,7 +76,7 @@ impl Sessions {
         for mut s in store.active_analytical_sessions()? {
             // Waiting refreshes are durable and may resume; launched endpoints
             // never survive a daemon generation or get silently rebound.
-            if s.state != "waiting" {
+            if s.state != "waiting" || store.notebook_session(s.id)? {
                 this.finish(store, &mut s, "daemon_restarted")?;
             }
         }
@@ -113,7 +113,33 @@ impl Sessions {
         key: String,
         ttl_ms: u64,
     ) -> Result<Value> {
-        let request = json!({"branch":branch,"epoch":epoch,"ttl_ms":ttl_ms});
+        Self::open_context(store, cell, binding, branch, epoch, key, ttl_ms, false)
+    }
+    pub(crate) fn open_notebook(
+        store: &mut Store,
+        cell: Option<&crate::engine::Cell>,
+        binding: &Binding,
+        branch: String,
+        key: String,
+        ttl_ms: u64,
+    ) -> Result<Value> {
+        Self::open_context(store, cell, binding, Some(branch), None, key, ttl_ms, true)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn open_context(
+        store: &mut Store,
+        cell: Option<&crate::engine::Cell>,
+        binding: &Binding,
+        branch: Option<String>,
+        epoch: Option<EpochId>,
+        key: String,
+        ttl_ms: u64,
+        notebook: bool,
+    ) -> Result<Value> {
+        let mut request = json!({"branch":branch,"epoch":epoch,"ttl_ms":ttl_ms});
+        if notebook {
+            request["notebook"] = json!(true);
+        }
         if let Some(s) = store.session_for_key(binding.project_id, &key, &request)? {
             return Ok(json!(s));
         }
@@ -227,11 +253,26 @@ impl Sessions {
             .filter(|q| q["id"] == json!(query))
             .ok_or_else(|| invalid("query result is absent or replaced by the next request"))
     }
-    fn finish(&mut self, store: &mut Store, s: &mut AnalyticalSession, reason: &str) -> Result<()> {
+    pub(crate) fn finish(
+        &mut self,
+        store: &mut Store,
+        s: &mut AnalyticalSession,
+        reason: &str,
+    ) -> Result<()> {
         s.state = "closing".into();
         s.error = Some(reason.into());
         s.endpoint = None;
         store.save_analytical_session(s)?;
+        // Notebook Python must stop before releasing the bound epoch reference,
+        // including direct CLI closure, expiry and forced branch deletion.
+        if let Some(p) = store
+            .native_processes()?
+            .into_iter()
+            .find(|p| p.role == format!("notebook-kernel-{}", s.id))
+        {
+            supervisor::stop(&p)?;
+            store.forget_native_process(&p)?;
+        }
         if let Some(p) = store
             .native_processes()?
             .into_iter()

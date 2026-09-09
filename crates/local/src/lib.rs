@@ -10,6 +10,7 @@ pub mod engine;
 pub mod ingest;
 pub mod installation;
 pub mod mcp;
+pub mod notebooks;
 pub mod operations;
 pub mod project;
 mod query;

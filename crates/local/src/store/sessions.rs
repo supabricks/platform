@@ -25,6 +25,10 @@ pub struct AnalyticalSession {
     pub query: Option<Value>,
 }
 impl Store {
+    pub(crate) fn notebook_session(&self, id: OperationId) -> Result<bool> {
+        Ok(self.db.query_row("SELECT coalesce(json_extract(request,'$.notebook'),0) FROM analytical_sessions WHERE id=?1", [id.to_string()], |r| r.get(0))?)
+    }
+
     pub fn analytical_session(
         &self,
         project: ProjectId,

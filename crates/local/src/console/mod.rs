@@ -65,6 +65,18 @@ fn directory(path: &Path) -> Result<()> {
     Ok(())
 }
 impl Consoles {
+    pub(crate) fn owns(&self, binding: &Binding, instance: &str) -> Result<()> {
+        if self.entries.get(&binding.worktree).is_none_or(|entry| {
+            entry.config.instance != instance
+                || entry.config.binding.project_id != binding.project_id
+        }) {
+            return Err(conflict(
+                "console process does not own this project binding",
+            ));
+        }
+        Ok(())
+    }
+
     pub fn recover(store: &mut Store) -> Result<Self> {
         let mut this = Self::default();
         this.stop(store)?;

@@ -905,3 +905,40 @@ fn refresh_status_distinguishes_standalone_exports_and_cancelled_refreshes() {
         epoch
     );
 }
+
+#[test]
+fn daemon_recovery_cancels_waiting_notebook_admissions_but_preserves_cli_waiters() {
+    use supabricks_local::sessions::Sessions;
+    let root = root();
+    let mut store = Store::open(&root.path().join("state")).unwrap();
+    let (project, branch) = parent(&mut store);
+    let export = complete_export(&mut store, project, branch, 44);
+    let notebook = store
+        .admit_analytical_session(
+            project,
+            branch,
+            "notebook",
+            json!({"notebook":true}),
+            None,
+            Some(export),
+            60000,
+        )
+        .unwrap();
+    let cli = store
+        .admit_analytical_session(project, branch, "cli", json!({}), None, Some(export), 60000)
+        .unwrap();
+    assert_eq!(notebook.state, "waiting");
+    Sessions::recover(&mut store).unwrap();
+    assert_eq!(
+        store
+            .analytical_session(project, notebook.id)
+            .unwrap()
+            .state,
+        "failed"
+    );
+    assert_eq!(
+        store.analytical_session(project, cli.id).unwrap().state,
+        "waiting"
+    );
+    assert_eq!(store.active_analytical_sessions().unwrap().len(), 1);
+}

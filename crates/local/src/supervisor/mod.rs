@@ -241,7 +241,14 @@ pub fn members(record: &OwnedProcess) -> Result<Vec<u32>> {
     Ok(members)
 }
 
+#[track_caller]
 pub fn stop(record: &OwnedProcess) -> Result<()> {
+    if record.role.starts_with("notebook-server-") {
+        eprintln!(
+            "SUPABRICKS_SERVER_STOP {}",
+            serde_json::json!({"pid":record.pid,"caller":std::panic::Location::caller().to_string()})
+        );
+    }
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         match stop_until(record, deadline) {
