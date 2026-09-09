@@ -9,11 +9,21 @@ behavior, browser boundaries, type mapping, commit reconciliation and recovery.
 This plan owns implementation order and evidence required to finish each slice.
 IDs are planning identifiers, not existing issues or completion claims.
 
+**Update, 2026-09-09:** C01, C02 and I00-I02 are implemented; I02 merged in PR #23
+at `d18aae7`. The first installed CSV/branching demo is complete. The requested
+[notebook phase](notebook-implementation.md) now follows that milestone and can
+use A03 without waiting for I03 or C03. The sequence below records the original
+console/ingestion order; N00-N05 adds an intervening notebook phase. I03, C03 and
+R04 remain open, and R04 must include notebook regression evidence if notebooks
+ship in its combined release.
+
 Implementation: [C01 console contract and qualification](../architecture/c01-console.md)
 and [console runbook](../handbook/local-console.md). C01 supplies launch and the
 read-only overview. [C02](../architecture/c02-workspace.md) supplies the PostgreSQL
 workspace. [I00](../architecture/i00-ingestion.md) supplies durable ingestion
-contracts and the explicit catalog migration; the first importer remains I01.
+contracts and the explicit catalog migration. [I01](../architecture/i01-ingestion.md)
+implements CSV ingestion; [I02](../architecture/i02-console-ingestion.md) adds the
+browser import wizard and installed demo.
 
 The first milestone is a real installed browser demo: **import CSV -> query ->
 branch -> mutate the branch -> verify the unchanged parent**. JSON/Parquet and

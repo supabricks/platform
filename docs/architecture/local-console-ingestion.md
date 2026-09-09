@@ -14,6 +14,12 @@ the PR sequence and qualification gates. The baseline is
 `platform/main@278926b857673b4f7be0a6b86dde300318fbe4b1` after R03, PR #17.
 Commands introduced here are proposed syntax until their implementation lands.
 
+**Scope update, 2026-09-09:** the I02 CSV/branching demo has landed in PR #23.
+The separately requested [notebook architecture](local-notebooks.md) extends
+this console with local Python execution. The notebook exclusion below records
+the original phase boundary; it does not exclude N00-N05. I03/C03/R04 still
+describe unfinished format, analytical workspace and combined release work.
+
 ## 1. Product decisions
 
 - Ship a local browser console first. `supabricks console` opens it against the
