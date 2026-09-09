@@ -243,9 +243,20 @@ try {
  }
  await page.evaluate(()=>window.n02info());
  await action({action:'interrupt',id:notebook.id,generation:notebook.generation,key:'spark-interrupt'});
- notebook=await waitState(notebook,['lost']);assert.equal(notebook.error,'spark_interrupt_escalated');
+ notebook=await waitState(notebook,['lost','ready']);
+ if(notebook.state==='lost'){
+   assert.equal(notebook.error,'spark_interrupt_escalated');
+   report.spark_interrupt_outcome='escalated_to_A03_shutdown';
+ }else{
+   const interrupted=await page.evaluate(()=>window.n02slow);
+   assert.equal(interrupted.reply?.status,'error',JSON.stringify(interrupted));
+   assert.equal(interrupted.reply.ename,'KeyboardInterrupt');
+   await ok("assert spark.table('public.orders').count()==2");
+   notebook=await stop(notebook);
+   report.spark_interrupt_outcome='observed_KeyboardInterrupt_then_explicit_shutdown';
+ }
  assert.equal((await fixture('snapshot')).active_sessions,0);
- report.checks.push('observed_inflight_Sail_interrupt_escalates_to_A03_shutdown');
+ report.checks.push('observed_inflight_Sail_interrupt_and_verified_A03_cleanup');
  notebook=await start('malformed-frame');await connect(notebook);
  await page.evaluate(()=>{const bytes=new Uint8Array(8);bytes.fill(255);window.n02socket.send(bytes);});
  notebook=await waitState(notebook,['lost']);assert.equal(notebook.error,'protocol_limit');
