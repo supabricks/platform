@@ -17,7 +17,14 @@ assert root.parent.name.startswith(('sb-n02-', 'sb-n02-release-')) and root.name
 action, role = sys.argv[2:4]
 db = sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro', uri=True)
 records = [json.loads(row[0]) for row in db.execute('SELECT record_json FROM native_processes')]
-if action == 'snapshot':
+if action == 'diagnostics':
+    # Private, bounded failure evidence survives daemon down; never upload it.
+    for index, path in enumerate((root / 'notebook-work').glob('*/server.log')):
+        with path.open('rb') as stream:
+            stream.seek(max(0, path.stat().st_size - 65536))
+            (root.parent / f'private-server-{index}.log').write_bytes(stream.read(65536))
+    print('{}')
+elif action == 'snapshot':
     processes = []
     for record in records:
         try:

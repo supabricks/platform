@@ -46,4 +46,3 @@ def environment():
             if selection["version"] != expected[selection["name"]]:
                 raise RuntimeError(f"component inventory drift: {component['id']}")
     return target, installed
-

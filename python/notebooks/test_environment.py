@@ -19,7 +19,7 @@ class InstalledEnvironment(unittest.TestCase):
         distributions = list(runtime_environment.importlib.metadata.distributions())
         extra = types.SimpleNamespace(metadata={'Name': 'unqualified-extension'}, version='1.0')
         changed = [types.SimpleNamespace(metadata=d.metadata, version='0.0' if d.metadata['Name'] == 'pyarrow' else d.version) for d in distributions]
-        removed = [d for d in distributions if d.metadata['Name'] != 'jupyter-server']
+        removed = [d for d in distributions if d.metadata['Name'].lower().replace('_','-') != 'jupyter-server']
         for values in [distributions + [extra], changed, removed]:
             with self.subTest(packages=len(values)), patch.object(runtime_environment.importlib.metadata, 'distributions', return_value=values):
                 with self.assertRaises(RuntimeError):

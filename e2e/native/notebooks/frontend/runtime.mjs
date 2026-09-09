@@ -48,7 +48,7 @@ try {
  async function action(command){
    const response=await context.request.post(origin+'/api/workspace',{headers,data:{action:'notebook',command}});
    const body=await response.json();
-   assert.equal(response.status(),200,JSON.stringify(body));return body.value;
+   assert.equal(response.status(),200,JSON.stringify(body));if(body.value?.state)report.last_notebook=body.value;return body.value;
  }
  let notebook=await action({action:'create',key:'runtime-smoke',target});
  assert.equal(notebook.state,'stopped');
@@ -274,7 +274,7 @@ try {
  assert.ok(!recovered.processes.some(p=>p.role.startsWith('notebook-')));
  report.checks.push('daemon_crash_reconciles_all_notebook_children_and_admissions');
  report.status='passed';
-} catch(error){report.status='failed';report.error=error.message;throw error;
+} catch(error){await fixture('diagnostics').catch(()=>{});report.status='failed';report.error=error.message;throw error;
 } finally {
  clearTimeout(timeout);await browser.close();
  if(ownedRoot){
