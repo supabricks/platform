@@ -63,6 +63,11 @@ def observe(kernel, message, size):
     kind = header['msg_type']
     parent = message.get('parent_header', {}).get('msg_id')
     if kind == 'status':
+        # Control-channel kernel_info/completion traffic can report idle while a
+        # shell execution is still running. Only that execution's status proves
+        # interruption/completion; otherwise a reconnect could fake success.
+        if record['executing'] is not None and parent != record['executing']:
+            return
         record['state'] = message['content']['execution_state']
         if record['state'] == 'idle' and parent == record['executing']:
             record['executing'] = None
@@ -175,6 +180,7 @@ class BoundedChannels(ZMQChannelsWebsocketConnection):
                     raise ValueError('execution requires bounded code and allow_stdin=false')
                 record['executions'].add(identity)
                 record['executing'] = identity
+                record['state'] = 'busy'
                 record['output_bytes'] = record['output_messages'] = 0
                 record['activity_ms'] = now()
             super().handle_incoming_message(incoming)

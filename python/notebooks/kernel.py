@@ -23,7 +23,7 @@ class BoundedSession(Session):
         # Detect large output before ZMQ's receive-side MAXMSGSIZE can discard it
         # without an observable error. The daemon independently bounds process RSS.
         size = sum(len(part) for part in self.serialize(message, ident=ident))
-        size += sum(len(part) for part in (buffers or message.get('buffers', [])))
+        size += sum(memoryview(part).nbytes for part in (buffers or message.get('buffers', [])))
         if size > FRAME_BYTES - 1024:
             value = json.loads(Path(os.environ['SUPABRICKS_NOTEBOOK_CONTEXT']).read_text())
             fault = Path(value['fault'])

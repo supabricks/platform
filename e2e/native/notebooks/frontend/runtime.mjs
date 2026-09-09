@@ -92,10 +92,10 @@ try {
      const data=new Uint8Array(offsets.at(-1));const view=new DataView(data.buffer);view.setBigUint64(0,BigInt(offsets.length),true);
      offsets.forEach((offset,i)=>view.setBigUint64(8*(i+1),BigInt(offset),true));parts.forEach((p,i)=>data.set(p,offsets[i]));return data;
    }
-   function request(kind,content,id=crypto.randomUUID()){return new Promise((resolve,reject)=>{
+   function request(kind,content,id=crypto.randomUUID(),channel='shell'){return new Promise((resolve,reject)=>{
        const timer=setTimeout(()=>{pending.delete(id);reject(new Error('Jupyter reply timed out: '+kind));},30000);
        pending.set(id,{resolve,reject,timer,outputs:[],idle:false});
-       ws.send(encode('shell',{header:{msg_id:id,session,username:'supabricks',date:new Date().toISOString(),msg_type:kind,version:'5.3'},parent_header:{},metadata:{},content}));
+       ws.send(encode(channel,{header:{msg_id:id,session,username:'supabricks',date:new Date().toISOString(),msg_type:kind,version:'5.3'},parent_header:{},metadata:{},content}));
      });
    }
    ws.onmessage=event=>{
@@ -114,6 +114,7 @@ try {
    ws.onclose=()=>{for(const p of pending.values()){clearTimeout(p.timer);p.reject(new Error('Notebook channel closed'));}pending.clear();};
    await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
    await request('kernel_info_request',{});
+   window.n02info=()=>request('kernel_info_request',{},crypto.randomUUID(),'control');
    window.n02observed=[];
    window.n02execute=(code,id)=>request('execute_request',{code,silent:false,store_history:true,user_expressions:{},allow_stdin:false,stop_on_error:true},id);
    window.n02socket=ws;
@@ -123,6 +124,8 @@ try {
  const result=await page.evaluate(()=>window.n02execute("assert spark.table('public.orders').count()==2\nassert str(spark.sql('SELECT sum(amount) AS total FROM public.orders').first().total)=='19.75'\nprint('N02_SPARK_OK')"));
  assert.equal(result.reply.status,'ok',JSON.stringify(result));assert.ok(result.outputs.some(o=>o.text?.includes('N02_SPARK_OK')));
  report.checks.push('console_binary_channel_real_Spark_query');
+ for(let i=0;i<8;i++){await page.evaluate(()=>window.n02socket.close());await connect(notebook);}
+ report.checks.push('rapid_channel_close_and_reconnect');
  async function waitState(entry, states, timeoutMs=20000){
    const end=Date.now()+timeoutMs;
    while(Date.now()<end){
@@ -156,6 +159,8 @@ try {
  await page.waitForFunction(()=>window.n02observed.some(t=>t.includes('PYTHON_RUNNING')));
  const busy=await page.evaluate(()=>window.n02execute('counter=99'));
  assert.equal(busy.reply.ename,'ExecutionBusy');
+ await page.evaluate(()=>window.n02info());await new Promise(r=>setTimeout(r,500));
+ assert.equal((await action({action:'status',id:notebook.id,generation:notebook.generation})).state,'busy');
  await action({action:'interrupt',id:notebook.id,generation:notebook.generation,key:'interrupt'});
  const interrupted=await page.evaluate(()=>window.n02long);
  assert.equal(interrupted.reply.status,'error');assert.equal(interrupted.reply.ename,'KeyboardInterrupt');
@@ -222,6 +227,7 @@ try {
  while(await readFile(marker,'utf8').catch(()=>'')!=='entered'){
    assert.ok(Date.now()<enteredEnd,'Sail UDF did not enter');await new Promise(r=>setTimeout(r,100));
  }
+ await page.evaluate(()=>window.n02info());
  await action({action:'interrupt',id:notebook.id,generation:notebook.generation,key:'spark-interrupt'});
  notebook=await waitState(notebook,['lost']);assert.equal(notebook.error,'spark_interrupt_escalated');
  assert.equal((await fixture('snapshot')).active_sessions,0);
