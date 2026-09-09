@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Real I01 service qualification in a verified disposable root; synthetic data only."""
+import http.client
+import socket
+import tomllib
+from urllib.parse import urlsplit
 import argparse
 import json
 import os
@@ -247,12 +251,41 @@ def qualify(args):
             try:
                 wait(lambda:(pressure_data/'control.sock').exists(),30)
                 if args.python:pressure_cli('analytics','configure','--python',args.python,'--worker',args.worker)
+                # Open the real authenticated bridge against this metadata-only
+                # cell, before disk pressure. No native compute is needed to upload.
+                config=tomllib.loads((pressure_project/'supabricks.toml').read_text())
+                def control(request):
+                    with socket.socket(socket.AF_UNIX) as sock:
+                        sock.settimeout(5);sock.connect(str(pressure_data/'control.sock'))
+                        sock.sendall(json.dumps(dict(version=1,request=request)).encode()+b'\n')
+                        value=json.loads(sock.makefile('rb').readline())
+                        assert 'error' not in value,value
+                        return value['result']
+                assets=Path(binary).parent.parent/'share/console'
+                if not assets.is_dir():assets=Path(__file__).resolve().parents[2]/'console/dist'
+                def open_console():
+                    value=control(dict(method='console_open',binding=dict(project_id=config['id'],worktree=str(pressure_project)),assets=str(assets)))
+                    return value if value['state']=='ready' else None
+                console=wait(open_console,20)
+                url=urlsplit(console['url']);origin=f'http://127.0.0.1:{url.port}'
+                headers={'Origin':origin,'X-Supabricks-Console':'1','Content-Type':'application/json'}
+                def http(path,payload):
+                    conn=http.client.HTTPConnection('127.0.0.1',url.port,timeout=10)
+                    conn.request('POST',path,body=json.dumps(payload),headers=headers)
+                    response=conn.getresponse();value=json.loads(response.read());cookie=response.getheader('Set-Cookie');code=response.status;conn.close()
+                    return code,value,cookie
+                code,session,cookie=http('/api/session',dict(token=url.fragment.removeprefix('launch=')))
+                assert code==200,session
+                headers.update({'Cookie':cookie.split(';')[0],'X-Supabricks-CSRF':session['csrf']})
+                def browser(command):return http('/api/workspace',dict(action='ingest',command=command))[:2]
                 disk=os.statvfs(pressure)
                 free=disk.f_bavail*disk.f_frsize
                 assert 8*1024**2<free<160*1024**2,'pressure fixture must be a separate bounded volume'
                 with (pressure/'synthetic-fill').open('wb') as out:
                     for _ in range((free-8*1024**2)//1048576):out.write(b'x'*1048576)
                     out.flush();os.fsync(out.fileno())
+                code,rejection=browser(dict(action='begin',name='browser.csv',bytes=100))
+                assert code==409 and 'disk_reserve' in rejection['error']['message'],rejection
                 rejected=pressure_cli('ingest','inspect',small,ok=False)
                 assert rejected['source']['state']=='interrupted' and rejected['error']=='disk_reserve',rejected
                 assert not list((pressure_data/'ingest/sources').glob('*.source'))
@@ -261,6 +294,16 @@ def qualify(args):
                 recovered=pressure_cli('ingest','inspect',small)
                 assert recovered['source']['state']=='staged',recovered
                 check('real bounded volume pressure refuses staging before partial publication and recovers after space is freed')
+                code,slot=browser(dict(action='begin',name='expired.csv',bytes=8));assert code==200,slot
+                source=slot['value']['source']['id']
+                # Test-only expiry injection in an isolated catalog. Production
+                # continues to have exactly one metadata writer.
+                with sqlite3.connect(pressure_data/'state.sqlite3') as db:
+                    db.execute('UPDATE ingest_sources SET expires_at_ms=0 WHERE id=?',(source,))
+                code,rejection=browser(dict(action='source',source=source))
+                assert code==409 and 'expired' in rejection['error']['message'],rejection
+                check('real browser upload admission rejects disk exhaustion and expired staging on the bounded volume')
+
             finally:
                 (pressure/'synthetic-fill').unlink(missing_ok=True)
                 pressure_cli('down');daemon.wait(timeout=30)

@@ -107,6 +107,62 @@ impl State {
         .await
         .map_err(|_| invalid("console worker unavailable"))?
     }
+    async fn ingest(&self, id: &str, command: super::ingestion::Command) -> Result<Value> {
+        let config = self.config.clone();
+        let owner = format!("{}:{id}", config.instance);
+        tokio::task::spawn_blocking(move || {
+            client::request_timeout(
+                &config.root,
+                Request::ConsoleAction {
+                    binding: config.binding,
+                    generation: config.generation,
+                    owner,
+                    action: super::workspace::Command::Ingest { command },
+                },
+                Duration::from_secs(2),
+            )
+        })
+        .await
+        .map_err(|_| invalid("upload bridge unavailable"))?
+    }
+    async fn upload(
+        &self,
+        id: &str,
+        source: crate::ingest::SourceId,
+        mut body: Incoming,
+    ) -> Result<Value> {
+        use super::ingestion::Command;
+        // Verify binding before reading any body, including an empty body.
+        let slot = self.ingest(id, Command::Source { source }).await?;
+        if slot["received"] != 0 || slot["status"]["source"]["state"] != "receiving" {
+            return Err(invalid("upload slot is not empty"));
+        }
+        let mut offset = 0;
+        while let Some(frame) = tokio::time::timeout(Duration::from_secs(10), body.frame())
+            .await
+            .map_err(|_| invalid("upload stalled"))?
+        {
+            let frame = frame.map_err(|_| invalid("upload interrupted"))?;
+            if let Ok(bytes) = frame.into_data() {
+                for chunk in bytes.chunks(24576) {
+                    self.ingest(
+                        id,
+                        Command::Chunk {
+                            source,
+                            offset,
+                            hex: hex::encode(chunk),
+                        },
+                    )
+                    .await?;
+                    offset += chunk.len() as u64;
+                }
+            }
+        }
+        if slot["expected"].as_u64() != Some(offset) {
+            return Err(invalid("upload incomplete"));
+        }
+        Ok(json!({"received":offset}))
+    }
     fn authenticated(&self, headers: &HeaderMap) -> Option<(String, String)> {
         let id = session_id(headers, &self.cookie)?;
         let mut sessions = self.sessions.lock().unwrap();
@@ -247,6 +303,30 @@ impl State {
         {
             return fail(403, "Invalid CSRF token");
         }
+        if let Some(source) = path.strip_prefix("/api/upload/") {
+            if request.method() != Method::POST
+                || single(request.headers(), "content-type") != Some("application/octet-stream")
+            {
+                return fail(415, "Expected a POST file stream");
+            }
+            let source = match source.parse::<crate::ingest::SourceId>() {
+                Ok(id) => id,
+                Err(_) => return fail(400, "Invalid source ID"),
+            };
+            let result = self.upload(&id, source, request.into_body()).await;
+            return match result {
+                Ok(value) => json_response(200, json!({"api_version":VERSION,"value":value})),
+                Err(_) => {
+                    let _ = self
+                        .ingest(&id, super::ingestion::Command::Dispose { source })
+                        .await;
+                    fail(
+                        409,
+                        "Upload interrupted, rejected or out of disk space. Select the file again.",
+                    )
+                }
+            };
+        }
         if path == "/api/workspace" && request.method() == Method::POST {
             if single(request.headers(), "content-type") != Some("application/json") {
                 return fail(415, "Expected application/json");
@@ -367,12 +447,15 @@ pub(super) async fn serve(config: Config) -> Result<()> {
                     let _permit = permit;
                     let service = service_fn(move |request| {
                         let state = state.clone();
-                        async move { Ok::<_, Infallible>(state.handle(request).await) }
+                        async move {
+                            let timeout = if request.uri().path().starts_with("/api/upload/") {610} else {8};
+                            Ok::<_, Infallible>(tokio::time::timeout(Duration::from_secs(timeout),state.handle(request)).await.unwrap_or_else(|_|fail(408,"Console request timed out")))
+                        }
                     });
                     let mut builder = hyper::server::conn::http1::Builder::new();
                     builder.keep_alive(false).max_buf_size(16384).max_headers(32)
                         .timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(3));
-                    let _ = tokio::time::timeout(Duration::from_secs(8), builder.serve_connection(TokioIo::new(stream), service)).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(615), builder.serve_connection(TokioIo::new(stream), service)).await;
                 });
             }
         }

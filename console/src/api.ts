@@ -178,3 +178,97 @@ export type WorkspaceCommand =
 export async function workspace<T>(command: WorkspaceCommand): Promise<T> {
   return (await request("workspace", "POST", command)).value;
 }
+
+export type Mapping = {
+  version: 1;
+  format: "csv";
+  delimiter: string;
+  header: boolean;
+  null_strings: string[];
+  columns: {
+    input: string;
+    name: string;
+    data_type: { kind: string; precision?: number; scale?: number };
+    nullable: boolean;
+  }[];
+};
+export type ImportSource = {
+  id: string;
+  display_name: string;
+  state: string;
+  sha256: string | null;
+  bytes: number;
+  expires_at_ms: number;
+};
+export type SourceStatus = {
+  status: {
+    source: ImportSource;
+    inspection: { mapping: Mapping; rows: (string | null)[][] } | null;
+    error: string | null;
+  };
+  received: number;
+  expected: number;
+  preview: number;
+};
+export type ImportLoad = {
+  version: 1;
+  project_id: string;
+  branch_id: string;
+  branch_revision: number;
+  source_id: string;
+  source_sha256: string;
+  mapping: Mapping;
+  schema: string;
+  table: string;
+};
+export type ImportJob = {
+  id: string;
+  load: ImportLoad;
+  state: string;
+  attempt: number;
+  parsed_rows: number;
+  copied_rows: number;
+  committed_rows: number | null;
+  retryable: boolean;
+  source_released: boolean;
+  error?: string;
+  source?: ImportSource;
+};
+export async function ingest<T>(command: object): Promise<T> {
+  return (await request("workspace", "POST", { action: "ingest", command }))
+    .value;
+}
+export function upload(
+  source: string,
+  file: File,
+  progress: (bytes: number) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/upload/${source}`);
+    xhr.setRequestHeader("X-Supabricks-Console", "1");
+    xhr.setRequestHeader("X-Supabricks-CSRF", csrf);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.timeout = 600000;
+    xhr.upload.onprogress = (e) => progress(e.loaded);
+    const abort = () => xhr.abort();
+    signal.addEventListener("abort", abort, { once: true });
+    xhr.onloadend = () => {
+      signal.removeEventListener("abort", abort);
+      if (xhr.status === 200) resolve();
+      else
+        reject(
+          new Error(
+            "Upload interrupted, rejected or out of disk space. Select the file again.",
+          ),
+        );
+    };
+    if (signal.aborted) {
+      reject(new Error("Upload cancelled"));
+      return;
+    }
+    // The browser streams the File directly; no arrayBuffer/text/base64 copy.
+    xhr.send(file);
+  });
+}

@@ -99,6 +99,19 @@ def stage(config):
     return dict(state='staged', bytes=size, sha256=digest.hexdigest(), inspection=inspection)
 
 
+def inspect_uploaded(config):
+    digest, size = hashlib.sha256(), 0
+    with regular(config['path']) as stream:
+        while block := stream.read(65536):
+            boundary(config)
+            size += len(block)
+            if size > SOURCE_BYTES:
+                raise Rejected('source_limit')
+            digest.update(block)
+    return dict(state='staged', bytes=size, sha256=digest.hexdigest(),
+                inspection=inspect_csv(config, config['path']))
+
+
 def first_record(path, delimiter):
     # Bound the stdlib header probe before Arrow allocates its column metadata.
     with regular(path) as raw:
@@ -390,7 +403,7 @@ def main(config):
                     os._exit(86)
     threading.Thread(target=watch,daemon=True).start()
     try:
-        result = {'stage':stage,'load':load_csv,'reconcile':reconcile}[config['mode']](config)
+        result = {'stage':stage,'uploaded':inspect_uploaded,'preview':inspect_uploaded,'load':load_csv,'reconcile':reconcile}[config['mode']](config)
         atomic(Path(config['workspace'])/'result.json',dict(ok=True,value=result,metrics=dict(peak_rss_bytes=max(peak,psutil.Process().memory_info().rss),duration_ms=int((time.monotonic()-started)*1000))))
     except BaseException as error:
         # Never put parser messages, source data, identifiers or connection URIs

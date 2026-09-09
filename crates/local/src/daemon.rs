@@ -130,6 +130,7 @@ pub struct Daemon {
     queries: Vec<std::thread::JoinHandle<()>>,
     ingest_error: Option<String>,
     ingestion: crate::ingest::service::Service,
+    uploads: crate::console::ingestion::Uploads,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -170,6 +171,7 @@ impl Daemon {
             queries: Vec::new(),
             ingest_error: None,
             ingestion: Default::default(),
+            uploads: Default::default(),
             gateway,
             validator,
             store,
@@ -211,6 +213,7 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                self.uploads.tick(&mut self.store, stopping)?;
                 let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
                     Ok(done) => {
                         self.ingest_error = None;
@@ -297,7 +300,21 @@ impl Daemon {
                 Ok(pair) => pair,
                 Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    std::thread::sleep(Duration::from_millis(20));
+                    // Wake immediately for streamed upload chunks while retaining
+                    // the 20 ms ceiling for gateways and lifecycle maintenance.
+                    use std::os::fd::AsRawFd;
+                    let mut fd = libc::pollfd {
+                        fd: self.listener.as_raw_fd(),
+                        events: libc::POLLIN,
+                        revents: 0,
+                    };
+                    let result = unsafe { libc::poll(&mut fd, 1, 20) };
+                    if result < 0 {
+                        let error = std::io::Error::last_os_error();
+                        if error.kind() != std::io::ErrorKind::Interrupted {
+                            return Err(error.into());
+                        }
+                    }
                     continue;
                 }
                 Err(e) => return Err(e.into()),
@@ -453,7 +470,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":false},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -574,6 +591,15 @@ impl Daemon {
         use crate::console::workspace::{Command as C, identifier};
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
+            C::Ingest { command } => {
+                return self.uploads.handle(
+                    &mut self.store,
+                    &mut self.ingestion,
+                    &binding,
+                    &owner,
+                    command,
+                );
+            }
             C::Query {
                 id,
                 target,

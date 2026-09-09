@@ -140,7 +140,11 @@ impl Service {
     ) -> Result<Value> {
         binding.validate(store)?;
         worker(store)?;
-        if self.tasks.values().any(|t| t.mode == "stage") {
+        if self
+            .tasks
+            .values()
+            .any(|t| matches!(t.mode, "stage" | "uploaded" | "preview"))
+        {
             return Err(conflict("a source inspection is already active"));
         }
         if !path.is_absolute() || path.as_os_str().len() > 4096 {
@@ -184,6 +188,40 @@ impl Service {
             return Err(error);
         }
         source_status(store, binding.project_id, source.id)
+    }
+    pub(crate) fn cancel_source(&mut self, store: &mut Store, id: SourceId) -> Result<()> {
+        if let Some(task) = self.tasks.values_mut().find(|t| t.source == Some(id)) {
+            task.started = Instant::now() - Duration::from_secs(601);
+            self.tick(store, false)?;
+        }
+        Ok(())
+    }
+    pub(crate) fn inspect_uploaded(
+        &mut self,
+        store: &mut Store,
+        binding: &Binding,
+        id: SourceId,
+        options: Mapping,
+    ) -> Result<Value> {
+        options.fingerprint()?;
+        if self.tasks.values().any(|t| t.source.is_some()) {
+            return Err(conflict("a source inspection is already active"));
+        }
+        let source = store.ingest_source(binding.project_id, id)?;
+        if source.generation != store.generation()
+            || source.expires_at_ms <= chrono::Utc::now().timestamp_millis()
+        {
+            return Err(conflict("source expired; upload again"));
+        }
+        let (mode, suffix) = match source.state.as_str() {
+            "receiving" => ("uploaded", "part"),
+            "staged" => ("preview", "source"),
+            _ => return Err(conflict("source is unavailable")),
+        };
+        let path = store.source_path(id, suffix)?;
+        self.launch(store, &format!("ingest-source-{id}"), binding.project_id, Some(id), None, mode,
+            json!({"path":path,"options":{"delimiter":options.delimiter,"header":options.header,"null_strings":options.null_strings}}))?;
+        source_status(store, binding.project_id, id)
     }
     fn launch(
         &mut self,
@@ -344,6 +382,13 @@ impl Service {
                         json!({"version":1,"source_id":source,"source_sha256":result["sha256"],"mapping":result["inspection"]["mapping"],"rows":result["inspection"]["rows"],"sample_only":true}),
                     )?;
                     inspection.validate()?;
+                    if t.mode == "preview" {
+                        let current = store.ingest_source(t.project, source)?;
+                        if current.sha256.as_deref() != result["sha256"].as_str() {
+                            return Err(conflict("staged source changed"));
+                        }
+                        return Ok(());
+                    }
                     store.seal_source_verified(
                         t.project,
                         source,
