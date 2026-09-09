@@ -65,7 +65,8 @@ elif action == 'kill-daemon':
     server = next(r for r in records if r['role'].startswith('notebook-server-'))
     process = psutil.Process(server['pid']).parent()
     command = process.cmdline()
-    assert 'daemon' in command and str(root) in command
+    assert 'daemon' in command and '--data-dir' in command
+    assert Path(command[command.index('--data-dir') + 1]).resolve() == root
     process.kill()
     print('{}')
 elif action == 'kill':
