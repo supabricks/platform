@@ -67,7 +67,7 @@ try {
  assert.ok(report.observed_server_rss_bytes>0 && report.observed_server_rss_bytes<=512*1024*1024);
  assert.ok(initial.processes.some(p=>p.role==='notebook-kernel-'+notebook.session_id));
  report.checks.push('durable_process_evidence_precedes_ready_and_server_rss_is_bounded');
- const page=await context.newPage();page.on('console',m=>{if(m.type()==='error')process.stderr.write(m.text()+'\n');});await page.goto(origin);
+ const page=await context.newPage();await page.goto(origin);
  async function connect(notebook){
  const kernelStatus=await context.request.get(origin+`/api/notebooks/${notebook.id}/${notebook.generation}/kernel`,{headers});
  assert.equal(kernelStatus.status(),200,await kernelStatus.text());

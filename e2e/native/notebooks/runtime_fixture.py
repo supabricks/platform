@@ -29,7 +29,8 @@ elif action == 'snapshot':
     for record in records:
         try:
             process = psutil.Process(record['pid'])
-            rss = sum(p.memory_info().rss for p in [process, *process.children(recursive=True)] if p.is_running())
+            rss = sum(p.memory_info().rss for p in [process, *process.children(recursive=True)]
+                      if p.is_running() and os.getpgid(p.pid) == record['pid'])
         except psutil.NoSuchProcess:
             rss = 0
         processes.append({'role': record['role'], 'pid': record['pid'], 'rss': rss})
