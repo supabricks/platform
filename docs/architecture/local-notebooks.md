@@ -17,25 +17,23 @@ should not have to install Jupyter, Python, Node, Java or a separate Spark clust
 
 | Layer | Proposed component | Supabricks responsibility |
 | --- | --- | --- |
-| Notebook editor | Datalayer `@datalayer/jupyter-react` | Console navigation, branch/snapshot context, toolbar and component adapter |
+| Notebook editor | Upstream JupyterLab notebook/services through a React adapter (N01 selection) | Console navigation, branch/snapshot context, toolbar and component adapter |
 | Notebook protocol and kernel services | Jupyter Server | Authenticated bridge, restricted contents adapter and lifecycle integration |
 | Python kernel | Upstream `ipykernel` | Bundled kernelspec, private configuration and Spark bootstrap |
 | Analytical execution | Existing PySpark Connect client and Sail | Existing A03 admission, epochs, leases and worker limits |
 | Document format | Standard `.ipynb` | Conflict-aware saves, project file ownership and metadata |
 
-Datalayer is the first candidate, not a qualified dependency yet. Its
-[MIT-licensed repository](https://github.com/datalayer/jupyter-ui) and
-[Notebook component documentation](https://jupyter-ui.datalayer.tech/docs/components/notebook/)
-describe a React notebook connected to a self-hosted Jupyter Server. No Datalayer
-service is needed. N01 must pin exact versions and prove compatibility with our
-React 19/Vite build, styling, content policy and offline archive.
+[N01 qualification](n01-notebook-qualification.md) selects upstream JupyterLab
+notebook/services with Jupyter Server and ipykernel. The retained Datalayer
+2.0.14 candidate fails under the existing Vite configuration on a JupyterLite
+asset import. The decision record contains exact locks, the comparison probe,
+measurements and required adapters; it does not enable a product feature.
 
 Use upstream [Jupyter Server APIs](https://jupyter-server.readthedocs.io/en/latest/developers/rest-api.html)
 and its [kernel WebSocket protocol](https://jupyter-server.readthedocs.io/en/latest/developers/websocket-protocols.html).
-Do not implement a replacement notebook execution protocol. If Datalayer cannot
-meet the measured requirements, evaluate a thin adapter around upstream
-JupyterLab notebook/services packages; record the decision before N02. An
-external JupyterLab tab may help diagnosis but does not complete the embedded UI.
+Keep notebook models, editing, rendering and execution in those upstream
+components. An external JupyterLab tab may help diagnosis but does not complete
+the embedded UI.
 
 Use a native Python kernel. Browser kernels have different package/execution
 constraints ([JupyterLite documentation](https://jupyterlite.readthedocs.io/en/stable/howto/configure/kernels.html));
