@@ -678,6 +678,16 @@ impl Daemon {
                     command,
                 );
             }
+            C::NotebookFiles { command } => {
+                self.consoles.owns(
+                    &binding,
+                    owner
+                        .split_once(':')
+                        .ok_or_else(|| invalid("invalid notebook owner"))?
+                        .0,
+                )?;
+                return crate::notebooks::files::handle(&binding.worktree, command);
+            }
             C::Ingest { command } => {
                 return self.uploads.handle(
                     &mut self.store,
