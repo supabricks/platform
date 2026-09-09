@@ -34,7 +34,31 @@ if action == 'diagnostics':
             for line in content.decode(errors='replace').splitlines():
                 if line.startswith('SUPABRICKS_SIGNAL '):
                     signals.append(json.loads(line.removeprefix('SUPABRICKS_SIGNAL ')))
-    print(json.dumps({'server_error_classes': sorted(classes), 'server_signals': signals[-16:]}))
+    crashes = []
+    stops = []
+    with (root / 'daemon.log').open('rb') as stream:
+        stream.seek(max(0, (root / 'daemon.log').stat().st_size - 65536))
+        for line in stream.read(65536).decode(errors='replace').splitlines():
+            if line.startswith('SUPABRICKS_SERVER_STOP '):
+                stops.append(json.loads(line.removeprefix('SUPABRICKS_SERVER_STOP ')))
+    if sys.platform == 'darwin':
+        # Only extract termination categories from this fixture's Python reports.
+        # Never retain raw OS reports (which include paths and process context).
+        for folder in [Path('/Library/Logs/DiagnosticReports'), Path.home() / 'Library/Logs/DiagnosticReports']:
+            for path in sorted(folder.glob('*python*.ips'), key=lambda p: p.stat().st_mtime, reverse=True)[:20]:
+                try:
+                    if time.time() - path.stat().st_mtime > 900:
+                        continue
+                    content = path.read_text()
+                    _, end = json.JSONDecoder().raw_decode(content)
+                    crash = json.loads(content[end:].strip())
+                    if '/sb-c01-release-' not in crash.get('procPath', ''):
+                        continue
+                    termination = crash.get('termination', {})
+                    crashes.append({k: termination.get(k) for k in ['namespace', 'code', 'indicator', 'byProc', 'byPid']})
+                except (OSError, ValueError):
+                    pass
+    print(json.dumps({'server_error_classes': sorted(classes), 'server_signals': signals[-16:], 'daemon_stops': stops[-16:], 'os_terminations': crashes}))
 elif action == 'snapshot':
     processes = []
     for record in records:

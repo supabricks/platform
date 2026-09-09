@@ -574,6 +574,11 @@ impl Notebooks {
             })();
             // Runtime errors fence the handle; cleanup is retried on the next tick.
             if let Err(error) = &result {
+                self.events
+                    .push(json!({"phase":"kernel_tick","handle":id,"error":error.to_string()}));
+                if self.events.len() > 16 {
+                    self.events.remove(0);
+                }
                 e.restart = false;
                 e.state = "stopping".into();
                 e.stop_reason = Some("runtime_failure".into());
