@@ -258,16 +258,19 @@ async def start(kernel, generation):
         if manager.autorestart:
             raise RuntimeError('automatic restart is forbidden')
         client = manager.client()
+        # Forget/shutdown must own these channels even if readiness fails.
+        record['client'] = client
         client.start_channels()
         await client.wait_for_ready(timeout=60)
         gate = manager.gate()
         if not Path(gate['ready']).is_file():
             raise RuntimeError('Spark bootstrap did not finish')
-        record['client'] = client
         record['ready'], record['state'], record['activity_ms'] = True, 'idle', now()
         record['monitor'] = asyncio.create_task(monitor(kernel, client))
         publish(kernel)
     except Exception:
+        if record.get('client'):
+            record['client'].stop_channels()
         fail(kernel, 'bootstrap_failed')
 
 
