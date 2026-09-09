@@ -81,6 +81,8 @@ jobs:
           python install/native/test_analytics.py
       - name: Assemble exact native release
         run: |
+          uv export --project python/notebooks --locked --format requirements-txt --no-emit-project --output-file python/notebooks/requirements.lock > /dev/null
+          git diff --exit-code -- python/notebooks/requirements.lock
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
