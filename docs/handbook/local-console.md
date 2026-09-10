@@ -64,6 +64,7 @@ desktop's `xdg-open`; the returned URL works when that helper is absent.
 Build the frontend once with Node 20.19+ (CI uses Node 22):
 
 ```sh
+git submodule update --init console
 npm ci --prefix console --no-audit --no-fund
 npm run build --prefix console
 cargo build --locked -p supabricks-local

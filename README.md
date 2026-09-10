@@ -26,6 +26,11 @@ See the [notebook runbook](docs/handbook/notebooks.md). The
 component qualification, local kernels, project files and installed release gates.
 Fresh installed Linux/macOS results are required before claiming notebook preview readiness.
 
+The frontend source now lives in [supabricks/console](https://github.com/supabricks/console),
+pinned here as the `console/` submodule. Run `git submodule update --init console`
+before building it. See the [source split contract](docs/architecture/console-source-split.md)
+for ownership, development and release provenance.
+
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres
 (Neon's Apache-2.0 storage engine) with scale-to-zero, ~1s wakes, instant

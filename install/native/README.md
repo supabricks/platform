@@ -77,6 +77,7 @@ No Go compiler is shipped or required by the installer. Then:
 
 ```sh
 cargo build --locked --release -p supabricks-local
+git submodule update --init console
 npm ci --prefix console --no-audit --no-fund
 npm run build --prefix console
 python3 components/prepare-native-cell.py linux-x86_64 build/native --offline-runtime

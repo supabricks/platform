@@ -12,6 +12,8 @@ on:
       - 'python/notebooks/**'
       - 'e2e/native/notebooks/**'
       - 'console/**'
+      - 'console'
+      - '.gitmodules'
       - 'examples/orders/**'
       - 'examples/console/**'
       - 'examples/notebooks/**'
@@ -42,6 +44,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v6
@@ -103,6 +107,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-linux-x86_64
@@ -145,6 +151,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-macos-arm64
@@ -183,6 +191,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -242,6 +252,8 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/console-browsers
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -301,6 +313,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -362,6 +376,8 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/notebook-browsers
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -391,7 +407,7 @@ jobs:
               SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
               "$3" install/native/qualify_console.py --directory build/releases \
               --report build/notebook-reports/notebooks.json --node "$4" \
-              --harness console/scripts/qualify-all-notebooks.mjs
+              --harness e2e/native/notebooks/qualify-product.mjs
           ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$python_path" "$node_path"
       - name: Installed browser workflow on macOS with external network denied
         if: runner.os == 'macOS'
@@ -401,7 +417,7 @@ jobs:
             SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
             "$(command -v python)" install/native/qualify_console.py --directory build/releases \
             --report build/notebook-reports/notebooks.json --node "$(command -v node)" \
-            --harness console/scripts/qualify-all-notebooks.mjs
+            --harness e2e/native/notebooks/qualify-product.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

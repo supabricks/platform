@@ -29,6 +29,23 @@ def output(*args):
     return subprocess.check_output(list(map(str, args)), cwd=ROOT, text=True).strip()
 
 
+def console_source():
+    entry = output('git', 'ls-files', '--stage', '--', 'console').split()
+    if len(entry) != 4 or entry[0] != '160000':
+        raise ValueError('console must be the pinned source submodule')
+    pin = entry[1]
+    if output('git', '-C', ROOT / 'console', 'rev-parse', 'HEAD') != pin:
+        raise ValueError('console checkout differs from its platform gitlink; update the pin explicitly')
+    if output('git', '-C', ROOT / 'console', 'status', '--porcelain', '--untracked-files=normal'):
+        raise ValueError('console source is dirty; commit it and update the platform gitlink before assembly')
+    source = json.loads((ROOT / 'console/build/console-source.json').read_text())
+    if (source.get('commit') != pin or source.get('dirty') is not False
+            or source.get('package_lock_sha256') != digest(ROOT / 'console/package-lock.json')
+            or source.get('manifest_sha256') != digest(ROOT / 'console/dist/console.json')):
+        raise ValueError('console assets were built from different or dirty source; rebuild the pinned console')
+    return source
+
+
 def assemble(args):
     if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?', args.version):
         raise ValueError('version must be a release tag, e.g. v0.1.0-alpha.1')
@@ -39,6 +56,7 @@ def assemble(args):
     if not (console / 'console.json').is_file():
         raise ValueError('build the console first: npm ci --prefix console && npm run build --prefix console')
     console_manifest = json.loads((console / 'console.json').read_text())
+    frontend_source = console_source()
     if console_manifest.get('api_version') != 1 or 'index.html' not in console_manifest.get('files', {}):
         raise ValueError('console build is missing its API 1 manifest or entry point')
     console_files = {str(p.relative_to(console)): digest(p) for p in console.rglob('*') if p.is_file() and p.name != 'console.json'}
@@ -116,6 +134,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'Cargo.lock', destination / 'provenance/platform-Cargo.lock')
     shutil.copy2(ROOT / 'console/package-lock.json', destination / 'provenance/console-package-lock.json')
     shutil.copy2(ROOT / 'console/package.json', destination / 'provenance/console-package.json')
+    shutil.copy2(ROOT / 'console/build/console-source.json', destination / 'provenance/console-source.json')
     # Preserve notices for all bundled runtime dependencies, including JupyterLab,
     # and Vite's generated loader. The lock retains exact source identities.
     frontend_lock = json.loads((ROOT / 'console/package-lock.json').read_text())
@@ -169,7 +188,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         (destination / 'python/ingest').mkdir()
         shutil.copy2(ROOT / 'python/ingest/worker.py', destination / 'python/ingest/worker.py')
     provenance = dict(
-        console=dict(api_version=1, manifest_sha256=digest(console / 'console.json'),
+        console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
         data_formats=dict(local_catalog=9, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
