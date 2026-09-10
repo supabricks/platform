@@ -332,7 +332,7 @@ jobs:
           pressure_mount=$(mktemp -d /tmp/sb-i01-volume.XXXXXX)
           hdiutil create -size 100m -fs HFS+ -volname SupabricksPressure build/ingest-pressure.dmg
           hdiutil attach build/ingest-pressure.dmg -mountpoint "$pressure_mount" -nobrowse
-          trap 'hdiutil detach "$pressure_mount"; rmdir "$pressure_mount"' EXIT
+          trap 'qualification_status=$?; trap - EXIT; if ! bash install/native/detach_macos_volume.sh "$pressure_mount"; then qualification_status=1; fi; exit "$qualification_status"' EXIT
           sandbox-exec -f install/native/offline-macos.sb \
             /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             SUPABRICKS_INGEST_PRESSURE_DIR="$pressure_mount" \

@@ -5,6 +5,7 @@ import socket
 import tomllib
 from urllib.parse import urlsplit
 import argparse
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -298,8 +299,9 @@ def qualify(args):
                 source=slot['value']['source']['id']
                 # Test-only expiry injection in an isolated catalog. Production
                 # continues to have exactly one metadata writer.
-                with sqlite3.connect(pressure_data/'state.sqlite3') as db:
-                    db.execute('UPDATE ingest_sources SET expires_at_ms=0 WHERE id=?',(source,))
+                with closing(sqlite3.connect(pressure_data/'state.sqlite3')) as db:
+                    with db:
+                        db.execute('UPDATE ingest_sources SET expires_at_ms=0 WHERE id=?',(source,))
                 code,rejection=browser(dict(action='source',source=source))
                 assert code==409 and 'expired' in rejection['error']['message'],rejection
                 check('real browser upload admission rejects disk exhaustion and expired staging on the bounded volume')

@@ -69,7 +69,23 @@ product workflow under the existing network isolation on both targets.
 
 ## Remaining qualification boundaries
 
-Fresh exact-archive Linux/macOS CI reports are pending. The expanded original
+The first exact-archive CI run at `f689236` passed the installed Linux notebook
+workflow and runtime fault checks on both targets. The macOS product fixture
+failed before opening the browser: `/private/tmp` expansion made its compute
+socket budget 106 bytes, exceeding the runtime's 104-byte limit. An isolated
+local reproduction at the same length returned that exact `start_compute`
+error. The fixture now uses a shorter prefix, checks the canonical path budget
+before launching services, and preserves structured CLI errors in its report.
+The updated fixture passes all 12 local browser checks; fresh macOS CI is pending.
+
+The same CI run's macOS ingestion assertions passed, but the job failed when
+`hdiutil detach` reported the disposable pressure volume busy. The test now
+explicitly closes its pressure-volume SQLite connection; workflow cleanup
+retries normal detach before forced detach of that fixture only. Persistent
+cleanup failures remain failures, and qualification failures retain a nonzero
+exit status. Shell tests exercised each cleanup outcome.
+
+The expanded original
 N03/N04 acceptance matrix (including disk-full injection, child-branch workflow,
 full-session admission and expired/deleted saved bindings through the product)
 must not be inferred from the smaller local browser suite. Existing backend

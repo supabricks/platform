@@ -1,5 +1,5 @@
 import { chromium } from "@playwright/test";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolve, dirname, join } from "node:path";
@@ -13,7 +13,9 @@ const args = Object.fromEntries(
 );
 if (!args["--binary"] || !args["--report"])
   throw new Error("Supply --binary and --report");
-const root = await mkdtemp("/tmp/sb-product-notebooks-"),
+// macOS resolves /tmp to /private/tmp. Leave room for tmp/<endpoint UUID>
+// and PostgreSQL's socket filename within the runtime's 104-byte budget.
+const root = await mkdtemp("/tmp/sb-nb-ui-"),
   project = root + "/project",
   data = root + "/data";
 await mkdir(project);
@@ -35,13 +37,34 @@ async function cli(...command) {
     );
     return JSON.parse(result.stdout.trim().split("\n").at(-1));
   } catch (e) {
+    let operationError;
+    try {
+      const result = JSON.parse(e.stdout.trim().split("\n").at(-1));
+      operationError = result.error ?? result.operation?.error;
+    } catch {
+      // Startup/transport failures may have no structured CLI result.
+    }
     throw new Error(
-      `Fixture ${command[0]} failed: ${String(e.stderr ?? e.code).slice(-1000)}`,
+      `Fixture ${command[0]} failed (code=${e.code}, signal=${e.signal ?? "none"}, killed=${e.killed ?? false}): ${operationError ? JSON.stringify(operationError) : String(e.stderr ?? e.message).slice(-1000)}`,
     );
   }
 }
 try {
   await cli("init", "notebook-repair");
+  const socketBudget =
+    Buffer.byteLength(
+      join(
+        await realpath(root),
+        "data",
+        "tmp",
+        "00000000-0000-0000-0000-000000000000",
+      ),
+    ) + 20;
+  report.socket_path_budget_bytes = socketBudget;
+  if (socketBudget > 104)
+    throw new Error(
+      `Fixture data path exceeds the PostgreSQL socket budget: ${socketBudget}/104 bytes`,
+    );
   if (args["--bundle"])
     await cli(
       "up",
