@@ -101,6 +101,17 @@ export async function logout() {
   csrf = "";
 }
 
+export type NotebookFile = { path: string };
+export type NotebookDocument = {
+  cells: { cell_type: "code" | "markdown" | "raw"; source: string; metadata?: object; [key: string]: unknown }[];
+  metadata: object;
+  nbformat: 4;
+  nbformat_minor: number;
+};
+export async function notebookFiles(command: object): Promise<Record<string, unknown>> {
+  return (await request("notebooks/contents", "POST", command)).value;
+}
+
 export type Target = { branch: string; revision: number };
 export type SqlResult = {
   branch_id: string;
