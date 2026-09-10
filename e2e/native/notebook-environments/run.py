@@ -12,10 +12,12 @@ import http.server
 import json
 import os
 from pathlib import Path
+import resource
 import shutil
 import signal
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -114,7 +116,7 @@ class Probe:
         self.report['package'] = {k: manifest[k] for k in ['wheel_bytes', 'uv_bytes', 'notebook_lock_sha256']}
         self.report['package']['base_distributions'] = len(manifest['packages'])
         self.service_before = inventory(self.service / 'python')
-        base = self.prepare('base-cold', self.bundle / 'base.lock')
+        base = self.base = self.prepare('base-cold', self.bundle / 'base.lock')
         warm = self.prepare('base-warm', self.bundle / 'base.lock')
         self.a = self.prepare('project-a', self.bundle / 'a.lock')
         self.b = self.prepare('project-b', self.bundle / 'b.lock')
@@ -182,7 +184,9 @@ class Probe:
         self.check('release_relocated_before_creation_venv_and_interpreter_move_require_rebuild')
         self.cancel_test(base)
         self.report['cache'] = size(self.root / 'cache')
-        shutil.rmtree(base)
+        # getrusage is the high-water mark across completed preparation/test
+        # children, not a sum of simultaneous processes or the service's RSS.
+        self.report['preparation_child_peak_rss_bytes'] = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss * (1 if sys.platform == 'darwin' else 1024)
         shutil.rmtree(warm)
 
     def cancel_test(self, environment):
@@ -238,7 +242,7 @@ class Probe:
     async def state(self, entry, states, seconds=120):
         end = time.monotonic() + seconds
         while time.monotonic() < end:
-            entry = self.action(action='status', id=entry['id'], generation=entry['generation'])
+            entry = next(e for e in self.action(action='list') if e['id'] == entry['id'])
             if entry['state'] in states:
                 return entry
             if entry['state'] in ['failed', 'lost', 'expired']:
@@ -288,7 +292,7 @@ class Probe:
             return [json.loads(row[0]) for row in db.execute('SELECT record_json FROM native_processes')]
 
     async def product_tests(self):
-        for label, environment in [('a', self.a), ('b', self.b)]:
+        for label, environment in [('base', self.base), ('a', self.a), ('b', self.b)]:
             project = self.root / ('project-' + label)
             project.mkdir()
             self.projects.append(project)
@@ -314,22 +318,25 @@ class Probe:
             ws = await self.connect(entry)
             try:
                 reply, output = await self.execute(ws, """import json,sys,importlib.metadata as md
-import ipykernel, pyarrow, pandas, humanize, xxhash, psutil
+import ipykernel, pyarrow, pandas, psutil
 assert spark.table('public.orders').count() == 2
 assert str(spark.sql('SELECT sum(amount) AS total FROM public.orders').first().total) == '19.75'
-assert humanize.intcomma(1234) == '1,234'
-assert len(xxhash.xxh64(b'Supabricks').hexdigest()) == 16
 assert type(get_ipython().kernel.session).__name__ == 'BoundedSession'
+extra = {}
+if 'humanize' in {d.metadata['Name'].lower() for d in md.distributions()}:
+    import humanize,xxhash
+    assert humanize.intcomma(1234) == '1,234'
+    assert len(xxhash.xxh64(b'Supabricks').hexdigest()) == 16
+    extra = dict(humanize=md.version('humanize'),native=xxhash._xxhash.__file__)
 print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.executable,
-    humanize=md.version('humanize'),native=xxhash._xxhash.__file__,kernel=ipykernel.__file__,
-    arrow=pyarrow.__file__,rss=psutil.Process().memory_info().rss)))
+    kernel=ipykernel.__file__,arrow=pyarrow.__file__,rss=psutil.Process().memory_info().rss,**extra)))
 """)
                 assert reply['status'] == 'ok', reply
                 evidence = json.loads(output.strip())
                 assert Path(evidence['prefix']) == environment
                 assert Path(evidence['base']) == self.python.parent.parent
-                assert evidence['humanize'] == ('4.13.0' if label == 'a' else '4.14.0')
-                for name in ['native', 'kernel', 'arrow']:
+                assert evidence.get('humanize') == {'base': None, 'a': '4.13.0', 'b': '4.14.0'}[label]
+                for name in (['kernel', 'arrow'] if label == 'base' else ['native', 'kernel', 'arrow']):
                     assert Path(evidence[name]).is_relative_to(environment)
                 records = self.processes()
                 kernel = next(p for p in records if p['role'] == 'notebook-kernel-' + entry['session_id'])
@@ -337,7 +344,7 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
                 assert str(environment / 'bin/python') in psutil.Process(kernel['pid']).cmdline()
                 assert Path(psutil.Process(server['pid']).cmdline()[0]).resolve() == self.python.resolve()
                 self.check('project_' + label + '_real_gate_bounded_session_native_import_and_spark',
-                           humanize=evidence['humanize'], kernel_rss_bytes=evidence['rss'],
+                           humanize=evidence.get('humanize'), kernel_rss_bytes=evidence['rss'],
                            server_rss_bytes=psutil.Process(server['pid']).memory_info().rss,
                            prefix_is_project=True, base_prefix_is_service=True,
                            kernel_arrow_native_imports_are_project_local=True)
@@ -348,8 +355,10 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
                 reply, _ = await execution
                 assert reply['status'] == 'error' and reply['ename'] == 'KeyboardInterrupt'
                 old_pid = kernel['pid']
+                old_generation = entry['generation']
                 entry = self.action(action='restart', id=entry['id'], generation=entry['generation'], key='restart')
                 entry = await self.state(entry, ['ready'])
+                assert entry['generation'] == old_generation + 1
                 assert entry['epoch_id'] == epoch
                 assert not psutil.pid_exists(old_pid)
                 ws.close()
@@ -358,6 +367,14 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
                     f"import sys\nassert sys.prefix == {str(environment)!r}\nassert spark.table('public.orders').count()==2\nprint('RESTART_OK')")
                 assert reply['status'] == 'ok' and 'RESTART_OK' in output
                 self.check('project_' + label + '_interrupt_restart_preserves_environment_and_epoch')
+                if label == 'b':
+                    try:
+                        await self.execute(ws, "print('x' * (3 * 1024 * 1024))")
+                    except RuntimeError:
+                        pass  # BoundedSession terminates before emitting the frame.
+                    entry = await self.state(entry, ['failed'])
+                    assert entry['error'] == 'output_limit'
+                    self.check('venv_bounded_session_rejects_oversized_output')
             finally:
                 ws.close()
                 self.action(action='shutdown', id=entry['id'], generation=entry['generation'], key='stop')
@@ -383,10 +400,13 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
                     self.cli(project, 'down')
                 except Exception:
                     self.report['cleanup_failed'] = True
+                    self.report['status'] = 'failed'
             self.save()
             print(json.dumps({'status': self.report['status'], 'private_workspace': str(self.root)}))
             if self.report['status'] == 'passed' and not self.report.get('cleanup_failed'):
                 shutil.rmtree(self.root)
+        if self.report.get('cleanup_failed'):
+            raise RuntimeError('probe cleanup failed')
 
 
 if __name__ == '__main__':

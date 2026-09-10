@@ -55,6 +55,7 @@ def main(args):
     for name, pin in uv_pin['notices'].items():
         fetch(**pin, destination=notices / name)
     lock_path = ROOT / 'python/notebooks/uv.lock'
+    assert digest(baseline / 'python/notebooks/uv.lock') == digest(lock_path), 'requalify the baseline after changing the service lock'
     packages = {p['name']: p for p in tomllib.loads(lock_path.read_text())['package']}
     # Traverse the existing qualified graph, evaluating target markers. No
     # resolution or implicit upgrade; these two roots include Spark's clients.
@@ -69,12 +70,13 @@ def main(args):
     for name in ['ipykernel', 'pyspark-client']:
         visit(name)
     tags = set(sys_tags())
-    sources, selected = {}, {}
+    sources, selected, registry = {}, {}, {}
     def wheel(candidates):
         for item in candidates:
             name = unquote(Path(urlparse(item['url']).path).name)
             if parse_wheel_filename(name)[3] & tags:
                 fetch(item['url'], item.get('sha256') or item['hash'].removeprefix('sha256:'), wheels / name)
+                registry[name] = {'url': item['url'], 'sha256': digest(wheels / name)}
                 return wheels / name
         raise ValueError('no qualified wheel for this target')
     for name in sorted(closure):
@@ -130,7 +132,7 @@ exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
     report = dict(target=args.target, uv=uv_pin, uv_binary_sha256=digest(out / 'bin/uv'),
                   service_baseline_sha256=digest(baseline / 'release.json'),
                   notebook_lock_sha256=digest(lock_path), roots=['ipykernel', 'pyspark-client'],
-                  packages=selected, extras=extras, source_builds=sources,
+                  packages=selected, extras=extras, source_builds=sources, registry_wheels=registry,
                   wheel_bytes=sum(p.stat().st_size for p in wheels.iterdir()),
                   uv_bytes=(out / 'bin/uv').stat().st_size,
                   files={str(p.relative_to(out)): digest(p) for parent in [wheels, out / 'licenses', out / 'bin']

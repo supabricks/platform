@@ -71,3 +71,8 @@ jobs:
             build/ne01-package/relocated probe/protected.txt
             build/ne01-package/relocated probe/licenses/**
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notebook-kernel-payload-${{ matrix.target }}
+          path: build/ne01-package/kernel-payload-*
+          if-no-files-found: error
