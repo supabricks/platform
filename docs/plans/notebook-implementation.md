@@ -23,6 +23,10 @@ User workflow: [notebook runbook](../handbook/notebooks.md). These repairs are
 in the extraction worktree based on N06; they do not themselves extract the UI
 to a separate repository or mark I03/C03/R04 complete.
 
+A subsequent branch based on the repaired PR #33 performs the
+[console source split](../architecture/console-source-split.md). It preserves
+these notebook semantics and consumes the frontend through a pinned submodule.
+
 Implement in `supabricks/platform`, starting from I02 at
 `main@d18aae72b3aa5e130adfe6ddcfc2241926a3277b` (PR #23, alpha.8). The
 [notebook architecture](../architecture/local-notebooks.md) owns product

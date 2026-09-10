@@ -7,8 +7,8 @@ const args = process.argv.slice(2),
 const reports = {};
 try {
   for (const [name, script] of [
-    ["runtime", "../../e2e/native/notebooks/frontend/runtime.mjs"],
-    ["product", "qualify-notebooks.mjs"],
+    ["runtime", "frontend/runtime.mjs"],
+    ["product", "../../../console/scripts/qualify-notebooks.mjs"],
   ]) {
     const childReport = report.replace(/\.json$/, `-${name}.json`);
     const childArgs = [...args];
