@@ -47,5 +47,11 @@ tokens or connection files. Failed runs preserve their private `/tmp/sb-ne01-*`
 workspace for local diagnosis; CI uploads only the public report allowlist.
 Successful runs stop the daemon and remove their private workspace.
 
+Both targets passed run `34497802778`. The
+[decision and retained evidence](../../../docs/architecture/ne01-notebook-environments.md)
+record the accepted uv options, dependency closure, native measurements and NE02
+budgets. Payload artifacts retain wheels, notices, uv and the source-only Spark
+build input; they are probe artifacts, not production installers.
+
 See the [NE implementation plan](../../../docs/plans/notebook-environments-implementation.md)
 for the decision gate and later runtime integration slices.
