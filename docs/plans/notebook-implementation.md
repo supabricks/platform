@@ -1,5 +1,10 @@
 # Console notebook implementation plan
 
+Follow-up: the [managed notebook environments plan](notebook-environments-implementation.md)
+starts from merged PRs #33/#34 and defines NE00–NE06 for project dependency
+isolation, package management and reproducible kernel environments. It is
+proposed work; the historical notebook milestones below retain their scope.
+
 *Status: Implemented preview under repair qualification · Updated: 2026-09-10*
 
 The original acceptance criteria below remain the completion gates. Subsequent

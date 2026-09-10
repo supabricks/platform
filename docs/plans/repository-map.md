@@ -6,9 +6,11 @@ capabilities from repository descriptions. Implementation sequence:
 
 ## Organization inventory
 
-The console is being split from platform's PR #33 into `supabricks/console`.
+PR #34 extracted the repaired console from platform into `supabricks/console`.
 Platform consumes it through the pinned `console/` submodule; see the
 [current ownership and build contract](../architecture/console-source-split.md).
+The [notebook environment follow-up](notebook-environments-implementation.md)
+maps upcoming runtime work to platform and package/environment controls to console.
 The original inventory below is preserved as the September 5 baseline.
 
 The authenticated organization listing contains five repositories. There is no
