@@ -114,17 +114,32 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'Cargo.lock', destination / 'provenance/platform-Cargo.lock')
     shutil.copy2(ROOT / 'console/package-lock.json', destination / 'provenance/console-package-lock.json')
     shutil.copy2(ROOT / 'console/package.json', destination / 'provenance/console-package.json')
-    # Include Vite's notice for its generated module loader as well as React.
-    # Node and build/test tools themselves are not shipped.
-    for name in ['react', 'react-dom', 'scheduler', 'vite']:
-        package = ROOT / 'console/node_modules' / name
-        target = destination / 'licenses/console' / name
+    # Preserve notices for all bundled runtime dependencies, including JupyterLab,
+    # and Vite's generated loader. The lock retains exact source identities.
+    frontend_lock = json.loads((ROOT / 'console/package-lock.json').read_text())
+    supplemental = ROOT / 'console/licenses'
+    license_index = json.loads((supplemental / 'index.json').read_text())
+    shutil.copy2(supplemental / 'index.json', destination / 'provenance/console-license-sources.json')
+    for relative, entry in frontend_lock['packages'].items():
+        if not relative or (entry.get('dev') and relative != 'node_modules/vite'):
+            continue
+        package = ROOT / 'console' / relative
+        target = destination / 'licenses/console' / relative
         target.mkdir(parents=True)
-        notices = list(package.glob('LICENSE*'))
+        notices = [p for p in package.iterdir() if p.name.lower().startswith(('license', 'notice', 'copying', 'copyright'))]
         if not notices:
-            raise ValueError('console package is missing its license notice: ' + name)
+            record = license_index.get(relative)
+            if not record or record['version'] != entry['version']:
+                raise ValueError('console dependency needs a reviewed license text: ' + relative)
+            notice = supplemental / record['file']
+            if digest(notice) != record['sha256']:
+                raise ValueError('console supplemental license digest mismatch: ' + relative)
+            notices = [notice]
         for notice in notices:
-            shutil.copy2(notice, target / notice.name)
+            if notice.is_dir():
+                shutil.copytree(notice, target / notice.name)
+            else:
+                shutil.copy2(notice, target / notice.name)
         shutil.copy2(package / 'package.json', target / 'package.json')
     shutil.copy2(args.helpers / 'helper-build.json', destination / 'provenance/helper-build.json')
     # Preserve declared licenses, exact sources and package identities even for
