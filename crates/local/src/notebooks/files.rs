@@ -190,6 +190,11 @@ fn expected(dir: &Directory, name: &OsStr, want: Option<&str>) -> Result<()> {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Rename {
+        path: String,
+        destination: String,
+        expected_revision: String,
+    },
     List,
     Get {
         path: String,
@@ -202,6 +207,21 @@ pub enum Command {
 }
 pub fn handle(worktree: &Path, command: Command) -> Result<Value> {
     match command {
+        Command::Rename {
+            path,
+            destination,
+            expected_revision,
+        } => {
+            let from = relative_path(&path)?;
+            let to = relative_path(&destination)?;
+            let source = parent(worktree, &from, false)?;
+            let dest = parent(worktree, &to, true)?;
+            expected(&source, from.file_name().unwrap(), Some(&expected_revision))?;
+            if from != to {
+                source.move_to(from.file_name().unwrap(), &dest, to.file_name().unwrap())?;
+            }
+            Ok(json!({"path":destination,"revision":expected_revision}))
+        }
         Command::List => {
             let project = Directory::project(worktree)?;
             if !project.exists(OsStr::new("notebooks"))? {
@@ -249,14 +269,16 @@ pub fn handle(worktree: &Path, command: Command) -> Result<Value> {
             let name = p.file_name().unwrap();
             expected(&dir, name, expected_revision.as_deref())?;
             let bytes = serde_json::to_vec_pretty(&document)?;
+            if bytes.len() > MAX_DOCUMENT_BYTES {
+                return Err(invalid("Formatted notebook document is too large"));
+            }
             let temporary = format!(
                 ".supabricks-{}.tmp",
                 supabricks_core::resource::OperationId::new()
             );
             let temporary = OsStr::new(&temporary);
+            let mut file = dir.open(temporary, libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL)?;
             let result = (|| -> Result<()> {
-                let mut file =
-                    dir.open(temporary, libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL)?;
                 file.write_all(&bytes)?;
                 file.sync_all()?;
                 expected(&dir, name, expected_revision.as_deref())?;

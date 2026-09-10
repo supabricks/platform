@@ -120,10 +120,11 @@ impl Sessions {
         cell: Option<&crate::engine::Cell>,
         binding: &Binding,
         branch: String,
+        epoch: Option<EpochId>,
         key: String,
         ttl_ms: u64,
     ) -> Result<Value> {
-        Self::open_context(store, cell, binding, Some(branch), None, key, ttl_ms, true)
+        Self::open_context(store, cell, binding, Some(branch), epoch, key, ttl_ms, true)
     }
     #[allow(clippy::too_many_arguments)]
     fn open_context(

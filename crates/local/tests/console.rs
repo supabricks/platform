@@ -170,6 +170,80 @@ fn login(origin: &str, token: &str) -> Http {
 }
 
 #[test]
+fn notebook_documents_cross_both_transports_with_string_revisions_and_conflicts() {
+    let fixture = Fixture::new();
+    let (origin, token) = parts(&fixture.open());
+    let session = login(&origin, &token);
+    let cookie = session
+        .headers
+        .lines()
+        .find(|s| s.to_lowercase().starts_with("set-cookie:"))
+        .unwrap()
+        .split_once(':')
+        .unwrap()
+        .1
+        .trim()
+        .split(';')
+        .next()
+        .unwrap();
+    let body: Value = serde_json::from_slice(&session.body).unwrap();
+    let csrf = body["csrf"].as_str().unwrap();
+    let headers = [
+        ("Origin", origin.as_str()),
+        ("Cookie", cookie),
+        ("X-Supabricks-Console", "1"),
+        ("X-Supabricks-CSRF", csrf),
+        ("Content-Type", "application/json"),
+    ];
+    let call = |v: Value| {
+        http(
+            &origin,
+            "POST",
+            "/api/notebooks/contents",
+            &headers,
+            &v.to_string(),
+        )
+    };
+    let cells:Vec<Value>=(0..6).map(|i|json!({"id":format!("cell{i}"),"cell_type":"code","metadata":{},"source":"#".repeat(400000),"outputs":[],"execution_count":null})).collect();
+    let doc = json!({"cells":cells,"nbformat":4,"nbformat_minor":5,"metadata":{}});
+    let saved = call(json!({"action":"save","path":"big.ipynb","document":doc}));
+    assert_eq!(
+        saved.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&saved.body)
+    );
+    let revision =
+        serde_json::from_slice::<Value>(&saved.body).unwrap()["value"]["revision"].clone();
+    assert!(revision.is_string());
+    let loaded = call(json!({"action":"get","path":"big.ipynb"}));
+    assert_eq!(loaded.status, 200);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&loaded.body).unwrap()["value"]["document"],
+        doc
+    );
+    assert_eq!(
+        call(
+            json!({"action":"save","path":"big.ipynb","document":doc,"expected_revision":revision})
+        )
+        .status,
+        200
+    );
+    assert_eq!(
+        call(json!({"action":"save","path":"big.ipynb","document":doc})).status,
+        409
+    );
+    assert_eq!(
+        call(
+            json!({"action":"save","path":"big.ipynb","document":doc,"expected_revision":"stale"})
+        )
+        .status,
+        409
+    );
+    assert_eq!(call(json!({"action":"rename","path":"big.ipynb","destination":"renamed.ipynb","expected_revision":revision})).status,200);
+}
+
+#[test]
 fn launch_is_single_use_and_browser_requests_are_scoped_and_bounded() {
     let fixture = Fixture::new();
     let (origin, token) = parts(&fixture.open());

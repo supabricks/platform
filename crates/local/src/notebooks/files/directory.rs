@@ -18,6 +18,42 @@ fn name(value: &OsStr) -> Result<CString> {
     CString::new(value.as_bytes()).map_err(|_| invalid("invalid notebook name"))
 }
 impl Directory {
+    pub fn move_to(&self, source: &OsStr, destination: &Directory, name_to: &OsStr) -> Result<()> {
+        let a = name(source)?;
+        let b = name(name_to)?;
+        #[cfg(target_os = "linux")]
+        let status = unsafe {
+            libc::syscall(
+                libc::SYS_renameat2,
+                self.0.as_raw_fd(),
+                a.as_ptr(),
+                destination.0.as_raw_fd(),
+                b.as_ptr(),
+                libc::RENAME_NOREPLACE,
+            )
+        };
+        #[cfg(target_os = "macos")]
+        let status = unsafe {
+            libc::renameatx_np(
+                self.0.as_raw_fd(),
+                a.as_ptr(),
+                destination.0.as_raw_fd(),
+                b.as_ptr(),
+                libc::RENAME_EXCL,
+            )
+        };
+        if status < 0 {
+            let e = io::Error::last_os_error();
+            return Err(if e.kind() == io::ErrorKind::AlreadyExists {
+                conflict("Notebook already exists; choose another name")
+            } else {
+                e.into()
+            });
+        }
+        self.0.sync_all()?;
+        destination.0.sync_all()?;
+        Ok(())
+    }
     pub fn project(path: &Path) -> Result<Self> {
         Ok(Self(
             OpenOptions::new()
@@ -127,8 +163,21 @@ impl Directory {
         let entries = Entries(ptr);
         let mut result = Vec::new();
         loop {
+            // readdir uses null for both EOF and errors; reset errno to distinguish them.
+            #[cfg(target_os = "linux")]
+            unsafe {
+                *libc::__errno_location() = 0;
+            }
+            #[cfg(target_os = "macos")]
+            unsafe {
+                *libc::__error() = 0;
+            }
             let entry = unsafe { libc::readdir(entries.0) };
             if entry.is_null() {
+                let error = io::Error::last_os_error();
+                if error.raw_os_error() != Some(0) {
+                    return Err(error.into());
+                }
                 break;
             }
             let bytes = unsafe { CStr::from_ptr((*entry).d_name.as_ptr()) }.to_bytes();

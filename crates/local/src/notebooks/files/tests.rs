@@ -3,6 +3,17 @@ use std::fs;
 fn document() -> Value {
     json!({"cells":[{"id":"a","cell_type":"code","metadata":{},"source":"print('hello')","outputs":[],"execution_count":null}],"metadata":{},"nbformat":4,"nbformat_minor":5})
 }
+#[test]
+fn formatting_cannot_publish_a_document_larger_than_the_read_limit() {
+    let project = tempfile::tempdir().unwrap();
+    let mut value = document();
+    value["metadata"]["padding"] = json!("");
+    let overhead = serde_json::to_vec(&value).unwrap().len();
+    value["metadata"]["padding"] = json!("x".repeat(MAX_DOCUMENT_BYTES - overhead - 1));
+    validate_document(&value).unwrap();
+    assert!(save(project.path(), "large.ipynb", value, None).is_err());
+    assert!(!project.path().join("notebooks/large.ipynb").exists());
+}
 fn save(project: &Path, path: &str, document: Value, revision: Option<String>) -> Result<Value> {
     handle(
         project,
@@ -172,4 +183,35 @@ fn malformed_sources_schema_and_oversized_files_are_rejected() {
     ] {
         assert!(relative_path(path).is_err());
     }
+}
+
+#[test]
+fn rename_never_replaces_destination_and_rejects_stale_source() {
+    let p = tempfile::tempdir().unwrap();
+    let a = save(p.path(), "a.ipynb", document(), None).unwrap();
+    save(p.path(), "b.ipynb", document(), None).unwrap();
+    let rename = |destination: &str, revision: &str| {
+        handle(
+            p.path(),
+            Command::Rename {
+                path: "a.ipynb".into(),
+                destination: destination.into(),
+                expected_revision: revision.into(),
+            },
+        )
+    };
+    assert!(rename("b.ipynb", a["revision"].as_str().unwrap()).is_err());
+    assert!(rename("nested/new.ipynb", "stale").is_err());
+    assert!(rename("nested/new.ipynb", a["revision"].as_str().unwrap()).is_ok());
+    assert!(!p.path().join("notebooks/a.ipynb").exists());
+    assert_eq!(
+        handle(
+            p.path(),
+            Command::Get {
+                path: "nested/new.ipynb".into()
+            }
+        )
+        .unwrap()["document"],
+        document()
+    );
 }

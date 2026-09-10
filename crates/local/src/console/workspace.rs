@@ -42,6 +42,16 @@ impl Target {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    NotebookRefresh {
+        target: Target,
+        key: String,
+    },
+    NotebookRefreshStatus {
+        id: OperationId,
+    },
+    NotebookCancelRefresh {
+        id: OperationId,
+    },
     Notebook {
         command: crate::notebooks::contract::Command,
     },

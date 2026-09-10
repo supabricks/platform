@@ -18,6 +18,23 @@ pub fn request(root: &Path, request: Request) -> Result<Value> {
     request_timeout(root, request, Duration::from_secs(50))
 }
 pub(crate) fn request_timeout(root: &Path, request: Request, timeout: Duration) -> Result<Value> {
+    let notebook = matches!(
+        &request,
+        Request::ConsoleAction {
+            action: crate::console::workspace::Command::NotebookFiles { .. },
+            ..
+        }
+    );
+    let request_limit = if notebook {
+        crate::notebooks::files::MAX_DOCUMENT_BYTES + 8192
+    } else {
+        65536
+    };
+    let response_limit = if notebook {
+        (crate::notebooks::files::MAX_DOCUMENT_BYTES + 8192) as u64
+    } else {
+        RESPONSE_LIMIT
+    };
     let mut stream = UnixStream::connect(root.join("control.sock")).map_err(|_| {
         OperationError::Unavailable(
             "daemon unavailable; run supabricks up or doctor with the same data directory".into(),
@@ -29,16 +46,16 @@ pub(crate) fn request_timeout(root: &Path, request: Request, timeout: Duration) 
         version: 1,
         request,
     })?;
-    if wire.len() + 1 > 65536 {
-        return Err(invalid("request exceeds 64 KiB"));
+    if wire.len() + 1 > request_limit {
+        return Err(invalid("request exceeds its size limit"));
     }
     stream.write_all(&wire)?;
     stream.write_all(b"\n")?;
     let mut bytes = Vec::new();
     BufReader::new(stream)
-        .take(RESPONSE_LIMIT + 1)
+        .take(response_limit + 1)
         .read_until(b'\n', &mut bytes)?;
-    if bytes.len() as u64 > RESPONSE_LIMIT || bytes.last() != Some(&b'\n') {
+    if bytes.len() as u64 > response_limit || bytes.last() != Some(&b'\n') {
         return Err(OperationError::Unavailable(
             "incomplete or oversized daemon response; inspect operation before retrying a write"
                 .into(),
