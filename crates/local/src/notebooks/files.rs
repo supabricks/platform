@@ -1,18 +1,17 @@
-//! Validation and atomic persistence for project notebook documents.
-//!
-//! The HTTP adapter will call this module after authenticating the console
-//! session. Keeping path and document policy here prevents the browser layer
-//! from becoming a second filesystem implementation.
+//! Bounded notebook documents and conditional, atomic project saves.
+mod directory;
 use crate::store::{
     Result,
     error::{conflict, invalid},
 };
-use serde_json::Value;
+use directory::Directory;
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
-    fs,
-    io::Write,
+    collections::HashSet,
+    ffi::OsStr,
+    io::{Read, Write},
     path::{Component, Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub const MAX_DOCUMENT_BYTES: usize = 8 * 1024 * 1024;
@@ -22,123 +21,172 @@ pub const MAX_CELL_SOURCE_BYTES: usize = 512 * 1024;
 pub fn root(worktree: &Path) -> PathBuf {
     worktree.join("notebooks")
 }
-
 pub fn relative_path(path: &str) -> Result<PathBuf> {
-    if path.is_empty() || path.len() > 256 || path.contains('\0') {
-        return Err(invalid("invalid notebook path"));
+    if path.is_empty()
+        || path.len() > 256
+        || path.contains('\0')
+        || path
+            .split('/')
+            .any(|v| v.is_empty() || v == "." || v == "..")
+    {
+        return Err(invalid("Notebook path must be relative without traversal"));
     }
-    let candidate = Path::new(path);
-    if candidate.extension().and_then(|v| v.to_str()) != Some("ipynb") {
-        return Err(invalid("notebook files must use the .ipynb extension"));
+    let p = Path::new(path);
+    if p.extension().and_then(|v| v.to_str()) != Some("ipynb")
+        || p.components().any(|v| !matches!(v, Component::Normal(_)))
+    {
+        return Err(invalid("Notebook path must be a relative .ipynb file"));
     }
-    let mut clean = PathBuf::new();
-    for component in candidate.components() {
-        match component {
-            Component::Normal(part) => clean.push(part),
-            _ => {
-                return Err(invalid(
-                    "notebook path must be relative and contain no traversal",
+    Ok(p.into())
+}
+fn source(v: &Value, limit: usize) -> Result<()> {
+    let size = match v {
+        Value::String(s) => s.len(),
+        Value::Array(lines) => lines.iter().try_fold(0usize, |total, line| {
+            let s = line
+                .as_str()
+                .ok_or_else(|| invalid("Notebook source must contain only strings"))?;
+            total
+                .checked_add(s.len())
+                .filter(|n| *n <= limit)
+                .ok_or_else(|| invalid("Notebook source exceeds limit"))
+        })?,
+        _ => {
+            return Err(invalid(
+                "Notebook source must be a string or array of strings",
+            ));
+        }
+    };
+    if size > limit {
+        return Err(invalid("Notebook source exceeds limit"));
+    }
+    Ok(())
+}
+fn output(v: &Value) -> Result<()> {
+    let o = v
+        .as_object()
+        .ok_or_else(|| invalid("Invalid notebook output"))?;
+    match o.get("output_type").and_then(Value::as_str) {
+        Some("stream") if matches!(v["name"].as_str(), Some("stdout" | "stderr")) => {
+            source(&v["text"], MAX_DOCUMENT_BYTES)?
+        }
+        Some("display_data" | "execute_result")
+            if v["data"].is_object() && v["metadata"].is_object() =>
+        {
+            if v["output_type"] == "execute_result" && v["execution_count"].as_u64().is_none() {
+                return Err(invalid("Invalid execution count"));
+            }
+        }
+        Some("error")
+            if v["ename"].is_string()
+                && v["evalue"].is_string()
+                && v["traceback"]
+                    .as_array()
+                    .is_some_and(|a| a.iter().all(Value::is_string)) =>
+        {
+            ()
+        }
+        _ => return Err(invalid("Invalid notebook output")),
+    }
+    Ok(())
+}
+pub fn validate_document(v: &Value) -> Result<()> {
+    if v["nbformat"].as_u64() != Some(4)
+        || !v["nbformat_minor"].as_u64().is_some_and(|n| n <= 5)
+        || !v["metadata"].is_object()
+    {
+        return Err(invalid(
+            "Unsupported notebook format (expected nbformat 4.0–4.5)",
+        ));
+    }
+    let cells = v["cells"]
+        .as_array()
+        .ok_or_else(|| invalid("Notebook cells must be an array"))?;
+    if cells.len() > MAX_CELLS {
+        return Err(invalid("Notebook has too many cells"));
+    }
+    let mut ids = HashSet::new();
+    for c in cells {
+        if !c.is_object() || !c["metadata"].is_object() {
+            return Err(invalid("Notebook cell requires metadata"));
+        }
+        source(&c["source"], MAX_CELL_SOURCE_BYTES)?;
+        if v["nbformat_minor"] == 5 || c.get("id").is_some() {
+            let id = c["id"]
+                .as_str()
+                .ok_or_else(|| invalid("Notebook cell requires an ID"))?;
+            if id.is_empty()
+                || id.len() > 64
+                || !id
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+                || !ids.insert(id)
+            {
+                return Err(invalid("Notebook cell IDs must be valid and unique"));
+            }
+        }
+        match c["cell_type"].as_str() {
+            Some("code") => {
+                if c.get("execution_count").is_none()
+                    || !(c["execution_count"].is_null() || c["execution_count"].as_u64().is_some())
+                {
+                    return Err(invalid("Code cell requires an execution count or null"));
+                }
+                for o in c["outputs"]
+                    .as_array()
+                    .ok_or_else(|| invalid("Code cell requires outputs"))?
+                {
+                    output(o)?;
+                }
+            }
+            Some("markdown" | "raw") => (),
+            _ => return Err(invalid("Unsupported notebook cell type")),
+        }
+    }
+    if serde_json::to_vec(v)?.len() > MAX_DOCUMENT_BYTES {
+        return Err(invalid("Notebook document is too large"));
+    }
+    Ok(())
+}
+fn parent(worktree: &Path, path: &Path, create: bool) -> Result<Directory> {
+    let mut dir = Directory::project(worktree)?.child(OsStr::new("notebooks"), create)?;
+    for part in path.parent().unwrap().components() {
+        dir = dir.child(part.as_os_str(), create)?;
+    }
+    Ok(dir)
+}
+fn read(dir: &Directory, name: &OsStr) -> Result<Vec<u8>> {
+    let file = dir.open(name, libc::O_RDONLY)?;
+    if !file.metadata()?.is_file() {
+        return Err(conflict("Notebook is not a regular file"));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_DOCUMENT_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > MAX_DOCUMENT_BYTES {
+        return Err(invalid("Notebook document is too large"));
+    }
+    Ok(bytes)
+}
+fn revision(bytes: &[u8]) -> String {
+    hex::encode(Sha256::digest(bytes))
+}
+fn expected(dir: &Directory, name: &OsStr, want: Option<&str>) -> Result<()> {
+    match want {
+        Some(want) => {
+            if revision(&read(dir, name)?) != want {
+                return Err(conflict(
+                    "Notebook changed on disk; download your edits or reload before saving",
                 ));
             }
         }
-    }
-    if clean.as_os_str().is_empty() {
-        return Err(invalid("invalid notebook path"));
-    }
-    Ok(clean)
-}
-
-pub fn validate_document(value: &Value) -> Result<()> {
-    let object = value
-        .as_object()
-        .ok_or_else(|| invalid("notebook document must be an object"))?;
-    if object.get("nbformat").and_then(Value::as_u64) != Some(4)
-        || object
-            .get("nbformat_minor")
-            .and_then(Value::as_u64)
-            .is_none()
-        || object.get("metadata").and_then(Value::as_object).is_none()
-    {
-        return Err(invalid("unsupported notebook format"));
-    }
-    let cells = object
-        .get("cells")
-        .and_then(Value::as_array)
-        .ok_or_else(|| invalid("notebook cells must be an array"))?;
-    if cells.len() > MAX_CELLS {
-        return Err(invalid("notebook has too many cells"));
-    }
-    for cell in cells {
-        let cell = cell
-            .as_object()
-            .ok_or_else(|| invalid("notebook cell must be an object"))?;
-        if !matches!(
-            cell.get("cell_type").and_then(Value::as_str),
-            Some("code" | "markdown" | "raw")
-        ) {
-            return Err(invalid("unsupported notebook cell type"));
+        None if dir.exists(name)? => {
+            return Err(conflict("Notebook already exists; open it before saving"));
         }
-        let source = cell
-            .get("source")
-            .ok_or_else(|| invalid("notebook cell has no source"))?;
-        let bytes = match source {
-            Value::String(s) => s.len(),
-            Value::Array(lines) => lines
-                .iter()
-                .map(|v| v.as_str().map(str::len).unwrap_or(usize::MAX))
-                .sum(),
-            _ => usize::MAX,
-        };
-        if bytes > MAX_CELL_SOURCE_BYTES {
-            return Err(invalid("notebook cell source is too large"));
-        }
-    }
-    let bytes = serde_json::to_vec(value)?;
-    if bytes.len() > MAX_DOCUMENT_BYTES {
-        return Err(invalid("notebook document is too large"));
+        None => (),
     }
     Ok(())
 }
-
-pub fn load(path: &Path) -> Result<Value> {
-    let metadata = fs::symlink_metadata(path)?;
-    if !metadata.file_type().is_file() {
-        return Err(conflict("notebook path is not a regular file"));
-    }
-    let bytes = fs::read(path)?;
-    if bytes.len() > MAX_DOCUMENT_BYTES {
-        return Err(invalid("notebook document is too large"));
-    }
-    let value = serde_json::from_slice(&bytes)?;
-    validate_document(&value)?;
-    Ok(value)
-}
-
-pub fn save(path: &Path, value: &Value) -> Result<()> {
-    validate_document(value)?;
-    let parent = path
-        .parent()
-        .ok_or_else(|| invalid("invalid notebook path"))?;
-    fs::create_dir_all(parent)?;
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let temporary = parent.join(format!(".supabricks-{nonce}.tmp"));
-    let bytes = serde_json::to_vec_pretty(value)?;
-    {
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary)?;
-        file.write_all(&bytes)?;
-        file.sync_all()?;
-    }
-    fs::rename(&temporary, path)?;
-    fs::File::open(parent)?.sync_all()?;
-    Ok(())
-}
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
@@ -149,104 +197,76 @@ pub enum Command {
     Save {
         path: String,
         document: Value,
-        expected_mtime_ns: Option<u128>,
+        expected_revision: Option<String>,
     },
 }
-
 pub fn handle(worktree: &Path, command: Command) -> Result<Value> {
-    let base = root(worktree);
     match command {
         Command::List => {
+            let project = Directory::project(worktree)?;
+            if !project.exists(OsStr::new("notebooks"))? {
+                return Ok(json!({"files":[]}));
+            }
+            let mut pending = vec![(
+                project.child(OsStr::new("notebooks"), false)?,
+                String::new(),
+            )];
+            let mut budget = 4096;
             let mut files = Vec::new();
-            if base.exists() {
-                let mut pending = vec![base.clone()];
-                while let Some(directory) = pending.pop() {
-                    for entry in fs::read_dir(&directory)? {
-                        let entry = entry?;
-                        let file_type = entry.file_type()?;
-                        if file_type.is_symlink() {
-                            return Err(conflict("notebook tree contains a symlink"));
+            while let Some((dir, prefix)) = pending.pop() {
+                for (name, kind) in dir.entries(&mut budget)? {
+                    let path = format!("{prefix}{name}");
+                    if kind == libc::S_IFDIR as u32 {
+                        if path.len() > 256 {
+                            return Err(invalid("Notebook directory path is too long"));
                         }
-                        if file_type.is_dir() {
-                            pending.push(entry.path());
-                            continue;
-                        }
-                        if file_type.is_file() {
-                            let entry_path = entry.path();
-                            let relative = entry_path
-                                .strip_prefix(&base)
-                                .map_err(|_| invalid("invalid notebook path"))?;
-                            let path = relative
-                                .to_str()
-                                .ok_or_else(|| invalid("notebook path is not UTF-8"))?;
-                            relative_path(path)?;
-                            files.push(path.to_owned());
-                        }
+                        pending.push((dir.child(OsStr::new(&name), false)?, format!("{path}/")));
+                    } else if kind == libc::S_IFREG as u32 && name.ends_with(".ipynb") {
+                        relative_path(&path)?;
+                        files.push(path);
                     }
                 }
             }
             files.sort();
-            Ok(serde_json::json!({"files": files}))
+            Ok(json!({"files":files}))
         }
         Command::Get { path } => {
-            let relative = relative_path(&path)?;
-            let full = base.join(relative);
-            let document = load(&full)?;
-            let metadata = fs::symlink_metadata(&full)?;
-            Ok(
-                serde_json::json!({"path": path, "document": document, "mtime_ns": metadata.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_nanos())}),
-            )
+            let p = relative_path(&path)?;
+            let dir = parent(worktree, &p, false)?;
+            let bytes = read(&dir, p.file_name().unwrap())?;
+            let document = serde_json::from_slice(&bytes)?;
+            validate_document(&document)?;
+            Ok(json!({"path":path,"document":document,"revision":revision(&bytes)}))
         }
         Command::Save {
             path,
             document,
-            expected_mtime_ns,
+            expected_revision,
         } => {
-            let relative = relative_path(&path)?;
-            let full = base.join(relative);
-            if let Some(expected) = expected_mtime_ns {
-                let actual = fs::symlink_metadata(&full)
-                    .ok()
-                    .and_then(|m| m.modified().ok())
-                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                    .map(|d| d.as_nanos());
-                if actual != Some(expected) {
-                    return Err(conflict("notebook changed on disk; reload before saving"));
-                }
-            }
-            save(&full, &document)?;
-            let metadata = fs::symlink_metadata(&full)?;
-            Ok(
-                serde_json::json!({"path": path, "saved": true, "mtime_ns": metadata.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_nanos())}),
-            )
+            validate_document(&document)?;
+            let p = relative_path(&path)?;
+            let dir = parent(worktree, &p, true)?;
+            let name = p.file_name().unwrap();
+            expected(&dir, name, expected_revision.as_deref())?;
+            let bytes = serde_json::to_vec_pretty(&document)?;
+            let temporary = format!(
+                ".supabricks-{}.tmp",
+                supabricks_core::resource::OperationId::new()
+            );
+            let temporary = OsStr::new(&temporary);
+            let result = (|| -> Result<()> {
+                let mut file =
+                    dir.open(temporary, libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL)?;
+                file.write_all(&bytes)?;
+                file.sync_all()?;
+                expected(&dir, name, expected_revision.as_deref())?;
+                dir.publish(temporary, name, expected_revision.is_some())
+            })();
+            let _ = dir.unlink(temporary);
+            result?;
+            Ok(json!({"path":path,"saved":true,"revision":revision(&bytes)}))
         }
     }
 }
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-    fn document() -> Value {
-        json!({"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5})
-    }
-    #[test]
-    fn rejects_traversal_and_non_notebooks() {
-        assert!(relative_path("../x.ipynb").is_err());
-        assert!(relative_path("x.json").is_err());
-        assert!(relative_path("a/x.ipynb").is_ok());
-    }
-    #[test]
-    fn validates_and_round_trips_atomically() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("notebooks/a.ipynb");
-        save(&path, &document()).unwrap();
-        assert_eq!(load(&path).unwrap(), document());
-    }
-    #[test]
-    fn rejects_invalid_schema() {
-        let mut value = document();
-        value["nbformat"] = json!(3);
-        assert!(validate_document(&value).is_err());
-    }
-}
+mod tests;

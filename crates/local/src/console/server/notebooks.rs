@@ -127,7 +127,7 @@ impl State {
             };
             return match self.notebook_contents(id, command).await {
                 Ok(value) => json_response(200, json!({"api_version":VERSION,"value":value})),
-                Err(_) => fail(409, "Notebook contents operation failed"),
+                Err(error) => fail(409, &error.to_string()),
             };
         }
         if request.uri().path() == "/api/notebooks/ticket" && request.method() == Method::POST {
