@@ -1,0 +1,73 @@
+name: notebook-environments
+on:
+  pull_request:
+    paths:
+      - 'e2e/native/notebook-environments/**'
+      - 'components/notebook-uv.lock.json'
+      - 'python/notebooks/uv.lock'
+      - '.github/workflows/notebook-environments.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: notebook-environments-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34486403948
+          name: release-${{ matrix.target }}
+          path: build/ne01-inputs
+          github-token: ${{ github.token }}
+      - name: Verify baseline, assemble and relocate the isolated probe
+        run: |
+          python e2e/native/notebook-environments/prepare.py --directory build/ne01-inputs --output build/ne01-package --target ${{ matrix.target }}
+      - name: Offline Linux qualification without host Python, uv or cache
+        if: runner.os == 'Linux'
+        run: |
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env \
+              SB_NE01_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated loopback-only network namespace" \
+              "build/ne01-package/relocated probe/service/python/runtime/bin/python3.12" -I -B \
+              e2e/native/notebook-environments/run.py --probe "build/ne01-package/relocated probe" \
+              --target linux-x86_64 --report build/ne01-reports/qualification.json
+          ' bash "$(id -un)"
+      - name: Offline macOS qualification without host Python, uv or cache
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env SB_NE01_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "build/ne01-package/relocated probe/service/python/runtime/bin/python3.12" -I -B \
+            e2e/native/notebook-environments/run.py --probe "build/ne01-package/relocated probe" \
+            --target macos-arm64 --report build/ne01-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-environments-${{ matrix.target }}
+          path: |
+            build/ne01-reports/*.json
+            build/ne01-package/relocated probe/probe.json
+            build/ne01-package/relocated probe/*.lock
+            build/ne01-package/relocated probe/protected.txt
+            build/ne01-package/relocated probe/licenses/**
+          if-no-files-found: error
