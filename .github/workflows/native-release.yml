@@ -14,6 +14,7 @@ on:
       - 'console/**'
       - 'examples/orders/**'
       - 'examples/console/**'
+      - 'examples/notebooks/**'
       - 'agents/**'
       - 'LICENSE'
       - '.github/workflows/native-release.yml'
@@ -374,6 +375,7 @@ jobs:
       - name: Install locked browser test machinery before network isolation
         run: |
           npm ci --prefix e2e/native/notebooks/frontend --no-audit --no-fund
+          npm ci --prefix console --no-audit --no-fund
           npm exec --prefix e2e/native/notebooks/frontend -- playwright install --with-deps chromium
           mkdir -p build/notebook-reports
       - name: Installed browser workflow in an isolated Linux network namespace
@@ -389,7 +391,7 @@ jobs:
               SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
               "$3" install/native/qualify_console.py --directory build/releases \
               --report build/notebook-reports/notebooks.json --node "$4" \
-              --harness e2e/native/notebooks/frontend/runtime.mjs
+              --harness console/scripts/qualify-all-notebooks.mjs
           ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$python_path" "$node_path"
       - name: Installed browser workflow on macOS with external network denied
         if: runner.os == 'macOS'
@@ -399,7 +401,7 @@ jobs:
             SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
             "$(command -v python)" install/native/qualify_console.py --directory build/releases \
             --report build/notebook-reports/notebooks.json --node "$(command -v node)" \
-            --harness e2e/native/notebooks/frontend/runtime.mjs
+            --harness console/scripts/qualify-all-notebooks.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

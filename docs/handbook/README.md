@@ -14,6 +14,7 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 | [Local runtime plan](../plans/local-runtime-implementation.md) | What are we building for the native Supabricks product, and in what order? |
 | [Console and ingestion architecture](../architecture/local-console-ingestion.md) | What should the local browser console and shared file importer do? |
 | [Local console](local-console.md) | How do I launch the project overview and recover an expired browser session? |
+| [Local notebooks](notebooks.md) | How do I query Sail, save notebooks and manage snapshots and kernels? |
 | [CSV/TSV ingestion](csv-ingestion.md) | How do I approve mappings, import local files and recover an interrupted import? |
 | [Console and ingestion plan](../plans/console-ingestion-implementation.md) | Which PR slices build the first file-import and branching demo? |
 | [Notebook architecture](../architecture/local-notebooks.md) | How should embedded Jupyter notebooks use local kernels, project files and analytical snapshots? |

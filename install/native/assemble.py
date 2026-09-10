@@ -104,6 +104,8 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(args.helpers / 'LICENSE', destination / 'licenses/process-compose.txt')
     shutil.copy2(args.helpers / 'SEAWEEDFS-LICENSE', destination / 'licenses/seaweedfs.txt')
     shutil.copytree(ROOT / 'examples/orders', destination / 'examples/orders', ignore=shutil.ignore_patterns('__pycache__', '.venv'))
+    shutil.copytree(ROOT / 'examples/notebooks', destination / 'examples/notebooks')
+    shutil.copy2(ROOT / 'docs/handbook/notebooks.md', destination / 'NOTEBOOKS.md')
     shutil.copytree(ROOT / 'agents', destination / 'agents', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(ROOT / 'docs/handbook/local-workflow.md', destination / 'WORKFLOW.md')
     shutil.copy2(ROOT / 'install/native/README.md', destination / 'INSTALL.md')
