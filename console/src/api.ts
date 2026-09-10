@@ -114,6 +114,9 @@ export async function notebookFiles(command: object): Promise<Record<string, unk
 export async function notebookLifecycle(command: object): Promise<Record<string, unknown>> {
   return (await request("workspace", "POST", { action: "notebook", command })).value;
 }
+export async function notebookTicket(id: string, generation: number): Promise<{ authorization_protocol: string }> {
+  return await request("notebooks/ticket", "POST", { id, generation });
+}
 
 export type Target = { branch: string; revision: number };
 export type SqlResult = {
