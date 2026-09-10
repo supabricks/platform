@@ -232,7 +232,7 @@ pub fn members(record: &OwnedProcess) -> Result<Vec<u32>> {
                 continue;
             }
             return Err(conflict(format!(
-                "{} contains an unverified process; recovery stopped",
+                "{} contains an unverified process (PID {pid}); recovery stopped",
                 record.role
             )));
         }

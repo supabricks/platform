@@ -85,7 +85,7 @@ fn read_tree(
 ) -> Result<()> {
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
-        if path.strip_prefix(root).unwrap().components().count() > 4 || out.len() >= 100 {
+        if path.strip_prefix(root).unwrap().components().count() > 4 || out.len() >= 256 {
             return Err(invalid("console asset inventory exceeds limits"));
         }
         let m = fs::symlink_metadata(&path)?;

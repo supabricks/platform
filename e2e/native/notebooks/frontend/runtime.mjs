@@ -42,7 +42,7 @@ try {
  const exchange=await context.request.post(origin+'/api/session',{headers,data:{token:new URL(launch.url).hash.slice(8)}});
  assert.equal(exchange.status(),200);headers['X-Supabricks-CSRF']=(await exchange.json()).csrf;
  const overview=await (await context.request.get(origin+'/api/overview',{headers})).json();
- assert.equal(overview.capabilities.notebooks,false);
+ assert.equal(overview.capabilities.notebooks,true);
  const branch=overview.branches.find(b=>b.name==='main');
  const target={branch:branch.id,revision:branch.revision};
  async function action(command){

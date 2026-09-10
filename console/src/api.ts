@@ -21,7 +21,12 @@ export interface Overview {
     postgres_major: number;
     needs_attention: boolean;
   };
-  capabilities: { overview: boolean; sql: boolean; ingestion: boolean };
+  capabilities: {
+    overview: boolean;
+    sql: boolean;
+    ingestion: boolean;
+    notebooks: boolean;
+  };
 }
 export class ApiError extends Error {
   constructor(
@@ -101,18 +106,110 @@ export async function logout() {
   csrf = "";
 }
 
-export type NotebookFile = { path: string };
-export type NotebookDocument = {
-  cells: { cell_type: "code" | "markdown" | "raw"; source: string; metadata?: object; [key: string]: unknown }[];
-  metadata: object;
-  nbformat: 4;
-  nbformat_minor: number;
+export type NotebookDocument = import("@jupyterlab/nbformat").INotebookContent;
+export type NotebookFile = {
+  path: string;
+  document: NotebookDocument;
+  revision: string;
 };
-export async function notebookFiles(command: object): Promise<Record<string, unknown>> {
-  return (await request("notebooks/contents", "POST", command)).value;
+export type NotebookCommand =
+  | { action: "create"; key: string; target: Target; epoch?: string | null }
+  | { action: "status"; id: string; generation: number }
+  | {
+      action: "start" | "restart" | "interrupt" | "shutdown";
+      id: string;
+      generation: number;
+      key: string;
+    };
+export type NotebookContext = {
+  id: string;
+  generation: number;
+  branch_id: string;
+  epoch_id: string | null;
+  state:
+    | "stopped"
+    | "starting"
+    | "ready"
+    | "busy"
+    | "interrupting"
+    | "stopping"
+    | "failed"
+    | "lost"
+    | "expired";
+  error: string | null;
+  expires_at_ms: number;
+  epoch: Record<string, unknown> | null;
+};
+export async function notebookList(): Promise<string[]> {
+  return (await request("notebooks/contents", "POST", { action: "list" })).value
+    .files;
 }
-export async function notebookLifecycle(command: object): Promise<Record<string, unknown>> {
-  return (await request("workspace", "POST", { action: "notebook", command })).value;
+export async function notebookGet(path: string): Promise<NotebookFile> {
+  return (await request("notebooks/contents", "POST", { action: "get", path }))
+    .value;
+}
+export async function notebookSave(
+  path: string,
+  document: NotebookDocument,
+  expected_revision: string | null,
+): Promise<{ path: string; revision: string }> {
+  return (
+    await request("notebooks/contents", "POST", {
+      action: "save",
+      path,
+      document,
+      expected_revision,
+    })
+  ).value;
+}
+export async function notebookLifecycle(
+  command: NotebookCommand,
+): Promise<NotebookContext> {
+  return (await request("workspace", "POST", { action: "notebook", command }))
+    .value;
+}
+export async function notebookContexts(): Promise<NotebookContext[]> {
+  return (
+    await request("workspace", "POST", {
+      action: "notebook",
+      command: { action: "list" },
+    })
+  ).value;
+}
+export type NotebookRefresh = {
+  id: string;
+  state: string;
+  error: string | null;
+};
+export async function notebookRefresh(
+  command:
+    | { action: "notebook_refresh"; target: Target; key: string }
+    | {
+        action: "notebook_refresh_status" | "notebook_cancel_refresh";
+        id: string;
+      },
+): Promise<NotebookRefresh> {
+  return (await request("workspace", "POST", command)).value;
+}
+export async function notebookRename(
+  path: string,
+  destination: string,
+  expected_revision: string,
+): Promise<{ path: string; revision: string }> {
+  return (
+    await request("notebooks/contents", "POST", {
+      action: "rename",
+      path,
+      destination,
+      expected_revision,
+    })
+  ).value;
+}
+export async function notebookTicket(
+  id: string,
+  generation: number,
+): Promise<{ protocol: string; authorization_protocol: string }> {
+  return await request("notebooks/ticket", "POST", { id, generation });
 }
 
 export type Target = { branch: string; revision: number };

@@ -47,6 +47,71 @@ fn wait_file(path: &Path) {
         std::thread::sleep(Duration::from_millis(10));
     }
 }
+
+struct Reap(Child);
+impl Drop for Reap {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn process_group_sampling_survives_exec_with_the_same_identity_and_token() {
+    let temp = tempfile::tempdir().unwrap();
+    fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    let store = Store::open(temp.path()).unwrap();
+    let script = temp.path().join("exec.sh");
+    fs::write(&script, "exec /bin/sh \"$0\"\n").unwrap();
+    let l = launch(
+        &store,
+        vec!["/bin/sh".into(), script.to_str().unwrap().into()],
+    );
+    let mut child = Reap(gated(&l));
+    let record = supervisor::evidence(&l, child.0.id()).unwrap();
+    child.0.stdin.take().unwrap().write_all(&[1]).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let mut samples = 0;
+    while Instant::now() < deadline {
+        assert_eq!(supervisor::members(&record).unwrap(), vec![child.0.id()]);
+        samples += 1;
+    }
+    assert!(samples > 0);
+    supervisor::stop(&record).unwrap();
+}
+
+#[test]
+fn live_unmarked_group_member_is_never_treated_as_owned() {
+    let temp = tempfile::tempdir().unwrap();
+    fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    let store = Store::open(temp.path()).unwrap();
+    let l = launch(&store, vec!["/bin/sleep".into(), "30".into()]);
+    let mut child = Reap(gated(&l));
+    let record = supervisor::evidence(&l, child.0.id()).unwrap();
+    child.0.stdin.take().unwrap().write_all(&[1]).unwrap();
+    for token in [None, Some(format!("{}-different-owner", l.token))] {
+        let mut command = Command::new("/bin/sleep");
+        command
+            .arg("30")
+            .env_clear()
+            .process_group(record.pid as i32);
+        if let Some(token) = token {
+            command.env("SUPABRICKS_PROCESS_TOKEN", token);
+        }
+        let mut unmarked = Reap(command.spawn().unwrap());
+        assert!(
+            supervisor::members(&record)
+                .unwrap_err()
+                .to_string()
+                .contains("unverified process")
+        );
+        assert!(unmarked.0.try_wait().unwrap().is_none());
+        assert!(child.0.try_wait().unwrap().is_none());
+        drop(unmarked);
+    }
+    supervisor::stop(&record).unwrap();
+}
 #[test]
 fn engine_recovery_leaves_notebooks_to_their_own_recovery_barrier() {
     let temp = tempfile::tempdir().unwrap();

@@ -46,6 +46,8 @@ pub enum Command {
         key: String,
         target: Target,
         #[serde(default)]
+        epoch: Option<supabricks_core::resource::EpochId>,
+        #[serde(default)]
         limits: Limits,
     },
     List,

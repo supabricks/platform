@@ -195,6 +195,22 @@ impl State {
             }
             let path = if path == "/" { "/index.html" } else { &path };
             return match self.assets.files.get(path) {
+                Some((mime, bytes)) if path == "/index.html" => {
+                    let nonce = match secret() {
+                        Ok(value) => value,
+                        Err(_) => return fail(500, "Console style authorization failed"),
+                    };
+                    let html = String::from_utf8_lossy(bytes).replacen(
+                        "<head>",
+                        &format!(
+                            "<head><meta name=\"supabricks-style-nonce\" content=\"{nonce}\">"
+                        ),
+                        1,
+                    );
+                    let mut reply = response(200, mime, html);
+                    reply.headers_mut().insert("Content-Security-Policy", HeaderValue::from_str(&format!("default-src 'none'; script-src 'self'; style-src 'self' 'nonce-{nonce}'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")).unwrap());
+                    reply
+                }
                 Some((mime, bytes)) => response(200, mime, bytes.clone()),
                 None => fail(404, "Console asset not found"),
             };

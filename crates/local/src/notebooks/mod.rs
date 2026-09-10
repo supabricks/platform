@@ -38,6 +38,7 @@ struct Entry {
     owner: String,
     key: String,
     target: Target,
+    epoch: Option<supabricks_core::resource::EpochId>,
     limits: Limits,
     generation: u64,
     state: String,
@@ -140,6 +141,7 @@ impl Notebooks {
             Command::Create {
                 key,
                 target,
+                epoch,
                 limits,
             } => {
                 contract::key(&key)?;
@@ -148,7 +150,7 @@ impl Notebooks {
                 if let Some(e) = self.entries.values().find(|e| {
                     e.owner == owner && e.binding.worktree == binding.worktree && e.key == key
                 }) {
-                    if e.target != target || e.limits != limits {
+                    if e.target != target || e.limits != limits || e.epoch != epoch {
                         return Err(conflict("notebook key was used with different parameters"));
                     }
                     return e.view(store);
@@ -166,6 +168,7 @@ impl Notebooks {
                     owner: owner.into(),
                     key,
                     target,
+                    epoch,
                     limits,
                     generation: 0,
                     state: "stopped".into(),
@@ -388,6 +391,7 @@ mod tests {
                 binding: binding.clone(),
                 owner: owner.clone(),
                 key: "create".into(),
+                epoch: None,
                 target: Target {
                     branch: BranchId::new(),
                     revision: 1,

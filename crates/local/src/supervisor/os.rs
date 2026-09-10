@@ -189,19 +189,39 @@ fn environment(pid: u32) -> Result<Vec<u8>> {
 }
 
 pub fn has_token(id: &Identity, token: &str) -> Result<bool> {
+    use std::time::{Duration, Instant};
     let expected = format!("SUPABRICKS_PROCESS_TOKEN={token}");
-    let bytes = match environment(id.pid) {
-        Ok(b) => b,
-        Err(e) => {
-            if identity(id.pid)?.is_none_or(|i| i.zombie) {
-                return Ok(false);
+    let deadline = Instant::now() + Duration::from_millis(50);
+    loop {
+        let bytes = match environment(id.pid) {
+            Ok(b) => b,
+            Err(e) => {
+                if identity(id.pid)?.is_none_or(|i| i.zombie) {
+                    return Ok(false);
+                }
+                return Err(e);
             }
-            return Err(e);
+        };
+        if identity(id.pid)?.is_none_or(|i| {
+            i.zombie || i.start != id.start || i.group != id.group || i.uid != id.uid
+        }) {
+            return Ok(false);
         }
-    };
-    Ok(bytes.split(|b| *b == 0).any(|e| e == expected.as_bytes())
-        && identity(id.pid)?
-            .is_some_and(|i| i.start == id.start && i.group == id.group && i.uid == id.uid))
+        if bytes
+            .split_inclusive(|b| *b == 0)
+            .any(|entry| entry.strip_suffix(&[0]) == Some(expected.as_bytes()))
+        {
+            return Ok(true);
+        }
+        // Linux can expose an empty or partial environ while exec replaces
+        // process memory between reads without changing PID or birth time.
+        // Retry the full token + identity proof briefly. Neither a transient
+        // read nor expiry of this deadline is evidence that a process is owned.
+        if Instant::now() >= deadline {
+            return Ok(false);
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
 }
 
 /// Sample resident memory without launching host utilities (macOS Seatbelt may

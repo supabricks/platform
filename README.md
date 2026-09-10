@@ -18,11 +18,13 @@ is available through CLI/MCP and the [browser import wizard](docs/handbook/brows
 JSON/Parquet follows in I03. [I00](docs/architecture/i00-ingestion.md) adds durable import
 contracts and the explicit catalog-8-to-9 upgrade. See the [architecture](docs/architecture/local-console-ingestion.md).
 
-Embedded Jupyter notebooks are the next proposed console phase. The
+Embedded Jupyter notebooks now have a local editor, project files and owned
+Sail-backed kernels; the repaired product is under native release qualification.
+See the [notebook runbook](docs/handbook/notebooks.md). The
 [notebook architecture](docs/architecture/local-notebooks.md) and
 [implementation plan](docs/plans/notebook-implementation.md) describe the
 component qualification, local kernels, project files and installed release gates.
-Notebooks are not yet included in the shipped preview.
+Fresh installed Linux/macOS results are required before claiming notebook preview readiness.
 
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres

@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { authenticate, overview, logout, ApiError, type Overview } from "./api";
 import "./style.css";
 import { Workspace } from "./workspace";
-import { Notebook } from "./notebook";
+const Notebook = lazy(async () => {
+  const { setStylesTarget } = await import("typestyle/lib");
+  const style = document.createElement("style");
+  style.nonce =
+    document.querySelector<HTMLMetaElement>(
+      'meta[name="supabricks-style-nonce"]',
+    )?.content ?? "";
+  document.head.appendChild(style);
+  setStylesTarget(style);
+  return import("./notebook").then((module) => ({ default: module.Notebook }));
+});
 
 // A launch secret is single-use. Remove it before any API call or UI rendering.
 const launch = new URLSearchParams(location.hash.slice(1)).get("launch");
@@ -31,6 +41,7 @@ function Mark() {
 }
 function App() {
   const [view, setView] = useState("overview");
+  const [notebooksOpened, setNotebooksOpened] = useState(false);
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -132,9 +143,17 @@ function App() {
           >
             Database workspace
           </button>
-          <button className={view === "notebooks" ? "active" : ""} onClick={() => setView("notebooks")}>
-            Notebooks
-          </button>
+          {data?.capabilities.notebooks && (
+            <button
+              className={view === "notebooks" ? "active" : ""}
+              onClick={() => {
+                setNotebooksOpened(true);
+                setView("notebooks");
+              }}
+            >
+              Notebooks
+            </button>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <span className="local-pill">
@@ -191,7 +210,11 @@ function App() {
         </header>
         <main
           id="main"
-            className={view === "workspace" || view === "notebooks" ? "workspace-main" : undefined}
+          className={
+            view === "workspace" || view === "notebooks"
+              ? "workspace-main"
+              : undefined
+          }
         >
           <div hidden={view !== "overview"}>
             <div className="page-heading">
@@ -419,7 +442,11 @@ function App() {
               visible={view === "workspace"}
             />
           )}
-          {authenticated && data && <Notebook visible={view === "notebooks"} data={data} />}
+          {authenticated && data && notebooksOpened && (
+            <Suspense fallback={<p role="status">Loading notebook editor…</p>}>
+              <Notebook visible={view === "notebooks"} data={data} />
+            </Suspense>
+          )}
         </main>
       </div>
     </div>

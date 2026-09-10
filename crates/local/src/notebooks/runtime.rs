@@ -199,6 +199,13 @@ impl Notebooks {
                 cell,
                 &e.binding,
                 e.target.branch.to_string(),
+                match e.session {
+                    Some(id) => store
+                        .analytical_session(e.binding.project_id, id)?
+                        .epoch_id
+                        .or(e.epoch),
+                    None => e.epoch,
+                },
                 format!("notebook:{}:{generation}", e.id),
                 e.limits.lifetime_ms,
             )?)?;

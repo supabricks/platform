@@ -1,13 +1,34 @@
 # Console notebook implementation plan
 
-*Status: Proposed PR sequence · Date: 2026-09-09*
+*Status: Implemented preview under repair qualification · Updated: 2026-09-10*
+
+The original acceptance criteria below remain the completion gates. Subsequent
+PR labels drifted: N04 added files, N05 added kernel controls, and N06 added an
+execution client. Those labels did not establish completion of the original
+N03–N05 milestones. The [holistic review](../reviews/n00-n06-notebooks.md) records
+the defects at `cb1f4f7`; the [repair record](../reviews/n00-n06-repairs.md) maps
+each finding to its fix and distinguishes local tests from installed evidence.
+
+| Original slice | Current implementation and evidence |
+| --- | --- |
+| N00 | Architecture and plan present; this table restores the milestone mapping |
+| N01 | Qualified upstream JupyterLab widget selected; now integrated in the product with exact locked dependencies |
+| N02 | Owned Jupyter/Sail runtime retained; restart now preserves its selected epoch |
+| N03 | Product editor, binary execution, conditional persistence, dirty/conflict handling and MIME policy implemented; real Linux source-build browser test passes |
+| N04 | Branch selection, saved epoch binding, refresh/cancel and explicit rebind implemented; local browser tests prove refresh isolation and pinned restart; broader fault and child-branch acceptance remain qualification work |
+| N05 | Runtime fault harness retained and actual product harness added to both native release targets; fresh installed Linux/macOS reports are required before claiming preview qualification |
+| N06 (later PR label) | Replaced the broken channel client with the qualified binary protocol and correlated, serialized execution |
+
+User workflow: [notebook runbook](../handbook/notebooks.md). These repairs are
+in the extraction worktree based on N06; they do not themselves extract the UI
+to a separate repository or mark I03/C03/R04 complete.
 
 Implement in `supabricks/platform`, starting from I02 at
 `main@d18aae72b3aa5e130adfe6ddcfc2241926a3277b` (PR #23, alpha.8). The
 [notebook architecture](../architecture/local-notebooks.md) owns product
 semantics, process/authentication boundaries, files and snapshot behavior. This
-plan owns implementation order and evidence. N00-N05 are planning identifiers,
-not existing issues or completion claims. This change adds documentation only.
+plan owns implementation order and evidence. N00-N05 are planning identifiers;
+the status table above records implementation against the original criteria.
 
 The first useful milestone is an **installed embedded notebook that queries
 `public.orders`, saves, reopens and restarts against the same snapshot**. Use
@@ -257,4 +278,4 @@ N05 does not mark I03, C03, R04 or the real-agent usability check complete.
 - Keep the running alpha.8 demo intact during development; use separate program,
   project and data directories for candidate releases and upgrade fixtures.
 - Update this plan with implementation/evidence links as slices merge. The next
-  implementation PR is **N01**, not a wholesale notebook subsystem addition.
+  gate is installed qualification of the repaired product on both native targets.

@@ -538,7 +538,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":false,"notebook_runtime":1},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -664,6 +664,32 @@ impl Daemon {
         use crate::console::workspace::{Command as C, identifier};
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
+            C::NotebookRefresh { target, key } => {
+                target.validate(&self.store, &binding)?;
+                crate::notebooks::contract::key(&key)?;
+                use sha2::Digest;
+                let key = hex::encode(sha2::Sha256::digest(
+                    json!([scope, key]).to_string().as_bytes(),
+                ));
+                return crate::sessions::Sessions::refresh(
+                    &mut self.store,
+                    self.cell.as_ref(),
+                    &binding,
+                    target.branch.to_string(),
+                    format!("console:{key}"),
+                    Default::default(),
+                );
+            }
+            C::NotebookRefreshStatus { id } => {
+                return self.store.refresh_status(binding.project_id, id);
+            }
+            C::NotebookCancelRefresh { id } => {
+                return crate::sessions::Sessions::cancel_refresh(
+                    &mut self.store,
+                    binding.project_id,
+                    id,
+                );
+            }
             C::Notebook { command } => {
                 let instance = owner
                     .split_once(':')
@@ -847,12 +873,27 @@ impl Drop for Daemon {
 fn read_request(stream: &mut UnixStream) -> Result<Envelope> {
     let mut bytes = Vec::new();
     BufReader::new(stream)
-        .take(LIMIT + 1)
+        .take(crate::notebooks::files::MAX_DOCUMENT_BYTES as u64 + 8193)
         .read_until(b'\n', &mut bytes)?;
-    if bytes.len() as u64 > LIMIT || bytes.last() != Some(&b'\n') {
+    if bytes.len() > crate::notebooks::files::MAX_DOCUMENT_BYTES + 8192
+        || bytes.last() != Some(&b'\n')
+    {
         return Err(invalid(
-            "request must be a newline-terminated JSON object of at most 64 KiB",
+            "request must be a newline-terminated JSON object within the transport size limit",
         ));
     }
-    serde_json::from_slice(&bytes).map_err(|_| invalid("invalid local API request"))
+    let envelope: Envelope =
+        serde_json::from_slice(&bytes).map_err(|_| invalid("invalid local API request"))?;
+    if bytes.len() as u64 > LIMIT
+        && !matches!(
+            &envelope.request,
+            Request::ConsoleAction {
+                action: crate::console::workspace::Command::NotebookFiles { .. },
+                ..
+            }
+        )
+    {
+        return Err(invalid("request exceeds 64 KiB"));
+    }
+    Ok(envelope)
 }

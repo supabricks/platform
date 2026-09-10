@@ -17,7 +17,7 @@ async function passed(...checks) {
  await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');
 }
 // Close the browser on an unresponsive protocol call so finally retains progress.
-const watchdog=setTimeout(()=>{report.timeout=true;void browser.close();},240000);
+const watchdog=setTimeout(()=>{report.status='failed';report.timeout=true;void browser.close();},240000);
 
 function handshake(path, headers) {
  return new Promise((resolve,reject)=>{
@@ -31,6 +31,47 @@ try {
  const context=await browser.newContext({viewport:{width:1400,height:1200}});
  await context.route('**/*',route=>{if(new URL(route.request().url()).origin!==origin){report.external.push(route.request().url());return route.abort();}return route.continue();});
  const page=await context.newPage();
+ async function kernelRequest(operation, code=null) {
+   report.active_operation=operation;
+   await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');
+   const result=await page.evaluate(async ({code})=>{
+     const kernel=window.n01.session.session?.kernel;
+     if (!kernel) throw new Error('N01 kernel is missing');
+     let timer, future, replyReceived=false, idleReceived=false;
+     try {
+       let pending;
+       // KernelConnection already starts the initial info exchange when its
+       // socket opens. Await that exchange before sending another request.
+       if (code===null) pending=kernel.info.then(content=>({content}));
+       else {
+         future=kernel.requestExecute({code});
+         future.onReply=()=>{replyReceived=true;};
+         future.onIOPub=message=>{if(message.header.msg_type==='status' && message.content.execution_state==='idle')idleReceived=true;};
+         pending=future.done;
+       }
+       const reply=await Promise.race([pending,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),60000);})]);
+       return {status:reply?.content.status??null,error:reply?.content.ename,
+         diagnostics:{timed_out:reply===null,reply_received:code===null?null:replyReceived,idle_received:code===null?null:idleReceived,
+           connection:kernel.connectionStatus,kernel_status:kernel.status}};
+     } finally {clearTimeout(timer);future?.dispose();}
+   },{code});
+   if(result.status===null) {
+     report.failure={operation,...result.diagnostics};
+     throw new Error('N01 kernel request did not complete: '+JSON.stringify(report.failure));
+   }
+   delete report.active_operation;
+   return result;
+ }
+ async function startKernel(operation) {
+   report.active_operation=operation;
+   await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');
+   await page.getByRole('button',{name:'Start kernel',exact:true}).click();
+   await page.waitForFunction(() => /^(Ready|Error:)/.test(document.querySelector('[role=status]').textContent),null,{timeout:120000});
+   await expect(page.getByRole('status')).toHaveText('Ready');
+   // A connected WebSocket does not prove that the kernel's shell and IOPub
+   // channels are ready. Require the same round trip on every fresh start.
+   assert.equal((await kernelRequest(operation+'_kernel_info')).status,'ok');
+ }
  page.on('pageerror',e=>report.errors.push(e.message));
  page.on('console',m=>{if(m.type()==='error')report.errors.push(m.text());});
  const anonymous=await browser.newContext();
@@ -59,11 +100,7 @@ try {
  assert.deepEqual(await (await context.request.get(origin+'/jupyter/api/kernels',{headers})).json(),[]);
  await passed('failed_start_compensates_before_retry');
  const start=performance.now();
- await page.getByRole('button',{name:'Start kernel',exact:true}).click();
- await page.waitForFunction(() => /^(Ready|Error:)/.test(document.querySelector('[role=status]').textContent),null,{timeout:120000});
- await expect(page.getByRole('status')).toHaveText('Ready');
- // Session creation precedes Python readiness; wait for a real kernel reply.
- await page.evaluate(async()=>{await window.n01.session.session.kernel.requestKernelInfo();});
+ await startKernel('initial_start');
  report.kernel_start_seconds=(performance.now()-start)/1000;
  const events=(await readFile(config.journal,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
  const kernelPid=events.findLast(event=>event.event==='launched').pid;
@@ -102,10 +139,7 @@ try {
  await page.waitForFunction(()=>window.n01?.session.session?.kernel?.connectionStatus==='connected',null,{timeout:30000});
  assert.equal(await page.evaluate(()=>window.n01.session.session.kernel.id),savedKernel);
  assert.deepEqual(JSON.parse(await readFile(config.notebooks+'/orders.ipynb','utf8')),saved);
- async function execute(code) {
-   return page.evaluate(async code=>{const future=window.n01.session.session.kernel.requestExecute({code});const reply=await future.done;return {status:reply.content.status,error:reply.content.ename};},code);
- }
- assert.equal((await execute('assert n01_counter == 1')).status,'ok');
+ assert.equal((await kernelRequest('reconnected_kernel_query','assert n01_counter == 1')).status,'ok');
  await passed('save_reload_reconnect_without_replay');
  // Observe upstream Contents behavior; N03 must add an expected-hash adapter.
  const document=await (await context.request.get(origin+'/jupyter/api/contents/orders.ipynb',{headers})).json();
@@ -125,7 +159,7 @@ try {
  await expect.poll(async()=>readFile(pythonMarker,'utf8').catch(()=>''),{timeout:30000}).toBe('entered');
  await page.getByRole('button',{name:'Interrupt',exact:true}).click();
  assert.equal(await page.evaluate(()=>Promise.race([window.n01Pending,new Promise(r=>setTimeout(()=>r('interrupt-timeout'),10000))])),'error');
- assert.equal((await execute('assert spark.table("public.orders").count() == 2')).status,'ok');
+ assert.equal((await kernelRequest('interrupted_kernel_query','assert spark.table("public.orders").count() == 2')).status,'ok');
  await passed('Python_interrupt_preserves_working_Spark_binding');
  // A real Sail Python UDF establishes that work entered the engine before cancellation.
  const marker=config.project+'/.n01-spark-entered';
@@ -137,14 +171,23 @@ try {
  await page.getByRole('button',{name:'Shutdown',exact:true}).click();
  await expect(page.getByRole('status')).toHaveText('Kernel stopped',{timeout:30000});
  await passed('Spark_inflight_interrupt_followed_by_owned_shutdown');
- await page.getByRole('button',{name:'Start kernel',exact:true}).click();
- await page.waitForFunction(()=>window.n01.session.session?.kernel?.connectionStatus==='connected',null,{timeout:60000});
- assert.equal((await execute("assert 'n01_counter' not in globals()\nassert spark.table('public.orders').count()==2")).status,'ok');
- await page.getByRole('button',{name:'Run all',exact:true}).click();
- await expect(page.getByRole('status')).toHaveText('Run complete',{timeout:60000});
- await page.screenshot({path:args['--report'].replace('.json','.png'),fullPage:true});
- await page.getByRole('button',{name:'Shutdown',exact:true}).click();
- await expect(page.getByRole('status')).toHaveText('Kernel stopped',{timeout:30000});
+ let previousKernel=savedKernel;
+ report.completed_restart_cycles=0;
+ for(let cycle=1;cycle<=3;cycle++) {
+   await startKernel('restart_'+cycle);
+   const nextKernel=await page.evaluate(()=>window.n01.session.session.kernel.id);
+   assert.notEqual(nextKernel,previousKernel);
+   previousKernel=nextKernel;
+   if(cycle===1)await passed('restarted_kernel_info_roundtrip');
+   assert.equal((await kernelRequest('restarted_kernel_query_'+cycle,"assert 'n01_counter' not in globals()\nassert spark.table('public.orders').count()==2")).status,'ok');
+   await page.getByRole('button',{name:'Run all',exact:true}).click();
+   await expect(page.getByRole('status')).toHaveText('Run complete',{timeout:60000});
+   await page.screenshot({path:args['--report'].replace('.json','.png'),fullPage:true});
+   await page.getByRole('button',{name:'Shutdown',exact:true}).click();
+   await expect(page.getByRole('status')).toHaveText('Kernel stopped',{timeout:30000});
+   report.completed_restart_cycles=cycle;
+   await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');
+ }
  await passed('explicit_restart_clears_variables_and_queries_same_snapshot');
  assert.equal((await context.request.post(origin+'/logout',{headers})).status(),200);
  assert.equal((await context.request.get(origin+'/jupyter/api/kernels',{headers})).status(),401);
@@ -153,4 +196,5 @@ try {
  assert.deepEqual(report.external,[]);
  assert.deepEqual(report.errors,[]);
  report.status='passed';
-} finally {clearTimeout(watchdog);await browser.close();await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');}
+} catch(error) {report.status='failed';throw error;}
+finally {clearTimeout(watchdog);await browser.close();await writeFile(args['--report'],JSON.stringify(report,null,2)+'\n');}
