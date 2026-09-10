@@ -111,6 +111,9 @@ export type NotebookDocument = {
 export async function notebookFiles(command: object): Promise<Record<string, unknown>> {
   return (await request("notebooks/contents", "POST", command)).value;
 }
+export async function notebookLifecycle(command: object): Promise<Record<string, unknown>> {
+  return (await request("workspace", "POST", { action: "notebook", command })).value;
+}
 
 export type Target = { branch: string; revision: number };
 export type SqlResult = {

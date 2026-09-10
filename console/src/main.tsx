@@ -419,7 +419,7 @@ function App() {
               visible={view === "workspace"}
             />
           )}
-          {authenticated && <Notebook visible={view === "notebooks"} />}
+          {authenticated && data && <Notebook visible={view === "notebooks"} data={data} />}
         </main>
       </div>
     </div>
