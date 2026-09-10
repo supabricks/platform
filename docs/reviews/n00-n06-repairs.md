@@ -76,7 +76,8 @@ socket budget 106 bytes, exceeding the runtime's 104-byte limit. An isolated
 local reproduction at the same length returned that exact `start_compute`
 error. The fixture now uses a shorter prefix, checks the canonical path budget
 before launching services, and preserves structured CLI errors in its report.
-The updated fixture passes all 12 local browser checks; fresh macOS CI is pending.
+The updated fixture passes all 12 local browser checks. The subsequent CI run
+at `3d51a05` passed both macOS notebook and ingestion release qualification.
 
 The same CI run's macOS ingestion assertions passed, but the job failed when
 `hdiutil detach` reported the disposable pressure volume busy. The test now
@@ -84,6 +85,34 @@ explicitly closes its pressure-volume SQLite connection; workflow cleanup
 retries normal detach before forced detach of that fixture only. Persistent
 cleanup failures remain failures, and qualification failures retain a nonzero
 exit status. Shell tests exercised each cleanup outcome.
+
+That subsequent run failed the Linux notebook memory-limit check with
+`contains an unverified process; recovery stopped`. The kernel was fenced as
+`runtime_failure` before the test could observe `memory_limit`. All other jobs
+passed. A local Linux regression reproduced the same ownership conflict in
+0.08 seconds by sampling a token-bearing shell repeatedly executing itself.
+During `exec`, `/proc/PID/environ` can return empty or partial data even though
+the PID, birth time, process group and UID remain unchanged. Retrying only
+empty reads was insufficient; a partial nonempty read reproduced the failure.
+This reproduces a cause of the CI symptom; the original CI diagnostic did not
+capture the offending PID or environment read.
+
+Ownership verification now retries a missing token for up to 50 ms, requiring
+a complete NUL-terminated token field and unchanged process identity before
+acceptance. Disappearance, a zombie or changed identity rejects ownership;
+deadline expiry also rejects it. Unrelated live group members remain conflicts,
+and conflict diagnostics now identify their PID without exposing environment
+contents. Regression tests cover repeated `exec`, absent tokens and tokens
+with a matching prefix but a different owner, alongside existing forged-birth
+and orphan-recovery tests.
+
+The portable core/local suite passed, and all five process-ownership tests
+passed with the final token-boundary check. The local source runtime harness
+passed 24 checks, including the failing memory-limit case, real Sail queries,
+interrupts, expiry and daemon-crash reconciliation. This source run uses the
+previously qualified native components and does not restrict host networking;
+its external-launch mode omits the two installed-layout cleanup/backup
+assertions. Fresh exact-archive Linux/macOS CI remains the release gate.
 
 The expanded original
 N03/N04 acceptance matrix (including disk-full injection, child-branch workflow,
