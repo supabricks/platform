@@ -198,7 +198,7 @@ export function Notebook({
   async function open(file: string) {
     if (!discard()) return;
     const instance = editor.current!;
-    instance.model.readOnly = true;
+    instance.setReadOnly(true);
     try {
       const loaded = await notebookGet(file);
       abort.current.signal.throwIfAborted();
@@ -213,7 +213,7 @@ export function Notebook({
       setProvenance(meta?.outputs ?? null);
       setMessage("Opened without starting a kernel or running cells.");
     } finally {
-      if (!instance.model.isDisposed) instance.model.readOnly = false;
+      if (!instance.model.isDisposed) instance.setReadOnly(false);
     }
   }
   async function save(asCopy = false) {
@@ -227,7 +227,7 @@ export function Notebook({
       : `${requested}.ipynb`;
     const value = editor.current!.snapshot(persistOutputs);
     // Freeze editing while saving so acknowledgement cannot clear newer edits.
-    editor.current!.model.readOnly = true;
+    editor.current!.setReadOnly(true);
     try {
       const result = await notebookSave(
         destination,
@@ -242,7 +242,7 @@ export function Notebook({
       setFiles(await notebookList());
     } finally {
       if (editor.current && !editor.current.model.isDisposed)
-        editor.current.model.readOnly = false;
+        editor.current.setReadOnly(false);
     }
   }
   function download() {

@@ -194,6 +194,15 @@ export class DocumentEditor {
     this.widget.activeCellIndex = this.widget.widgets.length - 1;
     this.widget.mode = "edit";
   }
+  setReadOnly(value: boolean) {
+    this.model.readOnly = value;
+    // NotebookModel.readOnly is advisory; the standalone widget does not bind it
+    // to editor input. Block editing/commands without persisting cell metadata.
+    this.widget.node.inert = value;
+    for (const cell of this.widget.widgets) {
+      cell.editor?.setOption("readOnly", value || cell.readOnly);
+    }
+  }
   async run(
     channel: NotebookChannel,
     all: boolean,
@@ -206,7 +215,7 @@ export class DocumentEditor {
       : this.widget.activeCell
         ? [this.widget.activeCell]
         : this.widget.widgets.slice(0, 1);
-    this.model.readOnly = true;
+    this.setReadOnly(true);
     try {
       for (const cell of cells) {
         if (cancelled()) break;
@@ -290,7 +299,7 @@ export class DocumentEditor {
         }
       }
     } finally {
-      this.model.readOnly = false;
+      if (!this.model.isDisposed) this.setReadOnly(false);
     }
   }
   dispose() {
