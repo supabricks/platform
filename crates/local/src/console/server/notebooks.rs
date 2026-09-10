@@ -36,6 +36,29 @@ fn target(path: &str, suffix: &str) -> Option<(OperationId, u64)> {
     Some((id.parse().ok()?, generation.parse().ok()?))
 }
 impl State {
+    async fn notebook_contents(
+        &self,
+        id: &str,
+        command: crate::notebooks::files::Command,
+    ) -> Result<Value> {
+        let config = self.config.clone();
+        let owner = format!("{}:{id}", config.instance);
+        tokio::task::spawn_blocking(move || {
+            client::request_timeout(
+                &config.root,
+                Request::ConsoleAction {
+                    binding: config.binding,
+                    generation: config.generation,
+                    owner,
+                    action: crate::console::workspace::Command::NotebookFiles { command },
+                },
+                Duration::from_secs(2),
+            )
+        })
+        .await
+        .map_err(|_| invalid("notebook contents bridge unavailable"))?
+    }
+
     pub(super) async fn notebook_request(&self, id: &str, event: Transport) -> Result<Value> {
         let config = self.config.clone();
         let owner = format!("{}:{id}", config.instance);
@@ -82,6 +105,31 @@ impl State {
         id: &str,
         request: HttpRequest<Incoming>,
     ) -> Reply {
+        if request.uri().path() == "/api/notebooks/contents" {
+            if request.method() != Method::POST
+                || single(request.headers(), "content-type") != Some("application/json")
+            {
+                return fail(415, "Expected a JSON POST");
+            }
+            let bytes = match Limited::new(
+                request.into_body(),
+                crate::notebooks::files::MAX_DOCUMENT_BYTES + 4096,
+            )
+            .collect()
+            .await
+            {
+                Ok(body) => body.to_bytes(),
+                Err(_) => return fail(413, "Notebook document is too large"),
+            };
+            let command: crate::notebooks::files::Command = match serde_json::from_slice(&bytes) {
+                Ok(command) => command,
+                Err(_) => return fail(400, "Invalid notebook contents request"),
+            };
+            return match self.notebook_contents(id, command).await {
+                Ok(value) => json_response(200, json!({"api_version":VERSION,"value":value})),
+                Err(_) => fail(409, "Notebook contents operation failed"),
+            };
+        }
         if request.uri().path() == "/api/notebooks/ticket" && request.method() == Method::POST {
             #[derive(Deserialize)]
             #[serde(deny_unknown_fields)]
