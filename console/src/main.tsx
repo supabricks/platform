@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { authenticate, overview, logout, ApiError, type Overview } from "./api";
 import "./style.css";
 import { Workspace } from "./workspace";
+import { Notebook } from "./notebook";
 
 // A launch secret is single-use. Remove it before any API call or UI rendering.
 const launch = new URLSearchParams(location.hash.slice(1)).get("launch");
@@ -131,6 +132,9 @@ function App() {
           >
             Database workspace
           </button>
+          <button className={view === "notebooks" ? "active" : ""} onClick={() => setView("notebooks")}>
+            Notebooks
+          </button>
         </nav>
         <div className="sidebar-bottom">
           <span className="local-pill">
@@ -187,7 +191,7 @@ function App() {
         </header>
         <main
           id="main"
-          className={view === "workspace" ? "workspace-main" : undefined}
+            className={view === "workspace" || view === "notebooks" ? "workspace-main" : undefined}
         >
           <div hidden={view !== "overview"}>
             <div className="page-heading">
@@ -415,6 +419,7 @@ function App() {
               visible={view === "workspace"}
             />
           )}
+          {authenticated && <Notebook visible={view === "notebooks"} />}
         </main>
       </div>
     </div>
