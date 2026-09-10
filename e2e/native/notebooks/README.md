@@ -75,7 +75,13 @@ API paths/protocol, lifecycle events and resource measurements.
   crash fencing, browser-session ownership and admission races remain N02.
 - `run.py` creates synthetic database/notebook files and runs the browser checks.
   Saved documents are validated with nbformat. Browser checkpoints are written
-  after each scenario; a watchdog bounds stalled protocol calls. Interrupt tests
+  after each scenario; a watchdog bounds stalled protocol calls. Every fresh
+  kernel start waits for a kernel-info round trip before sending query code;
+  WebSocket connection alone is not readiness. Three stop/start cycles exercise
+  fresh variables and real Sail queries. Kernel-info/query requests have a
+  60-second deadline; failed reports name the active operation and, for stalled
+  queries, record reply/idle receipt plus connection/kernel state. Query code
+  is never retried automatically. Interrupt tests
   wait for execution markers rather than potentially stale kernel status. The
   driver owns the browser process group and stops it on timeout. Private runtime files, launch
   secrets and logs remain under a mode-0700 temporary root; successful runs

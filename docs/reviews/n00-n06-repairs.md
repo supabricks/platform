@@ -112,7 +112,38 @@ passed 24 checks, including the failing memory-limit case, real Sail queries,
 interrupts, expiry and daemon-crash reconciliation. This source run uses the
 previously qualified native components and does not restrict host networking;
 its external-launch mode omits the two installed-layout cleanup/backup
-assertions. Fresh exact-archive Linux/macOS CI remains the release gate.
+assertions. Exact-archive Linux/macOS release qualification subsequently passed
+at `27014d4`, including notebooks, console, ingestion and recovery.
+
+The separate N01 component probe at that commit timed out on the first query
+after shutdown/start. This probe uses the frozen alpha.8 release, not the new
+platform executable. Its restart path waited only for a connected WebSocket;
+initial startup already required a kernel-info round trip. A local repetition
+of the original restart path stalled on its fourth cycle: the query appeared
+in IPython history, while its browser future received neither reply nor idle
+callbacks and the connection still reported connected/idle. The CI report did
+not contain message-level diagnostics, so that exact wire-level failure cannot
+be established retrospectively.
+
+The probe now awaits Jupyter's `kernel.info` readiness promise on all fresh
+starts, allowing the client's initial info exchange to finish before sending
+another request. A separate explicit info request also stalled during local
+stress testing, so the probe uses the upstream initialization promise. It
+checks for a new kernel identity and exercises three restart/query cycles.
+Kernel-info and query waits are bounded to 60 seconds without replaying query
+code. Failure reports are marked failed and identify the active operation;
+query timeouts include reply/idle receipt and connection/kernel state, without
+code, outputs or credentials. These are component-probe changes; production
+notebook runtime qualification remains separate.
+
+The final readiness change passed two complete local probe runs expanded to
+six restart/query cycles each (12 cycles total), including admission cleanup,
+closed analytical sessions, departed kernel processes and nbformat validation.
+A separate real sleeping-query injection failed at the 60-second request
+deadline with `busy`, no reply and no idle, instead of leaving a running report
+until the global watchdog. JavaScript syntax and the frontend build passed.
+These source-adapter runs used the qualified alpha.8/Jupyter components with
+unrestricted host networking; fresh packaged Linux/macOS CI remains required.
 
 The expanded original
 N03/N04 acceptance matrix (including disk-full injection, child-branch workflow,
