@@ -197,7 +197,15 @@ fn excluded(name: &str) -> bool {
             | "supervisor.token"
     ) || matches!(
         name.split('/').next(),
-        Some("logs" | "tmp" | "launches" | "notebook-work")
+        Some(
+            "logs"
+                | "tmp"
+                | "launches"
+                | "notebook-work"
+                | "notebook-environments"
+                | "notebook-environment-work"
+                | "notebook-environment-cache"
+        )
     )
 }
 fn walk(
@@ -284,7 +292,7 @@ impl Stopped {
         Self::open_schema(root, SCHEMA_VERSION)
     }
     pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
-        if !matches!(expected, 8 | 9) {
+        if !matches!(expected, 8 | 9 | 10) {
             return Err(conflict("unsupported recovery schema"));
         }
         let root = private_root(root)?;
@@ -324,11 +332,14 @@ impl Stopped {
                 "analytical sessions remain; complete shutdown first",
             ));
         }
-        if schema == 9 && db.prepare("SELECT 1 FROM ingest_jobs WHERE state IN ('loading','reconciling') OR worker IS NOT NULL")?.exists([])? {
+        if schema >= 9 && db.prepare("SELECT 1 FROM ingest_jobs WHERE state IN ('loading','reconciling') OR worker IS NOT NULL")?.exists([])? {
             return Err(conflict("imports require receipt reconciliation before backup; reopen the owning runtime and resolve pending jobs"));
         }
-        if schema == 9 {
+        if schema >= 9 {
             validate_ingest(&root, &db)?;
+        }
+        if schema >= 10 && db.prepare("SELECT 1 FROM environment_operations WHERE state IN ('queued','initializing','preparing','verifying') UNION ALL SELECT 1 FROM environment_leases")?.exists([])? {
+            return Err(conflict("environment preparations or leases remain; complete shutdown first"));
         }
         db.pragma_update(None, "synchronous", "FULL")?;
         let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))?;
@@ -454,7 +465,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     }
     let manifest: Manifest = serde_json::from_slice(&fs::read(manifest_file)?)?;
     if manifest.format_version != 1
-        || !matches!(manifest.schema_version, 8 | 9)
+        || !matches!(manifest.schema_version, 8 | 9 | 10)
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()
     {
@@ -499,7 +510,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
             "recovery catalog format or integrity differs from its manifest",
         ));
     }
-    if manifest.schema_version == 9 {
+    if manifest.schema_version >= 9 {
         validate_ingest(&data, &db)?;
     }
     drop(db);

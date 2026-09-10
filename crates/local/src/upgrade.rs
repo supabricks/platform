@@ -127,7 +127,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             "candidate format declaration does not match this binary",
         ));
     }
-    let migration = source_schema == 8;
+    let migration = matches!(source_schema, 8 | 9);
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);
     if migration && normalized == target_formats {
@@ -250,16 +250,17 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         return Err(conflict("runtime changed during upgrade"));
     }
     if migration {
-        if schema == 8 {
-            crate::store::migrations::ingest_upgrade(
+        if schema == source_schema {
+            crate::store::migrations::catalog_upgrade(
                 &mut stopped.db,
+                source_schema,
                 &journal.database_sha256,
                 &to.identity,
             )?;
         } else {
             let marker: (String, String) = stopped.db.query_row(
-                "SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=9",
-                [],
+                "SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=?1",
+                [SCHEMA_VERSION],
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )?;
             if marker != (journal.database_sha256.clone(), to.identity.clone()) {

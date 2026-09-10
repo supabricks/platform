@@ -36,6 +36,9 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    Environment {
+        command: crate::environments::Command,
+    },
     IngestInspect {
         path: std::path::PathBuf,
         #[serde(default = "ingest_delimiter")]
@@ -599,7 +602,10 @@ pub(crate) fn handle(
                 expires_at_ms,
             },
         ),
-        Action::Connect { .. } | Action::Catalog { .. } | Action::Sql { .. } => {
+        Action::Environment { .. }
+        | Action::Connect { .. }
+        | Action::Catalog { .. }
+        | Action::Sql { .. } => {
             return Err(invalid("connection action requires the native gateway"));
         }
     };

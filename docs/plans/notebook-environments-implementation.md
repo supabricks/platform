@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE01 qualified; NE02 next, product integration pending · Baseline: platform/main@8556027,
+*Status: NE01 qualified; NE02 implemented, native CI qualification pending · Baseline: platform/main@8556027,
 after PRs #33 and #34 · Updated: 2026-09-10*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
@@ -340,8 +340,9 @@ revision. No “industry-standard” completion claim rests on a source-only dem
 
 `NE00 -> NE01 -> NE02 -> NE03 -> NE04 -> NE05 -> NE06`.
 NE01's two-target separation probe and packaging/compatibility decision are
-qualified. NE02 is the next implementation slice: durable preparation and
-ownership before product kernel integration in NE03. Split individual slices into
+qualified. NE02 implements durable preparation and ownership; see the
+[NE02 architecture](../architecture/ne02-environment-manager.md) for validation
+and remaining evidence. NE03 binds product kernels to these environments. Split individual slices into
 backend/API and frontend pin PRs where necessary without weakening their gates.
 
 Containers/VM sandboxes, remote kernels, hosted-console connectivity, arbitrary

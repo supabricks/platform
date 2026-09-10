@@ -129,6 +129,7 @@ pub enum Request {
 }
 
 pub struct Daemon {
+    environments: crate::environments::Manager,
     notebooks: crate::notebooks::Notebooks,
     consoles: crate::console::Consoles,
     console_queries: crate::console::workspace::Queries,
@@ -150,6 +151,7 @@ impl Daemon {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
         let notebooks = crate::notebooks::Notebooks::recover(&mut store)?;
+        let environments = crate::environments::Manager::recover(&mut store)?;
         let consoles = crate::console::Consoles::recover(&mut store)?;
         crate::ingest::recover(&mut store)?;
         let socket = store.root().join("control.sock");
@@ -178,6 +180,7 @@ impl Daemon {
         let sessions = crate::sessions::Sessions::recover(&mut store)?;
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
+            environments,
             notebooks,
             consoles,
             console_queries: Default::default(),
@@ -228,6 +231,16 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                let environments_stopped = match self.environments.tick(&mut self.store, stopping) {
+                    Ok(done) => {
+                        self.environments.last_error = None;
+                        done
+                    }
+                    Err(error) => {
+                        self.environments.last_error = Some(error.to_string());
+                        false
+                    }
+                };
                 self.uploads.tick(&mut self.store, stopping)?;
                 let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
                     Ok(done) => {
@@ -291,6 +304,7 @@ impl Daemon {
                 }
                 if let Some(cell) = &mut self.cell {
                     if stopping
+                        && environments_stopped
                         && analytical_stopped
                         && notebooks_stopped
                         && self.consoles.last_error.is_none()
@@ -318,6 +332,7 @@ impl Daemon {
                         }
                     }
                 } else if stopping
+                    && environments_stopped
                     && analytical_stopped
                     && notebooks_stopped
                     && self.consoles.last_error.is_none()
@@ -547,7 +562,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
@@ -808,6 +823,9 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::Environment { command } = action {
+            return self.environments.handle(&mut self.store, &binding, command);
+        }
         if let crate::api::Action::IngestInspect {
             path,
             delimiter,

@@ -1,5 +1,5 @@
 //! Bounded notebook documents and conditional, atomic project saves.
-mod directory;
+pub(crate) mod directory;
 use crate::store::{
     Result,
     error::{conflict, invalid},
