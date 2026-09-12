@@ -30,6 +30,16 @@ impl Fixture {
         )
         .unwrap();
         let mut files = BTreeMap::new();
+        fs::create_dir_all(root.join("python/runtime/bin")).unwrap();
+        fs::write(
+            root.join("python/runtime/bin/python3.12"),
+            b"qualified interpreter",
+        )
+        .unwrap();
+        files.insert(
+            "python/runtime/bin/python3.12".into(),
+            hash(b"qualified interpreter"),
+        );
         for (name, bytes) in [
             ("pyproject.toml", b"manifest".as_slice()),
             ("uv.lock", b"lock"),
@@ -92,14 +102,14 @@ impl Fixture {
             project: self.binding.project_id,
             worktree: self.binding.worktree.clone(),
             worktree_key: wk,
-            path,
+            path: path.clone(),
             directory,
             inputs: inputs.clone(),
             contract: self.package.identity.clone(),
             interpreter: self.package.root.join("python/runtime/bin/python3.12"),
             installation: "source".into(),
             state: "building".into(),
-            inventory: Some(hash(b"inventory")),
+            inventory: Some(files::inventory(&path).unwrap()),
         };
         let mut o = Operation {
             id: OperationId::new(),
@@ -460,4 +470,50 @@ fn recovery_fences_every_partial_stage_and_keeps_idempotency_records() {
         assert_eq!(recovered.state, "failed");
         assert_eq!(store.active_environment(config.id, &project).unwrap(), None);
     }
+}
+
+#[test]
+fn kernel_selection_fences_drift_and_keeps_old_generations_after_declaration_changes() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let old = f.ready("old");
+    let selected = Manager::select(&mut f.store, &f.binding, old.id).unwrap();
+    assert_eq!(selected.python, old.path.join("bin/python"));
+    fs::write(
+        f.binding.worktree.join("notebooks/environment/uv.lock"),
+        b"new declaration",
+    )
+    .unwrap();
+    assert!(Manager::declarations_changed(
+        &f.store,
+        &f.binding,
+        &selected.identity
+    ));
+    assert_eq!(
+        Manager::select(&mut f.store, &f.binding, old.id)
+            .unwrap()
+            .identity,
+        selected.identity
+    );
+    fs::write(old.path.join("package.py"), b"drift").unwrap();
+    assert!(Manager::select(&mut f.store, &f.binding, old.id).is_err());
+    fs::write(old.path.join("package.py"), b"original").unwrap();
+    let mut wrong = f.binding.clone();
+    wrong.project_id = ProjectId::new();
+    assert!(Manager::select(&mut f.store, &wrong, old.id).is_err());
+    fs::remove_dir_all(&old.path).unwrap();
+    assert!(Manager::select(&mut f.store, &f.binding, old.id).is_err());
+}
+
+#[test]
+fn inventory_matches_canonical_worker_format_and_rejects_hardlinks() {
+    let tmp = tempfile::tempdir().unwrap();
+    fs::write(tmp.path().join("a"), b"abc").unwrap();
+    symlink("a", tmp.path().join("link")).unwrap();
+    assert_eq!(
+        files::inventory(tmp.path()).unwrap(),
+        hash(format!("{{\"a\":\"{}\",\"link\":{{\"link\":\"a\"}}}}", hash(b"abc")).as_bytes())
+    );
+    fs::hard_link(tmp.path().join("a"), tmp.path().join("b")).unwrap();
+    assert!(files::inventory(tmp.path()).is_err());
 }

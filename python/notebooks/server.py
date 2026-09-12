@@ -279,6 +279,9 @@ async def start(kernel, generation):
         gate = manager.gate()
         if not Path(gate['ready']).is_file():
             raise RuntimeError('Spark bootstrap did not finish')
+        ready = json.loads(Path(gate['ready']).read_text())
+        if ready.get('environment') != gate['environment'] or ready.get('epoch_id') != gate['epoch_id']:
+            raise RuntimeError('kernel bootstrap identity differs')
         record['ready'], record['state'], record['activity_ms'] = True, 'idle', now()
         record['monitor'] = asyncio.create_task(monitor(kernel, client))
         publish(kernel)

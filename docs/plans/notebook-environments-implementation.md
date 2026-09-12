@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE01/NE02 native qualification passed; NE02 portable fixture correction in CI · Baseline: platform/main@8556027,
+*Status: NE03 implementation in progress; native kernel qualification pending · Baseline: platform/main@8556027,
 after PRs #33 and #34 · Updated: 2026-09-10*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
@@ -233,6 +233,8 @@ GC-versus-lease races cannot activate partial environments or kill unrelated
 processes. Project manifests survive conflicts and interrupted paired updates.
 
 ### NE03 — Bind kernels and notebook provenance to environments
+
+**Implementation:** [kernel binding contract](../architecture/ne03-kernel-environments.md).
 
 **Depends on:** NE02. **Touch:** notebook coordinator/gate/bootstrap, status and
 capabilities, persistence validation, runtime fault tests.

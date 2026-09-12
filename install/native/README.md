@@ -37,10 +37,10 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-NE02 uses version `v0.1.0-alpha.9` and catalog 10. It adds offline managed
-notebook environment preparation to the console/notebook/ingestion platform.
-See the [environment manager](../../docs/architecture/ne02-environment-manager.md)
-for CLI usage and the boundary before NE03 kernel integration, and the
+NE03 uses version `v0.1.0-alpha.10` and catalog 10. Product notebook kernels
+run in offline managed environments with durable leases and saved provenance.
+See the [kernel environment guide](../../docs/architecture/ne03-kernel-environments.md)
+and the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
 profile conversion and engine upgrades are not qualified.

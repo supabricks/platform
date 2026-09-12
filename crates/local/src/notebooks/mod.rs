@@ -39,6 +39,10 @@ struct Entry {
     key: String,
     target: Target,
     epoch: Option<supabricks_core::resource::EpochId>,
+    requested_environment: Option<OperationId>,
+    environment: Option<crate::environments::Identity>,
+    environment_lease: Option<OperationId>,
+    environment_operation: Option<OperationId>,
     limits: Limits,
     generation: u64,
     state: String,
@@ -65,7 +69,9 @@ impl Entry {
             json!({"id":self.id,"generation":self.generation,"daemon_generation":store.generation(),
             "project_id":self.binding.project_id,"branch_id":self.target.branch,"worktree":self.binding.worktree,
             "state":self.state,"error":self.error,"kernel_id":self.kernel,"session_id":self.session,
-            "epoch_id":session.as_ref().and_then(|s|s.epoch_id),"epoch":session.as_ref().and_then(|s|s.metadata.clone()),
+            "epoch_id":session.as_ref().and_then(|s|s.epoch_id).or(self.epoch),
+            "environment":self.environment,"environment_operation":self.environment_operation,"prepared_environment_id":store.active_environment(self.binding.project_id,&self.binding.worktree)?,
+            "environment_preparation_needed":self.environment.as_ref().is_some_and(|i|crate::environments::Manager::declarations_changed(store,&self.binding,i)),"epoch":session.as_ref().and_then(|s|s.metadata.clone()),
             "expires_at_ms":self.expires,"limits":self.limits,"protocol_version":contract::PROTOCOL,
             "execution_replayed":false}),
         )
@@ -142,6 +148,7 @@ impl Notebooks {
                 key,
                 target,
                 epoch,
+                environment,
                 limits,
             } => {
                 contract::key(&key)?;
@@ -150,7 +157,11 @@ impl Notebooks {
                 if let Some(e) = self.entries.values().find(|e| {
                     e.owner == owner && e.binding.worktree == binding.worktree && e.key == key
                 }) {
-                    if e.target != target || e.limits != limits || e.epoch != epoch {
+                    if e.target != target
+                        || e.limits != limits
+                        || e.epoch != epoch
+                        || e.requested_environment != environment
+                    {
                         return Err(conflict("notebook key was used with different parameters"));
                     }
                     return e.view(store);
@@ -169,6 +180,10 @@ impl Notebooks {
                     key,
                     target,
                     epoch,
+                    requested_environment: environment,
+                    environment: None,
+                    environment_lease: None,
+                    environment_operation: None,
                     limits,
                     generation: 0,
                     state: "stopped".into(),
@@ -219,6 +234,12 @@ impl Notebooks {
                         generation,
                         key,
                     }
+                    | Command::AdoptEnvironment {
+                        id,
+                        generation,
+                        key,
+                        ..
+                    }
                     | Command::Shutdown {
                         id,
                         generation,
@@ -262,6 +283,16 @@ impl Notebooks {
                                 return Err(conflict("notebook cleanup is still pending"));
                             }
                             e.target.validate(store, binding)?;
+                            e.restart = true;
+                            e.stop_reason = Some("restart".into());
+                            e.state = "stopping".into();
+                        }
+                        Command::AdoptEnvironment { environment, .. } => {
+                            if e.state == "stopping" {
+                                return Err(conflict("notebook cleanup is still pending"));
+                            }
+                            crate::environments::Manager::select(store, binding, environment)?;
+                            e.requested_environment = Some(environment);
                             e.restart = true;
                             e.stop_reason = Some("restart".into());
                             e.state = "stopping".into();
@@ -392,6 +423,10 @@ mod tests {
                 owner: owner.clone(),
                 key: "create".into(),
                 epoch: None,
+                requested_environment: None,
+                environment: None,
+                environment_lease: None,
+                environment_operation: None,
                 target: Target {
                     branch: BranchId::new(),
                     revision: 1,

@@ -255,6 +255,7 @@ impl Daemon {
                 let notebooks_stopped = match self.notebooks.tick(
                     &mut self.store,
                     &mut self.sessions,
+                    &mut self.environments,
                     self.cell.as_ref(),
                     stopping,
                 ) {
@@ -553,7 +554,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {

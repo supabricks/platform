@@ -1,5 +1,7 @@
 //! NE02 offline preparation. Product kernels continue using service Python until NE03.
 mod files;
+mod selection;
+pub use selection::{DefaultPreparation, Identity, Selected};
 #[cfg(test)]
 mod tests;
 use crate::{
