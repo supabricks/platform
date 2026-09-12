@@ -50,5 +50,17 @@ class Packages(unittest.TestCase):
                     packages.download('https://files.pythonhosted.org/a.whl',path,3,lambda:None)
                 self.assertEqual(str(caught.exception),'artifact_limit')
 
+    def test_workspace_boundary_is_private_and_removed_after_resolver_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            documents=Path(directory)
+            path=documents/'pyproject.toml'
+            original=b'[project]\nname="example"\n'
+            path.write_bytes(original)
+            with self.assertRaises(RuntimeError):
+                with packages.standalone_project(documents):
+                    self.assertIn(b'[tool.uv.workspace]',path.read_bytes())
+                    raise RuntimeError('resolver conflict')
+            self.assertEqual(path.read_bytes(),original)
+
 
 if __name__=='__main__':unittest.main()

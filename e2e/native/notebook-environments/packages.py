@@ -26,6 +26,8 @@ def qualify(args):
     root = Path(tempfile.mkdtemp(prefix='sb-ne04-', dir='/tmp')).resolve()
     root.chmod(0o700)
     data = root / 'data'
+    (root/'pyproject.toml').write_text('[tool.uv.workspace]\nmembers=["data/notebook-environment-work/*/documents"]\n')
+    (root/'uv.lock').write_text('ancestor lock must remain untouched\n')
     report = dict(status='running', checks=[], release_sha256=digest(release / 'release.json'))
     project = root / 'project'
     project.mkdir()
@@ -166,6 +168,9 @@ def qualify(args):
             assert db.execute('SELECT count(*) FROM analytical_sessions').fetchone()[0]==0
         subprocess.run([str(binary),'installation','verify'],env=env,check=True,stdout=subprocess.DEVNULL)
         check('package_operations_never_acquire_sail_and_service_installation_is_unchanged')
+        assert (root/'uv.lock').read_text()=='ancestor lock must remain untouched\n'
+        assert '[tool.uv.workspace]' not in (project/'notebooks/environment/pyproject.toml').read_text()
+        check('resolver_cannot_read_or_publish_an_ancestor_workspace_lock')
         report['status']='passed'
     except BaseException as error:
         report['status']='failed';report['failure_type']=type(error).__name__

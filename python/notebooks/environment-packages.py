@@ -4,6 +4,7 @@ No project code or build backend is imported. uv edits/resolves private copies;
 only the daemon may publish the declaration pair or activate a generation.
 """
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -88,6 +89,21 @@ def download(url, temporary, remaining, check):
     return count
 
 
+@contextmanager
+def standalone_project(documents):
+    # --no-config does not disable uv's ancestor workspace discovery. An empty
+    # workspace at this private project is the explicit discovery boundary. It
+    # is transient: never change the user's declaration for this implementation
+    # detail, including when the resolver reports a conflict.
+    path = documents / 'pyproject.toml'
+    original = path.read_bytes()
+    path.write_bytes(original + b'\n[tool.uv.workspace]\n')
+    try:
+        yield
+    finally:
+        path.write_bytes(original)
+
+
 def execute(config, contract, package, env, check, step):
     # packaging itself is part of the verified, pure-Python kernel wheelhouse.
     # zipimport uses that immutable wheel, never the host site-packages.
@@ -115,8 +131,9 @@ def execute(config, contract, package, env, check, step):
     def uv(*args, capture=False):
         check()
         try:
-            result = subprocess.run([*flags, *map(str, args)], cwd=documents, env=env, check=True,
-                                    stdout=subprocess.PIPE if capture else None, timeout=55)
+            with standalone_project(documents):
+                result = subprocess.run([*flags, *map(str, args)], cwd=documents, env=env, check=True,
+                                        stdout=subprocess.PIPE if capture else None, timeout=55)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             raise Failure('resolution_failed') from e
         check()

@@ -112,7 +112,10 @@ One daemon worker serializes package operations and cache writes. It journals th
 request before launch, checks expected inputs again at start, and runs only the
 hash-verified bundled worker/interpreter. The worker edits private copies, resolves,
 acquires wheels, builds at the final private generation path, checks the package
-closure, imports the bootstrap dependencies and fsyncs the inventory.
+closure, imports the bootstrap dependencies and fsyncs the inventory. A transient
+empty uv workspace bounds discovery to the private project; `--no-config` alone
+does not prevent uv from selecting an ancestor workspace. The boundary is removed
+from the staged manifest after each resolver/export command.
 
 After validation the daemon journals the resulting hashes, then atomically
 exchanges the managed declaration directory with a staged complete pair
