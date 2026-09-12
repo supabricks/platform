@@ -98,8 +98,14 @@ stale publication, corrupt wheel bytes, daemon SIGKILL recovery and GC substitut
 
 The release workflow runs this harness on exact Linux x86_64 and macOS arm64
 archives with external networking denied, alongside existing notebook, ingestion,
-console and upgrade gates. Those target reports are required before declaring
-native qualification complete. The local run did not isolate networking. Tests
+console and upgrade gates. Both target gates passed at `92ac3a5` in
+[native-release run 34504307573](https://github.com/supabricks/platform/actions/runs/34504307573).
+Retained reports: [Linux](ne02-evidence/linux-x86_64.json) and
+[macOS](ne02-evidence/macos-arm64.json). The same run passed both native stopped
+upgrade/restore gates and all existing console, ingestion and notebook checks.
+The subsequent portable-test correction canonicalizes the macOS temporary
+worktree fixture; it does not change runtime or assembly code. The local run did
+not isolate networking. Tests
 do not constitute a power-loss or hostile-user sandbox guarantee; project code
 continues to run as the local user. Real kernel leases and notebook provenance
 are the next slice, NE03.

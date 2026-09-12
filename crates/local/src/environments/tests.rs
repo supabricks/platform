@@ -14,6 +14,9 @@ impl Fixture {
         let tmp = tempfile::tempdir().unwrap();
         let project = tmp.path().join("project");
         fs::create_dir(&project).unwrap();
+        // macOS temporary paths can traverse /var -> /private/var. Production
+        // bindings are canonical; the fixture must supply that same contract.
+        let project = project.canonicalize().unwrap();
         let config = ProjectConfig::initialize(&project, "example").unwrap();
         let mut store = Store::open(&tmp.path().join("data")).unwrap();
         store.register_project(&config).unwrap();
@@ -122,6 +125,24 @@ impl Fixture {
         self.store.publish_environment(&o, &g).unwrap();
         g
     }
+}
+
+#[test]
+fn worktree_alias_does_not_create_a_second_operation_namespace() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let alias = f._tmp.path().join("alias");
+    symlink(&f.binding.worktree, &alias).unwrap();
+    let binding = Binding {
+        worktree: alias,
+        ..f.binding.clone()
+    };
+    assert!(
+        f.manager
+            .handle(&mut f.store, &binding, Command::Inspect)
+            .is_err()
+    );
+    assert_eq!(f.store.environment_operations().unwrap().len(), 1);
 }
 
 #[test]

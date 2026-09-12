@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE01 qualified; NE02 implemented, native CI qualification pending · Baseline: platform/main@8556027,
+*Status: NE01/NE02 native qualification passed; NE02 portable fixture correction in CI · Baseline: platform/main@8556027,
 after PRs #33 and #34 · Updated: 2026-09-10*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
@@ -209,6 +209,9 @@ import in the already bundled environment is insufficient.
 before runtime integration. If any fails, revise the design with measured evidence.
 
 ### NE02 — Implement environment operations and durable ownership
+
+**Evidence:** [implementation and retained Linux/macOS reports](../architecture/ne02-environment-manager.md).
+Both exact-archive native gates passed; kernel binding remains NE03.
 
 **Depends on:** NE01. **Touch:** environment manager, supervisor, typed contracts,
 store/recovery as required, native component assembly.
