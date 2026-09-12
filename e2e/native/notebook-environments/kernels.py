@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import urllib.error
 import uuid
 import websocket
 
@@ -42,7 +43,13 @@ def main(args):
             headers={'Origin':self.origin,'X-Supabricks-Console':'1','Content-Type':'application/json'}
             if hasattr(self,'csrf'):headers['X-Supabricks-CSRF']=self.csrf
             req=urllib.request.Request(self.origin+'/api/'+path,headers=headers,data=None if value is None else json.dumps(value).encode())
-            with self.http.open(req,timeout=30) as result:return json.load(result)
+            try:
+                with self.http.open(req,timeout=30) as result:return json.load(result)
+            except urllib.error.HTTPError as error:
+                # Preserve the bounded API diagnostic; a bare 503 hides whether
+                # startup hit a transport deadline or the daemon rejected it.
+                detail=error.read(8192).decode('utf-8',errors='replace')
+                raise RuntimeError(f'console {path}: HTTP {error.code}: {detail}') from None
         def action(self,action,**fields):return self.request('workspace',{'action':'notebook','command':{'action':action,**fields}})['value']
         def wait(self,e,state='ready'):
             deadline=time.monotonic()+150
