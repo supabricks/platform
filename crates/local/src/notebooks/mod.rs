@@ -39,6 +39,8 @@ struct Entry {
     key: String,
     target: Target,
     epoch: Option<supabricks_core::resource::EpochId>,
+    creation_epoch: Option<supabricks_core::resource::EpochId>,
+    creation_environment: Option<OperationId>,
     requested_environment: Option<OperationId>,
     environment: Option<crate::environments::Identity>,
     environment_lease: Option<OperationId>,
@@ -159,8 +161,8 @@ impl Notebooks {
                 }) {
                     if e.target != target
                         || e.limits != limits
-                        || e.epoch != epoch
-                        || e.requested_environment != environment
+                        || e.creation_epoch != epoch
+                        || e.creation_environment != environment
                     {
                         return Err(conflict("notebook key was used with different parameters"));
                     }
@@ -180,6 +182,8 @@ impl Notebooks {
                     key,
                     target,
                     epoch,
+                    creation_epoch: epoch,
+                    creation_environment: environment,
                     requested_environment: environment,
                     environment: None,
                     environment_lease: None,
@@ -423,6 +427,8 @@ mod tests {
                 owner: owner.clone(),
                 key: "create".into(),
                 epoch: None,
+                creation_epoch: None,
+                creation_environment: None,
                 requested_environment: None,
                 environment: None,
                 environment_lease: None,

@@ -32,6 +32,7 @@ def main(args):
         report['checks'].append(name); args.report.parent.mkdir(parents=True,exist_ok=True);args.report.write_text(json.dumps(report,indent=2)+'\n');print(name,flush=True)
     class Console:
         def __init__(self,project):
+            self.created={}
             self.project=project;url=cli(project,'console','--no-open')['url'];self.origin=url.split('/#')[0].rstrip('/')
             self.jar=http.cookiejar.CookieJar();self.http=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
             self.csrf=self.request('session',{'token':url.split('#launch=')[1]})['csrf']
@@ -52,7 +53,8 @@ def main(args):
                 time.sleep(.15)
             raise TimeoutError('kernel readiness')
         def start(self,environment=None,epoch=None):
-            e=self.action('create',key=str(uuid.uuid4()),target=self.target,environment=environment,epoch=epoch)
+            request=dict(key=str(uuid.uuid4()),target=self.target,environment=environment,epoch=epoch)
+            e=self.action('create',**request);self.created[e['id']]=request
             e=self.action('start',id=e['id'],generation=0,key=str(uuid.uuid4()))
             return self.wait(e)
         def stop(self,e):
@@ -123,6 +125,7 @@ def main(args):
         execute(old_ws,"import humanize\nassert humanize.__version__=='4.13.0'\nassert 'counter' not in globals()")
         old_ws.close();adopted=a.restart(restarted,new_id);old_ws=a.connect(adopted)
         assert adopted['environment']['id']==new_id and adopted['epoch_id']==old['epoch_id']
+        assert a.action('create',**a.created[old['id']])['environment']==adopted['environment']
         execute(old_ws,"import humanize\nassert humanize.__version__=='4.14.0'\nassert 'counter' not in globals()")
         check('restart_retains_both_identities_and_explicit_adoption_retains_epoch_without_replay')
         def provenance(e):return {k:e[k] for k in ['branch_id','epoch_id','environment']}
