@@ -1,6 +1,7 @@
-//! NE02 offline preparation. Product kernels continue using service Python until NE03.
+//! Owned, reproducible notebook environments and package transactions.
 mod files;
 mod selection;
+mod transaction;
 pub use selection::{DefaultPreparation, Identity, Selected};
 #[cfg(test)]
 mod tests;
@@ -63,6 +64,19 @@ pub enum Command {
         key: String,
         expected: Inputs,
     },
+    Manage {
+        key: String,
+        expected: Inputs,
+        change: Change,
+        #[serde(default)]
+        offline: bool,
+    },
+    Find {
+        key: String,
+    },
+    Declaration {
+        path: PathBuf,
+    },
     Status {
         id: OperationId,
     },
@@ -70,6 +84,23 @@ pub enum Command {
         id: OperationId,
     },
     Collect,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Change {
+    Add { requirement: String },
+    Remove { package: String },
+    Lock,
+    Sync,
+    Adopt { path: PathBuf, expected: Inputs },
+    ExportBundle { path: PathBuf },
+    ImportBundle { path: PathBuf },
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Workflow {
+    change: Change,
+    offline: bool,
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Operation {
@@ -88,11 +119,17 @@ pub(crate) struct Operation {
     pub worker: Option<OwnedProcess>,
     pub error: Option<String>,
     pub cancel: bool,
+    #[serde(default)]
+    pub workflow: Option<Workflow>,
+    #[serde(default)]
+    pub result: Option<Value>,
+    #[serde(default)]
+    pub publication: Option<Inputs>,
 }
 impl Operation {
     fn view(&self) -> Value {
         json!({"id":self.id,"state":self.state,"kind":self.kind,"inputs":self.inputs,
-        "generation":self.generation,"created_at_ms":self.created,"error":self.error,"cancel_requested":self.cancel})
+        "key":self.key,"generation":self.generation,"created_at_ms":self.created,"error":self.error,"cancel_requested":self.cancel,"workflow":self.workflow,"result":self.result,"published_inputs":self.publication})
     }
 }
 #[derive(Clone, Serialize, Deserialize)]
@@ -291,7 +328,7 @@ impl Manager {
                     o.state = "ready".into();
                 } else {
                     o.state = if o.cancel { "cancelled" } else { "failed" }.into();
-                    o.error = Some("interrupted; retry with a new request key".into());
+                    o.error = Some("interrupted; inspect declarations and env sync with a new request key; previous declarations are retained in notebooks/.environment-<operation-id>".into());
                 }
                 store.save_environment_operation(&o)?;
             }
@@ -321,6 +358,13 @@ impl Manager {
         let operations = store.environment_operations()?;
         let scoped = |o: &&Operation| o.project == project && o.worktree == worktree;
         match command {
+            Command::Find { key } => Ok(
+                json!({"operation": operations.iter().filter(scoped).find(|o| o.key == key).map(Operation::view)}),
+            ),
+            Command::Declaration { path } => {
+                let (manifest, lock) = transaction::declaration(&worktree, &path)?;
+                Ok(json!({"inputs":Inputs {manifest:hash(&manifest),lock:hash(&lock)}}))
+            }
             Command::Inspect => {
                 let declarations = match files::inputs(&worktree) {
                     Ok(v) => Some(v),
@@ -344,7 +388,7 @@ impl Manager {
                 });
                 Ok(
                     json!({"version":1,"inputs":declarations,"active_generation":active,"preparation_needed":!ready,
-                    "package_mutation":false,"operations":operations.iter().filter(scoped).rev().take(20).map(Operation::view).collect::<Vec<_>>()}),
+                    "package_mutation":true,"index":"https://pypi.org/simple","supported_sources":"registry wheels only","protected_packages":package.template("base")?.packages,"operations":operations.iter().filter(scoped).rev().take(20).map(Operation::view).collect::<Vec<_>>()}),
                 )
             }
             Command::Status { id } | Command::Cancel { id } => {
@@ -365,10 +409,10 @@ impl Manager {
             }
             command => {
                 let package = Package::load(store)?;
-                let (key, kind, template, inputs) = match command {
+                let (key, kind, template, inputs, workflow) = match command {
                     Command::Initialize { key, template } => {
                         let t = package.template(&template)?;
-                        (key, "initialize", template, t.inputs.clone())
+                        (key, "initialize", template, t.inputs.clone(), None)
                     }
                     Command::Prepare { key, expected } => {
                         let template = package
@@ -376,13 +420,31 @@ impl Manager {
                             .iter()
                             .find(|(_, t)| t.inputs == expected)
                             .map(|(n, _)| n.clone())
-                            .ok_or_else(|| {
-                                conflict(
-                                    "only unchanged qualified locks may be prepared before NE04",
-                                )
-                            })?;
-                        (key, "prepare", template, expected)
+                            .unwrap_or_else(|| "base".into());
+                        let custom = package.template(&template)?.inputs != expected;
+                        (
+                            key,
+                            "prepare",
+                            template,
+                            expected,
+                            custom.then_some(Workflow {
+                                change: Change::Sync,
+                                offline: true,
+                            }),
+                        )
                     }
+                    Command::Manage {
+                        key,
+                        expected,
+                        change,
+                        offline,
+                    } => (
+                        key,
+                        "manage",
+                        "base".into(),
+                        expected,
+                        Some(Workflow { change, offline }),
+                    ),
                     _ => unreachable!(),
                 };
                 crate::notebooks::contract::key(&key)?;
@@ -391,10 +453,14 @@ impl Manager {
                         || o.inputs != inputs
                         || o.contract != package.identity
                         || o.template != template
+                        || o.workflow != workflow
                     {
                         return Err(conflict("environment request key has different parameters"));
                     }
                     return Ok(o.view());
+                }
+                if let Some(workflow) = &workflow {
+                    transaction::validate_change(&worktree, &workflow.change)?;
                 }
                 if operations
                     .iter()
@@ -410,12 +476,12 @@ impl Manager {
                         "environment preparation queue or worktree is occupied",
                     ));
                 }
-                if kind == "prepare" && files::inputs(&worktree)? != inputs {
+                if kind != "initialize" && files::inputs(&worktree)? != inputs {
                     return Err(conflict(
                         "environment inputs changed; inspect before preparing",
                     ));
                 }
-                if kind == "prepare"
+                if kind != "initialize"
                     && files::free_bytes(store.root())? < self.limits.admission_free
                 {
                     return Err(conflict("environment preparation requires 2 GiB free disk"));
@@ -436,6 +502,9 @@ impl Manager {
                     worker: None,
                     error: None,
                     cancel: false,
+                    workflow,
+                    result: None,
+                    publication: None,
                 };
                 store.save_environment_operation(&o)?;
                 Ok(o.view())
@@ -514,6 +583,9 @@ impl Manager {
         // the larger wheel inventory. Check their bytes before opening the gate.
         package.verify_executable("python/runtime/bin/python3.12")?;
         package.verify_executable("python/notebooks/environment-worker.py")?;
+        if o.workflow.is_some() {
+            package.verify_executable("python/notebooks/environment-packages.py")?;
+        }
         let key = hash(json!([o.project, o.worktree]).to_string().as_bytes());
         let parent = store.root().join("notebook-environments");
         files::directory(&parent)?;
@@ -548,13 +620,18 @@ impl Manager {
         files::directory(&cache)?;
         let home = dir.join("home");
         files::directory(&home)?;
+        if let Some(workflow) = &o.workflow {
+            transaction::snapshot(o, workflow, &dir)?;
+            files::directory(&store.root().join("notebook-environment-artifacts"))?;
+        }
         let config = dir.join("prepare.json");
         supervisor::write_json(
             &config,
             &json!({"version":1,"package":package.root,"contract":package.identity,
             "generation":g.path,"directory":g.directory,"template":o.template,"cache":cache,"home":home,
             "report":dir.join("result.json"),"progress":dir.join("progress.json"),"max_bytes":self.limits.generation_bytes,
-            "reserve_bytes":self.limits.reserve,"cache_bytes":self.limits.cache_bytes}),
+            "reserve_bytes":self.limits.reserve,"cache_bytes":self.limits.cache_bytes,
+            "operation_id":o.id,"workflow":o.workflow,"documents":dir.join("documents"),"artifacts":store.root().join("notebook-environment-artifacts")}),
         )?;
         let launch = Launch {
             root: store.root().into(),
@@ -603,13 +680,25 @@ impl Manager {
             .try_fold(0u64, |sum, pid| {
                 Ok::<_, crate::store::Error>(sum.saturating_add(supervisor::os::rss(pid)?))
             })?;
-        if now() - o.started.unwrap_or(0) > self.limits.deadline_ms
+        if now() - o.started.unwrap_or(0)
+            > self.limits.deadline_ms * if o.workflow.is_some() { 3 } else { 1 }
             || rss > self.limits.rss
             || files::free_bytes(store.root())? < self.limits.reserve
         {
             return Err(conflict("environment preparation resource limit"));
         }
         let dir = Self::operation_dir(store, o.id)?;
+        if o.workflow.is_some() {
+            files::bounded_size(&dir, 3 * 1024 * 1024 * 1024)?;
+            files::bounded_size(
+                &store.root().join("notebook-environment-cache"),
+                self.limits.cache_bytes,
+            )?;
+            files::bounded_size(
+                &store.root().join("notebook-environment-artifacts"),
+                self.limits.cache_bytes,
+            )?;
+        }
         if let Ok(bytes) = files::read(&dir.join("progress.json"), 4096) {
             let progress: Value = serde_json::from_slice(&bytes)?;
             if progress["stage"] == "verifying" && o.state != "verifying" {
@@ -632,7 +721,26 @@ impl Manager {
         self.child = None;
         o.worker = None;
         if !status.success() {
-            return Err(conflict("environment worker failed"));
+            let message = files::read(&dir.join("error.json"), 4096)
+                .ok()
+                .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                .and_then(|v| v["code"].as_str().map(String::from));
+            return Err(conflict(match message.as_deref() {
+                Some("offline_artifacts_missing") => {
+                    "offline wheel artifacts missing; import a bundle or run env sync online"
+                }
+                Some("resolution_failed") => {
+                    "dependency resolution failed; check Python and protected package constraints in env status (private worker.log has details)"
+                }
+                Some("invalid_declaration") => {
+                    "unsupported declaration or kernel dependency conflict; use registry requirements compatible with env status"
+                }
+                Some("invalid_bundle") => "bundle failed hash, target, path or size validation",
+                Some("network_failed") => {
+                    "package download failed; retry with a new request key or import an offline bundle"
+                }
+                _ => "environment worker failed; inspect the private operation worker.log",
+            }));
         }
         let package = Package::load(store)?;
         Binding {
@@ -659,17 +767,44 @@ impl Manager {
         if report["status"] != "ready"
             || report["contract"] != g.contract
             || report["prefix"] != json!(g.path)
-            || report["packages"] != json!(package.template(&o.template)?.packages)
+            || (o.workflow.is_none()
+                && report["packages"] != json!(package.template(&o.template)?.packages))
             || report["inventory"].as_str().is_none_or(|s| s.len() != 64)
         {
             return Err(conflict("environment verification report differs"));
+        }
+        if o.workflow.is_some() {
+            for (name, version) in &package.template("base")?.packages {
+                if report["packages"][name] != *version {
+                    return Err(conflict("prepared environment violates kernel contract"));
+                }
+            }
+            let published = transaction::result_inputs(&dir)?;
+            g.inputs = published.clone();
+            o.result = Some(
+                json!({"packages":report["packages"],"changes":report["changes"],
+                "network":report["network"],"adoption_required":true,"bundle":report["bundle"]}),
+            );
+            o.publication = Some(published);
+            // Journal the validated result before any project filesystem changes.
+            g.inventory = report["inventory"].as_str().map(String::from);
+            store.save_environment_generation(&g)?;
+            store.save_environment_operation(o)?;
+            transaction::publish(o, &dir)?;
+            transaction::export(o)?;
         }
         g.inventory = report["inventory"].as_str().map(String::from);
         g.state = "ready".into();
         o.state = "ready".into();
         // One FULL-synchronous SQLite transaction is the activation point. A
         // report file alone never authorizes a kernel or changes active state.
-        store.publish_environment(o, &g)
+        store.publish_environment(o, &g)?;
+        if o.workflow.is_some()
+            && let Err(error) = transaction::cleanup(&dir)
+        {
+            self.last_error = Some(diagnostic(error));
+        }
+        Ok(())
     }
     fn fail(
         &mut self,
@@ -697,6 +832,17 @@ impl Manager {
         {
             g.state = "invalid".into();
             store.invalidate_environment(&g)?;
+        }
+        if o.workflow.is_some() {
+            let dir = store
+                .root()
+                .join("notebook-environment-work")
+                .join(o.id.to_string());
+            if dir.exists()
+                && let Err(error) = transaction::cleanup(&dir)
+            {
+                self.last_error = Some(diagnostic(error));
+            }
         }
         Ok(())
     }

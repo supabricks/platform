@@ -268,7 +268,7 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"ingestion":true},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"ingestion":true,"notebook_environments":true,"notebook_packages":true},
         "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"analytical_sessions":2,"analytical_session_ttl_ms":3600000,"analytical_sql_rows":1000,"analytical_sql_result_bytes":262144,"analytical_sql_timeout_ms":30000,"active_branches":32,"connections":256,"connections_per_branch":64},
         "ingestion":{"formats":["csv","tsv"],"new_tables_only":true,"approved_mapping_required":true,"source_bytes":104857600,"decoded_bytes":536870912,"sampled_rss_bytes":536870912,"preview_rows":100,"preview_bytes":262144,"active_imports":1,"deadline_ms":600000},
         "sql":{"read_only_default":true,"statements_per_call":1,"values":"PostgreSQL text or null","writes":"explicit read_only=false; no automatic retry"}})

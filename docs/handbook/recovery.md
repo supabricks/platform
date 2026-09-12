@@ -1,6 +1,6 @@
 # Back up, restore and upgrade the localhost preview
 
-NE03 uses `v0.1.0-alpha.10` with catalog 10. Linux x86_64 and Apple
+NE04 uses `v0.1.0-alpha.11` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
 PR34 alpha.8 catalog-9 archive; migration fixtures also cover catalog 8.
 See the [environment manager](../architecture/ne02-environment-manager.md) and
@@ -43,7 +43,7 @@ new destination and retain the partial directory until you have inspected it.
 
 ## Upgrade catalog 8 or 9 to NE03
 
-Serve the prepared alpha.10 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.11 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh

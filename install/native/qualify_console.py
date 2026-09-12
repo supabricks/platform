@@ -55,7 +55,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', type=Path, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.10')
+    parser.add_argument('--version', default='v0.1.0-alpha.11')
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--node', required=True)
     parser.add_argument('--harness', required=True)

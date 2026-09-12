@@ -13,6 +13,7 @@ on:
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/manager.py'
       - 'e2e/native/notebook-environments/kernels.py'
+      - 'e2e/native/notebook-environments/packages.py'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -93,7 +94,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.10-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.11-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
       - uses: actions/upload-artifact@v4
         with:
@@ -471,3 +472,33 @@ jobs:
         with:
           name: release-notebooks-${{ matrix.target }}
           path: build/notebook-reports/*
+
+  release-packages:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact-release registry packages and cold offline bundle reconstruction
+        run: python install/native/qualify_environments.py --packages --directory build/releases --target ${{ matrix.target }} --report build/package-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-packages-${{ matrix.target }}
+          path: build/package-reports/*.json
+          if-no-files-found: error

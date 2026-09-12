@@ -313,7 +313,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.10')
+    parser.add_argument('--version', default='v0.1.0-alpha.11')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.8')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')

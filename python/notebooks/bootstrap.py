@@ -9,6 +9,16 @@ try:
     if sys.prefix != context['python_prefix'] or sys.prefix == sys.base_prefix or site.ENABLE_USER_SITE:
         raise RuntimeError('kernel environment prefix differs')
     supabricks_environment = context['environment']
+    def _supabricks_package_magic(line):
+        raise RuntimeError('Use supabricks env add PACKAGE, then explicitly use the updated environment. In-kernel package mutation is unsupported.')
+    def _supabricks_missing_package(result):
+        if isinstance(result.error_in_exec, ModuleNotFoundError):
+            print('Supabricks: install the matching distribution with supabricks env add PACKAGE, then use the updated environment. Notebook packages do not install packages in Sail UDF workers.', file=sys.stderr)
+    shell = get_ipython()
+    for magic in ('pip', 'uv', 'conda', 'mamba', 'micromamba'):
+        shell.register_magic_function(_supabricks_package_magic, 'line', magic)
+    shell.events.register('post_run_cell', _supabricks_missing_package)
+    del shell, magic
     from pyspark.sql import SparkSession
     spark = SparkSession.builder.remote(context['endpoint']).getOrCreate()
     epoch = spark.sql('SELECT * FROM _supabricks.epoch').first().asDict()

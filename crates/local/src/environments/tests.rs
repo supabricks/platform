@@ -127,6 +127,9 @@ impl Fixture {
             worker: None,
             error: None,
             cancel: false,
+            workflow: None,
+            result: None,
+            publication: None,
         };
         self.store.save_environment_generation(&g).unwrap();
         self.store.save_environment_operation(&o).unwrap();
@@ -460,6 +463,9 @@ fn recovery_fences_every_partial_stage_and_keeps_idempotency_records() {
             worker: None,
             error: None,
             cancel: false,
+            workflow: None,
+            result: None,
+            publication: None,
         };
         store.save_environment_operation(&operation).unwrap();
         drop(store);
@@ -516,4 +522,144 @@ fn inventory_matches_canonical_worker_format_and_rejects_hardlinks() {
     );
     fs::hard_link(tmp.path().join("a"), tmp.path().join("b")).unwrap();
     assert!(files::inventory(tmp.path()).is_err());
+}
+
+#[test]
+fn managed_requests_fence_revisions_and_replay_original_parameters() {
+    let mut f = Fixture::new();
+    let initialized = f.initialize();
+    let request = Command::Manage {
+        key: "add".into(),
+        expected: initialized.inputs.clone(),
+        change: Change::Add {
+            requirement: "humanize==4.13.0".into(),
+        },
+        offline: true,
+    };
+    let first = f
+        .manager
+        .handle(&mut f.store, &f.binding, request.clone())
+        .unwrap();
+    fs::write(
+        f.binding.worktree.join("notebooks/environment/uv.lock"),
+        b"external edit",
+    )
+    .unwrap();
+    assert_eq!(
+        f.manager.handle(&mut f.store, &f.binding, request).unwrap()["id"],
+        first["id"]
+    );
+    assert!(
+        f.manager
+            .handle(
+                &mut f.store,
+                &f.binding,
+                Command::Manage {
+                    key: "add".into(),
+                    expected: initialized.inputs,
+                    change: Change::Sync,
+                    offline: true
+                }
+            )
+            .is_err()
+    );
+    f.manager.tick(&mut f.store, false).unwrap();
+    assert_eq!(
+        f.manager
+            .handle(
+                &mut f.store,
+                &f.binding,
+                Command::Status {
+                    id: serde_json::from_value(first["id"].clone()).unwrap()
+                }
+            )
+            .unwrap()["state"],
+        "failed"
+    );
+    assert_eq!(
+        fs::read(f.binding.worktree.join("notebooks/environment/uv.lock")).unwrap(),
+        b"external edit"
+    );
+}
+
+#[test]
+fn publication_swaps_the_complete_pair_and_preserves_previous_revision() {
+    let mut f = Fixture::new();
+    let mut o = f.initialize();
+    let root = Manager::operation_dir(&f.store, o.id).unwrap();
+    let docs = root.join("documents");
+    fs::create_dir(&docs).unwrap();
+    fs::write(docs.join("pyproject.toml"), b"new manifest").unwrap();
+    fs::write(docs.join("uv.lock"), b"new lock").unwrap();
+    o.publication = Some(transaction::result_inputs(&root).unwrap());
+    f.store.save_environment_operation(&o).unwrap();
+    transaction::publish(&o, &root).unwrap();
+    assert_eq!(
+        files::inputs(&o.worktree).unwrap(),
+        o.publication.clone().unwrap()
+    );
+    let old = PathBuf::from(format!("notebooks/.environment-{}", o.id));
+    let (manifest, lock) = transaction::declaration(&o.worktree, &old).unwrap();
+    assert_eq!(
+        Inputs {
+            manifest: hash(&manifest),
+            lock: hash(&lock)
+        },
+        o.inputs
+    );
+    // Simulate crash after the pair exchange, before activation. Recovery never
+    // treats the report or pair alone as permission to activate a generation.
+    o.state = "verifying".into();
+    o.kind = "manage".into();
+    f.store.save_environment_operation(&o).unwrap();
+    Manager::recover(&mut f.store).unwrap();
+    assert!(
+        f.store
+            .active_environment(o.project, &o.worktree)
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(files::inputs(&o.worktree).unwrap(), o.publication.unwrap());
+    assert_eq!(
+        f.store
+            .environment_operations()
+            .unwrap()
+            .last()
+            .unwrap()
+            .state,
+        "failed"
+    );
+}
+
+#[test]
+fn publication_rejects_edits_and_unrelated_files_and_adoption_cannot_escape() {
+    let mut f = Fixture::new();
+    let mut o = f.initialize();
+    let root = Manager::operation_dir(&f.store, o.id).unwrap();
+    let workflow = Workflow {
+        change: Change::Sync,
+        offline: true,
+    };
+    transaction::snapshot(&o, &workflow, &root).unwrap();
+    fs::write(root.join("documents/uv.lock"), b"new").unwrap();
+    o.publication = Some(transaction::result_inputs(&root).unwrap());
+    fs::write(o.worktree.join("notebooks/environment/keep"), b"mine").unwrap();
+    assert!(transaction::publish(&o, &root).is_err());
+    fs::remove_file(o.worktree.join("notebooks/environment/keep")).unwrap();
+    fs::write(o.worktree.join("notebooks/environment/uv.lock"), b"edited").unwrap();
+    assert!(transaction::publish(&o, &root).is_err());
+    assert_eq!(
+        fs::read(o.worktree.join("notebooks/environment/uv.lock")).unwrap(),
+        b"edited"
+    );
+    assert!(
+        transaction::declaration(&o.worktree, Path::new("../project/notebooks/environment"))
+            .is_err()
+    );
+    symlink(
+        o.worktree.join("notebooks/environment"),
+        o.worktree.join("alias"),
+    )
+    .unwrap();
+    assert!(transaction::declaration(&o.worktree, Path::new("alias")).is_err());
 }

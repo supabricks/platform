@@ -1,6 +1,560 @@
 [
   {
     "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Find a worktree package operation by idempotency key before retrying, including the original expected inputs.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "env_find",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api",
+            "api_version",
+            "project_id",
+            "worktree",
+            "features",
+            "limits"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect notebook declaration hashes, protected packages and recent operations. Kernel starts are always offline.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "env_inspect",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "inputs",
+            "active_generation",
+            "operations",
+            "protected_packages"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read hashes of an explicit project-contained relative uv declaration directory before adoption.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "name": "env_declaration",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "inputs"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Create the offline notebook declaration pair without replacing existing files.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "template": {
+          "default": "base",
+          "enum": [
+            "base",
+            "fixture-a",
+            "fixture-b"
+          ]
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "env_initialize",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state",
+            "inputs",
+            "result"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": false
+    },
+    "description": "Explicit managed package transaction. Registry wheels from PyPI only; offline disables network. Requires current declaration hashes and request key. Returns operation ID; poll env_status. Running kernels retain their environment until explicit adoption. Bundle paths are absolute, adoption paths project-relative.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "change": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "add"
+                },
+                "requirement": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "requirement"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "remove"
+                },
+                "package": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "package"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "lock",
+                    "sync"
+                  ]
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "lock": {
+                      "pattern": "^[a-f0-9]{64}$",
+                      "type": "string"
+                    },
+                    "manifest": {
+                      "pattern": "^[a-f0-9]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "manifest",
+                    "lock"
+                  ],
+                  "type": "object"
+                },
+                "kind": {
+                  "const": "adopt"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "path",
+                "expected"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "export_bundle",
+                    "import_bundle"
+                  ]
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "path"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "expected": {
+          "additionalProperties": false,
+          "properties": {
+            "lock": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "manifest": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "manifest",
+            "lock"
+          ],
+          "type": "object"
+        },
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "offline": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "key",
+        "expected",
+        "change"
+      ],
+      "type": "object"
+    },
+    "name": "env_manage",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state",
+            "inputs",
+            "result"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Poll a durable package operation in this worktree, including conflicts and resolved package changes.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "env_status",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state",
+            "inputs",
+            "result"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Cancel a queued or running package operation; active kernel generations remain unchanged.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "env_cancel",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "id",
+            "state",
+            "inputs",
+            "result"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Collect inactive, unleased notebook generations in this worktree.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "env_collect",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "collected"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
       "destructiveHint": true,
       "openWorldHint": false,
       "readOnlyHint": false

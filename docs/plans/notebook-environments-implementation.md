@@ -1,7 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE03 implementation in progress; native kernel qualification pending · Baseline: platform/main@8556027,
-after PRs #33 and #34 · Updated: 2026-09-10*
+*Status: NE00–NE03 merged; NE04 implementation under validation · Baseline: platform/main@d51ff42 · Updated: 2026-09-12*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
 conventional local Python workflow: project dependencies live in a virtual
@@ -262,6 +261,8 @@ managed kernel environment using the existing console's default start path.
 
 ### NE04 — Add reproducible package workflows and CLI/agent actions
 
+**Implementation:** [managed package workflows](../architecture/ne04-notebook-packages.md).
+
 **Depends on:** NE03. **Touch:** typed environment commands, resolver/file edits,
 artifact cache and offline bundle import/export. Proposed CLI surface:
 
@@ -276,7 +277,7 @@ supabricks env export-bundle PATH
 supabricks env import-bundle PATH
 ```
 
-Commands are proposals, not available features. Reuse platform operation IDs,
+The NE04 implementation provides these commands. Reuse platform operation IDs,
 expected revisions, cancellation and bounded status results; do not add a shell
 command execution endpoint. Expose equivalent typed agent actions where the
 existing CLI/MCP capability contract supports them.

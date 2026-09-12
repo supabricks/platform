@@ -148,7 +148,9 @@ def main(destination, target):
             inputs=dict(manifest=digest(folder / 'pyproject.toml'), lock=digest(folder / 'uv.lock')), packages=versions)
     worker = destination / 'python/notebooks/environment-worker.py'
     shutil.copy2(ROOT / 'python/notebooks/environment-worker.py', worker)
-    files = [uv, worker, destination / 'python/runtime/bin/python3.12',
+    packages_worker = destination / 'python/notebooks/environment-packages.py'
+    shutil.copy2(ROOT / 'python/notebooks/environment-packages.py', packages_worker)
+    files = [uv, worker, packages_worker, destination / 'python/runtime/bin/python3.12',
              *wheels.iterdir(), *(destination / 'python/notebooks/environments').rglob('*')]
     contract = dict(version=1, target=target, python_version='3.12.13', templates=templates,
                     files={str(p.relative_to(destination)): digest(p) for p in files if p.is_file()})

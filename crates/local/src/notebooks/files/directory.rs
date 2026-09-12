@@ -58,6 +58,36 @@ impl Directory {
         destination.0.sync_all()?;
         Ok(())
     }
+    /// Atomically exchange two entries on the same filesystem; retain both.
+    pub(crate) fn exchange(&self, first: &OsStr, second: &OsStr) -> Result<()> {
+        let a = name(first)?;
+        let b = name(second)?;
+        #[cfg(target_os = "linux")]
+        let status = unsafe {
+            libc::syscall(
+                libc::SYS_renameat2,
+                self.0.as_raw_fd(),
+                a.as_ptr(),
+                self.0.as_raw_fd(),
+                b.as_ptr(),
+                libc::RENAME_EXCHANGE,
+            )
+        };
+        #[cfg(target_os = "macos")]
+        let status = unsafe {
+            libc::renameatx_np(
+                self.0.as_raw_fd(),
+                a.as_ptr(),
+                self.0.as_raw_fd(),
+                b.as_ptr(),
+                libc::RENAME_SWAP,
+            )
+        };
+        if status < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+        self.sync()
+    }
     pub fn project(path: &Path) -> Result<Self> {
         Ok(Self(
             OpenOptions::new()

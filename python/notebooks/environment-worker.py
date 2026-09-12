@@ -1,4 +1,4 @@
-"""NE02 owned offline worker. Never resolve project dependencies or run user code."""
+"""Owned environment worker. Only explicit package operations may use the network."""
 import hashlib
 import json
 import os
@@ -119,6 +119,8 @@ def main():
     uv = str(package / 'helpers/uv')
     python = package / 'python/runtime/bin/python3.12'
     template = contract['templates'][config['template']]
+    workflow_result = {}
+    wheelhouse = package / 'python/notebooks/wheelhouse'
     def run(command):
         check()
         # fchdir anchors the child to the opened final directory. uv creates
@@ -128,12 +130,24 @@ def main():
         check()
     flags = [uv, '--no-config', '--offline', '--no-python-downloads']
     try:
+        if config.get('workflow'):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('environment_packages', package / 'python/notebooks/environment-packages.py')
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            try:
+                workflow_result = module.execute(config, contract, package, env, check, step)
+            except module.Failure as error:
+                atomic(Path(config['report']).with_name('error.json'), {'code': error.code})
+                raise
+            template = workflow_result
+            wheelhouse = Path(template['wheelhouse'])
         step('creating')
         run([*flags, 'venv', '--python', python, '.'])
         assert 'include-system-site-packages = false' in (generation / 'pyvenv.cfg').read_text()
         step('syncing')
         run([*flags, 'pip', 'sync', '--python', './bin/python', '--no-index',
-             '--find-links', package / 'python/notebooks/wheelhouse', '--only-binary', ':all:',
+             '--find-links', wheelhouse, '--only-binary', ':all:',
              '--require-hashes', '--link-mode', 'copy', package / template['requirements']])
         step('verifying')
         run([*flags, 'pip', 'check', '--python', './bin/python'])
@@ -154,7 +168,24 @@ packages={d.metadata['Name'].lower().replace('_','-'):d.version for d in md.dist
         _, cache_size = tree(Path(config['cache']), 8 * 1024**3)
         if cache_size > config['cache_bytes']:
             run([*flags, 'cache', 'clean'])
-        atomic(Path(config['report']), {'status': 'ready', 'prefix': result['prefix'],
+        if workflow_result.get('bundle'):
+            target = Path(workflow_result['bundle'])
+            if target.parent.resolve() != target.parent:
+                raise ValueError('bundle parent changed')
+            parent = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                name = '.supabricks-bundle-' + config['operation_id'] + '.tmp'
+                fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=parent)
+                with (Path(config['documents']) / 'export.zip').open('rb') as src, os.fdopen(fd, 'wb') as out:
+                    shutil.copyfileobj(src, out, 1024*1024)
+                    out.flush()
+                    os.fsync(out.fileno())
+                os.fsync(parent)
+            finally:
+                os.close(parent)
+        if config.get('workflow'):
+            tree(Path(config['documents']), 3 * 1024**3, sync=True)
+        atomic(Path(config['report']), {**{k: workflow_result.get(k) for k in ('changes', 'network', 'bundle')}, 'status': 'ready' , 'prefix': result['prefix'],
                'contract': config['contract'], 'packages': result['packages'],
                'inventory': fingerprint, 'allocated_bytes': allocated})
     finally:
