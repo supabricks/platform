@@ -1,6 +1,7 @@
 mod analytics;
 mod branches;
 mod connections;
+mod environments;
 pub(crate) mod error;
 mod exports;
 mod ingest;
@@ -76,6 +77,8 @@ impl Store {
                     "runtime.json",
                     "ingest",
                     "analytics",
+                    "notebook-environments",
+                    "notebook-environment-work",
                     "storage.pk8",
                     "storage.pub",
                     "safekeeper",

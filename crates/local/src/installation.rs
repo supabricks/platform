@@ -105,6 +105,22 @@ impl Installation {
                 ));
             }
         }
+        if let Some(environments) = manifest.provenance.get("environments")
+            && (environments["version"] != 1
+                || !manifest.files.contains_key("helpers/uv")
+                || !manifest
+                    .files
+                    .contains_key("python/notebooks/environment-worker.py")
+                || environments["contract_sha256"].as_str()
+                    != manifest
+                        .files
+                        .get("python/notebooks/kernel-contract.json")
+                        .map(|f| f.sha256.as_str()))
+        {
+            return Err(invalid(
+                "environment manifest is missing its qualified component",
+            ));
+        }
         if let Some(ingestion) = manifest.provenance.get("ingestion") {
             if ingestion["protocol_version"] != crate::ingest::VERSION
                 || !manifest.files.contains_key("python/ingest/worker.py")

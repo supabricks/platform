@@ -11,6 +11,7 @@ on:
       - 'python/ingest/**'
       - 'python/notebooks/**'
       - 'e2e/native/notebooks/**'
+      - 'e2e/native/notebook-environments/manager.py'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -91,7 +92,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.8-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.9-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
       - uses: actions/upload-artifact@v4
         with:
@@ -197,11 +198,11 @@ jobs:
         with:
           name: release-${{ matrix.target }}
           path: build/releases
-      - name: Download the exact qualified R03 predecessor
+      - name: Download the exact qualified catalog-9 predecessor
         uses: actions/download-artifact@v4
         with:
           repository: supabricks/platform
-          run-id: 34184744702
+          run-id: 34486403948
           name: release-${{ matrix.target }}
           path: build/previous
           github-token: ${{ github.token }}
@@ -215,7 +216,7 @@ jobs:
             -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
             supabricks-recovery-test \
             python3 /harness/recovery.py --directory /releases --previous-directory /previous \
-            --report /reports/recovery.json --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; exact R03 and I00 archives'
+            --report /reports/recovery.json --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; exact PR34 and NE02 archives'
       - if: runner.os == 'macOS'
         uses: actions/setup-python@v5
         with:
@@ -229,7 +230,7 @@ jobs:
             "$(command -v python)" install/native/recovery.py \
             --directory build/releases --previous-directory build/previous \
             --report build/reports/recovery.json \
-            --network-evidence 'Separate macOS 15 arm64 runner; external networking and Homebrew denied; exact R03 and I00 archives'
+            --network-evidence 'Separate macOS 15 arm64 runner; external networking and Homebrew denied; exact PR34 and NE02 archives'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -359,6 +360,52 @@ jobs:
         with:
           name: release-ingest-${{ matrix.target }}
           path: build/ingest-reports/*
+
+  release-environments:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace" \
+              "$2" install/native/qualify_environments.py --directory build/releases \
+              --target linux-x86_64 --report build/environment-reports/qualification.json
+          ' bash "$(id -un)" "$python_path"
+      - if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied" \
+            "$(command -v python)" install/native/qualify_environments.py --directory build/releases \
+            --target macos-arm64 --report build/environment-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-environments-${{ matrix.target }}
+          path: build/environment-reports/*.json
+          if-no-files-found: error
 
   release-notebooks:
     needs: assemble

@@ -10,6 +10,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0007_analytics.sql"),
     include_str!("migrations/0008_sessions.sql"),
     include_str!("migrations/0009_ingest.sql"),
+    include_str!("migrations/0010_environments.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -99,19 +100,28 @@ mod tests {
     }
 }
 
-/// Only the stopped, backed-up upgrade path may call this for an existing v8 root.
-pub(crate) fn ingest_upgrade(db: &mut Connection, source: &str, release: &str) -> Result<()> {
+/// Existing roots migrate only through the verified stopped-backup upgrade.
+pub(crate) fn catalog_upgrade(
+    db: &mut Connection,
+    from: u32,
+    source: &str,
+    release: &str,
+) -> Result<()> {
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let version: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
-    if version != 8 {
-        return Err(conflict("ingestion migration requires catalog 8"));
+    if version != from || !matches!(from, 8 | 9) {
+        return Err(conflict(
+            "catalog migration requires the backed-up source schema",
+        ));
     }
-    tx.execute_batch(MIGRATIONS[8])?;
-    tx.execute(
-        "INSERT INTO catalog_migrations VALUES (9,?1,?2)",
-        [source, release],
-    )?;
-    tx.pragma_update(None, "user_version", 9)?;
+    for index in from as usize..MIGRATIONS.len() {
+        tx.execute_batch(MIGRATIONS[index])?;
+        tx.execute(
+            "INSERT INTO catalog_migrations VALUES (?1,?2,?3)",
+            rusqlite::params![(index + 1) as u32, source, release],
+        )?;
+    }
+    tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     if tx.prepare("PRAGMA foreign_key_check")?.exists([])? {
         return Err(conflict("migration contains invalid resource references"));
     }

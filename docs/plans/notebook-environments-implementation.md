@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: Proposed; NE00 documentation only · Baseline: platform/main@8556027,
+*Status: NE01/NE02 native qualification passed; NE02 portable fixture correction in CI · Baseline: platform/main@8556027,
 after PRs #33 and #34 · Updated: 2026-09-10*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
@@ -178,6 +178,10 @@ claims. No package, running-demo or service changes.
 
 ### NE01 — Qualify separate service and kernel environments
 
+**Evidence:** [qualified decision, measurements and retained reports](../architecture/ne01-notebook-environments.md).
+Both native targets pass the isolated offline probe. This does not enable
+environment selection or package installs in the product.
+
 **Depends on:** NE00. **Touch:** an isolated native probe, component/Python lock
 proposals, and a decision/evidence record. Do not enable user package installs yet.
 
@@ -205,6 +209,9 @@ import in the already bundled environment is insufficient.
 before runtime integration. If any fails, revise the design with measured evidence.
 
 ### NE02 — Implement environment operations and durable ownership
+
+**Evidence:** [implementation and retained Linux/macOS reports](../architecture/ne02-environment-manager.md).
+Both exact-archive native gates passed; kernel binding remains NE03.
 
 **Depends on:** NE01. **Touch:** environment manager, supervisor, typed contracts,
 store/recovery as required, native component assembly.
@@ -335,9 +342,10 @@ revision. No “industry-standard” completion claim rests on a source-only dem
 ## 5. Sequence and deferred scope
 
 `NE00 -> NE01 -> NE02 -> NE03 -> NE04 -> NE05 -> NE06`.
-NE01 is the next implementation slice. The first reviewable artifact should be
-the two-target separation probe and its packaging/compatibility decision, before
-adding a package-install button to the product. Split individual slices into
+NE01's two-target separation probe and packaging/compatibility decision are
+qualified. NE02 implements durable preparation and ownership; see the
+[NE02 architecture](../architecture/ne02-environment-manager.md) for validation
+and remaining evidence. NE03 binds product kernels to these environments. Split individual slices into
 backend/API and frontend pin PRs where necessary without weakening their gates.
 
 Containers/VM sandboxes, remote kernels, hosted-console connectivity, arbitrary

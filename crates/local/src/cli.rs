@@ -40,6 +40,9 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics sql --sql SQL [--session ID | --branch NAME] [--max-rows 200]
   analytics query SESSION_ID QUERY_ID
   spark shell [--branch NAME] [--epoch ID] [--file SCRIPT.py]
+  env init [--template base] [--key KEY] [--wait]
+  env status | prepare [--key KEY] [--wait] | operation ID | cancel ID | gc
+                               Offline qualified templates only; no user package changes
   analytics publish EXPORT_ID | publication EXPORT_ID | discard EXPORT_ID
   analytics snapshot --branch NAME | epochs --branch NAME | epoch EPOCH_ID
   analytics pin EPOCH_ID | renew LEASE_ID [--ttl-ms 60000] | unpin LEASE_ID
@@ -308,6 +311,77 @@ pub fn run() -> Result<u8> {
     }
     let directory = client::project_directory(project.as_deref())?;
     let c = Client::bind(&root, &directory)?;
+    if command == "env" {
+        use crate::environments::Command as E;
+        let action = a.required(1)?;
+        let wait = a.flag("--wait");
+        let call = |command| c.call(Action::Environment { command });
+        let request = match action.as_str() {
+            "init" => E::Initialize {
+                key: a
+                    .take("--key")
+                    .unwrap_or_else(|| OperationId::new().to_string()),
+                template: a.take("--template").unwrap_or_else(|| "base".into()),
+            },
+            "prepare" => {
+                let expected = call(E::Inspect)?["inputs"].clone();
+                if expected.is_null() {
+                    return Err(invalid(
+                        "initialize notebook declarations with env init first",
+                    ));
+                }
+                E::Prepare {
+                    key: a
+                        .take("--key")
+                        .unwrap_or_else(|| OperationId::new().to_string()),
+                    expected: serde_json::from_value(expected)?,
+                }
+            }
+            "status" => E::Inspect,
+            "operation" => E::Status {
+                id: a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid environment operation ID"))?,
+            },
+            "cancel" => E::Cancel {
+                id: a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid environment operation ID"))?,
+            },
+            "gc" => E::Collect,
+            _ => {
+                return Err(invalid(
+                    "use env init, status, prepare, operation, cancel or gc",
+                ));
+            }
+        };
+        a.finish(if matches!(action.as_str(), "operation" | "cancel") {
+            3
+        } else {
+            2
+        })?;
+        let mut value = call(request)?;
+        if wait && value["id"].is_string() {
+            let id = serde_json::from_value(value["id"].clone())?;
+            let deadline = Instant::now() + Duration::from_secs(90);
+            while matches!(
+                value["state"].as_str(),
+                Some("queued" | "initializing" | "preparing" | "verifying")
+            ) {
+                if Instant::now() >= deadline {
+                    println!("{value}");
+                    return Ok(8);
+                }
+                std::thread::sleep(Duration::from_millis(100));
+                value = call(E::Status { id })?;
+            }
+        }
+        let failed = matches!(value["state"].as_str(), Some("failed" | "cancelled"));
+        println!("{value}");
+        return Ok(if failed { 7 } else { 0 });
+    }
     if command == "mcp" {
         a.finish(1)?;
         crate::mcp::serve(c)?;

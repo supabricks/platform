@@ -213,7 +213,7 @@ fn release(prefix: &Path, version: &str) -> PathBuf {
     } else {
         "linux-x86_64"
     };
-    fs::write(path.join("release.json"),serde_json::to_vec(&json!({"format_version":1,"version":version,"profile":"local-postgres-alpha","target":target,"files":files,"provenance":{"data_formats":{"local_catalog":9,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1}}})).unwrap()).unwrap();
+    fs::write(path.join("release.json"),serde_json::to_vec(&json!({"format_version":1,"version":version,"profile":"local-postgres-alpha","target":target,"files":files,"provenance":{"data_formats":{"local_catalog":10,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1}}})).unwrap()).unwrap();
     path
 }
 #[test]
@@ -354,15 +354,27 @@ fn killed_backup_never_publishes_and_releases_ownership() {
 
 #[test]
 fn catalog_eight_migration_resumes_every_durable_boundary_and_preserves_old_backup() {
+    catalog_migration(8);
+}
+#[test]
+fn catalog_nine_migration_resumes_every_durable_boundary_and_preserves_old_backup() {
+    catalog_migration(9);
+}
+fn catalog_migration(source_schema: u32) {
     let f = Fixture::new();
     // Construct the exact pre-I00 catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE ingest_jobs; DROP TABLE ingest_sources; DROP TABLE ingest_identity; DROP TABLE catalog_migrations; PRAGMA user_version=8;").unwrap();
+    db.execute_batch("DROP TABLE environment_leases; DROP TABLE environment_active; DROP TABLE environment_operations; DROP TABLE environment_generations;").unwrap();
+    if source_schema == 8 {
+        db.execute_batch("DROP TABLE ingest_jobs; DROP TABLE ingest_sources; DROP TABLE ingest_identity; DROP TABLE catalog_migrations;").unwrap();
+    }
+    db.pragma_update(None, "user_version", source_schema)
+        .unwrap();
     drop(db);
     let manifest = f.old.join("release.json");
     let mut old: Value = serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
-    old["provenance"]["data_formats"]["local_catalog"] = json!(8);
+    old["provenance"]["data_formats"]["local_catalog"] = json!(source_schema);
     fs::write(&manifest, serde_json::to_vec(&old).unwrap()).unwrap();
     let mut runtime: Value =
         serde_json::from_slice(&fs::read(f.root.join("runtime.json")).unwrap()).unwrap();
@@ -380,7 +392,7 @@ fn catalog_eight_migration_resumes_every_durable_boundary_and_preserves_old_back
     fs::rename(f.root.join("runtime.saved"), f.root.join("runtime.json")).unwrap();
     f.upgrade(true);
     let saved = recovery::verify(&f.backup).unwrap();
-    assert_eq!(saved.schema_version, 8);
+    assert_eq!(saved.schema_version, source_schema);
     let backup_hash = digest(&f.backup.join("data/state.sqlite3"));
     for phase in [
         "before_migration",
@@ -409,11 +421,11 @@ fn catalog_eight_migration_resumes_every_durable_boundary_and_preserves_old_back
         assert_eq!(
             db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
                 .unwrap(),
-            9
+            10
         );
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=9",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=10",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -440,6 +452,6 @@ fn catalog_eight_migration_resumes_every_durable_boundary_and_preserves_old_back
             .unwrap()
             .pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
             .unwrap(),
-        8
+        source_schema
     );
 }

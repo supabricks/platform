@@ -184,13 +184,15 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         assemble_analytics(destination, args.target)
         from notebooks import assemble_notebooks
         notebook_provenance = assemble_notebooks(destination, args.target)
+        from environments import assemble_environments
+        environment_provenance = assemble_environments(destination, args.target)
     if not args.postgres_only:
         (destination / 'python/ingest').mkdir()
         shutil.copy2(ROOT / 'python/ingest/worker.py', destination / 'python/ingest/worker.py')
     provenance = dict(
         console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
-        data_formats=dict(local_catalog=9, runtime_config=2, postgres_major=17, analytical_snapshot=1),
+        data_formats=dict(local_catalog=10, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),
@@ -204,6 +206,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     if not args.postgres_only:
         provenance['ingestion'] = dict(protocol_version=1, worker_sha256=digest(ROOT / 'python/ingest/worker.py'))
         provenance['notebooks'] = notebook_provenance
+        provenance['environments'] = environment_provenance
     files = {}
     for path in sorted(destination.rglob('*')):
         if path.is_symlink():
@@ -235,7 +238,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.8')
+    parser.add_argument('--version', default='v0.1.0-alpha.9')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

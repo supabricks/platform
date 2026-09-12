@@ -18,6 +18,10 @@ fn name(value: &OsStr) -> Result<CString> {
     CString::new(value.as_bytes()).map_err(|_| invalid("invalid notebook name"))
 }
 impl Directory {
+    pub(crate) fn sync(&self) -> Result<()> {
+        self.0.sync_all()?;
+        Ok(())
+    }
     pub fn move_to(&self, source: &OsStr, destination: &Directory, name_to: &OsStr) -> Result<()> {
         let a = name(source)?;
         let b = name(name_to)?;

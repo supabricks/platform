@@ -37,9 +37,10 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-I02 uses version `v0.1.0-alpha.8`. It adds browser CSV/TSV imports to the
-PostgreSQL workspace and I01 ingestion service, alongside R03's coordinated
-backup/restore and explicit platform upgrades. See the
+NE02 uses version `v0.1.0-alpha.9` and catalog 10. It adds offline managed
+notebook environment preparation to the console/notebook/ingestion platform.
+See the [environment manager](../../docs/architecture/ne02-environment-manager.md)
+for CLI usage and the boundary before NE03 kernel integration, and the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01
 Postgres-only installations still require separate program/data directories;
 profile conversion and engine upgrades are not qualified.
