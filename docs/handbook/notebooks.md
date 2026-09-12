@@ -5,6 +5,11 @@ branch and click **Start kernel**. The console uses a JupyterLab notebook editor
 with the platform's bundled Python kernel and Sail session; no separate browser
 Jupyter server or Python installation is needed for an installed release.
 
+Kernels currently share the bundled Python dependencies. Per-project virtual
+environments and managed package installation are proposed in the
+[follow-up implementation plan](../plans/notebook-environments-implementation.md);
+the `supabricks env` commands described there are not available yet.
+
 ## First query
 
 Import the orders CSV through the console, or create `public.orders` using SQL.
