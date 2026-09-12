@@ -376,6 +376,16 @@ impl State {
                 Ok(action) => action,
                 Err(_) => return fail(400, "Invalid workspace command"),
             };
+            // Notebook admission verifies a complete environment and starts
+            // owned services on the single-writer daemon. Cold macOS filesystem
+            // reads can exceed the general two-second control deadline. Allow
+            // these commands to finish within the outer eight-second HTTP bound;
+            // never resend a mutation after a transport timeout.
+            let deadline = if matches!(&action, super::workspace::Command::Notebook { .. }) {
+                Duration::from_secs(6)
+            } else {
+                Duration::from_secs(2)
+            };
             let config = self.config.clone();
             let result = tokio::task::spawn_blocking(move || {
                 client::request_timeout(
@@ -386,7 +396,7 @@ impl State {
                         owner: format!("{}:{id}", config.instance),
                         action,
                     },
-                    Duration::from_secs(2),
+                    deadline,
                 )
             })
             .await;

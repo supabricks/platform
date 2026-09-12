@@ -170,6 +170,60 @@ fn login(origin: &str, token: &str) -> Http {
 }
 
 #[test]
+fn notebook_control_waits_through_a_busy_daemon_without_resending() {
+    let fixture = Fixture::new();
+    let (origin, token) = parts(&fixture.open());
+    let session = login(&origin, &token);
+    assert_eq!(session.status, 200);
+    let cookie = session
+        .headers
+        .lines()
+        .find(|s| s.to_lowercase().starts_with("set-cookie:"))
+        .unwrap()
+        .split_once(':')
+        .unwrap()
+        .1
+        .trim()
+        .split(';')
+        .next()
+        .unwrap();
+    let body: Value = serde_json::from_slice(&session.body).unwrap();
+
+    // Simulate the admission work that exceeded the old two-second socket
+    // deadline on macOS. Resume this fixture's exact child even if HTTP panics.
+    let pid = fixture.daemon.id() as libc::pid_t;
+    assert_eq!(unsafe { libc::kill(pid, libc::SIGSTOP) }, 0);
+    let resume = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(3));
+        assert_eq!(unsafe { libc::kill(pid, libc::SIGCONT) }, 0);
+    });
+    let response = http(
+        &origin,
+        "POST",
+        "/api/workspace",
+        &[
+            ("Origin", &origin),
+            ("Cookie", cookie),
+            ("X-Supabricks-Console", "1"),
+            ("X-Supabricks-CSRF", body["csrf"].as_str().unwrap()),
+            ("Content-Type", "application/json"),
+        ],
+        &json!({"action":"notebook","command":{"action":"list"}}).to_string(),
+    );
+    resume.join().unwrap();
+    assert_eq!(
+        response.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&response.body)
+    );
+    assert_eq!(
+        serde_json::from_slice::<Value>(&response.body).unwrap()["value"],
+        json!([])
+    );
+}
+
+#[test]
 fn notebook_documents_cross_both_transports_with_string_revisions_and_conflicts() {
     let fixture = Fixture::new();
     let (origin, token) = parts(&fixture.open());

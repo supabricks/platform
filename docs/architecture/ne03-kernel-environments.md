@@ -37,6 +37,12 @@ The notebook remains `starting` while preparation proceeds. No A03 session is
 admitted until preparation is ready. The existing two-session/server admission,
 RSS, lifetime, idle, output, authentication and channel limits remain in force.
 
+Notebook control requests allow six seconds for a daemon response within the
+console's eight-second HTTP deadline. Admission verifies complete environments
+on the single-writer daemon; the general two-second control deadline was too
+short on macOS and could disconnect the UI even though the kernel became ready.
+A timeout never causes an automatic resend of a notebook mutation.
+
 Before launch, selection checks canonical project/worktree ownership, private
 directory identity, interpreter/installation/component compatibility and the full
 materialized file inventory. It rejects symlinks at the generation root, changed
