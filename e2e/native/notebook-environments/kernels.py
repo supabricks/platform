@@ -18,6 +18,29 @@ import uuid
 import websocket
 
 
+def preparation_diagnostics(data):
+    """Only fixture operation diagnostics, never launch credentials or contexts."""
+    result=[]
+    with sqlite3.connect(f'file:{data}/state.sqlite3?mode=ro',uri=True) as db:
+        operations=[json.loads(row[0]) for row in db.execute('SELECT record_json FROM environment_operations')]
+    for operation in operations:
+        if operation['state'] not in ['failed','cancelled']:continue
+        item={key:operation.get(key) for key in ['id','state','kind','error']}
+        directory=data/'notebook-environment-work'/str(uuid.UUID(operation['id']))
+        if (directory/'progress.json').is_file():
+            item['progress']=json.loads((directory/'progress.json').read_text())
+        if (directory/'worker.log').is_file():
+            # These are the fixed release preparation worker's logs, not user
+            # kernel output. Redact its process token even in an exception dump.
+            launch=json.loads((directory/'launch.json').read_text())
+            with (directory/'worker.log').open('rb') as stream:
+                stream.seek(max(0,os.fstat(stream.fileno()).st_size-8192))
+                log=stream.read(8192).decode('utf-8',errors='replace')
+            item['worker_log']=log.replace(launch['token'],'[redacted]')
+        result.append(item)
+    return result
+
+
 def main(args):
     release=args.release.resolve(); binary=release/'bin/supabricks'
     root=Path(tempfile.mkdtemp(prefix='sb-ne03-',dir='/tmp')).resolve();root.chmod(0o700)
@@ -186,6 +209,12 @@ def main(args):
         report['status']='passed'
     finally:
         for ws in channels:ws.close()
+        if report['status']!='passed' and (data/'state.sqlite3').is_file():
+            try:
+                report['preparation_errors']=preparation_diagnostics(data)
+                print(json.dumps({'preparation_errors':report['preparation_errors']}),flush=True)
+            except Exception as error:
+                report['diagnostic_error']=type(error).__name__
         if projects:
             try:cli(projects[0],'down')
             except Exception:report['cleanup_failed']=True;report['status']='failed'
