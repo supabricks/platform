@@ -5,10 +5,12 @@ branch and click **Start kernel**. The console uses a JupyterLab notebook editor
 with the platform's bundled Python kernel and Sail session; no separate browser
 Jupyter server or Python installation is needed for an installed release.
 
-Kernels currently share the bundled Python dependencies. Per-project virtual
-environments and managed package installation are proposed in the
-[follow-up implementation plan](../plans/notebook-environments-implementation.md);
-the `supabricks env` commands described there are not available yet.
+Kernels run in managed per-project virtual environments. On the first explicit
+start, Supabricks prepares its bundled offline default. No host Python or package
+index is needed. Commit `notebooks/environment/pyproject.toml` and `uv.lock` with
+your project. The `supabricks env` commands inspect and prepare qualified locks;
+arbitrary dependency editing follows in NE04. See the
+[kernel environment contract](../architecture/ne03-kernel-environments.md).
 
 ## First query
 
@@ -62,7 +64,11 @@ A kernel is pinned to one branch and analytical epoch. PostgreSQL writes do not
 immediately appear in that running kernel. **Refresh snapshot** publishes a new
 analytical epoch and shows progress; the current kernel keeps its original one.
 **Start on latest snapshot** explicitly replaces the kernel to see the new data.
-**Restart kernel** resets Python variables while retaining the pinned epoch.
+**Restart kernel** resets Python variables while retaining both the pinned epoch
+and environment. **Use prepared environment** selects the project's prepared
+environment and retains the epoch. Neither action automatically runs saved cells.
+Changed declarations leave existing kernels untouched. Environment identity is
+shown with the snapshot and retained in each saved cell's output provenance.
 Changing the branch selection takes effect only when you start/rebind a kernel.
 
 Saving records the selected binding. Reopening never starts a kernel or runs

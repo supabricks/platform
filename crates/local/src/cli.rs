@@ -165,7 +165,7 @@ pub fn run() -> Result<u8> {
     }
     if raw == ["--version"] {
         let version = crate::installation::Installation::discover()?
-            .map(|i| i.manifest.version)
+            .map(|i| i.manifest.version.clone())
             .unwrap_or_else(|| env!("CARGO_PKG_VERSION").into());
         println!("supabricks {version} (local API 1)");
         return Ok(0);

@@ -49,6 +49,8 @@ pub enum Command {
         epoch: Option<supabricks_core::resource::EpochId>,
         #[serde(default)]
         limits: Limits,
+        #[serde(default)]
+        environment: Option<OperationId>,
     },
     List,
     Status {
@@ -69,6 +71,12 @@ pub enum Command {
         id: OperationId,
         generation: u64,
         key: String,
+    },
+    AdoptEnvironment {
+        id: OperationId,
+        generation: u64,
+        key: String,
+        environment: OperationId,
     },
     Shutdown {
         id: OperationId,

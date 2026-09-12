@@ -181,46 +181,93 @@ impl Notebooks {
     pub(super) fn start(
         &mut self,
         store: &mut Store,
-        cell: Option<&crate::engine::Cell>,
+        _cell: Option<&crate::engine::Cell>,
         e: &mut Entry,
     ) -> Result<()> {
         e.target.validate(store, &e.binding)?;
         if store.active_analytical_sessions()?.len() >= 2 {
             return Err(conflict("both analytical session slots are occupied"));
         }
-        self.ensure_server(store, &e.binding)?;
-        let generation = e
+        // Only explicit start/restart enters this state. Preparation is polled
+        // asynchronously, before an A03 slot or Python kernel is launched.
+        e.generation = e
             .generation
             .checked_add(1)
             .ok_or_else(|| conflict("notebook generation overflow"))?;
+        if let Some(id) = e.session {
+            e.epoch = store
+                .analytical_session(e.binding.project_id, id)?
+                .epoch_id
+                .or(e.epoch);
+        }
+        if e.requested_environment.is_some()
+            && e.requested_environment != e.environment.as_ref().map(|i| i.id)
+        {
+            e.environment = None;
+        }
+        e.session = None;
+        e.kernel = None;
+        e.environment_operation = None;
+        e.state = "starting".into();
+        e.error = None;
+        e.started = now();
+        e.expires = e.started + 120_000;
+        e.activity = now();
+        e.launch = None;
+        e.interrupt_at = None;
+        e.stop_reason = None;
+        e.restart = false;
+        Ok(())
+    }
+    fn admit_environment(
+        &mut self,
+        store: &mut Store,
+        environments: &mut crate::environments::Manager,
+        cell: Option<&crate::engine::Cell>,
+        e: &mut Entry,
+    ) -> Result<()> {
+        let selected = match e
+            .environment
+            .as_ref()
+            .map(|i| i.id)
+            .or(e.requested_environment)
+        {
+            Some(id) => crate::environments::Manager::select(store, &e.binding, id)?,
+            None => match environments.prepare_default(
+                store,
+                &e.binding,
+                &format!("notebook:{}:{}", e.id, e.generation),
+                e.environment_operation,
+            )? {
+                crate::environments::DefaultPreparation::Ready(selected) => selected,
+                crate::environments::DefaultPreparation::Pending(id) => {
+                    e.environment_operation = Some(id);
+                    return Ok(());
+                }
+            },
+        };
+        e.environment_lease = Some(environments.acquire(
+            store,
+            &e.binding,
+            selected.identity.id,
+            &format!("notebook:{}:{}", e.id, e.generation),
+        )?);
+        e.environment = Some(selected.identity);
+        self.ensure_server(store, &e.binding)?;
         let session: crate::store::AnalyticalSession =
             serde_json::from_value(Sessions::open_notebook(
                 store,
                 cell,
                 &e.binding,
                 e.target.branch.to_string(),
-                match e.session {
-                    Some(id) => store
-                        .analytical_session(e.binding.project_id, id)?
-                        .epoch_id
-                        .or(e.epoch),
-                    None => e.epoch,
-                },
-                format!("notebook:{}:{generation}", e.id),
+                e.epoch,
+                format!("notebook:{}:{}", e.id, e.generation),
                 e.limits.lifetime_ms,
             )?)?;
-        e.generation = generation;
         e.session = Some(session.id);
         e.kernel = Some(OperationId::new());
-        e.state = "starting".into();
-        e.error = None;
-        e.started = now();
         e.expires = session.expires_at_ms;
-        e.activity = now();
-        e.launch = None;
-        e.interrupt_at = None;
-        e.stop_reason = None;
-        e.restart = false;
+        e.environment_operation = None;
         Ok(())
     }
     fn report_path(&self, e: &Entry) -> Result<PathBuf> {
@@ -259,7 +306,17 @@ impl Notebooks {
         if server.port.is_none() {
             return Ok(());
         }
-        let (python, worker) = worker(store)?;
+        let (_, worker) = worker(store)?;
+        let selected = crate::environments::Manager::select(
+            store,
+            &e.binding,
+            e.environment
+                .as_ref()
+                .ok_or_else(|| conflict("kernel environment missing"))?
+                .id,
+        )?;
+        let python = selected.python;
+        e.epoch = session.epoch_id;
         let kernel = e.kernel.unwrap();
         let context = server
             .dir
@@ -271,7 +328,7 @@ impl Notebooks {
             .join(format!("{kernel}.ready.json"));
         supervisor::write_json(
             &context,
-            &json!({"endpoint":session.endpoint,"epoch_id":session.epoch_id,"ready":ready,"fault":server.dir.join("kernels").join(format!("{kernel}.fault.json"))}),
+            &json!({"endpoint":session.endpoint,"epoch_id":session.epoch_id,"environment":selected.identity,"python_prefix":python.parent().unwrap().parent().unwrap(),"ready":ready,"fault":server.dir.join("kernels").join(format!("{kernel}.fault.json"))}),
         )?;
         let launch = Launch {
             root: store.root().into(),
@@ -281,8 +338,7 @@ impl Notebooks {
             branch: None,
             argv: vec![
                 python.to_string_lossy().into(),
-                "-E".into(),
-                "-s".into(),
+                "-I".into(),
                 "-B".into(),
                 worker.with_file_name("kernel.py").to_string_lossy().into(),
                 "-f".into(),
@@ -324,7 +380,7 @@ impl Notebooks {
                 .dir
                 .join("kernels")
                 .join(format!("{kernel}.gate.json")),
-            &json!({"binary":std::env::current_exe()?,"launch":path,"ready":ready,"token":launch.token}),
+            &json!({"binary":std::env::current_exe()?,"launch":path,"ready":ready,"token":launch.token,"environment":selected.identity,"epoch_id":session.epoch_id}),
         )?;
         e.launch = Some(launch);
         self.control(e, "start")
@@ -372,6 +428,14 @@ impl Notebooks {
         )? {
             return Err(conflict("notebook server lost"));
         }
+        let environment = e
+            .environment
+            .as_ref()
+            .ok_or_else(|| conflict("kernel environment missing"))?;
+        let selected = crate::environments::Manager::select(store, &e.binding, environment.id)?;
+        if &selected.identity != environment || e.environment_lease.is_none() {
+            return Err(conflict("kernel environment binding changed"));
+        }
         let evidence = supervisor::evidence(launch, pid)?;
         store.record_native_process(&evidence)
     }
@@ -388,6 +452,10 @@ impl Notebooks {
         if e.kernel.is_some() && self.servers.contains_key(&e.binding.worktree) {
             self.control(e, "forget")?;
         }
+        if let Some(lease) = e.environment_lease {
+            store.release_environment_lease(lease)?;
+            e.environment_lease = None;
+        }
         e.launch = None;
         e.interrupt_at = None;
         let reason = e.stop_reason.as_deref().unwrap_or("stopped");
@@ -400,6 +468,8 @@ impl Notebooks {
         .into();
         e.error = if matches!(reason, "stopped" | "restart") {
             None
+        } else if reason == "runtime_failure" {
+            e.error.clone()
         } else {
             Some(reason.into())
         };
@@ -409,6 +479,7 @@ impl Notebooks {
         &mut self,
         store: &mut Store,
         sessions: &mut Sessions,
+        environments: &mut crate::environments::Manager,
         cell: Option<&crate::engine::Cell>,
         stopping: bool,
     ) -> Result<()> {
@@ -491,14 +562,17 @@ impl Notebooks {
                     e.restart = false;
                     e.stop_reason = Some(reason.into());
                 }
-                if e.state != "stopping" {
+                if e.state != "stopping" && e.session.is_some() {
                     let s = store.analytical_session(e.binding.project_id, e.session.unwrap())?;
                     if matches!(s.state.as_str(), "closing" | "closed" | "failed") {
                         e.stop_reason = Some("spark_context_lost".into());
                         e.state = "stopping".into();
                     }
                 }
-                if e.state == "starting" && e.launch.is_none() {
+                if e.state == "starting" && e.session.is_none() {
+                    self.admit_environment(store, environments, cell, &mut e)?;
+                }
+                if e.state == "starting" && e.session.is_some() && e.launch.is_none() {
                     self.prepare_kernel(store, &mut e)?;
                 }
                 if let Some(launch) = &e.launch {

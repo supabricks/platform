@@ -215,3 +215,27 @@ fn rename_never_replaces_destination_and_rejects_stale_source() {
         document()
     );
 }
+
+#[test]
+fn mixed_environment_and_epoch_provenance_roundtrips_without_rebinding_outputs() {
+    let project = tempfile::tempdir().unwrap();
+    let mut value = document();
+    let identity = |id| json!({"id":id,"inputs":{"manifest":"a".repeat(64),"lock":"b".repeat(64)},"contract":"c".repeat(64),"inventory":"d".repeat(64)});
+    let old = json!({"branch_id":supabricks_core::resource::BranchId::new(),"epoch_id":supabricks_core::resource::EpochId::new(),"environment":identity(supabricks_core::resource::OperationId::new())});
+    let new = json!({"branch_id":old["branch_id"],"epoch_id":supabricks_core::resource::EpochId::new(),"environment":identity(supabricks_core::resource::OperationId::new())});
+    value["metadata"]["supabricks"] = json!({"binding":new,"outputs":old});
+    value["cells"][0]["metadata"]["supabricks_outputs"] = old;
+    save(project.path(), "mixed.ipynb", value.clone(), None).unwrap();
+    let loaded = handle(
+        project.path(),
+        Command::Get {
+            path: "mixed.ipynb".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(loaded["document"], value);
+    value["cells"][0]["metadata"]["supabricks_outputs"]["environment"]["inventory"] =
+        json!("invalid");
+    assert!(validate_document(&value).is_err());
+    validate_document(&document()).unwrap(); // Old notebooks remain readable.
+}

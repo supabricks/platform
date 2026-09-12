@@ -90,6 +90,24 @@ fn output(v: &Value) -> Result<()> {
     }
     Ok(())
 }
+fn provenance(value: &Value) -> Result<()> {
+    if let Some(environment) = value.get("environment").filter(|v| !v.is_null()) {
+        let identity: crate::environments::Identity =
+            serde_json::from_value(environment.clone())
+                .map_err(|_| invalid("Invalid notebook environment provenance"))?;
+        for hash in [
+            &identity.inputs.manifest,
+            &identity.inputs.lock,
+            &identity.contract,
+            &identity.inventory,
+        ] {
+            if hash.len() != 64 || !hash.bytes().all(|c| c.is_ascii_hexdigit()) {
+                return Err(invalid("Invalid notebook environment fingerprint"));
+            }
+        }
+    }
+    Ok(())
+}
 pub fn validate_document(v: &Value) -> Result<()> {
     if v["nbformat"].as_u64() != Some(4)
         || !v["nbformat_minor"].as_u64().is_some_and(|n| n <= 5)
@@ -99,6 +117,8 @@ pub fn validate_document(v: &Value) -> Result<()> {
             "Unsupported notebook format (expected nbformat 4.0–4.5)",
         ));
     }
+    provenance(&v["metadata"]["supabricks"]["binding"])?;
+    provenance(&v["metadata"]["supabricks"]["outputs"])?;
     let cells = v["cells"]
         .as_array()
         .ok_or_else(|| invalid("Notebook cells must be an array"))?;
@@ -110,6 +130,7 @@ pub fn validate_document(v: &Value) -> Result<()> {
         if !c.is_object() || !c["metadata"].is_object() {
             return Err(invalid("Notebook cell requires metadata"));
         }
+        provenance(&c["metadata"]["supabricks_outputs"])?;
         source(&c["source"], MAX_CELL_SOURCE_BYTES)?;
         if v["nbformat_minor"] == 5 || c.get("id").is_some() {
             let id = c["id"]

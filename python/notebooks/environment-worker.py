@@ -76,7 +76,7 @@ def tree(path, max_bytes, *, sync=False):
             os.fsync(fd)
         finally:
             os.close(fd)
-    return hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest(), allocated
+    return hashlib.sha256(json.dumps(hashes, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest(), allocated
 
 
 def main():

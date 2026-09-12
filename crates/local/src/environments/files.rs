@@ -162,3 +162,72 @@ pub(super) fn free_bytes(path: &Path) -> Result<u64> {
     let value = unsafe { value.assume_init() };
     Ok((value.f_bavail as u64).saturating_mul(value.f_frsize as u64))
 }
+
+/// Match the worker's canonical inventory. No symlink is dereferenced, and
+/// bounded reads reject hard links, special files, deep trees and excess bytes.
+pub(super) fn inventory(root: &Path) -> Result<String> {
+    fn visit(
+        root: &Path,
+        path: &Path,
+        depth: usize,
+        values: &mut BTreeMap<String, Value>,
+        bytes: &mut u64,
+    ) -> Result<()> {
+        if depth > 64 {
+            return Err(conflict("environment directory depth limit"));
+        }
+        for entry in fs::read_dir(path)? {
+            let path = entry?.path();
+            let m = fs::symlink_metadata(&path)?;
+            let name = path
+                .strip_prefix(root)
+                .unwrap()
+                .to_str()
+                .ok_or_else(|| conflict("invalid environment filename"))?
+                .to_owned();
+            if m.is_dir() {
+                visit(root, &path, depth + 1, values, bytes)?;
+            } else {
+                if values.len() >= 100000 {
+                    return Err(conflict("environment file count limit"));
+                }
+                let value = if m.file_type().is_symlink() {
+                    json!({"link":fs::read_link(&path)?})
+                } else {
+                    let mut f = OpenOptions::new()
+                        .read(true)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+                        .open(&path)?;
+                    let m = f.metadata()?;
+                    *bytes = bytes.saturating_add(m.len());
+                    if !m.is_file() || m.nlink() != 1 || *bytes > 1024 * 1024 * 1024 {
+                        return Err(conflict("environment inventory exceeds its contract"));
+                    }
+                    let mut digest = Sha256::new();
+                    let mut buffer = [0; 64 * 1024];
+                    let mut remaining = m.len();
+                    loop {
+                        let n = f.read(&mut buffer)?;
+                        if n == 0 {
+                            break;
+                        }
+                        if n as u64 > remaining {
+                            return Err(conflict("environment file changed during verification"));
+                        }
+                        remaining -= n as u64;
+                        digest.update(&buffer[..n]);
+                    }
+                    if remaining != 0 {
+                        return Err(conflict("environment file changed during verification"));
+                    }
+                    json!(hex::encode(digest.finalize()))
+                };
+                values.insert(name, value);
+            }
+        }
+        Ok(())
+    }
+    let mut values = BTreeMap::new();
+    visit(root, root, 0, &mut values, &mut 0)?;
+    Ok(hash(&serde_json::to_vec(&values)?))
+}

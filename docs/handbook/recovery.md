@@ -1,9 +1,10 @@
 # Back up, restore and upgrade the localhost preview
 
-NE02 introduces `v0.1.0-alpha.9` with catalog 10. Linux x86_64 and Apple
+NE03 uses `v0.1.0-alpha.10` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
 PR34 alpha.8 catalog-9 archive; migration fixtures also cover catalog 8.
-See the [NE02 contract](../architecture/ne02-environment-manager.md).
+See the [environment manager](../architecture/ne02-environment-manager.md) and
+[kernel binding contract](../architecture/ne03-kernel-environments.md).
 
 ## Make a recovery bundle
 
@@ -40,15 +41,15 @@ analytical epochs before retiring any original data. Existing target directories
 are refused. A failed restore is never merged into an existing cell: use another
 new destination and retain the partial directory until you have inspected it.
 
-## Upgrade catalog 8 or 9 to NE02
+## Upgrade catalog 8 or 9 to NE03
 
-Serve the prepared alpha.9 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.10 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh
 curl -fsSL http://127.0.0.1:8080/install.sh |
   SUPABRICKS_UPGRADE=1 \
-  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha9" bash
+  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha10" bash
 supabricks up
 ```
 
@@ -77,11 +78,11 @@ data root:
 
 ```sh
 supabricks down
-supabricks backup restore "$HOME/supabricks-before-alpha9" \
+supabricks backup restore "$HOME/supabricks-before-alpha10" \
   --release "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8" \
-  --data-dir "$HOME/.supabricks-before-alpha9-restored"
+  --data-dir "$HOME/.supabricks-before-alpha10-restored"
 "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8/bin/supabricks" up \
-  --data-dir "$HOME/.supabricks-before-alpha9-restored"
+  --data-dir "$HOME/.supabricks-before-alpha10-restored"
 ```
 
 ## Uninstall and failure diagnosis

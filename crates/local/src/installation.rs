@@ -8,6 +8,7 @@ use std::{
     io::Read,
     os::unix::fs::PermissionsExt,
     path::{Component, Path, PathBuf},
+    sync::{Arc, Mutex},
 };
 
 #[derive(Deserialize, Serialize)]
@@ -31,8 +32,13 @@ pub struct Manifest {
 pub struct Installation {
     pub root: PathBuf,
     pub identity: String,
-    pub manifest: Manifest,
+    pub manifest: Arc<Manifest>,
 }
+
+// Discovery runs on every control/status path. Share the parsed inventory, but
+// re-read and hash the manifest bytes each time so in-place changes still fail
+// validation. One entry bounds memory and never caches installation file checks.
+static PARSED_MANIFEST: Mutex<Option<(String, Arc<Manifest>)>> = Mutex::new(None);
 
 impl Installation {
     pub fn discover() -> Result<Option<Self>> {
@@ -48,6 +54,19 @@ impl Installation {
             return Ok(None);
         }
         let bytes = fs::read(path)?;
+        let identity = hex::encode(Sha256::digest(&bytes));
+        let mut cached = PARSED_MANIFEST
+            .lock()
+            .map_err(|_| invalid("release manifest cache unavailable"))?;
+        if let Some((previous, manifest)) = &*cached
+            && previous == &identity
+        {
+            return Ok(Some(Self {
+                root: root.to_owned(),
+                identity,
+                manifest: Arc::clone(manifest),
+            }));
+        }
         let manifest: Manifest = serde_json::from_slice(&bytes)?;
         let target = if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
             "linux-x86_64"
@@ -145,9 +164,11 @@ impl Installation {
                 ));
             }
         }
+        let manifest = Arc::new(manifest);
+        *cached = Some((identity.clone(), Arc::clone(&manifest)));
         Ok(Some(Self {
             root: root.to_owned(),
-            identity: hex::encode(Sha256::digest(&bytes)),
+            identity,
             manifest,
         }))
     }
@@ -267,6 +288,40 @@ fn inventory(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn discovery_cache_rechecks_manifest_bytes_and_keeps_roots_independent() {
+        let root = tempfile::tempdir().unwrap();
+        let target = if cfg!(target_os = "macos") {
+            "macos-arm64"
+        } else {
+            "linux-x86_64"
+        };
+        let manifest = serde_json::json!({"format_version":1,"version":"v0.1.0",
+            "target":target,"profile":"local-postgres-alpha","provenance":{},
+            "files":{"bin/supabricks":{"sha256":"unused","executable":true}}});
+        let bytes = serde_json::to_vec(&manifest).unwrap();
+        for name in ["a", "b"] {
+            fs::create_dir(root.path().join(name)).unwrap();
+            fs::write(root.path().join(name).join("release.json"), &bytes).unwrap();
+        }
+        let a = Installation::at_executable(&root.path().join("a/bin/supabricks"))
+            .unwrap()
+            .unwrap();
+        let b = Installation::at_executable(&root.path().join("b/bin/supabricks"))
+            .unwrap()
+            .unwrap();
+        assert_eq!(a.identity, b.identity);
+        assert_ne!(a.root, b.root);
+        // Same-size changes cannot hide behind a cached parse or size check.
+        let invalid = String::from_utf8(bytes)
+            .unwrap()
+            .replace("\"format_version\":1", "\"format_version\":2");
+        fs::write(b.root.join("release.json"), invalid).unwrap();
+        assert!(Installation::at_executable(&b.root.join("bin/supabricks")).is_err());
+        assert_eq!(a.manifest.format_version, 1);
+        assert!(Installation::at_executable(&a.root.join("bin/supabricks")).is_ok());
+    }
 
     #[test]
     fn analytical_profile_requires_worker_inventory_and_resolves_from_release() {

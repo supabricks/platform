@@ -275,6 +275,13 @@ try {
  report.checks.push('kernel_and_server_SIGKILL_release_epoch_leases_without_replay');
  notebook=await action({action:'create',key:'bootstrap-failure',target});
  notebook=await action({action:'start',id:notebook.id,generation:0,key:'start'});
+ // NE03 prepares/selects the environment before A03 admission assigns a kernel.
+ const admissionDeadline=Date.now()+30000;
+ while(!notebook.kernel_id && Date.now()<admissionDeadline){
+   await new Promise(r=>setTimeout(r,50));
+   notebook=await action({action:'status',id:notebook.id,generation:notebook.generation});
+ }
+ assert.ok(notebook.kernel_id,'bootstrap fault requires an admitted kernel');
  await fixture('corrupt-bootstrap',notebook.kernel_id);
  notebook=await waitState(notebook,['failed']);assert.equal(notebook.error,'bootstrap_failed');
  assert.equal((await fixture('snapshot')).active_sessions,0);

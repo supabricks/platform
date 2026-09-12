@@ -56,7 +56,6 @@ impl Drop for Reap {
     }
 }
 
-#[cfg(target_os = "linux")]
 #[test]
 fn process_group_sampling_survives_exec_with_the_same_identity_and_token() {
     let temp = tempfile::tempdir().unwrap();
