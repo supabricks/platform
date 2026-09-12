@@ -255,7 +255,14 @@ def qualify(args):
                     assert select.select([mcp.stdout], [], [], 15)[0]
                     response = json.loads(mcp.stdout.readline())
                     assert 'error' not in response, response
-            assert len(response['result']['tools']) == 34
+            tools = response['result']['tools']
+            names = {tool['name'] for tool in tools}
+            assert len(names) == len(tools), 'duplicate MCP tool names'
+            # P06 compares the complete shared schema fixture. This isolated
+            # installer harness checks the capabilities its user workflows need.
+            assert {'capabilities', 'catalog', 'sql', 'create_branch', 'select_branch',
+                    'env_inspect', 'env_initialize', 'env_manage', 'env_status',
+                    'env_find', 'env_declaration', 'env_cancel', 'env_collect'} <= names
             def call_tool(name, arguments):
                 mcp.stdin.write(json.dumps(dict(jsonrpc='2.0', id=3, method='tools/call',
                     params=dict(name=name, arguments=arguments))) + '\n')
