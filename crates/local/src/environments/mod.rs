@@ -735,6 +735,9 @@ impl Manager {
                 Some("invalid_declaration") => {
                     "unsupported declaration or kernel dependency conflict; use registry requirements compatible with env status"
                 }
+                Some("artifact_hash_mismatch") => {
+                    "locked wheel hash differs from the qualified artifact; inspect the lock before retrying"
+                }
                 Some("invalid_bundle") => "bundle failed hash, target, path or size validation",
                 Some("network_failed") => {
                     "package download failed; retry with a new request key or import an offline bundle"

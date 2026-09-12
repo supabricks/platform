@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -125,6 +126,17 @@ def qualify(args):
                 dst.writestr(name,b'corrupt' if name=='pyproject.toml' else src.read(name))
         operation('import-bundle',corrupt,success=False)
         check('hostile_archive_paths_and_hash_mismatches_cannot_publish')
+        lock_path=project/'notebooks/environment/uv.lock'
+        original_lock=lock_path.read_text()
+        parts=re.split(r'(?=^\[\[package\]\]$)',original_lock,flags=re.M)
+        lock_path.write_text(''.join(re.sub(r'sha256:[a-f0-9]{64}','sha256:'+'0'*64,p) if p.startswith('[[package]]\nname = "pyarrow"') else p for p in parts))
+        try:
+            failure=operation('sync','--offline',success=False)
+            assert 'locked wheel hash differs' in failure['error'],failure
+            assert generation()['id']==before
+        finally:
+            lock_path.write_text(original_lock)
+        check('bundled_wheels_still_require_matching_committed_lock_hashes')
         source=project/'python-project';source.mkdir()
         for name in ('pyproject.toml','uv.lock'):
             shutil.copyfile(second/'notebooks/environment'/name,source/name)

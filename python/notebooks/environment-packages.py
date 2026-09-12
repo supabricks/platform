@@ -313,6 +313,13 @@ def execute(config, contract, package, env, check, step):
         source = bundled.get((name, version))
         if source is not None:
             expected = sha(source)
+            records = [p for p in lock['package'] if p['name'] == name and p['version'] == version]
+            if name == 'pyspark-client':
+                qualified = next(p for p in tomllib.loads((package / base['lock']).read_text())['package'] if p['name'] == name)
+                if len(records) != 1 or records[0].get('sdist') != qualified.get('sdist'):
+                    raise Failure('artifact_hash_mismatch')
+            elif not any(a['hash'] == 'sha256:' + expected for p in records for a in p.get('wheels', [])):
+                raise Failure('artifact_hash_mismatch')
             filename = source.name
         else:
             candidates = [a for p in lock['package'] if p['name'] == name and p['version'] == version for a in p.get('wheels', [])]
