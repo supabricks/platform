@@ -611,8 +611,16 @@ fn publication_swaps_the_complete_pair_and_preserves_previous_revision() {
     // treats the report or pair alone as permission to activate a generation.
     o.state = "verifying".into();
     o.kind = "manage".into();
+    o.workflow = Some(Workflow {
+        change: Change::Sync,
+        offline: true,
+    });
+    fs::create_dir(docs.join("wheels")).unwrap();
+    fs::write(docs.join("wheels/transfer.whl"), b"temporary").unwrap();
     f.store.save_environment_operation(&o).unwrap();
     Manager::recover(&mut f.store).unwrap();
+    assert!(!docs.join("wheels").exists());
+    assert!(docs.join("uv.lock").exists());
     assert!(
         f.store
             .active_environment(o.project, &o.worktree)
@@ -662,4 +670,16 @@ fn publication_rejects_edits_and_unrelated_files_and_adoption_cannot_escape() {
     )
     .unwrap();
     assert!(transaction::declaration(&o.worktree, Path::new("alias")).is_err());
+}
+
+#[test]
+fn explicit_adoption_can_read_project_root_without_following_a_virtualenv() {
+    let f = Fixture::new();
+    fs::write(f.binding.worktree.join("pyproject.toml"), b"root manifest").unwrap();
+    fs::write(f.binding.worktree.join("uv.lock"), b"root lock").unwrap();
+    symlink("/unrelated", f.binding.worktree.join(".venv")).unwrap();
+    assert_eq!(
+        transaction::declaration(&f.binding.worktree, Path::new(".")).unwrap(),
+        (b"root manifest".to_vec(), b"root lock".to_vec())
+    );
 }

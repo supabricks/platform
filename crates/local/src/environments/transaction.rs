@@ -12,16 +12,20 @@ use std::{
 pub(super) fn declaration(worktree: &Path, path: &Path) -> Result<(Vec<u8>, Vec<u8>)> {
     if path.as_os_str().is_empty()
         || path.is_absolute()
-        || !path
-            .components()
-            .all(|p| matches!(p, std::path::Component::Normal(_)))
+        || (path != Path::new(".")
+            && !path
+                .components()
+                .all(|p| matches!(p, std::path::Component::Normal(_))))
     {
         return Err(invalid(
             "declaration must name a project-contained relative directory",
         ));
     }
     let mut dir = Directory::project(worktree)?;
-    for component in path.components() {
+    for component in path
+        .components()
+        .filter(|p| !matches!(p, std::path::Component::CurDir))
+    {
         dir = dir.child(component.as_os_str(), false)?;
     }
     Ok((

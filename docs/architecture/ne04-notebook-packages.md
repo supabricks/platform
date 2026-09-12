@@ -59,7 +59,8 @@ To adopt an existing declaration, initialize the managed pair first, then run:
 supabricks env adopt path/to/python-project --wait
 ```
 
-The path is relative to the bound worktree and must contain `pyproject.toml` and
+Use `env adopt .` for a declaration at the project root. The path is relative to
+the bound worktree and must contain `pyproject.toml` and
 `uv.lock`, without symlink components. The supported source is a virtual uv project
 with static name, version, Python constraint and dependency list (description is
 allowed). Its Python constraint must admit 3.12.13. Adoption copies the intent,

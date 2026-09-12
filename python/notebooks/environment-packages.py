@@ -168,7 +168,7 @@ def execute(config, contract, package, env, check, step):
                     continue
                 if p['source'] != {'registry': INDEX} or (p['name'] in protected and p['version'] != protected[p['name']]):
                     raise ValueError()
-                for artifact in p.get('wheels', []):
+                for artifact in [*p.get('wheels', []), *([p['sdist']] if p.get('sdist') else [])]:
                     checked_url(artifact['url'])
                     if not re.fullmatch('sha256:[a-f0-9]{64}', artifact['hash']):
                         raise ValueError()

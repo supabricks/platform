@@ -319,6 +319,7 @@ impl Manager {
             store.forget_native_process(&p)?;
         }
         store.clear_environment_leases()?;
+        let mut recovered = Self::default();
         for mut o in store.environment_operations()? {
             if ACTIVE.contains(&o.state.as_str()) {
                 o.worker = None;
@@ -331,6 +332,17 @@ impl Manager {
                     o.error = Some("interrupted; inspect declarations and env sync with a new request key; previous declarations are retained in notebooks/.environment-<operation-id>".into());
                 }
                 store.save_environment_operation(&o)?;
+                if o.workflow.is_some() {
+                    let dir = store
+                        .root()
+                        .join("notebook-environment-work")
+                        .join(o.id.to_string());
+                    if dir.exists()
+                        && let Err(error) = transaction::cleanup(&dir)
+                    {
+                        recovered.last_error = Some(diagnostic(error));
+                    }
+                }
             }
         }
         for mut g in store.environment_generations()? {
@@ -341,7 +353,7 @@ impl Manager {
                 store.invalidate_environment(&g)?;
             }
         }
-        Ok(Self::default())
+        Ok(recovered)
     }
     pub fn handle(
         &mut self,

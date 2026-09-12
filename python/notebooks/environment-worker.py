@@ -151,10 +151,10 @@ def main():
              '--require-hashes', '--link-mode', 'copy', package / template['requirements']])
         step('verifying')
         run([*flags, 'pip', 'check', '--python', './bin/python'])
-        code = """import json,sys,site,importlib.metadata as md
+        code = """import json,sys,site,re,importlib.metadata as md
 import ipykernel,pyarrow,pandas,pyspark.sql
 print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,user=site.ENABLE_USER_SITE,
-packages={d.metadata['Name'].lower().replace('_','-'):d.version for d in md.distributions()})))
+packages={re.sub(r'[-_.]+','-',d.metadata['Name']).lower():d.version for d in md.distributions()})))
 """
         result = json.loads(subprocess.check_output(['./bin/python', '-I', '-B', '-c', code], env=env,
                             preexec_fn=lambda: os.fchdir(descriptor), timeout=15))
