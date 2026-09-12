@@ -197,15 +197,27 @@ def execute(config, contract, package, env, check, step):
         target = artifacts / expected
         if target.exists():
             regular(target)
-            if sha(target) != expected:
-                raise Failure('invalid_bundle')
-            return target
+            if sha(target) == expected:
+                return target
+            # The artifact cache is disposable. A verified bundle or download
+            # can repair drift/old interrupted writes without touching venvs.
+            target.unlink()
         if cache_size() + regular(source).st_size > config['cache_bytes']:
             raise Failure('artifact_limit')
-        with source.open('rb') as src, target.open('xb') as out:
+        temporary = artifacts / (expected + '.tmp')
+        if temporary.exists():
+            regular(temporary)
+            temporary.unlink()
+        with source.open('rb') as src, temporary.open('xb') as out:
             shutil.copyfileobj(src, out, 1024*1024)
             out.flush()
             os.fsync(out.fileno())
+        temporary.replace(target)
+        descriptor = os.open(artifacts, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
         return target
 
     if change['kind'] == 'adopt':
@@ -334,10 +346,10 @@ def execute(config, contract, package, env, check, step):
             if source.exists():
                 regular(source)
                 if sha(source) != expected:
-                    raise Failure('invalid_bundle')
-            elif offline:
-                raise Failure('offline_artifacts_missing')
-            else:
+                    source.unlink()
+            if not source.exists():
+                if offline:
+                    raise Failure('offline_artifacts_missing')
                 temporary = documents / 'download'
                 download_bytes += download(artifact['url'], temporary, MAX_DOWNLOAD-download_bytes, check)
                 source = cache(temporary, expected)

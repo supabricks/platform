@@ -110,7 +110,11 @@ def qualify(args):
         cli('up');started=True
         missing=operation('sync','--offline',success=False,at=second)
         assert 'offline wheel artifacts missing' in missing['error'],missing
+        # A valid bundle also repairs a corrupted disposable artifact cache.
+        boltons_hash=next(v for n,v in manifest['files'].items() if 'boltons-' in n)
+        (data/'notebook-environment-artifacts'/boltons_hash).write_bytes(b'interrupted old cache write')
         operation('import-bundle',bundle,at=second)
+        assert digest(data/'notebook-environment-artifacts'/boltons_hash)==boltons_hash
         restored=generation(second);imported(restored,'boltons','24.1.0');imported(restored,'humanize','4.13.0')
         operation('sync','--offline',at=second)
         check('clean_offline_missing_artifacts_fail_then_bundle_import_reconstructs_locked_versions')
