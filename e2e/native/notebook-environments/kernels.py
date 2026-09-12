@@ -47,6 +47,13 @@ def main(args):
     data=root/'data'; report={'status':'running','checks':[], 'release_sha256':hashlib.sha256((release/'release.json').read_bytes()).hexdigest(),
         'network_evidence':os.environ.get('SB_NE02_NETWORK_EVIDENCE','local run; external networking not isolated')}
     projects=[]; channels=[]
+    def owned_daemon():
+        matches=[]
+        for process in psutil.process_iter(['cmdline','uids']):
+            argv=process.info['cmdline'] or []
+            if 'daemon' in argv and str(data) in argv and process.info['uids'].effective==os.getuid():matches.append(process)
+        assert len(matches)==1
+        return matches[0]
     def cli(project,*parts):
         value=subprocess.run([str(binary),*parts,'--project',str(project),'--data-dir',str(data)],capture_output=True,text=True,timeout=180)
         if value.returncode:
@@ -134,6 +141,12 @@ def main(args):
         # Old documents/default start need no manual env initialization.
         first=a.start();ws=a.connect(first)
         assert first['environment'] and execute(ws,"import sys,site\nassert sys.prefix!=sys.base_prefix and not site.ENABLE_USER_SITE\nassert spark.table('public.orders').count()==1\nassert supabricks_environment['id']=="+repr(first['environment']['id'])+"\nprint('ISOLATED')").strip()=='ISOLATED'
+        # A bounded admission pause must not sever an existing binary channel.
+        daemon=owned_daemon();daemon.suspend()
+        try:time.sleep(3)
+        finally:daemon.resume()
+        execute(ws,"assert spark.table('public.orders').count()==1")
+        check('existing_channel_survives_three_second_daemon_admission_pause')
         ws.close();a.stop(first);check('default_console_start_creates_offline_isolated_kernel')
         old_id=prepare(projects[0],'fixture-a');other_id=prepare(projects[1],'fixture-b')
         old=a.start(old_id);other=b.start(other_id);old_ws=a.connect(old);other_ws=b.connect(other)
@@ -186,16 +199,11 @@ def main(args):
         check('service_runtime_dependencies_remain_unchanged')
         live=a.start(new_id);live_ws=a.connect(live);execute(live_ws,'counter=99')
         assert len(records('environment_leases'))==1
-        daemons=[]
-        for process in psutil.process_iter(['cmdline','uids']):
-            argv=process.info['cmdline'] or []
-            if 'daemon' in argv and str(data) in argv and process.info['uids'].effective==os.getuid():daemons.append(process)
-        assert len(daemons)==1
-        daemons[0].kill()
+        daemon=owned_daemon();daemon.kill()
         deadline=time.monotonic()+10
         while time.monotonic()<deadline:
             try:
-                if not daemons[0].is_running() or daemons[0].status()==psutil.STATUS_ZOMBIE:break
+                if not daemon.is_running() or daemon.status()==psutil.STATUS_ZOMBIE:break
             except psutil.NoSuchProcess:break
             time.sleep(.05)
         else:raise TimeoutError('owned daemon did not stop')

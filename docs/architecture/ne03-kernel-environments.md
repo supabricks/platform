@@ -37,11 +37,15 @@ The notebook remains `starting` while preparation proceeds. No A03 session is
 admitted until preparation is ready. The existing two-session/server admission,
 RSS, lifetime, idle, output, authentication and channel limits remain in force.
 
-Notebook control requests allow six seconds for a daemon response within the
-console's eight-second HTTP deadline. Admission verifies complete environments
+Notebook commands and channel ownership checks allow six seconds for a daemon
+response within the console's eight-second HTTP deadline. Admission verifies complete environments
 on the single-writer daemon; the general two-second control deadline was too
 short on macOS and could disconnect the UI even though the kernel became ready.
 A timeout never causes an automatic resend of a notebook mutation.
+Channel checks skip missed timer ticks after a slow response, and signout can
+cancel an in-flight check immediately. Release discovery shares one parsed
+inventory to avoid reparsing thousands of entries on every status call, while
+re-reading and hashing manifest bytes each time; file verification is unchanged.
 
 Before launch, selection checks canonical project/worktree ownership, private
 directory identity, interpreter/installation/component compatibility and the full

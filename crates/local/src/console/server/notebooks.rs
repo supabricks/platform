@@ -71,7 +71,10 @@ impl State {
                     owner,
                     event,
                 },
-                Duration::from_secs(2),
+                // A second kernel's admission can delay this check just as it
+                // delays notebook workspace commands. Keep the existing channel
+                // alive while that bounded work completes.
+                Duration::from_secs(6),
             )
         })
         .await
@@ -414,13 +417,20 @@ impl State {
         U: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
     {
         let mut check = tokio::time::interval(Duration::from_millis(500));
+        check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
             tokio::select! {
                 biased;
                 _=cancel.changed()=>break,
                 _=check.tick()=>{
                     let live=self.sessions.lock().unwrap().get(&id).is_some_and(|s|s.expires>Instant::now());
-                    if !live || self.notebook_request(&id,Transport::Check{id:kernel,generation}).await.is_err(){break;}
+                    if !live {break;}
+                    let result=tokio::select! {
+                        biased;
+                        _=cancel.changed()=>break,
+                        result=self.notebook_request(&id,Transport::Check{id:kernel,generation})=>result,
+                    };
+                    if result.is_err(){break;}
                 }
                 item=browser.next()=>{
                     let Some(Ok(message))=item else{break};

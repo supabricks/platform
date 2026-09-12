@@ -196,10 +196,19 @@ pub fn has_token(id: &Identity, token: &str) -> Result<bool> {
         let bytes = match environment(id.pid) {
             Ok(b) => b,
             Err(e) => {
-                if identity(id.pid)?.is_none_or(|i| i.zombie) {
+                if identity(id.pid)?.is_none_or(|i| {
+                    i.zombie || i.start != id.start || i.group != id.group || i.uid != id.uid
+                }) {
                     return Ok(false);
                 }
-                return Err(e);
+                // macOS KERN_PROCARGS2 can fail with EIO while exec replaces
+                // process memory. Retry within the same proof deadline; an I/O
+                // error never establishes ownership or permits a signal.
+                if Instant::now() >= deadline {
+                    return Err(e);
+                }
+                std::thread::sleep(Duration::from_millis(1));
+                continue;
             }
         };
         if identity(id.pid)?.is_none_or(|i| {
