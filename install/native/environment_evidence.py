@@ -9,7 +9,7 @@ from pathlib import Path
 SUITES = {
     'release-environments': {'qualification.json': 10, 'qualification-kernels.json': 10},
     'release-packages': {'qualification.json': 12},
-    'release-environment-lifecycle': {'qualification.json': 7, 'qualification-index.json': 5},
+    'release-environment-lifecycle': {'qualification.json': 7, 'qualification-index.json': 6},
     'release-environment-console': {'environments.json': 16},
     'release-notebooks': {'notebooks.json': 13},
     'release-console': {'console.json': 1},
@@ -39,7 +39,7 @@ def collect(directory, revision):
             archive=lifecycle['archives']['new'], previous=lifecycle['archives']['old'],
             python_version=lifecycle['python_version'], kernel_contract_sha256=lifecycle['kernel_contract_sha256'],
             source=lifecycle['source'], wheels=lifecycle['wheels'], notices=lifecycle['notices'],
-            measurements=lifecycle['measurements'], reports=reports)
+            measurements=lifecycle['measurements'], project_bundle=lifecycle['project_bundle'], reports=reports)
     return result
 
 

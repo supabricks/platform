@@ -40,7 +40,7 @@ and its venv remain present so accidental cross-root reuse/deletion is detectabl
 `index.py` serves a controlled loopback package index containing hash-pinned
 pure/native wheels from the archive. It exercises the exact bundled uv and
 Python: resolution, hashed installation, dependency conflict, corrupt expected
-hash, HTTP 503 and cold offline behavior with zero index requests.
+hash, source-only dependency refusal without build execution, HTTP 503 and cold offline behavior with zero index requests.
 
 This is a lower-level resolver probe. It does not bypass the product's registry
 validation or add custom-index configuration. The real product add/remove and
@@ -60,7 +60,7 @@ verified installed release identity and manifest digest.
 
 The `ne06-evidence` artifact records each target's archive digest, manifest and
 kernel contract identities, platform/console/engine/helper source pins, Python
-version, wheel hashes, notices, measured costs and constituent report digests.
+version, shipped and project-bundle wheel hashes, notices, measured costs and constituent report digests.
 `platform_commit` must equal that workflow's checked-out revision (GitHub's PR
 merge revision during PR validation). A new push requires new evidence; a local
 resealed engineering derivative is useful for debugging but cannot satisfy this

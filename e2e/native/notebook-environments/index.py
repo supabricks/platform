@@ -7,11 +7,13 @@ import argparse
 from functools import partial
 import hashlib
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import io
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import threading
 import time
@@ -88,6 +90,20 @@ def qualify(args):
         run('lock', '--project', impossible, '--python', python, '--default-index', index, '--no-build', success=False)
         assert not (impossible / 'uv.lock').exists()
         check('unsatisfiable_requirement_does_not_publish_lock')
+        # A source-only project must not execute its build backend on the user
+        # machine. This deliberately observable backend belongs to this fixture.
+        marker = root / 'backend-ran'
+        source = web / 'ne06_source_fixture-0.1.0.tar.gz'
+        code = f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\nraise RuntimeError('fixture backend executed')\n".encode()
+        with tarfile.open(source, 'w:gz') as archive:
+            info = tarfile.TarInfo('ne06_source_fixture-0.1.0/setup.py')
+            info.size = len(code); archive.addfile(info, io.BytesIO(code))
+        page = web / 'simple/ne06-source-fixture'; page.mkdir()
+        (page / 'index.html').write_text(f'<a href="../../{source.name}#sha256={digest(source)}">{source.name}</a>')
+        source_project = project('source-only', ['ne06-source-fixture==0.1.0'])
+        run('lock', '--project', source_project, '--python', python, '--default-index', index, '--no-build', success=False)
+        assert not marker.exists() and not (source_project / 'uv.lock').exists()
+        check('source_only_dependency_refused_without_executing_build_backend')
         corrupt = root / 'corrupt.txt'
         corrupt.write_text('humanize==4.13.0 --hash=sha256:' + '0'*64 + '\n')
         run('--no-cache', 'pip', 'sync', '--python', target / 'bin/python', '--default-index', index, '--only-binary', ':all:', '--require-hashes', '--reinstall', corrupt, success=False)

@@ -22,7 +22,7 @@ class EvidenceTest(unittest.TestCase):
                         value.update(target=target, source=dict(platform_commit='final', platform_dirty=False),
                             archives=dict(new=dict(target=target), old={}), release_identity=target,
                             python_version='3.12.13', kernel_contract_sha256='contract',
-                            wheels={}, notices={}, measurements={})
+                            wheels={}, notices={}, measurements={}, project_bundle={})
                     path.write_text(json.dumps(value))
 
     def change(self, suite, name, **fields):

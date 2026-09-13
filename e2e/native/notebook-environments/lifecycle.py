@@ -116,7 +116,9 @@ def qualify(args):
         ws = console.connect(execution)
         code = "import sys, site\nassert sys.prefix != sys.base_prefix and not site.ENABLE_USER_SITE\nassert spark.table('public.orders').count() == 1\nassert 'before_upgrade' not in globals()\n"
         if version:
-            code += f"import humanize, xxhash\nassert humanize.__version__ == {version!r}\nassert xxhash.xxh32('x').intdigest() > 0\n"
+            code += f"import humanize\nassert humanize.__version__ == {version!r}\n"
+            if not boltons:
+                code += "import xxhash\nassert xxhash.xxh32('x').intdigest() > 0\n"
         if boltons:
             code += "import boltons, importlib.metadata as md\nassert md.version('boltons') == '24.1.0'\n"
         assert execute(ws, code + "print('QUALIFIED')").strip() == 'QUALIFIED'
@@ -139,11 +141,12 @@ def qualify(args):
         old_release = install('old')
         old_identity = cli(project, 'installation', 'verify')['identity']
         cli(project, 'init', 'ne06'); cli(project, 'up'); cli(project, 'database', 'create', 'main', '--wait')
-        cli(project, 'sql', '--branch', 'main', '--write', '--sql', 'CREATE TABLE public.orders(id int); INSERT INTO public.orders VALUES(1)')
+        cli(project, 'sql', '--branch', 'main', '--write', '--sql', 'CREATE TABLE public.orders(id int)')
+        cli(project, 'sql', '--branch', 'main', '--write', '--sql', 'INSERT INTO public.orders VALUES(1)')
         a = Console(project, cli, channels)
         assert cli(project, 'env', 'status')['declaration']['state'] == 'absent'
         start = time.monotonic(); initial = a.start(); ws = query(a, initial)
-        report['measurements']['cold_base_start_seconds'] = round(time.monotonic()-start, 3)
+        report['measurements']['predecessor_cold_base_start_seconds'] = round(time.monotonic()-start, 3)
         ws.close(); a.stop(initial)
         check('signed_predecessor_install_in_relocated_path_starts_base_notebook_without_host_tools_or_warm_cache')
         old = prepare('fixture-a')
@@ -231,7 +234,9 @@ def qualify(args):
         assert not (data / 'notebook-environment-cache').exists() or not any((data / 'notebook-environment-cache').iterdir())
         missing = operation('sync', '--offline', success=False)
         assert 'offline wheel artifacts missing' in missing['error']
-        operation('import-bundle', final_bundle)
+        restored_operation = operation('import-bundle', final_bundle)
+        with zipfile.ZipFile(final_bundle) as archive:
+            report['project_bundle'] = dict(sha256=digest(final_bundle), manifest=json.loads(archive.read('bundle.json')), packages=restored_operation['result']['packages'])
         restored_generation = generation()
         assert Path(restored_generation['path']).is_relative_to(data)
         assert restored_generation['id'] != final_generation['id'] and restored_generation['worktree'] == str(project)
