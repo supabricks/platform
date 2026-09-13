@@ -1,5 +1,7 @@
 # CSV and TSV ingestion (I01)
 
+For JSON, JSONL and Parquet, see [file ingestion](file-ingestion.md).
+
 The native analytical preview includes a private CSV worker using the already
 pinned PyArrow and Psycopg dependencies. No host Python or pip installation is
 needed. JSON and Parquet support, and the browser file picker, follow in I02/I03.

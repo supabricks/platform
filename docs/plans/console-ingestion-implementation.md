@@ -1,6 +1,6 @@
 # Console and ingestion implementation plan
 
-*Status: Proposed PR sequence · Date: 2026-09-08*
+*Status: C01-C02 / I00-I02 complete; I03 under qualification · Reconciled: 2026-09-13*
 
 Implement in `supabricks/platform`, starting from
 `main@278926b857673b4f7be0a6b86dde300318fbe4b1` (R03 merged). The
@@ -16,6 +16,15 @@ use A03 without waiting for I03 or C03. The sequence below records the original
 console/ingestion order; N00-N05 adds an intervening notebook phase. I03, C03 and
 R04 remain open, and R04 must include notebook regression evidence if notebooks
 ship in its combined release.
+
+**Reconciliation, 2026-09-13:** resume I03 after N00-N06 and NE01-NE06.
+The implementation baseline is NE06 merged in PR #41 (`main@9c0d5e3`), catalog
+10, with console source pinned from `supabricks/console`. [I03's contract](../architecture/i03-ingestion.md)
+records reused services, type policy and qualification. Notebook SQL execution
+does not complete C03's analytical workspace; NE06's release evidence does not
+complete R04's combined format/analytical demo. I03 extends current native and
+browser gates; C03 and R04 remain subsequent slices. Direct analytical datasets,
+project packaging, IAM and catalog integration are outside this slice.
 
 Implementation: [C01 console contract and qualification](../architecture/c01-console.md)
 and [console runbook](../handbook/local-console.md). C01 supplies launch and the
@@ -34,7 +43,7 @@ analytical ingestion follow the browser release.
 
 | Component | Repository and proposed location | Responsibility |
 | --- | --- | --- |
-| Console UI | `platform/console/` | React/TypeScript frontend, domain client, browser tests and locked build |
+| Console UI | `supabricks/console` (`platform/console/` pinned submodule) | React/TypeScript frontend, domain client, browser tests and locked build |
 | Local bridge | `platform/crates/local/src/console/` | Loopback server, browser sessions, API adaptation, uploads and asset serving |
 | Import service | `platform/crates/local/src/ingest/`, `src/store/ingest.rs` | Job state, staging references, quotas, reconciliation and lifecycle integration |
 | Import worker | `platform/python/ingest/` | Bounded readers, schema mappings, PostgreSQL COPY and receipt protocol; use the existing private Python runtime |
@@ -242,6 +251,8 @@ milestone; the UI must call the real service throughout.
 
 ### I03 — JSON, JSONL and Parquet
 
+Implementation: [I03 reconciliation and format contract](../architecture/i03-ingestion.md), [user workflow](../handbook/file-ingestion.md).
+
 **Depends on:** I02. **Touch:** worker readers/mappings, shared format capabilities,
 console format controls, fixtures and packaging locks only if dependencies change.
 
@@ -357,5 +368,5 @@ solo-contributor protection rule or merging unrelated PR #1.
 
 Review each implementation PR with a concrete before/after behavior, its exact
 validation and remaining limits. Update capability documentation as slices land.
-The next coding slice after I00 is **I01**, the CSV service and its real commit/
-retry qualification through shared CLI/MCP adapters.
+The active slice is **I03**. After its two-target qualification, **C03** completes
+the analytical workspace and **R04** qualifies the combined local workflow.

@@ -125,6 +125,9 @@ impl Gateway {
         let computes: HashMap<_, _> = store
             .native_processes()?
             .into_iter()
+            // Other owned workers (including ingestion) also carry a branch.
+            // Only the PostgreSQL compute identity can invalidate its clients.
+            .filter(|p| p.role.starts_with("compute-"))
             .filter_map(|p| {
                 p.branch
                     .map(|(branch, revision)| (branch, (revision, p.pid, p.start_identity)))

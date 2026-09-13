@@ -839,6 +839,7 @@ impl Daemon {
         }
         if let crate::api::Action::IngestInspect {
             path,
+            format,
             delimiter,
             header,
             null_strings,
@@ -848,6 +849,7 @@ impl Daemon {
                 &mut self.store,
                 &binding,
                 path,
+                format,
                 delimiter,
                 header,
                 null_strings,

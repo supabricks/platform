@@ -1,6 +1,6 @@
 # Back up, restore and upgrade the localhost preview
 
-NE06 uses `v0.1.0-alpha.13` with catalog 10. Linux x86_64 and Apple
+I03 uses `v0.1.0-alpha.14` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
 PR34 alpha.8 catalog-9 archive and the NE05 alpha.12 archive with existing notebook environments; migration fixtures also cover catalog 8.
 See the [environment manager](../architecture/ne02-environment-manager.md) and
