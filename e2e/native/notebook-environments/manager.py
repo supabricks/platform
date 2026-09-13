@@ -152,9 +152,14 @@ def qualify(args):
         # Substitute a project declaration. No write may follow it.
         external = root / 'external.lock'
         external.write_bytes(original)
+        expected = command(a, 'inspect')['inputs']
         lock.unlink()
         lock.symlink_to(external)
-        api(a, dict(action='inspect'), error=True)
+        inspection = command(a, 'inspect')
+        assert inspection['declaration']['state'] == 'invalid' and inspection['declaration']['error']
+        assert inspection['inputs'] is None and inspection['preparation_needed']
+        assert inspection['active_generation'] == old
+        api(a, dict(action='prepare', key='symlink-refusal', expected=expected), error=True)
         assert external.read_bytes() == original
         lock.unlink()
         lock.write_bytes(original)
