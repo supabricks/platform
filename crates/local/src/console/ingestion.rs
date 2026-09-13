@@ -257,15 +257,6 @@ impl Uploads {
                 Ok(json!({"disposed":true}))
             }
             Command::Load { load, key, preview } => {
-                if load.mapping.format != ingest::Format::Csv
-                    || load
-                        .mapping
-                        .columns
-                        .iter()
-                        .any(|c| c.data_type == ingest::DataType::Jsonb)
-                {
-                    return Err(invalid("CSV/TSV scalar columns only"));
-                }
                 if load.project_id != project {
                     return Err(invalid("import project differs from console"));
                 }
@@ -283,7 +274,8 @@ impl Uploads {
                 let proposed: Mapping =
                     serde_json::from_value(status["inspection"]["mapping"].clone())
                         .map_err(|_| conflict("inspection is not ready"))?;
-                if proposed.delimiter != load.mapping.delimiter
+                if proposed.format != load.mapping.format
+                    || proposed.delimiter != load.mapping.delimiter
                     || proposed.header != load.mapping.header
                     || proposed.null_strings != load.mapping.null_strings
                     || status["source"]["sha256"] != load.source_sha256

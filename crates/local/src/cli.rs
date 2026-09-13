@@ -55,7 +55,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog [--branch NAME]       Discover application tables and columns
   sql --sql SQL | --file PATH [--branch NAME] [--write]
       [--max-rows 200] [--timeout-ms 10000]
-  ingest inspect FILE [--delimiter ,] [--no-header] [--null-strings JSON]
+  ingest inspect FILE [--format csv|tsv|jsonl|json|json_document|parquet] [--delimiter ,] [--no-header] [--null-strings JSON]
   ingest load [FILE | --source ID] --branch NAME --table NAME --schema-file PATH
       [--schema public] [--key KEY] [--wait]
   ingest source ID | status ID | list [--branch NAME] [--limit 20]
@@ -1100,8 +1100,15 @@ fn ingest_cli(a: &mut Args, c: &Client) -> Result<u8> {
     let value = match verb.as_str() {
         "inspect" => {
             let path = std::path::absolute(PathBuf::from(a.required(2)?))?;
+            let selected_format = a.take("--format").unwrap_or_else(|| {
+                path.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("csv")
+                    .to_ascii_lowercase()
+            });
+            let format = crate::ingest::Format::parse(&selected_format)?;
             let delimiter = a.take("--delimiter").unwrap_or_else(|| {
-                if path.extension().is_some_and(|e| e == "tsv") {
+                if selected_format == "tsv" {
                     "\t".into()
                 } else {
                     ",".into()
@@ -1117,6 +1124,7 @@ fn ingest_cli(a: &mut Args, c: &Client) -> Result<u8> {
             }
             let accepted = c.call(Action::IngestInspect {
                 path,
+                format,
                 delimiter,
                 header,
                 null_strings,
@@ -1169,6 +1177,7 @@ fn ingest_cli(a: &mut Args, c: &Client) -> Result<u8> {
             let staged = if let Some(path) = path {
                 let accepted = c.call(Action::IngestInspect {
                     path,
+                    format: mapping.format.clone(),
                     delimiter: mapping.delimiter.clone(),
                     header: mapping.header,
                     null_strings: mapping.null_strings.clone(),

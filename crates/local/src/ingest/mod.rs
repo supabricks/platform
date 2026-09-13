@@ -62,6 +62,25 @@ pub enum Format {
     JsonDocument,
     Parquet,
 }
+impl Default for Format {
+    fn default() -> Self {
+        Self::Csv
+    }
+}
+impl Format {
+    pub fn parse(value: &str) -> Result<Self> {
+        match value {
+            "csv" | "tsv" => Ok(Self::Csv),
+            "jsonl" | "ndjson" | "json_lines" => Ok(Self::JsonLines),
+            "json" | "json_array" => Ok(Self::JsonArray),
+            "json_document" => Ok(Self::JsonDocument),
+            "parquet" => Ok(Self::Parquet),
+            _ => Err(invalid(
+                "format must be csv, tsv, jsonl, json, json_document or parquet",
+            )),
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Column {
@@ -105,10 +124,25 @@ impl Mapping {
         {
             return Err(invalid("unsupported or unbounded ingestion mapping"));
         }
+        if self.format != Format::Csv
+            && (self.delimiter != "," || !self.header || !self.null_strings.is_empty())
+        {
+            return Err(invalid("CSV parser options do not apply to this format"));
+        }
+        if self.format == Format::Csv && self.columns.iter().any(|c| c.data_type == DataType::Jsonb)
+        {
+            return Err(invalid("CSV supports scalar mappings only"));
+        }
+        let mut inputs = std::collections::HashSet::new();
         let mut names = std::collections::HashSet::new();
         for c in &self.columns {
             identifier(&c.name)?;
-            if c.input.is_empty() || c.input.len() > 1024 || !names.insert(&c.name) {
+            if c.input.is_empty()
+                || c.input.len() > 1024
+                || c.input.contains('\0')
+                || !inputs.insert(&c.input)
+                || !names.insert(&c.name)
+            {
                 return Err(invalid("invalid input field or duplicate target column"));
             }
             if let DataType::Decimal { precision, scale } = c.data_type {
@@ -168,6 +202,8 @@ pub struct Inspection {
     pub mapping: Mapping,
     pub rows: Vec<Vec<Option<String>>>,
     pub sample_only: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_schema: Option<serde_json::Value>,
 }
 impl Inspection {
     pub fn validate(&self) -> Result<()> {

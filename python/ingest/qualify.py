@@ -78,6 +78,11 @@ def qualify(args):
         cli('up',*extra)
         if args.python:cli('analytics','configure','--python',args.python,'--worker',args.worker)
         cli('database','create','main','--wait')
+        from qualify_formats import qualify_formats
+        if args.formats_only:
+            qualify_formats(workspace, cli, check, wait, owned, terminal, report)
+            report['status']='passed'
+            return report
         source=workspace/'quoted.csv'
         source.write_text('id,zip,note,amount\n9007199254740993,001,"line\nnext",12345678901234567890.1234567890\n2,002,"",\n')
         inspected=cli('ingest','inspect',source,'--null-strings','[""]')
@@ -310,6 +315,7 @@ def qualify(args):
                 (pressure/'synthetic-fill').unlink(missing_ok=True)
                 pressure_cli('down');daemon.wait(timeout=30)
                 shutil.rmtree(pressure)
+        qualify_formats(workspace, cli, check, wait, owned, terminal, report)
         report['status']='passed'
     except BaseException as error:
         report['error']=str(error)
@@ -324,10 +330,13 @@ def qualify(args):
             try:proc.send_signal(signal.SIGCONT)
             except psutil.NoSuchProcess:pass
         try: cli('down')
-        except BaseException: report['cleanup_failed']=True
+        except BaseException:
+            report['cleanup_failed']=True
+            report['status']='failed'
         args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps(report,indent=2)+'\n')
         if report['status']=='passed' and not report.get('cleanup_failed'):shutil.rmtree(workspace)
+        if report.get('cleanup_failed'):raise RuntimeError('owned ingestion fixture cleanup failed')
     return report
 
 if __name__=='__main__':
@@ -335,4 +344,5 @@ if __name__=='__main__':
     p.add_argument('--binary',type=Path,required=True)
     for name in ['bundle','helpers','python','worker']:p.add_argument('--'+name,type=Path)
     p.add_argument('--report',type=Path,required=True)
+    p.add_argument('--formats-only',action='store_true',help='Local iteration only; release gates run the complete suite')
     print(json.dumps(qualify(p.parse_args()),indent=2))

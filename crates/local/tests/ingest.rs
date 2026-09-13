@@ -124,6 +124,7 @@ fn immutable_sources_idempotency_ownership_limits_and_lifecycle() {
         source_sha256: load.source_sha256.clone(),
         mapping: load.mapping.clone(),
         sample_only: true,
+        source_schema: None,
         rows: vec![vec![Some("x".into())]; 100],
     };
     view.validate().unwrap();
@@ -374,4 +375,26 @@ fn owner_replacement_fences_real_import_worker_and_preserves_uncertainty() {
     assert_eq!(s.ingest_source(p, source.id).unwrap().state, "interrupted");
     assert!(s.ingest_progress(p, j.id, &w, 10, 10).is_err());
     s.dispose_source(p, source.id, false).unwrap();
+}
+
+#[test]
+fn format_mappings_bind_parser_and_reject_ignored_options_or_duplicate_inputs() {
+    let (_tmp, _store, load) = fixture();
+    let mut mapping = load.mapping;
+    let csv = mapping.fingerprint().unwrap();
+    mapping.format = Format::JsonLines;
+    let json = mapping.fingerprint().unwrap();
+    assert_ne!(csv, json);
+    mapping.format = Format::JsonArray;
+    assert_ne!(json, mapping.fingerprint().unwrap());
+    mapping.null_strings.push("NULL".into());
+    assert!(mapping.fingerprint().is_err());
+    mapping.null_strings.clear();
+    mapping.header = false;
+    assert!(mapping.fingerprint().is_err());
+    mapping.header = true;
+    let mut duplicate = mapping.columns[0].clone();
+    duplicate.name = "different_target".into();
+    mapping.columns.push(duplicate);
+    assert!(mapping.fingerprint().is_err());
 }

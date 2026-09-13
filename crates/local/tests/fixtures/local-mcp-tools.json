@@ -559,7 +559,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Copy and inspect an explicitly requested absolute local CSV/TSV file. Returns a source ID immediately; poll ingest_source. Preview is a sample, text mappings preserve leading zeros. No database write.",
+    "description": "Copy and inspect an explicitly requested absolute local CSV/TSV, JSON, JSONL or Parquet file. Returns a source ID immediately; poll ingest_source. Preview is a sample, text mappings preserve leading zeros. No database write.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
@@ -569,6 +569,16 @@
             "\t",
             ";",
             "|"
+          ]
+        },
+        "format": {
+          "default": "csv",
+          "enum": [
+            "csv",
+            "json_lines",
+            "json_array",
+            "json_document",
+            "parquet"
           ]
         },
         "header": {
@@ -706,7 +716,7 @@
             },
             "mapping": {
               "additionalProperties": false,
-              "description": "Explicitly approved inspection mapping. Inputs are zero-based source index strings, each used once. Text preserves leading zeros; typed conversions reject overflow or rounding.",
+              "description": "Explicitly approved inspection mapping. CSV/Parquet inputs are index strings; JSON object inputs are exact top-level keys; documents use $. Each input is used once. Text preserves leading zeros; typed conversions reject overflow or rounding.",
               "properties": {
                 "columns": {
                   "items": {
@@ -727,7 +737,8 @@
                                   "double",
                                   "date",
                                   "timestamp",
-                                  "timestamp_tz"
+                                  "timestamp_tz",
+                                  "jsonb"
                                 ]
                               }
                             },
@@ -763,7 +774,8 @@
                         ]
                       },
                       "input": {
-                        "pattern": "^[0-9]+$",
+                        "maxLength": 1024,
+                        "minLength": 1,
                         "type": "string"
                       },
                       "name": {
@@ -796,7 +808,13 @@
                   ]
                 },
                 "format": {
-                  "const": "csv"
+                  "enum": [
+                    "csv",
+                    "json_lines",
+                    "json_array",
+                    "json_document",
+                    "parquet"
+                  ]
                 },
                 "header": {
                   "type": "boolean"

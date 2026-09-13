@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Owned CSV staging/COPY/receipt worker. SQLite belongs exclusively to the daemon."""
+"""Owned multi-format staging/COPY/receipt worker. SQLite belongs exclusively to the daemon."""
 import csv
 import datetime as dt
 from decimal import Decimal, localcontext, InvalidOperation
@@ -20,6 +20,8 @@ from psycopg import sql
 import psutil
 import pyarrow as pa
 import pyarrow.csv as arrow_csv
+import pyarrow.parquet as arrow_parquet
+from psycopg.types.json import Jsonb
 
 SOURCE_BYTES = 100 * 1024**2
 DECODED_BYTES = 512 * 1024**2
@@ -95,7 +97,7 @@ def stage(config):
         # changes to the user's file cannot affect the private staged payload.
         if identity(before) != identity(os.stat(config['path'], follow_symlinks=False)):
             raise Rejected('source_changed')
-    inspection = inspect_csv(config, config['part'])
+    inspection = inspect_source(config, config['part'])
     return dict(state='staged', bytes=size, sha256=digest.hexdigest(), inspection=inspection)
 
 
@@ -109,7 +111,7 @@ def inspect_uploaded(config):
                 raise Rejected('source_limit')
             digest.update(block)
     return dict(state='staged', bytes=size, sha256=digest.hexdigest(),
-                inspection=inspect_csv(config, config['path']))
+                inspection=inspect_source(config, config['path']))
 
 
 def first_record(path, delimiter):
@@ -247,10 +249,279 @@ def pg_type(t):
     if t['kind'] == 'decimal':
         return sql.SQL('numeric({},{})').format(sql.Literal(t['precision']), sql.Literal(t['scale']))
     name = {'text':'text', 'boolean':'boolean', 'smallint':'smallint', 'integer':'integer', 'bigint':'bigint',
-            'double':'double precision', 'date':'date', 'timestamp':'timestamp', 'timestamp_tz':'timestamptz'}.get(t['kind'])
+            'double':'double precision', 'date':'date', 'timestamp':'timestamp', 'timestamp_tz':'timestamptz', 'jsonb':'jsonb'}.get(t['kind'])
     if name is None:
         raise Rejected('unsupported_csv_type')
     return sql.SQL(name)
+
+
+# Added beside the existing CSV reader; all formats share staging and COPY receipts.
+JSON_BYTES = 10 * 1024**2
+MAX_DEPTH = 64
+MISSING = object()
+
+
+def json_text(value, depth=0):
+    """Encode exact JSON numbers without converting Decimal through float."""
+    if depth > MAX_DEPTH:
+        raise Rejected('json_depth_limit')
+    if value is None:
+        return 'null'
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    if isinstance(value, (int, Decimal)):
+        if isinstance(value, Decimal) and not value.is_finite():
+            raise Rejected('nonfinite_json_number')
+        return str(value)
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise Rejected('nonfinite_json_number')
+        return json.dumps(value, allow_nan=False)
+    if isinstance(value, str):
+        if '\0' in value:
+            raise Rejected('nul_in_field')
+        value.encode('utf-8')  # Reject lone Unicode surrogates.
+        return json.dumps(value, ensure_ascii=True)
+    if isinstance(value, list):
+        return '[' + ','.join(json_text(v, depth+1) for v in value) + ']'
+    if isinstance(value, dict):
+        return '{' + ','.join(json_text(k, depth+1)+':'+json_text(v, depth+1) for k,v in value.items()) + '}'
+    raise Rejected('unsupported_nested_type')
+
+
+def decode_json(raw):
+    def pairs(values):
+        result = {}
+        for key, value in values:
+            if key in result:
+                raise Rejected('duplicate_json_key')
+            result[key] = value
+        return result
+    def constant(_):
+        raise Rejected('nonfinite_json_number')
+    value = json.loads(raw, parse_float=Decimal, object_pairs_hook=pairs, parse_constant=constant)
+    json_text(value)  # Apply depth, Unicode and NUL limits to every value.
+    return value
+
+
+def json_records(config, path, format):
+    with regular(path) as source:
+        if format == 'json_lines':
+            first = True
+            while raw := source.readline(RECORD_BYTES + 1):
+                boundary(config)
+                if len(raw) > RECORD_BYTES:
+                    raise Rejected('record_limit')
+                value = decode_json(raw.decode('utf-8-sig' if first else 'utf-8'))
+                first = False
+                if not isinstance(value, dict):
+                    raise Rejected('json_object_required')
+                yield value
+        else:
+            if os.fstat(source.fileno()).st_size > JSON_BYTES:
+                raise Rejected('json_source_limit')
+            raw = source.read(JSON_BYTES + 1)
+            if len(raw) > JSON_BYTES:
+                raise Rejected('json_source_limit')
+            boundary(config)
+            value = decode_json(raw.decode('utf-8-sig'))
+            if format == 'json_document':
+                yield {'$': value}
+            elif format == 'json_array':
+                if not isinstance(value, list):
+                    raise Rejected('json_array_required_use_document_mode')
+                for item in value:
+                    boundary(config)
+                    if not isinstance(item, dict):
+                        raise Rejected('json_object_required')
+                    yield item
+            else:
+                raise Rejected('unsupported_format')
+
+
+def parquet_type(t, nested=False):
+    if pa.types.is_null(t): return dict(kind='jsonb')
+    if pa.types.is_boolean(t): return dict(kind='boolean')
+    if pa.types.is_string(t) or pa.types.is_large_string(t): return dict(kind='text')
+    if pa.types.is_integer(t):
+        if pa.types.is_unsigned_integer(t):
+            if t.bit_width == 64: return dict(kind='decimal', precision=20, scale=0)
+            bits = t.bit_width * 2
+        else: bits = t.bit_width
+        return dict(kind='smallint' if bits <= 16 else 'integer' if bits <= 32 else 'bigint')
+    if pa.types.is_floating(t): return dict(kind='double')
+    if pa.types.is_decimal(t):
+        if t.precision > 38 or not 0 <= t.scale <= t.precision:
+            raise Rejected('unsupported_parquet_decimal')
+        return dict(kind='decimal',precision=t.precision,scale=t.scale)
+    if not nested and pa.types.is_date(t): return dict(kind='date')
+    if not nested and pa.types.is_timestamp(t): return dict(kind='timestamp_tz' if t.tz else 'timestamp')
+    if pa.types.is_struct(t):
+        if len(set(t.names)) != len(t): raise Rejected('duplicate_parquet_field')
+        for field in t: parquet_type(field.type, True)
+        return dict(kind='jsonb')
+    if pa.types.is_list(t) or pa.types.is_large_list(t) or pa.types.is_fixed_size_list(t):
+        parquet_type(t.value_type, True)
+        return dict(kind='jsonb')
+    raise Rejected('unsupported_parquet_type')
+
+
+def parquet_open(source):
+    # Bound footer parsing and decoded row groups before requesting any batches.
+    size = os.fstat(source.fileno()).st_size
+    if size < 12: raise Rejected('invalid_parquet_footer')
+    source.seek(-8, 2)
+    footer = source.read(8)
+    if footer[4:] != b'PAR1' or not 0 < int.from_bytes(footer[:4],'little') <= min(8*1024**2, size-12):
+        raise Rejected('parquet_footer_limit')
+    source.seek(0)
+    reader = arrow_parquet.ParquetFile(source, thrift_string_size_limit=1024**2, thrift_container_size_limit=65536, page_checksum_verification=True)
+    schema = reader.schema_arrow
+    if not 1 <= len(schema) <= 256 or len(set(schema.names)) != len(schema):
+        raise Rejected('column_limit_or_duplicate')
+    for field in schema: parquet_type(field.type)
+    decoded = sum(reader.metadata.row_group(i).total_byte_size for i in range(reader.metadata.num_row_groups))
+    if decoded > DECODED_BYTES: raise Rejected('decoded_limit')
+    return reader
+
+
+def parquet_records(config, path):
+    try:
+        with regular(path) as source:
+            reader = parquet_open(source)
+            for batch in reader.iter_batches(batch_size=128, use_threads=False):
+                boundary(config)
+                if batch.nbytes > DECODED_BYTES: raise Rejected('decoded_limit')
+                # PostgreSQL timestamps have microsecond precision. Safe casts reject
+                # nonzero nanoseconds rather than truncating them via datetime.
+                fields = [pa.field(f.name, pa.timestamp('us',tz=f.type.tz),nullable=f.nullable)
+                          if pa.types.is_timestamp(f.type) else f for f in batch.schema]
+                batch = batch.cast(pa.schema(fields), safe=True)
+                for i in range(batch.num_rows):
+                    yield {str(n):batch.column(n)[i].as_py() for n in range(batch.num_columns)}
+    except (OSError, pa.ArrowException) as error:
+        raise Rejected('invalid_parquet') from error
+
+
+def typed_records(config, path, format):
+    values = parquet_records(config,path) if format == 'parquet' else json_records(config,path,format)
+    decoded = 0
+    for record in values:
+        boundary(config)
+        if len(record) > 256 or any(not k or len(k.encode()) > 1024 or '\0' in k for k in record):
+            raise Rejected('json_key_or_column_limit')
+        size = sum(len(display(v).encode()) + len(k.encode()) for k,v in record.items())
+        if size > (JSON_BYTES if format == 'json_document' else RECORD_BYTES):
+            raise Rejected('record_limit')
+        decoded += size
+        if decoded > DECODED_BYTES: raise Rejected('decoded_limit')
+        yield record, decoded
+
+
+def display(value):
+    if isinstance(value,(dt.datetime, dt.date)): return value.isoformat()
+    if isinstance(value,str):
+        json_text(value)
+        return value
+    return json_text(value)
+
+
+def json_type(values):
+    kinds = {type(v) for v in values if v is not None and v is not MISSING}
+    if kinds == {str}: return dict(kind='text')
+    if kinds == {bool}: return dict(kind='boolean')
+    if kinds and kinds <= {int, Decimal}:
+        nums = [Decimal(v) for v in values if v is not None and v is not MISSING]
+        scale = max(max(0,-v.as_tuple().exponent) for v in nums)
+        if kinds == {int} and all(-(2**63) <= v < 2**63 for v in nums): return dict(kind='bigint')
+        if scale <= 38 and all(v.is_zero() or v.adjusted() < 38-scale for v in nums):
+            return dict(kind='decimal',precision=38,scale=scale)
+    return dict(kind='jsonb')
+
+
+def column_names(headers):
+    used = set()
+    for n, header in enumerate(headers):
+        candidate = header or f'column_{n+1}'
+        while len(candidate.encode()) > 55: candidate = candidate[:-1]
+        base, suffix = candidate, 2
+        while candidate in used:
+            candidate=f'{base}_{suffix}'; suffix+=1
+        used.add(candidate)
+        yield candidate
+
+
+def inspect_source(config, path):
+    options = config['options']
+    format = options.get('format','csv')
+    if format == 'csv': return inspect_csv(config,path)
+    sample, keys, source_schema = [], [], None
+    if format == 'parquet':
+        with regular(path) as source:
+            reader = parquet_open(source)
+            schema = reader.schema_arrow
+            keys = [str(i) for i in range(len(schema))]
+            types = [parquet_type(f.type) for f in schema]
+            headers = schema.names
+            source_schema = [dict(input=str(i), name=f.name, arrow_type=str(f.type), nullable=f.nullable) for i,f in enumerate(schema)]
+    for record,_ in typed_records(config,path,format):
+        sample.append(record)
+        if format != 'parquet':
+            for key in record:
+                if key not in keys: keys.append(key)
+        if len(keys) > 256: raise Rejected('column_limit')
+        if len(sample) >= 100 or sum(len(display(v).encode()) for r in sample for v in r.values()) > 120*1024: break
+    if not keys: raise Rejected('empty_schema')
+    if format != 'parquet':
+        types = [dict(kind='jsonb') if format == 'json_document' else json_type([r.get(k,MISSING) for r in sample]) for k in keys]
+        headers = ['document'] if format == 'json_document' else keys
+    columns = [dict(input=k,name=name,data_type=t,nullable=True) for k,name,t in zip(keys,column_names(headers),types)]
+    mapping = dict(version=1,format=format,delimiter=',',header=True,null_strings=[],columns=columns)
+    rows = []
+    result = dict(mapping=mapping,rows=rows,sample_only=True,source_schema=source_schema)
+    for record in sample:
+        row = [None if k not in record or (record[k] is None and (t['kind'] != 'jsonb' or format == 'parquet')) else json_text(record[k]) if t['kind'] == 'jsonb' else display(record[k]) for k,t in zip(keys,types)]
+        rows.append(row)
+        if len(json.dumps(result,ensure_ascii=True).encode()) > 240*1024:
+            rows.pop(); break
+    return result
+
+
+def convert_typed(value, column, format):
+    if value is MISSING or (value is None and (column['data_type']['kind'] != 'jsonb' or format == 'parquet')):
+        return convert(None,column)
+    kind = column['data_type']['kind']
+    if kind == 'jsonb': return Jsonb(value,dumps=json_text)
+    if value is None: return convert(None,column)
+    # A typed input may not silently become a string, number or boolean.
+    allowed = {'text':(str,), 'boolean':(bool,), 'smallint':(int,), 'integer':(int,), 'bigint':(int,),
+               'decimal':(int,Decimal), 'double':(int,float,Decimal), 'date':(str,dt.date),
+               'timestamp':(str,dt.datetime), 'timestamp_tz':(str,dt.datetime)}
+    if type(value) not in allowed.get(kind,()): raise Rejected('source_type_mismatch')
+    return convert(display(value),column)
+
+
+def load_rows(config, path, mapping):
+    if mapping['format'] == 'csv':
+        width = len(first_record(path,mapping['delimiter']))
+        indices = [int(c['input']) for c in mapping['columns']]
+        if len(indices) != width or sorted(indices) != list(range(width)):
+            raise Rejected('mapping_requires_each_input_column_once')
+        for values,decoded in rows(config,path,mapping):
+            yield [convert(values[i],c) for i,c in zip(indices,mapping['columns'])],decoded
+        return
+    inputs = [c['input'] for c in mapping['columns']]
+    if len(set(inputs)) != len(inputs): raise Rejected('duplicate_input')
+    format = mapping['format']
+    if format == 'json_document' and (inputs != ['$'] or mapping['columns'][0]['data_type']['kind'] != 'jsonb'):
+        raise Rejected('document_requires_jsonb')
+    if format == 'parquet':
+        with regular(path) as source:
+            count = len(parquet_open(source).schema_arrow)
+        if set(inputs) != {str(i) for i in range(count)}: raise Rejected('mapping_requires_each_input_column_once')
+    for record,decoded in typed_records(config,path,format):
+        if set(record) - set(inputs): raise Rejected('unmapped_json_key')
+        yield [convert_typed(record.get(c['input'],MISSING),c,format) for c in mapping['columns']], decoded
 
 
 def receipt_schema(conn, ddl=None):
@@ -334,11 +605,9 @@ def progress(config, **value):
         _last_progress = time.monotonic()
 
 
-def load_csv(config):
+def load_source(config):
     load = config['load']
     mapping = load['mapping']
-    if mapping['format'] != 'csv':
-        raise Rejected('csv_only')
     with regular(config['source']) as f:
         before = os.fstat(f.fileno())
         if before.st_size > SOURCE_BYTES:
@@ -349,10 +618,6 @@ def load_csv(config):
             digest.update(block)
         if digest.hexdigest() != load['source_sha256']:
             raise Rejected('staged_source_changed')
-    width = len(first_record(config['source'],mapping['delimiter']))
-    indices = [int(c['input']) for c in mapping['columns']]
-    if len(indices) != width or sorted(indices) != list(range(width)):
-        raise Rejected('mapping_requires_each_input_column_once')
     parsed, copied, decoded = 0, 0, 0
     with connection(config) as conn:
         conn.execute('SET statement_timeout=0')
@@ -369,9 +634,9 @@ def load_csv(config):
         fields = [sql.SQL('{} {} {}').format(sql.Identifier(c['name']),pg_type(c['data_type']),sql.SQL('' if c['nullable'] else 'NOT NULL')) for c in mapping['columns']]
         conn.execute(sql.SQL('CREATE TABLE {} ({})').format(target,sql.SQL(',').join(fields)))
         with conn.cursor().copy(sql.SQL('COPY {} ({}) FROM STDIN').format(target,sql.SQL(',').join(sql.Identifier(c['name']) for c in mapping['columns']))) as copy:
-            for values, decoded in rows(config,config['source'],mapping):
+            for values, decoded in load_rows(config,config['source'],mapping):
                 parsed += 1
-                copy.write_row([convert(values[i],c) for i,c in zip(indices,mapping['columns'])])
+                copy.write_row(values)
                 copied += 1
                 if copied % 1024 == 0:
                     boundary(config)
@@ -403,13 +668,13 @@ def main(config):
                     os._exit(86)
     threading.Thread(target=watch,daemon=True).start()
     try:
-        result = {'stage':stage,'uploaded':inspect_uploaded,'preview':inspect_uploaded,'load':load_csv,'reconcile':reconcile}[config['mode']](config)
+        result = {'stage':stage,'uploaded':inspect_uploaded,'preview':inspect_uploaded,'load':load_source,'reconcile':reconcile}[config['mode']](config)
         atomic(Path(config['workspace'])/'result.json',dict(ok=True,value=result,metrics=dict(peak_rss_bytes=max(peak,psutil.Process().memory_info().rss),duration_ms=int((time.monotonic()-started)*1000))))
     except BaseException as error:
         # Never put parser messages, source data, identifiers or connection URIs
         # in logs. Retain only stable error categories and safe row counters.
         code = str(error) if isinstance(error,Rejected) else (
-            'invalid_csv' if isinstance(error,(pa.ArrowException,csv.Error,UnicodeError)) else
+            'invalid_source' if isinstance(error,(pa.ArrowException,csv.Error,UnicodeError,json.JSONDecodeError,RecursionError)) else
             'invalid_value' if isinstance(error,(ValueError,InvalidOperation,OverflowError)) else
             'postgres_' + (error.sqlstate or 'unavailable') if isinstance(error,psycopg.Error) else 'io_or_worker_failure')
         atomic(Path(config['workspace'])/'result.json',dict(ok=False,error=code))

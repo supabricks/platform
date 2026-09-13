@@ -1,5 +1,7 @@
 # Import a local CSV or TSV
 
+For JSON, JSONL and Parquet, see [file ingestion](file-ingestion.md).
+
 Run `supabricks console` from your application project, open **Database workspace**
 and choose **Import file**. The full alpha.8 preview bundles everything needed.
 

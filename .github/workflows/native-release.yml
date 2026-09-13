@@ -13,6 +13,7 @@ on:
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
       - 'docs/handbook/notebooks.md'
+      - 'docs/handbook/file-ingestion.md'
       - 'docs/handbook/notebook-environments.md'
       - 'docs/handbook/recovery.md'
       - 'console/**'
@@ -96,8 +97,10 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.13-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.14-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
+          "$release/python/analytics/python" python/ingest/test_worker.py
+          "$release/python/analytics/python" python/ingest/test_formats.py
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.target }}

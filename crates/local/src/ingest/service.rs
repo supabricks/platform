@@ -134,6 +134,7 @@ impl Service {
         store: &mut Store,
         binding: &Binding,
         path: PathBuf,
+        format: Format,
         delimiter: String,
         header: bool,
         null_strings: Vec<String>,
@@ -154,7 +155,7 @@ impl Service {
         }
         let options = Mapping {
             version: 1,
-            format: Format::Csv,
+            format: format.clone(),
             delimiter: delimiter.clone(),
             header,
             null_strings: null_strings.clone(),
@@ -173,7 +174,7 @@ impl Service {
         let source = store.acquire_source(binding.project_id, name)?;
         let role = format!("ingest-source-{}", source.id);
         let part = store.source_path(source.id, "part")?;
-        let input = json!({"path":path,"part":part,"options":{"delimiter":delimiter,"header":header,"null_strings":null_strings}});
+        let input = json!({"path":path,"part":part,"options":{"format":format,"delimiter":delimiter,"header":header,"null_strings":null_strings}});
         if let Err(error) = self.launch(
             store,
             &role,
@@ -220,7 +221,7 @@ impl Service {
         };
         let path = store.source_path(id, suffix)?;
         self.launch(store, &format!("ingest-source-{id}"), binding.project_id, Some(id), None, mode,
-            json!({"path":path,"options":{"delimiter":options.delimiter,"header":options.header,"null_strings":options.null_strings}}))?;
+            json!({"path":path,"options":{"format":options.format,"delimiter":options.delimiter,"header":options.header,"null_strings":options.null_strings}}))?;
         source_status(store, binding.project_id, id)
     }
     fn launch(
@@ -379,7 +380,7 @@ impl Service {
                     }
                     let result = &report["value"];
                     let inspection: Inspection = serde_json::from_value(
-                        json!({"version":1,"source_id":source,"source_sha256":result["sha256"],"mapping":result["inspection"]["mapping"],"rows":result["inspection"]["rows"],"sample_only":true}),
+                        json!({"version":1,"source_id":source,"source_sha256":result["sha256"],"mapping":result["inspection"]["mapping"],"rows":result["inspection"]["rows"],"sample_only":true,"source_schema":result["inspection"]["source_schema"]}),
                     )?;
                     inspection.validate()?;
                     if t.mode == "preview" {
