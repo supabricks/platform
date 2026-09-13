@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Install the exact archive via signed localhost curl, then qualify in Chromium."""
 import argparse
+import hashlib
+import json
 from functools import partial
 from http.server import ThreadingHTTPServer
 import os
@@ -39,8 +41,16 @@ def qualify(args):
         curl.wait(timeout=10)
         if curl.returncode or bash.returncode:
             raise RuntimeError('signed console installer failed: ' + bash.stderr[-1500:])
-        subprocess.run([args.node, args.harness, '--binary', str(prefix / 'bin/supabricks'),
-                        '--report', str(args.report), '--screenshot', str(args.report.with_suffix('.png'))], check=True, env=env)
+        installed = (prefix / 'current').resolve()
+        verified = json.loads(run([prefix / 'bin/supabricks', 'installation', 'verify'], env=env))
+        result = subprocess.run([args.node, args.harness, '--binary', str(prefix / 'bin/supabricks'),
+                        '--report', str(args.report), '--screenshot', str(args.report.with_suffix('.png'))], env=env)
+        if args.report.is_file():
+            report = json.loads(args.report.read_text())
+            report.update(release_identity=verified['identity'],
+                          release_sha256=hashlib.sha256((installed / 'release.json').read_bytes()).hexdigest())
+            args.report.write_text(json.dumps(report, indent=2) + '\n')
+        result.check_returncode()
         succeeded = True
     finally:
         if server:
@@ -55,7 +65,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', type=Path, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.12')
+    parser.add_argument('--version', default='v0.1.0-alpha.13')
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--node', required=True)
     parser.add_argument('--harness', required=True)
