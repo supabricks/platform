@@ -57,7 +57,8 @@ unsupported logical types and nested temporal values are rejected.
 jsonb columns can prevent a branch's analytical refresh; the previous published
 snapshot remains available. Scalar mappings supported by the analytical exporter
 can be refreshed and queried through `supabricks analytics` or a notebook. The
-separate analytical SQL workspace is still C03 follow-up work.
+[analytical workspace](analytical-workspace.md) offers the same explicit snapshot
+workflow in the console.
 
 The preview contains at most 100 rows and 256 KiB; it is not whole-file
 validation. Every row is checked while loading. Unsupported values, late type

@@ -1,9 +1,20 @@
-# Native local analytical preview (I01)
+# Native local console preview (R04)
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
 The default distribution includes the private analytical runtime. `--postgres-only`
 selects the smaller Postgres alpha during assembly.
+
+The installed `DEMO.md` and `examples/console/sales.csv` / `sales.ipynb` provide
+an offline [end-to-end walkthrough](../../docs/handbook/local-demo.md). It covers
+import, PostgreSQL, Spark snapshots, branching, notebooks and restart. Use
+Chromium on both targets; on macOS use `console --no-open` and paste the private
+launch URL into Chromium instead of the OS's default Safari.
+
+[R04 qualification](../../docs/architecture/r04-local-release.md) emits the
+`r04-evidence` artifact with both archive identities, source pins, browser versions,
+fixture hashes and sampled throughput/resources. Build/test tooling is not a
+runtime dependency. This artifact supplements the existing notebook evidence.
 
 ## Try the staged installer
 
@@ -21,7 +32,7 @@ curl -fsSL http://127.0.0.1:8080/install.sh | bash
 supabricks up
 supabricks init my-app
 supabricks database create main --wait
-supabricks console
+supabricks console --no-open
 supabricks connect main --uri
 supabricks sql --branch main --write --sql 'CREATE TABLE orders(id int, amount numeric(12,2))'
 supabricks sql --branch main --write --sql 'INSERT INTO orders VALUES (1, 12.99)'
@@ -37,7 +48,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-C03 uses version `v0.1.0-alpha.15` and catalog 10. Product notebook kernels
+R04 uses version `v0.1.0-alpha.16` and catalog 10. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).
@@ -141,5 +152,5 @@ behavior need separate public-distribution qualification. R03 provides platform 
 power-loss qualification remain required before public durability claims. See the qualification report for
 which clean-host/offline tests have actually run.
 
-I00 uses catalog 9. Existing catalog-8 roots require the explicit backed-up
-[upgrade workflow](../../docs/handbook/recovery.md); [ingestion commands](../../docs/handbook/csv-ingestion.md) use the same catalog in I01.
+Catalog 10 upgrades preserve the existing ingestion and notebook contracts.
+Older catalog-8/9 roots require the explicit backed-up upgrade workflow.

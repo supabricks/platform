@@ -1,4 +1,4 @@
-# sspc engineering handbook
+# Supabricks engineering handbook
 
 This is the operational knowledge that isn't in the RFCs: how the system is
 actually built, how to work on it without stepping on the landmines we already
@@ -7,6 +7,8 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 
 | Doc | Question it answers |
 |---|---|
+| [Installed local walkthrough](local-demo.md) | How do I install and demonstrate the native product without a source checkout? |
+| [R04 qualification](../architecture/r04-local-release.md) | Which exact release gates and artifacts establish the local preview contract? |
 | [architecture.md](architecture.md) | How does it actually work, end to end? |
 | [dev-loop.md](dev-loop.md) | How do I build, test, and deploy a change — and what will bite me? |
 | [runbook.md](runbook.md) | It broke / I need to break it — what do I do and what should I see? |
@@ -22,7 +24,7 @@ The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisi
 | [Repository map](../plans/repository-map.md) | Which organization repo owns each component and which sources have been inspected? |
 | [Component baseline](../../components/README.md) | Which sources are selected, what has been tested, and how do I validate the inventory? |
 
-## Your first week
+## Earlier Kubernetes profile: first week
 
 1. Read [architecture.md](architecture.md) (20 minutes) with `crates/operator/src/` open next to it.
 2. Run `install/up.sh` on your laptop. It should end with a working

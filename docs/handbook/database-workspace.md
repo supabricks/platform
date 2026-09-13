@@ -78,8 +78,9 @@ See [recovery](recovery.md). A saved query pointing to a changed/deleted branch
 requires explicit rebinding before execution. SQL can contain sensitive literals;
 only save text you intend to retain in your private data root and backups.
 
-C02 qualifies Chromium on Linux x86_64 and macOS arm64. File ingestion,
-analytical workspace views and VS Code integration remain later slices.
+The installed console qualifies Chromium on Linux x86_64 and macOS arm64. File
+ingestion and analytical workspace views are available; VS Code integration
+remains a separate follow-up.
 
 For Spark SQL on an immutable snapshot of the same branch, see the
 [analytical workspace](analytical-workspace.md).

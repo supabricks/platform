@@ -3,9 +3,13 @@
 Follow-up: the [managed notebook environments plan](notebook-environments-implementation.md)
 starts from merged PRs #33/#34 and defines NE00–NE06 for project dependency
 isolation, package management and reproducible kernel environments. It is
-proposed work; the historical notebook milestones below retain their scope.
+merged work; the historical notebook milestones below retain their scope.
 
-*Status: Implemented preview under repair qualification · Updated: 2026-09-10*
+*Status: N00–N06 repairs and UI extraction merged; installed notebook regressions qualified on both targets · Reconciled: 2026-09-13*
+
+The table below records the repair-stage evidence as of 2026-09-10. Subsequent
+NE01–NE06 and C03 release runs qualified the installed notebook/runtime product;
+[R04](../architecture/r04-local-release.md) retains those mandatory gates.
 
 The original acceptance criteria below remain the completion gates. Subsequent
 PR labels drifted: N04 added files, N05 added kernel controls, and N06 added an

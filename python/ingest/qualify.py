@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Real I01 service qualification in a verified disposable root; synthetic data only."""
+import hashlib
 import http.client
 import socket
 import tomllib
@@ -189,7 +190,9 @@ def qualify(args):
         assert completed['state']=='succeeded' and completed['attempt']==2 and completed['committed_rows']==count,completed
         assert sql('SELECT count(*) FROM killed_copy')==[[str(count)]]
         metrics=completed['metrics'];assert 0<metrics['peak_rss_bytes']<=512*1024**2 and metrics['decoded_bytes']<=512*1024**2,metrics
-        report['qualification']=dict(source_bytes=size,rows=count,**metrics)
+        with large.open('rb') as fixture:
+            source_hash=hashlib.file_digest(fixture,'sha256').hexdigest()
+        report['qualification']=dict(source_sha256=source_hash,source_bytes=size,rows=count,**metrics)
         check('explicit retry uses the same job exactly once; full 100 MiB source stays within sampled 512 MiB RSS and decoded limits')
 
         sid,mp=mapping_for(large)

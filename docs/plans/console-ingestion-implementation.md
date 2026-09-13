@@ -1,6 +1,6 @@
 # Console and ingestion implementation plan
 
-*Status: C01-C02 / I00-I03 complete; C03 in implementation · Reconciled: 2026-09-13*
+*Status: C01-C03 / I00-I03 complete; R04 in qualification · Reconciled: 2026-09-13*
 
 Implement in `supabricks/platform`, starting from
 `main@278926b857673b4f7be0a6b86dde300318fbe4b1` (R03 merged). The
@@ -18,13 +18,14 @@ R04 remain open, and R04 must include notebook regression evidence if notebooks
 ship in its combined release.
 
 **Reconciliation, 2026-09-13:** I03 is merged after N00-N06 and NE01-NE06;
-C03 is now active.
+C03 merged as platform #43 and console #4; R04 is now active.
 The implementation baseline is NE06 merged in PR #41 (`main@9c0d5e3`), catalog
 10, with console source pinned from `supabricks/console`. [I03's contract](../architecture/i03-ingestion.md)
 records reused services, type policy and qualification. Notebook SQL execution
 does not complete C03's analytical workspace; NE06's release evidence does not
 complete R04's combined format/analytical demo. I03 extends current native and
-browser gates; C03 and R04 remain subsequent slices. Direct analytical datasets,
+browser gates, C03 extends the analytical browser workflow, and R04 now combines
+their release evidence. Direct analytical datasets,
 project packaging, IAM and catalog integration are outside this slice.
 
 Implementation: [C01 console contract and qualification](../architecture/c01-console.md)
@@ -300,6 +301,9 @@ query engine and snapshot identity unambiguous without exposing worker machinery
 
 ### R04 — Qualify and ship the local console preview
 
+Implementation: [R04 release contract and evidence map](../architecture/r04-local-release.md),
+[installed walkthrough](../handbook/local-demo.md).
+
 **Depends on:** C01-C03, I00-I03. **Touch:** native assembly/workflows, component
 notices, browser qualification harness and operating/demo documentation.
 
@@ -307,8 +311,8 @@ notices, browser qualification harness and operating/demo documentation.
   workers. Extend immutable file verification and provenance to frontend sources,
   lockfiles, compiled assets and new dependencies. Keep build tools out of runtime.
 - Run the browser and CLI/MCP demo against those archives on Linux x86_64 and
-  macOS arm64 with external networking denied. Pin the browser automation tool;
-  Playwright is a candidate, not a selected/qualified dependency in this plan.
+  macOS arm64 with external networking denied. Use the pinned Playwright dependency and Chromium driver already qualified
+  through the console lockfile; record its actual browser version.
   Browser drivers are CI prerequisites, not runtime downloads. Record browser
   versions; qualify Chrome/Chromium first and test Safari manually before claiming
   Safari support or change the macOS launch guidance accordingly.
@@ -372,6 +376,7 @@ solo-contributor protection rule or merging unrelated PR #1.
 
 Review each implementation PR with a concrete before/after behavior, its exact
 validation and remaining limits. Update capability documentation as slices land.
-The active slice is **C03**; I03 merged as platform #42 and console #3 with
-Linux/macOS qualification. [C03 scope and implementation](../architecture/c03-analytical-workspace.md)
-completes the analytical workspace; **R04** qualifies the combined local workflow.
+The active slice is **R04**. I03 merged as platform #42 / console #3 and C03 as
+platform #43 / console #4, with exact Linux/macOS release evidence. R04 closes
+the combined local console/ingestion handoff and qualification, retaining the
+completed notebook and environment gates.

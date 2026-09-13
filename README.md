@@ -1,35 +1,36 @@
-# sspc platform (M1)
+# Supabricks Platform
 
-Supabricks code is licensed under [Apache 2.0](LICENSE). Bundled third-party
-components retain their own licenses.
+Supabricks is a native local database and analytics platform: PostgreSQL 17.8
+with branching, Sail/Spark SQL over immutable Delta snapshots, a browser console,
+file ingestion, and Jupyter notebooks with managed Python environments. It runs
+without Kubernetes, Docker, a system Python, or a model account on the target
+machine. Code is [Apache 2.0](LICENSE); bundled components retain their licenses.
 
-The native local analytical preview has a [localhost curl installer](install/native/README.md)
-that bundles Postgres, Sail and the private Python runtime.
-The [recovery runbook](docs/handbook/recovery.md) covers coordinated backups,
-restoring into a new root and explicit platform upgrades.
-It bundles PG17.8, branching, CLI and MCP without requiring Kubernetes or Docker
-on the target machine. Public hosting at `supabricks.io` is deferred.
+Start with the [installed local walkthrough](docs/handbook/local-demo.md). The
+[localhost curl installer](install/native/README.md) ships the runtime, compiled
+console and synthetic demo files. Public deployment to `supabricks.io` is deferred.
+R04 qualifies the combined workflow; see the [release contract and evidence map](docs/architecture/r04-local-release.md).
 
-`supabricks console` opens the [local project and branch overview](docs/handbook/local-console.md).
-The [console and ingestion implementation plan](docs/plans/console-ingestion-implementation.md)
-includes the [PostgreSQL database workspace](docs/handbook/database-workspace.md)
-with branch controls, SQL and saved queries. [CSV/TSV ingestion](docs/handbook/csv-ingestion.md)
-is available through CLI/MCP and the [browser import wizard](docs/handbook/browser-imports.md);
-[JSON/JSONL/Parquet ingestion](docs/handbook/file-ingestion.md) is implemented in I03, under release qualification. [I00](docs/architecture/i00-ingestion.md) adds durable import
-contracts and the explicit catalog-8-to-9 upgrade. See the [architecture](docs/architecture/local-console-ingestion.md).
+- [PostgreSQL workspace](docs/handbook/database-workspace.md): branches, catalog,
+  SQL, cancellation and explicitly saved queries.
+- [File ingestion](docs/handbook/file-ingestion.md): CSV/TSV, JSON, JSONL and
+  Parquet into new PostgreSQL tables through the console, CLI or MCP.
+- [Analytical workspace](docs/handbook/analytical-workspace.md): explicit snapshot
+  publication, pinned Spark SQL sessions and bounded result comparison.
+- [Notebooks](docs/handbook/notebooks.md): local JupyterLab editor, project files,
+  Sail-backed kernels and [managed environments](docs/handbook/notebook-environments.md).
+- [Recovery](docs/handbook/recovery.md): stopped backups, new-root restore and
+  explicit platform upgrades; application source has its own backup.
 
-Embedded Jupyter notebooks now have a local editor, project files and owned
-Sail-backed kernels; the repaired product is under native release qualification.
-See the [notebook runbook](docs/handbook/notebooks.md). The
-[notebook architecture](docs/architecture/local-notebooks.md) and
-[implementation plan](docs/plans/notebook-implementation.md) describe the
-component qualification, local kernels, project files and installed release gates.
-Fresh installed Linux/macOS results are required before claiming notebook preview readiness.
+I03 and C03 are merged and qualified on Linux x86_64 and macOS arm64. N00–N06 and
+NE01–NE06 are also merged; their regressions remain mandatory release gates.
+The [console/ingestion plan](docs/plans/console-ingestion-implementation.md) tracks
+R04 and subsequent optional work. The frontend source lives in
+[supabricks/console](https://github.com/supabricks/console), pinned here as the
+`console/` submodule. Run `git submodule update --init console` before source
+builds; the installed product does not need a checkout or Node.
 
-The frontend source now lives in [supabricks/console](https://github.com/supabricks/console),
-pinned here as the `console/` submodule. Run `git submodule update --init console`
-before building it. See the [source split contract](docs/architecture/console-source-split.md)
-for ownership, development and release provenance.
+## Earlier Kubernetes profile
 
 Serverless Postgres on your own Kubernetes: a Rust operator + Helm chart that
 turn declarative `Database`/`Branch` resources into disaggregated Postgres
@@ -40,7 +41,7 @@ New to the codebase? Start with the engineering handbook:
 `docs/handbook/README.md` (architecture as built, dev loop + landmines,
 runbook, and what's deliberately deferred).
 
-## Quickstart (laptop, kind)
+## Kubernetes quickstart (laptop, kind)
 
 Prereqs: docker, kind, kubectl, helm, jq — and the `claude` CLI if you want
 the MCP registration.
@@ -60,7 +61,7 @@ just e2e                                      # the full acceptance suite
 
 ## What's here
 
-The native Supabricks runtime is being built alongside this Kubernetes profile;
+The native Supabricks runtime is maintained alongside this earlier Kubernetes profile;
 see the [implementation plan](docs/plans/local-runtime-implementation.md).
 
 - `crates/core` — portable compute configuration, authentication, validation,
