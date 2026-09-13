@@ -1,6 +1,7 @@
 //! Owned, reproducible notebook environments and package transactions.
 mod files;
 mod selection;
+mod status;
 mod transaction;
 pub use selection::{DefaultPreparation, Identity, Selected};
 #[cfg(test)]
@@ -378,13 +379,8 @@ impl Manager {
                 Ok(json!({"inputs":Inputs {manifest:hash(&manifest),lock:hash(&lock)}}))
             }
             Command::Inspect => {
-                let declarations = match files::inputs(&worktree) {
-                    Ok(v) => Some(v),
-                    Err(crate::store::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {
-                        None
-                    }
-                    Err(e) => return Err(e),
-                };
+                let declaration = status::declaration(&worktree);
+                let declarations = declaration.inputs.clone();
                 let active = store.active_environment(project, &worktree)?;
                 let generation = store
                     .environment_generations()?
@@ -399,7 +395,7 @@ impl Manager {
                         && files::generation_path(store, g, false).is_ok()
                 });
                 Ok(
-                    json!({"version":1,"inputs":declarations,"active_generation":active,"preparation_needed":!ready,
+                    json!({"version":1,"inputs":declarations,"declaration":declaration,"python_version":package.python_version,"target":package.target,"environments":status::generations(store, binding, &package, &operations)?,"active_generation":active,"preparation_needed":!ready,
                     "package_mutation":true,"index":"https://pypi.org/simple","supported_sources":"registry wheels only","protected_packages":package.template("base")?.packages,"operations":operations.iter().filter(scoped).rev().take(20).map(Operation::view).collect::<Vec<_>>()}),
                 )
             }

@@ -381,7 +381,11 @@ impl State {
             // reads can exceed the general two-second control deadline. Allow
             // these commands to finish within the outer eight-second HTTP bound;
             // never resend a mutation after a transport timeout.
-            let deadline = if matches!(&action, super::workspace::Command::Notebook { .. }) {
+            let deadline = if matches!(
+                &action,
+                super::workspace::Command::Notebook { .. }
+                    | super::workspace::Command::Environment { .. }
+            ) {
                 Duration::from_secs(6)
             } else {
                 Duration::from_secs(2)

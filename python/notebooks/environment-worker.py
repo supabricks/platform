@@ -120,6 +120,15 @@ def main():
     python = package / 'python/runtime/bin/python3.12'
     template = contract['templates'][config['template']]
     workflow_result = {}
+    install_flags = []
+    if config.get('workflow'):
+        # Each transaction stages wheels under a new path. Caching their expanded
+        # installations would retain another kernel closure on every sync. Keep
+        # resolver metadata cached, but unpack pip sync into bounded owned scratch.
+        temporary = Path(config['documents']) / 'install-tmp'
+        temporary.mkdir(mode=0o700)
+        env['TMPDIR'] = str(temporary)
+        install_flags = ['--no-cache']
     wheelhouse = package / 'python/notebooks/wheelhouse'
     def run(command):
         check()
@@ -146,7 +155,7 @@ def main():
         run([*flags, 'venv', '--python', python, '.'])
         assert 'include-system-site-packages = false' in (generation / 'pyvenv.cfg').read_text()
         step('syncing')
-        run([*flags, 'pip', 'sync', '--python', './bin/python', '--no-index',
+        run([*flags, *install_flags, 'pip', 'sync', '--python', './bin/python', '--no-index',
              '--find-links', wheelhouse, '--only-binary', ':all:',
              '--require-hashes', '--link-mode', 'copy', package / template['requirements']])
         step('verifying')

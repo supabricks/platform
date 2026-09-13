@@ -13,7 +13,7 @@ parser.add_argument('--directory', type=Path, required=True)
 parser.add_argument('--target', required=True)
 parser.add_argument('--report', type=Path, required=True)
 parser.add_argument('--packages', action='store_true', help='Run NE04 online/offline package qualification')
-parser.add_argument('--version', default='v0.1.0-alpha.11')
+parser.add_argument('--version', default='v0.1.0-alpha.12')
 args = parser.parse_args()
 archive = args.directory / f'supabricks-{args.version}-{args.target}.tar.gz'
 with archive.open('rb') as stream:

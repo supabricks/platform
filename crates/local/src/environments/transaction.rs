@@ -231,7 +231,7 @@ pub(super) fn cleanup(root: &Path) -> Result<()> {
         return Ok(());
     }
     let dir = Directory::project(root)?.child(OsStr::new("documents"), false)?;
-    for name in ["wheels", "qualified"] {
+    for name in ["wheels", "qualified", "install-tmp"] {
         let path = documents.join(name);
         if dir.exists(OsStr::new(name))? {
             // remove_dir_all does not follow a substituted symlink.

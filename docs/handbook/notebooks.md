@@ -8,9 +8,22 @@ Jupyter server or Python installation is needed for an installed release.
 Kernels run in managed per-project virtual environments. On the first explicit
 start, Supabricks prepares its bundled offline default. No host Python or package
 index is needed. Commit `notebooks/environment/pyproject.toml` and `uv.lock` with
-your project. The `supabricks env` commands inspect and prepare qualified locks;
-arbitrary dependency editing follows in NE04. See the
-[kernel environment contract](../architecture/ne03-kernel-environments.md).
+your project. The **Python environment and packages** panel shows declared and
+installed dependencies. Add or remove packages there, then explicitly choose
+**Use prepared environment** to restart Python with the prepared versions.
+Variables are discarded; the analytical snapshot stays pinned and saved cells
+are not replayed. Snapshot refresh is a separate action.
+
+**Offline packages only** starts enabled. Disable it to allow downloading registry
+wheels from PyPI, or import an offline bundle in the panel's diagnostics section.
+**Prepare environment** prepares the current lock. Progress, cancellation and
+errors appear in the panel without discarding notebook edits. Missing locks must
+be restored alongside the reviewed manifest before preparing. The `supabricks env`
+CLI offers the same package operations; use these controls instead of `%pip` or
+`%uv`. Project packages apply to notebook Python, not Sail execution workers.
+
+See the [console environment workflow](../architecture/ne05-console-environments.md)
+and [kernel environment contract](../architecture/ne03-kernel-environments.md).
 
 ## First query
 

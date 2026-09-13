@@ -655,6 +655,35 @@ fn workspace_commands_enforce_csrf_revisions_private_saved_files_and_backup() {
         call(json!({"action":"select_branch","branch":"main"})).status,
         400
     );
+    let env =
+        json!({"action":"environment","command":{"action":"find","key":"browser-package-test"}});
+    assert_eq!(
+        http(
+            &origin,
+            "POST",
+            "/api/workspace",
+            &headers[..4],
+            &env.to_string()
+        )
+        .status,
+        403
+    );
+    let inspected = call(env);
+    assert_eq!(
+        inspected.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&inspected.body)
+    );
+    assert!(
+        serde_json::from_slice::<Value>(&inspected.body).unwrap()["value"]["operation"].is_null()
+    );
+    assert_eq!(
+        call(json!({"action":"environment","command":{"action":"inspect","project_id":"other"}}))
+            .status,
+        400
+    );
+    assert_eq!(call(json!({"action":"environment","command":{"action":"manage","key":"bad","change":{"kind":"add","requirement":"demo"}}})).status,400);
     let created = call(json!({"action":"create_database","name":"main","key":"saved-main"}));
     assert_eq!(
         created.status,
