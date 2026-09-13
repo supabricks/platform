@@ -1,6 +1,6 @@
 # Back up, restore and upgrade the localhost preview
 
-C03 uses `v0.1.0-alpha.15` with catalog 10. Linux x86_64 and Apple
+R04 uses `v0.1.0-alpha.16` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
 PR34 alpha.8 catalog-9 archive and the NE05 alpha.12 archive with existing notebook environments; migration fixtures also cover catalog 8.
 See the [environment manager](../architecture/ne02-environment-manager.md) and
@@ -41,15 +41,15 @@ analytical epochs before retiring any original data. Existing target directories
 are refused. A failed restore is never merged into an existing cell: use another
 new destination and retain the partial directory until you have inspected it.
 
-## Upgrade to NE06
+## Upgrade to the current localhost candidate
 
-Serve the prepared alpha.13 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.16 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh
 curl -fsSL http://127.0.0.1:8080/install.sh |
   SUPABRICKS_UPGRADE=1 \
-  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha13" bash
+  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha16" bash
 supabricks up
 ```
 
@@ -78,11 +78,11 @@ data root:
 
 ```sh
 supabricks down
-supabricks backup restore "$HOME/supabricks-before-alpha13" \
+supabricks backup restore "$HOME/supabricks-before-alpha16" \
   --release "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8" \
-  --data-dir "$HOME/.supabricks-before-alpha13-restored"
+  --data-dir "$HOME/.supabricks-before-alpha16-restored"
 "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8/bin/supabricks" up \
-  --data-dir "$HOME/.supabricks-before-alpha13-restored"
+  --data-dir "$HOME/.supabricks-before-alpha16-restored"
 ```
 
 ## Uninstall and failure diagnosis

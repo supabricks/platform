@@ -1,11 +1,13 @@
 # Open the local console
 
-The alpha.8 distribution includes a browser console for project identity,
-runtime readiness and branch inventory. It needs no Node, system Python, cloud
-account or frontend development server on the target machine. The initial UI
+The local preview includes project identity, runtime status, PostgreSQL and
+analytical workspaces, file ingestion and managed Jupyter notebooks. Start with
+the [installed walkthrough](local-demo.md). It needs no Node, system Python, cloud
+account or frontend development server on the target machine. The UI
 includes the overview and [PostgreSQL database workspace](database-workspace.md):
 branch controls, catalog browsing, SQL, explicitly saved queries and
-[browser CSV/TSV imports](browser-imports.md).
+[file imports](file-ingestion.md), [Spark SQL](analytical-workspace.md) and
+[notebooks](notebooks.md).
 
 From an existing application project containing `supabricks.toml`:
 
@@ -55,7 +57,7 @@ project file changes identity, open a fresh console after the old bridge exits.
 
 Chromium is the automated browser qualification target on Linux x86_64 and
 macOS arm64. Safari/Firefox and remote forwarding are not yet qualified. macOS's
-default browser may be Safari: use `--no-open` and open the returned URL in Chrome
+default browser may be Safari: use `--no-open` and open the returned URL in Chromium
 when following the qualified workflow. On Linux, automatic opening requires the
 desktop's `xdg-open`; the returned URL works when that helper is absent.
 

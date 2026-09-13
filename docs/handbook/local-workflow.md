@@ -1,11 +1,11 @@
-# Local application workflow (P06)
+# Local application workflow
 
-Supabricks now exposes the native PG17 cell through a project CLI and stdio MCP.
-The native binary is `cargo build --locked -p supabricks-local` →
-`target/debug/supabricks`. The first startup still needs the qualified E01 engine
-bundle and P03 helpers; see [native cell setup](../architecture/native-cell.md).
-The public download/one-command installer belongs to R01. No Kubernetes, model
-account or API key is required to run the database or sample app.
+Supabricks exposes the native PG17 cell through CLI, stdio MCP and the console.
+Installed releases contain the qualified engine, helpers, analytical runtime and
+UI. Follow the [installed walkthrough](local-demo.md); no Kubernetes, model
+account or API key is needed. Source builders can use
+`cargo build --locked -p supabricks-local` and the
+[native cell setup](../architecture/native-cell.md) instructions.
 
 ## First project
 
@@ -13,7 +13,7 @@ Use an empty project directory (or an existing application's root):
 
 ```sh
 supabricks init orders
-supabricks up --bundle /absolute/engine --helpers /absolute/helpers
+supabricks up
 supabricks database create main --key initial-main --wait
 supabricks branch use main
 supabricks connect
@@ -156,7 +156,7 @@ security boundary. The old operator HTTP/MCP API remains separate and unchanged.
 The [agent adapter and manual setup](../../agents/README.md) launch
 `supabricks mcp --project PATH --data-dir PATH`. The process has a fixed binding;
 it checks it again for every request and reconnects to the daemon after restart.
-The discoverable tools cover managed notebook packages, CSV/TSV ingestion, capabilities, catalog, SQL, selection,
+The discoverable tools cover managed notebook packages, CSV/TSV/JSON/Parquet ingestion, capabilities, catalog, SQL, selection,
 connections, metadata operations and operation polling. The MCP protocol revision
 is 2025-06-18. Tools return matching text and structured JSON; tool failures use
 `isError`, while malformed protocol/arguments use JSON-RPC errors. No tool shuts

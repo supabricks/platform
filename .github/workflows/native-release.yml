@@ -12,10 +12,7 @@ on:
       - 'python/notebooks/**'
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
-      - 'docs/handbook/notebooks.md'
-      - 'docs/handbook/file-ingestion.md'
-      - 'docs/handbook/notebook-environments.md'
-      - 'docs/handbook/recovery.md'
+      - 'docs/handbook/**'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -90,6 +87,9 @@ jobs:
           python install/native/test_installer.py
           python install/native/test_analytics.py
           python install/native/test_environment_evidence.py
+          python install/native/test_release_evidence.py
+          python install/native/test_demo.py
+          python install/native/test_cleanup.py
       - name: Assemble exact native release
         run: |
           uv export --project python/notebooks --locked --format requirements-txt --no-emit-project --output-file python/notebooks/requirements.lock > /dev/null
@@ -97,7 +97,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.15-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.16-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
@@ -641,10 +641,31 @@ jobs:
         with:
           pattern: release-console-*
           path: build/evidence
-      - name: Require passing evidence for one exact final release per target
-        run: python3 install/native/environment_evidence.py --directory build/evidence --revision "${{ github.sha }}" --report build/ne06-evidence.json
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-ingest-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-recovery-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-qualification-*
+          path: build/evidence
+      - name: Require complete local workflow evidence for both exact releases
+        run: |
+          python3 install/native/environment_evidence.py --directory build/evidence --revision "${{ github.sha }}" --report build/ne06-evidence.json
+          python3 install/native/release_evidence.py --directory build/evidence --revision "${{ github.sha }}" \
+            --console "$(git rev-parse HEAD:console)" --worker python/ingest/worker.py --report build/r04-evidence.json
+          cat build/r04-evidence.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: ne06-evidence
           path: build/ne06-evidence.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r04-evidence
+          path: build/r04-evidence.*
           if-no-files-found: error

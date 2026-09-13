@@ -1,10 +1,15 @@
 # A database you can experiment with
 
+For the full PostgreSQL, Spark, branching and notebook walkthrough, follow
+[the local demo](../../docs/handbook/local-demo.md), also shipped as `DEMO.md`
+in native archives with `sales.csv` and `sales.ipynb`. The example below uses
+`orders.csv` to demonstrate explicit type mapping.
+
 This synthetic fixture is Apache-2.0, like the repository. All names and orders
 are fictional. No download or external data service is needed.
 
 1. Install the current preview using the signed localhost installer described in
-   `install/native/README.md`. Run `supabricks init demo`, then
+   `install/native/README.md`. Run `supabricks init demo`, `supabricks up`, then
    `supabricks database create main --wait` and `supabricks console`.
 2. Open **Database workspace → Import file** and choose `orders.csv`.
    Keep `order_id` as text to preserve its leading zeros. Choose decimal(18,2)

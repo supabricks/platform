@@ -1,6 +1,10 @@
 # Managed notebook environments implementation plan
 
-*Status: NE00–NE05 merged; NE06 implementation under validation · Baseline: platform/main@83f134f · Updated: 2026-09-12*
+*Status: NE00–NE06 merged; NE06 landed in platform #41 · Reconciled: 2026-09-13*
+
+The historical baseline below describes the starting point. Managed environments
+and packages are now shipped and qualified; R04 retains the exact installed
+regressions described in [the release contract](../architecture/r04-local-release.md).
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
 conventional local Python workflow: project dependencies live in a virtual

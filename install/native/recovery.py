@@ -4,6 +4,7 @@
 No power-loss or OS-reboot claim: the kernel and its caches remain alive.
 Every mutation and signal is confined to this harness's fresh private root.
 """
+from cleanup import stop as stop_qualification
 import argparse
 import hashlib
 from functools import partial
@@ -295,17 +296,13 @@ print(json.dumps(pid))
                 config = json.loads((root / 'runtime.json').read_text())
                 engine = Path(config['bundle'])
                 cleanup_binary = engine.parent / 'bin/supabricks'
-                if cleanup_binary.exists():
-                    try:
-                        result = subprocess.run([str(cleanup_binary), 'down', '--data-dir', str(root)], env=env, capture_output=True, timeout=90)
-                        if result.returncode:
-                            report.setdefault('cleanup_errors', []).append(dict(root=root.name, exit_code=result.returncode))
-                    except subprocess.TimeoutExpired:
-                        report.setdefault('cleanup_errors', []).append(dict(root=root.name, timeout=True))
+                stop_qualification(report, [str(cleanup_binary), 'down', '--data-dir', str(root)], env=env, label=root.name)
         server.shutdown(); server.server_close(); key.unlink(missing_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + '\n')
         if report['status'] == 'passed' and not args.keep:
             shutil.rmtree(workspace)
+    if report['status'] != 'passed':
+        raise RuntimeError('recovery qualification failed; inspect the bounded report')
     print(json.dumps(report, indent=2))
 
 
@@ -313,7 +310,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.15')
+    parser.add_argument('--version', default='v0.1.0-alpha.16')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.8')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')

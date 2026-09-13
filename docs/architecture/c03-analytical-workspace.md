@@ -1,6 +1,9 @@
 # C03 — Analytical workspace
 
-Status: implementation and qualification in progress, 2026-09-13.
+Status: merged in platform #43 and console #4, 2026-09-13. Both alpha.15
+archives passed 39 browser and 39 ingestion checks in
+[run 34743055512](https://github.com/supabricks/platform/actions/runs/34743055512).
+[R04](r04-local-release.md) supplies the combined release handoff.
 
 C03 completes the analytical console slice from the original
 [console and ingestion plan](../plans/console-ingestion-implementation.md).
