@@ -1,8 +1,8 @@
 # Back up, restore and upgrade the localhost preview
 
-NE04 uses `v0.1.0-alpha.12` with catalog 10. Linux x86_64 and Apple
+NE06 uses `v0.1.0-alpha.13` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
-PR34 alpha.8 catalog-9 archive; migration fixtures also cover catalog 8.
+PR34 alpha.8 catalog-9 archive and the NE05 alpha.12 archive with existing notebook environments; migration fixtures also cover catalog 8.
 See the [environment manager](../architecture/ne02-environment-manager.md) and
 [kernel binding contract](../architecture/ne03-kernel-environments.md).
 
@@ -21,7 +21,7 @@ Backups contain database credentials and private keys. Keep the directory privat
 it is not encrypted. Application source and `supabricks.toml` outside the data
 root need their own backup, including `notebooks/environment/pyproject.toml` and
 `uv.lock`. Materialized notebook environments and their caches are disposable and
-excluded from backups; prepare them again after restore. Copying a live `~/.supabricks` is not a supported backup.
+excluded from backups; prepare them again after restore. For offline recovery, also export an explicit [environment wheel bundle](notebook-environments.md) before stopping the cell. Copying a live `~/.supabricks` is not a supported backup.
 
 ## Restore into a new directory
 
@@ -41,15 +41,15 @@ analytical epochs before retiring any original data. Existing target directories
 are refused. A failed restore is never merged into an existing cell: use another
 new destination and retain the partial directory until you have inspected it.
 
-## Upgrade catalog 8 or 9 to NE03
+## Upgrade to NE06
 
-Serve the prepared alpha.11 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.13 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh
 curl -fsSL http://127.0.0.1:8080/install.sh |
   SUPABRICKS_UPGRADE=1 \
-  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha10" bash
+  SUPABRICKS_BACKUP_DIR="$HOME/supabricks-before-alpha13" bash
 supabricks up
 ```
 
@@ -78,11 +78,11 @@ data root:
 
 ```sh
 supabricks down
-supabricks backup restore "$HOME/supabricks-before-alpha10" \
+supabricks backup restore "$HOME/supabricks-before-alpha13" \
   --release "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8" \
-  --data-dir "$HOME/.supabricks-before-alpha10-restored"
+  --data-dir "$HOME/.supabricks-before-alpha13-restored"
 "$HOME/.local/share/supabricks/releases/v0.1.0-alpha.8/bin/supabricks" up \
-  --data-dir "$HOME/.supabricks-before-alpha10-restored"
+  --data-dir "$HOME/.supabricks-before-alpha13-restored"
 ```
 
 ## Uninstall and failure diagnosis

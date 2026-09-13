@@ -22,6 +22,8 @@ be restored alongside the reviewed manifest before preparing. The `supabricks en
 CLI offers the same package operations; use these controls instead of `%pip` or
 `%uv`. Project packages apply to notebook Python, not Sail execution workers.
 
+The [environment recovery guide](notebook-environments.md) covers upgrades, offline bundles, moved projects and package compatibility.
+
 See the [console environment workflow](../architecture/ne05-console-environments.md)
 and [kernel environment contract](../architecture/ne03-kernel-environments.md).
 

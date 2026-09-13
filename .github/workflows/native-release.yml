@@ -11,9 +11,10 @@ on:
       - 'python/ingest/**'
       - 'python/notebooks/**'
       - 'e2e/native/notebooks/**'
-      - 'e2e/native/notebook-environments/manager.py'
-      - 'e2e/native/notebook-environments/kernels.py'
-      - 'e2e/native/notebook-environments/packages.py'
+      - 'e2e/native/notebook-environments/**'
+      - 'docs/handbook/notebooks.md'
+      - 'docs/handbook/notebook-environments.md'
+      - 'docs/handbook/recovery.md'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -87,6 +88,7 @@ jobs:
         run: |
           python install/native/test_installer.py
           python install/native/test_analytics.py
+          python install/native/test_environment_evidence.py
       - name: Assemble exact native release
         run: |
           uv export --project python/notebooks --locked --format requirements-txt --no-emit-project --output-file python/notebooks/requirements.lock > /dev/null
@@ -94,7 +96,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.12-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.13-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
       - uses: actions/upload-artifact@v4
         with:
@@ -495,12 +497,18 @@ jobs:
         with:
           python-version: '3.12'
       - name: Exact-release registry packages and cold offline bundle reconstruction
-        run: python install/native/qualify_environments.py --packages --directory build/releases --target ${{ matrix.target }} --report build/package-reports/qualification.json
+        run: python install/native/qualify_environments.py --packages --directory build/releases --target ${{ matrix.target }} --report build/package-reports/qualification.json --bundle-fixture build/package-fixture/environment.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: release-packages-${{ matrix.target }}
           path: build/package-reports/*.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: environment-bundle-${{ matrix.target }}
+          path: build/package-fixture/environment.zip
           if-no-files-found: error
 
   release-environment-console:
@@ -544,4 +552,95 @@ jobs:
         with:
           name: release-environment-console-${{ matrix.target }}
           path: build/environment-console-reports/*
+          if-no-files-found: error
+
+  release-environment-lifecycle:
+    needs: [assemble, release-packages]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-bundle-${{ matrix.target }}
+          path: build/package-fixture
+      - name: Download the exact qualified NE05 predecessor
+        uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34733919344
+          name: release-${{ matrix.target }}
+          path: build/previous
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Upgrade, cold restore and controlled resolver on loopback-only Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches" \
+              "$2" install/native/qualify_environments.py --lifecycle --directory build/releases \
+              --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+              --target linux-x86_64 --report build/environment-lifecycle-reports/qualification.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Upgrade, cold restore and controlled resolver on isolated macOS
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied; cold private HOME and caches" \
+            "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
+            --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+            --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-environment-lifecycle-${{ matrix.target }}
+          path: build/environment-lifecycle-reports/*.json
+          if-no-files-found: error
+
+  environment-evidence:
+    needs: [clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-environment*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-packages-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-notebooks-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-console-*
+          path: build/evidence
+      - name: Require passing evidence for one exact final release per target
+        run: python3 install/native/environment_evidence.py --directory build/evidence --revision "${{ github.sha }}" --report build/ne06-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ne06-evidence
+          path: build/ne06-evidence.json
           if-no-files-found: error

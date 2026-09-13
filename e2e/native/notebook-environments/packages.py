@@ -171,6 +171,9 @@ def qualify(args):
         assert (root/'uv.lock').read_text()=='ancestor lock must remain untouched\n'
         assert '[tool.uv.workspace]' not in (project/'notebooks/environment/pyproject.toml').read_text()
         check('resolver_cannot_read_or_publish_an_ancestor_workspace_lock')
+        if args.bundle_fixture:
+            args.bundle_fixture.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(bundle,args.bundle_fixture)
         report['status']='passed'
     except BaseException as error:
         report['status']='failed';report['failure_type']=type(error).__name__
@@ -190,4 +193,5 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--release',type=Path,required=True)
     parser.add_argument('--report',type=Path,required=True)
+    parser.add_argument('--bundle-fixture',type=Path)
     qualify(parser.parse_args())

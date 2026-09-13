@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE00–NE04 merged; NE05 implementation under validation · Baseline: platform/main@b5fb6c7 · Updated: 2026-09-12*
+*Status: NE00–NE05 merged; NE06 implementation under validation · Baseline: platform/main@83f134f · Updated: 2026-09-12*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
 conventional local Python workflow: project dependencies live in a virtual
@@ -323,6 +323,8 @@ explicit adoption, save/reopen and unchanged epoch. Test against an older runtim
 capability response and preserve the supported baseline experience.
 
 ### NE06 — Qualify installation, upgrades, recovery and documentation
+
+Implementation: [NE06 qualification contract](../architecture/ne06-environment-qualification.md). The final evidence gate must pass on both installed targets before this slice is qualified.
 
 **Depends on:** NE05. **Touch:** release assembly, native/offline/recovery jobs,
 runbooks, example projects and compatibility records.
