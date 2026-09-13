@@ -98,7 +98,7 @@ def literal(value):
 def query(spark, request, metadata):
     read_sql(request['sql'])
     frame = spark.sql(request['sql']).limit(request['max_rows'] + 1)
-    result = {'id': request['id'], 'session_id': metadata['session_id'],
+    result = {'id': request['id'], 'sql': request['sql'], 'session_id': metadata['session_id'],
               'epoch_id': metadata['epoch_id'], 'state': 'complete',
               'columns': [{'name': f.name, 'type': f.dataType.simpleString()}
                           for f in frame.schema.fields],

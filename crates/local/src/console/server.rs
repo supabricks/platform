@@ -388,6 +388,7 @@ impl State {
                 &action,
                 super::workspace::Command::Notebook { .. }
                     | super::workspace::Command::Environment { .. }
+                    | super::workspace::Command::Analytics { .. }
             ) {
                 CONTROL_TIMEOUT
             } else {
