@@ -13,7 +13,9 @@ from demo import FILES
 TARGETS = ('linux-x86_64', 'macos-arm64')
 METRICS = ('source_bytes', 'rows', 'decoded_bytes', 'duration_ms', 'peak_rss_bytes',
            'elapsed_seconds', 'archive_bytes', 'unpacked_bytes', 'logical_bytes',
-           'allocated_bytes', 'logical_cpus', 'host_memory_bytes', 'cgroup_memory_limit_bytes')
+           'allocated_bytes', 'logical_cpus', 'host_memory_bytes', 'cgroup_memory_limit_bytes',
+           'duration_seconds', 'cpu_seconds', 'mean_cpu_percent_one_core',
+           'source_payload_bytes', 'load_seconds', 'export_payload_mb_per_second')
 
 
 def require(condition, message):
@@ -47,6 +49,9 @@ def metrics(data):
             require(value is None or (type(value) in (int, float) and math.isfinite(value) and value >= 0),
                     f'invalid measurement: {key}')
             result[key] = value
+    for key in ('disk_before', 'disk_after'):
+        if key in data:
+            result[key] = metrics(data[key])
     return result
 
 
@@ -106,7 +111,10 @@ def collect(directory, revision, console, worker, version):
         require(baseline.get('network_qualification'), 'missing baseline network evidence')
         benchmark = read('release-qualification', 'benchmarks.json', 7, ('release_identity',)) if target == 'linux-x86_64' else baseline
         for size in (10000000, 100000000, 1000000000):
-            require(f'snapshot_{size}_bytes' in benchmark['measurements'], 'missing snapshot benchmark')
+            for suffix in ('', '_query'):
+                measurement = benchmark['measurements'].get(f'snapshot_{size}_bytes{suffix}', {})
+                for field in ('elapsed_seconds', 'peak_rss_bytes', 'logical_cpus', 'host_memory_bytes'):
+                    require(measurement.get(field, 0) > 0, f'missing snapshot benchmark measurement: {field}')
         network = None
         if target == 'linux-x86_64':
             path = directory / f'release-qualification-{target}/network.json'
@@ -136,7 +144,8 @@ def collect(directory, revision, console, worker, version):
             browser=dict(engine='Chromium', version=browser['browser'], network=browser['network_qualification']),
             demo=browser['demo'], notices=dict(files=len(env['notices']), inventory_sha256=digest(env['notices'])),
             ingestion=dict(csv_source_sha256=ingestion['qualification']['source_sha256'], csv=metrics(ingestion['qualification']), formats=formats, network=ingestion['network_evidence']),
-            baseline=dict(network=baseline['network_qualification'], measurements={k:metrics(v) for k,v in benchmark['measurements'].items()}),
+            baseline=dict(network=baseline['network_qualification'],
+                          scope='Daemon and sampled live descendants; excludes harness and CLI. RSS can double-count shared pages and miss short peaks.', measurements={k:metrics(v) for k,v in benchmark['measurements'].items()}),
             network_destinations=network['observed_destinations'] if network else None)
     return result
 
