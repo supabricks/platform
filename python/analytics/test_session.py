@@ -44,6 +44,9 @@ class SessionTests(unittest.TestCase):
             result=query(Frame(),dict(id='query',sql='SELECT x',max_rows=10,max_bytes=budget),dict(session_id='session',epoch_id='epoch'))
             self.assertLessEqual(len(json.dumps(result).encode()),budget)
             self.assertTrue(result['truncated'])
+            self.assertEqual(result['sql'], 'SELECT x')
+        with self.assertRaisesRegex(ValueError, 'byte budget'):
+            query(Frame(),dict(id='query',sql='SELECT x /*'+'x'*2048+'*/',max_rows=10,max_bytes=1024),dict(session_id='session',epoch_id='epoch'))
 
 
 if __name__=='__main__':unittest.main()
