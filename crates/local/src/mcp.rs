@@ -15,7 +15,71 @@ pub fn tools() -> Value {
     let data_type = json!({"oneOf":[{"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["text","boolean","smallint","integer","bigint","double","date","timestamp","timestamp_tz"]}},"required":["kind"]},{"type":"object","additionalProperties":false,"properties":{"kind":{"const":"decimal"},"precision":{"type":"integer","minimum":1,"maximum":38},"scale":{"type":"integer","minimum":0,"maximum":38}},"required":["kind","precision","scale"]}]});
     let mapping = json!({"type":"object","additionalProperties":false,"description":"Explicitly approved inspection mapping. Inputs are zero-based source index strings, each used once. Text preserves leading zeros; typed conversions reject overflow or rounding.","properties":{"version":{"const":1},"format":{"const":"csv"},"delimiter":{"enum":[",","\t",";","|"]},"header":{"type":"boolean"},"null_strings":{"type":"array","maxItems":16,"items":{"type":"string","maxLength":256}},"columns":{"type":"array","minItems":1,"maxItems":256,"items":{"type":"object","additionalProperties":false,"properties":{"input":{"type":"string","pattern":"^[0-9]+$"},"name":{"type":"string","minLength":1,"maxLength":63},"data_type":data_type,"nullable":{"type":"boolean"}},"required":["input","name","data_type","nullable"]}}},"required":["version","format","delimiter","header","null_strings","columns"]});
     let load = json!({"type":"object","additionalProperties":false,"properties":{"version":{"const":1},"project_id":string,"branch_id":string,"branch_revision":revision,"source_id":string,"source_sha256":string,"schema":string,"table":string,"mapping":mapping},"required":["version","project_id","branch_id","branch_revision","source_id","source_sha256","schema","table","mapping"]});
+    let inputs = json!({"type":"object","additionalProperties":false,"properties":{"manifest":{"type":"string","pattern":"^[a-f0-9]{64}$"},"lock":{"type":"string","pattern":"^[a-f0-9]{64}$"}},"required":["manifest","lock"]});
+    let change = json!({"oneOf":[
+        {"type":"object","additionalProperties":false,"properties":{"kind":{"const":"add"},"requirement":string},"required":["kind","requirement"]},
+        {"type":"object","additionalProperties":false,"properties":{"kind":{"const":"remove"},"package":string},"required":["kind","package"]},
+        {"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["lock","sync"]}},"required":["kind"]},
+        {"type":"object","additionalProperties":false,"properties":{"kind":{"const":"adopt"},"path":string,"expected":inputs},"required":["kind","path","expected"]},
+        {"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["export_bundle","import_bundle"]},"path":string},"required":["kind","path"]}
+    ]});
     let defs = vec![
+        (
+            "env_find",
+            "Find a worktree package operation by idempotency key before retrying, including the original expected inputs.",
+            json!({"key":key}),
+            vec!["key"],
+            true,
+        ),
+        (
+            "env_inspect",
+            "Inspect notebook declaration hashes, protected packages and recent operations. Kernel starts are always offline.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "env_declaration",
+            "Read hashes of an explicit project-contained relative uv declaration directory before adoption.",
+            json!({"path":string}),
+            vec!["path"],
+            true,
+        ),
+        (
+            "env_initialize",
+            "Create the offline notebook declaration pair without replacing existing files.",
+            json!({"key":key,"template":{"enum":["base","fixture-a","fixture-b"],"default":"base"}}),
+            vec!["key"],
+            false,
+        ),
+        (
+            "env_manage",
+            "Explicit managed package transaction. Registry wheels from PyPI only; offline disables network. Requires current declaration hashes and request key. Returns operation ID; poll env_status. Running kernels retain their environment until explicit adoption. Bundle paths are absolute, adoption paths project-relative.",
+            json!({"key":key,"expected":inputs,"change":change,"offline":{"type":"boolean","default":false}}),
+            vec!["key", "expected", "change"],
+            false,
+        ),
+        (
+            "env_status",
+            "Poll a durable package operation in this worktree, including conflicts and resolved package changes.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "env_cancel",
+            "Cancel a queued or running package operation; active kernel generations remain unchanged.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "env_collect",
+            "Collect inactive, unleased notebook generations in this worktree.",
+            json!({}),
+            vec![],
+            false,
+        ),
         (
             "ingest_inspect",
             "Copy and inspect an explicitly requested absolute local CSV/TSV file. Returns a source ID immediately; poll ingest_source. Preview is a sample, text mappings preserve leading zeros. No database write.",
@@ -255,13 +319,21 @@ pub fn tools() -> Value {
             false,
         ),
     ];
-    Value::Array(defs.into_iter().map(|(name,description,properties,required,read)|json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"outputSchema":output_schema(name),"annotations":{"readOnlyHint":read,"destructiveHint":!read,"openWorldHint":false}})).collect())
+    Value::Array(defs.into_iter().map(|(name,description,properties,required,read)|json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"outputSchema":output_schema(name),"annotations":{"readOnlyHint":read,"destructiveHint":!read,"openWorldHint":name == "env_manage"}})).collect())
 }
 fn output_schema(name: &str) -> Value {
     let string = json!({"type":"string"});
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "env_inspect" => {
+            json!({"type":"object","required":["inputs","active_generation","operations","protected_packages"]})
+        }
+        "env_declaration" => json!({"type":"object","required":["inputs"]}),
+        "env_initialize" | "env_manage" | "env_status" | "env_cancel" => {
+            json!({"type":"object","required":["id","state","inputs","result"]})
+        }
+        "env_collect" => json!({"type":"object","required":["collected"]}),
         "ingest_inspect" | "ingest_source" => {
             json!({"type":"object","required":["source","inspection","error","progress"]})
         }
@@ -386,7 +458,17 @@ impl Session {
                         "tool arguments must be an object without action",
                     ));
                 }
-                args["action"] = json!(name);
+                if let Some(command) = name.strip_prefix("env_") {
+                    args["action"] = json!(match command {
+                        "inspect" => "inspect",
+                        "initialize" => "initialize",
+                        "collect" => "collect",
+                        other => other,
+                    });
+                    args = json!({"action":"environment","command":args});
+                } else {
+                    args["action"] = json!(name);
+                }
                 let action = match serde_json::from_value::<Action>(args) {
                     Ok(a) => a,
                     Err(_) => {

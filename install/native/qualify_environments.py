@@ -12,7 +12,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--directory', type=Path, required=True)
 parser.add_argument('--target', required=True)
 parser.add_argument('--report', type=Path, required=True)
-parser.add_argument('--version', default='v0.1.0-alpha.10')
+parser.add_argument('--packages', action='store_true', help='Run NE04 online/offline package qualification')
+parser.add_argument('--version', default='v0.1.0-alpha.11')
 args = parser.parse_args()
 archive = args.directory / f'supabricks-{args.version}-{args.target}.tar.gz'
 with archive.open('rb') as stream:
@@ -22,8 +23,8 @@ with tarfile.open(archive) as tar:
     tar.extractall(root, filter='data')
 release = root / 'supabricks'
 subprocess.run([str(release / 'bin/supabricks'), 'installation', 'verify'], check=True)
-for harness in ['manager', 'kernels']:
-    report = args.report if harness == 'manager' else args.report.with_name(args.report.stem + '-kernels.json')
+for harness in (['packages'] if args.packages else ['manager', 'kernels']):
+    report = args.report if harness in ('manager', 'packages') else args.report.with_name(args.report.stem + '-kernels.json')
     result = subprocess.run([str(release / 'python/runtime/bin/python3.12'), '-I', '-B',
         str(Path(__file__).resolve().parents[2] / f'e2e/native/notebook-environments/{harness}.py'),
         '--release', str(release), '--report', str(report.resolve())])

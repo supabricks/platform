@@ -79,7 +79,7 @@ pub(super) fn read(path: &Path, limit: u64) -> Result<Vec<u8>> {
     }
     Ok(bytes)
 }
-fn document(dir: &Directory, name: &str) -> Result<Vec<u8>> {
+pub(super) fn document(dir: &Directory, name: &str) -> Result<Vec<u8>> {
     let f = dir.open(OsStr::new(name), libc::O_RDONLY)?;
     let m = f.metadata()?;
     if !m.is_file() || m.nlink() != 1 || m.len() > 1024 * 1024 {
@@ -230,4 +230,47 @@ pub(super) fn inventory(root: &Path) -> Result<String> {
     let mut values = BTreeMap::new();
     visit(root, root, 0, &mut values, &mut 0)?;
     Ok(hash(&serde_json::to_vec(&values)?))
+}
+
+/// Bound resolver scratch/cache bytes while the owned subprocess is running.
+/// This scans metadata only, never hashes or follows symlinks.
+pub(super) fn bounded_size(root: &Path, limit: u64) -> Result<()> {
+    fn walk(
+        path: &Path,
+        bytes: &mut u64,
+        entries: &mut usize,
+        depth: usize,
+        limit: u64,
+    ) -> Result<()> {
+        if depth > 64 {
+            return Err(conflict("environment scratch depth limit"));
+        }
+        let listing = match fs::read_dir(path) {
+            Ok(v) => v,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(e) => return Err(e.into()),
+        };
+        for entry in listing {
+            let path = entry?.path();
+            let m = match fs::symlink_metadata(&path) {
+                Ok(v) => v,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e.into()),
+            };
+            *entries += 1;
+            if *entries > 100_000 {
+                return Err(conflict("environment scratch entry limit"));
+            }
+            if m.is_dir() {
+                walk(&path, bytes, entries, depth + 1, limit)?;
+            } else {
+                *bytes = bytes.saturating_add(m.len());
+            }
+            if *bytes > limit {
+                return Err(conflict("environment scratch or cache size limit"));
+            }
+        }
+        Ok(())
+    }
+    walk(root, &mut 0, &mut 0, 0, limit)
 }

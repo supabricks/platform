@@ -37,8 +37,10 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-NE03 uses version `v0.1.0-alpha.10` and catalog 10. Product notebook kernels
+NE04 uses version `v0.1.0-alpha.11` and catalog 10. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
+Managed registry package transactions and offline wheel bundles are described in
+the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).
 See the [kernel environment guide](../../docs/architecture/ne03-kernel-environments.md)
 and the
 [recovery and upgrade runbook](../../docs/handbook/recovery.md). Existing R01

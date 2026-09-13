@@ -42,7 +42,10 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   spark shell [--branch NAME] [--epoch ID] [--file SCRIPT.py]
   env init [--template base] [--key KEY] [--wait]
   env status | prepare [--key KEY] [--wait] | operation ID | cancel ID | gc
-                               Offline qualified templates only; no user package changes
+  env add REQUIREMENT | remove PACKAGE | lock | sync [--offline] [--wait]
+  env adopt PROJECT_RELATIVE_DIRECTORY [--offline] [--wait]
+  env export-bundle ABSOLUTE_PATH | import-bundle ABSOLUTE_PATH [--wait]
+                               Managed registry wheels; running kernels adopt explicitly
   analytics publish EXPORT_ID | publication EXPORT_ID | discard EXPORT_ID
   analytics snapshot --branch NAME | epochs --branch NAME | epoch EPOCH_ID
   analytics pin EPOCH_ID | renew LEASE_ID [--ttl-ms 60000] | unpin LEASE_ID
@@ -89,6 +92,7 @@ impl Args {
                     arg.as_str(),
                     "--json"
                         | "--wait"
+                        | "--offline"
                         | "--write"
                         | "--force"
                         | "--uri"
@@ -323,18 +327,60 @@ pub fn run() -> Result<u8> {
                     .unwrap_or_else(|| OperationId::new().to_string()),
                 template: a.take("--template").unwrap_or_else(|| "base".into()),
             },
-            "prepare" => {
+            "prepare" | "sync" | "add" | "remove" | "lock" | "adopt" | "export-bundle"
+            | "import-bundle" => {
+                use crate::environments::Change;
                 let expected = call(E::Inspect)?["inputs"].clone();
                 if expected.is_null() {
                     return Err(invalid(
                         "initialize notebook declarations with env init first",
                     ));
                 }
-                E::Prepare {
-                    key: a
-                        .take("--key")
-                        .unwrap_or_else(|| OperationId::new().to_string()),
-                    expected: serde_json::from_value(expected)?,
+                let key = a
+                    .take("--key")
+                    .unwrap_or_else(|| OperationId::new().to_string());
+                let prior = call(E::Find { key: key.clone() })?["operation"].clone();
+                let expected = serde_json::from_value(if prior.is_null() {
+                    expected
+                } else {
+                    prior["inputs"].clone()
+                })?;
+                let offline = a.flag("--offline");
+                if action == "prepare" {
+                    E::Prepare { key, expected }
+                } else {
+                    let change = match action.as_str() {
+                        "add" => Change::Add {
+                            requirement: a.required(2)?,
+                        },
+                        "remove" => Change::Remove {
+                            package: a.required(2)?,
+                        },
+                        "lock" => Change::Lock,
+                        "sync" => Change::Sync,
+                        "adopt" => {
+                            let path = PathBuf::from(a.required(2)?);
+                            let source =
+                                call(E::Declaration { path: path.clone() })?["inputs"].clone();
+                            Change::Adopt {
+                                path,
+                                expected: serde_json::from_value(source)?,
+                            }
+                        }
+                        "export-bundle" => Change::ExportBundle {
+                            path: PathBuf::from(a.required(2)?),
+                        },
+                        "import-bundle" => Change::ImportBundle {
+                            path: PathBuf::from(a.required(2)?),
+                        },
+                        _ => unreachable!(),
+                    };
+                    E::Manage {
+                        key,
+                        expected,
+                        change,
+                        offline,
+                    }
                 }
             }
             "status" => E::Inspect,
@@ -353,19 +399,30 @@ pub fn run() -> Result<u8> {
             "gc" => E::Collect,
             _ => {
                 return Err(invalid(
-                    "use env init, status, prepare, operation, cancel or gc",
+                    "use env init, status, add, remove, lock, sync, adopt, export-bundle, import-bundle, operation, cancel or gc",
                 ));
             }
         };
-        a.finish(if matches!(action.as_str(), "operation" | "cancel") {
-            3
-        } else {
-            2
-        })?;
+        a.finish(
+            if matches!(
+                action.as_str(),
+                "operation"
+                    | "cancel"
+                    | "add"
+                    | "remove"
+                    | "adopt"
+                    | "export-bundle"
+                    | "import-bundle"
+            ) {
+                3
+            } else {
+                2
+            },
+        )?;
         let mut value = call(request)?;
         if wait && value["id"].is_string() {
             let id = serde_json::from_value(value["id"].clone())?;
-            let deadline = Instant::now() + Duration::from_secs(90);
+            let deadline = Instant::now() + Duration::from_secs(210);
             while matches!(
                 value["state"].as_str(),
                 Some("queued" | "initializing" | "preparing" | "verifying")
@@ -1221,4 +1278,34 @@ fn ingest_cli(a: &mut Args, c: &Client) -> Result<u8> {
             0
         },
     )
+}
+
+#[cfg(test)]
+mod environment_cli_tests {
+    use super::*;
+    #[test]
+    fn offline_is_a_boolean_and_does_not_consume_wait_or_paths() {
+        for args in [
+            vec!["env", "sync", "--offline", "--wait"],
+            vec![
+                "env",
+                "export-bundle",
+                "--offline",
+                "/tmp/bundle.zip",
+                "--wait",
+            ],
+        ] {
+            let mut parsed = Args::parse(args.iter().map(|s| s.to_string()).collect()).unwrap();
+            assert!(parsed.flag("--offline"));
+            assert!(parsed.flag("--wait"));
+            assert_eq!(
+                parsed.pos.len(),
+                if args.contains(&"export-bundle") {
+                    3
+                } else {
+                    2
+                }
+            );
+        }
+    }
 }

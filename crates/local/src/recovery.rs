@@ -205,6 +205,7 @@ fn excluded(name: &str) -> bool {
                 | "notebook-environments"
                 | "notebook-environment-work"
                 | "notebook-environment-cache"
+                | "notebook-environment-artifacts"
         )
     )
 }

@@ -184,7 +184,8 @@ class Workflow(Cell):
         self.cli("connect", project=other, code=3)
         mcp = MCP(self, other)
         try:
-            assert len(mcp.rpc("tools/list", {})["tools"]) == 34
+            expected_tools = json.loads((REPO / "crates/local/tests/fixtures/local-mcp-tools.json").read_text())
+            assert mcp.rpc("tools/list", {})["tools"] == expected_tools
             assert mcp.tool("capabilities")["worktree"] == str(other)
             branch = mcp.tool(
                 "create_branch", name="migration", parent="main", key="fork-migration"
