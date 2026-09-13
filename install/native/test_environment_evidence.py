@@ -17,7 +17,11 @@ class EvidenceTest(unittest.TestCase):
                 for name, minimum in files.items():
                     path = self.root / f'{suite}-{target}' / name
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    value = dict(status='passed', release_sha256=target, checks=list(range(minimum)))
+                    value = dict(status='passed', release_sha256=target)
+                    if isinstance(minimum, dict):
+                        value.update({name: dict(status='passed', checks=list(range(count))) for name, count in minimum.items()})
+                    else:
+                        value['checks'] = list(range(minimum))
                     if suite == 'release-environment-lifecycle' and name == 'qualification.json':
                         value.update(target=target, source=dict(platform_commit='final', platform_dirty=False),
                             archives=dict(new=dict(target=target), old={}), release_identity=target,
@@ -49,6 +53,12 @@ class EvidenceTest(unittest.TestCase):
         for fields in (dict(status='failed'), dict(status='passed', cleanup_failed=True)):
             self.change('release-packages', 'qualification.json', **fields)
             with self.assertRaises(AssertionError): collect(self.root, 'final')
+
+    def test_nested_notebook_results_must_both_pass(self):
+        self.change('release-notebooks', 'notebooks.json', product=dict(status='failed', checks=list(range(13))))
+        with self.assertRaisesRegex(AssertionError, 'failed suite'): collect(self.root, 'final')
+        self.change('release-notebooks', 'notebooks.json', product=dict(status='passed', checks=[]))
+        with self.assertRaisesRegex(AssertionError, 'incomplete'): collect(self.root, 'final')
 
     def test_source_build_or_different_revision_cannot_pass(self):
         for source in (dict(platform_commit='old', platform_dirty=False), dict(platform_commit='final', platform_dirty=True)):

@@ -11,9 +11,19 @@ SUITES = {
     'release-packages': {'qualification.json': 12},
     'release-environment-lifecycle': {'qualification.json': 8, 'qualification-index.json': 6},
     'release-environment-console': {'environments.json': 16},
-    'release-notebooks': {'notebooks.json': 13},
+    'release-notebooks': {'notebooks.json': {'runtime': 26, 'product': 13}},
     'release-console': {'console.json': 1},
 }
+
+
+def passed_checks(data, minimum, label):
+    assert data.get('status') == 'passed', f'{label}: failed suite'
+    assert not data.get('cleanup_failed') and not data.get('errors'), f'{label}: cleanup or browser errors'
+    if isinstance(minimum, dict):
+        assert all(name in data for name in minimum), f'{label}: missing nested suite'
+        return sum(passed_checks(data[name], count, f'{label}/{name}') for name, count in minimum.items())
+    assert len(data.get('checks', [])) >= minimum, f'{label}: incomplete checks'
+    return len(data['checks'])
 
 
 def collect(directory, revision):
@@ -30,11 +40,9 @@ def collect(directory, revision):
             for name, minimum in files.items():
                 path = directory / f'{suite}-{target}' / name
                 data = json.loads(path.read_text())
-                assert data['status'] == 'passed', f'{path}: failed suite'
-                assert not data.get('cleanup_failed') and not data.get('errors'), f'{path}: cleanup or browser errors'
+                checks = passed_checks(data, minimum, str(path))
                 assert data['release_sha256'] == identity, f'{path}: mixed release identities'
-                assert len(data['checks']) >= minimum, f'{path}: incomplete checks'
-                reports[str(path.relative_to(directory))] = dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), checks=len(data['checks']))
+                reports[str(path.relative_to(directory))] = dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), checks=checks)
         result['targets'][target] = dict(release_sha256=identity, release_identity=lifecycle['release_identity'],
             archive=lifecycle['archives']['new'], previous=lifecycle['archives']['old'],
             python_version=lifecycle['python_version'], kernel_contract_sha256=lifecycle['kernel_contract_sha256'],

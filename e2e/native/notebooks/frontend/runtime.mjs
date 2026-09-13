@@ -144,8 +144,15 @@ try {
    let e=await action({action:'create',key,target,limits});
    const command={action:'start',id:e.id,generation:0,key:'start'};
    const [first,retry]=await Promise.all([action(command),action(command)]);
-   assert.equal(first.generation,retry.generation);assert.equal(first.session_id,retry.session_id);
-   return waitState(first,['ready'],120000);
+   assert.equal(first.id,retry.id);assert.equal(first.generation,retry.generation);
+   // Admission progresses between replies: the session may still be absent in
+   // one snapshot. Replaying the same request after readiness must retain the
+   // admitted session and generation, without creating another kernel.
+   const ready=await waitState(first,['ready'],120000);
+   const admittedRetry=await action(command);
+   assert.equal(admittedRetry.id,ready.id);assert.equal(admittedRetry.generation,ready.generation);
+   assert.ok(ready.session_id);assert.equal(admittedRetry.session_id,ready.session_id);
+   return ready;
  }
  const ok=async(code,id)=>{const r=await page.evaluate(([code,id])=>window.n02execute(code,id),[code,id]);assert.equal(r.reply.status,'ok',JSON.stringify(r));return r;};
  // Reconnection cannot replay execution; repeated IDs receive a standard error.
