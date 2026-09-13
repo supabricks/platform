@@ -56,7 +56,13 @@ interpreter, shell command or index. The console's Host, Origin, session, CSRF,
 daemon-generation and instance-ownership checks apply. The daemon supplies the
 bound project/worktree; operation lookups and cancellation remain scoped there.
 The HTTP body remains bounded at 60 KB. Environment admission gets the same
-six-second daemon control budget as notebook admission.
+six-second daemon control budget as notebook admission. Console health checks use
+that budget too, run alongside HTTP acceptance, and skip missed timer ticks. They
+check ownership and overview concurrently, so slow package verification cannot
+block new connections or be mistaken for daemon death after two short timeouts.
+Workspace generation/binding checks and the six-second notebook owner lease still
+fence actions and kernels. The browser allows ten seconds for the server's bounded
+eight-second JSON response, then recovers uncertain package requests by key.
 
 Inspection adds declaration state, bounded TOML requirements, qualified Python
 and target, and scoped generation summaries. Package versions come from validated
@@ -83,7 +89,9 @@ the owned worker. This does not change dependency resolution or running kernels.
 ## Validation
 
 Rust tests cover declaration status, missing locks and symlinks, recorded inventory
-and scope, drift refusal at admission, and authenticated strict workspace requests.
+and scope, drift refusal at admission, and authenticated strict workspace requests. A regression test pauses the owned
+daemon and proves the console remains responsive and survives the pause; the
+previous implementation exited and refused the subsequent connection.
 The real browser harness is `console/scripts/qualify-environments.mjs`; it uses the
 packaged console, daemon, managed Python kernels and Sail. It covers opening
 without preparation, package version isolation and imports, explicit adoption,

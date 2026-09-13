@@ -224,6 +224,27 @@ fn notebook_control_waits_through_a_busy_daemon_without_resending() {
 }
 
 #[test]
+fn console_health_checks_keep_http_responsive_while_the_daemon_is_busy() {
+    let fixture = Fixture::new();
+    let (origin, token) = parts(&fixture.open());
+    assert_eq!(login(&origin, &token).status, 200);
+    let pid = fixture.daemon.id() as libc::pid_t;
+    assert_eq!(unsafe { libc::kill(pid, libc::SIGSTOP) }, 0);
+    let resume = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(7));
+        assert_eq!(unsafe { libc::kill(pid, libc::SIGCONT) }, 0);
+    });
+    // A heartbeat is now waiting on the single writer. Static HTTP must still
+    // be accepted, and two short control timeouts must not kill the console.
+    std::thread::sleep(Duration::from_secs(3));
+    let started = Instant::now();
+    assert_eq!(http(&origin, "GET", "/", &[], "").status, 200);
+    assert!(started.elapsed() < Duration::from_secs(2));
+    resume.join().unwrap();
+    assert_eq!(http(&origin, "GET", "/", &[], "").status, 200);
+}
+
+#[test]
 fn notebook_documents_cross_both_transports_with_string_revisions_and_conflicts() {
     let fixture = Fixture::new();
     let (origin, token) = parts(&fixture.open());
