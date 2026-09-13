@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import shutil
+import re
 import zipfile
 from email.parser import BytesParser
 
@@ -10,9 +11,8 @@ from analytics import digest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def verify(directory, target, *, root=ROOT):
+def verify_report(report, target, *, root=ROOT):
     pin = json.loads((root / 'components/sail-source.lock.json').read_text())
-    report = json.loads((directory / 'sail-build.json').read_text())
     expected = dict(schema_version=1, repository=pin['repository'], commit=pin['commit'], source_dirty=False,
                     version=pin['version'], target=target, inputs=pin['inputs'], maturin=pin['maturin'],
                     protoc=pin['targets'][target]['protoc'], profile=pin['profile'],
@@ -20,6 +20,19 @@ def verify(directory, target, *, root=ROOT):
                     builder_script_sha256=digest(root / 'components/build-sail.py'))
     if any(report.get(k) != v for k, v in expected.items()) or report.get('rustc', '').split()[1:2] != [pin['rust']]:
         raise ValueError('Sail artifact differs from reviewed source/build inputs')
+    wheel = report.get('wheel', {})
+    suffix = {'linux-x86_64': 'linux_x86_64.whl', 'macos-arm64': 'macosx_15_0_arm64.whl'}[target]
+    if not (isinstance(wheel.get('file'), str) and '/' not in wheel['file']
+            and wheel['file'].startswith('pysail-' + pin['version'] + '-') and wheel['file'].endswith(suffix)
+            and re.fullmatch(r'[0-9a-f]{64}', wheel.get('sha256', ''))):
+        raise ValueError('Sail wheel target or digest mismatch')
+    return {**expected, 'wheel': wheel, 'rustc': report['rustc']}
+
+
+def verify(directory, target, *, root=ROOT):
+    pin = json.loads((root / 'components/sail-source.lock.json').read_text())
+    report = json.loads((directory / 'sail-build.json').read_text())
+    verify_report(report, target, root=root)
     files = report.get('files', {})
     actual = {str(p.relative_to(directory)) for p in directory.rglob('*') if p.is_file() and p.name != 'sail-build.json'}
     if actual != set(files) or not {'Cargo.lock', 'LICENSE', 'dependencies.json'} <= actual:
