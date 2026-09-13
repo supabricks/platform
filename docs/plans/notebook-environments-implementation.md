@@ -25,7 +25,7 @@ environment, and import that library without changing another project's packages
 or the platform's Jupyter/Sail services. Commit the dependency declaration and
 lockfile; a second machine can recreate the environment for its supported target.
 
-Today `crates/local/src/notebooks/runtime.rs` chooses the analytical Python
+At the pre-NE baseline, `crates/local/src/notebooks/runtime.rs` chooses the analytical Python
 launcher for both the Jupyter server and notebook kernels. That launcher executes
 the bundled Python 3.12 runtime with ambient Python settings/user packages
 disabled. Notebook kernels have independent processes, but share packaged
@@ -35,8 +35,7 @@ runtime is therefore new behavior, not a UI switch that can simply be enabled.
 
 The shared-environment/build-time-only rules in the existing
 [architecture](../architecture/local-notebooks.md) and
-[N02 contract](../architecture/n02-notebook-runtime.md) remain current behavior
-until the corresponding slices land. This plan proposes their replacement for
+[N02 contract](../architecture/n02-notebook-runtime.md) describe that historical behavior. The merged NE slices replace it for
 notebook kernels only. Existing snapshot, process ownership, authentication,
 output, persistence and no-replay contracts remain requirements.
 

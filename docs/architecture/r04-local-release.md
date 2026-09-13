@@ -1,7 +1,7 @@
 # R04 — Complete local workflow qualification and handoff
 
-R04 closes the console/ingestion release slice after platform #43 and console #4
-(C03), with I03 and N00–N06 / NE01–NE06 already merged. The candidate is
+R04 merged in platform #44 and closes the console/ingestion release slice after platform #43 and console #4
+(C03), with I03 and N00–N06 / NE01–NE06 already merged. The qualified release is
 `v0.1.0-alpha.16`, catalog 10, PG17.8, with the reviewed `supabricks/console`
 submodule. No execution engine, UI rewrite, runtime dependency or catalog
 migration is needed for this slice.
@@ -78,9 +78,12 @@ metrics are emitted from the actual candidate, rather than copied from a prior
 release. Documentation is a handoff for the tested flow, not a claim of a separate
 human usability study.
 
-This completes the localhost console/ingestion workstream once merged. V01
+This completed the localhost console/ingestion workstream.
+Final qualification: [run 34762457678](https://github.com/supabricks/platform/actions/runs/34762457678),
+29 passing CI checks and matching exact-archive evidence on both targets. V01
 (thin VS Code integration) and L01 (direct analytical dataset design) remain
-optional next slices. Project packaging, shared catalog/IAM, source-built Sail
-and hosted console delivery require their own scope. Public domain deployment,
+optional next slices. Project packaging, shared catalog/IAM, and hosted console delivery require their own scope. The
+[source-built Sail follow-up](source-built-sail.md) is now implemented in PR #45
+and undergoing its own exact-archive qualification. Public domain deployment,
 publisher signing/notarization, redistribution audit and physical power-loss
 qualification retain their separate gates.

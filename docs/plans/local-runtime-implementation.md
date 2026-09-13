@@ -1,6 +1,10 @@
 # Supabricks local runtime implementation plan
 
-*Status: Proposed implementation sequence · Date: 2026-09-05*
+*Status: P00/E01/P01–P06/A00–A03 and localhost R01–R03 merged; W01 deferred · Reconciled: 2026-09-13*
+
+See [delivery status](status.md) for the current complete milestone map and
+[R04 evidence](../architecture/r04-local-release.md). The sequence below preserves
+the original design; dated baseline descriptions are historical.
 
 Build the local product in **`supabricks/platform`**. Use the existing
 `supabricks/neon` and `supabricks/postgres` repositories for engine source changes
@@ -24,7 +28,7 @@ requested phase. Reboot/power-loss and public-distribution gates remain open.
 CSV and branching demo is implemented. The requested
 [notebook architecture](../architecture/local-notebooks.md) and
 [N00-N05 plan](notebook-implementation.md) add embedded Jupyter over the existing
-analytical services. Notebooks remain proposed; I03, C03 and R04 remain open.
+analytical services. That phase, I03, C03 and R04 have since merged; see the current status ledger.
 
 ## 1. Outcome and scope
 

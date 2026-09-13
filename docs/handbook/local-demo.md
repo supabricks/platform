@@ -8,7 +8,7 @@ qualified; use Chromium for this preview, including on macOS.
 
 ## Install the prepared localhost release
 
-The person preparing the demo serves the qualified alpha.16 archives using
+The person preparing the demo serves the qualified alpha.17 archives using
 `python3 install/native/serve.py --directory build/releases --port 8080` on the
 same device. That is a build/hosting step, not a dependency of the installed
 runtime. The user runs:

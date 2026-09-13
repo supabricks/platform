@@ -7,9 +7,9 @@ merged work; the historical notebook milestones below retain their scope.
 
 *Status: N00–N06 repairs and UI extraction merged; installed notebook regressions qualified on both targets · Reconciled: 2026-09-13*
 
-The table below records the repair-stage evidence as of 2026-09-10. Subsequent
-NE01–NE06 and C03 release runs qualified the installed notebook/runtime product;
-[R04](../architecture/r04-local-release.md) retains those mandatory gates.
+The table below is reconciled through merged R04 (#44). Its installed alpha.16
+archives qualified notebook/runtime behavior on both targets. See
+[delivery status](status.md) for exact evidence and remaining release gates.
 
 The original acceptance criteria below remain the completion gates. Subsequent
 PR labels drifted: N04 added files, N05 added kernel controls, and N06 added an
@@ -23,16 +23,14 @@ each finding to its fix and distinguishes local tests from installed evidence.
 | N00 | Architecture and plan present; this table restores the milestone mapping |
 | N01 | Qualified upstream JupyterLab widget selected; now integrated in the product with exact locked dependencies |
 | N02 | Owned Jupyter/Sail runtime retained; restart now preserves its selected epoch |
-| N03 | Product editor, binary execution, conditional persistence, dirty/conflict handling and MIME policy implemented; real Linux source-build browser test passes |
-| N04 | Branch selection, saved epoch binding, refresh/cancel and explicit rebind implemented; local browser tests prove refresh isolation and pinned restart; broader fault and child-branch acceptance remain qualification work |
-| N05 | Runtime fault harness retained and actual product harness added to both native release targets; fresh installed Linux/macOS reports are required before claiming preview qualification |
+| N03 | Product editor, binary execution, conditional persistence, dirty/conflict handling and MIME policy implemented; installed Linux/macOS browser qualification passes |
+| N04 | Branch selection, saved epoch binding, refresh/cancel and explicit rebind implemented; installed browser/runtime tests cover refresh isolation, pinned restart, faults and branch binding |
+| N05 | Runtime fault harness retained and actual product harness added to both native release targets; installed Linux/macOS reports pass in NE06, C03 and R04 |
 | N06 (later PR label) | Replaced the broken channel client with the qualified binary protocol and correlated, serialized execution |
 
-User workflow: [notebook runbook](../handbook/notebooks.md). These repairs are
-in the extraction worktree based on N06; they do not themselves extract the UI
-to a separate repository or mark I03/C03/R04 complete.
+User workflow: [notebook runbook](../handbook/notebooks.md). The repairs and console extraction have merged; I03/C03/R04 have also completed.
 
-A subsequent branch based on the repaired PR #33 performs the
+Merged PR #34, based on repaired PR #33, performed the
 [console source split](../architecture/console-source-split.md). It preserves
 these notebook semantics and consumes the frontend through a pinned submodule.
 
@@ -65,7 +63,7 @@ off-the-shelf notebook components and the existing Sail session service.
 
 Paths marked new are proposals; retain existing layout where practical. All new
 work is in `platform`. `supabricks/neon` and `supabricks/postgres` continue to own
-the qualified PG17 engine, and upstream Sail remains the bundled package. The
+the qualified PG17 engine, and the source-built Sail follow-up now owns engine packaging. The
 legacy Kubernetes `ui/` and operator are separate. No new repository, engine fork,
 website deployment or change to the running demo is required by N00.
 

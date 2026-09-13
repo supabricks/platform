@@ -1,5 +1,9 @@
 # Native local console preview (R04)
 
+Alpha.17 builds Sail from [the controlled fork](../../docs/architecture/source-built-sail.md).
+Native assembly requires `build/sail-artifacts/<target>` from that source build;
+it does not download a PyPI Sail wheel.
+
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
 The default distribution includes the private analytical runtime. `--postgres-only`
@@ -48,7 +52,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-R04 uses version `v0.1.0-alpha.16` and catalog 10. Product notebook kernels
+R04 uses version `v0.1.0-alpha.17` and catalog 10. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).

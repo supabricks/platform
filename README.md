@@ -1,5 +1,8 @@
 # Supabricks Platform
 
+[Delivered scope and remaining work](docs/plans/status.md) ·
+[Controlled Sail source builds](docs/architecture/source-built-sail.md)
+
 Supabricks is a native local database and analytics platform: PostgreSQL 17.8
 with branching, Sail/Spark SQL over immutable Delta snapshots, a browser console,
 file ingestion, and Jupyter notebooks with managed Python environments. It runs

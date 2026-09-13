@@ -123,6 +123,13 @@ class ComponentContractTests(unittest.TestCase):
             errors = validate(self.manifest, root=root)
             self.assertIn("evidence must be a file inside the repo: report.json", errors)
 
+    def test_sail_source_cannot_be_detached_from_component_selection(self):
+        self.component("pysail")["source_build"] = None
+        self.assert_invalid("source_build")
+        self.component("pysail")["source_build"] = {"lock": "components/sail-source.lock.json"}
+        self.component("pysail")["repository"] = "https://github.com/lakehq/sail"
+        self.assert_invalid("controlled source")
+
     def test_legacy_image_drift_fails(self):
         self.manifest["legacy_images"]["images"][0]["reference"] = "example/neon@sha256:" + "0" * 64
         self.assert_invalid("digest inventory differs")

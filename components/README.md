@@ -1,10 +1,19 @@
 # Local component baseline
 
-This tracks **P00** and native engine work in **E01** from the
-[local runtime plan](../docs/plans/local-runtime-implementation.md). The
-[lock](components.lock.json) records selected sources, unresolved candidates,
-owners and target-specific evidence. It is an engineering inventory, not an
-installable distribution. No native engine artifact is qualified yet.
+The local product is merged and qualified through R04. See the
+[delivery status](../docs/plans/status.md) for completed work, exact release
+runs and remaining public gates. [Source-built Sail](../docs/architecture/source-built-sail.md)
+now has a controlled fork and separate source/build lock.
+
+The [component inventory](components.lock.json) retains historical P00/E01/A00
+probe evidence and exact package compatibility versions. Its `untested` and
+`probe-passed` states describe those component-level artifacts, not the current
+installed product. Do not promote an old probe to new-source qualification.
+Installed releases are governed by `native-cell.lock.json`,
+`release-build.lock.json`, the Python/notebook/UV locks, `sail-source.lock.json`,
+and each verified release's manifest/provenance. The R04 collector checks the
+complete archive evidence. There is no unselected local SQLite runtime: it is
+bundled through `rusqlite` and `libsqlite3-sys` in Cargo.lock.
 
 ## Run the checks
 
@@ -26,7 +35,7 @@ itself uses only repository files. The validator uses the off-the-shelf
 
 The separate [native baseline workflow](../.github/workflows/native-baseline.yml)
 runs these checks and the [synthetic analytical probe](../spikes/local-analytics/README.md)
-on Linux. Existing operator/Kubernetes checks remain in `ci.yml` and their
+on Linux and macOS. Existing operator/Kubernetes checks remain in `ci.yml` and their
 current Justfile recipes.
 
 ## What the lock means
@@ -36,9 +45,9 @@ current Justfile recipes.
 - `package` records the exact version exercised in the analytical fixture.
   The fixture's full dependency set is in its requirements file. These package
   versions alone are insufficient to reconstruct a shipped native environment.
-- `unselected` is explicit unresolved work. Bundled SQLite and a private Python
-  distribution still need release/build selection. Process Compose and SeaweedFS
-  have exact release archives pinned for both targets.
+- `unselected` means no source has been selected; no current initial component
+  remains unselected. SQLite is bundled from Cargo.lock; the private Python
+  distribution and native helper inputs have separate exact release locks.
 - Each target is `untested`, `probe-passed`, or `qualified`. The historical
   Linux analytics report cannot establish native/macOS qualification, and its
   versions must match both the manifest and the fixture's requirements.
@@ -134,9 +143,9 @@ Compose's release tag points to the immediately preceding commit, documented in
 its [provenance](provenance/process-compose.json). The validator rejects source
 or archive identities that disagree with these records. These are the original
 P00 helper probes. P03 uses a different SeaweedFS build, described below. Current upstream
-PG17 minor integration, macOS clean-host evidence, transitive license notices
-and release signing remain gates. No platform CLI or one-command installer is
-implemented by E01.
+physical-machine/reboot/power-loss testing and public signing/redistribution
+audit remain gates. PG17.8 integration, CLI/installer and isolated Linux/macOS
+release workflows have since shipped and passed R04.
 
 ## Native cell helpers (P03)
 
@@ -157,4 +166,15 @@ writes `helper-build.json` with source and binary identities. The
 [native qualification suite](../e2e/native/README.md) exercises supervision,
 authentication, actual S3 operations, disk-full behavior and cold restore.
 These engineering archives still need a stable release channel and separate
-power-loss qualification before public durability or installer claims.
+power-loss qualification before public durability or hosted distribution claims; localhost installation
+is implemented and qualified.
+
+## Sail source build
+
+`source_build.lock` on the Sail component identifies
+[sail-source.lock.json](sail-source.lock.json). The package selection retains
+0.7.1 as the compatibility version; the source commit, build profile and produced
+wheel hash identify the deployed engine. A00's old PyPI wheel remains a comparison
+fixture only. Native assembly requires source artifacts from the same CI run.
+Available Cargo licenses/notices and source identities ship with the release;
+missing transitive notices still belong to the public redistribution audit.

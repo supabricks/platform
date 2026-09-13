@@ -222,6 +222,18 @@
           "items": {
             "$ref": "#/$defs/artifact"
           }
+        },
+        "source_build": {
+          "type": "object",
+          "properties": {
+            "lock": {
+              "const": "components/sail-source.lock.json"
+            }
+          },
+          "required": [
+            "lock"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

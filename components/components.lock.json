@@ -21,14 +21,14 @@
           "evidence": [
             "components/provenance/native-linux.json"
           ],
-          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "components/provenance/native-macos.json"
           ],
-          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -49,14 +49,14 @@
           "evidence": [
             "components/provenance/native-linux.json"
           ],
-          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "components/provenance/native-macos.json"
           ],
-          "remaining": "Current PG17 minor; macOS clean-host/offline evidence; release license/signing audit; P03 storage/lifecycle qualification"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -75,12 +75,12 @@
         "linux-x86_64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P03 dynamic compute lifecycle, deliberate stop, process groups and supervisor death"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P03 dynamic compute lifecycle, deliberate stop, process groups and supervisor death"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": [
@@ -112,12 +112,12 @@
         "linux-x86_64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P03 Neon S3 compatibility, disk exhaustion and acknowledged-write durability"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P03 Neon S3 compatibility, disk exhaustion and acknowledged-write durability"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": [
@@ -142,19 +142,20 @@
       "repository": "https://sqlite.org",
       "license": "blessing",
       "selection": {
-        "kind": "unselected",
-        "reason": "Choose bundled library version with Rust storage dependency in P02"
+        "kind": "package",
+        "name": "libsqlite3-sys",
+        "version": "0.38.2"
       },
       "qualification": {
         "linux-x86_64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P02 migrations, restart recovery, locking and durable operation replay"
+          "remaining": "Bundled by rusqlite through Cargo.lock; catalog 10 and recovery/migrations qualified in R04. Component-only probe status is historical; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "P02 migrations, restart recovery, locking and durable operation replay"
+          "remaining": "Bundled by rusqlite through Cargo.lock; catalog 10 and recovery/migrations qualified in R04. Component-only probe status is historical; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -174,12 +175,12 @@
         "linux-x86_64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "R02 full runtime dependency/license inventory, relocation and offline operation"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "untested",
           "evidence": [],
-          "remaining": "R02 full runtime dependency/license inventory, relocation and offline operation"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": [
@@ -201,7 +202,7 @@
       "id": "pysail",
       "role": "Spark Connect analytical execution",
       "owner": "supabricks/platform",
-      "repository": "https://github.com/lakehq/sail",
+      "repository": "https://github.com/supabricks/sail",
       "license": "Apache-2.0",
       "selection": {
         "kind": "package",
@@ -216,17 +217,20 @@
             "spikes/local-analytics/requirements.txt",
             "python/analytics/evidence/linux-x86_64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Evidence here is the historical upstream 0.7.1 package probe. The selected source build requires its own alpha.17 installed qualification in platform #45; see docs/architecture/source-built-sail.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "python/analytics/evidence/macos-arm64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Evidence here is the historical upstream 0.7.1 package probe. The selected source build requires its own alpha.17 installed qualification in platform #45; see docs/architecture/source-built-sail.md."
         }
       },
-      "artifacts": []
+      "artifacts": [],
+      "source_build": {
+        "lock": "components/sail-source.lock.json"
+      }
     },
     {
       "id": "pyspark-client",
@@ -247,14 +251,14 @@
             "spikes/local-analytics/requirements.txt",
             "python/analytics/evidence/linux-x86_64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "python/analytics/evidence/macos-arm64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -278,14 +282,14 @@
             "spikes/local-analytics/requirements.txt",
             "python/analytics/evidence/linux-x86_64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "python/analytics/evidence/macos-arm64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -309,14 +313,14 @@
             "spikes/local-analytics/requirements.txt",
             "python/analytics/evidence/linux-x86_64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "python/analytics/evidence/macos-arm64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
@@ -340,14 +344,14 @@
             "spikes/local-analytics/requirements.txt",
             "python/analytics/evidence/linux-x86_64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         },
         "macos-arm64": {
           "state": "probe-passed",
           "evidence": [
             "python/analytics/evidence/macos-arm64.json"
           ],
-          "remaining": "A01\u2013A03 Postgres export/epochs/sessions; R02 private runtime and release packaging"
+          "remaining": "Historical component-level evidence; installed P/A/N/NE/C/I/R workflows are qualified through R04. Public distribution and physical reboot/power-loss gates remain; see docs/plans/status.md."
         }
       },
       "artifacts": []
