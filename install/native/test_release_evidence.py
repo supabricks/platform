@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from demo import FILES
+from test_sail import sample_report
 from environment_evidence import SUITES
 from release_evidence import collect, markdown
 
@@ -26,7 +27,7 @@ class ReleaseEvidence(unittest.TestCase):
                     else:
                         data['checks'] = self.checks(minimum)
                     if suite == 'release-environment-lifecycle' and name == 'qualification.json':
-                        data.update(target=target, source=dict(platform_commit='reviewed',platform_dirty=False,
+                        data.update(target=target, source=dict(sail=sample_report(target),platform_commit='reviewed',platform_dirty=False,
                             console=dict(manifest_sha256=HASH,package_lock_sha256=HASH,source=dict(commit='console',dirty=False,manifest_sha256=HASH,package_lock_sha256=HASH)),
                             ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=10,postgres_major=17)),
                             archives=dict(new=dict(version='alpha',target=target,sha256=HASH),old={}),
@@ -93,6 +94,7 @@ class ReleaseEvidence(unittest.TestCase):
         for mutate in (lambda d:d['source']['console']['source'].update(commit='stale'),
                        lambda d:d['source']['console']['source'].update(dirty=True),
                        lambda d:d['source']['console']['source'].update(manifest_sha256=OTHER),
+                       lambda d:d['source']['sail'].update(commit='stale'),
                        lambda d:d['source']['ingestion'].update(worker_sha256=OTHER),
                        lambda d:d['archives']['new'].update(version='old')):
             self.change('release-environment-lifecycle','qualification.json',mutate)

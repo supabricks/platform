@@ -186,7 +186,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     (destination / 'provenance/platform-dependencies.json').write_text(json.dumps(packages, indent=2) + '\n')
     if not args.postgres_only:
         from analytics import assemble_analytics
-        assemble_analytics(destination, args.target)
+        analytical_provenance = assemble_analytics(destination, args.target)
         from notebooks import assemble_notebooks
         notebook_provenance = assemble_notebooks(destination, args.target)
         from environments import assemble_environments
@@ -210,6 +210,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     )
     if not args.postgres_only:
         provenance['ingestion'] = dict(protocol_version=1, worker_sha256=digest(ROOT / 'python/ingest/worker.py'))
+        provenance['sail'] = analytical_provenance['sail']
         provenance['notebooks'] = notebook_provenance
         provenance['environments'] = environment_provenance
     files = {}
@@ -243,7 +244,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.16')
+    parser.add_argument('--version', default='v0.1.0-alpha.17')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

@@ -1,5 +1,11 @@
 # Supabricks repository and component map
 
+Current ownership/status: [delivery ledger](status.md). The inspected commits
+below are historical baselines. The console now lives in `supabricks/console`;
+`supabricks/sail` owns the maintained analytical engine source consumed by
+[the platform source build](../architecture/source-built-sail.md). Legacy PR #1
+is closed without merging as of 2026-09-13.
+
 *Inspected: 2026-09-05. This records observed repository state, not inferred
 capabilities from repository descriptions. Implementation sequence:
 [local-runtime-implementation.md](local-runtime-implementation.md).*
@@ -136,7 +142,7 @@ branch. It is a component fixture, not an existing OLTAP implementation.
 
 ## UI, website and scope
 
-[Platform PR #1](https://github.com/supabricks/platform/pull/1) is open: it removes
+[Platform PR #1](https://github.com/supabricks/platform/pull/1) was open at the original inspection (now closed): it removes
 the Carbon UI and plans a future console in a separate repository. Its unit and
 e2e checks were successful at inspection, but it was not merged. This plan does
 not require the Carbon bundle or merge that PR. Avoid changes that recreate its
@@ -155,7 +161,7 @@ runtime builds must not depend on private business documents or website access.
 **Console phase update, 2026-09-08:** new local console work is now planned in
 `platform/console/`, with ingestion and its daemon integration in `platform` and
 a later extension in `platform/extensions/vscode/`. Keep the existing `ui/`
-operator contract separate; PR #1 remains open at this reinspection. This updates
+operator contract separate; PR #1 was open at that dated reinspection and is now closed. This updates
 the earlier proposal of a separate console repository. See the
 [architecture](../architecture/local-console-ingestion.md) and
 [PR sequence](console-ingestion-implementation.md). The earlier source inventory
@@ -166,7 +172,8 @@ above remains a dated baseline, not a claim that the local runtime is absent.
 **Product behavior and assembled releases live in `platform`.** A source patch
 to a pageserver, safekeeper, broker, compute_ctl or the Neon PG extension belongs
 in `neon`. A PG core patch belongs in the relevant `postgres/sb/*` branch.
-Off-the-shelf Sail, delta-rs, SeaweedFS and Process Compose remain upstream
+Sail changes belong in `supabricks/sail` and are consumed through the platform
+source lock. Off-the-shelf delta-rs, SeaweedFS and Process Compose remain upstream
 dependencies pinned by the platform release; create no new fork merely to rename
 or repackage them. Cross-repository integration happens through immutable source
 and artifact identities.

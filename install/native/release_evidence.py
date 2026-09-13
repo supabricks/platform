@@ -9,6 +9,7 @@ import re
 
 from environment_evidence import SUITES, collect as environments
 from demo import FILES
+from sail import verify_report as verify_sail
 
 TARGETS = ('linux-x86_64', 'macos-arm64')
 METRICS = ('source_bytes', 'rows', 'decoded_bytes', 'duration_ms', 'peak_rss_bytes',
@@ -62,6 +63,7 @@ def collect(directory, revision, console, worker, version):
         env = prior['targets'][target]
         identity = env['release_sha256']
         source = env['source']
+        sail = verify_sail(source.get('sail', {}), target)
         frontend = source['console']['source']
         require(sha(identity), 'invalid release manifest identity')
         require(frontend['commit'] == console and frontend['dirty'] is False, 'console source differs from reviewed pin')
@@ -137,7 +139,7 @@ def collect(directory, revision, console, worker, version):
             formats[name] = dict(source_sha256=sample['source_sha256'], budget_source_sha256=budget['source_sha256'], measurements=measured)
         require(env['notices'] and all(sha(v) for v in env['notices'].values()), 'missing notice inventory')
         result['targets'][target] = dict(
-            release_sha256=identity, archive=env['archive'], reports=reports,
+            sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
             source=dict(platform_commit=revision, console_commit=console,
                         console_manifest_sha256=source['console']['manifest_sha256'],
                         console_lock_sha256=source['console']['package_lock_sha256'], ingestion_worker_sha256=worker),
@@ -153,6 +155,7 @@ def collect(directory, revision, console, worker, version):
 def markdown(report):
     lines = ['# Qualified local release', '', f"Version: `{report['version']}` · source: `{report['revision']}`", '',
              f"Console source: `{report['console_commit']}`", '',
+             f"Sail source: `{report['targets']['linux-x86_64']['sail']['commit']}` (native build on each target)", '',
              '| Target | Chromium | Checks across reports | Manifest SHA-256 |', '| --- | --- | ---: | --- |']
     for target, data in report['targets'].items():
         lines.append(f"| {target} | {data['browser']['version']} | {sum(r['checks'] for r in data['reports'].values())} | `{data['release_sha256']}` |")
@@ -174,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.16')
+    parser.add_argument('--version', default='v0.1.0-alpha.17')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

@@ -86,6 +86,16 @@ def validate(manifest, root=ROOT, require_qualified=False):
     for name in sorted(REQUIRED_COMPONENTS - components.keys()):
         errors.append(f"missing initial component: {name}")
 
+    sail = components.get("pysail", {})
+    source_path = (root / "components/sail-source.lock.json").resolve()
+    source = read_json(source_path) if source_path.is_relative_to(root) and source_path.is_file() else {}
+    if (sail.get("source_build") != {"lock": "components/sail-source.lock.json"}
+            or source.get("repository") != sail.get("repository")
+            or source.get("version") != sail.get("selection", {}).get("version")
+            or not re.fullmatch(r"[0-9a-f]{40}", source.get("commit", ""))
+            or set(source.get("targets", {})) != set(manifest["targets"])):
+        errors.append("pysail: controlled source build differs from component selection")
+
     pair = manifest["engine_pair"]
     for field, expected in (("neon", "neon-engine"), ("postgres", "postgres17")):
         name = pair[field]

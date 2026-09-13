@@ -1,6 +1,6 @@
 # Console and ingestion implementation plan
 
-*Status: C01-C03 / I00-I03 complete; R04 in qualification · Reconciled: 2026-09-13*
+*Status: C01-C03 / I00-I03 / R04 merged · Reconciled: 2026-09-13*
 
 Implement in `supabricks/platform`, starting from
 `main@278926b857673b4f7be0a6b86dde300318fbe4b1` (R03 merged). The
@@ -14,11 +14,12 @@ at `d18aae7`. The first installed CSV/branching demo is complete. The requested
 [notebook phase](notebook-implementation.md) now follows that milestone and can
 use A03 without waiting for I03 or C03. The sequence below records the original
 console/ingestion order; N00-N05 adds an intervening notebook phase. I03, C03 and
-R04 remain open, and R04 must include notebook regression evidence if notebooks
-ship in its combined release.
+R04 were open at that point; all have since merged with notebook regressions
+included in the combined release.
 
 **Reconciliation, 2026-09-13:** I03 is merged after N00-N06 and NE01-NE06;
-C03 merged as platform #43 and console #4; R04 is now active.
+C03 merged as platform #43 and console #4; R04 merged in platform #44 with both alpha.16 archives qualified.
+See [delivery status](status.md) for the remaining public-release gates.
 The implementation baseline is NE06 merged in PR #41 (`main@9c0d5e3`), catalog
 10, with console source pinned from `supabricks/console`. [I03's contract](../architecture/i03-ingestion.md)
 records reused services, type policy and qualification. Notebook SQL execution

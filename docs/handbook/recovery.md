@@ -1,6 +1,6 @@
 # Back up, restore and upgrade the localhost preview
 
-R04 uses `v0.1.0-alpha.16` with catalog 10. Linux x86_64 and Apple
+R04 uses `v0.1.0-alpha.17` with catalog 10. Linux x86_64 and Apple
 Silicon macOS use their own native bundles. The release gate upgrades the exact
 PR34 alpha.8 catalog-9 archive and the NE05 alpha.12 archive with existing notebook environments; migration fixtures also cover catalog 8.
 See the [environment manager](../architecture/ne02-environment-manager.md) and
@@ -43,7 +43,7 @@ new destination and retain the partial directory until you have inspected it.
 
 ## Upgrade to the current localhost candidate
 
-Serve the prepared alpha.16 release directory with `install/native/serve.py` as in
+Serve the prepared alpha.17 release directory with `install/native/serve.py` as in
 the installer quickstart. In the client terminal:
 
 ```sh
