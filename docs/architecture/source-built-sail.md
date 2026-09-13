@@ -10,7 +10,7 @@ reviewed immutable commits, never a floating branch or tag.
 ## Build and ownership
 
 `components/sail-source.lock.json` pins the fork commit, source file hashes,
-Rust 1.96.0, Maturin 1.15.0 and checksum-verified protoc 36.1 per target.
+Rust 1.96.0 with rustfmt, Maturin 1.15.0 and checksum-verified protoc 36.1 per target.
 Cargo builds with `--locked`. The optimized release profile retains upstream
 optimization level 3 but disables LTO and uses 16 codegen units with two build
 jobs to bound compiler memory on standard native runners. These choices are
@@ -48,7 +48,7 @@ pinned Rust toolchain, Python 3.12,
 and the hashed Maturin requirement, then use a clean checkout of the fork:
 
 ```sh
-rustup toolchain install 1.96.0 --profile minimal
+rustup toolchain install 1.96.0 --profile minimal --component rustfmt
 python3 -m pip install --require-hashes --no-deps --only-binary=:all: -r components/sail-build-requirements.txt
 git clone https://github.com/supabricks/sail.git build/sail-source
 git -C build/sail-source checkout 9544c9253e981a82c5f9e493c43ce98a4d9d41b7

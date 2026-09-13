@@ -66,6 +66,9 @@ def build(source, target, output):
     rustc = run('rustc', '--version', capture=True)
     if rustc.split()[1] != pin['rust'] or run(protoc, '--version', capture=True) != 'libprotoc ' + pin['protoc_version']:
         raise ValueError('incorrect compiler version')
+    # Sail formats generated Thrift bindings during compilation. Check this
+    # prerequisite before spending time building the Rust dependency graph.
+    rustfmt = run('rustfmt', '--version', capture=True)
     started = time.monotonic()
     run(sys.executable, '-m', 'maturin', 'build', '--release', '--locked', '--compatibility', 'off',
         '--interpreter', sys.executable, '--out', output)
@@ -92,7 +95,7 @@ def build(source, target, output):
         shutil.copy2(source / name, output / name)
     report = dict(schema_version=1, repository=pin['repository'], commit=pin['commit'], source_dirty=False,
                   version=pin['version'], target=target, inputs=pin['inputs'], rustc=rustc,
-                  maturin=pin['maturin'], protoc=tool, profile=pin['profile'],
+                  maturin=pin['maturin'], rustfmt=rustfmt, protoc=tool, profile=pin['profile'],
                   builder_script_sha256=sha(Path(__file__)), source_lock_sha256=sha(ROOT / 'components/sail-source.lock.json'),
                   builder=platform.platform(), elapsed_seconds=time.monotonic() - started,
                   wheel=dict(file=wheels[0].name, sha256=sha(wheels[0])),
