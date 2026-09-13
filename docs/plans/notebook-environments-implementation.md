@@ -1,6 +1,6 @@
 # Managed notebook environments implementation plan
 
-*Status: NE00–NE03 merged; NE04 implementation under validation · Baseline: platform/main@d51ff42 · Updated: 2026-09-12*
+*Status: NE00–NE04 merged; NE05 implementation under validation · Baseline: platform/main@b5fb6c7 · Updated: 2026-09-12*
 
 Follow up the [notebook implementation](notebook-implementation.md) with a
 conventional local Python workflow: project dependencies live in a virtual
@@ -299,6 +299,8 @@ clean target returns the selected versions. A package operation never modifies
 the currently executing kernel or acquires an analytical session unnecessarily.
 
 ### NE05 — Integrate environment controls in the console
+
+Implementation: [console environment controls](../architecture/ne05-console-environments.md).
 
 **Depends on:** NE04; API/capability contract can be coordinated earlier.
 **Touch:** `supabricks/console`, followed by a platform gitlink/integration PR.

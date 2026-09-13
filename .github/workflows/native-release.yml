@@ -94,7 +94,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.11-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.12-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
       - uses: actions/upload-artifact@v4
         with:
@@ -501,4 +501,47 @@ jobs:
         with:
           name: release-packages-${{ matrix.target }}
           path: build/package-reports/*.json
+          if-no-files-found: error
+
+  release-environment-console:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare browser qualification
+        run: |
+          npm ci --prefix console --no-audit --no-fund
+          npm exec --prefix console -- playwright install --with-deps chromium
+          mkdir -p build/environment-console-reports
+      - name: Qualify real console package controls against the installed archive
+        run: >-
+          python install/native/qualify_console.py --directory build/releases
+          --report build/environment-console-reports/environments.json
+          --node "$(command -v node)" --harness console/scripts/qualify-environments.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-environment-console-${{ matrix.target }}
+          path: build/environment-console-reports/*
           if-no-files-found: error

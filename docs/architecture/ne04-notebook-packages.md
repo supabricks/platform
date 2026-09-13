@@ -28,7 +28,7 @@ Commit `notebooks/environment/pyproject.toml` and `uv.lock`. The managed directo
 must contain only those two files so a transaction cannot move unrelated files.
 Use the existing console **Use prepared environment** action to adopt a ready
 generation. It discards variables without replaying cells and retains the
-analytical snapshot. Full package controls in the console are NE05.
+analytical snapshot. Full package controls are described in [NE05](ne05-console-environments.md).
 
 `env status` reports protected package versions, declaration hashes, active
 identity, preparation status and recent operations. Mutations return durable

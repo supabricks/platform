@@ -55,6 +55,9 @@ pub enum Command {
     Notebook {
         command: crate::notebooks::contract::Command,
     },
+    Environment {
+        command: crate::environments::Command,
+    },
     NotebookFiles {
         command: crate::notebooks::files::Command,
     },

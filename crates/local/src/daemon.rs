@@ -554,7 +554,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_adoption":true},
+                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -719,6 +719,16 @@ impl Daemon {
                     &owner,
                     command,
                 );
+            }
+            C::Environment { command } => {
+                self.consoles.owns(
+                    &binding,
+                    owner
+                        .split_once(':')
+                        .ok_or_else(|| invalid("invalid console owner"))?
+                        .0,
+                )?;
+                return self.environments.handle(&mut self.store, &binding, command);
             }
             C::NotebookFiles { command } => {
                 self.consoles.owns(

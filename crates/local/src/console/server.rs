@@ -29,6 +29,9 @@ use std::{
 };
 use tokio::{net::TcpListener, sync::Semaphore};
 
+// Shared with notebook/package admission; health checks must tolerate the same work.
+const CONTROL_TIMEOUT: Duration = Duration::from_secs(6);
+
 type Reply = Response<Full<Bytes>>;
 struct Session {
     cancel: tokio::sync::watch::Sender<bool>,
@@ -106,7 +109,7 @@ impl State {
                     binding: config.binding,
                     generation: config.generation,
                 },
-                Duration::from_secs(2),
+                CONTROL_TIMEOUT,
             )
         })
         .await
@@ -381,8 +384,12 @@ impl State {
             // reads can exceed the general two-second control deadline. Allow
             // these commands to finish within the outer eight-second HTTP bound;
             // never resend a mutation after a transport timeout.
-            let deadline = if matches!(&action, super::workspace::Command::Notebook { .. }) {
-                Duration::from_secs(6)
+            let deadline = if matches!(
+                &action,
+                super::workspace::Command::Notebook { .. }
+                    | super::workspace::Command::Environment { .. }
+            ) {
+                CONTROL_TIMEOUT
             } else {
                 Duration::from_secs(2)
             };
@@ -490,15 +497,31 @@ pub(super) async fn serve(config: Config) -> Result<()> {
         &json!({"port":port,"instance":config.instance,"pid":std::process::id()}),
     )?;
     let permits = Arc::new(Semaphore::new(16));
-    let mut heartbeat = tokio::time::interval(Duration::from_secs(2));
-    let mut failures = 0;
+    let health = async {
+        let mut heartbeat = tokio::time::interval(Duration::from_secs(2));
+        heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        let mut failures = 0;
+        loop {
+            heartbeat.tick().await;
+            // Keep accepting HTTP while the single writer verifies an environment.
+            // Check ownership alongside overview so one cannot delay the other.
+            let (owner, overview) = tokio::join!(state.notebook_heartbeat(), state.overview());
+            if owner.is_err() || overview.is_err() {
+                failures += 1;
+            } else {
+                failures = 0;
+            }
+            // Daemon replacement, binding changes and lost ownership still fail
+            // closed. A slow but bounded package operation is not daemon death.
+            if failures >= 2 {
+                return;
+            }
+        }
+    };
+    tokio::pin!(health);
     loop {
         tokio::select! {
-            _ = heartbeat.tick() => {
-                // Fail closed on daemon death/replacement or project-file changes.
-                if state.overview().await.is_err() || state.notebook_heartbeat().await.is_err() { failures += 1; } else { failures = 0; }
-                if failures >= 2 { return Ok(()); }
-            }
+            _ = &mut health => return Ok(()),
             accept = listener.accept() => {
                 let (stream, _) = accept?;
                 let Ok(permit) = permits.clone().try_acquire_owned() else { drop(stream); continue; };

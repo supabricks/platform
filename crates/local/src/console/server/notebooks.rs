@@ -74,7 +74,7 @@ impl State {
                 // A second kernel's admission can delay this check just as it
                 // delays notebook workspace commands. Keep the existing channel
                 // alive while that bounded work completes.
-                Duration::from_secs(6),
+                CONTROL_TIMEOUT,
             )
         })
         .await
@@ -96,7 +96,7 @@ impl State {
                     instance: config.instance,
                     sessions,
                 },
-                Duration::from_secs(2),
+                CONTROL_TIMEOUT,
             )
         })
         .await

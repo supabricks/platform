@@ -683,3 +683,53 @@ fn explicit_adoption_can_read_project_root_without_following_a_virtualenv() {
         (b"root manifest".to_vec(), b"root lock".to_vec())
     );
 }
+
+#[test]
+fn console_inspection_reports_only_bound_generations_and_recorded_packages() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let g = f.ready("display");
+    let operations = f.store.environment_operations().unwrap();
+    let mut operation = operations
+        .into_iter()
+        .find(|o| o.generation == Some(g.id))
+        .unwrap();
+    operation.result = Some(json!({"packages":{"example":"1.2.3"}}));
+    f.store.save_environment_operation(&operation).unwrap();
+    let inspect = f
+        .manager
+        .handle(&mut f.store, &f.binding, Command::Inspect)
+        .unwrap();
+    assert_eq!(inspect["environments"][0]["packages"]["example"], "1.2.3");
+    assert_eq!(inspect["python_version"], "3.12.13");
+    let mut other = f.binding.clone();
+    other.project_id = ProjectId::new();
+    assert!(
+        status::generations(
+            &f.store,
+            &other,
+            &f.package,
+            &f.store.environment_operations().unwrap()
+        )
+        .unwrap()
+        .is_empty()
+    );
+    assert!(
+        f.manager
+            .handle(&mut f.store, &other, Command::Status { id: operation.id })
+            .is_err()
+    );
+    // Package status reads recorded inventory; it never imports arbitrary files.
+    fs::write(
+        g.path.join("package.py"),
+        "raise RuntimeError('do not execute')",
+    )
+    .unwrap();
+    assert_eq!(
+        f.manager
+            .handle(&mut f.store, &f.binding, Command::Inspect)
+            .unwrap()["environments"][0]["packages"]["example"],
+        "1.2.3"
+    );
+    assert!(Manager::select(&mut f.store, &f.binding, g.id).is_err());
+}

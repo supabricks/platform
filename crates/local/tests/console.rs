@@ -224,6 +224,27 @@ fn notebook_control_waits_through_a_busy_daemon_without_resending() {
 }
 
 #[test]
+fn console_health_checks_keep_http_responsive_while_the_daemon_is_busy() {
+    let fixture = Fixture::new();
+    let (origin, token) = parts(&fixture.open());
+    assert_eq!(login(&origin, &token).status, 200);
+    let pid = fixture.daemon.id() as libc::pid_t;
+    assert_eq!(unsafe { libc::kill(pid, libc::SIGSTOP) }, 0);
+    let resume = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(7));
+        assert_eq!(unsafe { libc::kill(pid, libc::SIGCONT) }, 0);
+    });
+    // A heartbeat is now waiting on the single writer. Static HTTP must still
+    // be accepted, and two short control timeouts must not kill the console.
+    std::thread::sleep(Duration::from_secs(3));
+    let started = Instant::now();
+    assert_eq!(http(&origin, "GET", "/", &[], "").status, 200);
+    assert!(started.elapsed() < Duration::from_secs(2));
+    resume.join().unwrap();
+    assert_eq!(http(&origin, "GET", "/", &[], "").status, 200);
+}
+
+#[test]
 fn notebook_documents_cross_both_transports_with_string_revisions_and_conflicts() {
     let fixture = Fixture::new();
     let (origin, token) = parts(&fixture.open());
@@ -655,6 +676,35 @@ fn workspace_commands_enforce_csrf_revisions_private_saved_files_and_backup() {
         call(json!({"action":"select_branch","branch":"main"})).status,
         400
     );
+    let env =
+        json!({"action":"environment","command":{"action":"find","key":"browser-package-test"}});
+    assert_eq!(
+        http(
+            &origin,
+            "POST",
+            "/api/workspace",
+            &headers[..4],
+            &env.to_string()
+        )
+        .status,
+        403
+    );
+    let inspected = call(env);
+    assert_eq!(
+        inspected.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&inspected.body)
+    );
+    assert!(
+        serde_json::from_slice::<Value>(&inspected.body).unwrap()["value"]["operation"].is_null()
+    );
+    assert_eq!(
+        call(json!({"action":"environment","command":{"action":"inspect","project_id":"other"}}))
+            .status,
+        400
+    );
+    assert_eq!(call(json!({"action":"environment","command":{"action":"manage","key":"bad","change":{"kind":"add","requirement":"demo"}}})).status,400);
     let created = call(json!({"action":"create_database","name":"main","key":"saved-main"}));
     assert_eq!(
         created.status,
