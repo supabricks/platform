@@ -33,7 +33,56 @@ permissions:
   actions: read
 
 jobs:
+  source-sail:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read reviewed Sail source
+        id: sail
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          pin = json.load(open('components/sail-source.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('commit=' + pin['commit'] + '\n')
+              output.write('rust=' + pin['rust'] + '\n')
+          PYCODE
+      - uses: actions/checkout@v4
+        with:
+          repository: supabricks/sail
+          ref: ${{ steps.sail.outputs.commit }}
+          path: build/sail-source
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.sail.outputs.rust }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: build/sail-source -> target
+          shared-key: source-sail-${{ matrix.target }}
+      - name: Install pinned source builder
+        run: python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/sail-build-requirements.txt
+      - name: Build native Sail from locked source
+        run: python components/build-sail.py --source build/sail-source --target ${{ matrix.target }} --output build/sail-artifacts/${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-sail-${{ matrix.target }}
+          path: build/sail-artifacts/${{ matrix.target }}
+          if-no-files-found: error
+
   assemble:
+    needs: source-sail
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +139,10 @@ jobs:
           python install/native/test_release_evidence.py
           python install/native/test_demo.py
           python install/native/test_cleanup.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-sail-${{ matrix.target }}
+          path: build/sail-artifacts/${{ matrix.target }}
       - name: Assemble exact native release
         run: |
           uv export --project python/notebooks --locked --format requirements-txt --no-emit-project --output-file python/notebooks/requirements.lock > /dev/null

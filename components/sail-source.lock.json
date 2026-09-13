@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/supabricks/sail",
+  "upstream": "https://github.com/lakehq/sail",
+  "upstream_tag": "v0.7.1",
+  "commit": "9544c9253e981a82c5f9e493c43ce98a4d9d41b7",
+  "version": "0.7.1",
+  "inputs": {
+    "Cargo.lock": "3a19a605f46aa32002e7cdfcda6816b06d0fd09ff9db37b4dd0c0b6d558e76b1",
+    "Cargo.toml": "e008ee0294c7f8401c97518f301711fbcd26c0ae9333d4a1dca20f40d4b3f7d2",
+    "pyproject.toml": "2bbc410c581efe06bf614ee1f1074eaf349dceea8e614295c389cd128a424396",
+    "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  "rust": "1.96.0",
+  "maturin": "1.15.0",
+  "protoc_version": "36.1",
+  "profile": {
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "CARGO_PROFILE_RELEASE_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "targets": {
+    "linux-x86_64": {
+      "protoc": {
+        "url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-linux-x86_64.zip",
+        "sha256": "c4bc672d9d49214dc8cafdceadf4df92182d6ca8e3ec65a56b2d7de5602669b4"
+      }
+    },
+    "macos-arm64": {
+      "protoc": {
+        "url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-osx-aarch_64.zip",
+        "sha256": "de56d57afe30c5d191b11d24ff93dd4025728d7fb43b773886b2d3613e0bdbb2"
+      }
+    }
+  }
+}
