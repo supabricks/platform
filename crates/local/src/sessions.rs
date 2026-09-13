@@ -1,5 +1,6 @@
 //! On-demand Sail workers. No process may read a generation before its durable
 //! session reference and native PID/birth identity have committed.
+mod paths;
 use crate::{
     api::{Action, Binding},
     store::{
@@ -288,6 +289,7 @@ impl Sessions {
         // Removal follows proof of death; the durable reference stays until
         // cleanup completes, including after a filesystem error.
         let dir = workspace(store, s.id);
+        paths::remove(&dir, s.id)?;
         if dir.exists() {
             fs::remove_dir_all(dir)?;
         }
@@ -370,9 +372,12 @@ impl Sessions {
                 .descriptor
                 .ok_or_else(|| invalid("missing snapshot descriptor"))?;
             let metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
+            // The durable starting session identifies this alias even if the
+            // daemon stops between its creation and worker launch.
+            let sail_workspace = paths::create(&dir, s.id)?;
             supervisor::write_json(
                 &dir.join("input.json"),
-                &json!({"root":store.root(),"workspace":dir,"descriptor":descriptor,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
+                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
             )?;
             let env = BTreeMap::from([
                 ("PATH".into(), "/usr/bin:/bin".into()),

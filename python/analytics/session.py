@@ -189,6 +189,15 @@ def run(config):
     generation = (root / descriptor['generation']).resolve()
     if not generation.is_relative_to(root / 'analytics' / 'generations'):
         raise ValueError('generation must be inside the analytical store')
+    sail_generation = generation
+    if config.get('sail_workspace'):
+        # Sail 0.7.1's Delta prefix treats URL-encoded names as literal paths.
+        # The daemon owns this ASCII alias until worker death, including recovery.
+        alias = Path(config['sail_workspace'])
+        if alias.resolve() != workspace.resolve():
+            raise ValueError('analytical workspace alias changed')
+        (workspace / 'snapshot').symlink_to(generation, target_is_directory=True)
+        sail_generation = alias / 'snapshot'
     tables = descriptor['manifest']['tables']
     validate_decimal_statistics(generation, tables)
     schemas = {t['schema'] for t in tables}
@@ -207,7 +216,7 @@ def run(config):
         spark.sql(f'CREATE DATABASE IF NOT EXISTS {identifier(schema)}').collect()
     for table in tables:
         source = f"_supabricks_source.t_{table['oid']}"
-        path = str(generation / table['path'])
+        path = str(sail_generation / table['path'])
         spark.sql(f'CREATE TABLE {source} USING delta LOCATION {literal(path)}').collect()
         name = identifier(table['schema']) + '.' + identifier(table['name'])
         spark.sql(f"CREATE VIEW {name} AS SELECT * FROM {source} VERSION AS OF {int(table['version'])}").collect()

@@ -9,7 +9,7 @@ from pathlib import Path
 SUITES = {
     'release-environments': {'qualification.json': 10, 'qualification-kernels.json': 10},
     'release-packages': {'qualification.json': 12},
-    'release-environment-lifecycle': {'qualification.json': 7, 'qualification-index.json': 6},
+    'release-environment-lifecycle': {'qualification.json': 8, 'qualification-index.json': 6},
     'release-environment-console': {'environments.json': 16},
     'release-notebooks': {'notebooks.json': 13},
     'release-console': {'console.json': 1},

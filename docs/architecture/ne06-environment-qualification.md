@@ -35,6 +35,25 @@ Offline sync must fail without its artifacts; explicit bundle import must build
 a new environment and execute the preserved Sail snapshot. The source data root
 and its venv remain present so accidental cross-root reuse/deletion is detectable.
 
+## Restored path fix
+
+The cold restore exposed a Sail 0.7.1 Delta bug: URL-escaped filesystem prefixes
+are treated as literal names, so a valid snapshot under a path containing spaces,
+percent signs or Unicode appears missing. The native analytical session now
+creates an exclusive ASCII symlink in `/tmp` pointing to its private session
+workspace, with a workspace-local link to the already validated generation.
+No snapshot bytes are copied or modified. The durable session ID identifies the
+alias before worker launch. Cleanup follows proven worker death, removes only a
+matching owned symlink and rejects substituted entries; daemon recovery does the
+same before releasing the session reference. The underlying data-root permissions
+continue to protect access.
+
+The native lifecycle test restores into a path containing spaces, a quote, a
+percent sign and Unicode. It executes the saved Delta snapshot, kills only its
+owned daemon with a live kernel, verifies alias/lease cleanup, and explicitly
+starts another kernel without replay. Unit tests cover exclusive creation,
+collision/substitution refusal and preserving the target during cleanup.
+
 ## Deterministic resolver faults
 
 `index.py` serves a controlled loopback package index containing hash-pinned

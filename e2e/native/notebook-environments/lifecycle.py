@@ -9,6 +9,7 @@ import hashlib
 from http.server import ThreadingHTTPServer
 import json
 import os
+import psutil
 from pathlib import Path
 import shutil
 import sqlite3
@@ -221,7 +222,7 @@ def qualify(args):
         final_backup = root / 'backup'; cli(project, 'backup', 'create', final_backup); cli(project, 'backup', 'verify', final_backup)
         saved = json.loads((final_backup / 'backup.json').read_text())
         assert not any(name.startswith(('notebook-environments/', 'notebook-environment-cache/', 'notebook-environment-artifacts/')) for name in saved['files'])
-        restored = root / 'restored data'; roots.append(restored)
+        restored = root / "r % ' é"; roots.append(restored)
         original_data = data
         data = restored
         cli(project, 'backup', 'restore', final_backup)
@@ -243,7 +244,31 @@ def qualify(args):
         a = Console(project, cli, channels)
         assert a.action('list') == []
         assert a.request('notebooks/contents', dict(action='get', path='lifecycle.ipynb'))['value']['document'] == document
-        live = a.start(restored_generation['id'], epoch); ws = query(a, live, '4.13.0', boltons=True); ws.close(); a.stop(live)
+        live = a.start(restored_generation['id'], epoch); ws = query(a, live, '4.13.0', boltons=True)
+        with sqlite3.connect(f'file:{data}/state.sqlite3?mode=ro', uri=True) as db:
+            sessions = [r[0] for r in db.execute("SELECT id FROM analytical_sessions WHERE state='ready'")]
+        aliases = [Path('/tmp') / f'supabricks-sail-{os.geteuid()}-{identity}' for identity in sessions]
+        assert len(aliases) == 1 and all(path.is_symlink() for path in aliases)
+        execute(ws, 'after_restore = 88')
+        daemons = [p for p in psutil.process_iter(['cmdline', 'uids'])
+                   if 'daemon' in (p.info['cmdline'] or []) and str(data) in (p.info['cmdline'] or [])
+                   and p.info['uids'].effective == os.geteuid()]
+        assert len(daemons) == 1
+        daemon = daemons[0]; daemon.kill()
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                if not daemon.is_running() or daemon.status() == psutil.STATUS_ZOMBIE: break
+            except psutil.NoSuchProcess: break
+            time.sleep(.05)
+        else: raise TimeoutError('owned daemon did not exit')
+        ws.close(); cli(project, 'up')
+        assert not records('environment_leases') and all(not path.is_symlink() for path in aliases)
+        a = Console(project, cli, channels); assert a.action('list') == []
+        live = a.start(restored_generation['id'], epoch); ws = query(a, live, '4.13.0', boltons=True)
+        execute(ws, "assert 'after_restore' not in globals()")
+        ws.close(); a.stop(live)
+        check('restored_root_with_spaces_quotes_percent_and_unicode_runs_delta_and_crash_recovery_removes_owned_alias_without_replay')
         cli(project, 'env', 'gc')
         assert Path(final_generation['path']).exists() and (original_data / 'state.sqlite3').exists()
         check('cold_backup_restore_and_project_move_rebuild_from_explicit_bundle_and_execute_preserved_snapshot_without_cross_root_reuse')
