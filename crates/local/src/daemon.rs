@@ -133,6 +133,7 @@ pub struct Daemon {
     notebooks: crate::notebooks::Notebooks,
     consoles: crate::console::Consoles,
     console_queries: crate::console::workspace::Queries,
+    console_analytics: crate::console::analytics::Workspace,
     publisher: crate::analytics::Publisher,
     sessions: crate::sessions::Sessions,
     store: Store,
@@ -184,6 +185,7 @@ impl Daemon {
             notebooks,
             consoles,
             console_queries: Default::default(),
+            console_analytics: Default::default(),
             publisher,
             sessions,
             queries: Vec::new(),
@@ -242,6 +244,7 @@ impl Daemon {
                     }
                 };
                 self.uploads.tick(&mut self.store, stopping)?;
+                self.console_analytics.tick(&mut self.store, stopping)?;
                 let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
                     Ok(done) => {
                         self.ingest_error = None;
@@ -554,7 +557,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"analytical_workspace":1,"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -680,6 +683,22 @@ impl Daemon {
         use crate::console::workspace::{Command as C, identifier};
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
+            C::Analytics { command } => {
+                self.consoles.owns(
+                    &binding,
+                    owner
+                        .split_once(':')
+                        .ok_or_else(|| invalid("invalid console owner"))?
+                        .0,
+                )?;
+                return self.console_analytics.handle(
+                    &mut self.store,
+                    self.cell.as_ref(),
+                    &binding,
+                    &scope,
+                    command,
+                );
+            }
             C::NotebookRefresh { target, key } => {
                 target.validate(&self.store, &binding)?;
                 crate::notebooks::contract::key(&key)?;

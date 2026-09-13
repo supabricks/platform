@@ -1,6 +1,6 @@
 # Console and ingestion implementation plan
 
-*Status: C01-C02 / I00-I02 complete; I03 under qualification · Reconciled: 2026-09-13*
+*Status: C01-C02 / I00-I03 complete; C03 in implementation · Reconciled: 2026-09-13*
 
 Implement in `supabricks/platform`, starting from
 `main@278926b857673b4f7be0a6b86dde300318fbe4b1` (R03 merged). The
@@ -17,7 +17,8 @@ console/ingestion order; N00-N05 adds an intervening notebook phase. I03, C03 an
 R04 remain open, and R04 must include notebook regression evidence if notebooks
 ship in its combined release.
 
-**Reconciliation, 2026-09-13:** resume I03 after N00-N06 and NE01-NE06.
+**Reconciliation, 2026-09-13:** I03 is merged after N00-N06 and NE01-NE06;
+C03 is now active.
 The implementation baseline is NE06 merged in PR #41 (`main@9c0d5e3`), catalog
 10, with console source pinned from `supabricks/console`. [I03's contract](../architecture/i03-ingestion.md)
 records reused services, type policy and qualification. Notebook SQL execution
@@ -276,6 +277,9 @@ retry and cancellation case, not just parser unit tests.
 
 ### C03 — Analytical workspace and complete demonstration
 
+Implementation: [C03 scope and contract](../architecture/c03-analytical-workspace.md),
+[user workflow](../handbook/analytical-workspace.md).
+
 **Depends on:** I03, existing A01-A03. **Touch:** console query/activity views,
 existing analytical API adapters and demo walkthrough.
 
@@ -368,5 +372,6 @@ solo-contributor protection rule or merging unrelated PR #1.
 
 Review each implementation PR with a concrete before/after behavior, its exact
 validation and remaining limits. Update capability documentation as slices land.
-The active slice is **I03**. After its two-target qualification, **C03** completes
-the analytical workspace and **R04** qualifies the combined local workflow.
+The active slice is **C03**; I03 merged as platform #42 and console #3 with
+Linux/macOS qualification. [C03 scope and implementation](../architecture/c03-analytical-workspace.md)
+completes the analytical workspace; **R04** qualifies the combined local workflow.

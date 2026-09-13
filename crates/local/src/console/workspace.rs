@@ -42,6 +42,9 @@ impl Target {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Analytics {
+        command: super::analytics::Command,
+    },
     NotebookRefresh {
         target: Target,
         key: String,

@@ -80,3 +80,6 @@ only save text you intend to retain in your private data root and backups.
 
 C02 qualifies Chromium on Linux x86_64 and macOS arm64. File ingestion,
 analytical workspace views and VS Code integration remain later slices.
+
+For Spark SQL on an immutable snapshot of the same branch, see the
+[analytical workspace](analytical-workspace.md).
