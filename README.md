@@ -3,6 +3,10 @@
 [Delivered scope and remaining work](docs/plans/status.md) ·
 [Controlled Sail source builds](docs/architecture/source-built-sail.md)
 
+[Project packaging proposal](docs/architecture/project-packaging.md) ·
+[Industry research](docs/research/project-packaging-industry.md) ·
+[Packaging implementation plan](docs/plans/project-packaging-implementation.md)
+
 Supabricks is a native local database and analytics platform: PostgreSQL 17.8
 with branching, Sail/Spark SQL over immutable Delta snapshots, a browser console,
 file ingestion, and Jupyter notebooks with managed Python environments. It runs
