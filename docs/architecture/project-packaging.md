@@ -8,6 +8,11 @@ Research date: 2026-09-13.
 
 ## Decision
 
+Open-source Unity Catalog, deployed locally or on-prem under the operator's
+control, is the catalog integration target. Supabricks is an independent
+alternative to Databricks. Databricks-hosted compatibility is outside the product
+scope and roadmap; its documentation informs design research only.
+
 Make a Supabricks project a portable definition of code, resources, dependencies
 and required access. Build an immutable package from that definition. Deploy it
 into an execution workspace by binding those requirements to local resources,
@@ -365,9 +370,11 @@ multiuser tamper-resistant audit service.
 Reuse Rust/TOML/JSON, SQLite journal, native archive verification, uv/NE offline
 bundles, PostgreSQL tooling, ingestion workers and Sail. Platform owns these
 contracts; the separate console consumes typed APIs. Prefer Sail's existing UC
-provider to writing another engine connector. Qualify OSS UC and hosted UC as
-independent optional backends; retain the local default until a backend earns
-its operational cost. Use an existing OIDC provider, with Keycloak as an on-prem
+provider to writing another engine connector. Qualify a pinned open-source Unity
+Catalog server with local/on-prem storage and identity providers. Retain the
+current lightweight local metadata until that integration is qualified; the
+remaining choice is deployment footprint, not a hosted vendor backend. Use an
+existing OIDC provider, with Keycloak as an on-prem
 candidate, instead of writing a password/SSO service. Add OCI distribution only
 when remote artifact transport is needed.
 
@@ -375,4 +382,7 @@ These choices synthesize the cited [industry research](../research/project-packa
 Databricks' project/target and data governance separation, Snowflake's logical
 references, and dbt's source/profile/generated-artifact separation. The exact
 Supabricks schema, safety invariants and implementation sequence are proposals.
-The UC backend choice remains open; no cloud-hosted control plane is required.
+Open-source Unity Catalog is selected as the integration target. Its version,
+packaging, storage and identity integration remain qualification decisions.
+The complete workflow must operate without a Databricks account, service or
+control plane.

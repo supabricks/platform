@@ -54,8 +54,8 @@ saved queries, notebook/environment files and physical recovery semantics.
 
 Completion: linked documents, sourced vendor claims and concrete acceptance
 criteria for the next slice. This slice does not claim an operational UC or IAM
-integration. The backend choice remains open between OSS UC and hosted UC
-adapter profiles.
+integration. Open-source Unity Catalog is the selected integration target;
+Databricks-hosted compatibility is outside scope and the roadmap.
 
 ## PK01 — Project manifest and read-only inspection
 
@@ -242,12 +242,21 @@ rights in the later governed profile.
 
 ## UC00 and IAM00 — Follow-on design/probes, not PK completion gates
 
-**UC00:** pin OSS UC and separately identify hosted UC API/auth targets. Test the
-existing Sail provider with metadata resolution, Delta reads, denied reads,
-credential expiry, direct-path bypass, rename/recreate, snapshot-set consistency
-and backup/restore. Measure optional service footprint. Validate external storage
-credential behavior rather than treating an HTTP catalog listing as integration
-success. Do not publish an unsupported row/mask or write capability.
+**UC00:** select and pin an open-source Unity Catalog server release/source
+revision and test it with the existing Sail provider. Record build provenance,
+required Java/runtime dependencies, license inventory and a native/on-prem
+packaging proposal. Compare platform-managed local service versus an
+operator-managed on-prem service; both use OSS UC. No Databricks account, hosted
+endpoint or proprietary service may be required.
+
+Test metadata resolution, Delta reads, denied reads, credential expiry,
+direct-path bypass, rename/recreate, snapshot-set consistency and backup/restore
+using operator-controlled storage and identity. Measure startup, idle RSS, disk
+and disconnected operation on both native targets. Validate storage credential
+behavior rather than treating an HTTP catalog listing as integration success.
+Report gaps in OSS UC or Sail as explicit engineering decisions, not a reason to
+fall back to a Databricks service. Do not publish an unsupported row/mask or write
+capability. Hosted Databricks compatibility is not a follow-on deliverable.
 
 **IAM00:** define stable realm principal/group IDs, local-owner and OIDC adapters,
 authorized `run_as`, permission vocabulary, revocation/cache contracts and audit.

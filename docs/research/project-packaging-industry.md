@@ -5,6 +5,14 @@ were inspected. This is a design comparison, not an integration benchmark.
 [Proposed architecture](../architecture/project-packaging.md) ·
 [Implementation plan](../plans/project-packaging-implementation.md).
 
+## Product direction
+
+Open-source Unity Catalog is the selected integration target, running locally
+or on-prem under the operator's control. Databricks is a design reference and
+competitor, not a deployment dependency or compatibility target. There is no
+Databricks-hosted adapter on the roadmap. Server version, packaging and the
+qualified capability set remain to be established by UC00.
+
 ## Findings and implications
 
 | Reference | Observed pattern | Proposed Supabricks application |
@@ -161,10 +169,11 @@ provider is the candidate to test for Supabricks; installing that Spark plugin
 into a Python notebook does not substitute for configuring our execution engine.
 [OSS Spark integration](https://docs.unitycatalog.io/integrations/unity-catalog-spark/).
 
-Keep OSS UC and Databricks-hosted UC as separate adapter profiles with separately
-qualified authentication, APIs, storage access and policy behavior. Whether one
-should become the default is deliberately unresolved. Until a provider is
-qualified, our existing local metadata remains sufficient for local packaging.
+Qualify open-source Unity Catalog authentication, APIs, storage access and policy
+behavior against our local/on-prem requirements. Adapt the existing Sail provider
+to that contract where necessary. Until this integration is qualified, existing
+local metadata remains sufficient for local packaging. No hosted Databricks
+fallback is planned.
 
 ## Standards and components to reuse
 
@@ -186,8 +195,8 @@ installation should require no identity server.
 1. Which OSS UC release, storage backend and identity flows can satisfy the
    pinned Sail provider without source changes? Measure startup, idle RSS, disk,
    backup/restore and offline behavior on both native targets.
-2. Which hosted UC capabilities are accessible to an external Sail process, and
-   how are temporary storage credentials, expiry and revocation enforced?
+2. How should the OSS UC service access operator-controlled storage, and how
+   will scoped credentials, expiry and revocation work without vendor services?
 3. Can every analytical read path enforce the same resource and principal
    boundary, including direct file/Delta reads and cached sessions?
 4. How should project-scoped logical PostgreSQL data export preserve extensions,
