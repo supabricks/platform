@@ -72,7 +72,7 @@ print('PASS')
     def run(self,python,worker):
         self.python=python;self.work=self.root/'work';self.work.mkdir()
         (self.work/'supabricks.toml').write_text(f'format_version = 1\nid = "{self.project}"\nname = "sessions"\n')
-        self.start();self.request(method='register_project',config=dict(format_version=1,id=self.project,name='sessions'))
+        self.start();self.request(method='resolve_binding', source=dict(definition_id=self.project, worktree=str(self.work.resolve())))
         parent=self.create('main');self.configure(worker)
         self.sql(parent,"CREATE TABLE orders(id int,amount numeric(20,4)); CREATE TABLE payments(id int,amount numeric(20,4)); INSERT INTO orders VALUES(1,1234567890123456.1234); INSERT INTO payments SELECT * FROM orders")
         self.sql(parent,"CREATE TABLE empty(id int); CREATE TABLE types(b bool,n bigint,t text,d date,ts timestamp,tz timestamptz); INSERT INTO types VALUES(true,9223372036854775807,'héllo','2024-02-29','2024-02-29 12:34:56.123456','2024-02-29 12:34:56.123456+05'); INSERT INTO types DEFAULT VALUES")
