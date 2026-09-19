@@ -273,7 +273,13 @@ def consume(args, root, release, archive):
             destination = web / channel; destination.mkdir()
             source = directory / f'supabricks-{version}-{args.target}.tar.gz'
             assert digest(source) == Path(str(source)+'.sha256').read_text().split()[0]
-            for path in (source, Path(str(source)+'.sha256')): shutil.copy2(path, destination / path.name)
+            for path in (source, Path(str(source)+'.sha256')):
+                # Staging only reads these immutable archives. Avoid another full
+                # archive copy on small runners; cross-device roots still work.
+                try: os.link(path, destination / path.name)
+                except OSError as error:
+                    if error.errno != errno.EXDEV: raise
+                    shutil.copy2(path, destination / path.name)
             stage(destination, version, base+'/'+channel, key)
             if channel == 'old': report['previous_archive'] = dict(version=version, target=args.target, sha256=digest(source))
         install('new')
@@ -314,8 +320,9 @@ def consume(args, root, release, archive):
         third = root / 'third'; unpack(third)
         cell.cli(third, 'project', 'attach', binding['deployment_id'])
         plan = cell.plan(third)
-        cell.cli(third, 'project', 'attach', two['deployment_id'])
-        cell.cli(third, 'project', 'apply', plan, '--key', 'stale-binding', success=False)
+        cell.cli(third, 'project', 'attach', two['deployment_id'], success=False)
+        assert cell.cli(third, 'project', 'binding')['deployment_id'] == binding['deployment_id']
+        cell.cli(second, 'project', 'apply', plan, '--key', 'stale-binding', success=False)
         assert cell.cli(project, 'project', 'installed')['active_revision'] == first['id']
         check('two_worktrees_changed_binding_stale_plan')
         moved = root / "moved project ' é"; project.rename(moved); project = moved
@@ -330,6 +337,11 @@ def consume(args, root, release, archive):
         # Seed its installed template, then upgrade and explicitly adopt the same
         # transferred candidate package; never forge/reseal a predecessor closure.
         cell.close()
+        # Retire the completed, stopped first fixture before the independent
+        # upgrade installation; keep its measured peak, not duplicate releases.
+        for finished in (prefix, cell.data, project, second, third):
+            shutil.rmtree(finished)
+        cell.roots.clear()
         cell.data = root / 'upgrade-data'; cell.roots.append(cell.data)
         prefix = root / 'upgrade-programs'
         install('old')
@@ -373,6 +385,12 @@ def consume(args, root, release, archive):
         assert len(cell.cli(interrupted, 'database', 'list')['branches']) == 1
         assert cell.cli(interrupted, 'project', 'installed')['active_revision'] is None
         check('cancel_retains_resources')
+        deadline = time.monotonic()+120
+        while time.monotonic() < deadline:
+            branch = cell.cli(interrupted, 'branch', 'get', 'main')
+            if branch['revision'] == branch['observed_revision']: break
+            time.sleep(.2)
+        else: raise TimeoutError('retained database creation did not reconcile')
         cell.cli(interrupted, 'branch', 'resume', 'main', '--wait')
         cell.apply(interrupted, 'retry'); totals(interrupted)
         check('interrupted_apply_reconciles')

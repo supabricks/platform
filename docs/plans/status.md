@@ -40,8 +40,8 @@ tested merge `e94eaa66732ccd1b60073df2ac346391ffd0d59f`. It is the latest fully
 qualified predecessor. Alpha.20 archive qualification failed in both NE06 lifecycle
 jobs: the restore fixture moved its checkout without PK03's required explicit
 reattach. PK05 updates that harness; the candidate must rerun the complete gate.
-Alpha.21 archive qualification remains pending.
-PK05 targets alpha.22/catalog 13; its retained baseline failed in Linux database preparation and macOS bundle export. PK07 investigates those failures; alpha.22 is not fully qualified.
+Alpha.21 also failed its complete archive gate (baseline, macOS notebook and both environment lifecycle jobs); it is not qualified.
+PK05 targets alpha.22/catalog 13; its retained baseline failed in Linux database preparation and macOS bundle export. PK07 corrects retryable database startup handling and the macOS fixture's noncanonical output path; alpha.22 is not fully qualified.
 PK06 targets alpha.23/catalog 13 with the extracted console packaging workflow;
 it is merged; archive qualification remains pending. Its contract is tracked in the
 [PK06 contract](../architecture/pk06-console-projects.md).
@@ -53,7 +53,8 @@ not establish a factory-clean physical laptop trial, actual reboot/power-loss
 durability, or support for other browsers/operating systems.
 
 Public hosting, publisher signing/notarization, transitive redistribution audit,
-and physical-machine/reboot/power-loss qualification remain open. PK07 release-qualified project portability, PK08 logical data packaging, shared catalog/IAM/RBAC,
+and physical-machine/reboot/power-loss qualification remain open. PK07 is the current project portability qualification work.
+PK08 logical data packaging, shared catalog/IAM/RBAC,
 HA/distributed execution, upstream-only PostgreSQL, custom Scintilla and PGlite
 synchronization require separately scoped work. The first local preview never
 promised those enterprise capabilities.
