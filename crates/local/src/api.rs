@@ -1,7 +1,6 @@
 //! Local application API v1. Independent of the operator's HTTP/MCP contract.
 use crate::{
     operations::{BranchPoint, Mutation, Ports},
-    project::ProjectConfig,
     store::{
         Result, Store,
         error::{conflict, invalid, missing},
@@ -23,16 +22,7 @@ pub struct Binding {
 }
 impl Binding {
     pub fn validate(&self, store: &mut Store) -> Result<()> {
-        if !self.worktree.is_absolute() {
-            return Err(invalid("worktree must be absolute"));
-        }
-        let config = ProjectConfig::read(&self.worktree)?;
-        if config.id != self.project_id {
-            return Err(invalid(
-                "project identity changed; reopen the CLI or MCP session",
-            ));
-        }
-        store.register_project(&config)
+        store.admit_binding(self)
     }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -430,7 +420,11 @@ pub(crate) fn handle(
         Action::AnalyticsQuery { id, query } => {
             return crate::sessions::Sessions::query_status(store, project, id, query);
         }
-        Action::Capabilities => return Ok(capabilities(binding)),
+        Action::Capabilities => {
+            let mut value = capabilities(binding);
+            value["deployment"] = serde_json::to_value(store.binding_context(binding)?)?;
+            return Ok(value);
+        }
         Action::PublishExport { id } => return Ok(json!(store.publish_export(project, id)?)),
         Action::GetPublication { id } => {
             return Ok(json!(store.publication_in_project(project, id)?));

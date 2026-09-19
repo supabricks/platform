@@ -23,6 +23,7 @@ macro_rules! uuid_id {
 }
 uuid_id!(
     ProjectId,
+    DeploymentId,
     BranchId,
     EndpointId,
     OperationId,

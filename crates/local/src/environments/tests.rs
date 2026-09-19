@@ -19,7 +19,9 @@ impl Fixture {
         let project = project.canonicalize().unwrap();
         let config = ProjectConfig::initialize(&project, "example").unwrap();
         let mut store = Store::open(&tmp.path().join("data")).unwrap();
-        store.register_project(&config).unwrap();
+        store
+            .resolve_deployment(&crate::deployments::Source::read(&project).unwrap())
+            .unwrap();
         let root = tmp.path().join("package");
         fs::create_dir_all(root.join("python/analytics")).unwrap();
         fs::create_dir_all(root.join("python/notebooks")).unwrap();
@@ -732,4 +734,39 @@ fn console_inspection_reports_only_bound_generations_and_recorded_packages() {
         "1.2.3"
     );
     assert!(Manager::select(&mut f.store, &f.binding, g.id).is_err());
+}
+
+#[test]
+fn legacy_project_adoption_keeps_active_kernel_environment_and_lock_bytes() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let active = f.ready("active");
+    let selected = Manager::select(&mut f.store, &f.binding, active.id).unwrap();
+    let lock = f.binding.worktree.join("notebooks/environment/uv.lock");
+    let before = fs::read(&lock).unwrap();
+    fs::write(f.binding.worktree.join("supabricks.toml"),format!("format_version=2\nid='{}'\nname='example'\n[package]\nversion='0.1.0'\ninclude=[]\nnotebook_outputs='strip'\n",f.binding.project_id)).unwrap();
+    assert!(Manager::select(&mut f.store, &f.binding, active.id).is_err());
+    f.store
+        .project_command(
+            &crate::deployments::Source::read(&f.binding.worktree).unwrap(),
+            crate::deployments::Command::Adopt {
+                runtime_project: f.binding.project_id,
+                key: "adopt".into(),
+                target: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        Manager::select(&mut f.store, &f.binding, active.id)
+            .unwrap()
+            .identity,
+        selected.identity
+    );
+    assert_eq!(
+        f.store
+            .active_environment(f.binding.project_id, &f.binding.worktree)
+            .unwrap(),
+        Some(active.id)
+    );
+    assert_eq!(fs::read(lock).unwrap(), before);
 }

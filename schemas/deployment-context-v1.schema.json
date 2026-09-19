@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "definition_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deployment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "runtime_project_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "workspace_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "realm_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "effective_principal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "api_version": {
+      "const": 1
+    },
+    "target": {
+      "type": "string"
+    },
+    "legacy": {
+      "type": "boolean"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "identity_provider": {
+      "const": "local-owner"
+    }
+  },
+  "required": [
+    "definition_id",
+    "deployment_id",
+    "runtime_project_id",
+    "workspace_id",
+    "realm_id",
+    "actor_id",
+    "effective_principal_id",
+    "api_version",
+    "target",
+    "legacy",
+    "revision",
+    "identity_provider"
+  ]
+}

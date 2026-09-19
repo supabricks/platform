@@ -127,7 +127,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             "candidate format declaration does not match this binary",
         ));
     }
-    let migration = matches!(source_schema, 8 | 9);
+    let migration = matches!(source_schema, 8 | 9 | 10);
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);
     if migration && normalized == target_formats {

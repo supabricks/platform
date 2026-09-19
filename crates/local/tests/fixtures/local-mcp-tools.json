@@ -5,6 +5,576 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
+    "description": "Inspect the fixed checkout's destination-owned deployment and local-owner identity. Does not attach an unbound copy.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_binding",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "actor_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "api_version": {
+              "const": 1
+            },
+            "definition_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "deployment_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "effective_principal_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "identity_provider": {
+              "const": "local-owner"
+            },
+            "legacy": {
+              "type": "boolean"
+            },
+            "realm_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "runtime_project_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "workspace_id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition_id",
+            "deployment_id",
+            "runtime_project_id",
+            "workspace_id",
+            "realm_id",
+            "actor_id",
+            "effective_principal_id",
+            "api_version",
+            "target",
+            "legacy",
+            "revision",
+            "identity_provider"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List deployments of this source definition in the local owner workspace; selecting one requires explicit attach.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_deployments",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "deployments": {
+              "items": {
+                "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "actor_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "api_version": {
+                    "const": 1
+                  },
+                  "definition_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "deployment_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "effective_principal_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "identity_provider": {
+                    "const": "local-owner"
+                  },
+                  "legacy": {
+                    "type": "boolean"
+                  },
+                  "realm_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "revision": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "runtime_project_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "workspace_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "definition_id",
+                  "deployment_id",
+                  "runtime_project_id",
+                  "workspace_id",
+                  "realm_id",
+                  "actor_id",
+                  "effective_principal_id",
+                  "api_version",
+                  "target",
+                  "legacy",
+                  "revision",
+                  "identity_provider"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "api_version",
+            "deployments"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Explicitly create an empty deployment with a fresh runtime project ID and attach this unbound format-2 checkout. Does not create databases or execute source. Retry only with the same key and inputs.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "project_create",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "actor_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "api_version": {
+              "const": 1
+            },
+            "definition_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "deployment_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "effective_principal_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "identity_provider": {
+              "const": "local-owner"
+            },
+            "legacy": {
+              "type": "boolean"
+            },
+            "realm_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "runtime_project_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "workspace_id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition_id",
+            "deployment_id",
+            "runtime_project_id",
+            "workspace_id",
+            "realm_id",
+            "actor_id",
+            "effective_principal_id",
+            "api_version",
+            "target",
+            "legacy",
+            "revision",
+            "identity_provider"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Explicitly attach this checkout to a deployment of the same definition. Existing different bindings are never overwritten.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "deployment": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "deployment"
+      ],
+      "type": "object"
+    },
+    "name": "project_attach",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "actor_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "api_version": {
+              "const": 1
+            },
+            "definition_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "deployment_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "effective_principal_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "identity_provider": {
+              "const": "local-owner"
+            },
+            "legacy": {
+              "type": "boolean"
+            },
+            "realm_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "runtime_project_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "workspace_id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition_id",
+            "deployment_id",
+            "runtime_project_id",
+            "workspace_id",
+            "realm_id",
+            "actor_id",
+            "effective_principal_id",
+            "api_version",
+            "target",
+            "legacy",
+            "revision",
+            "identity_provider"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Explicitly adopt a legacy runtime using its original definition UUID and a format-2 source. Preserves runtime IDs and data; no SQL or source execution.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "runtime_project": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtime_project",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "project_adopt",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "$id": "https://supabricks.io/schemas/deployment-context-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "actor_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "api_version": {
+              "const": 1
+            },
+            "definition_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "deployment_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "effective_principal_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "identity_provider": {
+              "const": "local-owner"
+            },
+            "legacy": {
+              "type": "boolean"
+            },
+            "realm_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "runtime_project_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "workspace_id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition_id",
+            "deployment_id",
+            "runtime_project_id",
+            "workspace_id",
+            "realm_id",
+            "actor_id",
+            "effective_principal_id",
+            "api_version",
+            "target",
+            "legacy",
+            "revision",
+            "identity_provider"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
     "description": "Explicitly export one revision of this project's private saved PostgreSQL query as portable SQL. Preserves the original and omits runtime branch bindings; does not write files or execute SQL.",
     "inputSchema": {
       "additionalProperties": false,

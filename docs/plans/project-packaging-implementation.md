@@ -1,11 +1,12 @@
 # Project packaging implementation plan
 
 Status: PK00 design/research merged in #46 and PK01 source inspection merged in
-#47 (`343812f`). PK02 source packaging is implemented on its feature branch;
-qualification/merge is tracked in its implementation PR. PK03–PK08 are not
-implemented. PK02 targets alpha.19; catalog 10 and console `70af6a2` are unchanged.
-The alpha.18 archive qualification remains pending separately from PK01's completed
-merge checks. The last fully qualified predecessor is alpha.17 (#45).
+#47 (`343812f`). PK02 source packaging merged in #48 (`f453763`).
+PK03 deployment binding is implemented on its feature branch; its qualification
+and merge are pending. PK04–PK08 are not implemented. PK03 targets alpha.20 and
+catalog 11; console `70af6a2` is unchanged. Alpha.18/alpha.19 archive qualification
+remains pending separately from the completed PK01/PK02 merge checks. The last
+fully qualified predecessor is alpha.17 (#45).
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -120,7 +121,7 @@ files. Inspect/unpack never runs SQL, Python, package resolvers or hooks.
 
 ## PK03 — Deployment identity and explicit adoption
 
-Introduce realm/workspace defaults, project-definition records, deployment UUIDs,
+[Implemented contract](../architecture/pk03-deployment-bindings.md). Introduce realm/workspace defaults, project-definition records, deployment UUIDs,
 and mappings to existing runtime project UUIDs. Implement a central binding
 resolver used by CLI, MCP, console, notebook and environment admission. Keep
 private runtime IDs and canonical worktree selections out of source manifests.

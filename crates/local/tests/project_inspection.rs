@@ -79,7 +79,7 @@ fn legacy_projects_keep_identity_and_runtime_binding_without_writing() {
     assert_eq!(report["definition"]["id"], config.id.to_string());
     assert_eq!(report["execution_supported"], true);
     assert_eq!(report["files"].as_object().unwrap().len(), 1);
-    assert!(Client::bind(&t.path().join("absent"), t.path()).is_ok());
+    assert!(Client::bind_source(&t.path().join("absent"), t.path()).is_ok());
     assert_eq!(before, fs::read(t.path().join("supabricks.toml")).unwrap());
     assert!(!t.path().join("absent").exists());
 }
@@ -128,7 +128,7 @@ fn preview_identity_cannot_register_runtime_resources() {
         ProjectConfig::read(t.path())
             .unwrap_err()
             .to_string()
-            .contains("inspection-only")
+            .contains("deployment binding")
     );
     assert!(Client::bind(t.path(), t.path()).is_err());
     let client = Client::bind_source(t.path(), t.path()).unwrap();

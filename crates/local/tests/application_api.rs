@@ -82,6 +82,16 @@ fn public_contract_replays_allocations_scopes_operations_and_fixes_worktree_bind
     ProjectConfig::initialize(&foreign, "other").unwrap();
     let mut d = start(&root);
     let a = Client::bind(&root, &one).unwrap();
+    let second = Client::bind_source(&root, &two).unwrap();
+    assert!(Client::bind(&root, &two).is_err());
+    let deployment = a
+        .project(supabricks_local::deployments::Command::Inspect)
+        .unwrap();
+    second
+        .project(supabricks_local::deployments::Command::Attach {
+            deployment: serde_json::from_value(deployment["deployment_id"].clone()).unwrap(),
+        })
+        .unwrap();
     let b = Client::bind(&root, &two).unwrap();
     let other = Client::bind(&root, &foreign).unwrap();
     let create = json!({"action":"create_database","name":"main","key":"create-main"});
@@ -187,7 +197,7 @@ fn public_contract_replays_allocations_scopes_operations_and_fixes_worktree_bind
 fn mcp_contract_is_separate_strict_and_negotiated() {
     let temp = tempfile::tempdir().unwrap();
     ProjectConfig::initialize(temp.path(), "mcp").unwrap();
-    let client = Client::bind(temp.path(), temp.path()).unwrap();
+    let client = Client::bind_source(temp.path(), temp.path()).unwrap();
     let mut s = Session::default();
     assert_eq!(
         s.dispatch(
@@ -212,7 +222,7 @@ fn mcp_contract_is_separate_strict_and_negotiated() {
             json!({"jsonrpc":"2.0","id":3,"method":"tools/list"}),
         )
         .unwrap();
-    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 45);
+    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 50);
     for args in [
         json!({"branch":"main","project_id":"other"}),
         json!({"action":"delete_branch"}),

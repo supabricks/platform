@@ -33,14 +33,13 @@ with the installed kernel. The report states those limits explicitly.
 
 ## Format compatibility
 
-Format 1 remains the supported execution format. Its inspector inventories only
+Format 1 remains supported. [PK03](project-deployments.md) adds explicit deployment binding for format 2. Its inspector inventories only
 `supabricks.toml`; it does not guess which application files to package. The normal
 `init` command still writes format 1 and never rewrites an existing project.
 
-Format 2 is a preview definition of portable resources. PK01 rejects runtime
-binding of format-2 projects, even if their UUID matches an existing project.
-Use the inspection commands; do not convert a running application's manifest to
-format 2 expecting it to keep running. A target named `production` or a UUID in
+Format 2 is a preview definition of portable resources. An unbound copy cannot run,
+even if its UUID matches an existing project. PK03 requires explicit create, attach
+or adoption. Source inspection alone never creates that binding. A target named `production` or a UUID in
 a source file confers no authorization.
 
 Format-2 manifests require `id`, `name`, `package.version` (SemVer),
@@ -99,6 +98,6 @@ review arbitrary source/data before the later package export step.
 
 The fixed-project MCP server exposes `project_inspect` and `project_validate` with
 an optional `target`. These tools call the same offline API and cannot change the
-session's project path or UUID. Ordinary runtime tools still reject format 2.
+session's project path or UUID. Runtime tools require the destination binding supplied by PK03.
 Machine-readable schemas and the source example ship under `schemas/` and
 `examples/projects/sales` in the release.

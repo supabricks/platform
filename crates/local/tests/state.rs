@@ -67,7 +67,17 @@ fn identities_credentials_worktrees_and_reservations_survive_restart() {
     )
     .unwrap();
     let mut store = Store::open(root.path()).unwrap();
-    store.register_project(&project).unwrap();
+    let deployment = store
+        .resolve_deployment(&supabricks_local::deployments::Source::read(a.path()).unwrap())
+        .unwrap();
+    store
+        .project_command(
+            &supabricks_local::deployments::Source::read(b.path()).unwrap(),
+            supabricks_local::deployments::Command::Attach {
+                deployment: deployment.deployment_id,
+            },
+        )
+        .unwrap();
     let one = store
         .submit(project.id, "one", create("Main", 5400))
         .unwrap();

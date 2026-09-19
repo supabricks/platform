@@ -39,7 +39,7 @@ impl ProjectConfig {
             == Some(2)
         {
             return Err(invalid(
-                "format-2 projects are inspection-only in PK01; runtime deployment binding is not implemented",
+                "format-2 source definitions require deployment binding; use project create, attach or adopt instead of legacy initialization",
             ));
         }
         let config: Self = toml::from_str(&text)?;

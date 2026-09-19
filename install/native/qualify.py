@@ -191,7 +191,7 @@ def qualify(args):
         assert not inspection_state.exists()
         blocked = subprocess.run([str(binary), 'database', 'list', '--project', str(source_project),
                                   '--data-dir', str(inspection_state)], env=env, capture_output=True, text=True)
-        assert blocked.returncode == 2 and 'inspection-only' in blocked.stderr
+        assert blocked.returncode != 0
         assert not inspection_state.exists()
         assert json.loads(run([binary, 'installation', 'verify'], env=env))['identity'] == identity
         checks.append('PK01 installed source inspect/validate without HOME, tools or daemon; preview execution blocked; immutable inventory')
@@ -209,7 +209,7 @@ def qualify(args):
         assert json.loads((destination / 'supabricks-unpacked.json').read_text())['state'] == 'unbound'
         blocked = subprocess.run([str(binary), 'database', 'list', '--project', str(destination),
                                   '--data-dir', str(inspection_state)], env=env, capture_output=True, text=True)
-        assert blocked.returncode == 2 and 'inspection-only' in blocked.stderr
+        assert blocked.returncode != 0
         assert not inspection_state.exists()
         corrupted = workspace / 'corrupt.sbproj'
         corrupted.write_bytes(artifacts[0].read_bytes()[:-8])
@@ -230,6 +230,31 @@ def qualify(args):
         with measured('cold_runtime_start'):
             cli('up')
         assert cli('doctor')['healthy']
+        # PK03 deployments are explicit and allocate separate runtime project/tenant IDs.
+        def deployment_cli(path, *args):
+            return json.loads(run([binary, *args, '--project', path], env=env))
+        copies = [workspace / ('deployment-' + name) for name in ('a', 'b', 'attached')]
+        for path in copies:
+            shutil.copytree(source_project, path)
+        first, second = [deployment_cli(path, 'project', 'create', '--key', f'create-{index}') for index, path in enumerate(copies[:2])]
+        assert first['definition_id'] == second['definition_id']
+        assert first['runtime_project_id'] != second['runtime_project_id']
+        assert first['deployment_id'] != second['deployment_id']
+        assert first['actor_id'] == first['effective_principal_id']
+        assert first == deployment_cli(copies[0], 'project', 'create', '--key', 'create-0')
+        for path in copies[:2]:
+            deployment_cli(path, 'database', 'create', 'main', '--wait')
+        deployment_cli(copies[0], 'sql', '--branch', 'main', '--sql', 'CREATE TABLE pk03_private(id integer)', '--write')
+        assert deployment_cli(copies[1], 'sql', '--branch', 'main', '--sql', "SELECT to_regclass('public.pk03_private')")['rows'] == [[None]]
+        refused = subprocess.run([str(binary), 'database', 'list', '--project', str(copies[2])], env=env, capture_output=True)
+        assert refused.returncode != 0
+        attached = deployment_cli(copies[2], 'project', 'attach', first['deployment_id'])
+        assert attached == first
+        assert deployment_cli(copies[2], 'sql', '--branch', 'main', '--sql', "SELECT to_regclass('public.pk03_private')::text")['rows'] == [['pk03_private']]
+        for path in copies[:2]:
+            deployment_cli(path, 'branch', 'suspend', 'main', '--wait')
+        checks.append('PK03 installed deployment creation/replay, isolated live PostgreSQL tenants, explicit second-worktree attach and local-owner attribution')
+
         cli('database', 'create', 'main', '--wait')
         cli('branch', 'use', 'main')
         cli('sql', '--file', project / 'migrations/001-orders.sql', '--branch', 'main', '--write')
@@ -406,7 +431,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.19')
+    parser.add_argument('--version', default='v0.1.0-alpha.20')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

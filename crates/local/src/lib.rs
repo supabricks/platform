@@ -214,3 +214,5 @@ mod tests {
         assert!(plan_compute(&input(), &p).is_err());
     }
 }
+
+pub mod deployments;

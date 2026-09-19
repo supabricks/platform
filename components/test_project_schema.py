@@ -48,3 +48,12 @@ class ProjectSchemas(unittest.TestCase):
         content['hooks'] = {'install': 'sh install.sh'}
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(metadata, self.schema('project-package-v1'))
+
+    def test_destination_deployment_context_is_versioned(self):
+        context = json.loads((ROOT / 'crates/local/tests/fixtures/deployment-context.json').read_text())
+        jsonschema.validate(context, self.schema('deployment-context-v1'))
+        self.assertNotEqual(context['definition_id'], context['runtime_project_id'])
+        self.assertEqual(context['actor_id'], context['effective_principal_id'])
+        context['identity_provider'] = 'caller-supplied'
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(context, self.schema('deployment-context-v1'))

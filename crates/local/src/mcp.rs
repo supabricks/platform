@@ -25,6 +25,41 @@ pub fn tools() -> Value {
     ]});
     let defs = vec![
         (
+            "project_binding",
+            "Inspect the fixed checkout's destination-owned deployment and local-owner identity. Does not attach an unbound copy.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "project_deployments",
+            "List deployments of this source definition in the local owner workspace; selecting one requires explicit attach.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "project_create",
+            "Explicitly create an empty deployment with a fresh runtime project ID and attach this unbound format-2 checkout. Does not create databases or execute source. Retry only with the same key and inputs.",
+            json!({"key":key,"target":string}),
+            vec!["key"],
+            false,
+        ),
+        (
+            "project_attach",
+            "Explicitly attach this checkout to a deployment of the same definition. Existing different bindings are never overwritten.",
+            json!({"deployment":string}),
+            vec!["deployment"],
+            false,
+        ),
+        (
+            "project_adopt",
+            "Explicitly adopt a legacy runtime using its original definition UUID and a format-2 source. Preserves runtime IDs and data; no SQL or source execution.",
+            json!({"runtime_project":string,"key":key,"target":string}),
+            vec!["runtime_project", "key"],
+            false,
+        ),
+        (
             "saved_query_export",
             "Explicitly export one revision of this project's private saved PostgreSQL query as portable SQL. Preserves the original and omits runtime branch bindings; does not write files or execute SQL.",
             json!({"id":string,"expected_revision":revision}),
@@ -347,6 +382,15 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "project_binding" | "project_create" | "project_attach" | "project_adopt" => {
+            serde_json::from_str(include_str!(
+                "../../../schemas/deployment-context-v1.schema.json"
+            ))
+            .expect("checked deployment schema")
+        }
+        "project_deployments" => {
+            json!({"type":"object","properties":{"api_version":{"const":1},"deployments":{"type":"array","items":serde_json::from_str::<Value>(include_str!("../../../schemas/deployment-context-v1.schema.json")).unwrap()}},"required":["api_version","deployments"],"additionalProperties":false})
+        }
         "saved_query_export" => {
             json!({"type":"object","additionalProperties":false,"properties":{"api_version":{"const":1},"id":string,"revision":{"type":"integer","minimum":1},"title":string,"engine":{"const":"postgres"},"sql":string},"required":["api_version","id","revision","title","engine","sql"]})
         }
@@ -485,6 +529,40 @@ impl Session {
                         -32602,
                         "tool arguments must be an object without action",
                     ));
+                }
+                if matches!(
+                    name,
+                    "project_binding"
+                        | "project_deployments"
+                        | "project_create"
+                        | "project_attach"
+                        | "project_adopt"
+                ) {
+                    args["action"] = json!(match name {
+                        "project_binding" => "inspect",
+                        "project_deployments" => "list",
+                        "project_create" => "create",
+                        "project_attach" => "attach",
+                        _ => "adopt",
+                    });
+                    let command = match serde_json::from_value::<crate::deployments::Command>(args)
+                    {
+                        Ok(c) => c,
+                        Err(_) => {
+                            return Some(rpc_error(
+                                id,
+                                -32602,
+                                "invalid deployment arguments; identity and worktree are fixed by the session",
+                            ));
+                        }
+                    };
+                    let (body, error) = match client.project(command) {
+                        Ok(v) => (v, false),
+                        Err(e) => (json!({"error":diagnostic(&e)}), true),
+                    };
+                    return Some(
+                        json!({"jsonrpc":"2.0","id":id,"result":{"content":[{"type":"text","text":body.to_string()}],"structuredContent":body,"isError":error}}),
+                    );
                 }
                 if matches!(name, "project_inspect" | "project_validate") {
                     args["action"] = json!(name);

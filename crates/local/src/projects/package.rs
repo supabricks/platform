@@ -581,3 +581,37 @@ mod tests {
         assert!(verify(&path, None).is_ok());
     }
 }
+
+/// Fork portable source into a new private, unbound definition; never mutate input.
+pub fn fork(
+    directory: &Path,
+    destination: &Path,
+    name: &str,
+    target: Option<&str>,
+) -> Result<Value> {
+    let id = supabricks_core::resource::ProjectId::new();
+    super::manifest::identity(id, name)?;
+    let temporary = tempfile::tempdir()?;
+    let archive = temporary.path().join("source.sbproj");
+    pack(directory, &archive, target)?;
+    let (report, mut files) = read(&archive, target)?;
+    let mut manifest: toml::Value =
+        super::manifest::parse(&files["supabricks.toml"], "supabricks.toml")?;
+    manifest["id"] = toml::Value::String(id.to_string());
+    manifest["name"] = toml::Value::String(name.into());
+    files.insert(
+        "supabricks.toml".into(),
+        toml::to_string_pretty(&manifest)?.into_bytes(),
+    );
+    let mut memory = Source::memory(files.clone())?;
+    let inspection = inspect_inputs(&mut memory, Some(&report.inspection.target))?;
+    let publication = super::publication::Publication::new(destination)?;
+    for (path, bytes) in files {
+        publication.write(&path, &bytes)?;
+    }
+    publication.write(MARKER,&canonical(&json!({"format_version":1,"state":"unbound","origin_definition_id":report.inspection.definition.id,"origin_content_sha256":report.content_sha256,"definition_id":id}))?)?;
+    publication.publish_directory()?;
+    Ok(
+        json!({"api_version":1,"definition_id":id,"origin_definition_id":report.inspection.definition.id,"unbound":true,"inspection":inspection}),
+    )
+}
