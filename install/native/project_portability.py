@@ -155,8 +155,8 @@ def produce(args, root, release, archive):
                 release_sha256=digest(release / 'release.json'), package_sha256=digest(package),
                 content_sha256=report['content_sha256'], source_sha256=report['inspection']['source_sha256'],
                 environment=report['inspection']['environments']['notebook'], closures=closures,
-                fixtures={p.relative_to(source).as_posix():digest(p) for p in sorted(source.rglob('*'))
-                          if p.is_file() and p.suffix in ('.csv', '.sql', '.ipynb')},
+                fixtures={name:entry['sha256'] for name, entry in report['inspection']['files'].items()
+                          if Path(name).suffix in ('.csv', '.sql', '.ipynb')},
                 measurements=dict(archive_bytes=package.stat().st_size,
                                   unpacked_bytes=expanded_bytes, rows=2))
     assert not cell.data.exists(), 'producer unexpectedly started a daemon'
