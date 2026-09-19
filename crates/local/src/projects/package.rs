@@ -198,6 +198,16 @@ fn decode(compressed: &[u8], target: Option<&str>) -> Result<(Report, BTreeMap<S
     if compressed.len() as u64 > MAX_ARCHIVE {
         return Err(invalid("compressed package exceeds limit"));
     }
+    // The envelope must not hide filenames, comments, timestamps or extension data.
+    if compressed.len() < 10
+        || compressed[3] != 0
+        || compressed[4..8] != [0; 4]
+        || compressed[9] != 255
+    {
+        return Err(invalid(
+            "package gzip header must omit optional metadata and use zero time / OS 255",
+        ));
+    }
     let limit = MAX_ARCHIVE.min(compressed.len() as u64 * MAX_RATIO);
     let mut decoder = GzDecoder::new(compressed);
     let mut raw = Vec::new();
@@ -543,6 +553,22 @@ mod tests {
             )
             .is_err()
         );
+    }
+    #[test]
+    fn gzip_envelope_cannot_hide_host_metadata() {
+        let raw = tar_bytes(&entries()).unwrap();
+        for builder in [
+            GzBuilder::new().filename("private-host-path"),
+            GzBuilder::new().comment("hidden"),
+            GzBuilder::new().mtime(1),
+            GzBuilder::new().extra(vec![1, 2, 3]),
+        ] {
+            let mut encoder = builder
+                .operating_system(255)
+                .write(Vec::new(), Compression::default());
+            encoder.write_all(&raw).unwrap();
+            assert!(decode(&encoder.finish().unwrap(), None).is_err());
+        }
     }
     #[test]
     fn valid_highly_compressible_payload_uses_bounded_transport() {
