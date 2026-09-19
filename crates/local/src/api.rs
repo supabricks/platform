@@ -38,6 +38,10 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    SavedQueryExport {
+        id: OperationId,
+        expected_revision: i64,
+    },
     Environment {
         command: crate::environments::Command,
     },
@@ -306,6 +310,17 @@ pub(crate) fn handle(
     let project = binding.project_id;
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
+        Action::SavedQueryExport {
+            id,
+            expected_revision,
+        } => {
+            return crate::console::workspace::export_saved(
+                store.root(),
+                binding,
+                id,
+                expected_revision,
+            );
+        }
         Action::IngestInspect { .. } => {
             return Err(invalid("inspection requires daemon worker service"));
         }

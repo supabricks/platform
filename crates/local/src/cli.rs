@@ -19,6 +19,10 @@ const HELP: &str = r#"Supabricks local (PG17)
 Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
 
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
+  project pack --output PATH.sbproj [--target NAME]
+  project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
+  project unpack PACKAGE.sbproj --destination NEW_DIRECTORY
+  project export-query ID --expected-revision N --output NEW_FILE.sql
   init NAME                    Write retry-safe public supabricks.toml (offline)
   up                           Start/reconnect using the installed native bundle
       [--bundle PATH --helpers PATH]  Override parts for source development
@@ -187,27 +191,60 @@ pub fn run() -> Result<u8> {
     }
     let mut a = Args::parse(raw)?;
     let command = a.required(0)?;
-    if command == "project" {
+    if command == "project" && a.required(1)? != "export-query" {
         let action = a.required(1)?;
         let project = a.take("--project").map(PathBuf::from);
         let target = a.take("--target");
-        a.take("--data-dir"); // Accepted common flag; never resolve or access runtime state.
+        a.take("--data-dir"); // Offline commands never resolve runtime state.
         a.flag("--json");
-        a.finish(2)?;
-        let command = match action.as_str() {
-            "inspect" => crate::api::ProjectSourceCommand::ProjectInspect { target },
-            "validate" => crate::api::ProjectSourceCommand::ProjectValidate { target },
+        let report = match action.as_str() {
+            "validate" | "inspect" if a.pos.len() == 2 => {
+                a.finish(2)?;
+                let directory = client::project_directory(project.as_deref())?;
+                serde_json::to_value(crate::projects::inspect(&directory, target.as_deref())?)?
+            }
+            "pack" => {
+                let output = PathBuf::from(
+                    a.take("--output")
+                        .ok_or_else(|| invalid("project pack requires --output PATH"))?,
+                );
+                a.finish(2)?;
+                let directory = client::project_directory(project.as_deref())?;
+                serde_json::to_value(crate::projects::package::pack(
+                    &directory,
+                    &output,
+                    target.as_deref(),
+                )?)?
+            }
+            "inspect" | "verify" | "unpack" => {
+                if project.is_some() {
+                    return Err(invalid(
+                        "archive commands take a package path, not --project",
+                    ));
+                }
+                let archive = PathBuf::from(a.required(2)?);
+                let destination = if action == "unpack" {
+                    Some(PathBuf::from(a.take("--destination").ok_or_else(|| {
+                        invalid("project unpack requires --destination NEW_PATH")
+                    })?))
+                } else {
+                    None
+                };
+                a.finish(3)?;
+                let report = if let Some(destination) = destination {
+                    crate::projects::package::unpack(&archive, &destination, target.as_deref())?
+                } else {
+                    crate::projects::package::verify(&archive, target.as_deref())?
+                };
+                serde_json::to_value(report)?
+            }
             _ => {
                 return Err(invalid(
-                    "use project validate or project inspect; packaging and deployment are not implemented",
+                    "use project validate, inspect, pack, verify, unpack or export-query",
                 ));
             }
         };
-        let directory = client::project_directory(project.as_deref())?;
-        println!(
-            "{}",
-            serde_json::to_value(crate::projects::execute(&directory, command)?)?
-        );
+        println!("{report}");
         return Ok(0);
     }
     let root = if let Some(root) = a
@@ -343,6 +380,41 @@ pub fn run() -> Result<u8> {
     } else {
         Client::bind(&root, &directory)?
     };
+    if command == "project" && a.required(1)? == "export-query" {
+        let id = a
+            .required(2)?
+            .parse()
+            .map_err(|_| invalid("invalid saved query UUID"))?;
+        let expected_revision = a
+            .take("--expected-revision")
+            .ok_or_else(|| invalid("export-query requires --expected-revision N"))?
+            .parse()
+            .map_err(|_| invalid("invalid saved query revision"))?;
+        let output = PathBuf::from(
+            a.take("--output")
+                .ok_or_else(|| invalid("export-query requires --output NEW_FILE.sql"))?,
+        );
+        a.finish(3)?;
+        if output.extension().is_none_or(|e| e != "sql") {
+            return Err(invalid("export destination must end in .sql"));
+        }
+        let value = c.call(Action::SavedQueryExport {
+            id,
+            expected_revision,
+        })?;
+        crate::projects::publication::write_new(
+            &output,
+            value["sql"]
+                .as_str()
+                .ok_or_else(|| invalid("missing exported SQL"))?
+                .as_bytes(),
+        )?;
+        println!(
+            "{}",
+            json!({"api_version":1,"exported":true,"id":id,"revision":expected_revision,"engine":"postgres","file":output})
+        );
+        return Ok(0);
+    }
     if command == "env" {
         use crate::environments::Command as E;
         let action = a.required(1)?;

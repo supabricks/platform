@@ -195,6 +195,29 @@ def qualify(args):
         assert not inspection_state.exists()
         assert json.loads(run([binary, 'installation', 'verify'], env=env))['identity'] == identity
         checks.append('PK01 installed source inspect/validate without HOME, tools or daemon; preview execution blocked; immutable inventory')
+        # PK02 uses only the installed binary, before daemon startup.
+        artifacts = [workspace / 'first.sbproj', workspace / 'second.sbproj']
+        packed = [json.loads(run([binary, 'project', 'pack', '--project', source_project,
+                                  '--output', artifact, '--data-dir', inspection_state], env=source_env))
+                  for artifact in artifacts]
+        assert packed[0] == packed[1] and artifacts[0].read_bytes() == artifacts[1].read_bytes()
+        for command in ('inspect', 'verify'):
+            assert json.loads(run([binary, 'project', command, artifacts[0]], env=source_env)) == packed[0]
+        destination = workspace / 'unbound-copy'
+        assert json.loads(run([binary, 'project', 'unpack', artifacts[0], '--destination', destination],
+                              env=source_env)) == packed[0]
+        assert json.loads((destination / 'supabricks-unpacked.json').read_text())['state'] == 'unbound'
+        blocked = subprocess.run([str(binary), 'database', 'list', '--project', str(destination),
+                                  '--data-dir', str(inspection_state)], env=env, capture_output=True, text=True)
+        assert blocked.returncode == 2 and 'inspection-only' in blocked.stderr
+        assert not inspection_state.exists()
+        corrupted = workspace / 'corrupt.sbproj'
+        corrupted.write_bytes(artifacts[0].read_bytes()[:-8])
+        rejected = subprocess.run([str(binary), 'project', 'unpack', str(corrupted), '--destination',
+                                   str(workspace / 'must-not-exist')], env=source_env, capture_output=True)
+        assert rejected.returncode != 0 and not (workspace / 'must-not-exist').exists()
+        assert json.loads(run([binary, 'installation', 'verify'], env=env))['identity'] == identity
+        checks.append('PK02 deterministic installed source pack/verify/inspect/unpack offline; corrupt publication refused; extracted definition unbound; source inventory unchanged')
         # Occupy the conventional PG port if another Postgres is not there already.
         reserved = socket.socket()
         try:
@@ -383,7 +406,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.18')
+    parser.add_argument('--version', default='v0.1.0-alpha.19')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

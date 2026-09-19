@@ -369,6 +369,58 @@ fn read_saved(path: &Path) -> Result<Saved> {
     }
     Ok(saved)
 }
+/// Explicit revision-fenced source export; no private branch binding crosses the boundary.
+pub fn export_saved(
+    root: &Path,
+    binding: &Binding,
+    id: OperationId,
+    expected_revision: i64,
+) -> Result<Value> {
+    use crate::notebooks::files::directory::Directory;
+    use std::{ffi::OsStr, io::Read, os::unix::fs::MetadataExt};
+    if expected_revision < 1 {
+        return Err(invalid("saved query export requires a positive revision"));
+    }
+    let directory = Directory::project(root)?
+        .child(OsStr::new("queries"), false)?
+        .child(OsStr::new(&binding.project_id.to_string()), false)?;
+    let file = directory.open(OsStr::new(&format!("{id}.json")), libc::O_RDONLY)?;
+    let before = file.metadata()?;
+    if !before.is_file()
+        || before.nlink() != 1
+        || before.len() > 65536
+        || before.mode() & 0o077 != 0
+        || before.uid() != unsafe { libc::geteuid() }
+    {
+        return Err(invalid(
+            "saved query export requires a bounded private regular file",
+        ));
+    }
+    let mut bytes = Vec::new();
+    (&file).take(65537).read_to_end(&mut bytes)?;
+    let after = file.metadata()?;
+    if bytes.len() > 65536
+        || before.len() != after.len()
+        || before.mtime() != after.mtime()
+        || before.mtime_nsec() != after.mtime_nsec()
+        || before.ctime() != after.ctime()
+        || before.ctime_nsec() != after.ctime_nsec()
+    {
+        return Err(conflict("saved query changed during export; retry"));
+    }
+    let saved: Saved = serde_json::from_slice(&bytes)?;
+    if saved.version != 1 || saved.id != id {
+        return Err(invalid("saved query identity or format mismatch"));
+    }
+    if saved.revision != expected_revision {
+        return Err(conflict(
+            "saved query changed; reload its revision before exporting",
+        ));
+    }
+    Ok(
+        json!({"api_version":1,"id":saved.id,"revision":saved.revision,"title":saved.title,"engine":"postgres","sql":saved.sql}),
+    )
+}
 pub fn saved(store: &Store, binding: &Binding, command: Command) -> Result<Value> {
     let directory = saved_dir(store.root(), binding)?;
     match command {

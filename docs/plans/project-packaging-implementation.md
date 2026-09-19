@@ -1,9 +1,11 @@
 # Project packaging implementation plan
 
-Status: proposed. PK00 design/research is documented; PK01 is implemented on its feature branch; qualification/merge is tracked in
-its implementation PR. PK02–PK08 are not implemented. Baseline: merged platform #45 (`916a793`), alpha.17, catalog 10,
-console `70af6a2`. The original PK00 proposal contained documentation only;
-PK01 adds the offline source API and native CLI.
+Status: PK00 design/research merged in #46 and PK01 source inspection merged in
+#47 (`343812f`). PK02 source packaging is implemented on its feature branch;
+qualification/merge is tracked in its implementation PR. PK03–PK08 are not
+implemented. PK02 targets alpha.19; catalog 10 and console `70af6a2` are unchanged.
+The alpha.18 archive qualification remains pending separately from PK01's completed
+merge checks. The last fully qualified predecessor is alpha.17 (#45).
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -93,7 +95,7 @@ Acceptance:
 
 ## PK02 — Deterministic source package, verify and unpack
 
-Implement `project pack`, archive `project inspect`, `project verify` and
+[Implemented contract](../architecture/pk02-source-packages.md). Implement `project pack`, archive `project inspect`, `project verify` and
 `project unpack` in platform. Freeze `.sbproj` layout/version and digest rules.
 Use existing archive/hash libraries where suitable; no registry service or
 external tar executable is required on the target merely to inspect an artifact.

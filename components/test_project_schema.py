@@ -35,3 +35,16 @@ class ProjectSchemas(unittest.TestCase):
                       {'resources': {'jobs': {'unimplemented': {'kind': 'job'}}}}):
             with self.subTest(patch=patch), self.assertRaises(jsonschema.ValidationError):
                 jsonschema.validate(dict(source, **patch), self.schema('project-v2'))
+
+    def test_package_report_and_content_digest_contract(self):
+        report = json.loads((ROOT / 'crates/local/tests/fixtures/project-package.json').read_text())
+        jsonschema.validate(report, self.schema('project-package-report-v1'))
+        content = dict(format_version=1, profile='source', inspection=report['inspection'],
+                       exclusions=report['exclusions'])
+        digest = hashlib.sha256(json.dumps(content, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        self.assertEqual(digest, report['content_sha256'])
+        metadata = dict(content=content, content_sha256=digest)
+        jsonschema.validate(metadata, self.schema('project-package-v1'))
+        content['hooks'] = {'install': 'sh install.sh'}
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(metadata, self.schema('project-package-v1'))

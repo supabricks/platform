@@ -1,6 +1,6 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-13 against merged platform #45 (`916a793ab6d57780be0c57b54312ff1884e88bcd`).
+Reconciled 2026-09-19 through merged platform #47 (`343812fc873559d132561ef185f7fc183eb695b7`).
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -13,7 +13,7 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 documented; PK01 inspection implemented on its feature branch, qualification/merge pending; PK02–PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging implemented in #48, qualification/merge pending; PK03–PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -30,6 +30,10 @@ qualified tested merge `f2812627ad6004c88565a73afb7599c652724b4f`, retaining the
 console pin and report/check totals above. Its 33 checks passed after an unchanged
 macOS environment-console retry; the original offline-import timeout and duplicate
 report-artifact cleanup are recorded in [PR #45](https://github.com/supabricks/platform/pull/45).
+
+PK01 merged after all required merge checks and both native-cell suites passed.
+Its separate alpha.18 archive qualification is still running; PK02 targets alpha.19
+and must pass its own archive gates before claiming release qualification.
 
 The qualified browser is Chromium on both targets. Linux qualification uses
 an unprivileged minimal container / loopback-only namespace; macOS uses an

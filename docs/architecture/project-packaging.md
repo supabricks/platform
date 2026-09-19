@@ -1,6 +1,8 @@
 # Portable projects, deployments and governance
 
-Status: proposed, not implemented. Baseline: platform `916a793` (PR #45),
+Status: design adopted in #46; PK01 inspection merged in #47. PK02 implementation
+and subsequent slices are tracked in the plan below. The architecture describes
+the complete target, including work not yet implemented. Original baseline: platform `916a793` (PR #45),
 console `70af6a2`, catalog schema 10, PG17.8 and source-built Sail 0.7.1.
 Research date: 2026-09-13.
 [Industry evidence](../research/project-packaging-industry.md) ·
@@ -104,7 +106,8 @@ a new definition UUID and records optional origin provenance.
 
 ## Source and artifact contract
 
-Proposed layout; all commands and new manifest fields below are future interfaces:
+Target layout; PK01 supports the source manifest and inspection. PK02 adds the
+source archive workflow; deployment, apply and offline closure remain later slices:
 
 ```text
 supabricks.toml                    # definition and portable requirements
@@ -133,7 +136,8 @@ an original-file backup. Unknown execution/security fields and unsupported
 required capabilities fail validation. The catalog migration is separately
 versioned and follows the existing backed-up upgrade process.
 
-Illustrative format-2 source, not a supported configuration today:
+Illustrative format-2 source, supported for inspection by PK01 and source packaging
+by PK02; runtime binding remains blocked until PK03:
 
 ```toml
 format_version = 2

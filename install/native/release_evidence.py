@@ -109,9 +109,9 @@ def collect(directory, revision, console, worker, version):
         require(ingestion.get('network_evidence'), 'missing ingestion network evidence')
         recovery = read('release-recovery', 'recovery.json', 18, ('release_identity',))
         require(recovery.get('network_qualification'), 'missing recovery network evidence')
-        baseline = read('release-qualification', 'qualification.json', 7, ('release_identity',))
+        baseline = read('release-qualification', 'qualification.json', 9, ('release_identity',))
         require(baseline.get('network_qualification'), 'missing baseline network evidence')
-        benchmark = read('release-qualification', 'benchmarks.json', 7, ('release_identity',)) if target == 'linux-x86_64' else baseline
+        benchmark = read('release-qualification', 'benchmarks.json', 9, ('release_identity',)) if target == 'linux-x86_64' else baseline
         for size in (10000000, 100000000, 1000000000):
             for suffix in ('', '_query'):
                 measurement = benchmark['measurements'].get(f'snapshot_{size}_bytes{suffix}', {})
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.18')
+    parser.add_argument('--version', default='v0.1.0-alpha.19')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

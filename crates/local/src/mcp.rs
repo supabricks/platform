@@ -25,6 +25,13 @@ pub fn tools() -> Value {
     ]});
     let defs = vec![
         (
+            "saved_query_export",
+            "Explicitly export one revision of this project's private saved PostgreSQL query as portable SQL. Preserves the original and omits runtime branch bindings; does not write files or execute SQL.",
+            json!({"id":string,"expected_revision":revision}),
+            vec!["id", "expected_revision"],
+            true,
+        ),
+        (
             "project_inspect",
             "Preview the fixed worktree's project source graph, file hashes, requirements and unresolved bindings. Offline and read-only; never starts runtime or executes project code.",
             json!({"target":{"type":"string"}}),
@@ -340,6 +347,9 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "saved_query_export" => {
+            json!({"type":"object","additionalProperties":false,"properties":{"api_version":{"const":1},"id":string,"revision":{"type":"integer","minimum":1},"title":string,"engine":{"const":"postgres"},"sql":string},"required":["api_version","id","revision","title","engine","sql"]})
+        }
         "project_inspect" | "project_validate" => serde_json::from_str(include_str!(
             "../../../schemas/project-inspection-v1.schema.json"
         ))

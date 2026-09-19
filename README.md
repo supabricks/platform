@@ -18,7 +18,8 @@ Start with the [installed local walkthrough](docs/handbook/local-demo.md). The
 console and synthetic demo files. Public deployment to `supabricks.io` is deferred.
 R04 qualifies the combined workflow; see the [release contract and evidence map](docs/architecture/r04-local-release.md).
 
-- [Project inspection preview](docs/handbook/project-inspection.md): offline format-1/2 source validation and resource graphs; packaging/deployment follow later.
+- [Project inspection preview](docs/handbook/project-inspection.md): offline format-1/2 source validation and resource graphs.
+- [Source packages](docs/handbook/project-packages.md): deterministic archives, verification, private unpacking and explicit saved-query export; deployment follows in PK03–PK04.
 - [PostgreSQL workspace](docs/handbook/database-workspace.md): branches, catalog,
   SQL, cancellation and explicitly saved queries.
 - [File ingestion](docs/handbook/file-ingestion.md): CSV/TSV, JSON, JSONL and
