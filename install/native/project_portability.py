@@ -93,11 +93,18 @@ class Cell:
         return operation
 
     def close(self):
+        failed = False
         for data in self.roots:
             if (data / 'runtime.json').exists():
-                result = subprocess.run([str(self.binary), 'down', '--data-dir', str(data)], env=self.env, capture_output=True, timeout=120)
-                if result.returncode:
-                    raise RuntimeError('owned cell shutdown failed')
+                try:
+                    config = json.loads((data / 'runtime.json').read_text())
+                    binary = Path(config['bundle']).parent / 'bin/supabricks'
+                    result = subprocess.run([str(binary), 'down', '--data-dir', str(data)], env=self.env, capture_output=True, timeout=120)
+                    failed |= result.returncode != 0
+                except (OSError, ValueError, subprocess.TimeoutExpired):
+                    failed = True
+        if failed:
+            raise RuntimeError('owned cell shutdown failed')
 
 
 def bundle(args, root, release, archive):

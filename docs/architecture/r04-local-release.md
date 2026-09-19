@@ -87,3 +87,38 @@ optional next slices. Project packaging, shared catalog/IAM, and hosted console 
 and undergoing its own exact-archive qualification. Public domain deployment,
 publisher signing/notarization, redistribution audit and physical power-loss
 qualification retain their separate gates.
+
+
+## PK07 project portability extension
+
+Alpha.24 keeps this collector as the sole combined release authority. Each native
+assembly exports its base wheel closure through the installed CLI. One Linux job
+packs both target closures into one deterministic `sales.sbproj`. Both destination
+jobs download those exact bytes; independently rebuilding a similar package is
+rejected. The producer records the canonical packaged notebook/fixture hashes,
+not hashes of pre-stripping source text.
+
+`project_evidence.py` supplies strict validation to `release_evidence.py`:
+producer/archive/manifest identities must agree with retained lifecycle evidence,
+closures must match each native kernel contract and the common declaration pair,
+and both destination reports must identify the same actual artifact. Required
+checks are named, not a count that unrelated checks can satisfy. Missing checks,
+failed cleanup, missing isolation, zero/non-finite measurements and mixed reports
+fail the combined gate.
+
+The destination first deploys into a clean candidate installation. A separate
+private installation seeds the alpha.22 predecessor's installed project, upgrades
+through the signed localhost installer, and explicitly reapplies the transferred
+candidate package to that deployment. This allows legitimate changes to native
+kernel contracts without pretending an old bundle is compatible or rewriting its
+provenance. Cold restore then rebuilds from the same candidate source artifact.
+Alpha.22 is an exact pinned upgrade input, not a claim that all its archive gates
+passed. Its retained baseline failures are corrected in PK07: retryable database
+startup stays pending, and the macOS bundle-export fixture uses canonical parents.
+
+Package/expanded bytes describe the transferred artifact including its metadata;
+latencies describe first candidate apply and kernel readiness. Resource sampling
+covers daemon descendants and allocated data-root bytes, excluding installation,
+harness and archive staging. It can miss short peaks and double-count shared RSS.
+The two-row fixture is not a general capacity qualification. Existing R04 browser,
+ingestion, notebook, storage, recovery and benchmark suites remain mandatory.

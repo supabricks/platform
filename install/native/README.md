@@ -7,7 +7,9 @@ it does not download a PyPI Sail wheel.
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
-The default distribution includes the private analytical runtime. `--postgres-only`
+The default distribution includes the private analytical runtime. PK07 adds the
+installed `PROJECT-PORTABILITY.md` [walkthrough](../../docs/handbook/project-portability.md)
+and a shared-artifact portability gate in the combined R04 report. `--postgres-only`
 selects the smaller Postgres alpha during assembly.
 
 The installed `DEMO.md` and `examples/console/sales.csv` / `sales.ipynb` provide
@@ -53,7 +55,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current preview uses version `v0.1.0-alpha.23` and catalog 13. Product notebook kernels
+The current preview uses version `v0.1.0-alpha.24` and catalog 13. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).
