@@ -1,17 +1,13 @@
 # Project packaging implementation plan
 
-Status: PK00 design/research merged in #46 and PK01 source inspection merged in
-#47 (`343812f`). PK02 source packaging merged in #48 (`f453763`).
-PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply merged in
-#50 (`9544cb9`) after required checks and both native-cell gates passed. PK05
-merged in #51 (`b29e21a`) after the same gates; native archive qualification
-remains pending. PK06 is implemented on [console #5](https://github.com/supabricks/console/pull/5) and [platform #52](https://github.com/supabricks/platform/pull/52);
-merge and exact archive qualification are pending. PK07–PK08 are not implemented.
-PK06 targets alpha.23/catalog 13 with console `cd35222` ([console #5](https://github.com/supabricks/console/pull/5)).
-Alpha.19 (#48) remains the latest fully qualified release;
-alpha.20 archive qualification failed in the moved-checkout NE06 fixture (the
-explicit reattach is corrected with PK05); alpha.21 archive qualification remains
-pending separately from its completed merge checks.
+Status: PK00–PK06 are merged through platform #52 (`a94d8db`) and console #5
+(`cd35222` source pin). PK07 is in implementation: one cross-target artifact,
+installed lifecycle qualification, R04 evidence integration and walkthrough.
+PK08 remains unimplemented. PK07 targets alpha.24/catalog 13. Completion requires
+both exact native archives and the combined R04 gate; merged code is not release
+qualification. Alpha.22's retained baseline failed on Linux database preparation
+and macOS bundle export; investigation is part of PK07. Alpha.23 qualification
+remains pending. Alpha.19 is the latest confirmed fully qualified predecessor.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -219,6 +215,9 @@ CLI-created deployments reopen in the console with identical identity. Land the
 console PR and then update the platform gitlink through its release workflow.
 
 ## PK07 — Installed portability release qualification
+
+Implementation in progress on `feat/project-portability`. The installed walkthrough
+and cross-target evidence must pass before this slice is marked complete.
 
 Extend the R04 evidence collector instead of introducing a competing release
 authority. Bind reports to exact platform/console/Sail source, native archive,

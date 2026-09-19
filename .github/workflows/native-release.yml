@@ -143,6 +143,7 @@ jobs:
           python install/native/test_sail.py
           python install/native/test_environment_evidence.py
           python install/native/test_release_evidence.py
+          python install/native/test_project_evidence.py
           python install/native/test_demo.py
           python install/native/test_cleanup.py
       - uses: actions/download-artifact@v4
@@ -156,11 +157,18 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.23-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.24-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
           "$release/python/analytics/python" python/analytics/test_session.py
+      - name: Export PK07 native base closure from the exact archive
+        run: python install/native/project_portability.py bundle --directory build/releases --target ${{ matrix.target }} --output build/project-bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: project-bundle-${{ matrix.target }}
+          path: build/project-bundle/*
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -679,8 +687,100 @@ jobs:
           path: build/environment-lifecycle-reports/*.json
           if-no-files-found: error
 
+  project-source:
+    needs: assemble
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux-x86_64
+          path: build/releases
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: project-bundle-*
+          path: build/bundles
+      - name: Produce one deterministic project containing both native closures
+        run: python3 install/native/project_portability.py produce --directory build/releases --target linux-x86_64 --bundles build/bundles --output build/project
+      - uses: actions/upload-artifact@v4
+        with:
+          name: project-source
+          path: build/project/*
+          if-no-files-found: error
+
+  release-projects:
+    needs: [assemble, project-source]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/download-artifact@v4
+        with:
+          name: project-source
+          path: build/project
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 35460901104
+          name: release-${{ matrix.target }}
+          path: build/previous
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Shared project through clean install, upgrade and restore on isolated Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net --mount /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            mount --make-rprivate /
+            pressure_mount=$(mktemp -d /tmp/sb-pk07-volume.XXXXXX)
+            mount -t tmpfs -o size=80m,mode=1777 tmpfs "$pressure_mount"
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SUPABRICKS_PROJECT_PRESSURE_DIR="$pressure_mount" \
+              SUPABRICKS_PROJECT_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; private HOME and caches" \
+              "$2" install/native/project_portability.py consume --directory build/releases \
+              --previous-directory build/previous --package build/project --target linux-x86_64 \
+              --report build/project-reports/projects.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Shared project on macOS with external network and Homebrew denied
+        if: runner.os == 'macOS'
+        run: |
+          pressure_mount=$(mktemp -d /tmp/sb-pk07-volume.XXXXXX)
+          hdiutil create -size 100m -fs HFS+ -volname SupabricksProjects build/project-pressure.dmg
+          hdiutil attach build/project-pressure.dmg -mountpoint "$pressure_mount" -nobrowse
+          trap 'qualification_status=$?; trap - EXIT; if ! bash install/native/detach_macos_volume.sh "$pressure_mount"; then qualification_status=1; fi; exit "$qualification_status"' EXIT
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_PROJECT_PRESSURE_DIR="$pressure_mount" \
+            SUPABRICKS_PROJECT_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied; private HOME and caches" \
+            "$(command -v python)" install/native/project_portability.py consume --directory build/releases \
+            --previous-directory build/previous --package build/project --target macos-arm64 \
+            --report build/project-reports/projects.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-projects-${{ matrix.target }}
+          path: build/project-reports/*.json
+          if-no-files-found: error
+
   environment-evidence:
-    needs: [clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
+    needs: [release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -711,6 +811,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: release-qualification-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: project-source
+          path: build/evidence/project-source
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-projects-*
           path: build/evidence
       - name: Require complete local workflow evidence for both exact releases
         run: |

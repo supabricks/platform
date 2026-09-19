@@ -1,6 +1,6 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-19 through merged platform #51 (`b29e21a`).
+Reconciled 2026-09-19 through merged platform #52 (`a94d8db`) and console #5.
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -13,7 +13,7 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging implemented on its feature branches, merge/archive qualification pending; PK07–PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 portability qualification in progress; PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -41,9 +41,9 @@ qualified predecessor. Alpha.20 archive qualification failed in both NE06 lifecy
 jobs: the restore fixture moved its checkout without PK03's required explicit
 reattach. PK05 updates that harness; the candidate must rerun the complete gate.
 Alpha.21 archive qualification remains pending.
-PK05 targets alpha.22/catalog 13; full archive qualification remains pending.
+PK05 targets alpha.22/catalog 13; its retained baseline failed in Linux database preparation and macOS bundle export. PK07 investigates those failures; alpha.22 is not fully qualified.
 PK06 targets alpha.23/catalog 13 with the extracted console packaging workflow;
-its implementation and qualification are tracked in the
+it is merged; archive qualification remains pending. Its contract is tracked in the
 [PK06 contract](../architecture/pk06-console-projects.md).
 
 The qualified browser is Chromium on both targets. Linux qualification uses
@@ -53,8 +53,7 @@ not establish a factory-clean physical laptop trial, actual reboot/power-loss
 durability, or support for other browsers/operating systems.
 
 Public hosting, publisher signing/notarization, transitive redistribution audit,
-and physical-machine/reboot/power-loss qualification remain open. Full project
-packaging beyond notebook dependency bundles, shared catalog/IAM/RBAC,
+and physical-machine/reboot/power-loss qualification remain open. PK07 release-qualified project portability, PK08 logical data packaging, shared catalog/IAM/RBAC,
 HA/distributed execution, upstream-only PostgreSQL, custom Scintilla and PGlite
 synchronization require separately scoped work. The first local preview never
 promised those enterprise capabilities.
@@ -62,3 +61,8 @@ promised those enterprise capabilities.
 The obsolete legacy Kubernetes UI removal PR #1 was closed without merging on
 2026-09-13. The new console lives in `supabricks/console`; the legacy operator
 and its existing regression gates remain separate from the native product.
+
+PK07 targets alpha.24/catalog 13. It adds one shared cross-target project artifact,
+clean installed destination lifecycle probes and R04 provenance/measurement gates.
+Implementation and exact archive qualification are pending. See the
+[installed portability walkthrough](../handbook/project-portability.md).
