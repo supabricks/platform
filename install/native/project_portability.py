@@ -5,6 +5,7 @@ Runs in the release's Python. Reports are inputs to R04, never a second release
 completion authority. Private logs/data are retained only on failure.
 """
 import argparse
+import errno
 from functools import partial
 import hashlib
 from http.server import ThreadingHTTPServer
@@ -221,14 +222,14 @@ def consume(args, root, release, archive):
     def totals(at):
         assert sql(at, 'SELECT count(*),sum(amount) FROM public.sales') == [['2', '30']]
         assert sql(at, 'SELECT count(*) FROM public.project_marker') == [['1']]
-    def notebook(at):
+    def notebook(at, measure=False):
         installed = cell.cli(at, 'project', 'installed')
         assert not installed['preparation_needed']
         worktree = Path(installed['environment_worktrees']['environment.notebook'])
         generation = installed['resources']['environment.notebook']['generation']
         c = Console(worktree, cell.cli, channels)
         start = time.monotonic(); execution = c.start(generation)
-        report['measurements'].setdefault('start_seconds', time.monotonic()-start)
+        if measure: report['measurements']['start_seconds'] = time.monotonic()-start
         ws = c.connect(execution)
         try:
             doc = json.loads((worktree / 'notebooks/sales.ipynb').read_text())
@@ -283,8 +284,7 @@ def consume(args, root, release, archive):
         check('malformed_archive_no_publication')
         # First execute on the predecessor, then prove candidate preparation and reads.
         binding = cell.cli(project, 'project', 'create', '--key', 'destination')
-        start = time.monotonic(); first = cell.apply(project, 'first')
-        report['measurements']['prepare_seconds'] = time.monotonic()-start
+        first = cell.apply(project, 'first')
         totals(project); notebook(project)
         session = cell.cli(project, 'analytics', 'open', '--branch', 'main', '--wait')
         assert cell.cli(project, 'analytics', 'sql', '--session', session['id'], '--sql', 'SELECT sum(amount) FROM public.sales')['rows'] == [['30']]
@@ -316,7 +316,10 @@ def consume(args, root, release, archive):
         assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256'] != previous_identity
         cell.cli(project, 'up')
         assert cell.cli(project, 'project', 'installed')['preparation_needed']
-        cell.apply(project, 'upgrade'); totals(project); notebook(project)
+        cell.cli(project, 'branch', 'resume', 'main', '--wait')
+        start = time.monotonic(); cell.apply(project, 'upgrade')
+        report['measurements']['prepare_seconds'] = time.monotonic()-start
+        totals(project); notebook(project, measure=True)
         check('signed_upgrade_reprepare')
         # Missing local wheel closure must fail before activation in a cold deployment.
         missing = root / 'missing'; unpack(missing)
@@ -342,6 +345,7 @@ def consume(args, root, release, archive):
         assert len(cell.cli(interrupted, 'database', 'list')['branches']) == 1
         assert cell.cli(interrupted, 'project', 'installed')['active_revision'] is None
         check('cancel_retains_resources')
+        cell.cli(interrupted, 'branch', 'resume', 'main', '--wait')
         cell.apply(interrupted, 'retry'); totals(interrupted)
         check('interrupted_apply_reconciles')
         backup = root / 'backup'; cell.cli(project, 'backup', 'create', backup)
@@ -350,6 +354,7 @@ def consume(args, root, release, archive):
         cell.cli(project, 'backup', 'restore', backup); cell.cli(project, 'up')
         cell.cli(project, 'project', 'attach', binding['deployment_id'])
         assert cell.cli(project, 'project', 'installed')['preparation_needed']
+        cell.cli(project, 'branch', 'resume', 'main', '--wait')
         cell.apply(project, 'restored'); totals(project); notebook(project)
         check('cold_restore_reprepare')
         # Dedicated bounded test volume; never fill the host filesystem.
@@ -358,11 +363,14 @@ def consume(args, root, release, archive):
         assert before < 160 * 1024 * 1024, 'pressure fixture must be a bounded volume'
         filler = pressure / 'fill'
         try:
-            with filler.open('wb') as stream:
-                chunk = bytes(1024 * 1024)
-                for _ in range(max(0, int(before / len(chunk))-2)):
-                    stream.write(chunk)
-                stream.flush(); os.fsync(stream.fileno())
+            try:
+                with filler.open('wb') as stream:
+                    chunk = bytes(1024 * 1024)
+                    for _ in range(max(0, int(before / len(chunk))-2)):
+                        stream.write(chunk)
+                    stream.flush(); os.fsync(stream.fileno())
+            except OSError as error:
+                if error.errno != errno.ENOSPC: raise
             destination = pressure / 'must-not-exist'
             cell.cli(root, 'project', 'unpack', package, '--destination', destination, success=False)
             assert not destination.exists()
@@ -406,12 +414,12 @@ def main():
         value = getattr(args, name)
         if value: setattr(args, name, value.resolve())
     if not args.release:
-        root = Path(tempfile.mkdtemp(prefix='sb-pk07-release-', dir='/tmp'))
+        root = Path(tempfile.mkdtemp(prefix='sb-pk07-release-', dir='/tmp')).resolve()
         release, _ = extract(args.directory, args.version, args.target, root)
         result = subprocess.run([str(release / 'python/runtime/bin/python3.12'), '-I', '-B', str(Path(__file__).resolve()), *sys.argv[1:], '--release', str(release)])
         if result.returncode == 0: shutil.rmtree(root)
         raise SystemExit(result.returncode)
-    root = Path(tempfile.mkdtemp(prefix='sb-pk07-', dir='/tmp')); root.chmod(0o700)
+    root = Path(tempfile.mkdtemp(prefix='sb-pk07-', dir='/tmp')).resolve(); root.chmod(0o700)
     archive = args.directory / f'supabricks-{args.version}-{args.target}.tar.gz'
     identity = dict(version=args.version, target=args.target, sha256=digest(archive))
     try:

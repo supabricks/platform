@@ -878,7 +878,9 @@ fn record_database(
     checkpoint("database_owned");
     match child.status {
         crate::operations::Status::Succeeded => Ok(true),
-        crate::operations::Status::Pending if child.error.is_none() => Ok(false),
+        // Pending errors are retryable engine observations, not terminal failure.
+        // The branch reconciler retains the same operation and retries its step.
+        crate::operations::Status::Pending => Ok(false),
         _ => Err(conflict(
             "database preparation failed or was superseded; inspect the retained branch",
         )),

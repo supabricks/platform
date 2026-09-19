@@ -731,3 +731,34 @@ fn pending_project_apply_protects_database_even_from_force_delete() {
         .is_ok()
     );
 }
+
+#[test]
+fn database_retryable_error_keeps_apply_pending_but_terminal_error_fails() {
+    for terminal in [false, true] {
+        let (f, mut s) = Fixture::new();
+        let plan = f.plan(&s);
+        let operation = f.apply(&mut s, plan, "retryable-database");
+        let mut env = Manager::default();
+        for _ in 0..2 {
+            apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+        }
+        let child = s.pending().unwrap().into_iter().next().unwrap();
+        s.operation_error(
+            child.id,
+            json!({"code":"unavailable","retryable":!terminal}),
+            terminal,
+        )
+        .unwrap();
+        apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+        let observed = s.project_apply(f.ctx.deployment_id, operation.id).unwrap();
+        assert_eq!(s.active_deployment(f.ctx.deployment_id).unwrap(), None);
+        if terminal {
+            assert_eq!(observed.state, "failed");
+        } else {
+            assert!(observed.pending());
+            complete(&mut s);
+            assert_eq!(f.finish(&mut s, operation.id).state, "succeeded");
+        }
+        assert_eq!(s.branches().unwrap().len(), 1);
+    }
+}
