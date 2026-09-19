@@ -103,7 +103,7 @@ bounded-volume disk exhaustion. The existing browser, ingestion, storage and
 notebook gates remain required by the combined R04 collector.
 
 The report records exact source and archive identities, both wheel inventories,
-declaration/lock and fixture hashes, package/expanded bytes, candidate reapply and
+declaration/lock and fixture hashes, package/expanded bytes, first candidate apply and
 kernel-start times, sampled daemon RSS and sampled data disk peak. Samples can
 miss short peaks and shared pages can inflate RSS. These are measurements of
 this two-row example, not capacity promises for arbitrary projects. Consult the

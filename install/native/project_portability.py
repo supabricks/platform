@@ -149,6 +149,8 @@ def produce(args, root, release, archive):
     repeat = root / 'repeat.sbproj'
     cell.cli(source, 'project', 'pack', '--output', repeat)
     assert digest(repeat) == digest(package)
+    with tarfile.open(package) as tar:
+        expanded_bytes = sum(member.size for member in tar.getmembers())
     info = dict(status='passed', producer_target=args.target, producer_archive=archive,
                 release_sha256=digest(release / 'release.json'), package_sha256=digest(package),
                 content_sha256=report['content_sha256'], source_sha256=report['inspection']['source_sha256'],
@@ -156,7 +158,7 @@ def produce(args, root, release, archive):
                 fixtures={p.relative_to(source).as_posix():digest(p) for p in sorted(source.rglob('*'))
                           if p.is_file() and p.suffix in ('.csv', '.sql', '.ipynb')},
                 measurements=dict(archive_bytes=package.stat().st_size,
-                                  unpacked_bytes=sum(p.stat().st_size for p in source.rglob('*') if p.is_file()), rows=2))
+                                  unpacked_bytes=expanded_bytes, rows=2))
     assert not cell.data.exists(), 'producer unexpectedly started a daemon'
     (args.output / 'producer.json').write_text(json.dumps(info, indent=2)+'\n')
 
@@ -267,12 +269,15 @@ def consume(args, root, release, archive):
             for path in (source, Path(str(source)+'.sha256')): shutil.copy2(path, destination / path.name)
             stage(destination, version, base+'/'+channel, key)
             if channel == 'old': report['previous_archive'] = dict(version=version, target=args.target, sha256=digest(source))
-        install('old')
-        previous_identity = cell.cli(root, 'installation', 'verify')['identity']
+        install('new')
+        assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256']
         verified = cell.cli(root, 'project', 'verify', package)
         assert verified['archive_sha256'] == producer['package_sha256']
         assert verified['content_sha256'] == producer['content_sha256']
+        assert verified['inspection']['source_sha256'] == producer['source_sha256']
+        assert verified['inspection']['environments']['notebook'] == producer['environment']
         unpack(project)
+        assert all(digest(project / name) == expected for name, expected in producer['fixtures'].items())
         assert not cell.data.exists()
         cell.cli(project, 'project', 'binding', success=False)
         check('same_artifact_verified_unbound')
@@ -282,10 +287,11 @@ def consume(args, root, release, archive):
         assert not bad.exists()
         cell.cli(root, 'project', 'unpack', package, '--destination', project, success=False)
         check('malformed_archive_no_publication')
-        # First execute on the predecessor, then prove candidate preparation and reads.
+        # The shared artifact is first deployed into a clean candidate installation.
         binding = cell.cli(project, 'project', 'create', '--key', 'destination')
-        first = cell.apply(project, 'first')
-        totals(project); notebook(project)
+        start = time.monotonic(); first = cell.apply(project, 'first')
+        report['measurements']['prepare_seconds'] = time.monotonic()-start
+        totals(project); notebook(project, measure=True)
         session = cell.cli(project, 'analytics', 'open', '--branch', 'main', '--wait')
         assert cell.cli(project, 'analytics', 'sql', '--session', session['id'], '--sql', 'SELECT sum(amount) FROM public.sales')['rows'] == [['30']]
         cell.cli(project, 'analytics', 'close', session['id'], '--wait')
@@ -312,14 +318,27 @@ def consume(args, root, release, archive):
         assert cell.cli(project, 'project', 'installed')['active_revision'] == first['id']
         totals(project); notebook(project)
         check('restart_retains_revision')
+        # A predecessor's kernel contract can differ (including built wheel bytes).
+        # Seed its installed template, then upgrade and explicitly adopt the same
+        # transferred candidate package; never forge/reseal a predecessor closure.
+        cell.close()
+        cell.data = root / 'upgrade-data'; cell.roots.append(cell.data)
+        prefix = root / 'upgrade-programs'
+        install('old')
+        previous_identity = cell.cli(root, 'installation', 'verify')['identity']
+        predecessor = root / 'predecessor-project'
+        shutil.copytree(prefix / 'current/examples/projects/sales-runnable', predecessor)
+        previous_binding = cell.cli(predecessor, 'project', 'create', '--key', 'predecessor')
+        assert previous_binding['definition_id'] == binding['definition_id']
+        cell.apply(predecessor, 'predecessor'); totals(predecessor)
         install('new', upgrade=True)
         assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256'] != previous_identity
-        cell.cli(project, 'up')
-        assert cell.cli(project, 'project', 'installed')['preparation_needed']
+        cell.cli(predecessor, 'up')
+        assert cell.cli(predecessor, 'project', 'installed')['preparation_needed']
+        project = root / 'upgraded-project'; unpack(project)
+        binding = cell.cli(project, 'project', 'attach', previous_binding['deployment_id'])
         cell.cli(project, 'branch', 'resume', 'main', '--wait')
-        start = time.monotonic(); cell.apply(project, 'upgrade')
-        report['measurements']['prepare_seconds'] = time.monotonic()-start
-        totals(project); notebook(project, measure=True)
+        cell.apply(project, 'upgrade'); totals(project); notebook(project)
         check('signed_upgrade_reprepare')
         # Missing local wheel closure must fail before activation in a cold deployment.
         missing = root / 'missing'; unpack(missing)
