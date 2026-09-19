@@ -151,6 +151,7 @@ pub struct Daemon {
     gateway: Option<crate::connections::Gateway>,
     queries: Vec<std::thread::JoinHandle<()>>,
     ingest_error: Option<String>,
+    project_apply_error: Option<String>,
     ingestion: crate::ingest::service::Service,
     uploads: crate::console::ingestion::Uploads,
 }
@@ -197,6 +198,7 @@ impl Daemon {
             sessions,
             queries: Vec::new(),
             ingest_error: None,
+            project_apply_error: None,
             ingestion: Default::default(),
             uploads: Default::default(),
             gateway,
@@ -250,6 +252,15 @@ impl Daemon {
                         false
                     }
                 };
+                if !stopping {
+                    self.project_apply_error = crate::project_apply::tick(
+                        &mut self.store,
+                        &mut self.environments,
+                        self.cell.as_ref(),
+                    )
+                    .err()
+                    .map(|e| e.to_string());
+                }
                 self.uploads.tick(&mut self.store, stopping)?;
                 self.console_analytics.tick(&mut self.store, stopping)?;
                 let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
@@ -573,7 +584,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::ResolveBinding { source } => {
                 serde_json::to_value(self.store.resolve_deployment(&source)?)?
@@ -864,6 +875,9 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::ProjectApply { command } = action {
+            return crate::project_apply::handle(&mut self.store, &binding, command);
+        }
         if let crate::api::Action::Environment { command } = action {
             return self.environments.handle(&mut self.store, &binding, command);
         }

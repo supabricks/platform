@@ -28,6 +28,9 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    ProjectApply {
+        command: crate::project_apply::Command,
+    },
     SavedQueryExport {
         id: OperationId,
         expected_revision: i64,
@@ -606,7 +609,8 @@ pub(crate) fn handle(
                 expires_at_ms,
             },
         ),
-        Action::Environment { .. }
+        Action::ProjectApply { .. }
+        | Action::Environment { .. }
         | Action::Connect { .. }
         | Action::Catalog { .. }
         | Action::Sql { .. } => {

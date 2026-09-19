@@ -5,6 +5,867 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
+    "description": "Read-only destination plan with source/package hashes, explicit adoption and expected revisions. Does not prepare or execute resources.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "options": {
+          "additionalProperties": false,
+          "properties": {
+            "adopt": {
+              "additionalProperties": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_plan",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "$id": "https://supabricks.io/schemas/project-plan-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "archive_sha256": {
+              "type": "string"
+            },
+            "content_sha256": {
+              "type": "string"
+            },
+            "context": {
+              "additionalProperties": false,
+              "properties": {
+                "actor_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "api_version": {
+                  "const": 1
+                },
+                "definition_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "deployment_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "effective_principal_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "identity_provider": {
+                  "const": "local-owner"
+                },
+                "legacy": {
+                  "type": "boolean"
+                },
+                "realm_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "runtime_project_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "workspace_id": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "definition_id",
+                "deployment_id",
+                "runtime_project_id",
+                "workspace_id",
+                "realm_id",
+                "actor_id",
+                "effective_principal_id",
+                "api_version",
+                "target",
+                "legacy",
+                "revision",
+                "identity_provider"
+              ],
+              "type": "object"
+            },
+            "digest": {
+              "type": "string"
+            },
+            "installation": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "options": {
+              "additionalProperties": false,
+              "properties": {
+                "adopt": {
+                  "additionalProperties": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "object"
+                }
+              },
+              "required": [
+                "adopt"
+              ],
+              "type": "object"
+            },
+            "previous": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "retained": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "source_sha256": {
+              "type": "string"
+            },
+            "steps": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "create",
+                      "retain",
+                      "adopt",
+                      "prepare_offline",
+                      "install"
+                    ]
+                  },
+                  "branch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "database": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "environment": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "expected_revision": {
+                    "minimum": 1,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "file": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "enum": [
+                      "database",
+                      "environment",
+                      "notebook",
+                      "postgres_query",
+                      "spark_query"
+                    ]
+                  },
+                  "logical": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "logical",
+                  "kind",
+                  "action",
+                  "branch",
+                  "expected_revision",
+                  "file",
+                  "database",
+                  "environment"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "worktree": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "api_version",
+            "digest",
+            "context",
+            "worktree",
+            "source_sha256",
+            "archive_sha256",
+            "content_sha256",
+            "installation",
+            "options",
+            "previous",
+            "steps",
+            "retained"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Apply the exact reviewed plan with a retry key. Creates databases, installs immutable source and prepares environments offline; never executes SQL/notebooks. Poll project_status.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "plan": {
+          "$id": "https://supabricks.io/schemas/project-plan-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "archive_sha256": {
+              "type": "string"
+            },
+            "content_sha256": {
+              "type": "string"
+            },
+            "context": {
+              "additionalProperties": false,
+              "properties": {
+                "actor_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "api_version": {
+                  "const": 1
+                },
+                "definition_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "deployment_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "effective_principal_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "identity_provider": {
+                  "const": "local-owner"
+                },
+                "legacy": {
+                  "type": "boolean"
+                },
+                "realm_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "runtime_project_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "workspace_id": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "definition_id",
+                "deployment_id",
+                "runtime_project_id",
+                "workspace_id",
+                "realm_id",
+                "actor_id",
+                "effective_principal_id",
+                "api_version",
+                "target",
+                "legacy",
+                "revision",
+                "identity_provider"
+              ],
+              "type": "object"
+            },
+            "digest": {
+              "type": "string"
+            },
+            "installation": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "options": {
+              "additionalProperties": false,
+              "properties": {
+                "adopt": {
+                  "additionalProperties": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "object"
+                }
+              },
+              "required": [
+                "adopt"
+              ],
+              "type": "object"
+            },
+            "previous": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "retained": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "source_sha256": {
+              "type": "string"
+            },
+            "steps": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "create",
+                      "retain",
+                      "adopt",
+                      "prepare_offline",
+                      "install"
+                    ]
+                  },
+                  "branch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "database": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "environment": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "expected_revision": {
+                    "minimum": 1,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "file": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "enum": [
+                      "database",
+                      "environment",
+                      "notebook",
+                      "postgres_query",
+                      "spark_query"
+                    ]
+                  },
+                  "logical": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "logical",
+                  "kind",
+                  "action",
+                  "branch",
+                  "expected_revision",
+                  "file",
+                  "database",
+                  "environment"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "worktree": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "api_version",
+            "digest",
+            "context",
+            "worktree",
+            "source_sha256",
+            "archive_sha256",
+            "content_sha256",
+            "installation",
+            "options",
+            "previous",
+            "steps",
+            "retained"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "plan",
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "project_apply",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "id",
+            "key",
+            "plan",
+            "state",
+            "next_step",
+            "cancel_requested",
+            "resources",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect an apply journal in this deployment, including retained partial resources.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "project_status",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "id",
+            "key",
+            "plan",
+            "state",
+            "next_step",
+            "cancel_requested",
+            "resources",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Cancel further apply steps. Keeps the previous active revision and already allocated resources.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "project_cancel",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "id",
+            "key",
+            "plan",
+            "state",
+            "next_step",
+            "cancel_requested",
+            "resources",
+            "error"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Recover an apply operation after a lost reply using its request key.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Unique idempotency key. Reuse only for an identical retry; poll the returned operation ID.",
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "name": "project_find",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "operation"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect the active revision and retained destination-owned resources.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_installed",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "context",
+            "active_revision",
+            "resources"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read an installed immutable SQL/notebook asset without executing it.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "logical": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "logical"
+      ],
+      "type": "object"
+    },
+    "name": "project_asset",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "logical",
+            "revision",
+            "read_only",
+            "resource",
+            "content"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Copy an installed asset to a new source file under queries/ or notebooks/. Never overwrites source or the installed revision.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "logical": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "logical",
+        "path"
+      ],
+      "type": "object"
+    },
+    "name": "project_draft",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "path",
+            "draft",
+            "origin_revision",
+            "logical"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
     "description": "Inspect the fixed checkout's destination-owned deployment and local-owner identity. Does not attach an unbound copy.",
     "inputSchema": {
       "additionalProperties": false,

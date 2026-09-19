@@ -424,3 +424,18 @@ fn order(nodes: &BTreeMap<String, Node>) -> Result<Vec<String>> {
     }
     Ok(output)
 }
+
+pub(crate) fn validate_draft_path(path: &str, notebook: bool) -> Result<()> {
+    source::path(path, false)?;
+    if notebook {
+        let relative = path
+            .strip_prefix("notebooks/")
+            .ok_or_else(|| invalid("notebook drafts belong under notebooks/"))?;
+        crate::notebooks::files::relative_path(relative)?;
+    } else if !path.starts_with("queries/") || !path.ends_with(".sql") {
+        return Err(invalid(
+            "query drafts belong under queries/ with a .sql extension",
+        ));
+    }
+    Ok(())
+}

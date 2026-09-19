@@ -68,6 +68,17 @@ fn exclusions() -> Vec<String> {
 
 /// Produce a new archive; never overwrite an existing path or modify source files.
 pub fn pack(directory: &Path, output: &Path, target: Option<&str>) -> Result<Report> {
+    let prepared = prepare(directory, target)?;
+    super::publication::write_new(output, &prepared.archive)?;
+    Ok(prepared.report)
+}
+pub(crate) struct Prepared {
+    pub report: Report,
+    pub source_sha256: String,
+    pub archive: Vec<u8>,
+}
+/// The same deterministic package calculation as pack, without any publication.
+pub(crate) fn prepare(directory: &Path, target: Option<&str>) -> Result<Prepared> {
     let mut source = Source::new(directory)?;
     let original = inspect_inputs(&mut source, target)?;
     if original.definition.format_version != 2 {
@@ -120,15 +131,18 @@ pub fn pack(directory: &Path, output: &Path, target: Option<&str>) -> Result<Rep
     }
     // Reopen all source descriptors before publication; fail on observed substitutions.
     source.verify()?;
-    super::publication::write_new(output, &archive)?;
-    Ok(Report {
-        api_version: 1,
-        package_format_version: 1,
-        verified: true,
-        archive_sha256: hash(&archive),
-        content_sha256: metadata.content_sha256,
-        inspection,
-        exclusions: exclusions(),
+    Ok(Prepared {
+        source_sha256: original.source_sha256,
+        report: Report {
+            api_version: 1,
+            package_format_version: 1,
+            verified: true,
+            archive_sha256: hash(&archive),
+            content_sha256: metadata.content_sha256,
+            inspection,
+            exclusions: exclusions(),
+        },
+        archive,
     })
 }
 pub fn verify(archive: &Path, target: Option<&str>) -> Result<Report> {
@@ -171,7 +185,10 @@ fn tar_bytes(files: &BTreeMap<String, Vec<u8>>) -> Result<Vec<u8>> {
     }
     Ok(archive.into_inner()?)
 }
-fn read(path: &Path, target: Option<&str>) -> Result<(Report, BTreeMap<String, Vec<u8>>)> {
+pub(crate) fn read(
+    path: &Path,
+    target: Option<&str>,
+) -> Result<(Report, BTreeMap<String, Vec<u8>>)> {
     let file = OpenOptions::new()
         .read(true)
         .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)

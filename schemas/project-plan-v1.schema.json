@@ -1,0 +1,209 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "api_version": {
+      "const": 1
+    },
+    "digest": {
+      "type": "string"
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "definition_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "runtime_project_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "workspace_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "realm_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "actor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effective_principal_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "api_version": {
+          "const": 1
+        },
+        "target": {
+          "type": "string"
+        },
+        "legacy": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "identity_provider": {
+          "const": "local-owner"
+        }
+      },
+      "required": [
+        "definition_id",
+        "deployment_id",
+        "runtime_project_id",
+        "workspace_id",
+        "realm_id",
+        "actor_id",
+        "effective_principal_id",
+        "api_version",
+        "target",
+        "legacy",
+        "revision",
+        "identity_provider"
+      ]
+    },
+    "worktree": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string"
+    },
+    "archive_sha256": {
+      "type": "string"
+    },
+    "content_sha256": {
+      "type": "string"
+    },
+    "installation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adopt": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "adopt"
+      ]
+    },
+    "previous": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "logical": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "database",
+              "environment",
+              "notebook",
+              "postgres_query",
+              "spark_query"
+            ]
+          },
+          "action": {
+            "enum": [
+              "create",
+              "retain",
+              "adopt",
+              "prepare_offline",
+              "install"
+            ]
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "file": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "database": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "environment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "logical",
+          "kind",
+          "action",
+          "branch",
+          "expected_revision",
+          "file",
+          "database",
+          "environment"
+        ]
+      }
+    },
+    "retained": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "api_version",
+    "digest",
+    "context",
+    "worktree",
+    "source_sha256",
+    "archive_sha256",
+    "content_sha256",
+    "installation",
+    "options",
+    "previous",
+    "steps",
+    "retained"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/project-plan-v1.schema.json"
+}

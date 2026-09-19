@@ -122,3 +122,27 @@ mod tests {
         assert_eq!(std::fs::read(dest.join("original")).unwrap(), b"keep");
     }
 }
+
+/// Fixed-worktree drafts never follow a symlink in any destination component.
+pub(crate) fn write_draft(root: &Path, path: &str, bytes: &[u8]) -> Result<()> {
+    let parts = super::source::path(path, false)?;
+    let mut parent = Directory::project(root)?;
+    for part in &parts[..parts.len() - 1] {
+        parent = parent.child(OsStr::new(part), true)?;
+    }
+    let temporary = format!(
+        ".supabricks-draft-{}",
+        supabricks_core::resource::OperationId::new()
+    );
+    let name = OsStr::new(&temporary);
+    let mut file = parent.open(name, libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL)?;
+    let result = (|| {
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        parent.move_to(name, &parent, OsStr::new(parts.last().unwrap()))
+    })();
+    if result.is_err() {
+        let _ = parent.unlink(name);
+    }
+    result
+}

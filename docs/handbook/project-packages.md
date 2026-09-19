@@ -2,7 +2,7 @@
 
 A source package contains your declared code, notebooks, SQL, dependency declarations
 and selected fixtures. It can be inspected and unpacked with only the Supabricks
-binary. [PK03](project-deployments.md) adds explicit deployment binding; manifest-driven execution arrives in PK04;
+binary. [PK03](project-deployments.md) adds explicit deployment binding; [PK04](project-apply.md) adds reviewed resource application;
 source packages do not contain a prepared Python environment or database contents.
 
 Start with a format-2 definition such as the shipped inspection example. See

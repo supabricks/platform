@@ -2,11 +2,12 @@
 
 Status: PK00 design/research merged in #46 and PK01 source inspection merged in
 #47 (`343812f`). PK02 source packaging merged in #48 (`f453763`).
-PK03 deployment binding is implemented on its feature branch; its qualification
-and merge are pending. PK04–PK08 are not implemented. PK03 targets alpha.20 and
-catalog 11; console `70af6a2` is unchanged. Alpha.18/alpha.19 archive qualification
-remains pending separately from the completed PK01/PK02 merge checks. The last
-fully qualified predecessor is alpha.17 (#45).
+PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply is implemented
+on its feature branch; its
+merge and native archive qualification are pending. PK05–PK08 are not implemented.
+PK04 targets alpha.21/catalog 12; console `70af6a2` is unchanged. Alpha.19 (#48)
+is the latest fully qualified release; alpha.20 archive qualification remains
+pending separately from PK03's completed merge checks.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -145,6 +146,9 @@ the same deployment; legacy notebook locks, outputs, saved SQL, branch selection
 and restart behavior survive upgrade/restore. Copied UUIDs never grant access.
 
 ## PK04 — Read-only plan and durable apply
+
+[Implemented contract](../architecture/pk04-project-apply.md) ·
+[User workflow](../handbook/project-apply.md).
 
 Add `project plan`, `project apply`, operation inspection and cancellation.
 The plan binds package/input digests, target, destination binding revisions,

@@ -222,7 +222,7 @@ fn mcp_contract_is_separate_strict_and_negotiated() {
             json!({"jsonrpc":"2.0","id":3,"method":"tools/list"}),
         )
         .unwrap();
-    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 50);
+    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 58);
     for args in [
         json!({"branch":"main","project_id":"other"}),
         json!({"action":"delete_branch"}),
