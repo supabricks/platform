@@ -137,7 +137,9 @@ required capabilities fail validation. The catalog migration is separately
 versioned and follows the existing backed-up upgrade process.
 
 Illustrative format-2 source, supported for inspection by PK01 and source packaging
-by PK02; PK03 adds explicit runtime binding; PK04 adds [reviewed resource application](pk04-project-apply.md):
+by PK02; PK03 adds explicit runtime binding; PK04 adds [reviewed resource application](pk04-project-apply.md).
+PK05 adds [offline dependency closure and initialization](pk05-offline-projects.md).
+The original source example below remains compatible:
 
 ```toml
 format_version = 2

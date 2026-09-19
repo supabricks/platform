@@ -45,7 +45,7 @@ or any permissions. All targets and inferred capabilities remain visible.
 
 ## Validation and publication
 
-The reader bounds compressed and expanded archive bytes to 40 MiB and expansion
+PK02 originally bounded compressed and expanded archive bytes to 40 MiB and expansion
 to 200:1. Metadata is at most 2 MiB; the project is at most 1,024 files / 32 MiB,
 with PK01's 8 MiB file, 1 MiB TOML/lock, path, graph and include bounds retained.
 It checks gzip CRC/EOF and rejects trailing data or extra members. It accepts only
@@ -101,3 +101,7 @@ links, traversal, duplicates, case conflicts, bombs, extra gzip members, hidden 
 trailers, interrupted staging and destination races. Alpha.19 qualification adds
 an installed pack/verify/inspect/unpack round trip before runtime startup on both
 native targets and retains the existing release gates.
+
+PK05 extends the archive envelope for explicitly included target wheel bundles;
+see [offline projects](pk05-offline-projects.md) for current limits. Existing
+source-only archive bytes and their source-file budgets remain unchanged.

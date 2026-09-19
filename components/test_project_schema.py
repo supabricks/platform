@@ -19,6 +19,13 @@ class ProjectSchemas(unittest.TestCase):
                              ('resources/database.toml', 'project-resources-v1')]:
             jsonschema.validate(tomllib.loads((root / file).read_text()), self.schema(schema))
 
+    def test_runnable_example_has_explicit_initialization(self):
+        source = tomllib.loads((ROOT / 'examples/projects/sales-runnable/supabricks.toml').read_text())
+        jsonschema.validate(source, self.schema('project-v2'))
+        source['resources']['fixture']['sales']['mapping']['append'] = True
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(source, self.schema('project-v2'))
+
     def test_rust_output_matches_public_schema(self):
         report = json.loads((ROOT / 'crates/local/tests/fixtures/project-inspection.json').read_text())
         jsonschema.validate(report, self.schema('project-inspection-v1'))

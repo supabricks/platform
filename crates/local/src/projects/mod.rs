@@ -1,4 +1,5 @@
 //! PK01: pure, bounded project inspection. No daemon, catalog, subprocess or network.
+pub mod bundles;
 pub mod manifest;
 pub mod package;
 pub(crate) mod publication;
@@ -43,6 +44,8 @@ pub struct EnvironmentInput {
     pub lock: String,
     pub pyproject_sha256: String,
     pub lock_sha256: String,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub bundles: BTreeMap<String, bundles::Closure>,
 }
 #[derive(Debug, Serialize)]
 pub struct UnresolvedBinding {
@@ -154,7 +157,10 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
             }
         }
         for (group, entries) in &model.resources {
-            if !matches!(group.as_str(), "database" | "query" | "notebook") {
+            if !matches!(
+                group.as_str(),
+                "database" | "query" | "notebook" | "migration" | "fixture"
+            ) {
                 return Err(invalid("unsupported resource group"));
             }
             for (name, declaration) in entries {
@@ -173,6 +179,52 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
                             resource: logical.clone(),
                             kind: "destination_database".into(),
                         });
+                    }
+                    Resource::Migration {
+                        file,
+                        database,
+                        sequence,
+                        ..
+                    } => {
+                        require_file(source, file)?;
+                        if !file.ends_with(".sql") || *sequence == 0 {
+                            return Err(invalid(
+                                "migration needs a .sql file and positive sequence",
+                            ));
+                        }
+                        crate::project_apply::migrations::validate(&source.read(file)?)?;
+                        database_ref(database, model)?;
+                    }
+                    Resource::Fixture {
+                        file,
+                        database,
+                        schema,
+                        table,
+                        mapping,
+                        ..
+                    } => {
+                        require_file(source, file)?;
+                        database_ref(database, model)?;
+                        mapping.fingerprint()?;
+                        if mapping.format == crate::ingest::Format::Csv {
+                            let positions: BTreeSet<_> =
+                                mapping.columns.iter().map(|c| c.input.as_str()).collect();
+                            if !(0..mapping.columns.len())
+                                .all(|i| positions.contains(i.to_string().as_str()))
+                            {
+                                return Err(invalid(
+                                    "CSV fixture mapping inputs must cover zero-based column positions",
+                                ));
+                            }
+                        }
+                        crate::ingest::identifier(schema)?;
+                        crate::ingest::identifier(table)?;
+                        if schema == "_supabricks"
+                            || schema.starts_with("pg_")
+                            || schema == "information_schema"
+                        {
+                            return Err(invalid("fixture destination is reserved"));
+                        }
                     }
                     Resource::Sql {
                         engine,
@@ -253,6 +305,25 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
             {
                 return Err(invalid("expected uv lock version 1 with a package array"));
             }
+            let mut bundles = BTreeMap::new();
+            for (target, path) in &env.bundles {
+                if !matches!(target.as_str(), "linux-x86_64" | "macos-arm64")
+                    || !source::is_bundle(path)
+                {
+                    return Err(invalid(
+                        "bundles require a native target and dependencies/*.zip path",
+                    ));
+                }
+                require_file(source, path)?;
+                let closure = bundles::inspect(
+                    path,
+                    &source.read(path)?,
+                    target,
+                    &source.files[&env.pyproject].sha256,
+                    &source.files[&env.lock].sha256,
+                )?;
+                bundles.insert(target.clone(), closure);
+            }
             environments.insert(
                 name.clone(),
                 EnvironmentInput {
@@ -260,6 +331,7 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
                     lock: env.lock.clone(),
                     pyproject_sha256: source.files[&env.pyproject].sha256.clone(),
                     lock_sha256: source.files[&env.lock].sha256.clone(),
+                    bundles,
                 },
             );
         }
@@ -296,6 +368,48 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
             ));
         }
     };
+    // Sequence ordering is per database, independent of lexical resource names.
+    let mut migrations = BTreeMap::<String, BTreeMap<u32, String>>::new();
+    let mut destinations = BTreeSet::new();
+    for (logical, node) in &resources {
+        match &node.declaration {
+            Resource::Migration {
+                database, sequence, ..
+            } => {
+                if migrations
+                    .entry(database.clone())
+                    .or_default()
+                    .insert(*sequence, logical.clone())
+                    .is_some()
+                {
+                    return Err(invalid("duplicate migration sequence in a database"));
+                }
+            }
+            Resource::Fixture {
+                database,
+                schema,
+                table,
+                ..
+            } => {
+                if !destinations.insert((database, schema, table)) {
+                    return Err(invalid("fixtures must have distinct destination tables"));
+                }
+            }
+            _ => (),
+        }
+    }
+    for sequence in migrations.values() {
+        let mut previous = None;
+        for logical in sequence.values() {
+            if let Some(parent) = previous {
+                let deps = &mut resources.get_mut(logical).unwrap().dependencies;
+                deps.push(parent);
+                deps.sort();
+                deps.dedup();
+            }
+            previous = Some(logical.clone());
+        }
+    }
     let order = order(&resources)?;
     source.verify()?;
     let mut report = Inspection {api_version: 1, schema_version: 1, preview: true, valid: true,

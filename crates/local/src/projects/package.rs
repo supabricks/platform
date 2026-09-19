@@ -1,7 +1,7 @@
 //! Source-only .sbproj v1: bounded deterministic tar+gzip; never executes inputs.
 use super::{
     Inspection, inspect_inputs,
-    source::{MAX_FILE, MAX_FILES, MAX_TOTAL, Source},
+    source::{MAX_FILES, MAX_TOTAL, Source},
 };
 use crate::store::{
     Result,
@@ -19,7 +19,7 @@ use std::{
     path::Path,
 };
 
-const MAX_ARCHIVE: u64 = 40 * 1024 * 1024;
+const MAX_ARCHIVE: u64 = 300 * 1024 * 1024;
 const MAX_METADATA: usize = 2 * 1024 * 1024;
 const MAX_RATIO: u64 = 200;
 const MARKER: &str = "supabricks-unpacked.json";
@@ -86,6 +86,7 @@ pub(crate) fn prepare(directory: &Path, target: Option<&str>) -> Result<Prepared
             "project pack requires an explicit format-2 source definition; format-1 runtime projects are not implicitly converted",
         ));
     }
+    let bundled = source.files.keys().any(|p| super::source::is_bundle(p));
     let mut payload = source.payload.clone();
     for (name, bytes) in &mut payload {
         if name.eq_ignore_ascii_case(MARKER) {
@@ -121,13 +122,21 @@ pub(crate) fn prepare(directory: &Path, target: Option<&str>) -> Result<Prepared
         entries.insert(format!("project/{name}"), bytes);
     }
     let raw = tar_bytes(&entries)?;
-    let mut archive = gzip(&raw, Compression::default())?;
+    // Wheel ZIPs are already compressed; avoid recompressing large closures.
+    let mut archive = gzip(
+        &raw,
+        if bundled {
+            Compression::none()
+        } else {
+            Compression::default()
+        },
+    )?;
     // Highly compressible legitimate inputs must still satisfy the reader's bomb budget.
     if raw.len() as u64 > archive.len() as u64 * MAX_RATIO {
         archive = gzip(&raw, Compression::none())?;
     }
     if archive.len() as u64 > MAX_ARCHIVE {
-        return Err(invalid("compressed package exceeds 40 MiB"));
+        return Err(invalid("compressed package exceeds 300 MiB"));
     }
     // Reopen all source descriptors before publication; fail on observed substitutions.
     source.verify()?;
@@ -195,7 +204,7 @@ pub(crate) fn read(
         .open(path)?;
     let before = file.metadata()?;
     if !before.is_file() || before.len() > MAX_ARCHIVE {
-        return Err(invalid("package must be a regular file of at most 40 MiB"));
+        return Err(invalid("package must be a regular file of at most 300 MiB"));
     }
     let mut compressed = Vec::new();
     (&file).take(MAX_ARCHIVE + 1).read_to_end(&mut compressed)?;
@@ -269,7 +278,7 @@ fn decode(compressed: &[u8], target: Option<&str>) -> Result<(Report, BTreeMap<S
             if name.eq_ignore_ascii_case(MARKER) {
                 return Err(invalid("package cannot carry an unpack completion marker"));
             }
-            MAX_FILE
+            super::source::file_limit(path.strip_prefix("project/").unwrap())
         };
         let size = entry.size();
         if size > limit
@@ -429,6 +438,7 @@ fn reject_credentials(bytes: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::source::MAX_FILE;
     use super::*;
     fn entries() -> BTreeMap<String, Vec<u8>> {
         let t = tempfile::tempdir().unwrap();

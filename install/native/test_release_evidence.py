@@ -29,7 +29,7 @@ class ReleaseEvidence(unittest.TestCase):
                     if suite == 'release-environment-lifecycle' and name == 'qualification.json':
                         data.update(target=target, source=dict(sail=sample_report(target),platform_commit='reviewed',platform_dirty=False,
                             console=dict(manifest_sha256=HASH,package_lock_sha256=HASH,source=dict(commit='console',dirty=False,manifest_sha256=HASH,package_lock_sha256=HASH)),
-                            ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=12,postgres_major=17)),
+                            ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=13,postgres_major=17)),
                             archives=dict(new=dict(version='alpha',target=target,sha256=HASH),old={}),
                             release_identity=HASH,python_version='3.12',kernel_contract_sha256=HASH,
                             wheels={},notices={'licenses/platform.txt':HASH},measurements={},project_bundle={})
@@ -42,7 +42,7 @@ class ReleaseEvidence(unittest.TestCase):
                 formats={name:dict(source_sha256=HASH,budget=dict(source_sha256=HASH,**measured)) for name in ('jsonl','json','parquet')}))
             self.write(target,'release-recovery','recovery.json',dict(status='passed',checks=self.checks(18),release_identity=HASH,network_qualification='isolated'))
             for name in ('qualification.json','benchmarks.json'):
-                self.write(target,'release-qualification',name,dict(status='passed',checks=self.checks(11),release_identity=HASH,network_qualification='isolated',
+                self.write(target,'release-qualification',name,dict(status='passed',checks=self.checks(12),release_identity=HASH,network_qualification='isolated',
                     measurements={f'snapshot_{size}_bytes{suffix}':dict(elapsed_seconds=1,peak_rss_bytes=100,logical_cpus=4,host_memory_bytes=1000) for size in (10000000,100000000,1000000000) for suffix in ('','_query')}))
             self.write(target,'release-qualification','network.json',dict(status='passed',observed_destinations=123,external_destinations=[]))
 

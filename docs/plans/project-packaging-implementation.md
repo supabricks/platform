@@ -2,12 +2,14 @@
 
 Status: PK00 design/research merged in #46 and PK01 source inspection merged in
 #47 (`343812f`). PK02 source packaging merged in #48 (`f453763`).
-PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply is implemented
-on its feature branch; its
-merge and native archive qualification are pending. PK05–PK08 are not implemented.
-PK04 targets alpha.21/catalog 12; console `70af6a2` is unchanged. Alpha.19 (#48)
-is the latest fully qualified release; alpha.20 archive qualification remains
-pending separately from PK03's completed merge checks.
+PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply merged in
+#50 (`9544cb9`) after required checks and both native-cell gates passed. PK05 is
+implemented on its feature branch; merge and native archive qualification remain
+pending. PK06–PK08 are not implemented. PK05 targets alpha.22/catalog 13; console
+`70af6a2` is unchanged. Alpha.19 (#48) remains the latest fully qualified release;
+alpha.20 archive qualification failed in the moved-checkout NE06 fixture (the
+explicit reattach is corrected with PK05); alpha.21 archive qualification remains
+pending separately from its completed merge checks.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -169,6 +171,9 @@ UI edits to deployment-owned assets produce drafts rather than modifying the
 immutable installed revision.
 
 ## PK05 — Runnable offline project and bounded initialization
+
+Implemented on the PK05 feature branch; merge and exact archive qualification pending.
+[Contract](../architecture/pk05-offline-projects.md) · [Workflow](../handbook/project-offline.md).
 
 Compose NE04's verified wheel-bundle import/export with project packages. Add a
 per-target closure report: code may be portable while wheels are not. Reuse

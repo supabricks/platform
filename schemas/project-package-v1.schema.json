@@ -220,6 +220,206 @@
                           "database"
                         ],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "const": "migration"
+                          },
+                          "file": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 512
+                          },
+                          "database": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4294967295
+                          },
+                          "depends_on": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "file",
+                          "database",
+                          "sequence"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "const": "fixture"
+                          },
+                          "file": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 512
+                          },
+                          "database": {
+                            "type": "string"
+                          },
+                          "schema": {
+                            "type": "string"
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "mapping": {
+                            "additionalProperties": false,
+                            "description": "Explicitly approved inspection mapping. CSV/Parquet inputs are index strings; JSON object inputs are exact top-level keys; documents use $. Each input is used once. Text preserves leading zeros; typed conversions reject overflow or rounding.",
+                            "properties": {
+                              "columns": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "data_type": {
+                                      "oneOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "enum": [
+                                                "text",
+                                                "boolean",
+                                                "smallint",
+                                                "integer",
+                                                "bigint",
+                                                "double",
+                                                "date",
+                                                "timestamp",
+                                                "timestamp_tz",
+                                                "jsonb"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "decimal"
+                                            },
+                                            "precision": {
+                                              "maximum": 38,
+                                              "minimum": 1,
+                                              "type": "integer"
+                                            },
+                                            "scale": {
+                                              "maximum": 38,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "precision",
+                                            "scale"
+                                          ],
+                                          "type": "object"
+                                        }
+                                      ]
+                                    },
+                                    "input": {
+                                      "maxLength": 1024,
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "maxLength": 63,
+                                      "minLength": 1,
+                                      "type": "string"
+                                    },
+                                    "nullable": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "input",
+                                    "name",
+                                    "data_type",
+                                    "nullable"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 256,
+                                "minItems": 1,
+                                "type": "array"
+                              },
+                              "delimiter": {
+                                "enum": [
+                                  ",",
+                                  "\t",
+                                  ";",
+                                  "|"
+                                ]
+                              },
+                              "format": {
+                                "enum": [
+                                  "csv",
+                                  "json_lines",
+                                  "json_array",
+                                  "json_document",
+                                  "parquet"
+                                ]
+                              },
+                              "header": {
+                                "type": "boolean"
+                              },
+                              "null_strings": {
+                                "items": {
+                                  "maxLength": 256,
+                                  "type": "string"
+                                },
+                                "maxItems": 16,
+                                "type": "array"
+                              },
+                              "version": {
+                                "const": 1
+                              }
+                            },
+                            "required": [
+                              "version",
+                              "format",
+                              "delimiter",
+                              "header",
+                              "null_strings",
+                              "columns"
+                            ],
+                            "type": "object"
+                          },
+                          "depends_on": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "file",
+                          "database",
+                          "schema",
+                          "table",
+                          "mapping"
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   },
@@ -271,6 +471,38 @@
                   "lock_sha256": {
                     "type": "string",
                     "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "bundles": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string"
+                        },
+                        "kernel_contract": {
+                          "type": "string"
+                        },
+                        "wheels": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "status": {
+                          "const": "inventory_verified_runtime_preparation_required"
+                        }
+                      },
+                      "required": [
+                        "path",
+                        "sha256",
+                        "kernel_contract",
+                        "wheels",
+                        "status"
+                      ],
+                      "additionalProperties": false
+                    }
                   }
                 },
                 "required": [

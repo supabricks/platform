@@ -79,7 +79,7 @@ impl Fixture {
     fn finish(&self, s: &mut Store, id: OperationId) -> Operation {
         let mut env = Manager::default();
         for _ in 0..24 {
-            apply::tick(s, &mut env, None).unwrap();
+            apply::tick(s, &mut env, None, &mut Default::default()).unwrap();
             complete(s);
             let o = s.project_apply(self.ctx.deployment_id, id).unwrap();
             if !o.pending() {
@@ -222,11 +222,11 @@ fn cancellation_retains_allocations_and_previous_revision_missing_declarations_n
     let p = f.plan(&s);
     let o = f.apply(&mut s, p, "first");
     let mut env = Manager::default();
-    apply::tick(&mut s, &mut env, None).unwrap();
-    apply::tick(&mut s, &mut env, None).unwrap();
+    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
     assert_eq!(s.branches().unwrap().len(), 1);
     apply::handle(&mut s, &f.binding, Command::Cancel { id: o.id }).unwrap();
-    apply::tick(&mut s, &mut env, None).unwrap();
+    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
     assert_eq!(
         s.project_apply(f.ctx.deployment_id, o.id).unwrap().state,
         "cancelled"
@@ -616,7 +616,7 @@ fn killed_environment_submission_recovers_as_failed_without_activating_partial_s
     }
     let mut s = Store::open(&f.root).unwrap();
     let mut environments = Manager::recover(&mut s).unwrap();
-    apply::tick(&mut s, &mut environments, None).unwrap();
+    apply::tick(&mut s, &mut environments, None, &mut Default::default()).unwrap();
     let failed = s.project_apply(f.ctx.deployment_id, o.id).unwrap();
     assert_eq!(failed.state, "failed");
     assert!(
@@ -627,4 +627,107 @@ fn killed_environment_submission_recovers_as_failed_without_activating_partial_s
     );
     assert_eq!(s.active_deployment(f.ctx.deployment_id).unwrap(), None);
     assert!(s.branches().unwrap().is_empty());
+}
+
+#[test]
+fn initialization_plan_orders_checksums_and_rejects_implicit_adoption() {
+    let (f, mut s) = Fixture::new();
+    fs::write(
+        f.path.join("queries/first.sql"),
+        "CREATE TABLE public.marker(id integer)",
+    )
+    .unwrap();
+    fs::write(
+        f.path.join("queries/second.sql"),
+        "INSERT INTO public.marker VALUES (1)",
+    )
+    .unwrap();
+    let manifest = f.path.join("supabricks.toml");
+    let source = fs::read_to_string(&manifest)
+        .unwrap()
+        .replace("['queries/total.sql']", "['queries/*.sql']")
+        + "\n[resources.migration.z_first]\nkind='migration'\nfile='queries/first.sql'\ndatabase='database.main'\nsequence=1\n[resources.migration.a_second]\nkind='migration'\nfile='queries/second.sql'\ndatabase='database.main'\nsequence=2\n";
+    fs::write(&manifest, &source).unwrap();
+    let p = f.plan(&s);
+    let migrations: Vec<_> = p.steps.iter().filter(|s| s.kind == "migration").collect();
+    assert_eq!(
+        migrations
+            .iter()
+            .map(|s| s.logical.as_str())
+            .collect::<Vec<_>>(),
+        vec!["migration.z_first", "migration.a_second"]
+    );
+    assert_eq!(
+        migrations[0].initialization.as_ref().unwrap()["sha256"]
+            .as_str()
+            .unwrap()
+            .len(),
+        64
+    );
+    assert!(
+        s.list_branches(f.binding.project_id, false)
+            .unwrap()
+            .is_empty()
+    );
+    fs::write(&manifest, source.replace("sequence=2", "sequence=1")).unwrap();
+    assert!(apply::plan(&s, &f.binding, Options::default()).is_err());
+    fs::write(&manifest, &source).unwrap();
+    let result = create(&mut s, &f.binding, "external");
+    let branch = serde_json::from_value(result["branch_id"].clone()).unwrap();
+    complete(&mut s);
+    let options = Options {
+        adopt: BTreeMap::from([("database.main".into(), branch)]),
+    };
+    assert!(
+        apply::plan(&s, &f.binding, options)
+            .unwrap_err()
+            .to_string()
+            .contains("separate reviewed apply")
+    );
+    fs::write(f.path.join("queries/first.sql"), "COMMIT").unwrap();
+    assert!(apply::plan(&s, &f.binding, Options::default()).is_err());
+}
+
+#[test]
+fn pending_project_apply_protects_database_even_from_force_delete() {
+    let (f, mut s) = Fixture::new();
+    let plan = f.plan(&s);
+    let o = f.apply(&mut s, plan, "protect");
+    let mut env = Manager::default();
+    let mut workers = Default::default();
+    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
+    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
+    complete(&mut s);
+    let branch = s
+        .project_apply(f.ctx.deployment_id, o.id)
+        .unwrap()
+        .resources["database.main"]
+        .branch
+        .unwrap();
+    assert!(
+        s.submit(
+            f.binding.project_id,
+            "force",
+            supabricks_local::operations::Mutation::ForceDelete {
+                branch_id: branch,
+                expected_revision: 1
+            }
+        )
+        .unwrap_err()
+        .to_string()
+        .contains("pending project apply")
+    );
+    apply::handle(&mut s, &f.binding, Command::Cancel { id: o.id }).unwrap();
+    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
+    assert!(
+        s.submit(
+            f.binding.project_id,
+            "force",
+            supabricks_local::operations::Mutation::ForceDelete {
+                branch_id: branch,
+                expected_revision: 1
+            }
+        )
+        .is_ok()
+    );
 }

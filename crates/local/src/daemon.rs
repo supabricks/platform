@@ -152,6 +152,7 @@ pub struct Daemon {
     queries: Vec<std::thread::JoinHandle<()>>,
     ingest_error: Option<String>,
     project_apply_error: Option<String>,
+    project_migrations: crate::project_apply::migrations::Workers,
     ingestion: crate::ingest::service::Service,
     uploads: crate::console::ingestion::Uploads,
 }
@@ -199,6 +200,7 @@ impl Daemon {
             queries: Vec::new(),
             ingest_error: None,
             project_apply_error: None,
+            project_migrations: Default::default(),
             ingestion: Default::default(),
             uploads: Default::default(),
             gateway,
@@ -257,6 +259,7 @@ impl Daemon {
                         &mut self.store,
                         &mut self.environments,
                         self.cell.as_ref(),
+                        &mut self.project_migrations,
                     )
                     .err()
                     .map(|e| e.to_string());
@@ -332,6 +335,7 @@ impl Daemon {
                         && self.consoles.last_error.is_none()
                         && self.ingest_error.is_none()
                         && ingestion_stopped
+                        && self.project_migrations.idle()
                     {
                         match cell.stop(&mut self.store) {
                             Ok(true) => return Ok(()),
@@ -360,6 +364,7 @@ impl Daemon {
                     && self.consoles.last_error.is_none()
                     && self.ingest_error.is_none()
                     && ingestion_stopped
+                    && self.project_migrations.idle()
                 {
                     return Ok(());
                 }

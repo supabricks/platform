@@ -229,14 +229,14 @@ impl Drop for ConnectionTask {
 }
 /// Reject an oversized backend message before tokio-postgres allocates its body.
 /// No TLS negotiation here: this is the private local app worker over loopback.
-struct FramedSocket {
+pub(crate) struct FramedSocket {
     socket: TcpStream,
     header: [u8; 5],
     read: usize,
     body: usize,
 }
 impl FramedSocket {
-    fn new(socket: TcpStream) -> Self {
+    pub(crate) fn new(socket: TcpStream) -> Self {
         Self {
             socket,
             header: [0; 5],

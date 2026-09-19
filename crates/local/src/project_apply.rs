@@ -7,6 +7,8 @@ use crate::{
         error::{conflict, invalid},
     },
 };
+mod fixtures;
+pub mod migrations;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -64,6 +66,8 @@ pub struct Plan {
     pub previous: Option<OperationId>,
     pub steps: Vec<Step>,
     pub retained: Vec<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub dependency_closure: BTreeMap<String, Value>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -76,6 +80,8 @@ pub struct Step {
     pub file: Option<String>,
     pub database: Option<String>,
     pub environment: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initialization: Option<Value>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -87,6 +93,8 @@ pub struct Resource {
     pub database: Option<String>,
     pub environment: Option<String>,
     pub generation: Option<OperationId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt: Option<Value>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -131,7 +139,21 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
     let owned = store.deployment_resources(context.deployment_id)?;
     let branches = store.list_branches(context.runtime_project_id, false)?;
     let mut steps = Vec::new();
-    for (name, _) in &report.environments {
+    let mut dependency_closure = BTreeMap::new();
+    for (name, input) in &report.environments {
+        if !input.bundles.is_empty() {
+            let package = crate::environments::Package::load(store)?;
+            let bundle = input
+                .bundles
+                .get(&package.target)
+                .ok_or_else(|| conflict("project has no wheel bundle for this native target"))?;
+            if bundle.kernel_contract != package.identity {
+                return Err(conflict(
+                    "project wheel bundle requires another kernel contract",
+                ));
+            }
+            dependency_closure.insert(name.clone(), json!({"target":package.target,"kernel_contract":package.identity,"targets":input.bundles,"status":"prepare_offline_before_activation"}));
+        }
         steps.push(Step {
             logical: format!("environment.{name}"),
             kind: "environment".into(),
@@ -141,6 +163,7 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
             file: None,
             database: None,
             environment: Some(name.clone()),
+            initialization: None,
         });
     }
     for logical in &report.order {
@@ -154,6 +177,7 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
             file: None,
             database: None,
             environment: None,
+            initialization: None,
         };
         match &report.resources[logical].declaration {
             R::PostgresDatabase { .. } => {
@@ -198,6 +222,36 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
                     step.action = "create".into();
                 }
             }
+            R::Migration {
+                file,
+                database,
+                sequence,
+                ..
+            } => {
+                step.kind = "migration".into();
+                step.action = "transactional_migration".into();
+                step.file = Some(file.clone());
+                step.database = Some(database.clone());
+                step.initialization = Some(
+                    json!({"sequence":sequence,"sha256":report.files[file].sha256,"transaction":"one_statement_and_receipt"}),
+                );
+            }
+            R::Fixture {
+                file,
+                database,
+                schema,
+                table,
+                mapping,
+                ..
+            } => {
+                step.kind = "fixture".into();
+                step.action = "load_new_table".into();
+                step.file = Some(file.clone());
+                step.database = Some(database.clone());
+                step.initialization = Some(
+                    json!({"sha256":report.files[file].sha256,"schema":schema,"table":table,"mapping":mapping}),
+                );
+            }
             R::Sql {
                 file,
                 database,
@@ -233,6 +287,29 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
     }) {
         return Err(invalid("adoption must reference a declared database"));
     }
+    for step in &steps {
+        if matches!(step.kind.as_str(), "migration" | "fixture") {
+            let database = steps
+                .iter()
+                .find(|s| Some(&s.logical) == step.database.as_ref())
+                .unwrap();
+            if database.action == "adopt" {
+                return Err(conflict(
+                    "initialization requires a fresh or already owned database; adopt in a separate reviewed apply first",
+                ));
+            }
+            if let Some(id) = database.branch {
+                let b = store.branch(id)?;
+                if b.endpoint.desired_state != supabricks_core::resource::DesiredState::Running
+                    || b.observed_revision != b.revision
+                {
+                    return Err(conflict(
+                        "resume the owned database and wait before planning initialization",
+                    ));
+                }
+            }
+        }
+    }
     let retained = owned
         .keys()
         .filter(|k| !steps.iter().any(|s| &s.logical == *k))
@@ -251,6 +328,7 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
         context,
         steps,
         retained,
+        dependency_closure,
     };
     result.digest = digest(&result)?;
     if serde_json::to_vec(&result)?.len() > 48 * 1024 {
@@ -392,12 +470,26 @@ pub fn tick(
     store: &mut Store,
     environments: &mut crate::environments::Manager,
     cell: Option<&crate::engine::Cell>,
+    migrations: &mut migrations::Workers,
 ) -> Result<()> {
     for mut o in store.pending_applies()? {
-        if let Err(e) = advance(store, environments, cell, &mut o) {
+        if let Err(e) = advance(store, environments, cell, migrations, &mut o) {
+            if let Some(step) = o.plan.steps.get(o.next_step) {
+                let key = format!("{}:{}", o.id, step.logical);
+                if migrations.contains(&key) {
+                    let _ = migrations.finish(&key);
+                    if migrations.contains(&key) {
+                        continue;
+                    }
+                }
+            }
             o.state = "failed".into();
             o.error = Some(format!(
-                "{e}; previous active revision is retained. Inspect retained resources and make a new plan."
+                "step {}: {e}; previous active revision is retained. Earlier committed initialization remains. Inspect receipts and make a new plan.",
+                o.plan
+                    .steps
+                    .get(o.next_step)
+                    .map_or("activation", |s| s.logical.as_str())
             ));
             store.save_apply(&o)?;
         }
@@ -461,6 +553,22 @@ fn prepare_environment(
     o: &Operation,
     name: &str,
 ) -> Result<Value> {
+    let path = o.directory(store).join("environments").join(name);
+    let key = format!("project:{}:{name}", o.id);
+    if path.exists() {
+        let binding = env_binding(store, o, name)?;
+        if let Some(found) = environments
+            .handle(
+                store,
+                &binding,
+                crate::environments::Command::Find { key: key.clone() },
+            )?
+            .get("operation")
+            .filter(|v| !v.is_null())
+        {
+            return Ok(found.clone());
+        }
+    }
     let (report, files) = crate::projects::package::read(
         &o.directory(store).join("source.sbproj"),
         Some(&o.plan.context.target),
@@ -492,6 +600,17 @@ fn prepare_environment(
             &files[&input.pyproject],
         )?;
         p.write("notebooks/environment/uv.lock", &files[&input.lock])?;
+        if !input.bundles.is_empty() {
+            let package = crate::environments::Package::load(store)?;
+            let bundle = input
+                .bundles
+                .get(&package.target)
+                .ok_or_else(|| conflict("missing target bundle"))?;
+            if bundle.kernel_contract != package.identity {
+                return Err(conflict("kernel contract changed"));
+            }
+            p.write("dependency.zip", &files[&bundle.path])?;
+        }
         for (logical, node) in &report.inspection.resources {
             if let crate::projects::manifest::Resource::Notebook {
                 file, environment, ..
@@ -523,22 +642,29 @@ fn prepare_environment(
     {
         return Ok(found.clone());
     }
-    environments.handle(
-        store,
-        &binding,
-        crate::environments::Command::Prepare {
+    let expected = crate::environments::Inputs {
+        manifest: input.pyproject_sha256.clone(),
+        lock: input.lock_sha256.clone(),
+    };
+    let command = if input.bundles.is_empty() {
+        crate::environments::Command::Prepare { key, expected }
+    } else {
+        crate::environments::Command::Manage {
             key,
-            expected: crate::environments::Inputs {
-                manifest: input.pyproject_sha256.clone(),
-                lock: input.lock_sha256.clone(),
+            expected,
+            offline: true,
+            change: crate::environments::Change::ImportBundle {
+                path: path.join("dependency.zip"),
             },
-        },
-    )
+        }
+    };
+    environments.handle(store, &binding, command)
 }
 fn advance(
     store: &mut Store,
     environments: &mut crate::environments::Manager,
     cell: Option<&crate::engine::Cell>,
+    migrations: &mut migrations::Workers,
     o: &mut Operation,
 ) -> Result<()> {
     let ctx = store.binding_context(&o.plan.context.binding(&o.plan.worktree))?;
@@ -567,6 +693,31 @@ fn advance(
         }
     }
     if o.cancel_requested {
+        if let Some(step) = o.plan.steps.get(o.next_step) {
+            let key = format!("{}:{}", o.id, step.logical);
+            if migrations.contains(&key) {
+                // Finish receipt reconciliation before acknowledging cancellation.
+                let Some(receipt) = initialization(store, migrations, o, step)? else {
+                    return Ok(());
+                };
+                o.resources.insert(
+                    step.logical.clone(),
+                    Resource {
+                        kind: step.kind.clone(),
+                        origin: o.id,
+                        branch: step.branch,
+                        file: step.file.clone(),
+                        database: step.database.clone(),
+                        environment: None,
+                        generation: None,
+                        receipt: Some(receipt),
+                    },
+                );
+            }
+        }
+        if !fixtures::cancel(store, o)? {
+            return Ok(());
+        }
         for env in store
             .environment_operations()?
             .into_iter()
@@ -600,6 +751,7 @@ fn advance(
             database: step.database.clone(),
             environment: step.environment.clone(),
             generation: None,
+            receipt: None,
         };
         if step.kind == "database" {
             if step.action == "create" {
@@ -615,6 +767,11 @@ fn advance(
                 }
                 store.own_database(ctx.deployment_id, &step.logical, &resource)?;
             }
+        } else if matches!(step.kind.as_str(), "migration" | "fixture") {
+            let Some(receipt) = initialization(store, migrations, o, &step)? else {
+                return Ok(());
+            };
+            resource.receipt = Some(receipt);
         } else if step.kind == "environment" {
             let status =
                 prepare_environment(store, environments, o, step.environment.as_ref().unwrap())?;
@@ -661,11 +818,26 @@ fn advance(
             }
         } else if step.kind == "environment" {
             let binding = env_binding(store, o, step.environment.as_ref().unwrap())?;
-            crate::environments::Manager::select(
+            let selected = crate::environments::Manager::select(
                 store,
                 &binding,
                 o.resources[&step.logical].generation.unwrap(),
             )?;
+            let report = crate::projects::package::verify(
+                &o.directory(store).join("source.sbproj"),
+                Some(&o.plan.context.target),
+            )?;
+            let expected = &report.inspection.environments[step.environment.as_ref().unwrap()];
+            if selected.identity.inputs
+                != (crate::environments::Inputs {
+                    manifest: expected.pyproject_sha256.clone(),
+                    lock: expected.lock_sha256.clone(),
+                })
+            {
+                return Err(conflict(
+                    "prepared environment differs from the reviewed source declarations",
+                ));
+            }
         }
     }
     checkpoint("before_activation");
@@ -698,6 +870,7 @@ fn record_database(
         database: None,
         environment: None,
         generation: None,
+        receipt: None,
     };
     store.own_database(o.plan.context.deployment_id, &step.logical, &r)?;
     o.resources.insert(step.logical, r);
@@ -710,4 +883,76 @@ fn record_database(
             "database preparation failed or was superseded; inspect the retained branch",
         )),
     }
+}
+
+fn initialization(
+    store: &mut Store,
+    workers: &mut migrations::Workers,
+    o: &Operation,
+    step: &Step,
+) -> Result<Option<Value>> {
+    let worker_key = format!("{}:{}", o.id, step.logical);
+    if workers.contains(&worker_key) {
+        return workers.finish(&worker_key);
+    }
+    let database = o
+        .resources
+        .get(step.database.as_ref().unwrap())
+        .ok_or_else(|| conflict("initialization database was not prepared"))?;
+    let id = database.branch.unwrap();
+    store.accepting_work(id)?;
+    let b = store.branch(id)?;
+    let expected = o
+        .plan
+        .steps
+        .iter()
+        .find(|s| s.logical == *step.database.as_ref().unwrap())
+        .unwrap()
+        .expected_revision
+        .unwrap_or(1);
+    if b.revision != expected
+        || b.observed_revision != expected
+        || b.endpoint.desired_state != supabricks_core::resource::DesiredState::Running
+    {
+        return Err(conflict(
+            "initialization database changed or is not running",
+        ));
+    }
+    if step.kind == "fixture" && fixtures::exists(store, o, step, id)? {
+        return fixtures::load(store, o, step, id, &[]);
+    }
+    let (report, files) = crate::projects::package::read(
+        &o.directory(store).join("source.sbproj"),
+        Some(&o.plan.context.target),
+    )?;
+    if report.archive_sha256 != o.plan.archive_sha256 {
+        return Err(conflict("initialization archive changed"));
+    }
+    let bytes = &files[step.file.as_ref().unwrap()];
+    let config = step.initialization.as_ref().unwrap();
+    if hex::encode(Sha256::digest(bytes)) != config["sha256"].as_str().unwrap() {
+        return Err(conflict("initialization checksum changed"));
+    }
+    if step.kind == "fixture" {
+        return fixtures::load(store, o, step, id, bytes);
+    }
+    workers.poll(
+        &format!("{}:{}", o.id, step.logical),
+        migrations::Request {
+            port: b
+                .ports
+                .ok_or_else(|| conflict("migration database has no compute port"))?
+                .sql,
+            password: store.endpoint_password(b.endpoint.id)?,
+            origin: store.ingest_origin()?,
+            deployment: o.plan.context.deployment_id.to_string(),
+            branch: id.to_string(),
+            logical: step.logical.clone(),
+            sequence: config["sequence"].as_i64().unwrap(),
+            sha256: config["sha256"].as_str().unwrap().into(),
+            sql: std::str::from_utf8(bytes)
+                .map_err(|_| invalid("migration UTF-8"))?
+                .into(),
+        },
+    )
 }

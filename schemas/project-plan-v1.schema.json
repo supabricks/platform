@@ -127,7 +127,9 @@
               "environment",
               "notebook",
               "postgres_query",
-              "spark_query"
+              "spark_query",
+              "migration",
+              "fixture"
             ]
           },
           "action": {
@@ -136,7 +138,9 @@
               "retain",
               "adopt",
               "prepare_offline",
-              "install"
+              "install",
+              "transactional_migration",
+              "load_new_table"
             ]
           },
           "branch": {
@@ -169,6 +173,9 @@
               "string",
               "null"
             ]
+          },
+          "initialization": {
+            "type": "object"
           }
         },
         "required": [
@@ -188,6 +195,9 @@
       "items": {
         "type": "string"
       }
+    },
+    "dependency_closure": {
+      "type": "object"
     }
   },
   "required": [
