@@ -63,7 +63,7 @@ class Cell:
 
     def cli(self, at, *parts, success=True):
         scope = [] if parts[:2] == ('installation', 'verify') else ['--data-dir', str(self.data)]
-        if parts[:2] != ('project', 'unpack'):
+        if parts[:2] not in (('project', 'unpack'), ('project', 'verify'), ('installation', 'verify')):
             scope += ['--project', str(at)]
         result = subprocess.run([str(self.binary), *map(str, parts), *scope], env=self.env,
                                 capture_output=True, text=True, timeout=300)
@@ -295,6 +295,7 @@ def consume(args, root, release, archive):
         cell.cli(root, 'project', 'unpack', package, '--destination', project, success=False)
         check('malformed_archive_no_publication')
         # The shared artifact is first deployed into a clean candidate installation.
+        cell.cli(project, 'up')
         binding = cell.cli(project, 'project', 'create', '--key', 'destination')
         start = time.monotonic(); first = cell.apply(project, 'first')
         report['measurements']['prepare_seconds'] = time.monotonic()-start
@@ -335,6 +336,7 @@ def consume(args, root, release, archive):
         previous_identity = cell.cli(root, 'installation', 'verify')['identity']
         predecessor = root / 'predecessor-project'
         shutil.copytree(prefix / 'current/examples/projects/sales-runnable', predecessor)
+        cell.cli(predecessor, 'up')
         previous_binding = cell.cli(predecessor, 'project', 'create', '--key', 'predecessor')
         assert previous_binding['definition_id'] == binding['definition_id']
         cell.apply(predecessor, 'predecessor'); totals(predecessor)
@@ -398,8 +400,9 @@ def consume(args, root, release, archive):
             except OSError as error:
                 if error.errno != errno.ENOSPC: raise
             destination = pressure / 'must-not-exist'
-            cell.cli(root, 'project', 'unpack', package, '--destination', destination, success=False)
-            assert not destination.exists()
+            rejected = cell.cli(root, 'project', 'unpack', package, '--destination', destination, success=False)
+            assert 'os error 28' in json.loads(rejected.stdout)['error']['message'], 'expected real ENOSPC'
+            assert not destination.exists() and not list(pressure.glob('.supabricks-package-*'))
         finally:
             filler.unlink(missing_ok=True)
         check('low_disk_no_publication')
@@ -436,6 +439,12 @@ def main():
     parser.add_argument('--previous-version', default='v0.1.0-alpha.22')
     parser.add_argument('--release', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    required = {'bundle': ('directory', 'output'), 'produce': ('directory', 'bundles', 'output'),
+                'consume': ('directory', 'previous_directory', 'package', 'report')}[args.mode]
+    for name in required:
+        if getattr(args, name) is None: parser.error('--'+name.replace('_', '-')+' is required')
+    if args.mode == 'consume' and not os.environ.get('SUPABRICKS_PROJECT_PRESSURE_DIR'):
+        parser.error('consume requires SUPABRICKS_PROJECT_PRESSURE_DIR on a dedicated bounded volume')
     for name in ('directory', 'output', 'bundles', 'package', 'report', 'previous_directory', 'release'):
         value = getattr(args, name)
         if value: setattr(args, name, value.resolve())

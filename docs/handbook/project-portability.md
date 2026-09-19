@@ -51,6 +51,7 @@ storage, credentials, notebook outputs, active kernels or arbitrary local files.
 
 ```sh
 supabricks project unpack /absolute/path/sales.sbproj --destination ./sales-local
+supabricks up --project ./sales-local
 supabricks project create --project ./sales-local --key sales-local
 supabricks project plan --project ./sales-local > /tmp/sales-plan.json
 # Review the plan, then submit it with a stable key.
