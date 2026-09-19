@@ -1,0 +1,50 @@
+{
+  "api_version": 1,
+  "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "context": {
+    "actor_id": "00000000-0000-4000-8000-000000000006",
+    "api_version": 1,
+    "definition_id": "00000000-0000-4000-8000-000000000001",
+    "deployment_id": "00000000-0000-4000-8000-000000000002",
+    "effective_principal_id": "00000000-0000-4000-8000-000000000006",
+    "identity_provider": "local-owner",
+    "legacy": false,
+    "realm_id": "00000000-0000-4000-8000-000000000005",
+    "revision": 1,
+    "runtime_project_id": "00000000-0000-4000-8000-000000000003",
+    "target": "local",
+    "workspace_id": "00000000-0000-4000-8000-000000000004"
+  },
+  "digest": "192cd39e0b0a77bae3e8d25288091840ba020074431c50ff75ad12427a4c0ba8",
+  "installation": null,
+  "options": {
+    "adopt": {}
+  },
+  "previous": null,
+  "retained": [],
+  "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "steps": [
+    {
+      "action": "create",
+      "branch": null,
+      "database": null,
+      "environment": null,
+      "expected_revision": null,
+      "file": null,
+      "kind": "database",
+      "logical": "database.main"
+    },
+    {
+      "action": "install",
+      "branch": null,
+      "database": "database.main",
+      "environment": null,
+      "expected_revision": null,
+      "file": "queries/total.sql",
+      "kind": "postgres_query",
+      "logical": "query.total"
+    }
+  ],
+  "worktree": "/project"
+}

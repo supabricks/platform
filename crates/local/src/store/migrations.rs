@@ -12,6 +12,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0009_ingest.sql"),
     include_str!("migrations/0010_environments.sql"),
     include_str!("migrations/0011_deployments.sql"),
+    include_str!("migrations/0012_project_apply.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -110,7 +111,7 @@ pub(crate) fn catalog_upgrade(
 ) -> Result<()> {
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let version: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
-    if version != from || !matches!(from, 8 | 9 | 10) {
+    if version != from || !matches!(from, 8 | 9 | 10 | 11) {
         return Err(conflict(
             "catalog migration requires the backed-up source schema",
         ));

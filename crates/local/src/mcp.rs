@@ -23,7 +23,66 @@ pub fn tools() -> Value {
         {"type":"object","additionalProperties":false,"properties":{"kind":{"const":"adopt"},"path":string,"expected":inputs},"required":["kind","path","expected"]},
         {"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["export_bundle","import_bundle"]},"path":string},"required":["kind","path"]}
     ]});
+    let plan: Value =
+        serde_json::from_str(include_str!("../../../schemas/project-plan-v1.schema.json"))
+            .expect("checked plan schema");
     let defs = vec![
+        (
+            "project_plan",
+            "Read-only destination plan with source/package hashes, explicit adoption and expected revisions. Does not prepare or execute resources.",
+            json!({"options":{"type":"object","additionalProperties":false,"properties":{"adopt":{"type":"object","additionalProperties":{"type":"string","format":"uuid"}}}}}),
+            vec![],
+            true,
+        ),
+        (
+            "project_apply",
+            "Apply the exact reviewed plan with a retry key. Creates databases, installs immutable source and prepares environments offline; never executes SQL/notebooks. Poll project_status.",
+            json!({"plan":plan,"key":key}),
+            vec!["plan", "key"],
+            false,
+        ),
+        (
+            "project_status",
+            "Inspect an apply journal in this deployment, including retained partial resources.",
+            json!({"id":string}),
+            vec!["id"],
+            true,
+        ),
+        (
+            "project_cancel",
+            "Cancel further apply steps. Keeps the previous active revision and already allocated resources.",
+            json!({"id":string}),
+            vec!["id"],
+            false,
+        ),
+        (
+            "project_find",
+            "Recover an apply operation after a lost reply using its request key.",
+            json!({"key":key}),
+            vec!["key"],
+            true,
+        ),
+        (
+            "project_installed",
+            "Inspect the active revision and retained destination-owned resources.",
+            json!({}),
+            vec![],
+            true,
+        ),
+        (
+            "project_asset",
+            "Read an installed immutable SQL/notebook asset without executing it.",
+            json!({"logical":string}),
+            vec!["logical"],
+            true,
+        ),
+        (
+            "project_draft",
+            "Copy an installed asset to a new source file under queries/ or notebooks/. Never overwrites source or the installed revision.",
+            json!({"logical":string,"path":string}),
+            vec!["logical", "path"],
+            false,
+        ),
         (
             "project_binding",
             "Inspect the fixed checkout's destination-owned deployment and local-owner identity. Does not attach an unbound copy.",
@@ -382,6 +441,23 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "project_plan" => {
+            serde_json::from_str(include_str!("../../../schemas/project-plan-v1.schema.json"))
+                .expect("checked plan schema")
+        }
+        "project_apply" | "project_status" | "project_cancel" => {
+            json!({"type":"object","required":["api_version","id","key","plan","state","next_step","cancel_requested","resources","error"]})
+        }
+        "project_find" => json!({"type":"object","required":["operation"]}),
+        "project_installed" => {
+            json!({"type":"object","required":["api_version","context","active_revision","resources"]})
+        }
+        "project_asset" => {
+            json!({"type":"object","required":["api_version","logical","revision","read_only","resource","content"]})
+        }
+        "project_draft" => {
+            json!({"type":"object","required":["api_version","path","draft","origin_revision","logical"]})
+        }
         "project_binding" | "project_create" | "project_attach" | "project_adopt" => {
             serde_json::from_str(include_str!(
                 "../../../schemas/deployment-context-v1.schema.json"
@@ -585,7 +661,20 @@ impl Session {
                         json!({"jsonrpc":"2.0","id":id,"result":{"content":[{"type":"text","text":body.to_string()}],"structuredContent":body,"isError":error}}),
                     );
                 }
-                if let Some(command) = name.strip_prefix("env_") {
+                if matches!(
+                    name,
+                    "project_plan"
+                        | "project_apply"
+                        | "project_status"
+                        | "project_cancel"
+                        | "project_find"
+                        | "project_installed"
+                        | "project_asset"
+                        | "project_draft"
+                ) {
+                    args["action"] = json!(name.strip_prefix("project_").unwrap());
+                    args = json!({"action":"project_apply","command":args});
+                } else if let Some(command) = name.strip_prefix("env_") {
                     args["action"] = json!(match command {
                         "inspect" => "inspect",
                         "initialize" => "initialize",

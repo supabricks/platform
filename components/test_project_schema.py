@@ -57,3 +57,13 @@ class ProjectSchemas(unittest.TestCase):
         context['identity_provider'] = 'caller-supplied'
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(context, self.schema('deployment-context-v1'))
+
+    def test_destination_plan_is_typed_and_digest_bound(self):
+        plan = json.loads((ROOT / 'crates/local/tests/fixtures/project-plan.json').read_text())
+        jsonschema.validate(plan, self.schema('project-plan-v1'))
+        expected = plan['digest']
+        plan['digest'] = ''
+        self.assertEqual(expected, hashlib.sha256(json.dumps(plan, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
+        plan['context']['actor_override'] = 'admin'
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(plan, self.schema('project-plan-v1'))

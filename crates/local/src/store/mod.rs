@@ -10,6 +10,7 @@ mod journal;
 pub(crate) mod migrations;
 mod native;
 pub(crate) mod ownership;
+mod project_apply;
 mod sessions;
 pub use sessions::AnalyticalSession;
 mod work;
@@ -80,6 +81,7 @@ impl Store {
                     "analytics",
                     "notebook-environments",
                     "notebook-environment-work",
+                    "project-revisions",
                     "storage.pk8",
                     "storage.pub",
                     "safekeeper",

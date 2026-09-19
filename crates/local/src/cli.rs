@@ -23,6 +23,10 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
   project unpack PACKAGE.sbproj --destination NEW_DIRECTORY
   project export-query ID --expected-revision N --output NEW_FILE.sql
+  project plan [--adopt BINDINGS.json]      Preview destination changes as JSON
+  project apply PLAN.json --key KEY        Apply exactly the reviewed plan
+  project status ID | cancel ID | find --key KEY
+  project installed | asset LOGICAL | draft LOGICAL --path NEW_RELATIVE_PATH
   project create --key KEY [--target NAME]  New empty runtime deployment
   project deployments | binding            Inspect private deployment bindings
   project attach DEPLOYMENT_ID             Explicitly attach this checkout
@@ -199,7 +203,20 @@ pub fn run() -> Result<u8> {
     if command == "project"
         && !matches!(
             a.required(1)?.as_str(),
-            "export-query" | "create" | "attach" | "adopt" | "binding" | "deployments"
+            "export-query"
+                | "create"
+                | "attach"
+                | "adopt"
+                | "binding"
+                | "deployments"
+                | "plan"
+                | "apply"
+                | "status"
+                | "cancel"
+                | "find"
+                | "installed"
+                | "asset"
+                | "draft"
         )
     {
         let action = a.required(1)?;
@@ -397,6 +414,83 @@ pub fn run() -> Result<u8> {
         return Err(invalid("mcp requires an explicit --project worktree path"));
     }
     let directory = client::project_directory(project.as_deref())?;
+    if command == "project"
+        && matches!(
+            a.required(1)?.as_str(),
+            "plan" | "apply" | "status" | "cancel" | "find" | "installed" | "asset" | "draft"
+        )
+    {
+        use crate::project_apply::Command as P;
+        let (request, count) = match a.required(1)?.as_str() {
+            "plan" => {
+                let adopt = a
+                    .take("--adopt")
+                    .map(|p| read_project_json(&p))
+                    .transpose()?
+                    .unwrap_or_default();
+                (
+                    P::Plan {
+                        options: crate::project_apply::Options { adopt },
+                    },
+                    2,
+                )
+            }
+            "apply" => (
+                P::Apply {
+                    plan: read_project_json(&a.required(2)?)?,
+                    key: a
+                        .take("--key")
+                        .ok_or_else(|| invalid("apply requires --key"))?,
+                },
+                3,
+            ),
+            "find" => (
+                P::Find {
+                    key: a
+                        .take("--key")
+                        .ok_or_else(|| invalid("find requires --key"))?,
+                },
+                2,
+            ),
+            "installed" => (P::Installed, 2),
+            "asset" => (
+                P::Asset {
+                    logical: a.required(2)?,
+                },
+                3,
+            ),
+            "draft" => (
+                P::Draft {
+                    logical: a.required(2)?,
+                    path: a
+                        .take("--path")
+                        .ok_or_else(|| invalid("draft requires --path"))?,
+                },
+                3,
+            ),
+            action => {
+                let id = a
+                    .required(2)?
+                    .parse()
+                    .map_err(|_| invalid("invalid apply operation UUID"))?;
+                (
+                    if action == "cancel" {
+                        P::Cancel { id }
+                    } else {
+                        P::Status { id }
+                    },
+                    3,
+                )
+            }
+        };
+        a.finish(count)?;
+        let client = Client::bind(&root, &directory)?;
+        println!(
+            "{}",
+            client.call(Action::ProjectApply { command: request })?
+        );
+        return Ok(0);
+    }
     if command == "project" && a.required(1)? != "export-query" {
         use crate::deployments::Command as D;
         let action = a.required(1)?;
@@ -1485,4 +1579,16 @@ mod environment_cli_tests {
             );
         }
     }
+}
+
+fn read_project_json<T: serde::de::DeserializeOwned>(path: &str) -> Result<T> {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    std::fs::File::open(path)?
+        .take(48 * 1024 + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > 48 * 1024 {
+        return Err(invalid("project plan/bindings file exceeds 48 KiB"));
+    }
+    serde_json::from_slice(&bytes).map_err(|_| invalid("invalid project plan/bindings JSON"))
 }

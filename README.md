@@ -111,3 +111,6 @@ and pass `Authorization: Bearer <token>` with the token from:
 Single admin MCP token; per-endpoint NodePorts (gateway lands in M2, bringing
 plain-psql wake-on-connect); one safekeeper; `cloud_admin` credentials; no TLS.
 This is the demoable kernel, not the product.
+
+[Plan and apply projects](docs/handbook/project-apply.md) with reviewed inputs,
+retained resources and immutable installed revisions (PK04 preview).

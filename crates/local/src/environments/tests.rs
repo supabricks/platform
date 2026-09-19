@@ -770,3 +770,127 @@ fn legacy_project_adoption_keeps_active_kernel_environment_and_lock_bytes() {
     );
     assert_eq!(fs::read(lock).unwrap(), before);
 }
+
+#[test]
+fn failed_project_environment_preparation_keeps_existing_generation_and_never_activates() {
+    use crate::project_apply::{self as apply, Command as A, Options};
+    let mut f = Fixture::new();
+    f.initialize();
+    let old = f.ready("running-kernel");
+    let lease = f
+        .manager
+        .acquire(&mut f.store, &f.binding, old.id, "kernel-running")
+        .unwrap();
+    let path = &f.binding.worktree;
+    fs::write(
+        path.join("notebooks/environment/pyproject.toml"),
+        "[project]\nname='project-apply'\nversion='0.1.0'\n",
+    )
+    .unwrap();
+    fs::write(
+        path.join("notebooks/environment/uv.lock"),
+        "version=1\npackage=[]\n",
+    )
+    .unwrap();
+    fs::write(path.join("supabricks.toml"),format!("format_version=2\nid='{}'\nname='example'\n[package]\nversion='0.1.0'\ninclude=['notebooks/environment/pyproject.toml','notebooks/environment/uv.lock']\nnotebook_outputs='strip'\n[environments.base]\npyproject='notebooks/environment/pyproject.toml'\nlock='notebooks/environment/uv.lock'\n",f.binding.project_id)).unwrap();
+    let ctx: crate::deployments::Context = serde_json::from_value(
+        f.store
+            .project_command(
+                &crate::deployments::Source::read(path).unwrap(),
+                crate::deployments::Command::Adopt {
+                    runtime_project: f.binding.project_id,
+                    key: "adopt".into(),
+                    target: None,
+                },
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    let manifest = fs::read_to_string(path.join("supabricks.toml")).unwrap();
+    fs::write(
+        path.join("supabricks.toml"),
+        manifest.split("[environments.base]").next().unwrap(),
+    )
+    .unwrap();
+    let previous_plan = apply::plan(&f.store, &f.binding, Options::default()).unwrap();
+    let previous: crate::project_apply::Operation = serde_json::from_value(
+        apply::handle(
+            &mut f.store,
+            &f.binding,
+            A::Apply {
+                plan: previous_plan,
+                key: "previous".into(),
+            },
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    for _ in 0..3 {
+        apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    }
+    assert_eq!(
+        f.store.active_deployment(ctx.deployment_id).unwrap(),
+        Some(previous.id)
+    );
+    assert_eq!(
+        Manager::select(&mut f.store, &f.binding, old.id)
+            .unwrap()
+            .identity
+            .id,
+        old.id
+    );
+    fs::write(path.join("supabricks.toml"), manifest).unwrap();
+    let plan = apply::plan(&f.store, &f.binding, Options::default()).unwrap();
+    let o: crate::project_apply::Operation = serde_json::from_value(
+        apply::handle(
+            &mut f.store,
+            &f.binding,
+            A::Apply {
+                plan,
+                key: "apply".into(),
+            },
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    let child = f
+        .store
+        .environment_operations()
+        .unwrap()
+        .into_iter()
+        .find(|e| e.key.starts_with(&format!("project:{}:", o.id)))
+        .unwrap();
+    assert_eq!(child.state, "queued");
+    assert_ne!(child.worktree, f.binding.worktree);
+    f.manager
+        .handle(
+            &mut f.store,
+            &ctx.binding(&child.worktree),
+            Command::Cancel { id: child.id },
+        )
+        .unwrap();
+    f.manager.tick(&mut f.store, false).unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    assert_eq!(
+        f.store
+            .project_apply(ctx.deployment_id, o.id)
+            .unwrap()
+            .state,
+        "failed"
+    );
+    assert_eq!(
+        f.store.active_deployment(ctx.deployment_id).unwrap(),
+        Some(previous.id)
+    );
+    assert_eq!(
+        Manager::select(&mut f.store, &f.binding, old.id)
+            .unwrap()
+            .identity
+            .id,
+        old.id
+    );
+    assert_eq!(fs::read(old.path.join("package.py")).unwrap(), b"original");
+    f.manager.release(&f.store, lease).unwrap();
+}

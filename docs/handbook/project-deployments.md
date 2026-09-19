@@ -16,8 +16,8 @@ supabricks database create main --project ./sales --wait
 
 `project create` creates an empty deployment and attaches the checkout. It does not
 run the manifest's SQL/notebooks or install dependencies. Existing explicit CLI
-and console operations can then use the deployment. Manifest-driven plan/apply is
-PK04 work; offline dependency closure is PK05 work.
+and console operations can then use the deployment. [PK04 plan/apply](project-apply.md) installs declared resources through a reviewed
+plan. Offline dependency closure is PK05 work.
 
 The JSON context distinguishes `definition_id`, `deployment_id` and
 `runtime_project_id`, plus workspace/realm IDs and the local-owner actor. Runtime

@@ -129,6 +129,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'docs/handbook/project-inspection.md', destination / 'PROJECTS.md')
     shutil.copy2(ROOT / 'docs/handbook/project-packages.md', destination / 'PACKAGES.md')
     shutil.copy2(ROOT / 'docs/handbook/project-deployments.md', destination / 'DEPLOYMENTS.md')
+    shutil.copy2(ROOT / 'docs/handbook/project-apply.md', destination / 'PROJECT-APPLY.md')
     shutil.copy2(ROOT / 'docs/handbook/local-demo.md', destination / 'DEMO.md')
     shutil.copy2(ROOT / 'docs/handbook/notebooks.md', destination / 'NOTEBOOKS.md')
     shutil.copy2(ROOT / 'docs/handbook/file-ingestion.md', destination / 'INGESTION.md')
@@ -202,7 +203,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     provenance = dict(
         console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
-        data_formats=dict(local_catalog=11, runtime_config=2, postgres_major=17, analytical_snapshot=1),
+        data_formats=dict(local_catalog=12, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),
@@ -249,7 +250,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.20')
+    parser.add_argument('--version', default='v0.1.0-alpha.21')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)
