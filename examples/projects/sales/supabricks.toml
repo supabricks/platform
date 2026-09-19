@@ -1,0 +1,36 @@
+format_version = 2
+id = "707f5d76-71f2-4997-9bc0-71e375856031"
+name = "sales"
+include = ["resources/database.toml"]
+
+[package]
+version = "0.1.0"
+include = ["queries/*.sql", "notebooks/**/*.ipynb", "notebooks/environment/pyproject.toml", "notebooks/environment/uv.lock", "fixtures/sales.csv"]
+notebook_outputs = "strip"
+
+[requires]
+capabilities = ["postgres17", "spark-sql", "managed-notebooks"]
+
+[targets.local]
+mode = "development"
+default = true
+
+[targets.staging]
+mode = "production"
+
+[resources.query.sales_total]
+kind = "sql"
+engine = "postgres"
+file = "queries/sales_total.sql"
+database = "database.main"
+
+[resources.notebook.sales]
+kind = "notebook"
+file = "notebooks/sales.ipynb"
+environment = "notebook"
+database = "database.main"
+depends_on = ["query.sales_total"]
+
+[environments.notebook]
+pyproject = "notebooks/environment/pyproject.toml"
+lock = "notebooks/environment/uv.lock"

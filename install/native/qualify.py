@@ -177,6 +177,24 @@ def qualify(args):
         assert json.loads(run([binary, 'installation', 'verify'], env=env))['identity'] == identity
         assert '17.8' in run([prefix / 'bin/psql', '--version'], env=env)
         checks.append('signed curl-to-bash install and repeat install; custom path with spaces and quote; bundled psql')
+        # PK01 must work before any runtime exists and without host tools/HOME.
+        source_project = prefix / 'current/examples/projects/sales'
+        inspection_state = workspace / 'inspection-must-not-exist'
+        source_env = dict(env, PATH='/no-host-tools')
+        source_env.pop('HOME', None)
+        inspections = [json.loads(run([binary, 'project', command, '--project', source_project,
+                                      '--data-dir', inspection_state], env=source_env))
+                       for command in ('inspect', 'validate')]
+        assert inspections[0] == inspections[1]
+        assert inspections[0]['valid'] and not inspections[0]['execution_supported']
+        assert inspections[0]['order'] == ['database.main', 'query.sales_total', 'notebook.sales']
+        assert not inspection_state.exists()
+        blocked = subprocess.run([str(binary), 'database', 'list', '--project', str(source_project),
+                                  '--data-dir', str(inspection_state)], env=env, capture_output=True, text=True)
+        assert blocked.returncode == 2 and 'inspection-only' in blocked.stderr
+        assert not inspection_state.exists()
+        assert json.loads(run([binary, 'installation', 'verify'], env=env))['identity'] == identity
+        checks.append('PK01 installed source inspect/validate without HOME, tools or daemon; preview execution blocked; immutable inventory')
         # Occupy the conventional PG port if another Postgres is not there already.
         reserved = socket.socket()
         try:
@@ -365,7 +383,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.17')
+    parser.add_argument('--version', default='v0.1.0-alpha.18')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

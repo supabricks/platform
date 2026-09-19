@@ -1,0 +1,252 @@
+{
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "const": 2
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "package": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "maxItems": 128
+        },
+        "notebook_outputs": {
+          "const": "strip"
+        }
+      },
+      "required": [
+        "version",
+        "include",
+        "notebook_outputs"
+      ],
+      "additionalProperties": false
+    },
+    "requires": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "postgres17",
+              "spark-sql",
+              "managed-notebooks"
+            ]
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "targets": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_-]{1,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "development",
+              "production"
+            ]
+          },
+          "default": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 32
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "database": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z0-9_-]{1,63}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "postgres_database"
+              },
+              "lifecycle": {
+                "const": "retain"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 256
+              }
+            },
+            "required": [
+              "kind",
+              "lifecycle"
+            ],
+            "additionalProperties": false
+          },
+          "maxProperties": 256
+        },
+        "query": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z0-9_-]{1,63}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "sql"
+              },
+              "engine": {
+                "enum": [
+                  "postgres",
+                  "spark"
+                ]
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "database": {
+                "type": "string"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 256
+              }
+            },
+            "required": [
+              "kind",
+              "engine",
+              "file",
+              "database"
+            ],
+            "additionalProperties": false
+          },
+          "maxProperties": 256
+        },
+        "notebook": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z0-9_-]{1,63}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "notebook"
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "environment": {
+                "type": "string",
+                "pattern": "^[a-z0-9_-]{1,63}$"
+              },
+              "database": {
+                "type": "string"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 256
+              }
+            },
+            "required": [
+              "kind",
+              "file",
+              "environment",
+              "database"
+            ],
+            "additionalProperties": false
+          },
+          "maxProperties": 256
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "environments": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_-]{1,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "pyproject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "lock": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "pyproject",
+          "lock"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 32
+    },
+    "include": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "maxItems": 32,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "format_version",
+    "id",
+    "name",
+    "package"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "PK01 structural schema for parsed TOML; path, graph, capability, default-target and source checks also run in the Rust inspector. Format 2 is inspection-only."
+}
