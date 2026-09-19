@@ -185,9 +185,17 @@ impl State {
             return fail(403, "Unexpected console host or URL");
         }
         let origin = single(request.headers(), "origin");
+        // Reopening a deployment navigates between loopback ports. Permit only
+        // a top-level HTML navigation; API/asset requests retain exact-origin rules.
+        let launch_navigation = request.method() == Method::GET
+            && request.uri().path() == "/"
+            && origin.is_none()
+            && single(request.headers(), "sec-fetch-mode") == Some("navigate")
+            && single(request.headers(), "sec-fetch-dest") == Some("document");
         if (request.headers().contains_key("origin") && origin != Some(self.origin.as_str()))
-            || single(request.headers(), "sec-fetch-site")
-                .is_some_and(|s| !matches!(s, "same-origin" | "none"))
+            || single(request.headers(), "sec-fetch-site").is_some_and(|s| {
+                !matches!(s, "same-origin" | "none") && !(s == "same-site" && launch_navigation)
+            })
         {
             return fail(403, "Cross-origin console requests are refused");
         }
@@ -382,9 +390,12 @@ impl State {
             // Notebook admission verifies a complete environment and starts
             // owned services on the single-writer daemon. Cold macOS filesystem
             // reads can exceed the general two-second control deadline. Allow
-            // these commands to finish within the outer eight-second HTTP bound;
+            // these commands six seconds for admission. Package commands have a
+            // separate 120-second bound for archive verification/publication;
             // never resend a mutation after a transport timeout.
-            let deadline = if matches!(
+            let deadline = if matches!(&action, super::workspace::Command::Project { .. }) {
+                Duration::from_secs(120)
+            } else if matches!(
                 &action,
                 super::workspace::Command::Notebook { .. }
                     | super::workspace::Command::Environment { .. }
@@ -532,7 +543,7 @@ pub(super) async fn serve(config: Config) -> Result<()> {
                     let service = service_fn(move |request| {
                         let state = state.clone();
                         async move {
-                            let timeout = if request.uri().path().starts_with("/api/upload/") {610} else {8};
+                            let timeout = if request.uri().path().starts_with("/api/upload/") {610} else if request.uri().path()=="/api/workspace" {125} else {8};
                             Ok::<_, Infallible>(tokio::time::timeout(Duration::from_secs(timeout),state.handle(request)).await.unwrap_or_else(|_|fail(408,"Console request timed out")))
                         }
                     });

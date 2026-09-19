@@ -71,3 +71,32 @@ project. Remove it only after confirming no packaging operation is using it.
 A verified hash proves integrity, not who authored the package or whether its code
 is safe to execute. Offline dependency bundles, project apply, catalog integration
 and access management are later slices.
+
+
+## Browser workflow (PK06)
+
+Open `supabricks console` from an existing local project, then choose **Project
+packages**. Select a `.sbproj` file to verify its inventory and preview the
+resource graph. **Unpack as new project** creates a new source directory; choose
+**Create local deployment** or explicitly attach an existing deployment, then
+**Plan deployment** and review the ordered steps before applying.
+
+The source and deployment panel shows the worktree path for CLI use, public
+and runtime identities, selected target, source hash and installed revision.
+Apply errors retain the previous installed revision. If a reply is lost, use
+**Recover apply by key**; refreshing/reopening also discovers the latest durable
+operation. Correct the reported source, capability or preparation problem and
+plan again. Database allocations and committed initialization are retained.
+
+**Preview export** and **Download package** produce the same bytes as `project
+pack`. Installed queries/notebooks can be viewed read-only or copied to a new
+draft path without overwriting files. **Open console in new tab** preserves
+existing query and notebook drafts; installed environment rows open the
+corresponding environment worktree. Neither action starts a kernel.
+
+Imported sources are retained under the cell's `console-projects` directory and
+included in cold backups. Transfer slots are temporary (15-minute idle expiry,
+300 MiB maximum); reselect the device file after an interrupted upload. See the
+[console contract](../architecture/pk06-console-projects.md) for limits and
+recovery behavior. Format-1 projects need explicit format-2 declarations and
+`project adopt` before source export; the browser never infers those declarations.

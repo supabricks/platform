@@ -2,6 +2,16 @@ use super::*;
 use crate::project_apply::{Operation, Resource};
 use std::collections::BTreeMap;
 impl Store {
+    pub fn latest_deployment_apply(&self, deployment: DeploymentId) -> Result<Option<Operation>> {
+        let value: Option<String> = self.db.query_row(
+            "SELECT record_json FROM project_applies WHERE deployment_id=?1 ORDER BY rowid DESC LIMIT 1",
+            [deployment.to_string()], |r| r.get(0),
+        ).optional()?;
+        value
+            .map(|v| serde_json::from_str(&v).map_err(Into::into))
+            .transpose()
+    }
+
     pub fn deployment_resources(
         &self,
         deployment: DeploymentId,

@@ -70,7 +70,7 @@ struct Slot {
 pub(crate) struct Uploads {
     slots: BTreeMap<String, Slot>,
 }
-fn reserve(file: &File, bytes: u64) -> Result<()> {
+pub(super) fn reserve(file: &File, bytes: u64) -> Result<()> {
     use std::os::fd::AsRawFd;
     let mut stat = std::mem::MaybeUninit::<libc::statvfs>::uninit();
     if unsafe { libc::fstatvfs(file.as_raw_fd(), stat.as_mut_ptr()) } != 0 {

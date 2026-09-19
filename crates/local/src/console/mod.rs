@@ -2,6 +2,7 @@
 pub(crate) mod analytics;
 pub mod assets;
 pub(crate) mod ingestion;
+pub mod projects;
 mod server;
 pub mod workspace;
 use crate::{
@@ -66,6 +67,12 @@ fn directory(path: &Path) -> Result<()> {
     Ok(())
 }
 impl Consoles {
+    pub(crate) fn assets(&self, binding: &Binding) -> Result<PathBuf> {
+        self.entries
+            .get(&binding.worktree)
+            .map(|e| e.config.assets.clone())
+            .ok_or_else(|| conflict("console process no longer owns this project"))
+    }
     pub(crate) fn owns(&self, binding: &Binding, instance: &str) -> Result<()> {
         if self.entries.get(&binding.worktree).is_none_or(|entry| {
             entry.config.instance != instance

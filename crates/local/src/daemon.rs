@@ -141,6 +141,7 @@ pub struct Daemon {
     consoles: crate::console::Consoles,
     console_queries: crate::console::workspace::Queries,
     console_analytics: crate::console::analytics::Workspace,
+    console_projects: crate::console::projects::Workspace,
     publisher: crate::analytics::Publisher,
     sessions: crate::sessions::Sessions,
     store: Store,
@@ -163,6 +164,7 @@ impl Daemon {
         let notebooks = crate::notebooks::Notebooks::recover(&mut store)?;
         let environments = crate::environments::Manager::recover(&mut store)?;
         let consoles = crate::console::Consoles::recover(&mut store)?;
+        let console_projects = crate::console::projects::Workspace::recover(&store)?;
         crate::ingest::recover(&mut store)?;
         let socket = store.root().join("control.sock");
         match fs::symlink_metadata(&socket) {
@@ -195,6 +197,7 @@ impl Daemon {
             consoles,
             console_queries: Default::default(),
             console_analytics: Default::default(),
+            console_projects,
             publisher,
             sessions,
             queries: Vec::new(),
@@ -580,7 +583,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"analytical_workspace":1,"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"project_packaging":1,"analytical_workspace":1,"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -710,6 +713,32 @@ impl Daemon {
         use crate::console::workspace::{Command as C, identifier};
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
+            C::Project { source, command } => {
+                self.consoles.owns(
+                    &binding,
+                    owner
+                        .split_once(':')
+                        .ok_or_else(|| invalid("invalid console owner"))?
+                        .0,
+                )?;
+                if let crate::console::projects::Command::Reopen { environment } = command {
+                    let assets = self.consoles.assets(&binding)?;
+                    let selected = crate::console::projects::reopen(
+                        &mut self.store,
+                        &binding,
+                        &source,
+                        environment,
+                    )?;
+                    return self.consoles.open(&mut self.store, selected, assets);
+                }
+                return self.console_projects.handle(
+                    &mut self.store,
+                    &binding,
+                    &scope,
+                    source,
+                    command,
+                );
+            }
             C::Analytics { command } => {
                 self.consoles.owns(
                     &binding,
