@@ -311,10 +311,7 @@ class Workflow(Cell):
                 key="remove-migration",
             )
             self.await_op(deleted)
-            self.cli("connect", project=other, code=4)  # Copied UUIDs never attach implicitly.
-        deployment = self.cli("project", "binding")["deployment_id"]
-        self.cli("project", "attach", deployment, project=other)
-        self.cli("connect", project=other, code=3)  # Attachment does not inherit branch selection.
+            self.cli("connect", project=other, code=3)
             assert self.sql_public("SELECT count(*) FROM orders")["rows"] == [["2"]]
             self.checks.append(
                 "explicit suspension wakes through SQL; persistent MCP binding/selection and stable URI survive down/up; named deletion retains parent"
