@@ -7,7 +7,7 @@ PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply merged in
 merged in #51 (`b29e21a`) after the same gates; native archive qualification
 remains pending. PK06 is implemented on [console #5](https://github.com/supabricks/console/pull/5) and [platform #52](https://github.com/supabricks/platform/pull/52);
 merge and exact archive qualification are pending. PK07–PK08 are not implemented.
-PK06 targets alpha.23/catalog 13 with console `b7e4c9c` ([console #5](https://github.com/supabricks/console/pull/5)).
+PK06 targets alpha.23/catalog 13 with console `45ba7ff` ([console #5](https://github.com/supabricks/console/pull/5)).
 Alpha.19 (#48) remains the latest fully qualified release;
 alpha.20 archive qualification failed in the moved-checkout NE06 fixture (the
 explicit reattach is corrected with PK05); alpha.21 archive qualification remains

@@ -91,6 +91,9 @@ fn home(store: &Store, host: &Binding) -> Result<PathBuf> {
     super::directory(&base)?;
     let path = base.join(host.project_id.to_string());
     super::directory(&path)?;
+    // Publication syncs this directory; persist its newly created ancestors too.
+    std::fs::File::open(store.root())?.sync_all()?;
+    std::fs::File::open(&base)?.sync_all()?;
     Ok(path)
 }
 pub(crate) fn source(store: &Store, host: &Binding, selected: &Selection) -> Result<Source> {
