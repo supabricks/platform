@@ -331,6 +331,39 @@ fn launch_is_single_use_and_browser_requests_are_scoped_and_bounded() {
             .contains("content-security-policy: default-src 'none'")
     );
     assert!(!String::from_utf8(index.body).unwrap().contains(&token));
+    let navigation = [
+        ("Sec-Fetch-Site", "same-site"),
+        ("Sec-Fetch-Mode", "navigate"),
+        ("Sec-Fetch-Dest", "document"),
+    ];
+    assert_eq!(http(&origin, "GET", "/", &navigation, "").status, 200);
+    assert_eq!(
+        http(&origin, "GET", "/api/overview", &navigation, "").status,
+        403
+    );
+    assert_eq!(http(&origin, "POST", "/", &navigation, "").status, 403);
+    for (site, dest) in [
+        ("cross-site", "document"),
+        ("same-site", "iframe"),
+        ("same-site", "empty"),
+    ] {
+        assert_eq!(
+            http(
+                &origin,
+                "GET",
+                "/",
+                &[
+                    ("Sec-Fetch-Site", site),
+                    ("Sec-Fetch-Mode", "navigate"),
+                    ("Sec-Fetch-Dest", dest)
+                ],
+                ""
+            )
+            .status,
+            403
+        );
+    }
+
     assert_eq!(http(&origin, "GET", "/../config.json", &[], "").status, 404);
     assert_eq!(
         http(&origin, "GET", "/", &[("Host", "evil.example")], "").status,

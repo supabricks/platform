@@ -98,7 +98,8 @@ def collect(directory, revision, console, worker, version):
             reports[str(path.relative_to(directory))] = dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), checks=len(data['checks']))
             return data
 
-        browser = read('release-console', 'console.json', 39, ('release_sha256',))
+        browser = read('release-console', 'console.json', 49, ('release_sha256',))
+        require(sum(c.startswith('PK06 ') for c in browser['checks']) >= 10, 'browser: missing PK06 packaging coverage')
         require(browser.get('release_identity') == identity and browser.get('release_version') == version,
                 'browser archive differs')
         require(isinstance(browser.get('browser'), str) and re.fullmatch(r'\d+(\.\d+){3}', browser['browser']), 'missing browser version')
@@ -177,7 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.22')
+    parser.add_argument('--version', default='v0.1.0-alpha.23')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

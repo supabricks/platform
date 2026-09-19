@@ -34,7 +34,7 @@ class ReleaseEvidence(unittest.TestCase):
                             release_identity=HASH,python_version='3.12',kernel_contract_sha256=HASH,
                             wheels={},notices={'licenses/platform.txt':HASH},measurements={},project_bundle={})
                     self.write(target,suite,name,data)
-            self.write(target,'release-console','console.json',dict(status='passed',checks=self.checks(39),
+            self.write(target,'release-console','console.json',dict(status='passed',checks=self.checks(39)+['PK06 check-'+str(n) for n in range(10)],
                 release_sha256=HASH,release_identity=HASH,release_version='alpha',browser='153.0.1.2',network_qualification='isolated',demo={name:HASH for name in FILES}))
             measured=dict(source_bytes=100,rows=2,duration_ms=10,peak_rss_bytes=100)
             self.write(target,'release-ingest','ingest.json',dict(status='passed',checks=self.checks(39),
@@ -84,9 +84,13 @@ class ReleaseEvidence(unittest.TestCase):
                 path.write_text(old)
 
     def test_old_or_duplicate_browser_coverage_cannot_pass(self):
-        for checks in (self.checks(29), ['same']*39):
+        for checks in (self.checks(39), ['same']*49):
             self.change('release-console','console.json',lambda d:d.update(checks=checks))
             with self.assertRaisesRegex(ValueError,'incomplete checks'):self.collect()
+
+    def test_packaging_coverage_cannot_be_replaced_by_other_checks(self):
+        self.change('release-console','console.json',lambda d:d.update(checks=self.checks(49)))
+        with self.assertRaisesRegex(ValueError,'missing PK06'):self.collect()
 
     def test_wrong_console_worker_version_and_demo_are_rejected(self):
         path=self.root/'release-environment-lifecycle-linux-x86_64/qualification.json'
