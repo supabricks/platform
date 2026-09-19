@@ -26,6 +26,7 @@ import urllib.request
 
 from stage import stage
 from project_apply import qualify as qualify_project_apply
+from project_offline import qualify as qualify_project_offline
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -257,6 +258,7 @@ def qualify(args):
         checks.append('PK03 installed deployment creation/replay, isolated live PostgreSQL tenants, explicit second-worktree attach and local-owner attribution')
 
         checks.append(qualify_project_apply(binary, prefix / 'current', source_project, workspace, env))
+        checks.append(qualify_project_offline(binary, prefix / 'current', source_project.with_name("sales-runnable"), workspace, env))
 
         cli('database', 'create', 'main', '--wait')
         cli('branch', 'use', 'main')
@@ -434,7 +436,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.21')
+    parser.add_argument('--version', default='v0.1.0-alpha.22')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

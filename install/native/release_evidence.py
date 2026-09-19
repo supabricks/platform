@@ -72,7 +72,7 @@ def collect(directory, revision, console, worker, version):
         require(source['ingestion']['worker_sha256'] == worker, 'ingestion worker differs from reviewed source')
         require(env['archive']['version'] == version and env['archive']['target'] == target and sha(env['archive']['sha256']),
                 'archive version, target or checksum mismatch')
-        require(source['data_formats']['local_catalog'] == 12 and source['data_formats']['postgres_major'] == 17,
+        require(source['data_formats']['local_catalog'] == 13 and source['data_formats']['postgres_major'] == 17,
                 'unqualified catalog or PostgreSQL major')
         require(env['release_identity'] == identity, 'lifecycle manifest identity mismatch')
         reports = dict(env['reports'])
@@ -109,7 +109,7 @@ def collect(directory, revision, console, worker, version):
         require(ingestion.get('network_evidence'), 'missing ingestion network evidence')
         recovery = read('release-recovery', 'recovery.json', 18, ('release_identity',))
         require(recovery.get('network_qualification'), 'missing recovery network evidence')
-        baseline = read('release-qualification', 'qualification.json', 11, ('release_identity',))
+        baseline = read('release-qualification', 'qualification.json', 12, ('release_identity',))
         require(baseline.get('network_qualification'), 'missing baseline network evidence')
         benchmark = read('release-qualification', 'benchmarks.json', 11, ('release_identity',)) if target == 'linux-x86_64' else baseline
         for size in (10000000, 100000000, 1000000000):
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.21')
+    parser.add_argument('--version', default='v0.1.0-alpha.22')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

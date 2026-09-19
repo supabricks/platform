@@ -218,6 +218,7 @@ def qualify(args):
         operation('import-bundle', args.bundle_fixture)
         final_bundle = root / 'restoration.zip'; operation('export-bundle', final_bundle, '--offline')
         final_generation = generation()
+        deployment = cli(project, 'project', 'binding')['deployment_id']
         report['measurements'].update(generation_allocated_bytes=allocated(Path(final_generation['path'])), bundle_bytes=final_bundle.stat().st_size)
         final_backup = root / 'backup'; cli(project, 'backup', 'create', final_backup); cli(project, 'backup', 'verify', final_backup)
         saved = json.loads((final_backup / 'backup.json').read_text())
@@ -228,6 +229,8 @@ def qualify(args):
         cli(project, 'backup', 'restore', final_backup)
         moved = root / 'moved project'; shutil.move(project, moved); project = moved
         cli(project, 'up')
+        # PK03 makes a moved checkout an explicit destination-binding decision.
+        cli(project, 'project', 'attach', deployment)
         status = cli(project, 'env', 'status')
         assert status['preparation_needed'] and not status['environments']
         assert all(g['state'] != 'ready' for g in records('environment_generations'))

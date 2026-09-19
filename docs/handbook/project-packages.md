@@ -56,7 +56,10 @@ in the format-2 definition. No private branch binding travels with the exported 
 
 The source profile supports 1,024 files / 32 MiB total, 8 MiB per ordinary file,
 1 MiB per TOML/lock, and 2 MiB of package metadata. Compressed and expanded archives
-are limited to 40 MiB with a 200:1 expansion bound. PK01's smaller manifest, path,
+are bounded by a 300 MiB compressed/expanded envelope with a 200:1 expansion
+bound. PK05 permits explicitly included `dependencies/*.zip` wheel bundles up to
+128 MiB each / 256 MiB total, in addition to the 32 MiB source budget. See
+[offline projects](project-offline.md) for target closure and initialization. PK01's smaller manifest, path,
 graph and include limits also apply. USTAR imposes additional filename/prefix
 limits; shorten paths if packaging reports they cannot be represented.
 

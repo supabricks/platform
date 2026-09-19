@@ -62,10 +62,29 @@ pub enum Mode {
 pub struct Environment {
     pub pyproject: String,
     pub lock: String,
+    /// NE04 exports, explicitly qualified for each native target.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub bundles: BTreeMap<String, String>,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Resource {
+    Migration {
+        file: String,
+        database: String,
+        sequence: u32,
+        #[serde(default)]
+        depends_on: Vec<String>,
+    },
+    Fixture {
+        file: String,
+        database: String,
+        schema: String,
+        table: String,
+        mapping: crate::ingest::Mapping,
+        #[serde(default)]
+        depends_on: Vec<String>,
+    },
     PostgresDatabase {
         lifecycle: Lifecycle,
         #[serde(default)]
@@ -102,13 +121,25 @@ impl Resource {
         match self {
             Self::PostgresDatabase { .. } => "database",
             Self::Sql { .. } => "query",
+            Self::Migration { .. } => "migration",
+            Self::Fixture { .. } => "fixture",
             Self::Notebook { .. } => "notebook",
         }
     }
     pub fn dependencies(&self) -> Vec<String> {
         let (depends, database) = match self {
             Self::PostgresDatabase { depends_on, .. } => (depends_on, None),
-            Self::Sql {
+            Self::Migration {
+                depends_on,
+                database,
+                ..
+            }
+            | Self::Fixture {
+                depends_on,
+                database,
+                ..
+            }
+            | Self::Sql {
                 depends_on,
                 database,
                 ..

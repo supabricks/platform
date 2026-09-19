@@ -1,0 +1,75 @@
+format_version = 2
+id = "ce954a1b-4bd2-40be-bc2b-ad9cb081d67c"
+name = "sales"
+include = ["resources/database.toml"]
+
+[package]
+version = "0.1.0"
+include = ["queries/*.sql", "notebooks/**/*.ipynb", "notebooks/environment/pyproject.toml", "notebooks/environment/uv.lock", "fixtures/sales.csv", "migrations/*.sql"]
+notebook_outputs = "strip"
+
+[requires]
+capabilities = ["postgres17", "spark-sql", "managed-notebooks"]
+
+[targets.local]
+mode = "development"
+default = true
+
+[targets.staging]
+mode = "production"
+
+[resources.query.sales_total]
+kind = "sql"
+engine = "postgres"
+file = "queries/sales_total.sql"
+database = "database.main"
+
+[resources.notebook.sales]
+kind = "notebook"
+file = "notebooks/sales.ipynb"
+environment = "notebook"
+database = "database.main"
+depends_on = ["query.sales_total"]
+
+[environments.notebook]
+pyproject = "notebooks/environment/pyproject.toml"
+lock = "notebooks/environment/uv.lock"
+
+[resources.migration.create_marker]
+kind = "migration"
+file = "migrations/001-marker.sql"
+database = "database.main"
+sequence = 1
+
+[resources.migration.seed_marker]
+kind = "migration"
+file = "migrations/002-marker.sql"
+database = "database.main"
+sequence = 2
+
+[resources.fixture.sales]
+kind = "fixture"
+file = "fixtures/sales.csv"
+database = "database.main"
+schema = "public"
+table = "sales"
+depends_on = ["migration.seed_marker"]
+
+[resources.fixture.sales.mapping]
+version = 1
+format = "csv"
+delimiter = ","
+header = true
+null_strings = []
+
+[[resources.fixture.sales.mapping.columns]]
+input = "0"
+name = "id"
+data_type = { kind = "integer" }
+nullable = false
+
+[[resources.fixture.sales.mapping.columns]]
+input = "1"
+name = "amount"
+data_type = { kind = "integer" }
+nullable = false

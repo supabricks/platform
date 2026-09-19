@@ -826,7 +826,7 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
     )
     .unwrap();
     for _ in 0..3 {
-        apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+        apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
     }
     assert_eq!(
         f.store.active_deployment(ctx.deployment_id).unwrap(),
@@ -853,8 +853,8 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
         .unwrap(),
     )
     .unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
     let child = f
         .store
         .environment_operations()
@@ -872,7 +872,7 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
         )
         .unwrap();
     f.manager.tick(&mut f.store, false).unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None).unwrap();
+    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
     assert_eq!(
         f.store
             .project_apply(ctx.deployment_id, o.id)
@@ -893,4 +893,84 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
     );
     assert_eq!(fs::read(old.path.join("package.py")).unwrap(), b"original");
     f.manager.release(&f.store, lease).unwrap();
+}
+
+#[test]
+fn project_bundle_target_and_kernel_mismatch_fail_during_read_only_plan() {
+    use crate::project_apply::{self as apply, Options};
+    use std::io::{Cursor, Write};
+    let mut f = Fixture::new();
+    let path = &f.binding.worktree;
+    fs::create_dir_all(path.join("notebooks/environment")).unwrap();
+    fs::create_dir(path.join("dependencies")).unwrap();
+    let py = b"[project]\nname='example'\nversion='0.1.0'\n";
+    let lock = b"version=1\npackage=[]\n";
+    fs::write(path.join("notebooks/environment/pyproject.toml"), py).unwrap();
+    fs::write(path.join("notebooks/environment/uv.lock"), lock).unwrap();
+    let manifest = format!(
+        "format_version=2\nid='{}'\nname='example'\n[package]\nversion='0.1.0'\ninclude=['notebooks/environment/*','dependencies/*.zip']\nnotebook_outputs='strip'\n[environments.base]\npyproject='notebooks/environment/pyproject.toml'\nlock='notebooks/environment/uv.lock'\n",
+        f.binding.project_id
+    );
+    let bundle = |target: &str, contract: &str| {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in [
+            ("pyproject.toml", py.as_slice()),
+            ("uv.lock", lock.as_slice()),
+        ] {
+            zip.start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(bytes).unwrap();
+        }
+        zip.start_file("bundle.json", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(&serde_json::to_vec(&json!({"version":1,"target":target,"contract":contract,"files":{"pyproject.toml":hash(py),"uv.lock":hash(lock)}})).unwrap()).unwrap();
+        fs::write(
+            path.join("dependencies/kernel.zip"),
+            zip.finish().unwrap().into_inner(),
+        )
+        .unwrap();
+        fs::write(
+            path.join("supabricks.toml"),
+            format!(
+                "{manifest}\n[environments.base.bundles]\n{target}='dependencies/kernel.zip'\n"
+            ),
+        )
+        .unwrap();
+    };
+    bundle(&f.package.target, &f.package.identity);
+    f.store
+        .project_command(
+            &crate::deployments::Source::read(path).unwrap(),
+            crate::deployments::Command::Adopt {
+                runtime_project: f.binding.project_id,
+                key: "adopt".into(),
+                target: None,
+            },
+        )
+        .unwrap();
+    assert!(apply::plan(&f.store, &f.binding, Options::default()).is_ok());
+    bundle(
+        if f.package.target == "linux-x86_64" {
+            "macos-arm64"
+        } else {
+            "linux-x86_64"
+        },
+        &f.package.identity,
+    );
+    assert!(
+        apply::plan(&f.store, &f.binding, Options::default())
+            .unwrap_err()
+            .to_string()
+            .contains("no wheel bundle")
+    );
+    bundle(&f.package.target, &"0".repeat(64));
+    assert!(
+        apply::plan(&f.store, &f.binding, Options::default())
+            .unwrap_err()
+            .to_string()
+            .contains("another kernel contract")
+    );
+    assert!(f.store.pending_applies().unwrap().is_empty());
+    assert!(f.store.branches().unwrap().is_empty());
+    assert!(!f.store.root().join("project-revisions").exists());
 }

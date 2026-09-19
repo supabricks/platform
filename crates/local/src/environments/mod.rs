@@ -171,7 +171,7 @@ pub(crate) struct Package {
     pub installation: String,
 }
 impl Package {
-    fn load(store: &Store) -> Result<Self> {
+    pub(crate) fn load(store: &Store) -> Result<Self> {
         let installed = Installation::discover()?;
         let (root, installation) = if let Some(i) = installed {
             (i.root, i.identity)

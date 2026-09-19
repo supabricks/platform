@@ -1,6 +1,6 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-19 through merged platform #49 (`726ba3c71a4e71ba8836107594a0ebec74595e62`).
+Reconciled 2026-09-19 through merged platform #50 (`9544cb9`).
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -13,7 +13,7 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply implemented on its feature branch, merge/archive qualification pending; PK05–PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization implemented on its feature branch, merge/archive qualification pending; PK06–PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -31,14 +31,17 @@ console pin and report/check totals above. Its 33 checks passed after an unchang
 macOS environment-console retry; the original offline-import timeout and duplicate
 report-artifact cleanup are recorded in [PR #45](https://github.com/supabricks/platform/pull/45).
 
-PK01–PK03 merged after their required merge checks and both native-cell suites
+PK01–PK04 merged after their required merge checks and both native-cell suites
 passed. Alpha.18 (#47) qualified both archives in
 [run 35452363471](https://github.com/supabricks/platform/actions/runs/35452363471).
 Alpha.19 (#48) also completed all 33 checks and its combined archive evidence in
 [run 35453510718](https://github.com/supabricks/platform/actions/runs/35453510718),
 tested merge `e94eaa66732ccd1b60073df2ac346391ffd0d59f`. It is the latest fully
-qualified predecessor. Alpha.20 archive qualification remains pending. PK04
-targets alpha.21/catalog 12 and must pass its own gates before qualification.
+qualified predecessor. Alpha.20 archive qualification failed in both NE06 lifecycle
+jobs: the restore fixture moved its checkout without PK03's required explicit
+reattach. PK05 updates that harness; the candidate must rerun the complete gate.
+Alpha.21 archive qualification remains pending.
+PK05 targets alpha.22/catalog 13 and must pass its own gates before qualification.
 
 The qualified browser is Chromium on both targets. Linux qualification uses
 an unprivileged minimal container / loopback-only namespace; macOS uses an

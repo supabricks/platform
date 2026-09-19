@@ -14,7 +14,20 @@ use std::{
 };
 
 pub const MAX_FILE: u64 = 8 * 1024 * 1024;
-pub const MAX_TOTAL: u64 = 32 * 1024 * 1024;
+pub const MAX_TOTAL: u64 = 288 * 1024 * 1024;
+pub const MAX_BUNDLE: u64 = 128 * 1024 * 1024;
+pub fn is_bundle(path: &str) -> bool {
+    path.starts_with("dependencies/") && path.ends_with(".zip")
+}
+pub fn file_limit(path: &str) -> u64 {
+    if is_bundle(path) {
+        MAX_BUNDLE
+    } else if path.ends_with(".toml") || path.ends_with(".lock") {
+        1024 * 1024
+    } else {
+        MAX_FILE
+    }
+}
 pub const MAX_FILES: usize = 1024;
 pub const MAX_ENTRIES: usize = 4096;
 pub const MAX_DEPTH: usize = 16;
@@ -183,11 +196,7 @@ impl Source {
                 .get(value)
                 .ok_or_else(|| invalid(format!("missing declared project file: {value}")))?
                 .clone();
-            let limit = if value.ends_with(".toml") || value.ends_with(".lock") {
-                1024 * 1024
-            } else {
-                MAX_FILE
-            };
+            let limit = file_limit(value);
             if bytes.len() as u64 > limit {
                 return Err(invalid("package file exceeds source limit"));
             }
@@ -202,11 +211,7 @@ impl Source {
         }
         let file = self.open(value)?;
         let before = file.metadata()?;
-        let limit = if value.ends_with(".toml") || value.ends_with(".lock") {
-            1024 * 1024
-        } else {
-            MAX_FILE
-        };
+        let limit = file_limit(value);
         if !before.is_file() || before.nlink() != 1 || before.len() > limit {
             return Err(invalid(format!(
                 "{value}: expected bounded regular file (limit {limit} bytes)"
@@ -215,7 +220,7 @@ impl Source {
         let fresh = !self.files.contains_key(value);
         if fresh && (self.files.len() >= MAX_FILES || self.total + before.len() > MAX_TOTAL) {
             return Err(invalid(
-                "project input inventory exceeds 1024 files or 32 MiB",
+                "project input inventory exceeds 1024 files or 288 MiB",
             ));
         }
         let mut bytes = Vec::new();
@@ -245,6 +250,19 @@ impl Source {
         Ok(bytes)
     }
     pub fn verify(&self) -> Result<()> {
+        let (mut ordinary, mut bundles) = (0, 0);
+        for (path, entry) in &self.files {
+            if is_bundle(path) {
+                bundles += entry.bytes;
+            } else {
+                ordinary += entry.bytes;
+            }
+        }
+        if ordinary > 32 * 1024 * 1024 || bundles > 256 * 1024 * 1024 {
+            return Err(invalid(
+                "project exceeds 32 MiB source or 256 MiB wheel-bundle budget",
+            ));
+        }
         for (name, stamp) in &self.stamps {
             if !same(stamp, &self.open(name)?.metadata()?) {
                 return Err(conflict(

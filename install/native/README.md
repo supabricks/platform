@@ -53,7 +53,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current preview uses version `v0.1.0-alpha.21` and catalog 12. Product notebook kernels
+The current preview uses version `v0.1.0-alpha.22` and catalog 13. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).
@@ -171,3 +171,7 @@ its resources. The installed gate exercises independent live PostgreSQL tenants.
 PK04 ships `PROJECT-APPLY.md` and catalog 12. Plans bind exact package/source and
 destination revisions; journaled application retains existing resources and
 activates only after database and offline environment preparation.
+
+PK05 ships `PROJECT-OFFLINE.md` and the sales-runnable template. Catalog 13 fences
+target dependency closures and initialization receipts. Exact archive qualification
+includes wheel-bundle transfer, migration/fixture replay, and explicit notebook execution.
