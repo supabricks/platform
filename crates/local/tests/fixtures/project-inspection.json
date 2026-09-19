@@ -1,0 +1,131 @@
+{
+  "api_version": 1,
+  "capabilities": [
+    "managed-notebooks",
+    "postgres17",
+    "spark-sql"
+  ],
+  "definition": {
+    "format_version": 2,
+    "id": "707f5d76-71f2-4997-9bc0-71e375856031",
+    "name": "sales"
+  },
+  "environments": {
+    "notebook": {
+      "lock": "notebooks/environment/uv.lock",
+      "lock_sha256": "84b71bf9927ded170651abfa7a1446192eb0a0b38a0d40ee3d6f5cf61decfc42",
+      "pyproject": "notebooks/environment/pyproject.toml",
+      "pyproject_sha256": "ac39b8cedb5f4e0d707b55973effceb3aaa992b11d5de9334855a6fe592fe5c9"
+    }
+  },
+  "execution_supported": false,
+  "files": {
+    "fixtures/sales.csv": {
+      "bytes": 20,
+      "sha256": "31e26370225c0855b0966f4eb7b0820feaa07d086f131723c6362801ec880413"
+    },
+    "notebooks/environment/pyproject.toml": {
+      "bytes": 107,
+      "sha256": "ac39b8cedb5f4e0d707b55973effceb3aaa992b11d5de9334855a6fe592fe5c9"
+    },
+    "notebooks/environment/uv.lock": {
+      "bytes": 144,
+      "sha256": "84b71bf9927ded170651abfa7a1446192eb0a0b38a0d40ee3d6f5cf61decfc42"
+    },
+    "notebooks/sales.ipynb": {
+      "bytes": 666,
+      "sha256": "1dfde3bb6e4f973bd7e5cc51f285ff2d8ce57345b74b7363ba55d9362597cf8c"
+    },
+    "queries/sales_total.sql": {
+      "bytes": 47,
+      "sha256": "bed8c4b0a31b5ebcea48ff0e5bbfc58b0924f38dcde5ba4e2ca2a6a450cc475a"
+    },
+    "resources/database.toml": {
+      "bytes": 74,
+      "sha256": "9cdd4bad230513b4fd1d049f1bb67bd5879740d9d0ccd5e193c557cdd956e786"
+    },
+    "supabricks.toml": {
+      "bytes": 890,
+      "sha256": "d732d3a1038d127e6eecbc4e12d6e354dded39403ee1f32852897bf58d3e1c8d"
+    }
+  },
+  "limitations": [
+    "Source inspection only; no package, deployment or catalog access is created.",
+    "Dependency hashes do not establish uv lock freshness, kernel compatibility or offline readiness; preparation validates those later.",
+    "File inventory is not a guarantee that arbitrary source contains no secrets."
+  ],
+  "order": [
+    "database.main",
+    "query.sales_total",
+    "notebook.sales"
+  ],
+  "package": {
+    "include": [
+      "queries/*.sql",
+      "notebooks/**/*.ipynb",
+      "notebooks/environment/pyproject.toml",
+      "notebooks/environment/uv.lock",
+      "fixtures/sales.csv"
+    ],
+    "notebook_outputs": "strip",
+    "version": "0.1.0"
+  },
+  "preview": true,
+  "resources": {
+    "database.main": {
+      "declaration": {
+        "depends_on": [],
+        "kind": "postgres_database",
+        "lifecycle": "retain"
+      },
+      "dependencies": []
+    },
+    "notebook.sales": {
+      "declaration": {
+        "database": "database.main",
+        "depends_on": [
+          "query.sales_total"
+        ],
+        "environment": "notebook",
+        "file": "notebooks/sales.ipynb",
+        "kind": "notebook"
+      },
+      "dependencies": [
+        "database.main",
+        "query.sales_total"
+      ]
+    },
+    "query.sales_total": {
+      "declaration": {
+        "database": "database.main",
+        "depends_on": [],
+        "engine": "postgres",
+        "file": "queries/sales_total.sql",
+        "kind": "sql"
+      },
+      "dependencies": [
+        "database.main"
+      ]
+    }
+  },
+  "schema_version": 1,
+  "source_sha256": "991376d8f211f3b9be1680dae94844622e13d69992377dbff136b7d6bb6dcc2f",
+  "target": "local",
+  "targets": {
+    "local": {
+      "default": true,
+      "mode": "development"
+    },
+    "staging": {
+      "default": false,
+      "mode": "production"
+    }
+  },
+  "unresolved_bindings": [
+    {
+      "kind": "destination_database",
+      "resource": "database.main"
+    }
+  ],
+  "valid": true
+}

@@ -175,6 +175,12 @@ impl Directory {
         Ok(())
     }
     pub fn entries(&self, budget: &mut usize) -> Result<Vec<(String, u32)>> {
+        self.entries_impl(budget, false)
+    }
+    pub(crate) fn portable_entries(&self, budget: &mut usize) -> Result<Vec<(String, u32)>> {
+        self.entries_impl(budget, true)
+    }
+    fn entries_impl(&self, budget: &mut usize, strict_utf8: bool) -> Result<Vec<(String, u32)>> {
         let fd = self
             .open(OsStr::new("."), libc::O_RDONLY | libc::O_DIRECTORY)?
             .into_raw_fd();
@@ -243,6 +249,10 @@ impl Directory {
             }
             if let Ok(n) = std::str::from_utf8(bytes) {
                 result.push((n.into(), kind));
+            } else if strict_utf8 {
+                return Err(invalid(
+                    "project include directory contains a non-UTF-8 entry",
+                ));
             }
         }
         Ok(result)

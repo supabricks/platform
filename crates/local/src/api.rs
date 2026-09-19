@@ -12,6 +12,8 @@ use serde_json::{Value, json};
 use std::{collections::HashSet, net::TcpListener, path::PathBuf};
 use supabricks_core::resource::{BranchId, DesiredState, EpochId, LeaseId, OperationId, ProjectId};
 
+/// Offline source API; intentionally separate from daemon/runtime actions.
+pub use crate::projects::Command as ProjectSourceCommand;
 pub const VERSION: u32 = 1;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -14,6 +14,7 @@ pub mod mcp;
 pub mod notebooks;
 pub mod operations;
 pub mod project;
+pub mod projects;
 mod query;
 pub mod recovery;
 mod runtime_cli;

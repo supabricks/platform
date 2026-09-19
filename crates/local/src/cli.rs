@@ -18,6 +18,7 @@ use supabricks_core::resource::{DesiredState, OperationId};
 const HELP: &str = r#"Supabricks local (PG17)
 Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
 
+  project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
   init NAME                    Write retry-safe public supabricks.toml (offline)
   up                           Start/reconnect using the installed native bundle
       [--bundle PATH --helpers PATH]  Override parts for source development
@@ -186,6 +187,29 @@ pub fn run() -> Result<u8> {
     }
     let mut a = Args::parse(raw)?;
     let command = a.required(0)?;
+    if command == "project" {
+        let action = a.required(1)?;
+        let project = a.take("--project").map(PathBuf::from);
+        let target = a.take("--target");
+        a.take("--data-dir"); // Accepted common flag; never resolve or access runtime state.
+        a.flag("--json");
+        a.finish(2)?;
+        let command = match action.as_str() {
+            "inspect" => crate::api::ProjectSourceCommand::ProjectInspect { target },
+            "validate" => crate::api::ProjectSourceCommand::ProjectValidate { target },
+            _ => {
+                return Err(invalid(
+                    "use project validate or project inspect; packaging and deployment are not implemented",
+                ));
+            }
+        };
+        let directory = client::project_directory(project.as_deref())?;
+        println!(
+            "{}",
+            serde_json::to_value(crate::projects::execute(&directory, command)?)?
+        );
+        return Ok(0);
+    }
     let root = if let Some(root) = a
         .take("--data-dir")
         .or_else(|| std::env::var("SUPABRICKS_DATA_DIR").ok())
@@ -314,7 +338,11 @@ pub fn run() -> Result<u8> {
         return Err(invalid("mcp requires an explicit --project worktree path"));
     }
     let directory = client::project_directory(project.as_deref())?;
-    let c = Client::bind(&root, &directory)?;
+    let c = if command == "mcp" {
+        Client::bind_source(&root, &directory)?
+    } else {
+        Client::bind(&root, &directory)?
+    };
     if command == "env" {
         use crate::environments::Command as E;
         let action = a.required(1)?;

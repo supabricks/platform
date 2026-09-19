@@ -31,7 +31,18 @@ impl ProjectConfig {
         Ok(())
     }
     pub fn read(directory: &Path) -> Result<Self> {
-        let config: Self = toml::from_str(&fs::read_to_string(directory.join("supabricks.toml"))?)?;
+        let text = fs::read_to_string(directory.join("supabricks.toml"))?;
+        let value: toml::Value = toml::from_str(&text)?;
+        if value
+            .get("format_version")
+            .and_then(toml::Value::as_integer)
+            == Some(2)
+        {
+            return Err(invalid(
+                "format-2 projects are inspection-only in PK01; runtime deployment binding is not implemented",
+            ));
+        }
+        let config: Self = toml::from_str(&text)?;
         config.validate()?;
         Ok(config)
     }

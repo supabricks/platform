@@ -5,6 +5,784 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
+    "description": "Preview the fixed worktree's project source graph, file hashes, requirements and unresolved bindings. Offline and read-only; never starts runtime or executes project code.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_inspect",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "capabilities": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            "definition": {
+              "additionalProperties": false,
+              "properties": {
+                "format_version": {
+                  "enum": [
+                    1,
+                    2
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "format_version",
+                "id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "environments": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "lock": {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "lock_sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "pyproject": {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "pyproject_sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "pyproject",
+                  "lock",
+                  "pyproject_sha256",
+                  "lock_sha256"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 32,
+              "propertyNames": {
+                "pattern": "^[a-z0-9_-]{1,63}$"
+              },
+              "type": "object"
+            },
+            "execution_supported": {
+              "type": "boolean"
+            },
+            "files": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "bytes": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sha256",
+                  "bytes"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 1024,
+              "type": "object"
+            },
+            "limitations": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "order": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "package": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "include": {
+                      "items": {
+                        "maxLength": 512,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "maxItems": 128,
+                      "type": "array"
+                    },
+                    "notebook_outputs": {
+                      "const": "strip"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "include",
+                    "notebook_outputs"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preview": {
+              "const": true
+            },
+            "resources": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "declaration": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "kind": {
+                            "const": "postgres_database"
+                          },
+                          "lifecycle": {
+                            "const": "retain"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "lifecycle"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "database": {
+                            "type": "string"
+                          },
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "engine": {
+                            "enum": [
+                              "postgres",
+                              "spark"
+                            ]
+                          },
+                          "file": {
+                            "maxLength": 512,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "sql"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "engine",
+                          "file",
+                          "database"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "database": {
+                            "type": "string"
+                          },
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "environment": {
+                            "pattern": "^[a-z0-9_-]{1,63}$",
+                            "type": "string"
+                          },
+                          "file": {
+                            "maxLength": 512,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "notebook"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "file",
+                          "environment",
+                          "database"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "dependencies": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 256,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "declaration",
+                  "dependencies"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 256,
+              "type": "object"
+            },
+            "schema_version": {
+              "const": 1
+            },
+            "source_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "targets": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "default": {
+                    "type": "boolean"
+                  },
+                  "mode": {
+                    "enum": [
+                      "development",
+                      "production"
+                    ]
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 32,
+              "propertyNames": {
+                "pattern": "^[a-z0-9_-]{1,63}$"
+              },
+              "type": "object"
+            },
+            "unresolved_bindings": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "destination_database"
+                  },
+                  "resource": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "resource",
+                  "kind"
+                ],
+                "type": "object"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "valid": {
+              "const": true
+            }
+          },
+          "required": [
+            "api_version",
+            "schema_version",
+            "preview",
+            "valid",
+            "definition",
+            "target",
+            "targets",
+            "package",
+            "capabilities",
+            "resources",
+            "order",
+            "environments",
+            "files",
+            "unresolved_bindings",
+            "source_sha256",
+            "execution_supported",
+            "limitations"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Validate format-1 or preview format-2 source and return the same canonical inspection report. Does not establish dependency compatibility or authorize execution.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "project_validate",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "capabilities": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            "definition": {
+              "additionalProperties": false,
+              "properties": {
+                "format_version": {
+                  "enum": [
+                    1,
+                    2
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "format_version",
+                "id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "environments": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "lock": {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "lock_sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "pyproject": {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "pyproject_sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "pyproject",
+                  "lock",
+                  "pyproject_sha256",
+                  "lock_sha256"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 32,
+              "propertyNames": {
+                "pattern": "^[a-z0-9_-]{1,63}$"
+              },
+              "type": "object"
+            },
+            "execution_supported": {
+              "type": "boolean"
+            },
+            "files": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "bytes": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sha256",
+                  "bytes"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 1024,
+              "type": "object"
+            },
+            "limitations": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "order": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "package": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "include": {
+                      "items": {
+                        "maxLength": 512,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "maxItems": 128,
+                      "type": "array"
+                    },
+                    "notebook_outputs": {
+                      "const": "strip"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "include",
+                    "notebook_outputs"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preview": {
+              "const": true
+            },
+            "resources": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "declaration": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "kind": {
+                            "const": "postgres_database"
+                          },
+                          "lifecycle": {
+                            "const": "retain"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "lifecycle"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "database": {
+                            "type": "string"
+                          },
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "engine": {
+                            "enum": [
+                              "postgres",
+                              "spark"
+                            ]
+                          },
+                          "file": {
+                            "maxLength": 512,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "sql"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "engine",
+                          "file",
+                          "database"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "database": {
+                            "type": "string"
+                          },
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "environment": {
+                            "pattern": "^[a-z0-9_-]{1,63}$",
+                            "type": "string"
+                          },
+                          "file": {
+                            "maxLength": 512,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "notebook"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "file",
+                          "environment",
+                          "database"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "dependencies": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 256,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "declaration",
+                  "dependencies"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 256,
+              "type": "object"
+            },
+            "schema_version": {
+              "const": 1
+            },
+            "source_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "targets": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "default": {
+                    "type": "boolean"
+                  },
+                  "mode": {
+                    "enum": [
+                      "development",
+                      "production"
+                    ]
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 32,
+              "propertyNames": {
+                "pattern": "^[a-z0-9_-]{1,63}$"
+              },
+              "type": "object"
+            },
+            "unresolved_bindings": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "destination_database"
+                  },
+                  "resource": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "resource",
+                  "kind"
+                ],
+                "type": "object"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            "valid": {
+              "const": true
+            }
+          },
+          "required": [
+            "api_version",
+            "schema_version",
+            "preview",
+            "valid",
+            "definition",
+            "target",
+            "targets",
+            "package",
+            "capabilities",
+            "resources",
+            "order",
+            "environments",
+            "files",
+            "unresolved_bindings",
+            "source_sha256",
+            "execution_supported",
+            "limitations"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
     "description": "Find a worktree package operation by idempotency key before retrying, including the original expected inputs.",
     "inputSchema": {
       "additionalProperties": false,

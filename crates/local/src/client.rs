@@ -84,6 +84,26 @@ pub struct Client {
     pub binding: Binding,
 }
 impl Client {
+    /// MCP may inspect format 2, but ordinary daemon binding still rejects it.
+    pub fn bind_source(root: &Path, worktree: &Path) -> Result<Self> {
+        let worktree = worktree.canonicalize()?;
+        let config = crate::projects::source_identity(&worktree)?;
+        Ok(Self {
+            root: root.to_owned(),
+            binding: Binding {
+                project_id: config.id,
+                worktree,
+            },
+        })
+    }
+    pub fn inspect_source(&self, command: crate::api::ProjectSourceCommand) -> Result<Value> {
+        let report = crate::projects::execute(&self.binding.worktree, command)?;
+        if report.definition.id != self.binding.project_id {
+            return Err(invalid("project identity changed; reopen the MCP session"));
+        }
+        Ok(serde_json::to_value(report)?)
+    }
+
     pub fn bind(root: &Path, worktree: &Path) -> Result<Self> {
         let worktree = worktree.canonicalize()?;
         let config = ProjectConfig::read(&worktree)?;

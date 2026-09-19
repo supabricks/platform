@@ -25,6 +25,20 @@ pub fn tools() -> Value {
     ]});
     let defs = vec![
         (
+            "project_inspect",
+            "Preview the fixed worktree's project source graph, file hashes, requirements and unresolved bindings. Offline and read-only; never starts runtime or executes project code.",
+            json!({"target":{"type":"string"}}),
+            vec![],
+            true,
+        ),
+        (
+            "project_validate",
+            "Validate format-1 or preview format-2 source and return the same canonical inspection report. Does not establish dependency compatibility or authorize execution.",
+            json!({"target":{"type":"string"}}),
+            vec![],
+            true,
+        ),
+        (
             "env_find",
             "Find a worktree package operation by idempotency key before retrying, including the original expected inputs.",
             json!({"key":key}),
@@ -326,6 +340,10 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "project_inspect" | "project_validate" => serde_json::from_str(include_str!(
+            "../../../schemas/project-inspection-v1.schema.json"
+        ))
+        .expect("checked project inspection schema"),
         "env_inspect" => {
             json!({"type":"object","required":["inputs","active_generation","operations","protected_packages"]})
         }
@@ -457,6 +475,27 @@ impl Session {
                         -32602,
                         "tool arguments must be an object without action",
                     ));
+                }
+                if matches!(name, "project_inspect" | "project_validate") {
+                    args["action"] = json!(name);
+                    let command =
+                        match serde_json::from_value::<crate::api::ProjectSourceCommand>(args) {
+                            Ok(command) => command,
+                            Err(_) => {
+                                return Some(rpc_error(
+                                    id,
+                                    -32602,
+                                    "invalid project source arguments; consult inputSchema",
+                                ));
+                            }
+                        };
+                    let (body, error) = match client.inspect_source(command) {
+                        Ok(value) => (value, false),
+                        Err(error) => (json!({"error":diagnostic(&error)}), true),
+                    };
+                    return Some(
+                        json!({"jsonrpc":"2.0","id":id,"result":{"content":[{"type":"text","text":body.to_string()}],"structuredContent":body,"isError":error}}),
+                    );
                 }
                 if let Some(command) = name.strip_prefix("env_") {
                     args["action"] = json!(match command {

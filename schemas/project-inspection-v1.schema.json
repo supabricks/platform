@@ -1,0 +1,347 @@
+{
+  "type": "object",
+  "properties": {
+    "api_version": {
+      "const": 1
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "preview": {
+      "const": true
+    },
+    "valid": {
+      "const": true
+    },
+    "definition": {
+      "type": "object",
+      "properties": {
+        "format_version": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "format_version",
+        "id",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "string"
+    },
+    "targets": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_-]{1,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "development",
+              "production"
+            ]
+          },
+          "default": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 32
+    },
+    "package": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string"
+            },
+            "include": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "maxItems": 128
+            },
+            "notebook_outputs": {
+              "const": "strip"
+            }
+          },
+          "required": [
+            "version",
+            "include",
+            "notebook_outputs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "declaration": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "postgres_database"
+                  },
+                  "lifecycle": {
+                    "const": "retain"
+                  },
+                  "depends_on": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 256
+                  }
+                },
+                "required": [
+                  "kind",
+                  "lifecycle"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "sql"
+                  },
+                  "engine": {
+                    "enum": [
+                      "postgres",
+                      "spark"
+                    ]
+                  },
+                  "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "database": {
+                    "type": "string"
+                  },
+                  "depends_on": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 256
+                  }
+                },
+                "required": [
+                  "kind",
+                  "engine",
+                  "file",
+                  "database"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "notebook"
+                  },
+                  "file": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "environment": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9_-]{1,63}$"
+                  },
+                  "database": {
+                    "type": "string"
+                  },
+                  "depends_on": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 256
+                  }
+                },
+                "required": [
+                  "kind",
+                  "file",
+                  "environment",
+                  "database"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 256
+          }
+        },
+        "required": [
+          "declaration",
+          "dependencies"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 256
+    },
+    "order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    },
+    "environments": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_-]{1,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "pyproject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "lock": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "pyproject_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "lock_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "pyproject",
+          "lock",
+          "pyproject_sha256",
+          "lock_sha256"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 32
+    },
+    "files": {
+      "type": "object",
+      "maxProperties": 1024,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "sha256",
+          "bytes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unresolved_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "kind": {
+            "const": "destination_database"
+          }
+        },
+        "required": [
+          "resource",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 256
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution_supported": {
+      "type": "boolean"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "api_version",
+    "schema_version",
+    "preview",
+    "valid",
+    "definition",
+    "target",
+    "targets",
+    "package",
+    "capabilities",
+    "resources",
+    "order",
+    "environments",
+    "files",
+    "unresolved_bindings",
+    "source_sha256",
+    "execution_supported",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

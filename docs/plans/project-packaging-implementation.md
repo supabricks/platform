@@ -1,8 +1,9 @@
 # Project packaging implementation plan
 
-Status: proposed. PK00 design/research is documented; PK01–PK08 are not
-implemented. Baseline: merged platform #45 (`916a793`), alpha.17, catalog 10,
-console `70af6a2`. No runtime or console code changes accompany this plan.
+Status: proposed. PK00 design/research is documented; PK01 is implemented on its feature branch; qualification/merge is tracked in
+its implementation PR. PK02–PK08 are not implemented. Baseline: merged platform #45 (`916a793`), alpha.17, catalog 10,
+console `70af6a2`. The original PK00 proposal contained documentation only;
+PK01 adds the offline source API and native CLI.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -59,7 +60,7 @@ Databricks-hosted compatibility is outside scope and the roadmap.
 
 ## PK01 — Project manifest and read-only inspection
 
-**First implementation slice.** Extend `crates/local/src/project.rs` behind a
+**First implementation slice.** [Implemented contract](../architecture/pk01-project-inspection.md). Extend `crates/local/src/project.rs` behind a
 versioned parser and add a pure project graph module. Preserve format-1 behavior;
 validate a proposed format-2 file without mutating it. Keep the old initializer
 until the binding/adoption migration is ready. No catalog schema change yet.
