@@ -1,4 +1,4 @@
-# Plan and apply a project (PK04 preview)
+# Plan and apply a project
 
 Start Supabricks and explicitly create or attach a format-2 deployment as described
 in [deployment bindings](project-deployments.md). Review a plan before applying it:
@@ -17,13 +17,15 @@ After a lost response, `project find --key sales-v1` recovers it. Reusing the sa
 and plan is safe; a different plan needs a new key. A stale plan must be regenerated.
 
 Apply creates declared fresh PostgreSQL databases, installs immutable SQL/notebook
-source and prepares declared Python environments **offline**. It does not execute
-queries, notebook cells, migrations or fixtures. The inspection-only sales example
+source and prepares declared Python environments **offline**. Declared migrations
+and bounded fixtures execute as explicit reviewed initialization steps; saved
+queries and notebook cells run only on request. The inspection-only sales example
 needs a compatible locked notebook environment before apply; for the qualified
 baseline use the declaration pair supplied in
 `current/python/notebooks/environments/base/` of your local installation. Arbitrary
 lockfiles require their dependencies to be available to the NE preparation service;
-PK05 adds portable dependency closure and data initialization.
+[offline project closure and initialization](project-offline.md) supplies target
+wheel bundles, migration receipts and bounded fixture loads.
 
 ## Adopt an existing database
 
@@ -65,7 +67,8 @@ supabricks project draft notebook.sales --path notebooks/experiment.ipynb --proj
 
 Draft paths must be new, stay within the checkout and contain no symlink components.
 Edits and execution outputs never change the installed archive. The console's
-packaging preview/apply controls arrive in PK06.
+Project packages workspace provides preview, binding, reviewed apply, progress
+and installed asset/draft controls.
 
 ## Failure, cancellation and recovery
 
@@ -80,7 +83,7 @@ Inspect the diagnostic, fix the source or dependency problem, then create a fres
 plan and key. Database allocation retries use stable child keys across daemon crashes.
 No automatic deletion or rollback of already committed database effects occurs.
 
-Catalog 12 requires the normal stopped-backup upgrade from an older installation.
+Catalog 13 requires the normal stopped-backup upgrade from an older installation.
 Stopped backups preserve revision archives and draft worktrees. Virtual environments
 are rebuilt after a cold restore; `project installed` reports `preparation_needed`.
 Retain the original source checkout and exact previous release for recovery.

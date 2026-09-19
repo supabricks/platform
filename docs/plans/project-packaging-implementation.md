@@ -1,7 +1,7 @@
 # Project packaging implementation plan
 
 Status: PK00–PK06 are merged through platform #52 (`a94d8db`) and console #5
-(`cd35222` source pin). PK07 is in implementation: one cross-target artifact,
+(`cd35222` source pin). PK07 is implemented in [platform #53](https://github.com/supabricks/platform/pull/53): one cross-target artifact,
 installed lifecycle qualification, R04 evidence integration and walkthrough.
 PK08 remains unimplemented. PK07 targets alpha.24/catalog 13. Completion requires
 both exact native archives and the combined R04 gate; merged code is not release
@@ -171,7 +171,8 @@ immutable installed revision.
 
 ## PK05 — Runnable offline project and bounded initialization
 
-Merged in #51 (`b29e21a`); exact archive qualification remains pending.
+Merged in #51 (`b29e21a`). Alpha.22 failed retained baseline probes; PK07 corrects
+them and qualifies the alpha.24 candidate.
 [Contract](../architecture/pk05-offline-projects.md) · [Workflow](../handbook/project-offline.md).
 
 Compose NE04's verified wheel-bundle import/export with project packages. Add a
@@ -216,8 +217,9 @@ console PR and then update the platform gitlink through its release workflow.
 
 ## PK07 — Installed portability release qualification
 
-Implementation in progress on `feat/project-portability`. The installed walkthrough
-and cross-target evidence must pass before this slice is marked complete.
+Implemented in [platform #53](https://github.com/supabricks/platform/pull/53).
+The installed walkthrough and cross-target evidence must pass before this slice
+is marked complete; exact archive qualification is in progress.
 
 Extend the R04 evidence collector instead of introducing a competing release
 authority. Bind reports to exact platform/console/Sail source, native archive,

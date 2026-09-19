@@ -1,7 +1,8 @@
 # PK02 — Deterministic source packages
 
-Implemented contract; qualification and merge status are tracked in the implementation
-PR. [User workflow](../handbook/project-packages.md) ·
+PK02 merged in #48 and its alpha.19 archives qualified. This document records
+that slice; PK03–PK06 subsequently delivered deployment/apply, offline closure and
+console workflows. [User workflow](../handbook/project-packages.md) ·
 [Remaining slices](../plans/project-packaging-implementation.md).
 
 The platform owns source packaging. The console submodule, database engine and
@@ -9,7 +10,7 @@ catalog schema remain unchanged. PK02 adds `project pack`, archive `project
 inspect`, `project verify`, and `project unpack`, plus explicit saved-query export.
 Only format-2 definitions can be packaged; format-1 runtime projects are not
 silently converted. All archives use the `source` profile. Deployment resolution,
-apply, dependency installation and offline wheel closures remain PK03–PK05 work.
+apply, dependency installation and offline wheel closures are supplied by PK03–PK05.
 
 ## Version 1 artifact
 
