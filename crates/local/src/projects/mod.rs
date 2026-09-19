@@ -1,5 +1,7 @@
 //! PK01: pure, bounded project inspection. No daemon, catalog, subprocess or network.
 pub mod manifest;
+pub mod package;
+pub(crate) mod publication;
 mod source;
 use crate::{
     project::ProjectConfig,
@@ -95,6 +97,9 @@ pub fn execute(directory: &Path, command: Command) -> Result<Inspection> {
 }
 pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
     let mut source = Source::new(directory)?;
+    inspect_inputs(&mut source, target)
+}
+fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspection> {
     let bytes = source.read("supabricks.toml")?;
     if bytes.len() > 256 * 1024 {
         return Err(invalid("supabricks.toml exceeds 256 KiB"));
@@ -128,7 +133,7 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
         let mut included = BTreeSet::new();
         let mut fragment_paths = BTreeSet::new();
         for name in model.include.clone() {
-            fragment(&mut source, &name, model, &mut fragment_paths, 0)?;
+            fragment(source, &name, model, &mut fragment_paths, 0)?;
         }
         for pattern in &model.package.include {
             if !included.insert(pattern.clone()) {
@@ -171,7 +176,7 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
                         database,
                         ..
                     } => {
-                        require_file(&mut source, file)?;
+                        require_file(source, file)?;
                         if !file.ends_with(".sql") {
                             return Err(invalid("SQL resources require a .sql file"));
                         }
@@ -190,7 +195,7 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
                         database,
                         ..
                     } => {
-                        require_file(&mut source, file)?;
+                        require_file(source, file)?;
                         if !file.ends_with(".ipynb") {
                             return Err(invalid("notebook resources require an .ipynb file"));
                         }
@@ -220,8 +225,8 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
         }
         for (name, env) in &model.environments {
             key(name)?;
-            require_file(&mut source, &env.pyproject)?;
-            require_file(&mut source, &env.lock)?;
+            require_file(source, &env.pyproject)?;
+            require_file(source, &env.lock)?;
             let (py_parent, py_name) = env
                 .pyproject
                 .rsplit_once('/')
@@ -292,7 +297,7 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
     let mut report = Inspection {api_version: 1, schema_version: 1, preview: true, valid: true,
         definition: Definition {format_version: version, id, name}, target, targets,
         package: model.map(|m|m.package), capabilities: capabilities.into_iter().collect(), resources, order,
-        environments, files: source.files, unresolved_bindings, source_sha256: String::new(), execution_supported: version == 1,
+        environments, files: source.files.clone(), unresolved_bindings, source_sha256: String::new(), execution_supported: version == 1,
         limitations: vec!["Source inspection only; no package, deployment or catalog access is created.".into(), "Dependency hashes do not establish uv lock freshness, kernel compatibility or offline readiness; preparation validates those later.".into(), "File inventory is not a guarantee that arbitrary source contains no secrets.".into()]};
     report.source_sha256 = hex::encode(Sha256::digest(serde_json::to_vec(&report.files)?));
     Ok(report)

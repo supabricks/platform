@@ -1,7 +1,7 @@
 # Inspect a project definition (PK01 preview)
 
-PK01 adds offline source validation and inspection. It does not yet create project
-archives, install deployments, execute migrations or connect to Unity Catalog.
+PK01 adds offline source validation and inspection. [PK02 source packages](project-packages.md)
+add archive creation, verification and unpacking. Deployment, migrations and Unity Catalog remain later work.
 Your existing format-1 `supabricks.toml` and running projects continue to work.
 
 ```sh
@@ -44,8 +44,8 @@ format 2 expecting it to keep running. A target named `production` or a UUID in
 a source file confers no authorization.
 
 Format-2 manifests require `id`, `name`, `package.version` (SemVer),
-`package.include` and `package.notebook_outputs = "strip"`. Stripping is a future
-packaging policy; inspection preserves source notebooks and their outputs.
+`package.include` and `package.notebook_outputs = "strip"`. PK02 applies stripping in the
+packaged copy; source inspection preserves notebooks and their outputs.
 The supported resource groups/kinds are:
 
 | Group | Kind | Required reference fields |

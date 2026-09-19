@@ -42,7 +42,7 @@ class ReleaseEvidence(unittest.TestCase):
                 formats={name:dict(source_sha256=HASH,budget=dict(source_sha256=HASH,**measured)) for name in ('jsonl','json','parquet')}))
             self.write(target,'release-recovery','recovery.json',dict(status='passed',checks=self.checks(18),release_identity=HASH,network_qualification='isolated'))
             for name in ('qualification.json','benchmarks.json'):
-                self.write(target,'release-qualification',name,dict(status='passed',checks=self.checks(7),release_identity=HASH,network_qualification='isolated',
+                self.write(target,'release-qualification',name,dict(status='passed',checks=self.checks(9),release_identity=HASH,network_qualification='isolated',
                     measurements={f'snapshot_{size}_bytes{suffix}':dict(elapsed_seconds=1,peak_rss_bytes=100,logical_cpus=4,host_memory_bytes=1000) for size in (10000000,100000000,1000000000) for suffix in ('','_query')}))
             self.write(target,'release-qualification','network.json',dict(status='passed',observed_destinations=123,external_destinations=[]))
 

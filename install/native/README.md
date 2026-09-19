@@ -53,7 +53,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current preview uses version `v0.1.0-alpha.18` and catalog 10. Product notebook kernels
+The current preview uses version `v0.1.0-alpha.19` and catalog 10. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).
@@ -159,3 +159,7 @@ which clean-host/offline tests have actually run.
 
 Catalog 10 upgrades preserve the existing ingestion and notebook contracts.
 Older catalog-8/9 roots require the explicit backed-up upgrade workflow.
+
+PK02 source packaging ships `PACKAGES.md`, archive/report schemas and the sales
+example. Installed qualification packs twice, checks deterministic bytes, verifies
+and unpacks offline, and rejects execution of the unbound definition.

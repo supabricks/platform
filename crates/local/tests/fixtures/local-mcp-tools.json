@@ -5,6 +5,89 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
+    "description": "Explicitly export one revision of this project's private saved PostgreSQL query as portable SQL. Preserves the original and omits runtime branch bindings; does not write files or execute SQL.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "description": "Revision returned by get_branch. Stale mutations fail with conflict.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "expected_revision"
+      ],
+      "type": "object"
+    },
+    "name": "saved_query_export",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "api_version": {
+              "const": 1
+            },
+            "engine": {
+              "const": "postgres"
+            },
+            "id": {
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "sql": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "api_version",
+            "id",
+            "revision",
+            "title",
+            "engine",
+            "sql"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
     "description": "Preview the fixed worktree's project source graph, file hashes, requirements and unresolved bindings. Offline and read-only; never starts runtime or executes project code.",
     "inputSchema": {
       "additionalProperties": false,
