@@ -7,8 +7,9 @@ PK08 remains unimplemented. PK07 targets alpha.24/catalog 13. Completion require
 both exact native archives and the combined R04 gate; merged code is not release
 qualification. Alpha.22's retained baseline failed on Linux database preparation
 and macOS bundle export; PK07 corrects retryable database startup handling and
-the macOS fixture's noncanonical output path. Alpha.23 qualification
-remains pending. Alpha.19 is the latest confirmed fully qualified predecessor.
+the macOS fixture's noncanonical output path. Alpha.23 has failed both baseline
+checks and macOS console apply; the console failure's cause remains unconfirmed.
+Alpha.19 is the latest confirmed fully qualified predecessor.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -197,7 +198,8 @@ Custom compiled application services and arbitrary jobs remain out of scope.
 
 ## PK06 — Console project packaging workflow
 
-Merged in console #5 and platform #52; exact archive qualification is pending. See the [transport and workflow contract](../architecture/pk06-console-projects.md).
+Merged in console #5 and platform #52; alpha.23 archive qualification has failed
+both baseline checks and macOS console apply. See the [transport and workflow contract](../architecture/pk06-console-projects.md).
 
 Implement in `supabricks/console`, with typed platform API/MCP support in platform.
 Show source versus installed revision, deployment identity, target, logical data

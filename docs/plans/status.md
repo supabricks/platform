@@ -43,7 +43,10 @@ reattach. PK05 updates that harness; the candidate must rerun the complete gate.
 Alpha.21 also failed its complete archive gate (baseline, macOS notebook and both environment lifecycle jobs); it is not qualified.
 PK05 targets alpha.22/catalog 13; its retained baseline failed in Linux database preparation and macOS bundle export. PK07 corrects retryable database startup handling and the macOS fixture's noncanonical output path; alpha.22 is not fully qualified.
 PK06 targets alpha.23/catalog 13 with the extracted console packaging workflow;
-it is merged; archive qualification remains pending. Its contract is tracked in the
+it is merged, but archive qualification has failed Linux/macOS baseline checks
+and the macOS console apply check. PK07 includes fixes for retryable database
+startup and canonical export paths; the console failure's cause is not yet
+confirmed and requires the candidate macOS gate to pass. Its contract is tracked in the
 [PK06 contract](../architecture/pk06-console-projects.md).
 
 The qualified browser is Chromium on both targets. Linux qualification uses
