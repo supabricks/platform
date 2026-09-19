@@ -419,7 +419,7 @@ def consume(args, root, release, archive):
                 if error.errno != errno.ENOSPC: raise
             destination = pressure / 'must-not-exist'
             rejected = cell.cli(root, 'project', 'unpack', package, '--destination', destination, success=False)
-            assert 'os error 28' in json.loads(rejected.stdout)['error']['message'], 'expected real ENOSPC'
+            assert 'os error 28' in json.loads(rejected.stdout or rejected.stderr)['error']['message'], 'expected real ENOSPC'
             assert not destination.exists() and not list(pressure.glob('.supabricks-package-*'))
         finally:
             filler.unlink(missing_ok=True)
