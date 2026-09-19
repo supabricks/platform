@@ -348,6 +348,9 @@ fn recursive_globs_include_zero_and_many_directories() {
     );
 }
 
+// APFS rejects these filenames at creation time with EILSEQ; Linux can create
+// them, allowing us to verify that inspection rejects rather than omits them.
+#[cfg(target_os = "linux")]
 #[test]
 fn glob_does_not_silently_omit_non_utf8_names() {
     use std::os::unix::ffi::OsStringExt;
