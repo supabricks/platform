@@ -11,6 +11,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0008_sessions.sql"),
     include_str!("migrations/0009_ingest.sql"),
     include_str!("migrations/0010_environments.sql"),
+    include_str!("migrations/0011_deployments.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -109,7 +110,7 @@ pub(crate) fn catalog_upgrade(
 ) -> Result<()> {
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let version: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
-    if version != from || !matches!(from, 8 | 9) {
+    if version != from || !matches!(from, 8 | 9 | 10) {
         return Err(conflict(
             "catalog migration requires the backed-up source schema",
         ));
@@ -127,4 +128,82 @@ pub(crate) fn catalog_upgrade(
     }
     tx.commit()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod deployment_tests {
+    use super::*;
+    fn source() -> Connection {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        apply(&mut db, &MIGRATIONS[..10]).unwrap();
+        db.execute_batch("INSERT INTO projects VALUES ('original','old-name');
+            INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,revision,desired) VALUES ('branch','original','main','tenant','timeline',7,'suspended');
+            INSERT INTO worktrees VALUES ('/original/checkout','original','branch');
+            INSERT INTO environment_generations VALUES ('generation','original','/original/checkout','ready','{\"preserved\":\"record bytes\"}');
+            INSERT INTO environment_active VALUES ('original','/original/checkout','generation');
+            INSERT INTO environment_operations VALUES ('operation','original','/other/checkout','key','ready','{\"preserved\":true}');").unwrap();
+        db
+    }
+    #[test]
+    fn catalog_ten_migration_preserves_runtime_state_and_maps_known_worktrees() {
+        let mut db = source();
+        catalog_upgrade(&mut db, 10, "backup-sha", "release").unwrap();
+        let record: String = db
+            .query_row("SELECT record_json FROM environment_generations", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(record, "{\"preserved\":\"record bytes\"}");
+        let (runtime, definition): (String, String) = db
+            .query_row(
+                "SELECT runtime_project_id,definition_id FROM deployments",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(runtime, "original");
+        assert_eq!(definition, "original");
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM worktree_bindings", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            db.query_row("SELECT branch_id FROM worktrees", [], |r| r
+                .get::<_, String>(0))
+                .unwrap(),
+            "branch"
+        );
+        assert_eq!(
+            db.query_row("SELECT revision FROM branches", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            7
+        );
+        assert_eq!(db.query_row("SELECT count(*) FROM catalog_migrations WHERE version=11 AND source_sha256='backup-sha'",[],|r|r.get::<_,i64>(0)).unwrap(),1);
+        assert_eq!(db.query_row("SELECT count(*) FROM deployments WHERE actor_id=effective_principal_id AND actor_id IN (SELECT id FROM principals WHERE provider='local-owner')",[],|r|r.get::<_,i64>(0)).unwrap(),1);
+    }
+    #[test]
+    fn conflicting_legacy_worktrees_abort_the_entire_migration() {
+        let mut db = source();
+        db.execute_batch("INSERT INTO projects VALUES ('other','other'); INSERT INTO environment_generations VALUES ('foreign','other','/original/checkout','ready','{}');").unwrap();
+        assert!(catalog_upgrade(&mut db, 10, "backup", "release").is_err());
+        assert_eq!(
+            db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
+                .unwrap(),
+            10
+        );
+        assert!(
+            !db.prepare("SELECT 1 FROM sqlite_master WHERE name='deployments'")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM projects", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+    }
 }

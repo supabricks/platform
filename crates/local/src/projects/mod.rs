@@ -73,12 +73,16 @@ const CAPABILITIES: &[&str] = &["postgres17", "spark-sql", "managed-notebooks"];
 
 /// Establish only public source identity for a fixed MCP session. Does not admit execution.
 pub fn source_identity(directory: &Path) -> Result<ProjectConfig> {
+    Ok(source_identity_version(directory)?.0)
+}
+pub(crate) fn source_identity_version(directory: &Path) -> Result<(ProjectConfig, u32)> {
     let mut source = Source::new(directory)?;
     let bytes = source.read("supabricks.toml")?;
     if bytes.len() > 256 * 1024 {
         return Err(invalid("supabricks.toml exceeds 256 KiB"));
     }
-    let config = if version(&bytes)? == 1 {
+    let version = version(&bytes)?;
+    let config = if version == 1 {
         let c: ProjectConfig = parse(&bytes, "supabricks.toml")?;
         c.validate()?;
         c
@@ -87,7 +91,7 @@ pub fn source_identity(directory: &Path) -> Result<ProjectConfig> {
         identity(m.id, &m.name)?
     };
     source.verify()?;
-    Ok(config)
+    Ok((config, version))
 }
 pub fn execute(directory: &Path, command: Command) -> Result<Inspection> {
     let target = match command {

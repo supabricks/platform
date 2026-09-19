@@ -23,6 +23,11 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
   project unpack PACKAGE.sbproj --destination NEW_DIRECTORY
   project export-query ID --expected-revision N --output NEW_FILE.sql
+  project create --key KEY [--target NAME]  New empty runtime deployment
+  project deployments | binding            Inspect private deployment bindings
+  project attach DEPLOYMENT_ID             Explicitly attach this checkout
+  project adopt RUNTIME_PROJECT_ID --key KEY [--target NAME]
+  project fork --destination NEW_DIRECTORY --name NAME
   init NAME                    Write retry-safe public supabricks.toml (offline)
   up                           Start/reconnect using the installed native bundle
       [--bundle PATH --helpers PATH]  Override parts for source development
@@ -191,13 +196,30 @@ pub fn run() -> Result<u8> {
     }
     let mut a = Args::parse(raw)?;
     let command = a.required(0)?;
-    if command == "project" && a.required(1)? != "export-query" {
+    if command == "project"
+        && !matches!(
+            a.required(1)?.as_str(),
+            "export-query" | "create" | "attach" | "adopt" | "binding" | "deployments"
+        )
+    {
         let action = a.required(1)?;
         let project = a.take("--project").map(PathBuf::from);
         let target = a.take("--target");
         a.take("--data-dir"); // Offline commands never resolve runtime state.
         a.flag("--json");
         let report = match action.as_str() {
+            "fork" => {
+                let destination = PathBuf::from(
+                    a.take("--destination")
+                        .ok_or_else(|| invalid("fork requires --destination NEW_DIRECTORY"))?,
+                );
+                let name = a
+                    .take("--name")
+                    .ok_or_else(|| invalid("fork requires --name NAME"))?;
+                a.finish(2)?;
+                let directory = client::project_directory(project.as_deref())?;
+                crate::projects::package::fork(&directory, &destination, &name, target.as_deref())?
+            }
             "validate" | "inspect" if a.pos.len() == 2 => {
                 a.finish(2)?;
                 let directory = client::project_directory(project.as_deref())?;
@@ -335,7 +357,7 @@ pub fn run() -> Result<u8> {
         }
         a.finish(1)?;
         if let Some(project) = &project {
-            ProjectConfig::read(project)?;
+            crate::projects::source_identity(project)?;
         }
         crate::runtime_cli::run(&command, root, bundle, helpers)?;
         return Ok(0);
@@ -344,7 +366,7 @@ pub fn run() -> Result<u8> {
         a.finish(1)?;
         let status = client::request(&root, Request::Status);
         let project_check = project.as_ref().map(|p| {
-            ProjectConfig::read(p)
+            crate::projects::source_identity(p)
                 .map(|c| json!({"id":c.id,"name":c.name}))
                 .unwrap_or_else(|e| json!({"error":client::diagnostic(&e)}))
         });
@@ -375,6 +397,52 @@ pub fn run() -> Result<u8> {
         return Err(invalid("mcp requires an explicit --project worktree path"));
     }
     let directory = client::project_directory(project.as_deref())?;
+    if command == "project" && a.required(1)? != "export-query" {
+        use crate::deployments::Command as D;
+        let action = a.required(1)?;
+        let (command, count) = match action.as_str() {
+            "binding" => (D::Inspect, 2),
+            "deployments" => (D::List, 2),
+            "create" => (
+                D::Create {
+                    key: a
+                        .take("--key")
+                        .ok_or_else(|| invalid("create requires --key KEY"))?,
+                    target: a.take("--target"),
+                },
+                2,
+            ),
+            "attach" => (
+                D::Attach {
+                    deployment: a
+                        .required(2)?
+                        .parse()
+                        .map_err(|_| invalid("invalid deployment UUID"))?,
+                },
+                3,
+            ),
+            "adopt" => (
+                D::Adopt {
+                    runtime_project: a
+                        .required(2)?
+                        .parse()
+                        .map_err(|_| invalid("invalid runtime project UUID"))?,
+                    key: a
+                        .take("--key")
+                        .ok_or_else(|| invalid("adopt requires --key KEY"))?,
+                    target: a.take("--target"),
+                },
+                3,
+            ),
+            _ => return Err(invalid("unknown project binding command")),
+        };
+        a.finish(count)?;
+        println!(
+            "{}",
+            Client::bind_source(&root, &directory)?.project(command)?
+        );
+        return Ok(0);
+    }
     let c = if command == "mcp" {
         Client::bind_source(&root, &directory)?
     } else {

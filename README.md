@@ -19,7 +19,8 @@ console and synthetic demo files. Public deployment to `supabricks.io` is deferr
 R04 qualifies the combined workflow; see the [release contract and evidence map](docs/architecture/r04-local-release.md).
 
 - [Project inspection preview](docs/handbook/project-inspection.md): offline format-1/2 source validation and resource graphs.
-- [Source packages](docs/handbook/project-packages.md): deterministic archives, verification, private unpacking and explicit saved-query export; deployment follows in PK03–PK04.
+- [Source packages](docs/handbook/project-packages.md): deterministic archives, verification, private unpacking and explicit saved-query export; deployment binding is covered in PK03; resource apply follows in PK04.
+- [Project deployments](docs/handbook/project-deployments.md): independent runtime identities, explicit attachment/adoption, source forks and catalog-11 upgrade.
 - [PostgreSQL workspace](docs/handbook/database-workspace.md): branches, catalog,
   SQL, cancellation and explicitly saved queries.
 - [File ingestion](docs/handbook/file-ingestion.md): CSV/TSV, JSON, JSONL and

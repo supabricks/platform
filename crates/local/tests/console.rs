@@ -776,7 +776,7 @@ fn workspace_commands_enforce_csrf_revisions_private_saved_files_and_backup() {
     let other_config = ProjectConfig::initialize(&other, "other-project").unwrap();
     let other_binding = Binding {
         project_id: other_config.id,
-        worktree: other,
+        worktree: other.canonicalize().unwrap(),
     };
     let owner = format!("console-{}:{}", OperationId::new(), "b".repeat(64));
     let other_saved = request(

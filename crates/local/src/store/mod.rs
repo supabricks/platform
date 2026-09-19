@@ -1,6 +1,7 @@
 mod analytics;
 mod branches;
 mod connections;
+mod deployments;
 mod environments;
 pub(crate) mod error;
 mod exports;
@@ -137,8 +138,22 @@ impl Store {
     }
     pub fn register_project(&mut self, config: &ProjectConfig) -> Result<()> {
         config.validate()?;
-        self.db.execute("INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO UPDATE SET name=excluded.name", params![config.id.to_string(), config.name])?;
-        Ok(())
+        self.db.execute_batch("SAVEPOINT register_project")?;
+        let result = (|| {
+            self.db.execute("INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO UPDATE SET name=excluded.name", params![config.id.to_string(), config.name])?;
+            self.ensure_legacy_deployment(config)
+        })();
+        match result {
+            Ok(()) => {
+                self.db.execute_batch("RELEASE register_project")?;
+                Ok(())
+            }
+            Err(e) => {
+                self.db
+                    .execute_batch("ROLLBACK TO register_project; RELEASE register_project")?;
+                Err(e)
+            }
+        }
     }
     pub fn project(&self, id: ProjectId) -> Result<ProjectConfig> {
         let name = self
@@ -185,10 +200,7 @@ impl Store {
         project: ProjectId,
         branch_id: BranchId,
     ) -> Result<()> {
-        let config = ProjectConfig::read(directory)?;
-        if config.id != project {
-            return Err(conflict("worktree belongs to another project"));
-        }
+        self.check_runtime_binding(directory, project)?;
         if self.is_export(branch_id)? {
             return Err(conflict("internal export branch"));
         }
@@ -214,10 +226,7 @@ impl Store {
         Ok(())
     }
     pub fn selected_branch(&self, directory: &Path, project: ProjectId) -> Result<BranchId> {
-        let config = ProjectConfig::read(directory)?;
-        if config.id != project {
-            return Err(conflict("worktree belongs to another project"));
-        }
+        self.check_runtime_binding(directory, project)?;
         let id: String = self
             .db
             .query_row(

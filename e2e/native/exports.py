@@ -82,7 +82,7 @@ print(json.dumps(table.to_pylist(),default=str,sort_keys=True))
         self.work.mkdir()
         (self.work/'supabricks.toml').write_text(f'format_version = 1\nid = "{self.project}"\nname = "exports"\n')
         self.start()
-        self.request(method='register_project', config=dict(format_version=1,id=self.project,name='exports'))
+        self.request(method='resolve_binding', source=dict(definition_id=self.project, worktree=str(self.work.resolve())))
         parent = self.create('main')
         self.parent = parent
         self.sql(parent, """

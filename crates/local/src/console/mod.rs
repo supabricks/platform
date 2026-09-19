@@ -281,7 +281,7 @@ impl Drop for Consoles {
 }
 
 pub fn launch(root: PathBuf, project: PathBuf, no_open: bool) -> Result<Value> {
-    let c = client::Client::bind(&root, &project)?;
+    crate::projects::source_identity(&project)?;
     let asset_path = assets::discover()?;
     let _ = assets::Assets::load(&asset_path)?;
     // Run the existing readiness path without introducing a second JSON result.
@@ -296,6 +296,7 @@ pub fn launch(root: PathBuf, project: PathBuf, no_open: bool) -> Result<Value> {
             "runtime is not ready; resolve the startup diagnostic above and run supabricks doctor",
         ));
     }
+    let c = client::Client::bind(&root, &project)?;
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let mut value = client::request(

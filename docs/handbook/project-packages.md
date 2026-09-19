@@ -2,7 +2,7 @@
 
 A source package contains your declared code, notebooks, SQL, dependency declarations
 and selected fixtures. It can be inspected and unpacked with only the Supabricks
-binary. Deployment and execution of these format-2 definitions arrive in PK03–PK04;
+binary. [PK03](project-deployments.md) adds explicit deployment binding; manifest-driven execution arrives in PK04;
 source packages do not contain a prepared Python environment or database contents.
 
 Start with a format-2 definition such as the shipped inspection example. See
@@ -32,8 +32,7 @@ secret scan.
 
 Unpack creates a private directory with `supabricks-unpacked.json` written last.
 This receipt records the verified hashes and `unbound` state. It does not attach
-the definition's UUID to a live database. Runtime commands reject these format-2
-projects until deployment binding is implemented. Inspection and unpacking never
+the definition's UUID to a live database. Runtime commands reject an unbound copy until explicitly created or attached through PK03. Inspection and unpacking never
 run SQL, Python, installation hooks or package resolvers.
 
 ## Export a saved query explicitly

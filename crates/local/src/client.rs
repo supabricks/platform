@@ -2,7 +2,6 @@
 use crate::{
     api::{Action, Binding, VERSION},
     daemon::{Envelope, Request},
-    project::ProjectConfig,
     store::{Error, Result, error::invalid},
 };
 use serde_json::{Value, json};
@@ -82,14 +81,18 @@ pub(crate) fn request_timeout(root: &Path, request: Request, timeout: Duration) 
 pub struct Client {
     pub root: PathBuf,
     pub binding: Binding,
+    definition_id: supabricks_core::resource::ProjectId,
+    runtime_bound: bool,
 }
 impl Client {
-    /// MCP may inspect format 2, but ordinary daemon binding still rejects it.
+    /// Source inspection remains offline; runtime calls resolve destination binding.
     pub fn bind_source(root: &Path, worktree: &Path) -> Result<Self> {
         let worktree = worktree.canonicalize()?;
         let config = crate::projects::source_identity(&worktree)?;
         Ok(Self {
             root: root.to_owned(),
+            definition_id: config.id,
+            runtime_bound: false,
             binding: Binding {
                 project_id: config.id,
                 worktree,
@@ -98,29 +101,53 @@ impl Client {
     }
     pub fn inspect_source(&self, command: crate::api::ProjectSourceCommand) -> Result<Value> {
         let report = crate::projects::execute(&self.binding.worktree, command)?;
-        if report.definition.id != self.binding.project_id {
+        if report.definition.id != self.definition_id {
             return Err(invalid("project identity changed; reopen the MCP session"));
         }
         Ok(serde_json::to_value(report)?)
     }
 
     pub fn bind(root: &Path, worktree: &Path) -> Result<Self> {
-        let worktree = worktree.canonicalize()?;
-        let config = ProjectConfig::read(&worktree)?;
-        Ok(Self {
-            root: root.to_owned(),
-            binding: Binding {
-                project_id: config.id,
-                worktree,
+        let mut client = Self::bind_source(root, worktree)?;
+        client.binding = client.resolve_runtime()?;
+        client.runtime_bound = true;
+        Ok(client)
+    }
+    fn source(&self) -> crate::deployments::Source {
+        crate::deployments::Source {
+            definition_id: self.definition_id,
+            worktree: self.binding.worktree.clone(),
+        }
+    }
+    fn resolve_runtime(&self) -> Result<Binding> {
+        let context: crate::deployments::Context = serde_json::from_value(request(
+            &self.root,
+            Request::ResolveBinding {
+                source: self.source(),
             },
-        })
+        )?)?;
+        Ok(context.binding(&self.binding.worktree))
+    }
+    pub fn project(&self, command: crate::deployments::Command) -> Result<Value> {
+        request(
+            &self.root,
+            Request::Project {
+                source: self.source(),
+                command,
+            },
+        )
     }
     pub fn call(&self, action: Action) -> Result<Value> {
+        let binding = if self.runtime_bound {
+            self.binding.clone()
+        } else {
+            self.resolve_runtime()?
+        };
         request(
             &self.root,
             Request::Api {
                 api_version: VERSION,
-                binding: self.binding.clone(),
+                binding,
                 action,
             },
         )

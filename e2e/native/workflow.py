@@ -181,7 +181,10 @@ class Workflow(Cell):
         other = self.root / "second-worktree"
         other.mkdir()
         shutil.copy2(self.worktree / "supabricks.toml", other / "supabricks.toml")
-        self.cli("connect", project=other, code=3)
+        self.cli("connect", project=other, code=4)  # Copied UUIDs never attach implicitly.
+        deployment = self.cli("project", "binding")["deployment_id"]
+        self.cli("project", "attach", deployment, project=other)
+        self.cli("connect", project=other, code=3)  # Attachment does not inherit branch selection.
         mcp = MCP(self, other)
         try:
             expected_tools = json.loads((REPO / "crates/local/tests/fixtures/local-mcp-tools.json").read_text())

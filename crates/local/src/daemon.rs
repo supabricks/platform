@@ -30,6 +30,13 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    ResolveBinding {
+        source: crate::deployments::Source,
+    },
+    Project {
+        source: crate::deployments::Source,
+        command: crate::deployments::Command,
+    },
     NotebookTransport {
         binding: crate::api::Binding,
         generation: i64,
@@ -541,7 +548,7 @@ impl Daemon {
                 if generation != self.store.generation() {
                     return Err(conflict("console belongs to a prior daemon generation"));
                 }
-                let config = ProjectConfig::read(&binding.worktree)?;
+                let config = crate::projects::source_identity(&binding.worktree)?;
                 let runtime = self
                     .cell
                     .as_ref()
@@ -552,7 +559,7 @@ impl Daemon {
                         "desired_state":b.endpoint.desired_state,"revision":b.revision,"observed_revision":b.observed_revision,"is_default":b.is_default,
                         "expired":b.expired})
                 }).collect();
-                json!({"api_version":crate::console::assets::VERSION,"project":{"id":config.id,"name":config.name},
+                json!({"api_version":crate::console::assets::VERSION,"project":{"id":binding.project_id,"name":config.name},"definition_id":config.id,"deployment":self.store.binding_context(&binding)?,
                     "worktree":binding.worktree,"data_dir":self.store.root(),"branches":branches,
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
@@ -568,6 +575,10 @@ impl Daemon {
             Request::Status => {
                 json!({"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
+            Request::ResolveBinding { source } => {
+                serde_json::to_value(self.store.resolve_deployment(&source)?)?
+            }
+            Request::Project { source, command } => self.store.project_command(&source, command)?,
             Request::RegisterProject { config } => {
                 self.store.register_project(&config)?;
                 json!(config)

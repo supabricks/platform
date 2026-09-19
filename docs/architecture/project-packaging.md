@@ -1,6 +1,6 @@
 # Portable projects, deployments and governance
 
-Status: design adopted in #46; PK01 inspection merged in #47. PK02 implementation
+Status: design adopted in #46; PK01 inspection merged in #47. PK02/PK03 implementation
 and subsequent slices are tracked in the plan below. The architecture describes
 the complete target, including work not yet implemented. Original baseline: platform `916a793` (PR #45),
 console `70af6a2`, catalog schema 10, PG17.8 and source-built Sail 0.7.1.
@@ -137,7 +137,7 @@ required capabilities fail validation. The catalog migration is separately
 versioned and follows the existing backed-up upgrade process.
 
 Illustrative format-2 source, supported for inspection by PK01 and source packaging
-by PK02; runtime binding remains blocked until PK03:
+by PK02; PK03 adds explicit runtime binding; resource apply remains PK04 work:
 
 ```toml
 format_version = 2
