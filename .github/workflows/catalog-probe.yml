@@ -67,7 +67,7 @@ jobs:
             exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
               SB_UC00_NETWORK_EVIDENCE="unprivileged loopback-only Linux network namespace" \
               "$2" e2e/native/catalog/probe.py \
-              --release build/baseline/supabricks-v0.1.0-alpha.24-linux-x86_64 \
+              --release build/baseline/supabricks \
               --uc-runtime build/uc-runtime --report build/reports/probe.json
           ' bash "$(id -un)" "$python_path"
       - name: Probe offline on macOS
@@ -77,7 +77,7 @@ jobs:
             env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external networking and Homebrew denied" \
             "$(command -v python)" e2e/native/catalog/probe.py \
-            --release build/baseline/supabricks-v0.1.0-alpha.24-macos-arm64 \
+            --release build/baseline/supabricks \
             --uc-runtime build/uc-runtime --report build/reports/probe.json
       - uses: actions/upload-artifact@v4
         if: always()

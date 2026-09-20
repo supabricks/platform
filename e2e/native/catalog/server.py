@@ -58,7 +58,9 @@ s3.region.0=us-east-1
         try:
             with urllib.request.urlopen(req, timeout=15) as response:
                 raw = response.read()
-                return response.status, json.loads(raw) if raw else None
+                try: data = json.loads(raw) if raw else None
+                except ValueError: data = raw.decode(errors='replace')
+                return response.status, data
         except urllib.error.HTTPError as error:
             raw = error.read()
             try: data = json.loads(raw)

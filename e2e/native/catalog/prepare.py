@@ -32,7 +32,7 @@ def main():
     expected=(args.output/(name+'.sha256')).read_text().split()[0]
     assert digest(archive)==expected
     with tarfile.open(archive) as tar: tar.extractall(args.output,filter='data')
-    release=args.output/name.removesuffix('.tar.gz')
+    release=args.output/'supabricks'
     manifest=json.loads((release/'release.json').read_text())
     for name,entry in manifest['files'].items():
         path=release/name

@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import queue
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -31,7 +32,9 @@ def sha(path):
 
 
 class Sail:
-    def __init__(self, python, server, token, root, storage=None):
+    def __init__(self, python, server, token, root, evidence, storage=None):
+        self.evidence = evidence
+        self.worker_id = str(uuid.uuid4())
         self.log = (root/f'sail-{uuid.uuid4()}.log').open('w')
         env = clean_env()
         env['AWS_EC2_METADATA_DISABLED'] = 'true'
@@ -54,6 +57,7 @@ class Sail:
         self.proc.stdin.write(json.dumps(dict(sql=sql))+'\n'); self.proc.stdin.flush()
         result = self.results.get(timeout=90)
         assert result is not None, 'Sail exited; inspect private worker log'
+        self.evidence.append(dict(worker_id=self.worker_id, sql=sql, result=result))
         return result
 
     def rows(self, sql):
@@ -82,14 +86,29 @@ def main():
     os.chmod(root, 0o700)
     print('Private probe state: '+str(root), flush=True)
     checks = []
+    manifest = json.loads((release/'release.json').read_text())
+    for name, entry in manifest['files'].items():
+        file = release/name
+        assert file.resolve().is_relative_to(release), name
+        assert sha(file) == entry['sha256'], 'baseline file differs from inventory: '+name
+    if os.environ.get('SB_UC00_NETWORK_EVIDENCE'):
+        try:
+            with socket.create_connection(('1.1.1.1',443),timeout=2): pass
+        except OSError: pass
+        else: raise AssertionError('offline qualification has external TCP access')
     report = dict(schema_version=1, status='FAIL', target=platform.system()+'-'+platform.machine(),
         network_evidence=os.environ.get('SB_UC00_NETWORK_EVIDENCE','local run; external network not isolated'),
         uc_build=json.loads((runtime/'build.json').read_text()),
         uc_artifact=json.loads(runtime.with_suffix('.artifact.json').read_text()),
         sail_build=json.loads((release/'provenance/sail/sail-build.json').read_text()),
-        platform_binary_sha256=sha(release/'bin/supabricks'), checks=checks)
+        platform_binary_sha256=sha(release/'bin/supabricks'), release_inventory_sha256=sha(release/'release.json'), checks=checks, queries=[])
     pin = json.loads((REPO/'components/sail-source.lock.json').read_text())
     assert report['sail_build']['commit'] == pin['commit']
+    uc_pin = json.loads((REPO/'components/unity-catalog-source.lock.json').read_text())
+    assert report['uc_build']['source_commit'] == uc_pin['commit']
+    assert report['uc_build']['source_pin_sha256'] == sha(REPO/'components/unity-catalog-source.lock.json')
+    for entry in report['uc_build']['jars']:
+        assert sha(runtime/entry['path']) == entry['sha256'], entry['path']
     cellroot = root/'cell'; cellroot.mkdir(mode=0o700)
     cell = Epochs(release/'bin/supabricks', release/'engine', release/'helpers', cellroot)
     cell.python = release/'python/analytics/python'
@@ -100,7 +119,7 @@ def main():
     def check(name, **facts):
         checks.append(dict(name=name, status='PASS', **facts)); print('PASS '+name, flush=True)
     def worker(token, storage=None):
-        result = Sail(cell.python, server, token, root, storage); workers.append(result); return result
+        result = Sail(cell.python, server, token, root, report['queries'], storage); workers.append(result); return result
     def register(catalog, schema, name, location, epoch):
         return server.ok('POST', 'tables', dict(name=name, catalog_name=catalog, schema_name=schema,
             table_type='EXTERNAL', data_source_format='DELTA', storage_location=location,
@@ -163,10 +182,14 @@ def main():
         assert expired == 401, expired
         check('metadata_permissions_and_expired_token', denied_http=denied, expired_http=expired)
         owner, consumer = worker(t1), worker(t2)
-        assert owner.rows('SELECT sum(amount) AS total FROM uc.p1.current.orders') == [dict(total=10)]
-        assert consumer.rows('SELECT sum(amount) AS total FROM uc.p2.current.private') == [dict(total=10)]
-        assert not consumer.query('SELECT * FROM uc.p1.current.orders')['ok']
-        assert not worker(server.token(reader1,-60)).query('SELECT * FROM uc.p1.current.orders')['ok']
+        assert owner.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=10)]
+        assert consumer.rows('SELECT sum(amount) AS total FROM p2.current.private') == [dict(total=10)]
+        assert not consumer.query('SELECT * FROM p1.current.orders')['ok']
+        assert not worker(server.token(reader1,-60)).query('SELECT * FROM p1.current.orders')['ok']
+        listed = owner.rows('SHOW TABLES IN p1.current')
+        assert {r['tableName'] for r in listed} == {'orders','payments'}, listed
+        described = owner.rows('DESCRIBE TABLE p1.current.orders')
+        assert any(r.get('col_name') == 'amount' for r in described), described
         check('native_sail_catalog_reads_and_cross_principal_denial')
         # Local OS ownership can read bytes without consulting UC. This is an
         # expected capability limit, never a claim of governed data isolation.
@@ -174,7 +197,7 @@ def main():
         assert bypass == [dict(total=10)]
         check('local_owner_direct_path_bypasses_catalog', governed_local_storage=False)
         server.grant('table','p1.current.orders',reader1,remove=['SELECT'])
-        assert not owner.query('SELECT * FROM uc.p1.current.orders')['ok']
+        assert not owner.query('SELECT * FROM p1.current.orders')['ok']
         server.grant('table','p1.current.orders',reader1,['SELECT'])
         check('revocation_in_existing_uncached_sail_session')
         # Resolve both authorized locations once, then pin their Delta versions.
@@ -189,20 +212,24 @@ def main():
         assert recreated['table_id'] != table['table_id']
         assert server.request('GET','tables/p1.current.orders',token=t1)[0] in (403,404)
         server.grant('table','p1.current.orders',reader1,['SELECT'])
-        assert owner.rows('SELECT sum(amount) AS total FROM uc.p1.current.orders') == [dict(total=30)]
+        assert owner.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
         # An ordinary multi-table query can now see a mixed snapshot set.
-        totals = owner.rows('SELECT (SELECT sum(amount) FROM uc.p1.current.orders) AS orders, (SELECT sum(amount) FROM uc.p1.current.payments) AS payments')
+        totals = owner.rows('SELECT (SELECT sum(amount) FROM p1.current.orders) AS orders, (SELECT sum(amount) FROM p1.current.payments) AS payments')
         assert totals == [dict(orders=30,payments=10)], totals
         frozen = owner.rows('SELECT (SELECT sum(amount) FROM frozen_orders) AS orders, (SELECT sum(amount) FROM frozen_payments) AS payments')
         assert frozen == [dict(orders=10,payments=10)]
         check('recreate_changes_identity_and_mutable_names_mix_epochs', frozen_namespace_consistent=True)
         rename = server.request('PATCH','tables/p1.current.orders',dict(new_name='renamed'))[0]
-        assert rename in (404,405,501), rename
+        assert rename in (404,405,500,501), rename
+        assert server.ok('GET','tables/p1.current.orders')['table_id'] == recreated['table_id']
+        assert server.request('GET','tables/p1.current.renamed')[0] == 404
         check('table_rename_unavailable', http_status=rename)
         # Use an existing local object for the actual file credential probe.
         local_table = server.ok('GET','tables/p1.current.payments')
-        local_credentials = server.request('POST','temporary-table-credentials',dict(table_id=local_table['table_id'],operation='READ'),token=t1)[0]
-        check('local_file_credential_vending_observed', http_status=local_credentials)
+        local_status, local_credentials = server.request('POST','temporary-table-credentials',dict(table_id=local_table['table_id'],operation='READ'),token=t1)
+        assert local_status == 200
+        assert not any(local_credentials.get(k) for k in ('aws_temp_credentials','azure_user_delegation_sas','gcp_oauth_token'))
+        check('local_file_credential_vending_observed', http_status=local_status, storage_credentials=False)
         # Upload the same immutable Delta tree into the cell's existing SeaweedFS.
         from urllib.parse import urlparse, unquote
         source = Path(unquote(urlparse(location(first,'orders')).path))
@@ -212,21 +239,21 @@ def main():
         remote = register('p1','current','s3orders','s3://supabricks/'+prefix,first['epoch_id'])
         server.grant('table','p1.current.s3orders',reader1,['SELECT'])
         status, creds = server.request('POST','temporary-table-credentials',dict(table_id=remote['table_id'],operation='READ'),token=t1)
-        assert status == 200, (status,creds)
+        assert status == 200, status
         assert creds['aws_temp_credentials']['access_key_id'] == cell.config['s3_access']
         check('seaweed_static_test_credentials_vended', scoped_sts=False)
         storage = dict(AWS_ENDPOINT=f"http://127.0.0.1:{cell.config['ports']['weed_s3']}", AWS_ALLOW_HTTP='true',
             AWS_REGION='us-east-1', AWS_VIRTUAL_HOSTED_STYLE_REQUEST='false')
-        assert not worker(t1,storage).query('SELECT * FROM uc.p1.current.s3orders')['ok']
+        assert not worker(t1,storage).query('SELECT * FROM p1.current.s3orders')['ok']
         storage.update(AWS_ACCESS_KEY_ID=cell.config['s3_access'],AWS_SECRET_ACCESS_KEY=cell.config['s3_secret'])
-        assert worker(t1,storage).rows('SELECT sum(amount) AS total FROM uc.p1.current.s3orders') == [dict(total=10)]
+        assert worker(t1,storage).rows('SELECT sum(amount) AS total FROM p1.current.s3orders') == [dict(total=10)]
         check('sail_seaweed_read_needs_explicit_storage_credentials', native_vending=False, path_style=True)
         server.stop()
-        assert not owner.query('SELECT * FROM uc.p1.current.orders')['ok']
+        assert not owner.query('SELECT * FROM p1.current.orders')['ok']
         backup = root/'stopped-backup'; shutil.copytree(server.root/'etc',backup)
         server.start()
         assert server.ok('GET','tables/p1.current.orders')['table_id'] == recreated['table_id']
-        assert owner.rows('SELECT sum(amount) AS total FROM uc.p1.current.orders') == [dict(total=30)]
+        assert owner.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
         server.stop()
         shutil.rmtree(server.root/'etc'); shutil.copytree(backup,server.root/'etc')
         server.start()
@@ -234,6 +261,11 @@ def main():
         assert server.request('GET','tables/p1.current.orders',token=t2)[0] in (403,404)
         assert owner.rows('SELECT sum(amount) AS total FROM frozen_orders') == [dict(total=10)]
         check('outage_restart_and_stopped_metadata_restore', backend='H2', data_backup_separate=True)
+        short_lived = worker(server.token(reader1, 8))
+        assert short_lived.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
+        time.sleep(9)
+        assert not short_lived.query('SELECT * FROM p1.current.orders')['ok']
+        check('expiry_in_existing_uncached_sail_session')
         report['metrics'] = dict(readiness_seconds=server.ready_times, idle_rss_bytes=max(server.idle_samples),
             peak_rss_bytes=server.peak, compressed_runtime_bytes=report['uc_artifact']['compressed_bytes'])
         assert max(server.ready_times)<20, report['metrics']
