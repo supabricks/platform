@@ -269,8 +269,49 @@ pub fn rss(pid: u32) -> Result<u64> {
     if n == size {
         return Ok(info.pti_resident_size);
     }
-    if identity(pid)?.is_none() {
+    // PROC_PIDTASKINFO excludes zombies, whereas identity deliberately includes
+    // them. A worker can exit after group enumeration and before this sample.
+    // Preserve the task probe error before the identity syscall changes errno.
+    let error = io::Error::last_os_error();
+    if identity(pid)?.is_none_or(|id| id.zombie) {
         return Ok(0);
     }
-    Err(io::Error::last_os_error().into())
+    if n != 0 {
+        return Err(conflict("incomplete process RSS"));
+    }
+    Err(error.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        process::Command,
+        thread,
+        time::{Duration, Instant},
+    };
+
+    #[test]
+    fn resident_memory_of_an_unreaped_exited_child_is_zero() {
+        assert!(rss(std::process::id()).unwrap() > 0);
+        let mut child = Command::new("/bin/sh")
+            .args(["-c", "exit 0"])
+            .spawn()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let zombie = loop {
+            if identity(child.id()).unwrap().is_some_and(|id| id.zombie) {
+                break true;
+            }
+            if Instant::now() >= deadline {
+                break false;
+            }
+            thread::sleep(Duration::from_millis(1));
+        };
+        // Do not reap before the sample: that would miss the macOS exit race.
+        let sample = rss(child.id());
+        child.wait().unwrap();
+        assert!(zombie, "child did not become a zombie before the deadline");
+        assert_eq!(sample.unwrap(), 0);
+    }
 }
