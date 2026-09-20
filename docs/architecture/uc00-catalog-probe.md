@@ -1,6 +1,7 @@
 # UC00: OSS Unity Catalog feasibility probe
 
-Status: implementation and qualification in progress. This is a developer probe,
+Status: UC00 implemented and qualified on both native targets, under review in
+[platform #56](https://github.com/supabricks/platform/pull/56). This is a developer probe,
 not an installed catalog feature. See the [UC00–UC09 plan](../plans/unity-catalog-implementation.md).
 
 ## Scope and inputs
@@ -37,8 +38,17 @@ The source checkout must be clean at the lock's commit. The output must be new.
 The build produces a server-only archive, its build/JAR inventory and an archive
 hash sidecar. Build tools download dependencies; runtime qualification runs with
 external outbound networking denied. Linux uses a loopback-only network namespace;
-macOS uses Seatbelt outbound restrictions and verifies service listeners on loopback. CI performs the build and
-probe independently on Linux x86_64 and macOS arm64.
+macOS uses Seatbelt outbound restrictions and verifies service listeners on
+loopback. An external TCP sentinel must fail with a policy/network-denial errno;
+a timeout does not count. CI performs the build and probe independently on
+Linux x86_64 and macOS arm64.
+
+For this sandboxed probe, Java uses `-Djava.net.preferIPv4Stack=true` and macOS
+Spark Connect uses native IPv6 loopback (`sc://[::1]:port`). IPv4-mapped IPv6
+sockets do not match Seatbelt's localhost filter in the tested configuration.
+Native process inspection through `psutil` verifies database shutdown without
+executing macOS's sandbox-blocked system `ps`. These are harness settings;
+installed platform transport and sandbox policies are unchanged.
 
 The harness creates its own private cell, projects, PG tables, Delta epochs,
 UC state, principals and Sail processes. It never connects to an existing
@@ -46,7 +56,7 @@ Supabricks daemon. Raw diagnostics and credentials stay in the private temporary
 root; only structured evidence and bounded, redacted failure diagnostics are uploaded. Failed roots are retained locally
 for investigation. Successful runs remove their state.
 
-## Decisions awaiting qualification
+## Selected integration boundaries
 
 - Use independent embedded H2 metadata for the local-owner profile. Back up the
   stopped UC `etc` state, including metadata, policies and signing keys; retain
@@ -54,9 +64,9 @@ for investigation. Successful runs remove their state.
 - Keep canonical UC registrations unique. UC rejects overlapping registered table
   locations. A consumer project should bind an existing table identity rather
   than re-register its location under another catalog.
-- Evaluate native UC resolution and frozen, version-pinned session views against
-  two complete PG export epochs. UC03/UC04 must provide publication-set atomicity.
-- Test real UC metadata permissions separately from data access. Same-owner local
+- Native UC resolution can mix publication epochs. Resolve one complete manifest
+  into version-pinned session views; UC03/UC04 must provide publication-set atomicity.
+- Keep UC metadata permissions separate from data access. Same-owner local
   files and broad SeaweedFS credentials cannot establish multiuser isolation.
 - Use explicit Sail catalog configuration. Synthetic principal JWTs signed with
   the private test server key exercise authorization only; they are not an IdP
@@ -65,14 +75,47 @@ for investigation. Successful runs remove their state.
   Classpath Exception, with its legal directory preserved. JAR notices remain
   embedded. UC01 must finish the production dependency lock and license inventory;
   this probe records resolved JAR hashes and is not a reproducible-release claim.
+  Configuration staging includes only tracked templates, excluding ignored
+  developer keys and tokens even when the source checkout otherwise looks clean.
 
-Measured results, capability limitations and the UC01 go/no-go decision will be
-recorded here after both native reports pass.
+**Decision: GO for UC01's local-owner file profile**, using independent H2 and
+this source-built server/JRE closure. Governed multiuser storage remains
+unsupported. No Sail fork change was needed; the UC transcoder loopback patch is
+required. UC is not yet included in the installed platform.
+
+## Native qualification evidence
+
+[CI run 35524237918](https://github.com/supabricks/platform/actions/runs/35524237918)
+passed all **14 checks on each target** at platform `5eee755`. Committed summaries
+preserve the query results, denial outcomes, exact pins, archive hashes and full
+report digest: [Linux](../../e2e/native/catalog/evidence/linux-x86_64.json) and
+[macOS](../../e2e/native/catalog/evidence/macos-arm64.json). The CI artifacts contain
+the full reports and resolved JAR inventory.
+
+| Measurement | Linux x86_64 | macOS arm64 | Frozen UC01 ceiling |
+| --- | ---: | ---: | ---: |
+| First authenticated readiness | 4.442 s | 3.784 s | 20 s |
+| Readiness after restart / restore | 4.298 / 4.212 s | 3.144 / 2.983 s | 20 s |
+| Maximum idle UC RSS | 295.4 MiB | 301.5 MiB | 512 MiB |
+| Sampled peak UC RSS | 330.0 MiB | 319.7 MiB | Recorded, no separate ceiling |
+| Compressed server + JRE archive | 190.0 MiB | 186.1 MiB | 300 MiB |
+
+RSS covers the UC JVM, sampled every 100 ms; idle values are the maximum of ten
+samples after each readiness check. First start is a fresh process and metadata
+store, not a cold OS filesystem cache. Archive size measures incremental UC
+closure, not the complete Supabricks release. UC01/UC08 must remeasure the
+installed candidate against these ceilings.
+
+Both runtimes read real PG-exported Delta files with external outbound TCP denied
+(`ENETUNREACH` on Linux, `EPERM` on macOS). The PG cell is stopped before the
+catalog restart/restore checks. Builder safeguards passed on both targets;
+the fork's transcoder and Armeria unit suites passed all five tests.
 
 ## Observed capability contract
 
-The following results have passed locally on Linux; the final native evidence
-must also pass before UC00 is marked complete.
+The following behavior passed on both native targets. A passing negative check
+means the limitation was reproduced and asserted; it does not make the capability
+supported.
 
 | Capability | Observed behavior | Integration decision |
 | --- | --- | --- |
@@ -123,7 +166,9 @@ all PG types, schema evolution, malicious metadata or non-default Sail caches.
 UC09/IAM must qualify a real credential issuer, storage enforcement and execution
 isolation before mutually untrusted users share a deployment. UC's legacy static
 `sessionToken` setting is explicitly test-only and cannot supply that boundary.
-There is no Databricks-hosted dependency or fallback in this design.
+Other SeaweedFS IAM/STS modes were not evaluated; these conclusions apply to the
+existing cell's static-credential configuration. There is no Databricks-hosted
+dependency or fallback in this design.
 
 The stricter macOS network policy is scoped to this probe. The earlier shared
 release sandbox allowed the external TCP sentinel; existing macOS disconnected

@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
-Status: proposed, 2026-09-20. UC00 is the first implementation slice; none of
-UC00–UC09 is implemented by this document. Baseline: platform `8c81417` after
+Status: UC00 implemented, Linux/macOS qualified, and under review in platform #56, 2026-09-20.
+UC01–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -105,7 +105,7 @@ flowchart LR
 | `supabricks/platform` | Contracts, service supervision, ownership, publication, retention, destination bindings, credentials and release evidence. Extend `crates/local/src/{api.rs,client.rs,cli.rs,mcp.rs,daemon.rs}`, `store/`, `projects/`, `project_apply.rs`, `analytics.rs`, `recovery.rs`, `console/`, and `python/analytics/session.py`. Proposed new modules: `catalog/` and `store/catalog.rs`; allocate migration numbers from current main. |
 | `supabricks/console` | Data browser, publication and binding flows, provenance/freshness, notebook/SQL handoff and browser tests. Extend `src/{api.ts,main.tsx,projects.tsx,analytics.tsx,notebook.tsx}`; keep implementation in this repo and advance platform's gitlink after its PR merges. |
 | `supabricks/sail` | Narrow changes to `crates/sail-catalog-unity/` and provider configuration/credentials if the probe requires them. Platform consumes a reviewed commit through `components/sail-source.lock.json`. |
-| Proposed `supabricks/unitycatalog` | Maintained OSS UC fork/source mirror, build patches and upstream tracking. It does not exist in the org at plan-writing time. Establish it in UC00; keep product orchestration in platform. |
+| `supabricks/unitycatalog` | Created by UC00 as the controlled OSS UC fork. The reviewed v0.6.0 candidate and loopback patch are pinned in platform; source patch PR #1 remains under review. Product orchestration stays in platform. |
 | `supabricks/neon`, `supabricks/postgres` | Existing engine dependencies. No catalog-driven storage rewrite or PostgreSQL fork change is assumed. |
 | `supabricks/rfcs` | Optional decision mirror. Platform owns the executable contracts, plan and qualification evidence. |
 
@@ -136,6 +136,11 @@ be reviewed together. Do not promise dates before UC00 measures the dependency
 footprint and exposes provider/storage gaps.
 
 ## UC00 — Qualify the actual integration
+
+Implementation: [platform #56](https://github.com/supabricks/platform/pull/56).
+The [capability report](../architecture/uc00-catalog-probe.md) records the source
+pin, native evidence, local-owner boundary and UC01 handoff. Both native targets pass all 14 checks; the measured ceilings and local-owner
+GO decision are frozen in that report. The acceptance criteria below remain the specification; UC00 does not install UC in a release.
 
 Start with an isolated developer harness; do not change the user's installed
 runtime or ship UC in the release yet. Pin a candidate UC tag to its resolved
