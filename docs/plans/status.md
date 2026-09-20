@@ -68,5 +68,5 @@ and its existing regression gates remain separate from the native product.
 
 PK07 targets alpha.24/catalog 13. It adds one shared cross-target project artifact,
 clean installed destination lifecycle probes and R04 provenance/measurement gates.
-Implementation is in [platform #53](https://github.com/supabricks/platform/pull/53); exact archive qualification is pending. See the
+Implementation is in [platform #53](https://github.com/supabricks/platform/pull/53). The first alpha.24 run passed Linux portability and both console suites, but failed the Linux baseline harness mount and macOS predecessor seed/pressure cleanup. Corrections are awaiting a complete archive rerun. See the
 [installed portability walkthrough](../handbook/project-portability.md).

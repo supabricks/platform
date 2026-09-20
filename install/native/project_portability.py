@@ -83,7 +83,8 @@ class Cell:
             time.sleep(.2)
             operation = self.cli(project, 'project', 'status', operation['id'])
         (self.root / 'private-operation.json').write_text(json.dumps(operation))
-        assert operation['state'] == state, f'apply expected {state}; see private-operation.json'
+        if state is not None:
+            assert operation['state'] == state, f'apply expected {state}; see private-operation.json'
         return operation
 
     def apply(self, project, key, state='succeeded'):
@@ -105,6 +106,34 @@ class Cell:
                     failed = True
         if failed:
             raise RuntimeError('owned cell shutdown failed')
+
+
+def seed_predecessor(cell, project):
+    """Recover only alpha.22's known premature database failure, once.
+
+    The candidate must succeed without this accommodation. Retained resources
+    reconcile normally before a new explicit apply; no database is recreated.
+    """
+    operation = cell.apply(project, 'predecessor', state=None)
+    if operation['state'] == 'succeeded':
+        return False
+    assert operation['state'] == 'failed' and 'database preparation failed or was superseded' in (operation.get('error') or ''), 'unexpected predecessor apply failure'
+    assert set(operation['resources']) == {'database.main'}, 'predecessor failure occurred beyond database preparation'
+    assert cell.cli(project, 'project', 'installed')['active_revision'] is None
+    branches = cell.cli(project, 'database', 'list')['branches']
+    assert len(branches) == 1
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        branch = cell.cli(project, 'branch', 'get', 'main')
+        if branch['revision'] == branch['observed_revision']:
+            break
+        time.sleep(.2)
+    else:
+        raise TimeoutError('predecessor retained database did not reconcile')
+    cell.cli(project, 'branch', 'resume', 'main', '--wait')
+    cell.apply(project, 'predecessor-reconciled')
+    assert len(cell.cli(project, 'database', 'list')['branches']) == 1
+    return True
 
 
 def bundle(args, root, release, archive):
@@ -351,7 +380,8 @@ def consume(args, root, release, archive):
         cell.cli(predecessor, 'up')
         previous_binding = cell.cli(predecessor, 'project', 'create', '--key', 'predecessor')
         assert previous_binding['definition_id'] == binding['definition_id']
-        cell.apply(predecessor, 'predecessor'); totals(predecessor)
+        report['predecessor_database_recovery'] = seed_predecessor(cell, predecessor)
+        totals(predecessor)
         install('new', upgrade=True)
         assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256'] != previous_identity
         cell.cli(predecessor, 'up')

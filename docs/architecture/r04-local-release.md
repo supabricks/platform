@@ -113,7 +113,10 @@ candidate package to that deployment. This allows legitimate changes to native
 kernel contracts without pretending an old bundle is compatible or rewriting its
 provenance. Cold restore then rebuilds from the same candidate source artifact.
 Alpha.22 is an exact pinned upgrade input, not a claim that all its archive gates
-passed. Its retained baseline failures are corrected in PK07: retryable database
+passed. Only predecessor seeding allows one explicit reapply after its known
+premature database-preparation failure: the sole retained database must reconcile,
+no revision may have activated, and no later resource may have been prepared.
+The report records this recovery; candidate applies receive no such retry. Its retained baseline failures are corrected in PK07: retryable database
 startup stays pending, and the macOS bundle-export fixture uses canonical parents.
 
 Package/expanded bytes describe the transferred artifact including its metadata;

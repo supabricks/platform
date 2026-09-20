@@ -144,6 +144,7 @@ jobs:
           python install/native/test_environment_evidence.py
           python install/native/test_release_evidence.py
           python install/native/test_project_evidence.py
+          python install/native/test_project_portability.py
           python install/native/test_demo.py
           python install/native/test_cleanup.py
       - uses: actions/download-artifact@v4
@@ -201,19 +202,21 @@ jobs:
           mkdir -p build/reports
           chmod 777 build/releases build/reports
           docker run --rm --network=none --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --ulimit core=0:0 \
-            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
+            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
             supabricks-release-test \
             strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
-            python3 /harness/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
+            python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
         run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
       - name: Measure full snapshots offline without syscall tracing overhead
         run: |
           docker run --rm --network=none --memory=16g --cpus=4 --ulimit core=0:0 \
-            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
+            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
             supabricks-release-test \
-            python3 /harness/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
+            python3 /harness/install/native/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
             --network-evidence 'Ubuntu 24.04 unprivileged container; network=none; 16 GiB and 4 CPU limits; no syscall tracing during measurements'
       - uses: actions/upload-artifact@v4
         if: always()
