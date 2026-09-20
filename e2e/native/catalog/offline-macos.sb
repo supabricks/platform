@@ -1,0 +1,14 @@
+;; UC00 qualification only: each direction has its own address restriction.
+;; A generic network* allow for a local address can also authorize outbound
+;; sockets. The harness must prove an external TCP connection is denied.
+(version 1)
+(allow default)
+(deny network*)
+(allow network-bind (local ip "localhost:*"))
+(allow network-inbound (local ip "localhost:*"))
+(allow network-outbound (remote ip "localhost:*"))
+(allow network* (local unix-socket))
+(allow network* (remote unix-socket))
+(deny file-read* (subpath "/opt/homebrew"))
+(deny file-read* (subpath "/usr/local/Cellar"))
+(deny file-read* (subpath "/usr/local/opt"))

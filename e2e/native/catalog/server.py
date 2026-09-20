@@ -39,9 +39,17 @@ s3.bucketPath.0=s3://supabricks
 s3.region.0=us-east-1
 ''' + f"s3.accessKey.0={s3['s3_access']}\ns3.secretKey.0={s3['s3_secret']}\ns3.sessionToken.0=uc00-test-only-no-downscoping\n")
         config.chmod(0o600)
-        with socket.socket() as sock:
-            sock.bind(('127.0.0.1', 0))
-            self.port = sock.getsockname()[1]
+        # Upstream main starts the transcoder on N and the API on N+1.
+        # Check both ports, not just the public one.
+        for _ in range(100):
+            with socket.socket() as front, socket.socket() as backend:
+                front.bind(('127.0.0.1', 0))
+                self.port = front.getsockname()[1]
+                if self.port == 65535: continue
+                try: backend.bind(('127.0.0.1', self.port+1))
+                except OSError: continue
+                break
+        else: raise RuntimeError('no adjacent UC probe ports available')
         self.base = f'http://127.0.0.1:{self.port}'
         self.process = None
         self.peak = 0

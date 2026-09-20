@@ -8,7 +8,7 @@ config = json.loads(sys.stdin.readline())
 providers = ['{type="memory", name="spark_catalog", initial_database=["default"]}']
 for catalog in ('p1','p2'):
     providers.append('{type="unity", name='+json.dumps(catalog)+', uri='+json.dumps(config['uri'])+
-        ', default_catalog='+json.dumps(catalog)+', token='+json.dumps(config['token'])+'}')
+        ', database_cache_type="none", table_cache_type="none", view_cache_type="none", default_catalog='+json.dumps(catalog)+', token='+json.dumps(config['token'])+'}')
 os.environ['SAIL_CATALOG__LIST'] = '['+','.join(providers)+']'
 os.environ['SAIL_CATALOG__DEFAULT_CATALOG'] = 'spark_catalog'
 for key, value in config.get('storage', {}).items():

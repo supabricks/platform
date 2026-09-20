@@ -73,7 +73,7 @@ jobs:
       - name: Probe offline on macOS
         if: runner.os == 'macOS'
         run: |
-          sandbox-exec -f install/native/offline-macos.sb \
+          sandbox-exec -f e2e/native/catalog/offline-macos.sb \
             env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
             SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external networking and Homebrew denied" \
             "$(command -v python)" e2e/native/catalog/probe.py \

@@ -241,13 +241,20 @@ def main():
         status, creds = server.request('POST','temporary-table-credentials',dict(table_id=remote['table_id'],operation='READ'),token=t1)
         assert status == 200, status
         assert creds['aws_temp_credentials']['access_key_id'] == cell.config['s3_access']
-        check('seaweed_static_test_credentials_vended', scoped_sts=False)
+        assert server.request('POST','temporary-table-credentials',dict(table_id=remote['table_id'],operation='READ'),token=t2)[0] == 403
+        check('seaweed_static_test_credentials_vended', scoped_sts=False, unauthorized_vending_http=403)
         storage = dict(AWS_ENDPOINT=f"http://127.0.0.1:{cell.config['ports']['weed_s3']}", AWS_ALLOW_HTTP='true',
             AWS_REGION='us-east-1', AWS_VIRTUAL_HOSTED_STYLE_REQUEST='false')
         assert not worker(t1,storage).query('SELECT * FROM p1.current.s3orders')['ok']
-        storage.update(AWS_ACCESS_KEY_ID=cell.config['s3_access'],AWS_SECRET_ACCESS_KEY=cell.config['s3_secret'])
+        aws = creds['aws_temp_credentials']
+        storage.update(AWS_ACCESS_KEY_ID=aws['access_key_id'],AWS_SECRET_ACCESS_KEY=aws['secret_access_key'],
+            AWS_SESSION_TOKEN=aws['session_token'])
+        assert not worker(t1,storage).query('SELECT * FROM p1.current.s3orders')['ok']
+        storage.pop('AWS_SESSION_TOKEN')
         assert worker(t1,storage).rows('SELECT sum(amount) AS total FROM p1.current.s3orders') == [dict(total=10)]
-        check('sail_seaweed_read_needs_explicit_storage_credentials', native_vending=False, path_style=True)
+        assert worker(t2,storage).rows(f"SELECT sum(amount) AS total FROM delta.`s3://supabricks/{prefix}`") == [dict(total=10)]
+        check('sail_seaweed_read_needs_explicit_storage_credentials', native_vending=False, path_style=True,
+            test_session_token_accepted=False, static_keys_without_token=True, broad_credentials_bypass_catalog=True)
         server.stop()
         assert not owner.query('SELECT * FROM p1.current.orders')['ok']
         backup = root/'stopped-backup'; shutil.copytree(server.root/'etc',backup)

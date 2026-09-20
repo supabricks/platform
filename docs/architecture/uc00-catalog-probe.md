@@ -67,3 +67,37 @@ for investigation. Successful runs remove their state.
 
 Measured results, capability limitations and the UC01 go/no-go decision will be
 recorded here after both native reports pass.
+
+## Observed capability contract
+
+The following results have passed locally on Linux; the final native evidence
+must also pass before UC00 is marked complete.
+
+| Capability | Observed behavior | Integration decision |
+| --- | --- | --- |
+| Source-built native provider | Sail reads actual PG-exported Delta files through UC; list/describe work | Reuse the existing provider; no Spark JVM plugin |
+| SQL names | Three-part `provider.schema.table` works; four-part `provider.catalog.schema.table` is rejected by Sail | Configure one explicit provider entry per UC catalog, with a fixed `default_catalog` |
+| Metadata permissions | Two principals receive different catalog access; denied reads return 403; expired tokens return 401 | Keep authentication enabled; no anonymous fallback |
+| Revocation/expiry | New named reads in an existing uncached Sail session fail after revocation/expiry | Explicitly disable all provider caches for this profile; cached-provider policies are unqualified |
+| Object incarnation | Drop/recreate changes the UC table ID and removes old grants | Bind IDs and revisions, not just names |
+| Duplicate registrations | A second registration at the same location is denied, including across catalogs | Consumer bindings reference the canonical registration |
+| Table rename | Standard REST table PATCH returns 500 and leaves the original object unchanged | Do not expose native table rename; fix error mapping separately if needed |
+| Local credentials | File-backed temporary-credentials request returns 200 without storage credentials | File access remains OS-owner access |
+| Local data denial | A principal denied metadata can still read known paths as the same OS user | No multiuser storage-security claim |
+| Mutable publication names | A two-table query returns orders total 30 and payments total 10 after only orders advances | Never resolve each logical table independently against mutable names |
+| Frozen resolution | Views resolved once to epoch-1 paths and Delta version 0 return totals 10/10 after names change | UC04 needs a frozen-resolution adapter backed by complete publication manifests and leases |
+| SeaweedFS | Explicit endpoint, path-style requests and static access keys read the exported Delta table | Keep this as a separately tested local-owner path; do not assume AWS STS |
+| Native credential vending | UC can return its configured test credentials; Sail does not consume them automatically | A storage credential adapter is required before vending can be used |
+| SeaweedFS test token | Forwarding the synthetic UC test session token fails; removing it permits the static-key read | This is not STS compatibility or downscoping; governed S3 access is unsupported |
+| Storage bypass | A principal denied UC vending can read a known S3 location when given broad static keys | Do not hand these credentials to mutually untrusted users |
+| Outage and recovery | New named resolution fails during UC outage; IDs, grants and reads survive restart and stopped-state restore | Use H2 plus a coordinated stopped-state backup for the initial local profile |
+
+Frozen views are a **probe of the adapter design**, not a shipping security
+boundary. They deliberately avoid further catalog resolution and can outlive a
+catalog grant. UC04 must bound them by policy/credential lifetime and data leases;
+UC09 additionally needs process and storage isolation. A single UC registration
+must not imply that all tables in a publication have advanced atomically.
+
+The test users and project definitions are fixtures. This slice does not install
+project-to-UC ownership APIs, publication journals, dataset bindings, console
+browsing, external IdP login or product RBAC. Those remain UC01–UC09 work.
