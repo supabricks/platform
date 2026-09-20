@@ -170,9 +170,7 @@ impl Manager {
     fn start(&mut self, store: &mut Store) -> Result<()> {
         stop_owned(store)?;
         let provider = &self.config.as_ref().unwrap().provider;
-        if self.runtime.is_none() {
-            self.runtime = Some(runtime::resolve(provider)?);
-        }
+        self.runtime = Some(runtime::resolve(provider)?);
         let runtime = self.runtime.as_ref().unwrap();
         let root = store.root().join("catalog");
         if root.join("rotate-key.json").try_exists()?

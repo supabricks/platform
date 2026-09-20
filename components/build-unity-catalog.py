@@ -47,6 +47,26 @@ def java_home(cache, spec, kind):
         unpacked.mkdir()
         with tarfile.open(archive) as tar:
             tar.extractall(unpacked, filter='data')
+    # The archive checksum alone does not authenticate an extracted cache that
+    # may have been edited or left incomplete by an interrupted earlier build.
+    with tarfile.open(archive) as tar:
+        expected=set()
+        for member in tar:
+            path=unpacked/member.name
+            if member.isdir():
+                if path.is_symlink() or not path.is_dir(): raise ValueError('Java cache directory mismatch')
+                continue
+            expected.add(member.name.rstrip('/'))
+            if member.issym():
+                if not path.is_symlink() or os.readlink(path)!=member.linkname: raise ValueError('Java cache symlink mismatch')
+            elif member.isfile() or member.islnk():
+                with tar.extractfile(member) as data:
+                    checksum=hashlib.file_digest(data,'sha256').hexdigest()
+                if path.is_symlink() or not path.is_file() or digest(path)!=checksum:
+                    raise ValueError('Java cache checksum mismatch')
+            else: raise ValueError('unsupported Java archive member')
+        actual={str(p.relative_to(unpacked)) for p in unpacked.rglob('*') if p.is_file() or p.is_symlink()}
+        if actual!=expected: raise ValueError('Java cache inventory mismatch')
     homes = [p.parent.parent for p in unpacked.rglob('bin/java')]
     if len(homes) != 1:
         raise ValueError('ambiguous Java runtime')

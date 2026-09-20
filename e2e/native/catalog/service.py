@@ -155,18 +155,25 @@ def main():
         assert api(rotated['endpoint'],token(),'catalogs/uc01_recovery')[1]['id']==catalog_id
         assert rotated['metastore_id']==first['metastore_id'] and rotated['provider_id']==first['provider_id']
         check('key_rotation_revokes_old_token_preserves_metadata_and_identity')
-        previous_port=int(rotated['endpoint'].rsplit(':',1)[1])
-        victim=psutil.Process(owned()['pid']);os.kill(victim.pid,signal.SIGKILL)
-        wait(lambda:not victim.is_running() or victim.status()==psutil.STATUS_ZOMBIE)
+        command('restart')
+        pending=wait(lambda:(s if (s:=status())['state']=='starting' and s['endpoint'] else None))
+        # Race the real JVM launch: occupy its selected backend port after the
+        # reservation is released but before Java starts listening. This avoids
+        # confusing a closed connection's TIME_WAIT with a live port collision.
+        previous_port=int(pending['endpoint'].rsplit(':',1)[1])+1
         blocker=socket.socket();blocker.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         blocker.bind(('127.0.0.1',previous_port));blocker.listen()
         try:
             assert cell.sql(branch,'SELECT 42')=='42'
-            recovered=wait(lambda:(s if (s:=status())['ready'] and s['endpoint']!=rotated['endpoint'] else None))
+            recovered=wait(lambda:(s if (s:=status())['ready'] and s['endpoint']!=pending['endpoint'] else None))
             assert int(recovered['endpoint'].rsplit(':',1)[1])!=previous_port
             assert blocker.getsockname()[1]==previous_port
         finally:blocker.close()
-        check('catalog_crash_and_port_collision_leave_postgres_and_unrelated_listener_usable')
+        check('port_collision_retries_without_adopting_or_stopping_unrelated_listener')
+        victim=owned()['pid'];os.kill(victim,signal.SIGKILL)
+        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:(s if (s:=status())['ready'] and owned()['pid']!=victim else None))
+        check('catalog_crash_leaves_postgres_usable')
         command('restart');ready()
         for _ in range(3):
             current=owned()['pid'];os.kill(current,signal.SIGKILL)
