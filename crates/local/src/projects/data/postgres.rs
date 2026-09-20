@@ -442,9 +442,10 @@ async fn import_tables(
         .await
         .map_err(db)?;
     version(&client).await?;
-    if locale(&client).await? != archive.content.locale {
+    let destination_locale = locale(&client).await?;
+    if archive.content.requires_matching_locale() && destination_locale != archive.content.locale {
         return Err(invalid(
-            "source and destination database locale/version differ",
+            "text/varchar columns require matching source and destination database locale/version",
         ));
     }
     // Serialize PK08 imports per destination database. PostgreSQL owns both the

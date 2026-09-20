@@ -52,6 +52,28 @@ fn fixture() -> Content {
 }
 
 #[test]
+fn locale_matching_is_required_exactly_for_collatable_column_types() {
+    let mut content = fixture();
+    assert!(content.requires_matching_locale());
+    content.tables[0].columns[1].data_type = Type::Varchar { length: Some(32) };
+    assert!(content.requires_matching_locale());
+    for ty in [
+        Type::Bytea,
+        Type::Json,
+        Type::Jsonb,
+        Type::Integer,
+        Type::Numeric {
+            precision: None,
+            scale: None,
+        },
+        Type::TimestampTz,
+    ] {
+        content.tables[0].columns[1].data_type = ty;
+        assert!(!content.requires_matching_locale());
+    }
+}
+
+#[test]
 fn deterministic_typed_archive_preserves_copy_bytes_without_reporting_values() {
     let source = fixture();
     let bytes = encode(source.clone()).unwrap();

@@ -72,7 +72,7 @@ and [selection v1](../../schemas/project-data-selection-v1.schema.json).
 | Views, foreign/unlogged/partitioned/inherited tables, RLS, triggers, rules | Rejected |
 | Extension-owned tables, extension/custom/domain/array types, custom access methods | Rejected |
 | Explicit column collations, custom index semantics/storage options | Rejected |
-| Default database locale | UTF-8 only; builtin PG17 or libc C/POSIX; source/destination locale and actual version must match |
+| Default database locale | UTF-8 only; builtin PG17 or libc C/POSIX; text/varchar require matching source/destination locale and actual version; tables without collatable types can transfer across these locales |
 | Delta/Parquet epochs and versions | Not accepted as inputs; no Delta files, snapshot IDs or storage URIs are copied |
 | Roles, grants, functions, ownership statements, physical cell state | Not included |
 
@@ -90,7 +90,7 @@ Delta GC in this adapter. Any later epoch adapter must acquire and renew platfor
 leases before reading its inputs.
 
 Import verifies the whole bounded archive before connecting. It validates PG
-major and locale, serializes PK08 imports with a transaction advisory lock,
+major and locale (requiring equality when text/varchar columns are present), serializes PK08 imports with a transaction advisory lock,
 refuses existing table names, creates schemas/tables, performs COPY and checks
 row counts. All DDL/data and `_supabricks.logical_import_receipts_v1` commit in
 one transaction. No source database OID, branch UUID or credential is adopted.
@@ -124,3 +124,9 @@ both exact installed native consumers verify and import those same bytes, prove
 binary/decimal/NULL fidelity and retry behavior, and bind the result to archive
 and source provenance. All existing release gates remain mandatory. The installed
 walkthrough is `PROJECT-DATA.md`.
+
+Native database defaults differ: Linux uses builtin `C.UTF-8` and macOS uses
+builtin `C`. Numeric/binary-only table sets do not depend on collation and transfer
+between them. Text/varchar sets still refuse a mismatch; preserving or selecting
+explicit portable column collations is a future adapter extension. The source
+locale remains in the archive provenance even when it has no effect on the types.

@@ -127,6 +127,22 @@ lifecycle="retain"
     other=cell.root/'locale.sbdata';reseal(locale,other)
     cell.cli('project','data','import',other,'--branch','retry','--key','locale',code=2)
     check('changed_archive_key_and_locale_mismatch_refused')
+    # Native defaults differ: Linux builtin C.UTF-8, macOS builtin C. Only
+    # text/varchar require a matching collation; bytea/numeric carry none.
+    with connect('source') as source:
+        source.execute('CREATE TABLE public.scalar_portability(id integer PRIMARY KEY, amount numeric(18,2), payload bytea)')
+        source.execute("INSERT INTO public.scalar_portability VALUES(1,12.34,decode('00ff','hex'))")
+    scalar=cell.root/'scalar.sbdata';export(scalar,'scalar_portability')
+    value=json.loads(scalar.read_text())
+    alternate='C' if value['content']['locale']['locale']=='C.UTF-8' else 'C.UTF-8'
+    value['content']['locale'].update(provider='b',locale=alternate,collate=alternate,ctype=alternate,version='1')
+    reseal(value,scalar)
+    cell.cli('project','data','import',scalar,'--branch','destination','--key','different-scalar-locale')
+    assert cell.cli('sql','--branch','destination','--sql',"SELECT id,amount,encode(payload,'hex') FROM public.scalar_portability")['rows']==[['1','12.34','00ff']]
+    text_locale=json.loads(package.read_text());text_locale['content']['locale']=value['content']['locale']
+    text_path=cell.root/'text-locale.sbdata';reseal(text_locale,text_path)
+    cell.cli('project','data','import',text_path,'--branch','destination','--key','different-text-locale',code=2)
+    check('noncollatable_tables_transfer_across_builtin_locales_while_text_refuses_mismatch')
     other_project=cell.root/'second-project';shutil.copytree(cell.worktree,other_project)
     cell.cli('project','data','import',package,'--branch','destination','--key','other',project=other_project,code=4)
     cell.cli('project','create','--key','other-deployment',project=other_project)
