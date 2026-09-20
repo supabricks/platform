@@ -35,14 +35,15 @@ python e2e/native/catalog/probe.py --release /path/to/qualified-alpha24 \
 
 The source checkout must be clean at the lock's commit. The output must be new.
 The build produces a server-only archive, its build/JAR inventory and an archive
-hash sidecar. Build tools download dependencies; runtime qualification runs in
-an OS sandbox that permits only loopback networking. CI performs the build and
+hash sidecar. Build tools download dependencies; runtime qualification runs with
+external outbound networking denied. Linux uses a loopback-only network namespace;
+macOS uses Seatbelt outbound restrictions and verifies service listeners on loopback. CI performs the build and
 probe independently on Linux x86_64 and macOS arm64.
 
 The harness creates its own private cell, projects, PG tables, Delta epochs,
 UC state, principals and Sail processes. It never connects to an existing
 Supabricks daemon. Raw diagnostics and credentials stay in the private temporary
-root; only allowlisted evidence is uploaded. Failed roots are retained locally
+root; only structured evidence and bounded, redacted failure diagnostics are uploaded. Failed roots are retained locally
 for investigation. Successful runs remove their state.
 
 ## Decisions awaiting qualification

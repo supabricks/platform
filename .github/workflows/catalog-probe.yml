@@ -78,7 +78,7 @@ jobs:
         run: |
           sandbox-exec -f e2e/native/catalog/offline-macos.sb \
             env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external networking and Homebrew denied" \
+            SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external outbound connections and Homebrew denied; service listeners checked on loopback" \
             "$(command -v python)" e2e/native/catalog/probe.py \
             --release build/baseline/supabricks \
             --uc-runtime build/uc-runtime --report build/reports/probe.json
