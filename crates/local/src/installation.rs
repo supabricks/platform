@@ -102,6 +102,29 @@ impl Installation {
                 "analytical preview manifest is missing its private worker",
             ));
         }
+        if let Some(catalog) = manifest.provenance.get("unity_catalog") {
+            if catalog["protocol_version"] != 1
+                || catalog["profile"] != "local-owner-files"
+                || catalog["build_sha256"].as_str()
+                    != manifest
+                        .files
+                        .get("share/unity-catalog/build.json")
+                        .map(|f| f.sha256.as_str())
+                || [
+                    "share/unity-catalog/java/bin/java",
+                    "share/unity-catalog/classpath.json",
+                    "share/unity-catalog/dependencies.json",
+                    "provenance/unity-catalog/unity-catalog-source.lock.json",
+                    "provenance/unity-catalog/unity-catalog-maven.lock.json",
+                ]
+                .iter()
+                .any(|p| !manifest.files.contains_key(*p))
+            {
+                return Err(invalid(
+                    "catalog manifest is missing its reviewed runtime inventory",
+                ));
+            }
+        }
         if let Some(notebooks) = manifest.provenance.get("notebooks") {
             if notebooks["protocol_version"] != crate::notebooks::contract::PROTOCOL
                 || [

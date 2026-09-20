@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
-Status: UC00 implemented, Linux/macOS qualified, and under review in platform #56, 2026-09-20.
-UC01–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+Status: UC00 merged in platform #56; UC01 implemented with qualification in progress, 2026-09-20.
+UC02–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -105,7 +105,7 @@ flowchart LR
 | `supabricks/platform` | Contracts, service supervision, ownership, publication, retention, destination bindings, credentials and release evidence. Extend `crates/local/src/{api.rs,client.rs,cli.rs,mcp.rs,daemon.rs}`, `store/`, `projects/`, `project_apply.rs`, `analytics.rs`, `recovery.rs`, `console/`, and `python/analytics/session.py`. Proposed new modules: `catalog/` and `store/catalog.rs`; allocate migration numbers from current main. |
 | `supabricks/console` | Data browser, publication and binding flows, provenance/freshness, notebook/SQL handoff and browser tests. Extend `src/{api.ts,main.tsx,projects.tsx,analytics.tsx,notebook.tsx}`; keep implementation in this repo and advance platform's gitlink after its PR merges. |
 | `supabricks/sail` | Narrow changes to `crates/sail-catalog-unity/` and provider configuration/credentials if the probe requires them. Platform consumes a reviewed commit through `components/sail-source.lock.json`. |
-| `supabricks/unitycatalog` | Created by UC00 as the controlled OSS UC fork. The reviewed v0.6.0 candidate and loopback patch are pinned in platform; source patch PR #1 remains under review. Product orchestration stays in platform. |
+| `supabricks/unitycatalog` | Created by UC00 as the controlled OSS UC fork. The reviewed v0.6.0 candidate and loopback patch are pinned in platform; loopback patch #1 is merged; retired-key authentication fix #2 is under review. Product orchestration stays in platform. |
 | `supabricks/neon`, `supabricks/postgres` | Existing engine dependencies. No catalog-driven storage rewrite or PostgreSQL fork change is assumed. |
 | `supabricks/rfcs` | Optional decision mirror. Platform owns the executable contracts, plan and qualification evidence. |
 
@@ -181,6 +181,10 @@ Acceptance:
   is not completion. A failed capability does not trigger a proprietary fallback.
 
 ## UC01 — Own the service and its deployed source
+
+Implementation is in progress on `feat/uc01-catalog-service`. See the
+[service handbook](../handbook/catalog-service.md) for managed/external modes,
+source ownership, lifecycle and qualification boundaries.
 
 Build UC from the controlled source pin in CI. Bundle the built server, its
 runtime dependency closure and a checksum-pinned JRE for both targets. Preserve

@@ -46,6 +46,7 @@ impl Release {
                     || *name == "helpers/weed"
                     || *name == "python/analytics/uv.lock"
                     || *name == "provenance/analytical-runtime.lock.json"
+                    || name.starts_with("share/unity-catalog/")
             })
             .map(|(name, f)| (name, (&f.sha256, f.executable)))
             .collect();

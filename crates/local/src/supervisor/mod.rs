@@ -107,6 +107,13 @@ pub fn child(path: &Path, stdin_gate: bool) -> Result<()> {
             return Err(conflict("launch was not authorized"));
         }
     }
+    if launch.role == "unity-catalog" {
+        // UC generates its signing keys, bootstrap token and H2 files itself.
+        // Set this in the gated child only, never in the multithreaded daemon.
+        unsafe {
+            libc::umask(0o077);
+        }
+    }
     let mut cmd = Command::new(&launch.argv[0]);
     cmd.args(&launch.argv[1..])
         .env_clear()

@@ -1,8 +1,12 @@
 # UC00: OSS Unity Catalog feasibility probe
 
-Status: UC00 implemented and qualified on both native targets, under review in
+Status: UC00 implemented and qualified on both native targets, merged in
 [platform #56](https://github.com/supabricks/platform/pull/56). This is a developer probe,
 not an installed catalog feature. See the [UC00–UC09 plan](../plans/unity-catalog-implementation.md).
+
+This report records the UC00 decision at its qualified commit. The
+[UC01 service handbook](../handbook/catalog-service.md) tracks the subsequent
+installed-service implementation and source pin changes.
 
 ## Scope and inputs
 

@@ -129,8 +129,13 @@ fn wait_ready(root: &std::path::Path, mut child: Option<&mut std::process::Child
     let deadline = Instant::now() + Duration::from_secs(60);
     let mut progress = Instant::now();
     loop {
-        if request(root, Request::Status).is_ok_and(|s| s["runtime"]["ready"] == true) {
-            println!("{}", serde_json::json!({"status":"ready","data_dir":root}));
+        if let Ok(status) = request(root, Request::Status)
+            && status["runtime"]["ready"] == true
+        {
+            println!(
+                "{}",
+                serde_json::json!({"status":"ready","data_dir":root,"catalog":status["catalog"]})
+            );
             return Ok(());
         }
         if let Some(child) = &mut child
@@ -156,6 +161,7 @@ pub(crate) fn shutdown(root: &std::path::Path) -> Result<()> {
     if request(root, Request::Shutdown).is_err() {
         if root.exists() {
             let mut store = acquire_after_shutdown(root, Instant::now() + Duration::from_secs(60))?;
+            crate::catalog::stop_owned(&mut store)?;
             crate::notebooks::Notebooks::recover(&mut store)?;
             crate::console::Consoles::recover(&mut store)?;
             crate::engine::Cell::recover(&mut store)?;
@@ -185,6 +191,7 @@ pub(crate) fn shutdown(root: &std::path::Path) -> Result<()> {
     // Socket disappearance can also mean a crashed daemon. Reacquire the
     // ownership lock and account for every recorded writer before success.
     let mut store = acquire_after_shutdown(root, deadline)?;
+    crate::catalog::stop_owned(&mut store)?;
     crate::notebooks::Notebooks::recover(&mut store)?;
     crate::console::Consoles::recover(&mut store)?;
     crate::engine::Cell::recover(&mut store)?;

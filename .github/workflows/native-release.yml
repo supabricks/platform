@@ -35,6 +35,48 @@ permissions:
   actions: read
 
 jobs:
+  source-catalog:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read reviewed UC source
+        id: uc
+        run: |
+          python - <<'PY'
+          import json,os
+          pin=json.load(open('components/unity-catalog-source.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:out.write('commit='+pin['commit']+'\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: supabricks/unitycatalog
+          ref: ${{ steps.uc.outputs.commit }}
+          path: build/uc-source
+      - name: Build locked server, JRE and dependency/license inventory
+        run: |
+          python components/test_unity_catalog.py
+          python install/native/test_unity_catalog.py
+          python components/build-unity-catalog.py --source build/uc-source --tools build/uc-tools --output build/uc-runtime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-catalog-${{ matrix.target }}
+          path: |
+            build/uc-runtime.tar.gz
+            build/uc-runtime.artifact.json
+          if-no-files-found: error
+
   source-sail:
     strategy:
       fail-fast: false
@@ -87,7 +129,7 @@ jobs:
           if-no-files-found: error
 
   assemble:
-    needs: source-sail
+    needs: [source-sail, source-catalog]
     strategy:
       fail-fast: false
       matrix:
@@ -141,6 +183,7 @@ jobs:
           python install/native/test_installer.py
           python install/native/test_analytics.py
           python install/native/test_sail.py
+          python install/native/test_unity_catalog.py
           python install/native/test_environment_evidence.py
           python install/native/test_release_evidence.py
           python install/native/test_project_evidence.py
@@ -151,6 +194,26 @@ jobs:
         with:
           name: source-sail-${{ matrix.target }}
           path: build/sail-artifacts/${{ matrix.target }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-catalog-${{ matrix.target }}
+          path: build/catalog-input
+      - name: Unpack the source-built catalog closure
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,tarfile
+          from pathlib import Path
+          source=Path('build/catalog-input')
+          expected=json.loads((source/'uc-runtime.artifact.json').read_text())
+          archive=source/'uc-runtime.tar.gz'
+          assert expected['target']==os.environ['TARGET']
+          with archive.open('rb') as f:assert hashlib.file_digest(f,'sha256').hexdigest()==expected['artifact_sha256']
+          with tarfile.open(archive) as tar:tar.extractall(source,filter='data')
+          destination=Path('build/uc-artifacts')/os.environ['TARGET'];destination.parent.mkdir(parents=True)
+          (source/'uc00-runtime').rename(destination)
+          PY
       - name: Assemble exact native release
         run: |
           uv export --project python/notebooks --locked --format requirements-txt --no-emit-project --output-file python/notebooks/requirements.lock > /dev/null
@@ -158,7 +221,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.26-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.27-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
