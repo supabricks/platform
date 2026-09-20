@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is implemented with qualification in progress; UC03–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is implemented with qualification in progress; UC04–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -210,7 +210,7 @@ Missing/dirty source artifacts fail assembly. Document resource measurements.
 
 ## UC02 — Project ownership, identities and metadata contracts
 
-Implementation is on `feat/uc02-catalog-metadata`; see the [UC02 contract](../architecture/uc02-catalog-metadata.md) and [walkthrough](../handbook/catalog-metadata.md). Control schema 14 adds ownership records through the existing backed-up upgrade path. Native and release qualification remain in progress.
+Implementation merged in [platform #58](https://github.com/supabricks/platform/pull/58); see the [UC02 contract](../architecture/uc02-catalog-metadata.md) and [walkthrough](../handbook/catalog-metadata.md). Control schema 14 adds ownership records through the existing backed-up upgrade path. Both native targets passed 14 compatibility and 22 installed-service checks; full archive qualification remains incomplete.
 
 Implement the provider adapter and versioned API/MCP contracts: capabilities,
 list/describe, resolve object/version, health and typed errors. Bound pagination,
@@ -230,6 +230,8 @@ stale bindings; unavailable catalog and empty catalog are distinguishable;
 existing projects need no destructive automatic migration.
 
 ## UC03 — Publish complete snapshots durably
+
+Implementation is on `feat/uc03-durable-publication`; see the [journal contract](../architecture/uc03-durable-publication.md) and [workflow](../handbook/catalog-publication.md). Control schema 15 and [UC fork #3](https://github.com/supabricks/unitycatalog/pull/3) add durable publication/retention and identity-conditioned provider writes. Qualification is in progress.
 
 Add explicit preview/publish/status/unpublish operations with a request key and
 expected source/binding revision. Reuse frozen exports and immutable epoch

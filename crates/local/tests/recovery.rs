@@ -376,13 +376,20 @@ fn catalog_twelve_migration_resumes_every_durable_boundary() {
 fn catalog_thirteen_migration_is_additive_and_resumes_durable_boundaries() {
     catalog_migration(13);
 }
+#[test]
+fn catalog_fourteen_migration_preserves_publication_predecessor() {
+    catalog_migration(14);
+}
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::new();
     // Construct the exact pre-I00 catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE catalog_assets; DROP TABLE catalog_namespaces;")
-        .unwrap();
+    db.execute_batch("DROP TABLE catalog_publication_refs; DROP TABLE catalog_retention; DROP TABLE catalog_heads; DROP TABLE catalog_publications;").unwrap();
+    if source_schema < 14 {
+        db.execute_batch("DROP TABLE catalog_assets; DROP TABLE catalog_namespaces;")
+            .unwrap();
+    }
     if source_schema < 12 {
         db.execute_batch("DROP TABLE deployment_active; DROP TABLE deployment_revisions; DROP TABLE deployment_resources; DROP TABLE project_applies;").unwrap();
     }
@@ -451,7 +458,7 @@ fn catalog_migration(source_schema: u32) {
         );
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=14",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=15",
                 [],
                 |r| r.get::<_, String>(0)
             )

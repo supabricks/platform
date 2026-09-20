@@ -95,6 +95,26 @@ impl Store {
             if let Some(id) = previous {
                 asset.id = parse(&id)?;
             }
+            if let Some(epoch) = asset.epoch_id {
+                let publication:Option<String>=tx.query_row("SELECT record_json FROM catalog_publications WHERE deployment_id=?1 AND epoch_id=?2 AND state='published'",params![asset.deployment_id.to_string(),epoch.to_string()],|r|r.get(0)).optional()?;
+                if let Some(record) = publication {
+                    let p: crate::catalog::publication::Publication =
+                        serde_json::from_str(&record)?;
+                    if let Some(table) = p
+                        .tables
+                        .iter()
+                        .find(|t| t.source_schema == asset.schema && t.source_name == asset.name)
+                    {
+                        asset.uc_object_id = Some(table.id.to_string());
+                        use sha2::{Digest, Sha256};
+                        asset.version =
+                            hex::encode(Sha256::digest(serde_json::to_vec(&serde_json::json!([
+                                asset.version,
+                                asset.uc_object_id
+                            ]))?));
+                    }
+                }
+            }
             asset.state = "active".into();
             tx.execute("INSERT INTO catalog_assets VALUES (?1,?2,?3,?4,?5,?6,?7,?8,'active',?9) ON CONFLICT(id) DO UPDATE SET record_json=excluded.record_json,state='active'",params![asset.id.to_string(),asset.deployment_id.to_string(),asset.project_id.to_string(),asset.branch_id.to_string(),asset.provider_id,asset.resource_key,asset.incarnation,asset.kind,serde_json::to_string(asset)?])?;
         }

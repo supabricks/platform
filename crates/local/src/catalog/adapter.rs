@@ -12,6 +12,15 @@ pub(crate) struct Adapter {
 }
 impl Adapter {
     fn request(&self, method: &str, path: &str, body: Option<Value>) -> RemoteResult<Value> {
+        self.owned_request(method, path, body, None)
+    }
+    pub(crate) fn owned_request(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<Value>,
+        id: Option<&str>,
+    ) -> RemoteResult<Value> {
         let token = super::config::token(&self.probe.token_file)
             .map_err(|_| Fault::new(Code::Unavailable, "catalog credentials unavailable"))?;
         let mut tls = ureq::tls::TlsConfig::builder();
@@ -33,11 +42,20 @@ impl Adapter {
             self.probe.endpoint.trim_end_matches('/')
         );
         let response = if method == "POST" {
-            agent
-                .post(url)
+            let mut request = agent.post(url.clone());
+            if let Some(id) = id {
+                request = request.header("X-Supabricks-Table-Id", id);
+            }
+            request
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {token}"))
                 .send_json(body.unwrap())
+        } else if method == "DELETE" {
+            agent
+                .delete(url)
+                .header("Authorization", format!("Bearer {token}"))
+                .header("X-Supabricks-Table-Id", id.unwrap())
+                .call()
         } else {
             agent
                 .get(url)
@@ -76,6 +94,9 @@ impl Adapter {
                 },
                 "catalog rejected the request",
             ));
+        }
+        if method == "DELETE" {
+            return Ok(serde_json::json!({}));
         }
         let bytes = response
             .body_mut()

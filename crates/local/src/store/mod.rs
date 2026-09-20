@@ -1,6 +1,7 @@
 mod analytics;
 mod branches;
 mod catalog;
+mod catalog_publication;
 mod connections;
 mod deployments;
 mod environments;

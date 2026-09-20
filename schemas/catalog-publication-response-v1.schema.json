@@ -1,0 +1,590 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/catalog-publication-response-v1.schema.json",
+  "type": "object",
+  "$defs": {
+    "publication": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "project_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "branch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "epoch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "key": {
+          "type": "string"
+        },
+        "request_hash": {
+          "type": "string"
+        },
+        "preview_hash": {
+          "type": "string"
+        },
+        "manifest_hash": {
+          "type": "string"
+        },
+        "source_revision": {
+          "type": "integer"
+        },
+        "expected_binding_revision": {
+          "type": "integer"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "namespace": {
+          "type": "object",
+          "properties": {
+            "deployment_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "project_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "provider_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "metastore_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "catalog": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            },
+            "catalog_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "schema_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "state": {
+              "enum": [
+                "new",
+                "creating_catalog",
+                "catalog_ready",
+                "creating_schema",
+                "ready",
+                "indeterminate",
+                "stale",
+                "collision"
+              ]
+            }
+          },
+          "required": [
+            "deployment_id",
+            "project_id",
+            "provider_id",
+            "metastore_id",
+            "catalog",
+            "schema",
+            "catalog_id",
+            "schema_id",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        "tables": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "source_schema": {
+                "type": "string"
+              },
+              "source_name": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "catalog_name": {
+                    "type": "string"
+                  },
+                  "schema_name": {
+                    "type": "string"
+                  },
+                  "table_type": {
+                    "const": "EXTERNAL"
+                  },
+                  "data_source_format": {
+                    "const": "DELTA"
+                  },
+                  "storage_location": {
+                    "type": "string",
+                    "pattern": "^file:///"
+                  },
+                  "columns": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 128,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type_name": {
+                          "type": "string"
+                        },
+                        "type_text": {
+                          "type": "string"
+                        },
+                        "type_json": {
+                          "type": "string"
+                        },
+                        "nullable": {
+                          "type": "boolean"
+                        },
+                        "position": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "type_name",
+                        "type_text",
+                        "type_json",
+                        "nullable",
+                        "position"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "catalog_name",
+                  "schema_name",
+                  "table_type",
+                  "data_source_format",
+                  "storage_location",
+                  "columns"
+                ],
+                "additionalProperties": false
+              },
+              "state": {
+                "enum": [
+                  "planned",
+                  "creating",
+                  "registered",
+                  "verified",
+                  "deleted"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "source_schema",
+              "source_name",
+              "body",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "state": {
+          "enum": [
+            "registering",
+            "published",
+            "retiring",
+            "retired"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unpublish_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unpublish_binding_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot_at_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "deployment_id",
+        "project_id",
+        "branch_id",
+        "epoch_id",
+        "key",
+        "request_hash",
+        "preview_hash",
+        "manifest_hash",
+        "source_revision",
+        "expected_binding_revision",
+        "revision",
+        "namespace",
+        "tables",
+        "state",
+        "error",
+        "unpublish_key",
+        "unpublish_binding_revision",
+        "snapshot_at_ms"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "publication": {
+          "$ref": "#/$defs/publication"
+        }
+      },
+      "required": [
+        "api_version",
+        "publication"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "binding_revision": {
+          "type": "integer"
+        },
+        "publication": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/publication"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "api_version",
+        "binding_revision",
+        "publication"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "project_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "branch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "epoch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_revision": {
+          "type": "integer"
+        },
+        "binding_revision": {
+          "type": "integer"
+        },
+        "namespace": {
+          "type": "object",
+          "properties": {
+            "deployment_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "project_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "provider_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "metastore_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "catalog": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            },
+            "catalog_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "schema_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            },
+            "state": {
+              "enum": [
+                "new",
+                "creating_catalog",
+                "catalog_ready",
+                "creating_schema",
+                "ready",
+                "indeterminate",
+                "stale",
+                "collision"
+              ]
+            }
+          },
+          "required": [
+            "deployment_id",
+            "project_id",
+            "provider_id",
+            "metastore_id",
+            "catalog",
+            "schema",
+            "catalog_id",
+            "schema_id",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        "tables": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_schema": {
+                "type": "string"
+              },
+              "source_name": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "catalog_name": {
+                    "type": "string"
+                  },
+                  "schema_name": {
+                    "type": "string"
+                  },
+                  "table_type": {
+                    "const": "EXTERNAL"
+                  },
+                  "data_source_format": {
+                    "const": "DELTA"
+                  },
+                  "storage_location": {
+                    "type": "string",
+                    "pattern": "^file:///"
+                  },
+                  "columns": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 128,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type_name": {
+                          "type": "string"
+                        },
+                        "type_text": {
+                          "type": "string"
+                        },
+                        "type_json": {
+                          "type": "string"
+                        },
+                        "nullable": {
+                          "type": "boolean"
+                        },
+                        "position": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "type_name",
+                        "type_text",
+                        "type_json",
+                        "nullable",
+                        "position"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "catalog_name",
+                  "schema_name",
+                  "table_type",
+                  "data_source_format",
+                  "storage_location",
+                  "columns"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "source_schema",
+              "source_name",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "snapshot_at_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "manifest_hash": {
+          "type": "string"
+        },
+        "preview_hash": {
+          "type": "string"
+        },
+        "retention": {
+          "type": "object",
+          "properties": {
+            "durable": {
+              "const": true
+            },
+            "until": {
+              "type": "string"
+            },
+            "copies": {
+              "const": false
+            }
+          },
+          "required": [
+            "durable",
+            "until",
+            "copies"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "api_version",
+        "deployment_id",
+        "project_id",
+        "branch_id",
+        "epoch_id",
+        "source_revision",
+        "binding_revision",
+        "namespace",
+        "tables",
+        "snapshot_at_ms",
+        "manifest_hash",
+        "preview_hash",
+        "retention"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

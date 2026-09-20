@@ -70,6 +70,9 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics gc --branch NAME [--keep 2]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
+  catalog publication preview EPOCH | publish EPOCH --key KEY --preview HASH --source-revision N --binding-revision N
+  catalog publication status ID | resume ID | resolve [--branch NAME]
+  catalog publication unpublish ID --key KEY --binding-revision N
   catalog metadata capabilities | health | namespace | ensure-namespace
   catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
   catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
@@ -1161,6 +1164,60 @@ pub fn run() -> Result<u8> {
                 println!("{result}");
             }
             return Ok(0);
+        }
+        "catalog" if a.pos.get(1).is_some_and(|s| s == "publication") => {
+            use crate::catalog::publication::Command as P;
+            let verb = a.required(2)?;
+            let command = if verb == "resolve" {
+                let branch = a.take("--branch");
+                a.finish(3)?;
+                P::Resolve { branch }
+            } else {
+                let id = a.required(3)?;
+                let required = |a: &mut Args, flag: &str| {
+                    a.take(flag)
+                        .ok_or_else(|| invalid(format!("supply {flag}")))
+                };
+                let command = match verb.as_str() {
+                    "preview" => P::Preview {
+                        epoch_id: id.parse().map_err(|_| invalid("invalid epoch UUID"))?,
+                    },
+                    "publish" => P::Publish {
+                        epoch_id: id.parse().map_err(|_| invalid("invalid epoch UUID"))?,
+                        key: required(&mut a, "--key")?,
+                        expected_preview: required(&mut a, "--preview")?,
+                        expected_source_revision: required(&mut a, "--source-revision")?
+                            .parse()
+                            .map_err(|_| invalid("invalid source revision"))?,
+                        expected_binding_revision: required(&mut a, "--binding-revision")?
+                            .parse()
+                            .map_err(|_| invalid("invalid binding revision"))?,
+                    },
+                    "status" => P::Status {
+                        id: id
+                            .parse()
+                            .map_err(|_| invalid("invalid publication UUID"))?,
+                    },
+                    "resume" => P::Resume {
+                        id: id
+                            .parse()
+                            .map_err(|_| invalid("invalid publication UUID"))?,
+                    },
+                    "unpublish" => P::Unpublish {
+                        id: id
+                            .parse()
+                            .map_err(|_| invalid("invalid publication UUID"))?,
+                        key: required(&mut a, "--key")?,
+                        expected_binding_revision: required(&mut a, "--binding-revision")?
+                            .parse()
+                            .map_err(|_| invalid("invalid binding revision"))?,
+                    },
+                    _ => return Err(invalid("unknown catalog publication command")),
+                };
+                a.finish(4)?;
+                command
+            };
+            Action::CatalogPublication { command }
         }
         "catalog" if a.pos.get(1).is_some_and(|s| s == "metadata") => {
             use crate::catalog::metadata::Command as M;

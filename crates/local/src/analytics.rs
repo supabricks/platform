@@ -342,7 +342,7 @@ fn atomic_descriptor(
     hook("descriptor_durable")?;
     Ok(())
 }
-fn check_ready(root: &Path, d: &Value) -> Result<()> {
+pub(crate) fn check_ready(root: &Path, d: &Value) -> Result<()> {
     require(
         serde_json::from_slice::<Value>(&small(&root.join("snapshot.json"))?)? == *d,
         "snapshot descriptor differs from journal",

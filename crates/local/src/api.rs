@@ -28,6 +28,9 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    CatalogPublication {
+        command: crate::catalog::publication::Command,
+    },
     CatalogMetadata {
         command: crate::catalog::metadata::Command,
     },
@@ -307,7 +310,7 @@ pub(crate) fn handle(
     let project = binding.project_id;
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
-        Action::CatalogMetadata { .. } => {
+        Action::CatalogMetadata { .. } | Action::CatalogPublication { .. } => {
             return Err(invalid("catalog metadata requires daemon worker service"));
         }
         Action::SavedQueryExport {

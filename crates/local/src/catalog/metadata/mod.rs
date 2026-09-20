@@ -136,5 +136,5 @@ pub(super) fn check_version(s: &str) -> Result<()> {
     Ok(())
 }
 pub fn capabilities() -> Value {
-    json!({"api_version":VERSION,"profile":"local_owner_metadata","providers":["postgres","supabricks_snapshot","oss_unity_catalog"],"limits":{"page_size":100,"response_bytes":MAX_BYTES,"workers":2,"retained_requests":32,"request_retention_seconds":300,"provider_request_ms":750,"provider_retries":0,"postgres_timeout_ms":10000,"tables":128,"columns_per_table":128},"namespace_creation":true,"uc_publication":false,"cross_project_bindings":false,"storage_access":false,"governed_multiuser":false})
+    json!({"api_version":VERSION,"profile":"local_owner_metadata","providers":["postgres","supabricks_snapshot","oss_unity_catalog"],"limits":{"page_size":100,"response_bytes":MAX_BYTES,"workers":2,"retained_requests":32,"request_retention_seconds":300,"provider_request_ms":750,"provider_retries":0,"postgres_timeout_ms":10000,"tables":128,"columns_per_table":128},"namespace_creation":true,"uc_publication":true,"cross_project_bindings":false,"storage_access":false,"governed_multiuser":false})
 }

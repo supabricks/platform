@@ -48,7 +48,7 @@ def installed_fixture(baseline, binary, runtime, output):
     shutil.copytree(baseline,output)
     shutil.copy2(binary,output/'bin/supabricks')
     catalog=install(output,manifest['target'],runtime)
-    manifest['provenance']['data_formats']['local_catalog']=14
+    manifest['provenance']['data_formats']['local_catalog']=15
     manifest['provenance']['unity_catalog']=catalog
     manifest['provenance']['data_formats']['unity_catalog']=1
     manifest['provenance']['uc01_fixture']='current platform binary and UC closure over immutable alpha.24 engines; not full release qualification'
@@ -152,6 +152,8 @@ def main():
         branch=cell.create('main');assert cell.sql(branch,'SELECT 42')=='42'
         from metadata import run as metadata_checks
         metadata_checks(cell,root,installed,branch,work,first['endpoint'],token,api,check)
+        from publication import run as publication_checks
+        publication_checks(cell,root,installed,branch,work,token,api,check)
         old_token=token();command('rotate_key');rotated=ready()
         old_status=api(rotated['endpoint'],old_token)[0]
         assert old_status in (401,403), ('old_key_token_status',old_status)
