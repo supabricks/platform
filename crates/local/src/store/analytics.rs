@@ -394,6 +394,7 @@ impl Store {
           WHERE p.branch_id=?1 AND s.state IN ('available','unavailable'))
           SELECT epoch_id,export_id FROM ranked r WHERE rank>?2
           AND NOT EXISTS(SELECT 1 FROM snapshot_heads h WHERE h.epoch_id=r.epoch_id)
+          AND NOT EXISTS(SELECT 1 FROM catalog_retention c WHERE c.epoch_id=r.epoch_id)
           AND NOT EXISTS(SELECT 1 FROM snapshot_leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)
           AND NOT EXISTS(SELECT 1 FROM leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)
           AND NOT EXISTS(SELECT 1 FROM analytical_sessions a WHERE a.epoch_id=r.epoch_id AND a.state IN ('waiting','starting','ready','closing'))

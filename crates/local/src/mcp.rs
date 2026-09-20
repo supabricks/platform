@@ -420,6 +420,13 @@ pub fn tools() -> Value {
             true,
         ),
         (
+            "catalog_publication",
+            "Durable publication of a complete frozen snapshot into the selected project's UC namespace. Preview first; publish requires its hash and source/binding revisions and an idempotency key. Poll status; resolve exposes only committed sets. Unpublish blocks new references and waits for readers before retiring owned UC objects. Resume explicitly retries a blocked journal.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/catalog-publication-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            false,
+        ),
+        (
             "catalog_metadata",
             "Project-owned metadata API v1. capabilities/health/namespace are read-only; ensure_namespace creates the selected deployment's default UC namespace. list/describe/resolve/validate_source submit bounded requests; poll their returned UUID until complete or failed. Resolve requires the observed version. Metadata grants no storage access. Never adopt ownership from names or UC properties.",
             json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/catalog-metadata-command-v1.schema.json")).unwrap()}),
@@ -448,6 +455,10 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "catalog_publication" => serde_json::from_str(include_str!(
+            "../../../schemas/catalog-publication-response-v1.schema.json"
+        ))
+        .unwrap(),
         "catalog_metadata" => serde_json::from_str(include_str!(
             "../../../schemas/catalog-metadata-response-v1.schema.json"
         ))

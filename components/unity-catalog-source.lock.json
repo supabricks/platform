@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "scope": "UC01 managed local OSS Unity Catalog runtime",
+  "scope": "UC03 managed local OSS Unity Catalog publication runtime",
   "repository": "https://github.com/supabricks/unitycatalog",
   "upstream": "https://github.com/unitycatalog/unitycatalog",
   "upstream_tag": "v0.6.0",
-  "commit": "b13b5cd642fadd5c3f965fc83ab163f699240f90",
+  "commit": "8e195426ce03e593b03c92f87051d7bf013aeee1",
   "inputs": {
     "api/all.yaml": "1a64563946721b7f3bb7c4ddfd787770467b1c3a5be6a696b1844843ec92e287",
     "api/control.yaml": "4f69708dfa0ba890fe805f987a920400e83b38f1d75ce60764ef23881832cdd7",
@@ -17,7 +17,12 @@
     "server/src/main/java/io/unitycatalog/server/URLTranscoderVerticle.java": "dae9a6e0eae84ac20855eef72ae6ceb6daa6dbfb375585f8936a304b8fd4db38",
     "server/src/main/java/io/unitycatalog/server/utils/JwksOperations.java": "eeeb10342fba0911c64b56d30040cade9c883a143b392eda0a1ada0673232e25",
     "server/src/test/java/io/unitycatalog/server/service/AuthServiceTest.java": "ce81d39027e77bc8868fc7ba2b843fd19c4e3b2d1f1dbe8862373eb97327cb24",
-    "server/src/test/java/io/unitycatalog/server/utils/JwksOperationsTest.java": "95987c28c71fd22deba49b8cf610d68555b8c7823bc8a8ae0303cf6a9e2ef543"
+    "server/src/test/java/io/unitycatalog/server/utils/JwksOperationsTest.java": "95987c28c71fd22deba49b8cf610d68555b8c7823bc8a8ae0303cf6a9e2ef543",
+    "server/src/main/java/io/unitycatalog/server/persist/TableRepository.java": "8388936509d8f0ce604ca9404ec106f512d008fb72fe2fc99977a84de3ac3138",
+    "server/src/main/java/io/unitycatalog/server/persist/dao/PublicationIdentityDAO.java": "6a504a9f42c94f27eab1b66c51b3685972852f5def430b3e2a0aa43bd6153762",
+    "server/src/main/java/io/unitycatalog/server/persist/utils/HibernateConfigurator.java": "5f24d60b9f63336e13296e30e8ba6350225e8922dacaaa07f371da97da8e64cd",
+    "server/src/main/java/io/unitycatalog/server/service/TableService.java": "153406bc761ed221f8edd39d1ef364f276448e597684422686f88f5a6da9beb5",
+    "server/src/test/java/io/unitycatalog/server/sdk/delta/PublicationIdentityTest.java": "d9572cd25a7b6ba5ba05b076e9d9386d455c94ee8cd970d540d9c039d853f15e"
   },
   "sbt": {
     "version": "1.9.9",
@@ -58,6 +63,7 @@
   "upstream_commit": "6605f867d9a8b63205534dd8d575adb430e8f798",
   "patches": [
     "Bind URL transcoder to IPv4 loopback; upstream Armeria API already uses loopback.",
-    "Map retired/unknown signing keys to HTTP 401 while preserving provider network errors."
+    "Map retired/unknown signing keys to HTTP 401 while preserving provider network errors.",
+    "Support durable caller-assigned external Delta table UUIDs and transactional UUID-conditional deletion for UC03; retain UUID tombstones after deletion."
   ]
 }
