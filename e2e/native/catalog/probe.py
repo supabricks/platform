@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """UC00: isolated, real PG -> Delta -> UC -> source-built Sail qualification."""
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -91,13 +92,17 @@ def main():
         file = release/name
         assert file.resolve().is_relative_to(release), name
         assert sha(file) == entry['sha256'], 'baseline file differs from inventory: '+name
+    network_denial = None
     if os.environ.get('SB_UC00_NETWORK_EVIDENCE'):
         try:
             with socket.create_connection(('1.1.1.1',443),timeout=2): pass
-        except OSError: pass
+        except OSError as error:
+            assert error.errno in (errno.EPERM, errno.EACCES, errno.ENETUNREACH), error.errno
+            network_denial = errno.errorcode[error.errno]
         else: raise AssertionError('offline qualification has external TCP access')
     report = dict(schema_version=1, status='FAIL', target=platform.system()+'-'+platform.machine(),
         network_evidence=os.environ.get('SB_UC00_NETWORK_EVIDENCE','local run; external network not isolated'),
+        external_tcp_denial=network_denial,
         uc_build=json.loads((runtime/'build.json').read_text()),
         uc_artifact=json.loads(runtime.with_suffix('.artifact.json').read_text()),
         sail_build=json.loads((release/'provenance/sail/sail-build.json').read_text()),
@@ -258,6 +263,7 @@ def main():
         server.stop()
         assert not owner.query('SELECT * FROM p1.current.orders')['ok']
         backup = root/'stopped-backup'; shutil.copytree(server.root/'etc',backup)
+        cell.stop()  # Metadata and local analytical reads must not depend on user PG.
         server.start()
         assert server.ok('GET','tables/p1.current.orders')['table_id'] == recreated['table_id']
         assert owner.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
@@ -267,7 +273,7 @@ def main():
         assert server.ok('GET','tables/p1.current.orders')['table_id'] == recreated['table_id']
         assert server.request('GET','tables/p1.current.orders',token=t2)[0] in (403,404)
         assert owner.rows('SELECT sum(amount) AS total FROM frozen_orders') == [dict(total=10)]
-        check('outage_restart_and_stopped_metadata_restore', backend='H2', data_backup_separate=True)
+        check('outage_restart_and_stopped_metadata_restore', backend='H2', data_backup_separate=True, project_runtime_stopped=True)
         short_lived = worker(server.token(reader1, 8))
         assert short_lived.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
         time.sleep(9)
@@ -281,12 +287,20 @@ def main():
         check('local_footprint_budgets')
         report['status'] = 'PASS'
     finally:
-        for w in workers: w.close()
-        if server: server.stop()
-        cell.close()
+        if report['status'] != 'PASS' and server:
+            report['uc_failure'] = server.diagnostics()
+        cleanup_errors = []
+        callbacks = [w.close for w in workers] + ([server.stop] if server else []) + [cell.close]
+        for close in callbacks:
+            try: close()
+            except Exception as error: cleanup_errors.append(type(error).__name__)
+        if cleanup_errors:
+            report['status'] = 'FAIL'
+            report['cleanup_errors'] = cleanup_errors
         args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps(report,indent=2)+'\n')
         if report['status']=='PASS' and not args.keep_state: shutil.rmtree(root)
+        if cleanup_errors: raise RuntimeError('probe cleanup failed; inspect private test state')
     print(json.dumps(dict(status=report['status'], checks=len(checks), metrics=report.get('metrics')),indent=2))
 
 

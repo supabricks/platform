@@ -101,3 +101,34 @@ must not imply that all tables in a publication have advanced atomically.
 The test users and project definitions are fixtures. This slice does not install
 project-to-UC ownership APIs, publication journals, dataset bindings, console
 browsing, external IdP login or product RBAC. Those remain UC01–UC09 work.
+
+## Follow-up implementation boundaries
+
+UC01 should bundle and supervise this server-only closure, with its own H2 2.2.224
+state, Temurin 17.0.20.1+1 runtime and loopback endpoints. Complete the transitive
+build dependency lock, third-party license inventory, runtime inventory validation,
+auth bootstrap/rotation and authenticated readiness checks before shipping it.
+The required fork patch is [unitycatalog #1](https://github.com/supabricks/unitycatalog/pull/1).
+
+UC02/UC03 should maintain stable platform asset identities and one canonical UC
+registration per immutable publication table. Keep display names separate from
+physical names and remote object incarnations. Publication commit and retention
+remain platform responsibilities. UC04 should resolve an entire committed manifest
+once, validate its UC IDs/locations, acquire references, and install version-pinned
+session aliases. The probe uses temporary views and integer-column fixtures;
+it does not qualify the production adapter, concurrent publication journal,
+all PG types, schema evolution, malicious metadata or non-default Sail caches.
+
+UC09/IAM must qualify a real credential issuer, storage enforcement and execution
+isolation before mutually untrusted users share a deployment. UC's legacy static
+`sessionToken` setting is explicitly test-only and cannot supply that boundary.
+There is no Databricks-hosted dependency or fallback in this design.
+
+The stricter macOS network policy is scoped to this probe. The earlier shared
+release sandbox allowed the external TCP sentinel; existing macOS disconnected
+release claims need requalification with an enforced policy before UC08. This is
+additional to the alpha.25/26 release failures already recorded in the plan.
+
+Source references: [UC authentication/bootstrap](https://docs.unitycatalog.io/server/auth/),
+[pinned UC server configuration](https://github.com/supabricks/unitycatalog/blob/9c4b48ccbf18ffd89b4dfe966e79a2b6cb826069/etc/conf/server.properties),
+[pinned Sail UC provider](https://github.com/supabricks/sail/blob/9544c9253e981a82c5f9e493c43ce98a4d9d41b7/crates/sail-catalog-unity/src/provider.rs).

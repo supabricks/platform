@@ -3,6 +3,7 @@ import base64
 import json
 import ipaddress
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -26,6 +27,7 @@ def clean_env():
 class Server:
     def __init__(self, runtime, root, s3):
         self.runtime, self.root = runtime, root
+        self.secrets = [s3["s3_access"], s3["s3_secret"]]
         root.mkdir(mode=0o700)
         shutil.copytree(runtime/'configuration-template', root/'etc/conf')
         (root/'etc/db').mkdir()
@@ -143,3 +145,20 @@ s3.region.0=us-east-1
     def grant(self, kind, name, email, add=(), remove=()):
         return self.ok('PATCH', f'permissions/{kind}/{name}', dict(changes=[
             dict(principal=email, add=list(add), remove=list(remove))]))
+
+    def diagnostics(self):
+        """Bounded, redacted Java failure details; never upload the private tree."""
+        secrets = list(self.secrets)
+        token_file = self.root/'etc/conf/token.txt'
+        if token_file.exists(): secrets.append(token_file.read_text().strip())
+        lines = []
+        for path in (self.root/'server.log', self.root/'etc/logs/server.log'):
+            if path.exists():
+                for line in path.read_text(errors='replace').splitlines():
+                    if not any(word in line for word in ('Exception', 'Error', 'ERROR', 'Caused by:', '\tat ')):
+                        continue
+                    for secret in secrets:
+                        if secret: line = line.replace(secret, '[redacted]')
+                    line = re.sub(r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', '[redacted JWT]', line)
+                    lines.append(line[:500])
+        return dict(exit_code=None if self.process is None else self.process.poll(), lines=lines[-35:])

@@ -4,7 +4,9 @@
 (version 1)
 (allow default)
 (deny network*)
-(allow network-bind (local ip "localhost:*"))
+;; JVM/Netty client sockets may bind wildcard ephemeral addresses before connect.
+;; Inbound listeners and outbound connections remain restricted separately.
+(allow network-bind)
 (allow network-inbound (local ip "localhost:*"))
 (allow network-outbound (remote ip "localhost:*"))
 (allow network* (local unix-socket))
