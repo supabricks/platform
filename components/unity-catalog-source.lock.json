@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "UC00 probe only; not an installed runtime selection",
+  "repository": "https://github.com/supabricks/unitycatalog",
+  "upstream": "https://github.com/unitycatalog/unitycatalog",
+  "upstream_tag": "v0.6.0",
+  "commit": "9c4b48ccbf18ffd89b4dfe966e79a2b6cb826069",
+  "inputs": {
+    "api/all.yaml": "1a64563946721b7f3bb7c4ddfd787770467b1c3a5be6a696b1844843ec92e287",
+    "api/control.yaml": "4f69708dfa0ba890fe805f987a920400e83b38f1d75ce60764ef23881832cdd7",
+    "api/delta.yaml": "ba1acdf35cbe995abca533af24851e8ae5f52bb5e0a355e63d6aa3624987918e",
+    "build.sbt": "ed226e6ba5bf7e530f2f0e27633e84bf75803410a5bf468a091fe341d6387fa2",
+    "project/build.properties": "e653e3c45bcab4fcaaa641ffff2358ef1edf4572df5edd12806da32bd74d232b",
+    "project/plugins.sbt": "d8b9307b86d952180a7267fbda7894e430aecf92723410e28ea1e4feac5a3f45",
+    "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "NOTICE": "9e78763fda1910f34b4a67f045f0c378f5fa284b0814ecce85caecdc25066e98",
+    "server/src/main/java/io/unitycatalog/server/URLTranscoderVerticle.java": "dae9a6e0eae84ac20855eef72ae6ceb6daa6dbfb375585f8936a304b8fd4db38"
+  },
+  "sbt": {
+    "version": "1.9.9",
+    "url": "https://repo.maven.apache.org/maven2/org/scala-sbt/sbt-launch/1.9.9/sbt-launch-1.9.9.jar",
+    "sha256": "99fd0509060b9655ece7c5a34ecd7ecb471986d4191922966100057f6b6f373c"
+  },
+  "java": {
+    "vendor": "Eclipse Temurin",
+    "version": "17.0.20.1+1",
+    "license": "GPL-2.0-with-classpath-exception",
+    "targets": {
+      "linux-x86_64": {
+        "jdk": {
+          "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+          "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e",
+          "bytes": 193252603
+        },
+        "jre": {
+          "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+          "sha256": "0b2b640e3046b64c8ec504de0ab9d91bb5610182bda21fad454681ce54d45a62",
+          "bytes": 46640574
+        }
+      },
+      "macos-arm64": {
+        "jdk": {
+          "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+          "sha256": "196d13ba5f10414bef7f6a05a9b3f00edacb18ebacef2b99485db9e2ee18f0e8",
+          "bytes": 185851019
+        },
+        "jre": {
+          "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+          "sha256": "190480874ccceb358cbc840393207f77ac3e63a4c5f8129d0e23e9518b96ad05",
+          "bytes": 42722113
+        }
+      }
+    }
+  },
+  "upstream_commit": "6605f867d9a8b63205534dd8d575adb430e8f798",
+  "patches": [
+    "Bind URL transcoder to IPv4 loopback; upstream Armeria API already uses loopback."
+  ]
+}
