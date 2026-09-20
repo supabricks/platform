@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
-Status: UC00 merged in platform #56; UC01 implemented with qualification in progress, 2026-09-20.
-UC02–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
+UC02 is implemented with qualification in progress; UC03–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -105,14 +105,14 @@ flowchart LR
 | `supabricks/platform` | Contracts, service supervision, ownership, publication, retention, destination bindings, credentials and release evidence. Extend `crates/local/src/{api.rs,client.rs,cli.rs,mcp.rs,daemon.rs}`, `store/`, `projects/`, `project_apply.rs`, `analytics.rs`, `recovery.rs`, `console/`, and `python/analytics/session.py`. Proposed new modules: `catalog/` and `store/catalog.rs`; allocate migration numbers from current main. |
 | `supabricks/console` | Data browser, publication and binding flows, provenance/freshness, notebook/SQL handoff and browser tests. Extend `src/{api.ts,main.tsx,projects.tsx,analytics.tsx,notebook.tsx}`; keep implementation in this repo and advance platform's gitlink after its PR merges. |
 | `supabricks/sail` | Narrow changes to `crates/sail-catalog-unity/` and provider configuration/credentials if the probe requires them. Platform consumes a reviewed commit through `components/sail-source.lock.json`. |
-| `supabricks/unitycatalog` | Created by UC00 as the controlled OSS UC fork. The reviewed v0.6.0 candidate and loopback patch are pinned in platform; loopback patch #1 is merged; retired-key authentication fix #2 is under review. Product orchestration stays in platform. |
+| `supabricks/unitycatalog` | Created by UC00 as the controlled OSS UC fork. The reviewed v0.6.0 candidate and loopback patch are pinned in platform; loopback patch #1 is merged; retired-key authentication fix #2 is merged. Product orchestration stays in platform. |
 | `supabricks/neon`, `supabricks/postgres` | Existing engine dependencies. No catalog-driven storage rewrite or PostgreSQL fork change is assumed. |
 | `supabricks/rfcs` | Optional decision mirror. Platform owns the executable contracts, plan and qualification evidence. |
 
 New platform build/qualification files should follow the Sail pattern:
 `components/unity-catalog-source.lock.json`, `components/build-unity-catalog.py`,
 `install/native/unity_catalog.py`, and bounded `e2e/native/catalog/` scenarios.
-These are planned paths, not existing implementations. Do not use the archived
+These paths now contain the UC00/UC01 implementations. Do not use the archived
 `sspc` repo or revive the Kubernetes UI.
 
 ## Slice sequence
@@ -182,7 +182,7 @@ Acceptance:
 
 ## UC01 — Own the service and its deployed source
 
-Implementation is in progress on `feat/uc01-catalog-service`. See the
+Implementation merged in [platform #57](https://github.com/supabricks/platform/pull/57). Both native suites passed 14 compatibility and 13 installed-service checks each. Full alpha.27 archive qualification failed on stale alpha.26 harness defaults; UC02 reconciles them. See the
 [service handbook](../handbook/catalog-service.md) for managed/external modes,
 source ownership, lifecycle and qualification boundaries.
 
@@ -209,6 +209,8 @@ not affect unrelated processes; UC failure leaves existing PG workflows usable.
 Missing/dirty source artifacts fail assembly. Document resource measurements.
 
 ## UC02 — Project ownership, identities and metadata contracts
+
+Implementation is on `feat/uc02-catalog-metadata`; see the [UC02 contract](../architecture/uc02-catalog-metadata.md) and [walkthrough](../handbook/catalog-metadata.md). Control schema 14 adds ownership records through the existing backed-up upgrade path. Native and release qualification remain in progress.
 
 Implement the provider adapter and versioned API/MCP contracts: capabilities,
 list/describe, resolve object/version, health and typed errors. Bound pagination,

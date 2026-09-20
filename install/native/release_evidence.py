@@ -74,7 +74,7 @@ def collect(directory, revision, console, worker, version):
         require(source['ingestion']['worker_sha256'] == worker, 'ingestion worker differs from reviewed source')
         require(env['archive']['version'] == version and env['archive']['target'] == target and sha(env['archive']['sha256']),
                 'archive version, target or checksum mismatch')
-        require(source['data_formats']['local_catalog'] == 13 and source['data_formats']['postgres_major'] == 17,
+        require(source['data_formats']['local_catalog'] == 14 and source['data_formats']['postgres_major'] == 17,
                 'unqualified catalog or PostgreSQL major')
         require(env['release_identity'] == identity, 'lifecycle manifest identity mismatch')
         reports = dict(env['reports'])
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.26')
+    parser.add_argument('--version', default='v0.1.0-alpha.28')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

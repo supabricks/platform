@@ -120,14 +120,16 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         .as_u64()
         .and_then(|n| u32::try_from(n).ok())
         .ok_or_else(|| conflict("invalid source catalog format"))?;
-    if target_formats
-        != json!({"local_catalog":SCHEMA_VERSION,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1})
-    {
+    let mut expected_formats = json!({"local_catalog":SCHEMA_VERSION,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1});
+    if target_formats.get("unity_catalog").is_some() {
+        expected_formats["unity_catalog"] = json!(1);
+    }
+    if target_formats != expected_formats {
         return Err(conflict(
             "candidate format declaration does not match this binary",
         ));
     }
-    let migration = matches!(source_schema, 8 | 9 | 10 | 11 | 12);
+    let migration = matches!(source_schema, 8 | 9 | 10 | 11 | 12 | 13);
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);
     if migration && normalized == target_formats {

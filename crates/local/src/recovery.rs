@@ -294,7 +294,7 @@ impl Stopped {
         Self::open_schema(root, SCHEMA_VERSION)
     }
     pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
-        if !matches!(expected, 8 | 9 | 10 | 11 | 12 | 13) {
+        if !matches!(expected, 8 | 9 | 10 | 11 | 12 | 13 | 14) {
             return Err(conflict("unsupported recovery schema"));
         }
         let root = private_root(root)?;
@@ -467,7 +467,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     }
     let manifest: Manifest = serde_json::from_slice(&fs::read(manifest_file)?)?;
     if manifest.format_version != 1
-        || !matches!(manifest.schema_version, 8 | 9 | 10 | 11 | 12 | 13)
+        || !matches!(manifest.schema_version, 8 | 9 | 10 | 11 | 12 | 13 | 14)
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()
     {

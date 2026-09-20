@@ -1,6 +1,7 @@
 use super::*;
 use ureq::tls::{RootCerts, TlsConfig};
 
+#[derive(Clone)]
 pub struct Probe {
     pub endpoint: String,
     pub token_file: PathBuf,

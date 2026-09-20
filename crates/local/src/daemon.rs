@@ -140,6 +140,8 @@ pub enum Request {
 
 pub struct Daemon {
     catalog: crate::catalog::Manager,
+    catalog_metadata: crate::catalog::metadata::Service,
+    catalog_metadata_error: bool,
     environments: crate::environments::Manager,
     notebooks: crate::notebooks::Notebooks,
     consoles: crate::console::Consoles,
@@ -166,6 +168,7 @@ impl Daemon {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
         let catalog = crate::catalog::Manager::recover(&mut store);
+        let catalog_metadata = crate::catalog::metadata::Service::recover(&mut store)?;
         let notebooks = crate::notebooks::Notebooks::recover(&mut store)?;
         let environments = crate::environments::Manager::recover(&mut store)?;
         let consoles = crate::console::Consoles::recover(&mut store)?;
@@ -198,6 +201,8 @@ impl Daemon {
         let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
             catalog,
+            catalog_metadata,
+            catalog_metadata_error: false,
             environments,
             notebooks,
             consoles,
@@ -253,7 +258,23 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
-                let catalog_stopped = self.catalog.tick(&mut self.store, stopping);
+                let metadata_stopped =
+                    match self
+                        .catalog_metadata
+                        .tick(&mut self.store, &self.catalog, stopping)
+                    {
+                        Ok(stopped) => {
+                            self.catalog_metadata_error = false;
+                            stopped
+                        }
+                        Err(_) => {
+                            self.catalog_metadata_error = true;
+                            false
+                        }
+                    };
+                let catalog_stopped = self
+                    .catalog
+                    .tick(&mut self.store, stopping && metadata_stopped);
                 let environments_stopped = match self.environments.tick(&mut self.store, stopping) {
                     Ok(done) => {
                         self.environments.last_error = None;
@@ -340,6 +361,7 @@ impl Daemon {
                 if let Some(cell) = &mut self.cell {
                     if stopping
                         && catalog_stopped
+                        && metadata_stopped
                         && environments_stopped
                         && analytical_stopped
                         && notebooks_stopped
@@ -370,6 +392,7 @@ impl Daemon {
                     }
                 } else if stopping
                     && catalog_stopped
+                    && metadata_stopped
                     && environments_stopped
                     && analytical_stopped
                     && notebooks_stopped
@@ -602,7 +625,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"catalog_metadata_error":self.catalog_metadata_error,"catalog_metadata_active":self.catalog_metadata.active(),"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::CatalogService { command } => {
                 self.catalog.command(&mut self.store, command)?
@@ -815,6 +838,10 @@ impl Daemon {
                     command,
                 );
             }
+            C::CatalogMetadata { command } => {
+                return self
+                    .public_action(binding, crate::api::Action::CatalogMetadata { command });
+            }
             C::Environment { command } => {
                 self.consoles.owns(
                     &binding,
@@ -929,6 +956,25 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::CatalogMetadata { command } = action {
+            let branch =
+                crate::catalog::metadata::Service::branch(&self.store, &binding, &command)?;
+            let target = branch
+                .map(|id| {
+                    self.handle(Request::Connection {
+                        project_id: binding.project_id,
+                        id,
+                    })
+                })
+                .transpose()?;
+            return self.catalog_metadata.handle(
+                &mut self.store,
+                &self.catalog,
+                &binding,
+                command,
+                target,
+            );
+        }
         if let crate::api::Action::ProjectApply { command } = action {
             return crate::project_apply::handle(&mut self.store, &binding, command);
         }

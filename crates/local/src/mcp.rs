@@ -420,6 +420,13 @@ pub fn tools() -> Value {
             true,
         ),
         (
+            "catalog_metadata",
+            "Project-owned metadata API v1. capabilities/health/namespace are read-only; ensure_namespace creates the selected deployment's default UC namespace. list/describe/resolve/validate_source submit bounded requests; poll their returned UUID until complete or failed. Resolve requires the observed version. Metadata grants no storage access. Never adopt ownership from names or UC properties.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/catalog-metadata-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            false,
+        ),
+        (
             "catalog",
             "Discover tables and columns using the application role and SQL limits. Wakes the selected or explicit branch.",
             json!({"branch":branch}),
@@ -441,6 +448,10 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "catalog_metadata" => serde_json::from_str(include_str!(
+            "../../../schemas/catalog-metadata-response-v1.schema.json"
+        ))
+        .unwrap(),
         "project_plan" => {
             serde_json::from_str(include_str!("../../../schemas/project-plan-v1.schema.json"))
                 .expect("checked plan schema")
