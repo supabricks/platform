@@ -69,3 +69,5 @@ older operator deployment.
 - [Browser CSV/TSV imports](browser-imports.md): file selection, mapping approval and durable import jobs.
 
 - [Logical project data](project-data.md): export selected PostgreSQL tables and import them transactionally into a destination project.
+
+- [Create projects in the console](project-creation.md): one form provisions the project and database; all assets belong to a project.

@@ -329,7 +329,16 @@ pub fn run() -> Result<u8> {
     if command == "console" {
         let no_open = a.flag("--no-open");
         a.finish(1)?;
-        let directory = client::project_directory(project.as_deref())?;
+        let directory = match project.as_deref() {
+            Some(path) => client::project_directory(Some(path))?,
+            None => {
+                let cwd = std::env::current_dir()?;
+                match cwd.ancestors().find(|p| p.join("supabricks.toml").exists()) {
+                    Some(path) => path.to_owned(),
+                    None => crate::console::launcher(&root)?,
+                }
+            }
+        };
         println!("{}", crate::console::launch(root, directory, no_open)?);
         return Ok(0);
     }

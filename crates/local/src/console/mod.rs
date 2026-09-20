@@ -58,6 +58,9 @@ fn directory(path: &Path) -> Result<()> {
     if !path.try_exists()? {
         fs::DirBuilder::new().mode(0o700).create(path)?;
     }
+    directory_existing(path)
+}
+fn directory_existing(path: &Path) -> Result<()> {
     let m = fs::symlink_metadata(path)?;
     if !m.is_dir() || m.uid() != unsafe { libc::geteuid() } || m.mode() & 0o077 != 0 {
         return Err(conflict(
@@ -65,6 +68,20 @@ fn directory(path: &Path) -> Result<()> {
         ));
     }
     Ok(())
+}
+
+/// A private launcher lets the first project be created in the browser. It has
+/// no database and never writes a project manifest in the caller's directory.
+pub fn launcher(root: &Path) -> Result<PathBuf> {
+    fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(root)?;
+    directory_existing(root)?;
+    let path = root.join("console-home");
+    directory(&path)?;
+    crate::project::ProjectConfig::initialize(&path, "local-projects")?;
+    Ok(path.canonicalize()?)
 }
 impl Consoles {
     pub(crate) fn assets(&self, binding: &Binding) -> Result<PathBuf> {
@@ -354,4 +371,26 @@ pub fn serve(config: &Path) -> Result<()> {
         .enable_all()
         .build()?
         .block_on(server::serve(config))
+}
+
+#[cfg(test)]
+mod launcher_tests {
+    use super::*;
+
+    #[test]
+    fn launcher_reuses_private_identity_and_refuses_a_replaced_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let path = launcher(&root).unwrap();
+        let identity = crate::project::ProjectConfig::read(&path).unwrap();
+        assert_eq!(launcher(&root).unwrap(), path);
+        assert_eq!(
+            crate::project::ProjectConfig::read(&path).unwrap(),
+            identity
+        );
+        let saved = root.join("old-home");
+        fs::rename(&path, &saved).unwrap();
+        std::os::unix::fs::symlink(&saved, &path).unwrap();
+        assert!(launcher(&root).is_err());
+    }
 }

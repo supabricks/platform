@@ -25,11 +25,17 @@ const CHUNK: usize = 24576;
 pub enum Selection {
     Current,
     Imported { id: OperationId },
+    Created { id: OperationId },
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     List,
+    Create {
+        id: OperationId,
+        name: String,
+        attempt: OperationId,
+    },
     View {
         target: Option<String>,
     },
@@ -96,6 +102,12 @@ fn home(store: &Store, host: &Binding) -> Result<PathBuf> {
     std::fs::File::open(&base)?.sync_all()?;
     Ok(path)
 }
+fn created_home(store: &Store) -> Result<PathBuf> {
+    let path = store.root().join("console-created-projects");
+    super::directory(&path)?;
+    std::fs::File::open(store.root())?.sync_all()?;
+    Ok(path)
+}
 pub(crate) fn source(store: &Store, host: &Binding, selected: &Selection) -> Result<Source> {
     let path = match selected {
         Selection::Current => host.worktree.clone(),
@@ -106,6 +118,11 @@ pub(crate) fn source(store: &Store, host: &Binding, selected: &Selection) -> Res
             if !m.is_dir() {
                 return Err(invalid("imported project must be a directory, not a link"));
             }
+            path
+        }
+        Selection::Created { id } => {
+            let path = created_home(store)?.join(id.to_string());
+            super::directory_existing(&path)?;
             path
         }
     };
@@ -217,6 +234,9 @@ impl Workspace {
         self.transfers
             .retain(|_, t| t.touched.elapsed() < Duration::from_secs(900));
         match command {
+            Command::Create { id, name, attempt } => {
+                return create(store, host, id, &name, attempt);
+            }
             Command::Begin { bytes } => {
                 let id = self.allocate(store, owner, bytes, false)?;
                 return Ok(json!({"id":id,"bytes":bytes,"chunk_bytes":CHUNK}));
@@ -318,7 +338,20 @@ impl Workspace {
                         entries.push(json!({"source":selected,"name":identity.name,"definition_id":identity.id,"worktree":s.worktree}));
                     }
                 }
-                return Ok(json!({"imports":entries}));
+                let mut projects = Vec::new();
+                for entry in std::fs::read_dir(created_home(store)?)?.take(33) {
+                    let entry = entry?;
+                    let Ok(id) = entry.file_name().to_string_lossy().parse::<OperationId>() else {
+                        continue;
+                    };
+                    let selected = Selection::Created { id };
+                    if let Ok(s) = source(store, host, &selected) {
+                        let identity = projects::source_identity(&s.worktree)?;
+                        projects.push(json!({"source":selected,"name":identity.name,"definition_id":identity.id,"worktree":s.worktree}));
+                    }
+                }
+                projects.sort_by_key(|p| p["name"].as_str().unwrap_or_default().to_owned());
+                return Ok(json!({"imports":entries,"projects":projects}));
             }
             _ => {}
         }
@@ -396,6 +429,74 @@ impl Workspace {
     }
 }
 
+// A console-created source is published atomically at a server-chosen path.
+// The source UUID and durable deployment/apply journals recover lost responses
+// and process restarts. HTTP callers cannot select an arbitrary filesystem path.
+fn create(
+    store: &mut Store,
+    host: &Binding,
+    id: OperationId,
+    name: &str,
+    attempt: OperationId,
+) -> Result<Value> {
+    let name = supabricks_core::validation::valid_name(&json!({"name":name}), "name")
+        .map_err(supabricks_core::error::OperationError::from)?;
+    let base = created_home(store)?;
+    let path = base.join(id.to_string());
+    let manifest = format!(
+        "format_version=2\nid=\"{id}\"\nname=\"{name}\"\n[package]\nversion=\"0.1.0\"\ninclude=[]\nnotebook_outputs=\"strip\"\n[resources.database.main]\nkind=\"postgres_database\"\nlifecycle=\"retain\"\n"
+    );
+    if !path.try_exists()? {
+        if std::fs::read_dir(&base)?.count() >= 32 {
+            return Err(conflict("32 console projects already exist"));
+        }
+        let publication = projects::publication::Publication::new(&path)?;
+        publication.write("supabricks.toml", manifest.as_bytes())?;
+        publication.publish_directory()?;
+    }
+    let selected = Selection::Created { id };
+    let src = source(store, host, &selected)?;
+    let dir = crate::notebooks::files::directory::Directory::project(&src.worktree)?;
+    let mut actual = String::new();
+    dir.open(std::ffi::OsStr::new("supabricks.toml"), libc::O_RDONLY)?
+        .take(4096)
+        .read_to_string(&mut actual)?;
+    if actual != manifest {
+        return Err(conflict(
+            "project creation identity or source changed; existing files were retained",
+        ));
+    }
+    store.project_command(
+        &src,
+        deployments::Command::Create {
+            key: format!("console-create-{id}"),
+            target: None,
+        },
+    )?;
+    let bound = binding(store, &src)?;
+    let key = format!("console-create-{attempt}");
+    let found = project_apply::handle(
+        store,
+        &bound,
+        project_apply::Command::Find { key: key.clone() },
+    )?;
+    let latest = store.latest_deployment_apply(store.binding_context(&bound)?.deployment_id)?;
+    let operation = if !found["operation"].is_null() {
+        found["operation"].clone()
+    } else if let Some(op) = latest.filter(|op| op.pending() || op.state == "succeeded") {
+        serde_json::to_value(op)?
+    } else {
+        let plan = project_apply::plan(store, &bound, Default::default())?;
+        project_apply::handle(store, &bound, project_apply::Command::Apply { plan, key })?
+    };
+    if operation["state"] == "succeeded" {
+        let branch =
+            serde_json::from_value(operation["resources"]["database.main"]["branch"].clone())?;
+        store.select_worktree(&src.worktree, bound.project_id, branch)?;
+    }
+    Ok(json!({"source":selected,"name":name,"worktree":src.worktree,"operation":operation}))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -464,6 +565,134 @@ mod tests {
             id
         }
     }
+    #[test]
+    fn creation_recovers_after_restart_without_duplicate_deployment_or_apply() {
+        let mut f = Fixture::new();
+        let id = OperationId::new();
+        let attempt = OperationId::new();
+        let first = f
+            .call(
+                "a",
+                Selection::Current,
+                Command::Create {
+                    id,
+                    name: "My-App".into(),
+                    attempt,
+                },
+            )
+            .unwrap();
+        assert_eq!(first["name"], "my-app");
+        assert_eq!(first["operation"]["state"], "queued");
+        assert_eq!(
+            first["operation"]["plan"]["steps"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        let path = PathBuf::from(first["worktree"].as_str().unwrap());
+        assert_eq!(
+            projects::inspect(&path, None)
+                .unwrap()
+                .definition
+                .format_version,
+            2
+        );
+        let root = f.store.root().to_owned();
+        drop(f.store);
+        f.store = Store::open(&root).unwrap();
+        f.ui = Workspace::recover(&f.store).unwrap();
+        let again = f
+            .call(
+                "new-session",
+                Selection::Current,
+                Command::Create {
+                    id,
+                    name: "my-app".into(),
+                    attempt,
+                },
+            )
+            .unwrap();
+        assert_eq!(first, again);
+        let simultaneous = f
+            .call(
+                "other-tab",
+                Selection::Current,
+                Command::Create {
+                    id,
+                    name: "my-app".into(),
+                    attempt: OperationId::new(),
+                },
+            )
+            .unwrap();
+        assert_eq!(first, simultaneous);
+        let list = f.call("a", Selection::Current, Command::List).unwrap();
+        assert_eq!(list["projects"].as_array().unwrap().len(), 1);
+        assert_eq!(list["projects"][0]["source"], first["source"]);
+    }
+
+    #[test]
+    fn creation_rejects_invalid_names_collisions_and_symlinks_without_overwriting() {
+        let mut f = Fixture::new();
+        let id = OperationId::new();
+        let attempt = OperationId::new();
+        assert!(
+            f.call(
+                "a",
+                Selection::Current,
+                Command::Create {
+                    id,
+                    name: "../../elsewhere".into(),
+                    attempt
+                }
+            )
+            .is_err()
+        );
+        assert!(!f.store.root().join("console-created-projects").exists());
+        f.call(
+            "a",
+            Selection::Current,
+            Command::Create {
+                id,
+                name: "original".into(),
+                attempt,
+            },
+        )
+        .unwrap();
+        assert!(
+            f.call(
+                "a",
+                Selection::Current,
+                Command::Create {
+                    id,
+                    name: "different".into(),
+                    attempt
+                }
+            )
+            .is_err()
+        );
+        let fake = OperationId::new();
+        std::os::unix::fs::symlink(
+            &f.host.worktree,
+            created_home(&f.store).unwrap().join(fake.to_string()),
+        )
+        .unwrap();
+        assert!(source(&f.store, &f.host, &Selection::Created { id: fake }).is_err());
+        assert!(
+            f.call(
+                "a",
+                Selection::Current,
+                Command::Create {
+                    id: fake,
+                    name: "original".into(),
+                    attempt
+                }
+            )
+            .is_err()
+        );
+        assert!(serde_json::from_value::<Command>(json!({"action":"create","id":id,"attempt":attempt,"name":"original","path":"/tmp/elsewhere"})).is_err());
+    }
+
     #[test]
     fn transfer_admission_is_session_bound_bounded_and_ordered() {
         let mut f = Fixture::new();

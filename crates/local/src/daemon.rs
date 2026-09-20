@@ -578,12 +578,13 @@ impl Daemon {
                         "desired_state":b.endpoint.desired_state,"revision":b.revision,"observed_revision":b.observed_revision,"is_default":b.is_default,
                         "expired":b.expired})
                 }).collect();
+                let console_home = binding.worktree == self.store.root().join("console-home");
                 json!({"api_version":crate::console::assets::VERSION,"project":{"id":binding.project_id,"name":config.name},"definition_id":config.id,"deployment":self.store.binding_context(&binding)?,
-                    "worktree":binding.worktree,"data_dir":self.store.root(),"branches":branches,
+                    "worktree":binding.worktree,"data_dir":self.store.root(),"branches":branches,"console_home":console_home,
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"project_packaging":1,"analytical_workspace":1,"overview":true,"sql":true,"workspace":true,"ingestion":true,"notebooks":true,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -711,6 +712,13 @@ impl Daemon {
         action: crate::console::workspace::Command,
     ) -> Result<Value> {
         use crate::console::workspace::{Command as C, identifier};
+        if binding.worktree == self.store.root().join("console-home")
+            && !matches!(&action, C::Project { .. })
+        {
+            return Err(conflict(
+                "create or open a project before working with databases, notebooks or analytics",
+            ));
+        }
         let scope = json!([binding.project_id, binding.worktree, owner]).to_string();
         let (id, target, query) = match action {
             C::Project { source, command } => {
