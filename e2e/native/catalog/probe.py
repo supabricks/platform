@@ -115,6 +115,7 @@ def main():
     report = dict(schema_version=1, status='FAIL', target=platform.system()+'-'+platform.machine(),
         network_evidence=os.environ.get('SB_UC00_NETWORK_EVIDENCE','local run; external network not isolated'),
         external_tcp_denial=network_denial,
+        spark_connect_host='::1' if sys.platform == 'darwin' else '127.0.0.1',
         java_flags=['-Xms64m','-Xmx256m','-XX:ActiveProcessorCount=2','-Djava.net.preferIPv4Stack=true'],
         uc_build=json.loads((runtime/'build.json').read_text()),
         uc_artifact=json.loads(runtime.with_suffix('.artifact.json').read_text()),

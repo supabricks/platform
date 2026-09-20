@@ -17,7 +17,10 @@ for key, value in config.get('storage', {}).items():
 from pysail.spark import SparkConnectServer
 from pyspark.sql import SparkSession
 
-server = SparkConnectServer(ip='127.0.0.1', port=0)
+# Seatbelt does not classify gRPC's IPv4-mapped IPv6 sockets as localhost.
+# Use native IPv6 loopback for this macOS-only qualification transport.
+host = '::1' if sys.platform == 'darwin' else '127.0.0.1'
+server = SparkConnectServer(ip=host, port=0)
 server.start()
 import psutil
 listeners = [c for c in psutil.Process().net_connections(kind='inet') if c.status == 'LISTEN']
@@ -27,7 +30,8 @@ for connection in listeners:
     assert (getattr(address,'ipv4_mapped',None) or address).is_loopback, connection.laddr
 print('UC00 loopback listeners verified',file=sys.stderr,flush=True)
 _, port = server.listening_address
-spark = SparkSession.builder.remote(f'sc://127.0.0.1:{port}').getOrCreate()
+authority = '[::1]' if host == '::1' else host
+spark = SparkSession.builder.remote(f'sc://{authority}:{port}').getOrCreate()
 try:
     for line in sys.stdin:
         request = json.loads(line)
