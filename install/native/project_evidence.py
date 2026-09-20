@@ -37,6 +37,11 @@ def collect(directory, targets):
     require(all(sha(h) for h in producer['fixtures'].values()), 'invalid fixture hashes')
     require(producer['measurements']['archive_bytes'] == artifact.stat().st_size, 'artifact size differs')
     require(producer['measurements']['rows'] == 2, 'fixture size differs')
+    data_artifact=directory/'project-source/sales.sbdata'
+    logical=producer['logical_data']
+    require(logical.get('verified') is True and logical.get('profile')=='postgres_tables'
+            and sha(logical.get('content_sha256')) and logical.get('archive_sha256')==hashlib.sha256(data_artifact.read_bytes()).hexdigest(), 'logical data artifact differs')
+    require(producer['closures']['linux-x86_64'].get('logical_data')==logical, 'logical data producer provenance differs')
     result = {}
     for target in TARGETS:
         native = targets[target]
@@ -59,6 +64,7 @@ def collect(directory, targets):
         require(set(data.get('checks', [])) == set(CHECKS) and len(data['checks']) == len(CHECKS), 'incomplete checks')
         require(data.get('target') == target and data.get('archive') == native['archive'] and data.get('release_sha256') == native['release_sha256'], 'mixed destination archive')
         require(data.get('producer') == producer, 'consumers used different source artifacts')
+        require(data.get('logical_data')==dict(archive_sha256=logical['archive_sha256'],content_sha256=logical['content_sha256'],rows=2), 'incomplete logical data transfer')
         previous = data['previous_archive']
         require(previous.get('version') == 'v0.1.0-alpha.22' and previous.get('target') == target and sha(previous.get('sha256')), 'missing predecessor identity')
         require(data.get('network_evidence') and 'not isolated' not in data['network_evidence'], 'missing network isolation')
@@ -69,7 +75,7 @@ def collect(directory, targets):
             measurements[name] = value
         require(all(measurements[n] == producer['measurements'][n] for n in ('archive_bytes', 'unpacked_bytes', 'rows')), 'fixture measurements differ')
         result[target] = dict(package_sha256=actual, source_sha256=producer['source_sha256'], content_sha256=producer['content_sha256'],
-                              environment=env, fixtures=producer['fixtures'], measurements=measurements,
+                              environment=env, fixtures=producer['fixtures'], measurements=measurements, logical_data=data['logical_data'],
                               network=data['network_evidence'], previous_archive=previous,
                               reports={str(path.relative_to(directory)):dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), checks=len(CHECKS)),
                                        str(source.relative_to(directory)):dict(sha256=hashlib.sha256(source.read_bytes()).hexdigest(), checks=1)})

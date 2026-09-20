@@ -125,3 +125,14 @@ covers daemon descendants and allocated data-root bytes, excluding installation,
 harness and archive staging. It can miss short peaks and double-count shared RSS.
 The two-row fixture is not a general capacity qualification. Existing R04 browser,
 ingestion, notebook, storage, recovery and benchmark suites remain mandatory.
+
+## PK08 logical data extension
+
+Alpha.25 retains every existing gate and adds the same Linux-produced `.sbdata`
+companion to both installed portability consumers. The collector checks the actual
+file hash, producing archive provenance and both transactional import reports.
+Native-cell qualification on each target covers the wider fidelity matrix,
+concurrent snapshot consistency, rollback, exact-key replay, fresh ownership,
+unsupported schema and byte/row bounds, including SIGKILL before/after commit.
+See the [PK08 contract](pk08-logical-data.md). This does not qualify Delta data
+packaging or arbitrary PostgreSQL schemas.

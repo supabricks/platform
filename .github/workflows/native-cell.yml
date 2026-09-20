@@ -70,6 +70,8 @@ jobs:
         run: python e2e/native/connections.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-connections.json
       - name: Public CLI, MCP and orders application workflow
         run: python e2e/native/workflow.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-workflow.json
+      - name: Logical data type fidelity, consistent snapshots and atomic recovery
+        run: python e2e/native/project_data.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-project-data.json
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.11.21'
@@ -91,6 +93,7 @@ jobs:
         with:
           name: native-cell-${{ matrix.target }}
           path: |
+            native-project-data.json
             native-cell.json
             native-cell.log
             native-branches.json

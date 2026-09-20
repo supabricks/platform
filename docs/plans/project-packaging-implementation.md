@@ -1,15 +1,12 @@
 # Project packaging implementation plan
 
-Status: PK00–PK06 are merged through platform #52 (`a94d8db`) and console #5
-(`cd35222` source pin). PK07 is implemented in [platform #53](https://github.com/supabricks/platform/pull/53): one cross-target artifact,
-installed lifecycle qualification, R04 evidence integration and walkthrough.
-PK08 remains unimplemented. PK07 targets alpha.24/catalog 13. Completion requires
-both exact native archives and the combined R04 gate; merged code is not release
-qualification. Alpha.22's retained baseline failed on Linux database preparation
-and macOS bundle export; PK07 corrects retryable database startup handling and
-the macOS fixture's noncanonical output path. Alpha.23 has failed both baseline
-checks and macOS console apply; the console failure's cause remains unconfirmed.
-Alpha.19 is the latest confirmed fully qualified predecessor.
+Status: PK00–PK07 are merged through platform #53 (`87f4898`) and console #5
+(`cd35222` source pin). PK07's exact alpha.24 archives passed the complete
+[R04 run 35484139360](https://github.com/supabricks/platform/actions/runs/35484139360),
+testing `6ab87e0`. Alpha.24 is the latest fully qualified predecessor.
+PK08 implements the bounded PostgreSQL table-data companion profile described in
+[its contract](../architecture/pk08-logical-data.md), targeting alpha.25/catalog 13;
+its release qualification is pending. UC/IAM remain separate follow-ons.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -219,9 +216,9 @@ console PR and then update the platform gitlink through its release workflow.
 
 ## PK07 — Installed portability release qualification
 
-Implemented in [platform #53](https://github.com/supabricks/platform/pull/53).
-The installed walkthrough and cross-target evidence must pass before this slice
-is marked complete; exact archive qualification is in progress.
+Merged and qualified in [platform #53](https://github.com/supabricks/platform/pull/53).
+Both exact alpha.24 archives and the complete R04 gate passed in run 35484139360.
+The installed walkthrough ships with the qualified artifacts.
 
 Extend the R04 evidence collector instead of introducing a competing release
 authority. Bind reports to exact platform/console/Sail source, native archive,
@@ -247,7 +244,14 @@ shared-user governance or physical power-loss qualification.
 
 ## PK08 — Logical data package profile
 
-After PK07, scope an independent data export/import adapter milestone. Probe PG
+Implemented as an explicit `.sbdata` companion with CLI export/inspect/verify/import/status.
+See the [profile and fidelity matrix](../architecture/pk08-logical-data.md) and
+[walkthrough](../handbook/project-data.md). Native and exact archive release gates
+must pass before completion. Version 1 uses one live PG MVCC snapshot, typed
+schema declarations and text COPY; the transaction protects source data without
+reading Delta epochs. Any future epoch input must use platform leases.
+
+Original adapter milestone scope: probe PG
 logical tooling versus the existing frozen export path for schema/type fidelity.
 Define an explicit matrix for extensions, sequences, constraints, indexes,
 binary data, Delta versions and unsupported objects. Begin with selected tables

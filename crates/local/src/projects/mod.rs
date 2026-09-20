@@ -1,5 +1,6 @@
 //! PK01: pure, bounded project inspection. No daemon, catalog, subprocess or network.
 pub mod bundles;
+pub mod data;
 pub mod manifest;
 pub mod package;
 pub(crate) mod publication;

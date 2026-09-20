@@ -23,6 +23,10 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
   project unpack PACKAGE.sbproj --destination NEW_DIRECTORY
   project export-query ID --expected-revision N --output NEW_FILE.sql
+  project data export --branch NAME --tables SELECTION.json --output NEW_FILE.sbdata
+  project data inspect PACKAGE.sbdata | verify PACKAGE.sbdata
+  project data import PACKAGE.sbdata --branch NAME --key KEY
+  project data status --branch NAME --key KEY
   project plan [--adopt BINDINGS.json]      Preview destination changes as JSON
   project apply PLAN.json --key KEY        Apply exactly the reviewed plan
   project status ID | cancel ID | find --key KEY
@@ -201,9 +205,21 @@ pub fn run() -> Result<u8> {
     let mut a = Args::parse(raw)?;
     let command = a.required(0)?;
     if command == "project"
+        && a.required(1)? == "data"
+        && matches!(a.required(2)?.as_str(), "inspect" | "verify")
+    {
+        let path = PathBuf::from(a.required(3)?);
+        a.take("--data-dir");
+        a.flag("--json");
+        a.finish(4)?;
+        println!("{}", crate::projects::data::read(&path)?.report());
+        return Ok(0);
+    }
+    if command == "project"
         && !matches!(
             a.required(1)?.as_str(),
             "export-query"
+                | "data"
                 | "create"
                 | "attach"
                 | "adopt"
@@ -414,6 +430,51 @@ pub fn run() -> Result<u8> {
         return Err(invalid("mcp requires an explicit --project worktree path"));
     }
     let directory = client::project_directory(project.as_deref())?;
+    if command == "project" && a.required(1)? == "data" {
+        use crate::projects::data;
+        let action = a.required(2)?;
+        let branch = a
+            .take("--branch")
+            .ok_or_else(|| invalid("project data requires --branch NAME"))?;
+        let report = match action.as_str() {
+            "export" => {
+                let selection: data::Selection = read_project_json(
+                    &a.take("--tables")
+                        .ok_or_else(|| invalid("export requires --tables SELECTION.json"))?,
+                )?;
+                let output = PathBuf::from(
+                    a.take("--output")
+                        .ok_or_else(|| invalid("export requires --output NEW_FILE.sbdata"))?,
+                );
+                a.finish(3)?;
+                data::export(
+                    &Client::bind(&root, &directory)?,
+                    &branch,
+                    selection,
+                    &output,
+                )?
+            }
+            "import" => {
+                let path = PathBuf::from(a.required(3)?);
+                let key = a
+                    .take("--key")
+                    .ok_or_else(|| invalid("import requires --key KEY"))?;
+                a.finish(4)?;
+                let archive = data::read(&path)?;
+                data::import(&Client::bind(&root, &directory)?, &branch, &key, archive)?
+            }
+            "status" => {
+                let key = a
+                    .take("--key")
+                    .ok_or_else(|| invalid("status requires --key KEY"))?;
+                a.finish(3)?;
+                data::status(&Client::bind(&root, &directory)?, &branch, &key)?
+            }
+            _ => return Err(invalid("unknown project data command")),
+        };
+        println!("{report}");
+        return Ok(0);
+    }
     if command == "project"
         && matches!(
             a.required(1)?.as_str(),
