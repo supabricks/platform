@@ -267,14 +267,8 @@ fn stop_until(record: &OwnedProcess, deadline: Instant) -> Result<()> {
     // Stop the verified leader first. Neon's sandboxed WAL redo helpers clear
     // their environment; they exit when the pageserver's pipes close. Never
     // signal such an unmarked child merely because it shares a numeric PGID.
-    if let Some(id) = os::identity(record.pid)? {
-        if id.start != record.start_identity
-            || id.uid != unsafe { libc::geteuid() }
-            || (!id.zombie && !os::has_token(&id, &record.token)?)
-        {
-            return Err(conflict("process leader ownership is ambiguous"));
-        }
-        if !id.zombie && unsafe { libc::kill(record.pid as i32, libc::SIGKILL) } != 0 {
+    if leader_is_live_and_owned(record, os::identity, os::has_token)? {
+        if unsafe { libc::kill(record.pid as i32, libc::SIGKILL) } != 0 {
             let e = std::io::Error::last_os_error();
             if e.raw_os_error() != Some(libc::ESRCH) {
                 return Err(e.into());
@@ -307,5 +301,103 @@ fn stop_until(record: &OwnedProcess, deadline: Instant) -> Result<()> {
             )));
         }
         std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
+fn leader_is_live_and_owned(
+    record: &OwnedProcess,
+    mut identity: impl FnMut(u32) -> Result<Option<os::Identity>>,
+    has_token: impl FnOnce(&os::Identity, &str) -> Result<bool>,
+) -> Result<bool> {
+    let Some(id) = identity(record.pid)? else {
+        return Ok(false);
+    };
+    if id.start != record.start_identity || id.uid != unsafe { libc::geteuid() } {
+        return Err(conflict("process leader ownership is ambiguous"));
+    }
+    if id.zombie {
+        return Ok(false);
+    }
+    if has_token(&id, &record.token)? {
+        return Ok(true);
+    }
+    // has_token deliberately returns false if its identity recheck sees exit.
+    // Recheck before labelling that normal race ambiguous. This permits no
+    // leader signal; surviving group members still require their own proof.
+    if identity(record.pid)?.is_none_or(|now| {
+        now.zombie && now.start == id.start && now.uid == id.uid && now.group == id.group
+    }) {
+        return Ok(false);
+    }
+    Err(conflict("process leader ownership is ambiguous"))
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use super::*;
+
+    fn identity(start: &str, zombie: bool) -> os::Identity {
+        os::Identity {
+            pid: 42,
+            group: 42,
+            uid: unsafe { libc::geteuid() },
+            start: start.into(),
+            zombie,
+        }
+    }
+
+    #[test]
+    fn exit_during_token_proof_needs_no_leader_signal_but_live_ambiguity_fails() {
+        let record = OwnedProcess {
+            root: PathBuf::new(),
+            generation: 1,
+            role: "fixture".into(),
+            pid: 42,
+            start_identity: "original".into(),
+            token: "private".into(),
+            branch: None,
+        };
+        for after in [None, Some(identity("original", true))] {
+            let mut observations = [Some(identity("original", false)), after].into_iter();
+            assert!(
+                !leader_is_live_and_owned(
+                    &record,
+                    |_| Ok(observations.next().unwrap()),
+                    |_, _| Ok(false),
+                )
+                .unwrap()
+            );
+        }
+        for after in [
+            identity("original", false),
+            identity("reused", false),
+            identity("reused", true),
+        ] {
+            let mut observations = [Some(identity("original", false)), Some(after)].into_iter();
+            assert!(
+                leader_is_live_and_owned(
+                    &record,
+                    |_| Ok(observations.next().unwrap()),
+                    |_, _| Ok(false),
+                )
+                .is_err()
+            );
+        }
+        assert!(
+            leader_is_live_and_owned(
+                &record,
+                |_| Ok(Some(identity("original", false))),
+                |_, _| Ok(true),
+            )
+            .unwrap()
+        );
+        assert!(
+            leader_is_live_and_owned(
+                &record,
+                |_| Ok(Some(identity("reused", false))),
+                |_, _| panic!("reused identity must fail before token lookup"),
+            )
+            .is_err()
+        );
     }
 }
