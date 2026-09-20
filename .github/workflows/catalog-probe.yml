@@ -4,6 +4,10 @@ on:
     paths:
       - 'components/*unity-catalog*'
       - 'components/test_unity_catalog.py'
+      - 'crates/local/**'
+      - 'Cargo.lock'
+      - 'install/native/unity_catalog.py'
+      - 'install/native/test_unity_catalog.py'
       - 'e2e/native/catalog/**'
       - '.github/workflows/catalog-probe.yml'
   workflow_dispatch:
@@ -30,6 +34,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the platform service owner
+        run: cargo build --locked --release -p supabricks-local --bin supabricks
       - name: Read reviewed source and baseline pins
         id: pins
         env:
@@ -51,6 +59,7 @@ jobs:
       - name: Build the pinned server and private JRE closure
         run: |
           python components/test_unity_catalog.py
+          python install/native/test_unity_catalog.py
           python components/build-unity-catalog.py --source build/uc-source --tools build/uc-tools --output build/uc-runtime
       - name: Download and verify the qualified source-built Sail/PG baseline
         env:
@@ -82,6 +91,28 @@ jobs:
             "$(command -v python)" e2e/native/catalog/probe.py \
             --release build/baseline/supabricks \
             --uc-runtime build/uc-runtime --report build/reports/probe.json
+      - name: Qualify the installed catalog service offline on Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_UC00_NETWORK_EVIDENCE="unprivileged loopback-only Linux network namespace" \
+              "$2" e2e/native/catalog/service.py \
+              --release build/baseline/supabricks --binary target/release/supabricks \
+              --uc-runtime build/uc-runtime --report build/reports/service.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Qualify the installed catalog service offline on macOS
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f e2e/native/catalog/offline-macos.sb \
+            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external outbound connections and Homebrew denied" \
+            "$(command -v python)" e2e/native/catalog/service.py \
+            --release build/baseline/supabricks --binary target/release/supabricks \
+            --uc-runtime build/uc-runtime --report build/reports/service.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

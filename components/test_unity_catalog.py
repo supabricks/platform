@@ -4,6 +4,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
+import concurrent.futures
+import hashlib
+import io
+import threading
+import tarfile
 
 spec = importlib.util.spec_from_file_location('build_uc', Path(__file__).with_name('build-unity-catalog.py'))
 build = importlib.util.module_from_spec(spec)
@@ -11,6 +17,34 @@ spec.loader.exec_module(build)
 
 
 class SourceArtifactTests(unittest.TestCase):
+    def test_modified_extracted_java_cache_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);archive=root/'jre.tar.gz'
+            with tarfile.open(archive,'w:gz') as tar:
+                member=tarfile.TarInfo('jre/bin/java');member.size=4
+                tar.addfile(member,io.BytesIO(b'java'))
+            spec=dict(url='https://invalid.example/',sha256=build.digest(archive))
+            java=build.java_home(root,spec,'jre')/'bin/java'
+            java.write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError,'Java cache checksum mismatch'):
+                build.java_home(root,spec,'jre')
+
+    def test_parallel_pom_and_jar_downloads_do_not_share_temporary_files(self):
+        barrier=threading.Barrier(2)
+        class Download(io.BytesIO):
+            first=True
+            def read(self,*args):
+                if self.first:self.first=False;barrier.wait(timeout=3)
+                return super().read(*args)
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            with patch.object(build.urllib.request,'urlopen',side_effect=lambda url,**_:Download(url.encode())):
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                    tasks=[pool.submit(build.fetch,dict(url=kind,sha256=hashlib.sha256(kind.encode()).hexdigest()),root/('artifact.'+kind)) for kind in ('jar','pom')]
+                    for task in tasks:task.result()
+            self.assertEqual((root/'artifact.jar').read_bytes(),b'jar')
+            self.assertEqual((root/'artifact.pom').read_bytes(),b'pom')
+
     def test_only_tracked_configuration_is_packaged(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

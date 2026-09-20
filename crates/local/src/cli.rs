@@ -71,6 +71,11 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
   catalog [--branch NAME]       Discover application tables and columns
+  catalog service status | restart | rotate-key
+  catalog service configure local [--runtime ABSOLUTE_PATH]
+  catalog service configure external --endpoint URL --token-file ABSOLUTE_PATH
+      --metastore-id UUID [--ca-file ABSOLUTE_PATH]
+                               OSS UC only; remote TLS required; storage access disabled
   sql --sql SQL | --file PATH [--branch NAME] [--write]
       [--max-rows 200] [--timeout-ms 10000]
   ingest inspect FILE [--format csv|tsv|jsonl|json|json_document|parquet] [--delimiter ,] [--no-header] [--null-strings JSON]
@@ -402,6 +407,56 @@ pub fn run() -> Result<u8> {
             crate::projects::source_identity(project)?;
         }
         crate::runtime_cli::run(&command, root, bundle, helpers)?;
+        return Ok(0);
+    }
+    if command == "catalog" && a.pos.get(1).is_some_and(|s| s == "service") {
+        let action = a.required(2)?;
+        let command = match action.as_str() {
+            "status" => {
+                a.finish(3)?;
+                crate::catalog::Command::Status
+            }
+            "restart" => {
+                a.finish(3)?;
+                crate::catalog::Command::Restart
+            }
+            "rotate-key" => {
+                a.finish(3)?;
+                crate::catalog::Command::RotateKey
+            }
+            "configure" => {
+                let provider = match a.required(3)?.as_str() {
+                    "local" => crate::catalog::Provider::Local {
+                        runtime: a.take("--runtime").map(PathBuf::from),
+                    },
+                    "external" => crate::catalog::Provider::External {
+                        endpoint: a
+                            .take("--endpoint")
+                            .ok_or_else(|| invalid("missing --endpoint"))?,
+                        token_file: a
+                            .take("--token-file")
+                            .map(PathBuf::from)
+                            .ok_or_else(|| invalid("missing --token-file"))?,
+                        ca_file: a.take("--ca-file").map(PathBuf::from),
+                        metastore_id: a
+                            .take("--metastore-id")
+                            .ok_or_else(|| invalid("missing --metastore-id"))?,
+                    },
+                    _ => return Err(invalid("use catalog service configure local or external")),
+                };
+                a.finish(4)?;
+                crate::catalog::Command::Configure { provider }
+            }
+            _ => {
+                return Err(invalid(
+                    "use catalog service status, configure, restart or rotate-key",
+                ));
+            }
+        };
+        println!(
+            "{}",
+            client::request(&root, Request::CatalogService { command })?
+        );
         return Ok(0);
     }
     if command == "doctor" {

@@ -236,9 +236,15 @@ fn secret() -> String {
 fn engine_role(role: &str) -> bool {
     // Health checks and recovery must use the same ownership boundary. A
     // notebook kernel can exit between its owner's tick and the engine tick.
-    !["analytics-session-", "console-", "ingest-", "notebook-"]
-        .iter()
-        .any(|prefix| role.starts_with(prefix))
+    ![
+        "analytics-session-",
+        "console-",
+        "ingest-",
+        "notebook-",
+        "unity-catalog",
+    ]
+    .iter()
+    .any(|prefix| role.starts_with(prefix))
 }
 fn path(p: &Path) -> Result<String> {
     p.to_str()
