@@ -9,6 +9,7 @@ from pathlib import Path
 import platform
 import queue
 import re
+import signal
 import shutil
 import socket
 import subprocess
@@ -18,12 +19,42 @@ import threading
 import time
 import uuid
 
+import psutil
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from epochs import Epochs
+from cell import wait
 from server import Server, clean_env
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
+
+
+class CatalogCell(Epochs):
+    def stop(self):
+        # Seatbelt refuses macOS's system ps executable. Inspect native process
+        # identities directly, including PG workers in separate process groups.
+        descendants = set()
+        for record in self.records():
+            try:
+                process = psutil.Process(record['pid'])
+                descendants.add(process)
+                descendants.update(process.children(recursive=True))
+            except psutil.NoSuchProcess:
+                pass
+        self.request(method='shutdown')
+        wait(lambda: not (self.root / 'control.sock').exists(), timeout=60)
+        for process in self.daemons:
+            if process.poll() is None:
+                process.wait(timeout=10)
+            assert process.returncode in (0, -signal.SIGKILL), 'daemon failed during shutdown'
+        assert not self.records(), 'owned processes remain after shutdown'
+        for process in descendants:
+            try:
+                assert not process.is_running() or process.status() == psutil.STATUS_ZOMBIE, \
+                    'owned descendant survived cleanup'
+            except psutil.NoSuchProcess:
+                pass
 
 
 def sha(path):
@@ -129,7 +160,7 @@ def main():
     for entry in report['uc_build']['jars']:
         assert sha(runtime/entry['path']) == entry['sha256'], entry['path']
     cellroot = root/'cell'; cellroot.mkdir(mode=0o700)
-    cell = Epochs(release/'bin/supabricks', release/'engine', release/'helpers', cellroot)
+    cell = CatalogCell(release/'bin/supabricks', release/'engine', release/'helpers', cellroot)
     cell.python = release/'python/analytics/python'
     cell.work = root/'producer'; cell.work.mkdir()
     (cell.work/'supabricks.toml').write_text(f'format_version = 1\nid = "{cell.project}"\nname = "producer"\n')
