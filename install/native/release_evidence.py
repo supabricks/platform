@@ -171,6 +171,7 @@ def markdown(report):
         for name, m in samples.items():
             seconds=m['duration_ms']/1000
             lines.append(f"| {target} | {name} | {m['source_bytes']} | {m['rows']} | {seconds:.3f} | {m['source_bytes']/1048576/seconds:.3f} | {m['peak_rss_bytes']/1048576:.1f} |")
+    lines += ['', '## Logical data portability', '', 'Both targets verified and transactionally imported the same Linux-produced `.sbdata` companion: `' + report['targets']['linux-x86_64']['projects']['logical_data']['archive_sha256'] + '`. The fixture includes a primary key, decimal amounts, NULL and binary bytes. Native-cell qualification additionally covers the type matrix, concurrent snapshots, schema rejection, atomic rollback and SIGKILL before/after COMMIT. The profile is PG17 typed table data; it does not copy roles, grants, executable dump SQL or Delta epochs.']
     lines += ['', '## Project portability', '', 'Both targets consumed the same `.sbproj`: `' + report['targets']['linux-x86_64']['projects']['package_sha256'] + '`. Synthetic fixture: two CSV rows, two migrations, one SQL query and one notebook, with two native wheel closures. Prepare time is first deployment in the clean candidate installation; start time is candidate kernel readiness. RSS samples daemon descendants; disk peak samples allocated bytes across owned data roots every 0.5 seconds. These samples can miss short peaks; RSS can double-count shared pages. Archive/install/harness disk is excluded.', '', '| Target | Package bytes | Expanded bytes | Prepare seconds | Kernel start seconds | Sampled RSS bytes | Sampled data disk bytes |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
     for target, data in report['targets'].items():
         m = data['projects']['measurements']
@@ -185,7 +186,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.24')
+    parser.add_argument('--version', default='v0.1.0-alpha.25')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

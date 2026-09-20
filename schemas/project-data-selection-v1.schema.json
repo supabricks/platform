@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 63,
+            "pattern": "^[^\\u0000]+$",
+            "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 63,
+            "pattern": "^[^\\u0000]+$",
+            "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+          }
+        },
+        "required": [
+          "schema",
+          "name"
+        ]
+      }
+    }
+  },
+  "required": [
+    "version",
+    "tables"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/project-data-selection-v1.schema.json",
+  "title": "Explicit logical data table selection"
+}

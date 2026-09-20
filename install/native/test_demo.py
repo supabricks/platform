@@ -13,7 +13,7 @@ class DemoTest(unittest.TestCase):
         self.root=Path(self.temp.name)
         repo=Path(__file__).resolve().parents[2]
         for name in FILES:
-            source=repo/({'DEMO.md':'docs/handbook/local-demo.md','PROJECT-PORTABILITY.md':'docs/handbook/project-portability.md'}.get(name,name))
+            source=repo/({'DEMO.md':'docs/handbook/local-demo.md','PROJECT-PORTABILITY.md':'docs/handbook/project-portability.md','PROJECT-DATA.md':'docs/handbook/project-data.md'}.get(name,name))
             destination=self.root/name;destination.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,destination)
         self.seal()
 

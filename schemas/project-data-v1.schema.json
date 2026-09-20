@@ -1,0 +1,467 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1
+        },
+        "profile": {
+          "const": "postgres_tables"
+        },
+        "postgres_major": {
+          "const": 17
+        },
+        "locale": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "provider": {
+              "enum": [
+                "b",
+                "c"
+              ]
+            },
+            "collate": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "ctype": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "locale": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "provider",
+            "collate",
+            "ctype",
+            "locale",
+            "version"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "source_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "runtime_project_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "branch_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "branch_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "snapshot": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^[0-9]+:[0-9]+:[0-9,]*$"
+            }
+          },
+          "required": [
+            "definition_id",
+            "source_sha256",
+            "runtime_project_id",
+            "branch_id",
+            "branch_revision",
+            "snapshot"
+          ]
+        },
+        "tables": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "table": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "schema": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "pattern": "^[^\\u0000]+$",
+                    "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63,
+                    "pattern": "^[^\\u0000]+$",
+                    "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+                  }
+                },
+                "required": [
+                  "schema",
+                  "name"
+                ]
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 63,
+                      "pattern": "^[^\\u0000]+$",
+                      "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+                    },
+                    "data_type": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "boolean"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "smallint"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "bigint"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "text"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "bytea"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "uuid"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "json"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "jsonb"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "real"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "double"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "date"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "timestamp"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "timestamp_tz"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "varchar"
+                            },
+                            "length": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 10485760
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "length"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "numeric"
+                            },
+                            "precision": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1000
+                            },
+                            "scale": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": -1000,
+                              "maximum": 1000
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "precision",
+                            "scale"
+                          ]
+                        }
+                      ]
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "data_type",
+                    "nullable"
+                  ]
+                }
+              },
+              "constraints": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 63,
+                      "pattern": "^[^\\u0000]+$",
+                      "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+                    },
+                    "kind": {
+                      "enum": [
+                        "primary_key",
+                        "unique"
+                      ]
+                    },
+                    "columns": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 64,
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 63,
+                        "pattern": "^[^\\u0000]+$",
+                        "description": "Runtime additionally enforces the PostgreSQL 63-byte UTF-8 limit."
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "kind",
+                    "columns"
+                  ]
+                }
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "data_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "copy_text": {
+                "type": "string",
+                "description": "PostgreSQL COPY text, UTF-8. Runtime validates hash, row widths/counts and byte budgets."
+              }
+            },
+            "required": [
+              "table",
+              "columns",
+              "constraints",
+              "rows",
+              "data_sha256",
+              "copy_text"
+            ]
+          }
+        }
+      },
+      "required": [
+        "format_version",
+        "profile",
+        "postgres_major",
+        "locale",
+        "source",
+        "tables"
+      ]
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "content",
+    "content_sha256"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/project-data-v1.schema.json",
+  "title": "Supabricks PostgreSQL table-data companion v1",
+  "description": "Structural schema only. Runtime additionally validates digests, aggregate budgets, supported locale combinations, type modifiers, constraints and COPY rows."
+}

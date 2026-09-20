@@ -31,7 +31,7 @@ CHECKS = (
     'missing_wheels_no_activation', 'cancel_retains_resources',
     'interrupted_apply_reconciles', 'restart_retains_revision',
     'signed_upgrade_reprepare', 'cold_restore_reprepare', 'low_disk_no_publication',
-    'final_inventory_verified',
+    'final_inventory_verified', 'logical_data_transferred_transactionally',
 )
 
 
@@ -63,7 +63,7 @@ class Cell:
 
     def cli(self, at, *parts, success=True):
         scope = [] if parts[:2] == ('installation', 'verify') else ['--data-dir', str(self.data)]
-        if parts[:2] not in (('project', 'unpack'), ('project', 'verify'), ('installation', 'verify')):
+        if parts[:2] not in (('project', 'unpack'), ('project', 'verify'), ('installation', 'verify')) and parts[:3] != ('project', 'data', 'verify'):
             scope += ['--project', str(at)]
         result = subprocess.run([str(self.binary), *map(str, parts), *scope], env=self.env,
                                 capture_output=True, text=True, timeout=300)
@@ -149,6 +149,15 @@ def bundle(args, root, release, archive):
             manifest = json.loads(z.read('bundle.json'))
         report = dict(status='passed', target=args.target, archive=archive,
                       release_sha256=digest(release / 'release.json'), bundle_sha256=digest(path), manifest=manifest)
+        if args.target == 'linux-x86_64':
+            cell.cli(project, 'database', 'create', 'main', '--key', 'logical-source', '--wait')
+            cell.cli(project, 'sql', '--branch', 'main', '--write', '--sql', 'CREATE TABLE public.portable_sales(id integer PRIMARY KEY, amount numeric(18,2), payload bytea)')
+            cell.cli(project, 'sql', '--branch', 'main', '--write', '--sql', "INSERT INTO public.portable_sales VALUES(1,10,decode('00ff','hex')),(2,20,NULL)")
+            selection=root/'data-tables.json'
+            selection.write_text(json.dumps(dict(version=1,tables=[dict(schema='public',name='portable_sales')])))
+            logical=cell.cli(project, 'project', 'data', 'export', '--branch', 'main', '--tables', selection, '--output', args.output/'sales.sbdata')
+            assert logical['archive_sha256'] == digest(args.output/'sales.sbdata')
+            report['logical_data'] = logical
     finally:
         cell.close()
     (args.output / 'bundle.json').write_text(json.dumps(report, indent=2)+'\n')
@@ -179,6 +188,9 @@ def produce(args, root, release, archive):
     manifest.write_text(manifest.read_text().replace('"migrations/*.sql"]', '"migrations/*.sql", "dependencies/*.zip"]') +
                         '\n[environments.notebook.bundles]\n' + ''.join(f'{t} = "dependencies/{t}.zip"\n' for t in TARGETS))
     args.output.mkdir(parents=True, exist_ok=True)
+    data_source=args.bundles/'project-bundle-linux-x86_64/sales.sbdata'
+    assert digest(data_source) == closures['linux-x86_64']['logical_data']['archive_sha256']
+    shutil.copy2(data_source,args.output/'sales.sbdata')
     package = args.output / 'sales.sbproj'
     report = cell.cli(source, 'project', 'pack', '--output', package)
     # Repacking on this producer must be deterministic. Consumers never repack it.
@@ -191,6 +203,7 @@ def produce(args, root, release, archive):
                 release_sha256=digest(release / 'release.json'), package_sha256=digest(package),
                 content_sha256=report['content_sha256'], source_sha256=report['inspection']['source_sha256'],
                 environment=report['inspection']['environments']['notebook'], closures=closures,
+                logical_data=closures['linux-x86_64']['logical_data'],
                 fixtures={name:entry['sha256'] for name, entry in report['inspection']['files'].items()
                           if Path(name).suffix in ('.csv', '.sql', '.ipynb')},
                 measurements=dict(archive_bytes=package.stat().st_size,
@@ -362,6 +375,19 @@ def consume(args, root, release, archive):
         assert cell.cli(project, 'project', 'installed')['active_revision'] == first['id']
         totals(project); notebook(project)
         check('restart_retains_revision')
+        # Both native targets import these exact Linux-produced bytes. No source
+        # roles, branch IDs, OIDs or credentials become destination authority.
+        logical=args.package/'sales.sbdata'
+        verified=cell.cli(project,'project','data','verify',logical)
+        assert verified == producer['logical_data'] and digest(logical)==verified['archive_sha256']
+        cell.cli(project,'database','create','transferred','--key','logical-target','--wait')
+        imported=cell.cli(project,'project','data','import',logical,'--branch','transferred','--key','portable-data')
+        assert imported['state']=='committed' and imported['archive_sha256']==verified['archive_sha256']
+        assert imported['destination_branch_id']!=verified['source']['branch_id']
+        assert cell.cli(project,'sql','--branch','transferred','--sql',"SELECT count(*),sum(amount),min(encode(payload,'hex')) FROM public.portable_sales")['rows']==[['2','30.00','00ff']]
+        assert cell.cli(project,'project','data','import',logical,'--branch','transferred','--key','portable-data')['replayed']
+        report['logical_data'] = dict(archive_sha256=verified['archive_sha256'],content_sha256=verified['content_sha256'],rows=2)
+        check('logical_data_transferred_transactionally')
         # A predecessor's kernel contract can differ (including built wheel bytes).
         # Seed its installed template, then upgrade and explicitly adopt the same
         # transferred candidate package; never forge/reseal a predecessor closure.
@@ -483,7 +509,7 @@ def main():
     for name in ('directory', 'output', 'bundles', 'package', 'report', 'previous-directory'):
         parser.add_argument('--'+name, type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.24')
+    parser.add_argument('--version', default='v0.1.0-alpha.25')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.22')
     parser.add_argument('--release', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
