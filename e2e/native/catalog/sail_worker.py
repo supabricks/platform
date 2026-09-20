@@ -1,6 +1,7 @@
 """One private worker per catalog principal; credentials enter over stdin only."""
 import json
 import os
+import ipaddress
 import sys
 
 config = json.loads(sys.stdin.readline())
@@ -18,6 +19,13 @@ from pyspark.sql import SparkSession
 
 server = SparkConnectServer(ip='127.0.0.1', port=0)
 server.start()
+import psutil
+listeners = [c for c in psutil.Process().net_connections(kind='inet') if c.status == 'LISTEN']
+assert listeners, 'Sail has no listening socket'
+for connection in listeners:
+    address = ipaddress.ip_address(connection.laddr.ip)
+    assert (getattr(address,'ipv4_mapped',None) or address).is_loopback, connection.laddr
+print('UC00 loopback listeners verified',file=sys.stderr,flush=True)
 _, port = server.listening_address
 spark = SparkSession.builder.remote(f'sc://127.0.0.1:{port}').getOrCreate()
 try:

@@ -7,7 +7,9 @@
 ;; JVM/Netty client sockets may bind wildcard ephemeral addresses before connect.
 ;; Inbound listeners and outbound connections remain restricted separately.
 (allow network-bind)
-(allow network-inbound (local ip "localhost:*"))
+;; Native gRPC uses internal listeners; the harness verifies service listeners
+;; are loopback. This policy enforces disconnected outbound execution.
+(allow network-inbound)
 (allow network-outbound (remote ip "localhost:*"))
 (allow network* (local unix-socket))
 (allow network* (remote unix-socket))

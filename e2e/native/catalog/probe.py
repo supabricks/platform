@@ -41,6 +41,8 @@ class Sail:
         self.log = (root/f'sail-{uuid.uuid4()}.log').open('w')
         env = clean_env()
         env['AWS_EC2_METADATA_DISABLED'] = 'true'
+        env['GRPC_VERBOSITY'] = 'DEBUG'
+        env['GRPC_TRACE'] = 'client_channel'
         env['AWS_CONFIG_FILE'] = str(root/'absent-aws-config')
         env['AWS_SHARED_CREDENTIALS_FILE'] = str(root/'absent-aws-credentials')
         self.proc = subprocess.Popen([str(python), str(HERE/'sail_worker.py')], env=env,
