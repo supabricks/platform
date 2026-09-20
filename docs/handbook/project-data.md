@@ -48,7 +48,9 @@ under that key fails. `not_committed` may mean another attempt is still running;
 it does not authorize deleting destination data. Use Ctrl-C to interrupt the
 foreground command. No platform job continues after its client connection closes.
 
-Version 1 supports PG17 UTF-8 tables with compatible database locale/version,
+Version 1 supports PG17 UTF-8 tables with portable database locales. Text/varchar
+columns require matching locale/version; numeric/binary-only tables also transfer
+between the Linux builtin `C.UTF-8` and macOS builtin `C` defaults. It preserves
 common scalar types (including numeric, UUID, JSON/JSONB and bytea), NOT NULL,
 primary keys and ordinary UNIQUE constraints. It rejects sequences/serial/identity,
 defaults, foreign keys, CHECK constraints, standalone/custom indexes, extensions,

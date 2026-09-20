@@ -238,6 +238,16 @@ impl Selection {
     }
 }
 impl Content {
+    /// Only text/varchar in this profile have PostgreSQL collations. Binary,
+    /// numeric, JSON and temporal COPY values do not acquire the DB collation.
+    pub fn requires_matching_locale(&self) -> bool {
+        self.tables.iter().any(|t| {
+            t.columns
+                .iter()
+                .any(|c| matches!(c.data_type, Type::Text | Type::Varchar { .. }))
+        })
+    }
+
     pub fn validate(&self) -> Result<()> {
         self.locale.validate()?;
         if self.format_version != 1
