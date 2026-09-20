@@ -1,0 +1,38 @@
+"""UC00 source artifact boundaries; never package developer authentication state."""
+import importlib.util
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+spec = importlib.util.spec_from_file_location('build_uc', Path(__file__).with_name('build-unity-catalog.py'))
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+
+
+class SourceArtifactTests(unittest.TestCase):
+    def test_only_tracked_configuration_is_packaged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'source'; source.mkdir()
+            subprocess.run(['git','init','-q',str(source)],check=True)
+            conf = source/'etc/conf'; conf.mkdir(parents=True)
+            for name in ('server.properties','hibernate.properties'):
+                (conf/name).write_text('fixture=true\n')
+            subprocess.run(['git','add','etc/conf'],cwd=source,check=True)
+            (source/'.gitignore').write_text('etc/conf/token.txt\netc/conf/private_key.der\n')
+            (conf/'token.txt').write_text('private developer token')
+            (conf/'private_key.der').write_bytes(b'private developer key')
+            output = root/'templates'
+            inventory = build.stage_configuration(source, output)
+            self.assertEqual(set(inventory), {'server.properties','hibernate.properties'})
+            self.assertEqual({p.name for p in output.iterdir()}, set(inventory))
+
+    def test_corrupt_cached_download_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cached = Path(tmp)/'runtime.tar.gz'; cached.write_bytes(b'corrupt')
+            with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                build.fetch(dict(url='https://invalid.example/',sha256='0'*64),cached)
+
+
+if __name__ == '__main__': unittest.main()

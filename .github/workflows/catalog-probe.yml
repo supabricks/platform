@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'components/*unity-catalog*'
+      - 'components/test_unity_catalog.py'
       - 'e2e/native/catalog/**'
       - '.github/workflows/catalog-probe.yml'
   workflow_dispatch:
@@ -48,7 +49,9 @@ jobs:
           ref: ${{ steps.pins.outputs.commit }}
           path: build/uc-source
       - name: Build the pinned server and private JRE closure
-        run: python components/build-unity-catalog.py --source build/uc-source --tools build/uc-tools --output build/uc-runtime
+        run: |
+          python components/test_unity_catalog.py
+          python components/build-unity-catalog.py --source build/uc-source --tools build/uc-tools --output build/uc-runtime
       - name: Download and verify the qualified source-built Sail/PG baseline
         env:
           GH_TOKEN: ${{ github.token }}

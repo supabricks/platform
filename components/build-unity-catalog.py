@@ -49,6 +49,26 @@ def java_home(cache, spec, kind):
     return homes[0]
 
 
+def stage_configuration(source, output):
+    # A clean checkout may still contain ignored admin tokens/signing keys
+    # from an earlier developer run. Only package tracked templates.
+    tracked = subprocess.check_output(['git', 'ls-files', '-z', '--', 'etc/conf'], cwd=source).decode().split('\0')
+    inventory = {}
+    output.mkdir()
+    for name in filter(None, tracked):
+        path = source/name
+        relative = Path(name).relative_to('etc/conf')
+        if path.is_symlink() or not path.is_file():
+            raise ValueError('configuration templates must be regular tracked files')
+        destination = output/relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        inventory[str(relative)] = digest(path)
+    if 'server.properties' not in inventory or 'hibernate.properties' not in inventory:
+        raise ValueError('required UC configuration templates missing')
+    return inventory
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -107,7 +127,7 @@ def main():
         inventory.append(dict(path=relative, source_name=jar.name, sha256=digest(jar), bytes=jar.stat().st_size))
     (output/'classpath.json').write_text(json.dumps([x['path'] for x in inventory])+'\n')
     shutil.copytree(jre, output/'java', symlinks=True)
-    shutil.copytree(source/'etc/conf', output/'configuration-template')
+    configuration = stage_configuration(source, output/'configuration-template')
     (output/'licenses').mkdir()
     for name in ('LICENSE','NOTICE'):
         shutil.copy2(source/name, output/'licenses'/name)
@@ -115,7 +135,7 @@ def main():
     report = dict(schema_version=1, scope='UC00 server-only developer artifact',
         target=target, source_commit=sha, source_pin_sha256=digest(PIN),
         java=pin['java'], sbt=pin['sbt'], source_inputs=pin['inputs'],
-        build_seconds=round(time.monotonic()-started, 3), jars=inventory,
+        build_seconds=round(time.monotonic()-started, 3), jars=inventory, configuration_templates=configuration,
         dependency_lock_status='resolved JAR hashes recorded; production transitive lock is UC01 work')
     (output/'build.json').write_text(json.dumps(report, indent=2)+'\n')
     artifact = output.with_suffix('.tar.gz')

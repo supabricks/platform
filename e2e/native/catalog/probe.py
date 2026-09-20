@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import queue
+import re
 import shutil
 import socket
 import subprocess
@@ -34,6 +35,7 @@ def sha(path):
 
 class Sail:
     def __init__(self, python, server, token, root, evidence, storage=None):
+        self.secrets = [token] + [v for k,v in (storage or {}).items() if k in ('AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_SESSION_TOKEN')]
         self.evidence = evidence
         self.worker_id = str(uuid.uuid4())
         self.log = (root/f'sail-{uuid.uuid4()}.log').open('w')
@@ -65,6 +67,14 @@ class Sail:
         result = self.query(sql)
         assert result['ok'], result
         return result['rows']
+
+    def diagnostics(self):
+        self.log.flush()
+        content = Path(self.log.name).read_text(errors='replace')
+        for secret in self.secrets:
+            if secret: content = content.replace(secret, '[redacted]')
+        content = re.sub(r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', '[redacted JWT]', content)
+        return dict(worker_id=self.worker_id, exit_code=self.proc.poll(), lines=[x[:500] for x in content.splitlines()[-25:]])
 
     def close(self):
         try:
@@ -291,6 +301,7 @@ def main():
     finally:
         if report['status'] != 'PASS' and server:
             report['uc_failure'] = server.diagnostics()
+            report['sail_failure'] = [w.diagnostics() for w in workers]
         cleanup_errors = []
         callbacks = [w.close for w in workers] + ([server.stop] if server else []) + [cell.close]
         for close in callbacks:

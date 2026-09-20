@@ -16,10 +16,10 @@ for key, value in config.get('storage', {}).items():
 from pysail.spark import SparkConnectServer
 from pyspark.sql import SparkSession
 
-server = SparkConnectServer()
+server = SparkConnectServer(ip='127.0.0.1', port=0)
 server.start()
 _, port = server.listening_address
-spark = SparkSession.builder.remote(f'sc://localhost:{port}').getOrCreate()
+spark = SparkSession.builder.remote(f'sc://127.0.0.1:{port}').getOrCreate()
 try:
     for line in sys.stdin:
         request = json.loads(line)
