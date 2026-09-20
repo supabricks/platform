@@ -3,13 +3,26 @@ import json
 import subprocess
 import socket
 import uuid
+from pathlib import Path
+from jsonschema import Draft202012Validator, FormatChecker
 from cell import wait
 
 
 def run(cell, root, installed, branch, work, endpoint, token, api, check):
+    repo=Path(__file__).resolve().parents[3]
+    contract=json.loads((repo/'schemas/catalog-metadata-response-v1.schema.json').read_text())
+    tools=json.loads((repo/'crates/local/tests/fixtures/local-mcp-tools.json').read_text())
+    embedded=next(tool['outputSchema'] for tool in tools if tool['name']=='catalog_metadata')
+    validators=[]
+    for schema in (contract,embedded):
+        Draft202012Validator.check_schema(schema)
+        validators.append(Draft202012Validator(schema,format_checker=FormatChecker()))
     binding=dict(project_id=cell.project,worktree=str(work))
     def submit(command, scope=None):
-        return cell.request(method='api',api_version=1,binding=scope or binding,action=dict(action='catalog_metadata',command=command))
+        value=cell.request(method='api',api_version=1,binding=scope or binding,action=dict(action='catalog_metadata',command=command))
+        for validator in validators:
+            validator.validate(value)
+        return value
     def metadata(action, scope=None, expect='complete', **fields):
         value=submit(dict(action=action,**fields),scope)
         if value.get('state')=='running':
@@ -18,6 +31,7 @@ def run(cell, root, installed, branch, work, endpoint, token, api, check):
             assert value['state']==expect,value
             return value['result'] if expect=='complete' else value['error']
         return value
+    assert metadata('capabilities')['namespace_creation']
     assert metadata('namespace')['namespace'] is None
     assert metadata('list',branch='main')['assets']==[]
     assert metadata('health')['catalog']['ready']

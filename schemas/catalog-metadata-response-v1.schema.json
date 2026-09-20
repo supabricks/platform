@@ -1,32 +1,276 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supabricks.io/schemas/catalog-metadata-response-v1.schema.json",
   "title": "Supabricks project metadata response v1",
   "type": "object",
-  "properties": {
-    "api_version": {
-      "const": 1
-    },
-    "state": {
-      "enum": [
-        "running",
-        "complete",
-        "failed"
-      ]
-    },
-    "id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "result": {
-      "type": "object"
-    },
-    "error": {
+  "$defs": {
+    "column": {
       "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "data_type": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
       "required": [
-        "code",
-        "retryable",
-        "message"
+        "name",
+        "data_type",
+        "nullable",
+        "ordinal"
       ],
+      "additionalProperties": false
+    },
+    "asset": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "project_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "branch_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "resource_key": {
+          "type": "string"
+        },
+        "provider_id": {
+          "type": "string"
+        },
+        "incarnation": {
+          "type": "string"
+        },
+        "alias": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "postgres",
+            "supabricks_snapshot"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "postgres_table",
+            "delta_snapshot"
+          ]
+        },
+        "uc_object_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/column"
+          }
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "publication_revision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "epoch_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "source_revision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observed_at_ms": {
+          "type": "integer"
+        },
+        "snapshot_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "state": {
+          "enum": [
+            "active",
+            "stale"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "deployment_id",
+        "branch_id",
+        "resource_key",
+        "provider_id",
+        "incarnation",
+        "alias",
+        "schema",
+        "name",
+        "provider",
+        "kind",
+        "uc_object_id",
+        "columns",
+        "version",
+        "publication_revision",
+        "epoch_id",
+        "source_revision",
+        "observed_at_ms",
+        "snapshot_at_ms",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "namespace": {
+      "type": "object",
+      "properties": {
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "project_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "provider_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "metastore_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "catalog": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "catalog_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "schema_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "state": {
+          "enum": [
+            "new",
+            "creating_catalog",
+            "catalog_ready",
+            "creating_schema",
+            "ready",
+            "indeterminate",
+            "stale",
+            "collision"
+          ]
+        }
+      },
+      "required": [
+        "deployment_id",
+        "project_id",
+        "provider_id",
+        "metastore_id",
+        "catalog",
+        "schema",
+        "catalog_id",
+        "schema_id",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "catalog": {
+      "type": "object",
+      "properties": {
+        "protocol_version": {
+          "const": 1
+        },
+        "provider": {
+          "const": "oss_unity_catalog"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "state": {
+          "type": "string"
+        },
+        "provider_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "metastore_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "protocol_version",
+        "provider",
+        "ready",
+        "state",
+        "provider_id",
+        "metastore_id",
+        "error"
+      ],
+      "additionalProperties": true
+    },
+    "fault": {
+      "type": "object",
       "properties": {
         "code": {
           "enum": [
@@ -49,10 +293,253 @@
           "type": "string"
         }
       },
+      "required": [
+        "code",
+        "retryable",
+        "message"
+      ],
       "additionalProperties": false
     }
   },
-  "required": [
-    "api_version"
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "profile": {
+          "const": "local_owner_metadata"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "postgres",
+              "supabricks_snapshot",
+              "oss_unity_catalog"
+            ]
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "namespace_creation": {
+          "const": true
+        },
+        "uc_publication": {
+          "const": false
+        },
+        "cross_project_bindings": {
+          "const": false
+        },
+        "storage_access": {
+          "const": false
+        },
+        "governed_multiuser": {
+          "const": false
+        }
+      },
+      "required": [
+        "api_version",
+        "profile",
+        "providers",
+        "limits",
+        "namespace_creation",
+        "uc_publication",
+        "cross_project_bindings",
+        "storage_access",
+        "governed_multiuser"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "deployment_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        }
+      },
+      "required": [
+        "api_version",
+        "deployment_id",
+        "catalog"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/namespace"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        }
+      },
+      "required": [
+        "api_version",
+        "namespace",
+        "catalog"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "const": "running"
+        }
+      },
+      "required": [
+        "api_version",
+        "id",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "const": "complete"
+        },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "assets": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "$ref": "#/$defs/asset"
+                  }
+                },
+                "next": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 2048
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "assets",
+                "next",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "asset": {
+                  "$ref": "#/$defs/asset"
+                },
+                "storage_access": {
+                  "const": false
+                },
+                "valid": {
+                  "const": true
+                }
+              },
+              "required": [
+                "asset",
+                "storage_access"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "namespace": {
+                  "$ref": "#/$defs/namespace"
+                }
+              },
+              "required": [
+                "namespace"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        }
+      },
+      "required": [
+        "api_version",
+        "id",
+        "state",
+        "result",
+        "catalog"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "const": "failed"
+        },
+        "error": {
+          "$ref": "#/$defs/fault"
+        }
+      },
+      "required": [
+        "api_version",
+        "id",
+        "state",
+        "error"
+      ],
+      "additionalProperties": false
+    }
   ]
 }
