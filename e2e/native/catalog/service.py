@@ -193,6 +193,15 @@ def main():
         assert api(restarted['endpoint'],token(),'catalogs/uc01_recovery')[1]['id']==catalog_id
         assert restarted['metastore_id']==first['metastore_id']
         check('daemon_restart_preserves_catalog_metadata')
+        cell.stop();saved_catalog=root/'saved-catalog';(cellroot/'catalog').rename(saved_catalog)
+        cell.start();wait(lambda:status()['state']=='failed',timeout=40)
+        assert not (cellroot/'catalog/etc/db/h2db.mv.db').exists()
+        assert cell.sql(branch,'SELECT 42')=='42'
+        cell.stop();shutil.rmtree(cellroot/'catalog');saved_catalog.rename(cellroot/'catalog')
+        cell.start();restored=ready()
+        assert restored['provider_id']==first['provider_id'] and restored['metastore_id']==first['metastore_id']
+        assert api(restored['endpoint'],token(),'catalogs/uc01_recovery')[1]['id']==catalog_id
+        check('missing_metastore_fails_closed_and_restore_preserves_identity')
         external=Server(runtime,root/'external',{'s3_access':'uc01-test-access','s3_secret':'uc01-test-secret'})
         external.start();external_token=external.root/'etc/conf/token.txt';external_token.chmod(0o600)
         external_id=external.ok('GET','metastore_summary')['metastore_id']

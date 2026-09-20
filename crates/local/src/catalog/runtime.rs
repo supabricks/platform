@@ -138,12 +138,25 @@ pub fn resolve(provider: &Provider) -> Result<Runtime> {
     }
 }
 
-pub fn prepare(store: &Store, runtime: &Runtime) -> Result<PathBuf> {
+pub fn data_directory(store: &Store) -> Result<PathBuf> {
     let root = store.root().join("catalog");
     config::directory(&root)?;
     for name in ["etc", "etc/conf", "etc/db", "etc/logs", "tmp"] {
         config::directory(&root.join(name))?;
     }
+    let db = root.join("etc/db/h2db.mv.db");
+    if config::local_identity(store)?.metastore_id.is_some() && !db.try_exists()? {
+        return Err(conflict("catalog metastore missing; restore catalog data"));
+    }
+    if db.try_exists()? {
+        crate::store::ownership::private_file(&db)?;
+    }
+    crate::store::ownership::private_file(&root.join("process.log"))?;
+    Ok(root)
+}
+
+pub fn prepare(store: &Store, runtime: &Runtime) -> Result<PathBuf> {
+    let root = data_directory(store)?;
     let conf = root.join("etc/conf");
     // Fail closed on incomplete key state after first successful bootstrap.
     // Explicit key rotation removes the sentinel while stopped.

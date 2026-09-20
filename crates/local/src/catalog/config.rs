@@ -24,6 +24,35 @@ pub struct Config {
     pub provider: Provider,
 }
 
+// Independent of catalog/ so losing the metastore cannot silently replace it.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalIdentity {
+    pub version: u32,
+    pub provider_id: String,
+    pub metastore_id: Option<String>,
+}
+
+pub fn local_identity(store: &Store) -> Result<LocalIdentity> {
+    let identity: LocalIdentity = serde_json::from_slice(&private_bytes(
+        &store.root().join("catalog-local.json"),
+        4096,
+    )?)?;
+    if identity.version != 1
+        || identity
+            .provider_id
+            .parse::<supabricks_core::resource::ProjectId>()
+            .is_err()
+        || identity
+            .metastore_id
+            .as_ref()
+            .is_some_and(|id| id.parse::<supabricks_core::resource::ProjectId>().is_err())
+    {
+        return Err(invalid("invalid local catalog identity"));
+    }
+    Ok(identity)
+}
+
 pub fn directory(path: &Path) -> Result<()> {
     if !path.try_exists()? {
         fs::DirBuilder::new().mode(0o700).create(path)?;
@@ -176,6 +205,11 @@ pub fn load(store: &Store) -> Result<Option<Config>> {
             return Err(invalid("unsupported catalog provider configuration"));
         }
         validate(&config.provider)?;
+        if matches!(config.provider, Provider::Local { .. })
+            && local_identity(store)?.provider_id != config.provider_id
+        {
+            return Err(conflict("local catalog provider identity changed"));
+        }
         return Ok(Some(config));
     }
     if crate::installation::Installation::discover()?
@@ -192,19 +226,33 @@ pub fn new(store: &Store, provider: Provider) -> Result<Config> {
     validate(&provider)?;
     let provider_id = match &provider {
         Provider::Local { .. } => {
-            let root = store.root().join("catalog");
-            directory(&root)?;
-            let identity = root.join("identity.json");
-            if identity.try_exists()? {
-                let id: String = serde_json::from_slice(&private_bytes(&identity, 1024)?)?;
-                id.parse::<supabricks_core::resource::ProjectId>()
-                    .map_err(|_| invalid("invalid local catalog identity"))?;
-                id
-            } else {
-                let id = supabricks_core::resource::ProjectId::new().to_string();
-                supervisor::write_json(&identity, &id)?;
-                id
+            let identity = store.root().join("catalog-local.json");
+            if !identity.try_exists()? {
+                // Existing provider state must never be reset through reconfiguration.
+                let configured_local = if store.root().join("catalog-provider.json").try_exists()? {
+                    let saved: Config = serde_json::from_slice(&private_bytes(
+                        &store.root().join("catalog-provider.json"),
+                        32768,
+                    )?)?;
+                    matches!(saved.provider, Provider::Local { .. })
+                } else {
+                    false
+                };
+                if store.root().join("catalog").try_exists()? || configured_local {
+                    return Err(conflict(
+                        "local catalog identity missing; restore control state",
+                    ));
+                }
+                supervisor::write_json(
+                    &identity,
+                    &LocalIdentity {
+                        version: 1,
+                        provider_id: supabricks_core::resource::ProjectId::new().to_string(),
+                        metastore_id: None,
+                    },
+                )?;
             }
+            local_identity(store)?.provider_id
         }
         Provider::External { .. } => supabricks_core::resource::ProjectId::new().to_string(),
     };

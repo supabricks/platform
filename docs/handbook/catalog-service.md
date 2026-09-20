@@ -36,6 +36,10 @@ The process uses the existing durable PID/start-identity ownership mechanism.
 reused PIDs fail closed; Supabricks never signals an unrelated process to free a
 port. Restart preserves the provider and metastore identities. A changed
 metastore identity fails readiness instead of silently adopting an empty store.
+The expected local provider and metastore identities live separately in
+`catalog-local.json`. If `catalog/` is lost, restore it from backup; startup
+will not initialize a replacement under the existing identity. Preserve both
+control state and catalog metadata together when backing up the data root.
 
 To invalidate credentials signed by the current local key:
 

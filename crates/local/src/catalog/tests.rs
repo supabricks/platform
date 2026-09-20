@@ -74,6 +74,46 @@ fn local_provider_identity_survives_reconfiguration() {
     assert_eq!(one.provider_id, two.provider_id);
 }
 
+#[test]
+fn local_identity_and_metastore_loss_fail_closed() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(&dir.path().join("data")).unwrap();
+    let configured = config::new(&store, Provider::Local { runtime: None }).unwrap();
+    supervisor::write_json(&store.root().join("catalog-provider.json"), &configured).unwrap();
+    let root = runtime::data_directory(&store).unwrap();
+    let mut identity = config::local_identity(&store).unwrap();
+    identity.metastore_id = Some(supabricks_core::resource::ProjectId::new().to_string());
+    supervisor::write_json(&store.root().join("catalog-local.json"), &identity).unwrap();
+    fs::remove_dir_all(root).unwrap();
+    assert!(runtime::data_directory(&store).is_err());
+    assert_eq!(
+        config::load(&store).unwrap().unwrap().provider_id,
+        configured.provider_id
+    );
+    fs::remove_file(store.root().join("catalog-local.json")).unwrap();
+    assert!(config::load(&store).is_err());
+    assert!(config::new(&store, Provider::Local { runtime: None }).is_err());
+}
+
+#[test]
+fn catalog_paths_are_checked_before_launch_mutations() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(&dir.path().join("data")).unwrap();
+    config::new(&store, Provider::Local { runtime: None }).unwrap();
+    let root = runtime::data_directory(&store).unwrap();
+    let target = dir.path().join("unrelated");
+    fs::write(&target, b"untouched").unwrap();
+    fs::remove_file(root.join("process.log")).unwrap();
+    symlink(&target, root.join("process.log")).unwrap();
+    assert!(runtime::data_directory(&store).is_err());
+    assert_eq!(fs::read(&target).unwrap(), b"untouched");
+    fs::remove_file(root.join("process.log")).unwrap();
+    fs::remove_dir(root.join("etc/conf")).unwrap();
+    symlink(dir.path(), root.join("etc/conf")).unwrap();
+    assert!(runtime::data_directory(&store).is_err());
+}
+
 fn probe_fixture(
     anonymous_status: u16,
     identity: &str,

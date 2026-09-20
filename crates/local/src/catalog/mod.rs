@@ -145,7 +145,7 @@ impl Manager {
             supervisor::write_json(&store.root().join("catalog-provider.json"), &config)?;
             self.config = Some(config);
         } else if matches!(command, Command::RotateKey) {
-            let root = store.root().join("catalog");
+            let root = runtime::data_directory(store)?;
             // Durable intent survives interruption between individual key removals.
             supervisor::write_json(&root.join("rotate-key.json"), &json!({"version":1}))?;
         } else {
@@ -172,7 +172,7 @@ impl Manager {
         let provider = &self.config.as_ref().unwrap().provider;
         self.runtime = Some(runtime::resolve(provider)?);
         let runtime = self.runtime.as_ref().unwrap();
-        let root = store.root().join("catalog");
+        let root = runtime::data_directory(store)?;
         if root.join("rotate-key.json").try_exists()?
             || !root.join("bootstrapped.json").try_exists()?
         {
@@ -329,7 +329,12 @@ impl Manager {
                 Ok(health) => {
                     if local && self.ready_seconds.is_none() {
                         let root = store.root().join("catalog");
-                        supervisor::write_json(&root.join("metastore.json"), &health.metastore_id)?;
+                        let mut identity = config::local_identity(store)?;
+                        identity.metastore_id = Some(health.metastore_id.clone());
+                        supervisor::write_json(
+                            &store.root().join("catalog-local.json"),
+                            &identity,
+                        )?;
                         supervisor::write_json(
                             &root.join("bootstrapped.json"),
                             &json!({"version":1}),
@@ -368,14 +373,7 @@ impl Manager {
             let probe = match &config.provider {
                 Provider::Local { .. } => {
                     let root = store.root().join("catalog");
-                    let expected = if root.join("metastore.json").try_exists()? {
-                        Some(serde_json::from_slice::<String>(&config::private_bytes(
-                            &root.join("metastore.json"),
-                            1024,
-                        )?)?)
-                    } else {
-                        None
-                    };
+                    let expected = config::local_identity(store)?.metastore_id;
                     http::Probe {
                         endpoint: self.endpoint.clone().unwrap(),
                         token_file: root.join("etc/conf/token.txt"),
