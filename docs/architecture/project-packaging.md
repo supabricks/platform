@@ -395,3 +395,12 @@ Open-source Unity Catalog is selected as the integration target. Its version,
 packaging, storage and identity integration remain qualification decisions.
 The complete workflow must operate without a Databricks account, service or
 control plane.
+
+## Console creation follow-up
+
+[Browser project creation](../handbook/project-creation.md) uses format-2 source
+definitions, deployment binding and the existing durable apply journal. It adds
+no alternate asset ownership model: databases, notebooks, queries, ingestion and
+Spark execution remain project-scoped. The console home is a launcher and rejects
+asset operations until a project is opened. Future asset kinds must have mandatory
+project ownership; UC and IAM will govern that same boundary.

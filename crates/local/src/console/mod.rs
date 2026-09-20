@@ -372,3 +372,25 @@ pub fn serve(config: &Path) -> Result<()> {
         .build()?
         .block_on(server::serve(config))
 }
+
+#[cfg(test)]
+mod launcher_tests {
+    use super::*;
+
+    #[test]
+    fn launcher_reuses_private_identity_and_refuses_a_replaced_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let path = launcher(&root).unwrap();
+        let identity = crate::project::ProjectConfig::read(&path).unwrap();
+        assert_eq!(launcher(&root).unwrap(), path);
+        assert_eq!(
+            crate::project::ProjectConfig::read(&path).unwrap(),
+            identity
+        );
+        let saved = root.join("old-home");
+        fs::rename(&path, &saved).unwrap();
+        std::os::unix::fs::symlink(&saved, &path).unwrap();
+        assert!(launcher(&root).is_err());
+    }
+}

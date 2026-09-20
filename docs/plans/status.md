@@ -76,3 +76,9 @@ companion, typed schema fidelity and transactional import receipts. Native and
 exact archive qualification remain pending. See the
 [contract](../architecture/pk08-logical-data.md) and
 [installed walkthrough](../handbook/project-data.md).
+
+Console project creation follow-up is implemented on top of PK08, targeting
+alpha.26/catalog 13; full release qualification is pending. A browser form creates
+a format-2 project, provisions and selects `main`, and opens the workspace.
+The console home rejects asset work; project ownership remains mandatory for all
+user-created assets. See the [walkthrough](../handbook/project-creation.md).
