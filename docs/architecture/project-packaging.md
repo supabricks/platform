@@ -1,7 +1,9 @@
 # Portable projects, deployments and governance
 
-Status: design adopted in #46; PK01 inspection merged in #47. PK02/PK03 implementation
-and subsequent slices are tracked in the plan below. The architecture describes
+Status: PK00–PK06 are merged through platform #52 and console #5. PK07 installed
+portability qualification is implemented in [platform #53](https://github.com/supabricks/platform/pull/53),
+with exact archive qualification in progress. PK08, catalog integration and IAM
+remain follow-ons tracked in the plan below. The architecture describes
 the complete target, including work not yet implemented. Original baseline: platform `916a793` (PR #45),
 console `70af6a2`, catalog schema 10, PG17.8 and source-built Sail 0.7.1.
 Research date: 2026-09-13.

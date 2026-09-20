@@ -9,6 +9,7 @@ import re
 
 from environment_evidence import SUITES, collect as environments
 from demo import FILES
+from project_evidence import collect as projects
 from sail import verify_report as verify_sail
 
 TARGETS = ('linux-x86_64', 'macos-arm64')
@@ -58,6 +59,7 @@ def metrics(data):
 
 def collect(directory, revision, console, worker, version):
     prior = environments(directory, revision)
+    portability = projects(directory, prior['targets'])
     result = dict(status='passed', version=version, revision=revision, console_commit=console, targets={})
     for target in TARGETS:
         env = prior['targets'][target]
@@ -76,6 +78,7 @@ def collect(directory, revision, console, worker, version):
                 'unqualified catalog or PostgreSQL major')
         require(env['release_identity'] == identity, 'lifecycle manifest identity mismatch')
         reports = dict(env['reports'])
+        reports.update(portability[target]['reports'])
         for suite, files in SUITES.items():
             for name, minimum in files.items():
                 path = directory / f'{suite}-{target}' / name
@@ -140,7 +143,7 @@ def collect(directory, revision, console, worker, version):
             formats[name] = dict(source_sha256=sample['source_sha256'], budget_source_sha256=budget['source_sha256'], measurements=measured)
         require(env['notices'] and all(sha(v) for v in env['notices'].values()), 'missing notice inventory')
         result['targets'][target] = dict(
-            sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
+            projects=portability[target], sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
             source=dict(platform_commit=revision, console_commit=console,
                         console_manifest_sha256=source['console']['manifest_sha256'],
                         console_lock_sha256=source['console']['package_lock_sha256'], ingestion_worker_sha256=worker),
@@ -168,6 +171,10 @@ def markdown(report):
         for name, m in samples.items():
             seconds=m['duration_ms']/1000
             lines.append(f"| {target} | {name} | {m['source_bytes']} | {m['rows']} | {seconds:.3f} | {m['source_bytes']/1048576/seconds:.3f} | {m['peak_rss_bytes']/1048576:.1f} |")
+    lines += ['', '## Project portability', '', 'Both targets consumed the same `.sbproj`: `' + report['targets']['linux-x86_64']['projects']['package_sha256'] + '`. Synthetic fixture: two CSV rows, two migrations, one SQL query and one notebook, with two native wheel closures. Prepare time is first deployment in the clean candidate installation; start time is candidate kernel readiness. RSS samples daemon descendants; disk peak samples allocated bytes across owned data roots every 0.5 seconds. These samples can miss short peaks; RSS can double-count shared pages. Archive/install/harness disk is excluded.', '', '| Target | Package bytes | Expanded bytes | Prepare seconds | Kernel start seconds | Sampled RSS bytes | Sampled data disk bytes |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
+    for target, data in report['targets'].items():
+        m = data['projects']['measurements']
+        lines.append(f"| {target} | {m['archive_bytes']} | {m['unpacked_bytes']} | {m['prepare_seconds']:.3f} | {m['start_seconds']:.3f} | {m['peak_rss_bytes']} | {m['disk_peak_bytes']} |")
     lines += ['', 'The JSON companion records fixture, archive, asset, worker, notice and report hashes. These are local engineering archives. Public hosting/signing/notarization, redistribution audit, physical power-loss tests, Safari/Firefox and other OS targets are separate gates.', '']
     return '\n'.join(lines)
 
@@ -178,7 +185,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.23')
+    parser.add_argument('--version', default='v0.1.0-alpha.24')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

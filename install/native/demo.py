@@ -3,7 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 
-FILES = ('DEMO.md', 'examples/console/sales.csv', 'examples/console/sales.ipynb')
+FILES = ('DEMO.md', 'examples/console/sales.csv', 'examples/console/sales.ipynb', 'PROJECT-PORTABILITY.md')
 SALES = b'id,amount\n1,10\n2,20\n'
 SQL = 'SELECT sum(amount) AS total FROM public.sales'
 

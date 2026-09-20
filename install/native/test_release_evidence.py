@@ -8,6 +8,7 @@ from demo import FILES
 from test_sail import sample_report
 from environment_evidence import SUITES
 from release_evidence import collect, markdown
+from test_project_evidence import fixture as project_fixture
 
 HASH = 'a' * 64
 OTHER = 'b' * 64
@@ -46,6 +47,8 @@ class ReleaseEvidence(unittest.TestCase):
                     measurements={f'snapshot_{size}_bytes{suffix}':dict(elapsed_seconds=1,peak_rss_bytes=100,logical_cpus=4,host_memory_bytes=1000) for size in (10000000,100000000,1000000000) for suffix in ('','_query')}))
             self.write(target,'release-qualification','network.json',dict(status='passed',observed_destinations=123,external_destinations=[]))
 
+        project_fixture(self.root, {t:dict(release_sha256=HASH, kernel_contract_sha256=HASH, archive=dict(version='alpha',target=t,sha256=HASH)) for t in ('linux-x86_64','macos-arm64')})
+
     @staticmethod
     def checks(count):
         return [f'check-{n}' for n in range(count)]
@@ -65,8 +68,8 @@ class ReleaseEvidence(unittest.TestCase):
     def test_complete_release_includes_all_suites_and_sanitized_metrics(self):
         self.change('release-ingest','ingest.json',lambda d:d['formats']['json']['budget'].update(sql='secret SQL',rows_payload=['secret rows'],path='/private/source'))
         report=self.collect()
-        self.assertEqual(len(report['targets']['linux-x86_64']['reports']),13)
-        self.assertEqual(len(report['targets']['macos-arm64']['reports']),11)
+        self.assertEqual(len(report['targets']['linux-x86_64']['reports']),15)
+        self.assertEqual(len(report['targets']['macos-arm64']['reports']),13)
         self.assertNotIn('secret',json.dumps(report))
         self.assertNotIn('/private',json.dumps(report))
         self.assertIn('worker interval',markdown(report))

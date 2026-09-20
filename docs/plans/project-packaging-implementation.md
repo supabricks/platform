@@ -1,17 +1,15 @@
 # Project packaging implementation plan
 
-Status: PK00 design/research merged in #46 and PK01 source inspection merged in
-#47 (`343812f`). PK02 source packaging merged in #48 (`f453763`).
-PK03 deployment binding merged in #49 (`726ba3c`). PK04 plan/apply merged in
-#50 (`9544cb9`) after required checks and both native-cell gates passed. PK05
-merged in #51 (`b29e21a`) after the same gates; native archive qualification
-remains pending. PK06 is implemented on [console #5](https://github.com/supabricks/console/pull/5) and [platform #52](https://github.com/supabricks/platform/pull/52);
-merge and exact archive qualification are pending. PK07–PK08 are not implemented.
-PK06 targets alpha.23/catalog 13 with console `cd35222` ([console #5](https://github.com/supabricks/console/pull/5)).
-Alpha.19 (#48) remains the latest fully qualified release;
-alpha.20 archive qualification failed in the moved-checkout NE06 fixture (the
-explicit reattach is corrected with PK05); alpha.21 archive qualification remains
-pending separately from its completed merge checks.
+Status: PK00–PK06 are merged through platform #52 (`a94d8db`) and console #5
+(`cd35222` source pin). PK07 is implemented in [platform #53](https://github.com/supabricks/platform/pull/53): one cross-target artifact,
+installed lifecycle qualification, R04 evidence integration and walkthrough.
+PK08 remains unimplemented. PK07 targets alpha.24/catalog 13. Completion requires
+both exact native archives and the combined R04 gate; merged code is not release
+qualification. Alpha.22's retained baseline failed on Linux database preparation
+and macOS bundle export; PK07 corrects retryable database startup handling and
+the macOS fixture's noncanonical output path. Alpha.23 has failed both baseline
+checks and macOS console apply; the console failure's cause remains unconfirmed.
+Alpha.19 is the latest confirmed fully qualified predecessor.
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -174,7 +172,8 @@ immutable installed revision.
 
 ## PK05 — Runnable offline project and bounded initialization
 
-Merged in #51 (`b29e21a`); exact archive qualification remains pending.
+Merged in #51 (`b29e21a`). Alpha.22 failed retained baseline probes; PK07 corrects
+them and qualifies the alpha.24 candidate.
 [Contract](../architecture/pk05-offline-projects.md) · [Workflow](../handbook/project-offline.md).
 
 Compose NE04's verified wheel-bundle import/export with project packages. Add a
@@ -199,8 +198,8 @@ Custom compiled application services and arbitrary jobs remain out of scope.
 
 ## PK06 — Console project packaging workflow
 
-Implemented on the console/platform PK06 feature branches; merge and exact
-archive qualification pending. See the [transport and workflow contract](../architecture/pk06-console-projects.md).
+Merged in console #5 and platform #52; alpha.23 archive qualification has failed
+both baseline checks and macOS console apply. See the [transport and workflow contract](../architecture/pk06-console-projects.md).
 
 Implement in `supabricks/console`, with typed platform API/MCP support in platform.
 Show source versus installed revision, deployment identity, target, logical data
@@ -219,6 +218,10 @@ CLI-created deployments reopen in the console with identical identity. Land the
 console PR and then update the platform gitlink through its release workflow.
 
 ## PK07 — Installed portability release qualification
+
+Implemented in [platform #53](https://github.com/supabricks/platform/pull/53).
+The installed walkthrough and cross-target evidence must pass before this slice
+is marked complete; exact archive qualification is in progress.
 
 Extend the R04 evidence collector instead of introducing a competing release
 authority. Bind reports to exact platform/console/Sail source, native archive,

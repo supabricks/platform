@@ -8,6 +8,8 @@ import time
 
 
 def qualify(binary, release, source_project, workspace, env):
+    # macOS /tmp aliases /private/tmp; NE04 publication requires canonical parents.
+    workspace = workspace.resolve()
     def cli(path, *args, fail=False):
         project_args = [] if args[:2] == ('project', 'unpack') else ['--project', str(path)]
         result = subprocess.run([str(binary), *map(str, args), *project_args],
@@ -17,7 +19,15 @@ def qualify(binary, release, source_project, workspace, env):
             return
         if result.returncode:
             (workspace / 'pk05-command.log').write_text(result.stdout + result.stderr)
-            raise RuntimeError('PK05 CLI failed; inspect private pk05-command.log')
+            diagnostic = {}
+            try:
+                value = json.loads(result.stdout)
+                diagnostic = {key:value.get(key) for key in ('state', 'error')}
+            except ValueError:
+                pass
+            # Environment errors are bounded typed reasons, with no source contents.
+            detail = str(diagnostic) if args[:1] == ('env',) else ''
+            raise RuntimeError('PK05 CLI '+str(args[:2])+' failed; '+detail+'; inspect private pk05-command.log')
         return json.loads(result.stdout)
 
     def apply(path, key, state='succeeded'):

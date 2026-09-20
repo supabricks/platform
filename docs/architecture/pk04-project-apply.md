@@ -80,8 +80,8 @@ leases when a later apply publishes another revision in another worktree.
 `project asset` reads installed source. `project draft` copies it into a new file
 under the calling checkout's `queries/` or `notebooks/`, using descriptor-relative,
 no-symlink, no-overwrite publication. Source checkout edits and saved console queries
-remain drafts. PK06 will surface source versus installed revision directly in the
-console; this slice adds no independent console planning implementation.
+remain drafts. [PK06](pk06-console-projects.md) surfaces source versus installed
+revision directly in the console using the same planning implementation.
 
 Physical backup includes revision archives and draft worktrees. Materialized virtual
 environments keep NE's rebuild-on-restore contract. `project installed` reports when
@@ -91,7 +91,8 @@ A portable `.sbproj` does not include destination journals, identities or virtua
 ## Boundaries and evidence
 
 This is local-owner, retain-only application of databases, source assets and offline
-managed environments. SQL migrations, fixtures and portable wheel closure are PK05.
+managed environments. [PK05](pk05-offline-projects.md) extends this slice with SQL
+migrations, fixtures and portable wheel closure.
 There are no install hooks, notebook execution, external jobs or remote destinations.
 The package's locked dependencies must already be available to the existing offline
 NE preparation service; unresolved dependencies fail before activation.

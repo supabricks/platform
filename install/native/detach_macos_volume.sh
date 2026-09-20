@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Only for the disposable ingestion pressure volume created by native-release.
+# Only for disposable ingestion/project pressure volumes created by native-release.
 set -euo pipefail
-pressure_mount=${1:?Supply the temporary ingestion pressure mount}
+pressure_mount=${1:?Supply the temporary pressure mount}
 case "$pressure_mount" in
-  /tmp/sb-i01-volume.*/*) echo 'Expected the mount root, not a nested path' >&2; exit 1 ;;
-  /tmp/sb-i01-volume.*) ;;
-  *) echo 'Refusing to detach a path outside the ingestion pressure fixture' >&2; exit 1 ;;
+  /tmp/sb-i01-volume.*/*|/tmp/sb-pk07-volume.*/*) echo 'Expected the mount root, not a nested path' >&2; exit 1 ;;
+  /tmp/sb-i01-volume.*|/tmp/sb-pk07-volume.*) ;;
+  *) echo 'Refusing to detach a path outside the pressure fixtures' >&2; exit 1 ;;
 esac
 
 # A busy detach can finish asynchronously. Check device identity before retrying
