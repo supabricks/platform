@@ -1,6 +1,8 @@
 //! Independent local-owner OSS UC service. No project tables are registered here.
+mod adapter;
 mod config;
 mod http;
+pub mod metadata;
 mod runtime;
 #[cfg(test)]
 mod tests;
@@ -98,6 +100,42 @@ impl Manager {
             }
         }
         manager
+    }
+
+    pub(crate) fn adapter(&self, store: &Store) -> Result<adapter::Adapter> {
+        if self.state != "ready" {
+            return Err(supabricks_core::error::OperationError::Unavailable(
+                "catalog provider is not ready; inspect catalog health".into(),
+            )
+            .into());
+        }
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| invalid("catalog is not configured"))?;
+        let probe = match &config.provider {
+            Provider::Local { .. } => http::Probe {
+                endpoint: self.endpoint.clone().unwrap(),
+                token_file: store.root().join("catalog/etc/conf/token.txt"),
+                ca_file: None,
+                expected_metastore: self.metastore.clone(),
+            },
+            Provider::External {
+                endpoint,
+                token_file,
+                ca_file,
+                metastore_id,
+            } => http::Probe {
+                endpoint: endpoint.clone(),
+                token_file: token_file.clone(),
+                ca_file: ca_file.clone(),
+                expected_metastore: Some(metastore_id.clone()),
+            },
+        };
+        Ok(adapter::Adapter {
+            probe,
+            provider_id: config.provider_id.clone(),
+        })
     }
 
     pub fn status(&self) -> Value {

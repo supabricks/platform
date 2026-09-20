@@ -139,6 +139,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'docs/handbook/file-ingestion.md', destination / 'INGESTION.md')
     shutil.copy2(ROOT / 'docs/handbook/analytical-workspace.md', destination / 'ANALYTICS.md')
     shutil.copy2(ROOT / 'docs/handbook/catalog-service.md', destination / 'CATALOG.md')
+    shutil.copy2(ROOT / 'docs/handbook/catalog-metadata.md', destination / 'CATALOG-METADATA.md')
     shutil.copy2(ROOT / 'docs/handbook/notebook-environments.md', destination / 'ENVIRONMENTS.md')
     shutil.copytree(ROOT / 'agents', destination / 'agents', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(ROOT / 'docs/handbook/local-workflow.md', destination / 'WORKFLOW.md')
@@ -213,7 +214,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     provenance = dict(
         console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
-        data_formats=dict(local_catalog=13, runtime_config=2, postgres_major=17, analytical_snapshot=1),
+        data_formats=dict(local_catalog=14, runtime_config=2, postgres_major=17, analytical_snapshot=1),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),
@@ -262,7 +263,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.27')
+    parser.add_argument('--version', default='v0.1.0-alpha.28')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

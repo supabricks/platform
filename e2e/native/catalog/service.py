@@ -48,6 +48,7 @@ def installed_fixture(baseline, binary, runtime, output):
     shutil.copytree(baseline,output)
     shutil.copy2(binary,output/'bin/supabricks')
     catalog=install(output,manifest['target'],runtime)
+    manifest['provenance']['data_formats']['local_catalog']=14
     manifest['provenance']['unity_catalog']=catalog
     manifest['provenance']['data_formats']['unity_catalog']=1
     manifest['provenance']['uc01_fixture']='current platform binary and UC closure over immutable alpha.24 engines; not full release qualification'
@@ -62,7 +63,7 @@ def api(endpoint, token, path='catalogs', method='GET', body=None):
         data=None if body is None else json.dumps(body).encode())
     try:
         with urllib.request.urlopen(request,timeout=3) as response:
-            raw=response.read();return response.status,json.loads(raw) if raw else None
+            raw=response.read();return response.status,json.loads(raw) if raw and method!='DELETE' else None
     except urllib.error.HTTPError as error:return error.code,None
 
 
@@ -149,6 +150,8 @@ def main():
         work=root/'project';work.mkdir();(work/'supabricks.toml').write_text(f'format_version=1\nid="{cell.project}"\nname="uc01"\n')
         cell.request(method='resolve_binding',source=dict(definition_id=cell.project,worktree=str(work)))
         branch=cell.create('main');assert cell.sql(branch,'SELECT 42')=='42'
+        from metadata import run as metadata_checks
+        metadata_checks(cell,root,installed,branch,work,first['endpoint'],token,api,check)
         old_token=token();command('rotate_key');rotated=ready()
         old_status=api(rotated['endpoint'],old_token)[0]
         assert old_status in (401,403), ('old_key_token_status',old_status)

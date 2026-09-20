@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supabricks project metadata response v1",
+  "type": "object",
+  "properties": {
+    "api_version": {
+      "const": 1
+    },
+    "state": {
+      "enum": [
+        "running",
+        "complete",
+        "failed"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "result": {
+      "type": "object"
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "retryable",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "unavailable",
+            "not_found",
+            "identity_changed",
+            "name_collision",
+            "ambiguous_mutation",
+            "invalid_response",
+            "limit_exceeded",
+            "schema_drift",
+            "quoting_collision",
+            "stale_version"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "api_version"
+  ]
+}

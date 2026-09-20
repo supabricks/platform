@@ -222,7 +222,7 @@ fn mcp_contract_is_separate_strict_and_negotiated() {
             json!({"jsonrpc":"2.0","id":3,"method":"tools/list"}),
         )
         .unwrap();
-    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 58);
+    assert_eq!(list["result"]["tools"].as_array().unwrap().len(), 59);
     for args in [
         json!({"branch":"main","project_id":"other"}),
         json!({"action":"delete_branch"}),
@@ -260,6 +260,8 @@ fn cli_input_errors_are_machine_readable_and_do_not_create_state() {
         vec!["up", "--bundle", "missing"],
         vec!["init", "orders", "--unknown", "value"],
         vec!["mcp"],
+        vec!["catalog", "metadata", "ensure-namespace"],
+        vec!["catalog", "metadata", "list"],
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_supabricks"))
             .args(args)

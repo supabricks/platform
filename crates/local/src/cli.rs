@@ -70,6 +70,9 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics gc --branch NAME [--keep 2]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
+  catalog metadata capabilities | health | namespace | ensure-namespace
+  catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
+  catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
   catalog [--branch NAME]       Discover application tables and columns
   catalog service status | restart | rotate-key
   catalog service configure local [--runtime ABSOLUTE_PATH]
@@ -1158,6 +1161,88 @@ pub fn run() -> Result<u8> {
                 println!("{result}");
             }
             return Ok(0);
+        }
+        "catalog" if a.pos.get(1).is_some_and(|s| s == "metadata") => {
+            use crate::catalog::metadata::Command as M;
+            let verb = a.required(2)?;
+            let command = match verb.as_str() {
+                "capabilities" => {
+                    a.finish(3)?;
+                    M::Capabilities {}
+                }
+                "health" => {
+                    a.finish(3)?;
+                    M::Health {}
+                }
+                "namespace" => {
+                    a.finish(3)?;
+                    M::Namespace {}
+                }
+                "ensure-namespace" => {
+                    a.finish(3)?;
+                    M::EnsureNamespace {}
+                }
+                "list" => {
+                    let branch = a.take("--branch");
+                    let after = a.take("--after");
+                    let limit = a
+                        .take("--limit")
+                        .map(|s| s.parse::<usize>())
+                        .transpose()
+                        .map_err(|_| invalid("invalid catalog page size"))?
+                        .unwrap_or(50);
+                    a.finish(3)?;
+                    M::List {
+                        branch,
+                        after,
+                        limit,
+                    }
+                }
+                "describe" | "resolve" | "validate-source" | "poll" => {
+                    let id = a
+                        .required(3)?
+                        .parse()
+                        .map_err(|_| invalid("invalid catalog asset/request UUID"))?;
+                    let value = match verb.as_str() {
+                        "describe" => M::Describe { id },
+                        "poll" => M::Poll { id },
+                        other => {
+                            let expected_version = a
+                                .take("--version")
+                                .ok_or_else(|| invalid("supply the observed --version revision"))?;
+                            if other == "resolve" {
+                                M::Resolve {
+                                    id,
+                                    expected_version,
+                                }
+                            } else {
+                                M::ValidateSource {
+                                    id,
+                                    expected_version,
+                                }
+                            }
+                        }
+                    };
+                    a.finish(4)?;
+                    value
+                }
+                _ => return Err(invalid("unknown catalog metadata command")),
+            };
+            let mut value = c.call(Action::CatalogMetadata { command })?;
+            let started = std::time::Instant::now();
+            while value["state"] == "running" && verb != "poll" {
+                if started.elapsed() > std::time::Duration::from_secs(55) {
+                    println!("{value}");
+                    return Ok(5);
+                }
+                let id = serde_json::from_value(value["id"].clone())?;
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                value = c.call(Action::CatalogMetadata {
+                    command: M::Poll { id },
+                })?;
+            }
+            println!("{value}");
+            return Ok(if value["state"] == "failed" { 5 } else { 0 });
         }
         "catalog" => {
             let branch = a.take("--branch");

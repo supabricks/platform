@@ -1,5 +1,6 @@
 mod analytics;
 mod branches;
+mod catalog;
 mod connections;
 mod deployments;
 mod environments;
@@ -77,6 +78,9 @@ impl Store {
             && (has_objects
                 || [
                     "runtime.json",
+                    "catalog",
+                    "catalog-provider.json",
+                    "catalog-local.json",
                     "ingest",
                     "analytics",
                     "notebook-environments",
