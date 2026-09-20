@@ -9,7 +9,8 @@ the complete target, including work not yet implemented. Original baseline: plat
 console `70af6a2`, catalog schema 10, PG17.8 and source-built Sail 0.7.1.
 Research date: 2026-09-13.
 [Industry evidence](../research/project-packaging-industry.md) ·
-[Implementation slices](../plans/project-packaging-implementation.md).
+[Implementation slices](../plans/project-packaging-implementation.md) ·
+[Unity Catalog integration plan](../plans/unity-catalog-implementation.md).
 
 ## Decision
 

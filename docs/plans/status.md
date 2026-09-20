@@ -1,6 +1,6 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-19 through merged platform #52 (`a94d8db`) and console #5.
+Reconciled 2026-09-20 through merged platform #55 (`8c81417`) and console #6.
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -13,7 +13,9 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile implemented, alpha.25 qualification pending | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile merged in #54; alpha.25 release qualification failed | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Console project creation | Merged in platform #55 and console #6 | Browser-created project with selected main database; mandatory project ownership; alpha.26 release qualification failed |
+| Open-source Unity Catalog | UC00 source build and isolated native probe implemented in platform #56; Linux/macOS qualified (14 checks each), under review; UC01–UC09 remain planned | [UC00 capability report](../architecture/uc00-catalog-probe.md), [UC00–UC09 plan](unity-catalog-implementation.md): local catalog workflow first; governed access depends on IAM and isolation |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -72,13 +74,21 @@ tested head `6ab87e0`. This is the latest fully qualified native release.
 The earlier alpha.24 harness and ownership failures were corrected and rerun.
 
 PK08 targets alpha.25/catalog 13 with the bounded `.sbdata` PostgreSQL table-data
-companion, typed schema fidelity and transactional import receipts. Native and
-exact archive qualification remain pending. See the
+companion, typed schema fidelity and transactional import receipts. Native checks
+passed before merge; complete alpha.25 archive qualification failed and remains
+unresolved. See the
 [contract](../architecture/pk08-logical-data.md) and
 [installed walkthrough](../handbook/project-data.md).
 
-Console project creation follow-up is implemented on top of PK08, targeting
-alpha.26/catalog 13; full release qualification is pending. A browser form creates
-a format-2 project, provisions and selects `main`, and opens the workspace.
+Console project creation follow-up is merged in platform #55 and console #6,
+targeting alpha.26/catalog 13; full release qualification failed. A browser form
+creates a format-2 project, provisions and selects `main`, and opens the workspace.
 The console home rejects asset work; project ownership remains mandatory for all
 user-created assets. See the [walkthrough](../handbook/project-creation.md).
+
+The latest checked [alpha.25 run](https://github.com/supabricks/platform/actions/runs/35495263448)
+and [alpha.26 run](https://github.com/supabricks/platform/actions/runs/35496334403)
+both concluded failure. Alpha.25 includes macOS notebook/Spark and snapshot-export
+failures; alpha.26 failed Linux assembly. Required merge checks passing does not
+qualify either archive. Release stabilization must resolve the inherited gates
+before UC08 can qualify a new candidate; UC00 investigation may proceed.

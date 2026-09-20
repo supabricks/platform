@@ -6,7 +6,10 @@ Status: PK00–PK07 are merged through platform #53 (`87f4898`) and console #5
 testing `6ab87e0`. Alpha.24 is the latest fully qualified predecessor.
 PK08 implements the bounded PostgreSQL table-data companion profile described in
 [its contract](../architecture/pk08-logical-data.md), targeting alpha.25/catalog 13;
-its release qualification is pending. UC/IAM remain separate follow-ons.
+it is merged in platform #54, while release qualification remains incomplete.
+Console project creation is merged in platform #55 and console #6.
+UC/IAM remain separate follow-ons; see the
+[UC00–UC09 integration plan](unity-catalog-implementation.md).
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·
@@ -266,6 +269,11 @@ or formats only through evidence. Packages containing data have explicit export
 rights in the later governed profile.
 
 ## UC00 and IAM00 — Follow-on design/probes, not PK completion gates
+
+The [Unity Catalog implementation plan](unity-catalog-implementation.md) expands
+UC00 into the local UC00–UC08 milestone and the IAM-dependent UC09 governed
+milestone. It owns the detailed slice order and acceptance criteria; the
+integration and security boundaries below remain applicable.
 
 **UC00:** select and pin an open-source Unity Catalog server release/source
 revision and test it with the existing Sail provider. Record build provenance,

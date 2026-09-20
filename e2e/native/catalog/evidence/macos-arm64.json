@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "target": "Darwin-arm64",
+  "network_evidence": "macOS sandbox; external outbound connections and Homebrew denied; service listeners checked on loopback",
+  "external_tcp_denial": "EPERM",
+  "spark_connect_host": "::1",
+  "java_flags": [
+    "-Xms64m",
+    "-Xmx256m",
+    "-XX:ActiveProcessorCount=2",
+    "-Djava.net.preferIPv4Stack=true"
+  ],
+  "uc_artifact": {
+    "target": "macos-arm64",
+    "source_commit": "9c4b48ccbf18ffd89b4dfe966e79a2b6cb826069",
+    "compressed_bytes": 195100978,
+    "artifact_sha256": "42549689f91b28452da1d19d39377dc7e1752e0f5db5f09526e890279b9094b2"
+  },
+  "platform_binary_sha256": "989663ae9e4438579c857cd3120e664638780b7b46d8972a7eab482757cdd835",
+  "release_inventory_sha256": "eee35110d22ad8a2504ac8ea3fb749816d84a39dc0d57f264a57ce1ec45e1983",
+  "checks": [
+    {
+      "name": "two_projects_and_two_complete_pg_export_epochs",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate_registration_at_same_location_rejected",
+      "status": "PASS",
+      "http_status": 403
+    },
+    {
+      "name": "metadata_permissions_and_expired_token",
+      "status": "PASS",
+      "denied_http": 403,
+      "expired_http": 401
+    },
+    {
+      "name": "native_sail_catalog_reads_and_cross_principal_denial",
+      "status": "PASS"
+    },
+    {
+      "name": "local_owner_direct_path_bypasses_catalog",
+      "status": "PASS",
+      "governed_local_storage": false
+    },
+    {
+      "name": "revocation_in_existing_uncached_sail_session",
+      "status": "PASS"
+    },
+    {
+      "name": "recreate_changes_identity_and_mutable_names_mix_epochs",
+      "status": "PASS",
+      "frozen_namespace_consistent": true
+    },
+    {
+      "name": "table_rename_unavailable",
+      "status": "PASS",
+      "http_status": 500
+    },
+    {
+      "name": "local_file_credential_vending_observed",
+      "status": "PASS",
+      "http_status": 200,
+      "storage_credentials": false
+    },
+    {
+      "name": "seaweed_static_test_credentials_vended",
+      "status": "PASS",
+      "scoped_sts": false,
+      "unauthorized_vending_http": 403
+    },
+    {
+      "name": "sail_seaweed_read_needs_explicit_storage_credentials",
+      "status": "PASS",
+      "native_vending": false,
+      "path_style": true,
+      "test_session_token_accepted": false,
+      "static_keys_without_token": true,
+      "broad_credentials_bypass_catalog": true
+    },
+    {
+      "name": "outage_restart_and_stopped_metadata_restore",
+      "status": "PASS",
+      "backend": "H2",
+      "data_backup_separate": true,
+      "project_runtime_stopped": true
+    },
+    {
+      "name": "expiry_in_existing_uncached_sail_session",
+      "status": "PASS"
+    },
+    {
+      "name": "local_footprint_budgets",
+      "status": "PASS"
+    }
+  ],
+  "queries": [
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "2f3f6d7a-4ac9-44f0-bd1d-8cbc38a7d4d6",
+      "sql": "SELECT sum(amount) AS total FROM p2.current.private",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "2f3f6d7a-4ac9-44f0-bd1d-8cbc38a7d4d6",
+      "sql": "SELECT * FROM p1.current.orders",
+      "result": {
+        "ok": false,
+        "error_type": "AnalysisException"
+      }
+    },
+    {
+      "worker_id": "d032ac71-13ef-4c8a-8620-4841bdd2a00a",
+      "sql": "SELECT * FROM p1.current.orders",
+      "result": {
+        "ok": false,
+        "error_type": "AnalysisException"
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SHOW TABLES IN p1.current",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "database": "p1.current",
+            "tableName": "orders",
+            "isTemporary": false
+          },
+          {
+            "database": "p1.current",
+            "tableName": "payments",
+            "isTemporary": false
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "DESCRIBE TABLE p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "col_name": "id",
+            "data_type": "int",
+            "comment": null
+          },
+          {
+            "col_name": "amount",
+            "data_type": "int",
+            "comment": null
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "2f3f6d7a-4ac9-44f0-bd1d-8cbc38a7d4d6",
+      "sql": "SELECT sum(amount) AS total FROM delta.`file:///private/tmp/sb-uc00-3o25lrrw/cell/analytics/generations/1b955373-d141-430e-a06b-de039919df5b/16440`",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT * FROM p1.current.orders",
+      "result": {
+        "ok": false,
+        "error_type": "AnalysisException"
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "CREATE TEMPORARY VIEW frozen_orders AS SELECT * FROM delta.`file:///private/tmp/sb-uc00-3o25lrrw/cell/analytics/generations/1b955373-d141-430e-a06b-de039919df5b/16440` VERSION AS OF 0",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "value": true
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "CREATE TEMPORARY VIEW frozen_payments AS SELECT * FROM delta.`file:///private/tmp/sb-uc00-3o25lrrw/cell/analytics/generations/1b955373-d141-430e-a06b-de039919df5b/16443` VERSION AS OF 0",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "value": true
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 30
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT (SELECT sum(amount) FROM p1.current.orders) AS orders, (SELECT sum(amount) FROM p1.current.payments) AS payments",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "orders": 30,
+            "payments": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT (SELECT sum(amount) FROM frozen_orders) AS orders, (SELECT sum(amount) FROM frozen_payments) AS payments",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "orders": 10,
+            "payments": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "941bc380-963e-4d03-b26d-5d22f36e66d1",
+      "sql": "SELECT * FROM p1.current.s3orders",
+      "result": {
+        "ok": false,
+        "error_type": "SparkRuntimeException"
+      }
+    },
+    {
+      "worker_id": "7c4e15c5-512d-4d01-afad-c43d8f6e5013",
+      "sql": "SELECT * FROM p1.current.s3orders",
+      "result": {
+        "ok": false,
+        "error_type": "SparkRuntimeException"
+      }
+    },
+    {
+      "worker_id": "05cefddc-5da8-4200-9981-12658d28ff15",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.s3orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "c2389f4f-642b-443e-b2f6-72a9b922dcfc",
+      "sql": "SELECT sum(amount) AS total FROM delta.`s3://supabricks/uc00/187d9818-4251-4ad5-9dbd-0b00696c77ce/orders`",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT * FROM p1.current.orders",
+      "result": {
+        "ok": false,
+        "error_type": "AnalysisException"
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 30
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 30
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "19f604d3-02c7-43a3-bed4-2a52820af039",
+      "sql": "SELECT sum(amount) AS total FROM frozen_orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 10
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "1d0c353b-8079-4f20-83aa-fad236074fd6",
+      "sql": "SELECT sum(amount) AS total FROM p1.current.orders",
+      "result": {
+        "ok": true,
+        "rows": [
+          {
+            "total": 30
+          }
+        ]
+      }
+    },
+    {
+      "worker_id": "1d0c353b-8079-4f20-83aa-fad236074fd6",
+      "sql": "SELECT * FROM p1.current.orders",
+      "result": {
+        "ok": false,
+        "error_type": "AnalysisException"
+      }
+    }
+  ],
+  "metrics": {
+    "readiness_seconds": [
+      3.784,
+      3.144,
+      2.983
+    ],
+    "idle_rss_bytes": 316162048,
+    "peak_rss_bytes": 335249408,
+    "compressed_runtime_bytes": 195100978
+  },
+  "evidence": {
+    "run_url": "https://github.com/supabricks/platform/actions/runs/35524237918",
+    "platform_head": "5eee75555b7fe996f4e6f0d475e0e3cc07e84d36",
+    "artifact": "uc00-macos-arm64",
+    "full_report_sha256": "36a1799fbd539f6540a936ed1d808c89123cbf950294a035192ade188a2a5d22",
+    "scope": "UC00 developer probe using immutable alpha.24 baseline; not installed-release qualification"
+  },
+  "uc_source": {
+    "source_commit": "9c4b48ccbf18ffd89b4dfe966e79a2b6cb826069",
+    "source_pin_sha256": "4524ae2eaf8b7a91b18bef9e01e6c11ff7a2deb3368dd51984fad650a9a8ad16",
+    "source_inputs": {
+      "api/all.yaml": "1a64563946721b7f3bb7c4ddfd787770467b1c3a5be6a696b1844843ec92e287",
+      "api/control.yaml": "4f69708dfa0ba890fe805f987a920400e83b38f1d75ce60764ef23881832cdd7",
+      "api/delta.yaml": "ba1acdf35cbe995abca533af24851e8ae5f52bb5e0a355e63d6aa3624987918e",
+      "build.sbt": "ed226e6ba5bf7e530f2f0e27633e84bf75803410a5bf468a091fe341d6387fa2",
+      "project/build.properties": "e653e3c45bcab4fcaaa641ffff2358ef1edf4572df5edd12806da32bd74d232b",
+      "project/plugins.sbt": "d8b9307b86d952180a7267fbda7894e430aecf92723410e28ea1e4feac5a3f45",
+      "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "NOTICE": "9e78763fda1910f34b4a67f045f0c378f5fa284b0814ecce85caecdc25066e98",
+      "server/src/main/java/io/unitycatalog/server/URLTranscoderVerticle.java": "dae9a6e0eae84ac20855eef72ae6ceb6daa6dbfb375585f8936a304b8fd4db38"
+    },
+    "configuration_templates": {
+      "cli.log4j2.properties": "777e72957f710c09855a58e6d0b67b6a7e553cb2ad20eea37326161166fcab16",
+      "hibernate.properties": "082a79515c789cde9a8fa18eba0095850e15e39c767594f343a1948ec2f8c258",
+      "server.log4j2.properties": "46a0970a2381eb4e3ca73e748dfb26a070539f355e5382815d6ebe25ba37618b",
+      "server.properties": "5a770d7953ead21e886586b412868443ea2b707223a1225e8b963d351cf9ee2e"
+    },
+    "dependency_lock_status": "resolved JAR hashes recorded; production transitive lock is UC01 work"
+  },
+  "sail_source": {
+    "repository": "https://github.com/supabricks/sail",
+    "commit": "9544c9253e981a82c5f9e493c43ce98a4d9d41b7",
+    "version": "0.7.1",
+    "source_lock_sha256": "a6c89a02741398bd6fbd3ad7118b3aa0a76ffc466020959410791ecd6c78bfca",
+    "wheel": {
+      "file": "pysail-0.7.1-cp38-abi3-macosx_15_0_arm64.whl",
+      "sha256": "019ee3f38999d8a564e389ac9ea159cca8d8a64fa29b5c8ff3c049df21e1530c"
+    }
+  }
+}

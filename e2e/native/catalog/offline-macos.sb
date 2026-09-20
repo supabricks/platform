@@ -1,0 +1,18 @@
+;; UC00 disconnected-outbound qualification, not product process isolation.
+;; A generic network* allow for a local address can also authorize outbound
+;; sockets. The harness must prove an external TCP connection is denied.
+(version 1)
+(allow default)
+(deny network*)
+;; JVM/Netty client sockets may bind wildcard ephemeral addresses before connect.
+;; Outbound connections remain restricted separately.
+(allow network-bind)
+;; Native gRPC uses internal listeners; the harness verifies service listeners
+;; are loopback. This policy enforces disconnected outbound execution.
+(allow network-inbound)
+(allow network-outbound (remote ip "localhost:*"))
+(allow network* (local unix-socket))
+(allow network* (remote unix-socket))
+(deny file-read* (subpath "/opt/homebrew"))
+(deny file-read* (subpath "/usr/local/Cellar"))
+(deny file-read* (subpath "/usr/local/opt"))
