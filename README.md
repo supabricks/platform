@@ -5,7 +5,8 @@
 
 [Project packaging proposal](docs/architecture/project-packaging.md) ·
 [Industry research](docs/research/project-packaging-industry.md) ·
-[Packaging implementation plan](docs/plans/project-packaging-implementation.md)
+[Packaging implementation plan](docs/plans/project-packaging-implementation.md) ·
+[Unity Catalog integration plan](docs/plans/unity-catalog-implementation.md)
 
 Supabricks is a native local database and analytics platform: PostgreSQL 17.8
 with branching, Sail/Spark SQL over immutable Delta snapshots, a browser console,
