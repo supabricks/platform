@@ -13,7 +13,7 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 implemented in platform #53, archive qualification in progress; PK08 not started | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile implemented, alpha.25 qualification pending | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog is the integration target; UC/IAM remain separate follow-ons |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -36,8 +36,7 @@ passed. Alpha.18 (#47) qualified both archives in
 [run 35452363471](https://github.com/supabricks/platform/actions/runs/35452363471).
 Alpha.19 (#48) also completed all 33 checks and its combined archive evidence in
 [run 35453510718](https://github.com/supabricks/platform/actions/runs/35453510718),
-tested merge `e94eaa66732ccd1b60073df2ac346391ffd0d59f`. It is the latest fully
-qualified predecessor. Alpha.20 archive qualification failed in both NE06 lifecycle
+tested merge `e94eaa66732ccd1b60073df2ac346391ffd0d59f`. It was the fully qualified predecessor before alpha.24. Alpha.20 archive qualification failed in both NE06 lifecycle
 jobs: the restore fixture moved its checkout without PK03's required explicit
 reattach. PK05 updates that harness; the candidate must rerun the complete gate.
 Alpha.21 also failed its complete archive gate (baseline, macOS notebook and both environment lifecycle jobs); it is not qualified.
@@ -56,8 +55,8 @@ not establish a factory-clean physical laptop trial, actual reboot/power-loss
 durability, or support for other browsers/operating systems.
 
 Public hosting, publisher signing/notarization, transitive redistribution audit,
-and physical-machine/reboot/power-loss qualification remain open. PK07 is the current project portability qualification work.
-PK08 logical data packaging, shared catalog/IAM/RBAC,
+and physical-machine/reboot/power-loss qualification remain open. PK07 project portability is qualified on alpha.24; PK08 logical table-data qualification is the current work.
+Expanded logical data profiles, shared catalog/IAM/RBAC,
 HA/distributed execution, upstream-only PostgreSQL, custom Scintilla and PGlite
 synchronization require separately scoped work. The first local preview never
 promised those enterprise capabilities.
@@ -66,7 +65,14 @@ The obsolete legacy Kubernetes UI removal PR #1 was closed without merging on
 2026-09-13. The new console lives in `supabricks/console`; the legacy operator
 and its existing regression gates remain separate from the native product.
 
-PK07 targets alpha.24/catalog 13. It adds one shared cross-target project artifact,
-clean installed destination lifecycle probes and R04 provenance/measurement gates.
-Implementation is in [platform #53](https://github.com/supabricks/platform/pull/53). The first alpha.24 run passed Linux portability and both console suites, but failed the Linux baseline harness mount and macOS predecessor seed/pressure cleanup. The corrected Linux baseline passed locally with external networking disabled. Further macOS checks exposed lock-release and process-exit races; PK07 adds regression coverage and fixes, which require a complete archive rerun. See the
-[installed portability walkthrough](../handbook/project-portability.md).
+PK07 alpha.24/catalog 13 is merged in [platform #53](https://github.com/supabricks/platform/pull/53)
+(`87f4898`). Both native archives and the complete R04 evidence gate passed
+[run 35484139360](https://github.com/supabricks/platform/actions/runs/35484139360),
+tested head `6ab87e0`. This is the latest fully qualified native release.
+The earlier alpha.24 harness and ownership failures were corrected and rerun.
+
+PK08 targets alpha.25/catalog 13 with the bounded `.sbdata` PostgreSQL table-data
+companion, typed schema fidelity and transactional import receipts. Native and
+exact archive qualification remain pending. See the
+[contract](../architecture/pk08-logical-data.md) and
+[installed walkthrough](../handbook/project-data.md).

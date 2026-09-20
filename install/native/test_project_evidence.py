@@ -25,7 +25,10 @@ def fixture(root, targets):
         closures[target] = dict(status='passed', target=target, archive=native['archive'],
                                release_sha256=native['release_sha256'], bundle_sha256=HASH, manifest=manifest)
         env['bundles'][target] = dict(sha256=HASH, kernel_contract=manifest['contract'], wheels=1)
-    producer = dict(status='passed', producer_target='linux-x86_64', producer_archive=targets['linux-x86_64']['archive'],
+    data_artifact=source/'sales.sbdata';data_artifact.write_bytes(b'synthetic logical data fixture')
+    logical=dict(verified=True,profile='postgres_tables',content_sha256=HASH,archive_sha256=hashlib.sha256(data_artifact.read_bytes()).hexdigest())
+    closures['linux-x86_64']['logical_data']=logical
+    producer = dict(logical_data=logical,status='passed', producer_target='linux-x86_64', producer_archive=targets['linux-x86_64']['archive'],
                     release_sha256=targets['linux-x86_64']['release_sha256'], package_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
                     content_sha256=HASH, source_sha256=HASH, environment=env, closures=closures,
                     fixtures={n:HASH for n in ('fixtures/sales.csv', 'migrations/001-marker.sql', 'migrations/002-marker.sql', 'notebooks/sales.ipynb', 'queries/sales_total.sql')},
@@ -36,6 +39,7 @@ def fixture(root, targets):
         path = root / f'release-projects-{target}/projects.json'; path.parent.mkdir()
         path.write_text(json.dumps(dict(status='passed', checks=list(CHECKS), target=target, archive=native['archive'],
                          release_sha256=native['release_sha256'], producer=producer, network_evidence='loopback only',
+                         logical_data=dict(archive_sha256=logical['archive_sha256'],content_sha256=HASH,rows=2),
                          previous_archive=dict(version='v0.1.0-alpha.22', target=target, sha256=HASH),
                          measurements=dict(producer['measurements'], prepare_seconds=2, start_seconds=3, peak_rss_bytes=100, disk_peak_bytes=1000))))
 
@@ -62,6 +66,12 @@ class ProjectEvidence(unittest.TestCase):
     def test_actual_artifact_must_match(self):
         (self.root/'project-source/sales.sbproj').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'changed'): collect(self.root,self.targets)
+
+    def test_changed_logical_data_or_missing_import_proof_fails(self):
+        self.change('release-projects-macos-arm64/projects.json',lambda d:d.pop('logical_data'))
+        with self.assertRaisesRegex(ValueError,'logical data transfer'): collect(self.root,self.targets)
+        (self.root/'project-source/sales.sbdata').write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError,'logical data artifact'): collect(self.root,self.targets)
 
     def test_missing_target_wrong_archive_contract_and_locks_fail(self):
         path=self.root/'project-source/producer.json'; original=path.read_text()

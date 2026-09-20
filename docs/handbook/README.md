@@ -67,3 +67,5 @@ older operator deployment.
 - [PostgreSQL database workspace](database-workspace.md): branch controls, SQL, cancellation and saved queries.
 
 - [Browser CSV/TSV imports](browser-imports.md): file selection, mapping approval and durable import jobs.
+
+- [Logical project data](project-data.md): export selected PostgreSQL tables and import them transactionally into a destination project.
