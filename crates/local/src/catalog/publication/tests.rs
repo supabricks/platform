@@ -475,3 +475,17 @@ fn sigkill_at_each_journal_boundary_preserves_visibility_and_retention() {
         assert_eq!(retained, if phase == "retired" { 0 } else { 1 }, "{phase}");
     }
 }
+
+#[test]
+fn symlinked_or_relocated_locations_cannot_be_registered() {
+    let (dir, store, _, mut p) = setup();
+    verify_locations(&store, &p).unwrap();
+    p.tables[0].body["storage_location"] = json!("file:///unowned/table");
+    assert!(verify_locations(&store, &p).is_err());
+    let target = dir.path().join("target");
+    fs::create_dir(&target).unwrap();
+    let link = dir.path().join("link");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+    assert!(local_location(&link).is_err());
+    assert!(local_location(&target.canonicalize().unwrap()).is_ok());
+}

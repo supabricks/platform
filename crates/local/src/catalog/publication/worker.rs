@@ -89,6 +89,11 @@ impl Service {
                 store.save_catalog_publication(&p)?;
                 continue;
             }
+            if p.state == "registering" && verify_locations(store, &p).is_err() {
+                p.error=Some("snapshot unavailable or publication paths relocated; explicit reconciliation required".into());
+                store.save_catalog_publication(&p)?;
+                continue;
+            }
             let step = if p.state == "retiring" {
                 if store.catalog_references(&p)? {
                     continue;

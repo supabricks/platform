@@ -78,6 +78,10 @@ or remote location is accepted from a caller. UC removes external metadata only;
 after every object is retired and references drain, the platform releases its
 pin. Existing A02 GC owns subsequent deletion of verified generation paths.
 
+Before registration and final commit, locations are checked against the current
+owned snapshot root. Symlinked or relocated components stop the journal; it never
+publishes remembered absolute paths after a data-root move.
+
 The provider-side UUID reservation table is additive UC metastore state and must
 be backed up with that metastore. Cross-version UC upgrades and relocation of
 registered paths remain UC07; this slice does not weaken the existing strict

@@ -160,16 +160,7 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
         }
         let path = root.join(oid.to_string());
         let columns = columns(&root, &path, &d, t)?;
-        let location = format!(
-            "file://{}",
-            path.canonicalize()?
-                .to_str()
-                .ok_or_else(|| invalid("invalid snapshot location"))?
-                .split('/')
-                .map(|part| percent_encoding::utf8_percent_encode(part, PATH_ESCAPE).to_string())
-                .collect::<Vec<_>>()
-                .join("/")
-        );
+        let location = local_location(&path)?;
         let alias = format!("e_{}_{}", epoch.to_string().replace('-', ""), oid);
         objects.push(json!({"source_schema":schema,"source_name":name,"body":{"catalog_name":n.catalog,"schema_name":n.schema,"name":alias,"table_type":"EXTERNAL","data_source_format":"DELTA","storage_location":location,"columns":columns}}));
     }
@@ -179,6 +170,53 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
     }
     v["preview_hash"] = json!(hash(&v));
     Ok(v)
+}
+fn local_location(path: &Path) -> Result<String> {
+    let canonical = path.canonicalize()?;
+    if canonical != path {
+        return Err(conflict(
+            "snapshot location contains relocated or symlinked components",
+        ));
+    }
+    Ok(format!(
+        "file://{}",
+        canonical
+            .to_str()
+            .ok_or_else(|| invalid("non-UTF8 snapshot path"))?
+            .split('/')
+            .map(|part| percent_encoding::utf8_percent_encode(part, PATH_ESCAPE).to_string())
+            .collect::<Vec<_>>()
+            .join("/")
+    ))
+}
+fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
+    let snapshot = store.snapshot(p.project_id, p.epoch_id)?;
+    let d = snapshot
+        .publication
+        .descriptor
+        .ok_or_else(|| conflict("snapshot descriptor missing"))?;
+    if snapshot.state != "available" || d["manifest_sha256"] != p.manifest_hash {
+        return Err(conflict("snapshot identity changed"));
+    }
+    let root = store
+        .root()
+        .join("analytics/generations")
+        .join(snapshot.publication.export_id.to_string());
+    let tables = d["manifest"]["tables"]
+        .as_array()
+        .ok_or_else(|| invalid("snapshot tables missing"))?;
+    if tables.len() != p.tables.len() {
+        return Err(conflict("snapshot table set changed"));
+    }
+    for (source, t) in tables.iter().zip(&p.tables) {
+        let oid = source["oid"]
+            .as_u64()
+            .ok_or_else(|| invalid("snapshot table OID missing"))?;
+        if t.body["storage_location"] != local_location(&root.join(oid.to_string()))? {
+            return Err(conflict("catalog publication location changed"));
+        }
+    }
+    Ok(())
 }
 fn columns(root: &Path, path: &Path, d: &Value, table: &Value) -> Result<Vec<Value>> {
     use sha2::{Digest, Sha256};
