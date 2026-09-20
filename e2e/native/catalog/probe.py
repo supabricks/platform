@@ -103,6 +103,7 @@ def main():
     report = dict(schema_version=1, status='FAIL', target=platform.system()+'-'+platform.machine(),
         network_evidence=os.environ.get('SB_UC00_NETWORK_EVIDENCE','local run; external network not isolated'),
         external_tcp_denial=network_denial,
+        java_flags=['-Xms64m','-Xmx256m','-XX:ActiveProcessorCount=2','-Djava.net.preferIPv4Stack=true'],
         uc_build=json.loads((runtime/'build.json').read_text()),
         uc_artifact=json.loads(runtime.with_suffix('.artifact.json').read_text()),
         sail_build=json.loads((release/'provenance/sail/sail-build.json').read_text()),
@@ -272,6 +273,7 @@ def main():
         server.start()
         assert server.ok('GET','tables/p1.current.orders')['table_id'] == recreated['table_id']
         assert server.request('GET','tables/p1.current.orders',token=t2)[0] in (403,404)
+        assert owner.rows('SELECT sum(amount) AS total FROM p1.current.orders') == [dict(total=30)]
         assert owner.rows('SELECT sum(amount) AS total FROM frozen_orders') == [dict(total=10)]
         check('outage_restart_and_stopped_metadata_restore', backend='H2', data_backup_separate=True, project_runtime_stopped=True)
         short_lived = worker(server.token(reader1, 8))

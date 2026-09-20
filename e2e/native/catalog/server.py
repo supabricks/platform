@@ -87,7 +87,7 @@ s3.region.0=us-east-1
         began = time.monotonic()
         with (self.root/'server.log').open('ab') as log:
             self.process = subprocess.Popen([str(self.runtime/'java/bin/java'), '-Xms64m', '-Xmx256m',
-                '-XX:ActiveProcessorCount=2', '-cp', classpath,
+                '-XX:ActiveProcessorCount=2', '-Djava.net.preferIPv4Stack=true', '-cp', classpath,
                 'io.unitycatalog.server.UnityCatalogServer', '--port', str(self.port)],
                 cwd=self.root, env=clean_env(), stdout=log, stderr=subprocess.STDOUT)
         proc = self.process
