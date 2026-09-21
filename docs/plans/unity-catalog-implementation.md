@@ -415,7 +415,7 @@ recorded evidence, not from implementation presence.
 Scope: [governed on-prem architecture](../architecture/uc09-governed-on-prem.md)
 and [UC09.0–UC09.8 implementation plan](uc09-governed-implementation.md).
 Linux server first is confirmed; macOS retains local-owner mode. UC09.0 is the
-IAM00 feasibility foundation; subsequent slices implement the actual identity,
+[IAM00 feasibility foundation](../architecture/iam00-governance-probe.md), now implemented and locally qualified; subsequent slices implement the actual identity,
 authorization and isolation prerequisites. No governed capability is shipped yet.
 
 This slice is a joint milestone, blocked on actual IAM principal/group/run-as
