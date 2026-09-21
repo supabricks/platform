@@ -26,6 +26,10 @@ No browser login becomes an administrator automatically. Bootstrap records the
 chosen identity for subsequent authorization; the preview exposes no remote
 administration endpoints. All administration uses the private operator socket.
 
+The [UC09.2 authorization slice](uc092-authorization.md) extends these adapters
+with typed project control, a separate control scope and immutable admission
+intents. The description below records the UC09.1 identity-only boundary.
+
 ## Protocol and session boundary
 
 `identity_auth` uses its own API version (1) and a closed command set. It has no

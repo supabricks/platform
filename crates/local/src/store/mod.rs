@@ -1,4 +1,5 @@
 mod analytics;
+mod authorization;
 mod branches;
 mod catalog;
 mod catalog_publication;

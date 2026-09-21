@@ -1,6 +1,6 @@
 //! Exercise the shipped daemon/CLI and browser adapter over real sockets/TLS.
 use reqwest::blocking::Client;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::{
     fs,
     io::{BufRead, BufReader, Write},
@@ -117,6 +117,52 @@ impl Fixture {
         )
     }
 }
+fn authorization_project(f: &Fixture, actor: &str) -> String {
+    use supabricks_core::resource::ProjectId;
+    use supabricks_local::{
+        authorization::{AdminCommand as Policy, Role, Subject},
+        project::ProjectConfig,
+    };
+    let config = ProjectConfig {
+        id: ProjectId::new(),
+        name: "governed".into(),
+        format_version: 1,
+    };
+    client::request(
+        &f.root,
+        Request::RegisterProject {
+            config: config.clone(),
+        },
+    )
+    .unwrap();
+    let db = rusqlite::Connection::open_with_flags(
+        f.root.join("state.sqlite3"),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .unwrap();
+    let deployment: String = db
+        .query_row(
+            "SELECT id FROM deployments WHERE runtime_project_id=?1",
+            [config.id.to_string()],
+            |r| r.get(0),
+        )
+        .unwrap();
+    drop(db);
+    client::request(
+        &f.root,
+        Request::AuthorizationAdmin {
+            command: Policy::SetRole {
+                deployment: deployment.clone(),
+                subject: Subject::Principal(actor.into()),
+                role: Some(Role::Editor),
+                expected_policy: 1,
+                key: "initial-role".into(),
+            },
+        },
+    )
+    .unwrap();
+    deployment
+}
 fn stderr_line(process: &mut Process) -> String {
     let mut line = String::new();
     BufReader::new(process.0.stderr.take().unwrap())
@@ -158,6 +204,63 @@ fn identity_cli_login_private_output_and_authenticated_mcp_never_fall_back() {
     let context = transport::whoami(&f.root, &output, false).unwrap();
     assert_eq!(context["actor_id"], session["principal_id"]);
     assert_eq!(context["actor_id"], context["effective_principal_id"]);
+    use supabricks_local::authorization::{AdminCommand as Policy, Command as Control, Subject};
+    let deployment = authorization_project(&f, context["actor_id"].as_str().unwrap());
+    let request_path = f.temp.path().join("control.json");
+    transport::write_private(
+        &request_path,
+        &json!({"action":"project","deployment":deployment}),
+    )
+    .unwrap();
+    let mut control = f.spawn(&[
+        "identity",
+        "control",
+        "--session-file",
+        output.to_str().unwrap(),
+        "--request-file",
+        request_path.to_str().unwrap(),
+    ]);
+    let mut cli_result = String::new();
+    BufReader::new(control.0.stdout.take().unwrap())
+        .read_line(&mut cli_result)
+        .unwrap();
+    assert!(control.0.wait().unwrap().success());
+    assert_eq!(
+        serde_json::from_str::<Value>(&cli_result).unwrap()["deployment_id"],
+        deployment
+    );
+    assert!(!cli_result.contains(token));
+    let mut control_mcp = f.spawn(&[
+        "identity",
+        "mcp",
+        "--session-file",
+        output.to_str().unwrap(),
+    ]);
+    let mut input = control_mcp.0.stdin.take().unwrap();
+    writeln!(input,"{}",json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"project_control","arguments":{"command":{"action":"project","deployment":deployment}}}})).unwrap();
+    drop(input);
+    let mut result = String::new();
+    BufReader::new(control_mcp.0.stdout.take().unwrap())
+        .read_line(&mut result)
+        .unwrap();
+    assert!(control_mcp.0.wait().unwrap().success());
+    assert!(result.contains(&deployment));
+    assert!(!result.contains(token));
+    client::request(
+        &f.root,
+        Request::AuthorizationAdmin {
+            command: Policy::SetRole {
+                deployment: deployment.clone(),
+                subject: Subject::Principal(context["actor_id"].as_str().unwrap().into()),
+                role: None,
+                expected_policy: 2,
+                key: "revoke".into(),
+            },
+        },
+    )
+    .unwrap();
+    assert!(transport::control(&f.root, &output, Control::Project { deployment }).is_err());
+
     assert!(
         client::request(
             &f.root,
@@ -312,6 +415,77 @@ fn identity_browser_pkce_cookie_csrf_logout_and_product_gate() {
     assert_eq!(page.status(), 200);
     let html = page.text().unwrap();
     let form = csrf(&html);
+    let identity = client::request(
+        &f.root,
+        Request::IdentityAdmin {
+            command: AdminCommand::Status,
+        },
+    )
+    .unwrap();
+    let actor = identity["principals"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["kind"] == "user")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap();
+    let deployment = authorization_project(&f, actor);
+    let control = |body: Value, csrf: &str, request_origin: &str| {
+        f.http
+            .post(format!("{origin}/auth/v1/control"))
+            .header("Origin", request_origin)
+            .header("Cookie", &session)
+            .header("X-CSRF-Token", csrf)
+            .header("Content-Type", "application/json")
+            .body(body.to_string())
+            .send()
+            .unwrap()
+    };
+    assert_eq!(
+        control(json!({"action":"projects"}), "wrong", origin).status(),
+        403
+    );
+    assert_eq!(
+        control(
+            json!({"action":"projects"}),
+            &form,
+            "https://attacker.example"
+        )
+        .status(),
+        403
+    );
+    let result = control(
+        json!({"action":"project","deployment":deployment}),
+        &form,
+        origin,
+    );
+    assert_eq!(result.status(), 200);
+    assert_eq!(result.headers()["content-type"], "application/json");
+    assert_eq!(
+        serde_json::from_str::<Value>(&result.text().unwrap()).unwrap()["deployment_id"],
+        deployment
+    );
+    assert_eq!(
+        control(
+            json!({"action":"projects","actor_id":"owner"}),
+            &form,
+            origin
+        )
+        .status(),
+        403
+    );
+    assert_eq!(control(json!({"action":"save_source","deployment":deployment,"asset":"query","kind":"sql","contents":"select 1","expected_head":null,"expected_policy":2,"key":"browser-save"}),&form,origin).status(),200);
+    assert_eq!(
+        control(
+            json!({"action":"unavailable","deployment":deployment,"operation":"postgres_read"}),
+            &form,
+            origin
+        )
+        .status(),
+        403
+    );
+
     assert!(!html.contains("access_token"));
     assert!(!html.contains("fixture-secret"));
     assert_eq!(

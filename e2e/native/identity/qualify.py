@@ -15,6 +15,7 @@ import secrets
 import select
 import socket
 import ssl
+import sqlite3
 import subprocess
 import tempfile
 import time
@@ -195,6 +196,72 @@ def qualify(binary):
             assert cli('identity', 'whoami', '--session-file', alice)['actor_id'] == alice_id
             assert cli('identity', 'whoami', '--session-file', bob)['actor_id'] == bob_id
             checks.append('real TLS Keycloak PKCE logins and equal-email principal separation')
+            # Exercise the same authenticated authorization path used by the
+            # browser adapter and MCP, against the two real Keycloak sessions.
+            runtime_project = str(uuid.uuid4())
+            with socket.socket(socket.AF_UNIX) as control_socket:
+                control_socket.settimeout(10)
+                control_socket.connect(str(data/'control.sock'))
+                control_socket.sendall((json.dumps(dict(version=1, request=dict(
+                    method='register_project', config=dict(format_version=1,
+                    id=runtime_project, name='governed-fixture'))))+'\n').encode())
+                with control_socket.makefile('rb') as reader:
+                    assert 'result' in json.loads(reader.readline())
+            with sqlite3.connect('file:'+str(data/'state.sqlite3')+'?mode=ro', uri=True) as db:
+                deployment = db.execute('SELECT id FROM deployments WHERE runtime_project_id=?',
+                                        (runtime_project,)).fetchone()[0]
+
+            def policy(command):
+                path = root/'policy.json'; path.write_text(json.dumps(command)); path.chmod(0o600)
+                return cli('identity', 'policy-admin', '--request-file', path)
+
+            def update(action, **fields):
+                revision = policy(dict(action='policy', deployment=deployment))['policy_revision']
+                return policy(dict(action=action, deployment=deployment, expected_policy=revision,
+                                   key=uuid.uuid4().hex, **fields))
+
+            def control(session, command, ok=True):
+                path = root/'control.json'; path.write_text(json.dumps(command)); path.chmod(0o600)
+                return cli('identity', 'control', '--request-file', path, '--session-file', session, ok=ok)
+
+            subject = lambda principal: dict(kind='principal', id=principal)
+            update('set_role', subject=subject(alice_id), role='editor')
+            update('set_role', subject=subject(bob_id), role='viewer')
+            revision = policy(dict(action='policy', deployment=deployment))['policy_revision']
+            source_command = dict(action='save_source', deployment=deployment, asset='query',
+                                  kind='sql', contents='select 1', expected_head=None,
+                                  expected_policy=revision, key='first-source')
+            control(bob, source_command, ok=False)
+            source = control(alice, source_command)['revision']
+            admission = dict(action='admit_execution', deployment=deployment, source_revision=source,
+                             effective_principal=None, expected_policy=revision, key='run')
+            control(alice, admission, ok=False)
+            update('set_grant', subject=subject(alice_id), grant='execute',
+                   effective_principal=None, source_revision=None, present=True)
+            admission['expected_policy'] = policy(dict(action='policy', deployment=deployment))['policy_revision']
+            admitted = control(alice, admission)
+            assert admitted['actor_id'] == alice_id and admitted['effective_principal_id'] == alice_id
+            assert admitted['runtime_started'] is False
+            assert control(alice, admission) == admitted
+            control(bob, dict(action='stop_execution', deployment=deployment, id=admitted['id'],
+                              expected_policy=admission['expected_policy'], key='stop-other'), ok=False)
+            for operation in ('postgres_read', 'catalog_read', 'backup', 'restore', 'web_socket', 'workload_launch'):
+                control(alice, dict(action='unavailable', deployment=deployment, operation=operation), ok=False)
+            checks.append('two real users enforce conflicting roles, explicit execution, idempotency and stop ownership')
+            elevated = admin(dict(action='service', label='approved-worker'))['principal_id']
+            update('set_role', subject=subject(elevated), role='viewer')
+            update('set_grant', subject=subject(elevated), grant='execute',
+                   effective_principal=None, source_revision=None, present=True)
+            update('set_grant', subject=subject(alice_id), grant='act_as',
+                   effective_principal=elevated, source_revision=source, present=True)
+            revision = policy(dict(action='policy', deployment=deployment))['policy_revision']
+            delegated = dict(admission, effective_principal=elevated, expected_policy=revision, key='approved')
+            assert control(alice, delegated)['effective_principal_id'] == elevated
+            edited = control(alice, dict(source_command, contents='select secret', expected_head=source,
+                                         expected_policy=revision, key='edited-source'))['revision']
+            control(alice, dict(delegated, source_revision=edited, key='confused-deputy'), ok=False)
+            checks.append('service execution approval binds the exact immutable source and rejects edited code')
+
             users = keycloak_admin('GET', 'users?username=alice')
             keycloak_admin('PUT', 'users/'+users[0]['id'], dict(enabled=False))
             cli('identity', 'whoami', '--session-file', alice, ok=False)

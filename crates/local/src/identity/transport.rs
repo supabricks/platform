@@ -1,4 +1,4 @@
-//! Loopback-only authentication adapters. They expose no project/data APIs.
+//! Loopback-only identity and project-control adapters; data/workload routes stay gated.
 use super::*;
 use crate::{client, daemon::Request};
 use reqwest::Url;
@@ -210,6 +210,48 @@ pub fn whoami(root: &Path, path: &Path, logout: bool) -> Result<Value> {
         },
     )
 }
+/// Same typed server-side admission path for CLI, MCP and browser requests.
+pub fn control(root: &Path, path: &Path, command: crate::authorization::Command) -> Result<Value> {
+    let (token, channel) = session_fields(read_private(path)?)?;
+    control_credential(root, token, channel, None, command)
+}
+fn control_credential(
+    root: &Path,
+    token: String,
+    channel: Channel,
+    csrf: Option<String>,
+    command: crate::authorization::Command,
+) -> Result<Value> {
+    client::request(
+        root,
+        Request::Authorized {
+            envelope: crate::authorization::Envelope {
+                api_version: crate::authorization::VERSION,
+                token,
+                channel,
+                csrf,
+                command,
+            },
+        },
+    )
+}
+fn json_reply(request: tiny_http::Request, status: u16, value: Value) {
+    let mut response =
+        Response::from_string(value.to_string()).with_status_code(StatusCode(status));
+    for (name, value) in [
+        ("Content-Type", "application/json"),
+        ("Cache-Control", "no-store"),
+        ("X-Content-Type-Options", "nosniff"),
+        (
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'",
+        ),
+        ("Referrer-Policy", "no-referrer"),
+    ] {
+        response.add_header(Header::from_bytes(name, value).unwrap());
+    }
+    let _ = request.respond(response);
+}
 pub fn login(root: &Path, provider: &str, redirect: &str, output: &Path) -> Result<Value> {
     if output.exists() {
         return Err(invalid("session output must be a new private file"));
@@ -385,6 +427,40 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
             }
             continue;
         }
+        if path == "/auth/v1/control" {
+            let valid = request.method() == &Method::Post
+                && request.url() == path
+                && single(&request, "origin") == Some(&origin)
+                && single(&request, "content-type") == Some("application/json")
+                && request.body_length().is_some_and(|n| n <= 49152);
+            if !valid {
+                json_reply(request, 403, json!({"error":"Request refused"}));
+                continue;
+            }
+            let token = cookie(&request, &session_name).unwrap_or_default();
+            let csrf = single(&request, "x-csrf-token").map(str::to_owned);
+            let mut request = request;
+            let mut bytes = Vec::new();
+            if request
+                .as_reader()
+                .take(49153)
+                .read_to_end(&mut bytes)
+                .is_err()
+                || bytes.len() > 49152
+            {
+                json_reply(request, 403, json!({"error":"Request refused"}));
+                continue;
+            }
+            let command = serde_json::from_slice(&bytes).map_err(|_| denied());
+            let result = command.and_then(|command| {
+                control_credential(root, token, Channel::Browser, csrf, command)
+            });
+            match result {
+                Ok(value) => json_reply(request, 200, value),
+                Err(_) => json_reply(request, 403, json!({"error":"Project action refused"})),
+            }
+            continue;
+        }
         if request.method() != &Method::Post
             || single(&request, "origin") != Some(&origin)
             || request.url().contains('?')
@@ -451,7 +527,7 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
         }
     }
 }
-/// Authenticated MCP identity surface; product tools remain gated until UC09.2.
+/// Authenticated identity and project control tools; all capabilities are checked by the daemon.
 /// Credential paths are process configuration, never tool arguments or results.
 pub fn mcp(root: &Path, path: &Path) -> Result<()> {
     use std::io::BufRead;
@@ -478,7 +554,7 @@ pub fn mcp(root: &Path, path: &Path) -> Result<()> {
                     json!({"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"supabricks-identity","version":"1"}}})
                 }
                 Some("tools/list") => {
-                    json!({"result":{"tools":[{"name":"identity_whoami","description":"Inspect the authenticated identity. Product access remains disabled.","inputSchema":{"type":"object","properties":{},"additionalProperties":false}}]}})
+                    json!({"result":{"tools":[{"name":"identity_whoami","description":"Inspect the authenticated identity.","inputSchema":{"type":"object","properties":{},"additionalProperties":false}},{"name":"project_control","description":"Project roles, immutable source revisions and execution admission; catalog/PG and workload launch remain disabled.","inputSchema":{"type":"object","properties":{"command":{"type":"object"}},"required":["command"],"additionalProperties":false}}]}})
                 }
                 Some("tools/call")
                     if request["params"]["name"] == "identity_whoami"
@@ -487,6 +563,27 @@ pub fn mcp(root: &Path, path: &Path) -> Result<()> {
                             .is_none_or(|a| a.is_empty()) =>
                 {
                     json!({"result":{"content":[{"type":"text","text":context.to_string()}],"isError":false}})
+                }
+                Some("tools/call") if request["params"]["name"] == "project_control" => {
+                    let arguments = &request["params"]["arguments"];
+                    let result = if arguments
+                        .as_object()
+                        .is_some_and(|a| a.len() == 1 && a.contains_key("command"))
+                    {
+                        serde_json::from_value(arguments["command"].clone())
+                            .map_err(|_| denied())
+                            .and_then(|command| control(root, path, command))
+                    } else {
+                        Err(denied())
+                    };
+                    match result {
+                        Ok(value) => {
+                            json!({"result":{"content":[{"type":"text","text":value.to_string()}],"isError":false}})
+                        }
+                        Err(_) => {
+                            json!({"result":{"content":[{"type":"text","text":"Project action refused"}],"isError":true}})
+                        }
+                    }
                 }
                 _ => json!({"error":{"code":-32601,"message":"Method unavailable"}}),
             },
