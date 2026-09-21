@@ -26,7 +26,7 @@ GC protection and package requirement rebinding. Recovery includes an interrupte
 restore, moved data root with stable identities and relocated file URLs, revoked
 old credentials, retained snapshots, corrupt backend refusal, incompatible
 backend refusal and explicit external-provider rebinding. Linux additionally
-requires an actual bounded filesystem ENOSPC failure. The installed `CATALOG.md`
+requires an actual bounded filesystem ENOSPC failure. The installed `CATALOG-DEMO.md`
 walkthrough uses browser project creation, import, publication, binding, Sail SQL
 and a managed notebook without manual UC setup.
 
@@ -117,6 +117,14 @@ silently retried.
   those readiness fixes: 37 service, 11 browser and 10 recovery scenarios, including
   ENOSPC. The detached-daemon census observed 143 browser descendants and no leaks.
   This locally assembled candidate predates the final branch head.
+- Final review found assembly overwrote the new walkthrough with the existing
+  catalog service handbook at `CATALOG.md`. The demo now ships separately as
+  `CATALOG-DEMO.md`, and the collector requires its exact source hash. Earlier
+  catalog gate passes establish runtime behavior, not correct demo packaging.
+- All required PR checks and both native catalog suites passed at `3c81659`;
+  native recovery includes the timing-only UC rebuild through every interrupted
+  activation boundary. The complete release pipeline and corrected demo archive
+  still require qualification.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

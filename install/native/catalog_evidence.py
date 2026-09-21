@@ -53,6 +53,8 @@ def collect(data, env):
     require(data.get('release_identity')==env['release_sha256'] and data.get('archive')==env['archive'],
             'catalog: mixed release or archive identity')
     require(data.get('source')==env['source'],'catalog: mixed component provenance')
+    require(data.get('demo',{}).get('CATALOG-DEMO.md')==digest(ROOT/'docs/handbook/catalog-demo.md'),
+            'catalog: missing or different installed catalog walkthrough')
     require(bool(data.get('network_evidence')),'catalog: network evidence missing')
     build=data.get('unity_catalog',{})
     require(all(build.get(k)==v for k,v in expected_build(target).items()),'catalog: unreviewed UC/JRE build')

@@ -23,7 +23,7 @@ launch URL into Chromium instead of the OS's default Safari.
 fixture hashes and sampled throughput/resources. Build/test tooling is not a
 runtime dependency. This artifact supplements the existing notebook evidence.
 
-UC08 adds the installed `CATALOG.md` [two-project walkthrough](../../docs/handbook/catalog-demo.md)
+UC08 adds the installed `CATALOG-DEMO.md` [two-project walkthrough](../../docs/handbook/catalog-demo.md)
 and exact catalog evidence to the same R04 collector. Alpha.34 is a candidate;
 see the [qualification ledger](../../docs/architecture/uc08-release-qualification.md)
 for completed gates and outstanding failures.

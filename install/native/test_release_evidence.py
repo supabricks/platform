@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from demo import FILES
-from catalog_evidence import expected_build, REQUIRED, MINIMUM
+from catalog_evidence import expected_build, REQUIRED, MINIMUM, digest, ROOT
 from test_sail import sample_report
 from environment_evidence import SUITES
 from release_evidence import collect, markdown
@@ -59,6 +59,7 @@ class ReleaseEvidence(unittest.TestCase):
             self.write(target,'release-catalog','catalog.json',dict(status='passed',checks=self.checks(5),
                 release_identity=HASH,archive=env['archives']['new'],source=env['source'],
                 network_evidence='isolated',unity_catalog=build,uc_build_sha256=HASH,
+                demo={'CATALOG-DEMO.md':digest(ROOT/'docs/handbook/catalog-demo.md')},
                 contract=dict(backend_schema=1,publication_manifest=1,server_commit=build['source_commit'],capability_profile='local-owner-files-v1'),
                 suites=suites,measurements=dict(peak_rss_bytes=100,catalog_peak_rss_bytes=50,catalog_processes_observed=2,duration_seconds=3)))
 
@@ -144,6 +145,8 @@ class ReleaseEvidence(unittest.TestCase):
         original=path.read_text()
         mutations=[
             lambda d:d.update(release_identity=OTHER),
+            lambda d:d.update(demo={}),
+            lambda d:d['demo'].update({'CATALOG-DEMO.md':OTHER}),
             lambda d:d['archive'].update(sha256=OTHER),
             lambda d:d['unity_catalog'].update(source_commit='stale'),
             lambda d:d['unity_catalog']['java'].update(version='system Java'),

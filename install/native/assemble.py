@@ -135,7 +135,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'docs/handbook/project-data.md', destination / 'PROJECT-DATA.md')
     shutil.copy2(ROOT / 'docs/handbook/project-creation.md', destination / 'PROJECT-CREATION.md')
     shutil.copy2(ROOT / 'docs/handbook/local-demo.md', destination / 'DEMO.md')
-    shutil.copy2(ROOT / 'docs/handbook/catalog-demo.md', destination / 'CATALOG.md')
+    shutil.copy2(ROOT / 'docs/handbook/catalog-demo.md', destination / 'CATALOG-DEMO.md')
     shutil.copy2(ROOT / 'docs/handbook/notebooks.md', destination / 'NOTEBOOKS.md')
     shutil.copy2(ROOT / 'docs/handbook/file-ingestion.md', destination / 'INGESTION.md')
     shutil.copy2(ROOT / 'docs/handbook/analytical-workspace.md', destination / 'ANALYTICS.md')
