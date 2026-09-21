@@ -2,12 +2,13 @@
 mod adapter;
 mod config;
 pub mod datasets;
+pub mod governance;
 mod http;
 pub mod metadata;
 pub mod publication;
 pub mod reads;
 pub(crate) mod recovery;
-mod runtime;
+pub(crate) mod runtime;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -196,6 +197,7 @@ impl Manager {
                 "signing key rotation applies only to a managed local catalog",
             ));
         }
+        store.invalidate_catalog_governance()?;
         stop_owned(store)?;
         if let Some(mut child) = self.child.take() {
             let _ = child.wait();

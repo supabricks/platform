@@ -30,6 +30,9 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    CatalogGovernance {
+        command: crate::catalog::governance::AdminCommand,
+    },
     AuthorizationAdmin {
         command: crate::authorization::AdminCommand,
     },
@@ -174,6 +177,7 @@ pub struct Daemon {
     identity_jobs: Vec<(
         UnixStream,
         std::thread::JoinHandle<Result<crate::store::IdentityCommit>>,
+        Option<(crate::catalog::governance::ReadCommand, String)>,
     )>,
     ingest_error: Option<String>,
     project_apply_error: Option<String>,
@@ -186,6 +190,7 @@ impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
+        store.recover_catalog_governance()?;
         let catalog = crate::catalog::Manager::recover(&mut store);
         let catalog_publication = crate::catalog::publication::Service::recover(&mut store)?;
         let catalog_metadata = crate::catalog::metadata::Service::recover(&mut store)?;
@@ -267,7 +272,7 @@ impl Daemon {
         loop {
             for index in (0..self.identity_jobs.len()).rev() {
                 if self.identity_jobs[index].1.is_finished() {
-                    let (mut reply, worker) = self.identity_jobs.swap_remove(index);
+                    let (mut reply, worker, catalog) = self.identity_jobs.swap_remove(index);
                     let result = if stopping {
                         Err(conflict("daemon is stopping"))
                     } else {
@@ -277,7 +282,31 @@ impl Daemon {
                             .and_then(|r| r)
                             .and_then(|commit| commit(&mut self.store))
                     };
-                    let _ = writeln!(reply, "{}", response(result));
+                    if let Some((command, token_hash)) = catalog {
+                        let next = result
+                            .and_then(|value| {
+                                let ctx = serde_json::from_value(value)?;
+                                let broker = crate::catalog::governance::Broker::managed(
+                                    &self.catalog,
+                                    &self.store,
+                                )?;
+                                self.store
+                                    .catalog_governance_read(ctx, token_hash, command, broker)
+                            })
+                            .and_then(|job| {
+                                Ok(std::thread::Builder::new()
+                                    .name("catalog-read".into())
+                                    .spawn(job)?)
+                            });
+                        match next {
+                            Ok(worker) => self.identity_jobs.push((reply, worker, None)),
+                            Err(error) => {
+                                let _ = writeln!(reply, "{}", response(Err(error)));
+                            }
+                        }
+                    } else {
+                        let _ = writeln!(reply, "{}", response(result));
+                    }
                 }
             }
             self.queries.retain(|t| !t.is_finished());
@@ -520,12 +549,51 @@ impl Daemon {
                     if self.identity_jobs.len() >= 4 {
                         return Err(conflict("identity workers are busy"));
                     }
-                    let job = self.store.authorization_job(envelope)?;
+                    if envelope.api_version != crate::authorization::VERSION {
+                        return Err(invalid("unsupported project authorization API version"));
+                    }
+                    let (job, catalog) = if let crate::authorization::Command::Catalog { command } =
+                        envelope.command
+                    {
+                        let hash = crate::identity::hash(&envelope.token);
+                        (
+                            self.store.identity_job(
+                                crate::identity::AuthCommand::Authenticate {
+                                    token: envelope.token,
+                                    channel: envelope.channel,
+                                    csrf: envelope.csrf,
+                                },
+                            )?,
+                            Some((command, hash)),
+                        )
+                    } else {
+                        (self.store.authorization_job(envelope)?, None)
+                    };
                     self.identity_jobs.push((
                         stream.try_clone()?,
                         std::thread::Builder::new()
                             .name("project-auth".into())
                             .spawn(job)?,
+                        catalog,
+                    ));
+                    return Ok(None);
+                }
+                if let Request::CatalogGovernance { command } = envelope.request {
+                    if matches!(command, crate::catalog::governance::AdminCommand::Status {}) {
+                        return self.store.catalog_governance_status().map(Some);
+                    }
+                    if self.identity_jobs.len() >= 4 {
+                        return Err(conflict("identity workers are busy"));
+                    }
+                    let broker =
+                        crate::catalog::governance::Broker::managed(&self.catalog, &self.store)?;
+                    let job = self.store.catalog_governance_admin(command, broker)?;
+                    self.identity_jobs.push((
+                        stream.try_clone()?,
+                        std::thread::Builder::new()
+                            .name("catalog-grants".into())
+                            .spawn(job)?,
+                        None,
                     ));
                     return Ok(None);
                 }
@@ -550,6 +618,7 @@ impl Daemon {
                         std::thread::Builder::new()
                             .name("identity-oidc".into())
                             .spawn(job)?,
+                        None,
                     ));
                     return Ok(None);
                 }
@@ -624,6 +693,9 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::CatalogGovernance { .. } => {
+                return Err(invalid("catalog governance requires bounded workers"));
+            }
             Request::AuthorizationAdmin { command } => self.store.authorization_admin(command)?,
             Request::Authorized { .. } => {
                 return Err(invalid(

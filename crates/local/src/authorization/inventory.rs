@@ -32,7 +32,8 @@ pub fn boundary(request: &Request) -> Boundary {
     match request {
         Request::Authorized { .. } => Boundary::Project,
         Request::IdentityAuth { .. } => Boundary::Identity,
-        Request::AuthorizationAdmin { .. }
+        Request::CatalogGovernance { .. }
+        | Request::AuthorizationAdmin { .. }
         | Request::IdentityAdmin { .. }
         | Request::CatalogService { .. }
         | Request::ResolveBinding { .. }
