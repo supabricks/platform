@@ -4,21 +4,66 @@ on:
     branches: [qualify/uc08-diagnostics]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: uc08-diagnostics-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  mapped-loopback:
-    runs-on: macos-15
+  release-recovery:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+          run-id: 35577160676
+          github-token: ${{ github.token }}
+      - name: Download the exact qualified catalog-9 predecessor
+        uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34486403948
+          name: release-${{ matrix.target }}
+          path: build/previous
+          github-token: ${{ github.token }}
+      - if: runner.os == 'Linux'
+        run: |
+          docker build -f install/native/Dockerfile.qualify -t supabricks-recovery-test .
+          mkdir -p build/reports
+          chmod 777 build/releases build/previous build/reports
+          docker run --rm --network=none --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/previous:/previous" \
+            -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness:ro" \
+            supabricks-recovery-test \
+            python3 /harness/recovery.py --directory /releases --previous-directory /previous \
+            --report /reports/recovery.json --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; exact PR34 and NE02 archives'
+      - if: runner.os == 'macOS'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify explicit mapped-loopback policy without permitting external TCP
-        run: python e2e/native/notebook-environments/mapped_probe.py
+      - if: runner.os == 'macOS'
+        run: |
+          mkdir -p build/reports
+          ulimit -c 0
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            "$(command -v python)" install/native/recovery.py \
+            --directory build/releases --previous-directory build/previous \
+            --report build/reports/recovery.json \
+            --network-evidence 'Separate macOS 15 arm64 runner; external networking and Homebrew denied; exact PR34 and NE02 archives'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mapped-loopback
-          path: build/mapped.json
+          name: release-recovery-${{ matrix.target }}
+          path: build/reports/*.json
+
