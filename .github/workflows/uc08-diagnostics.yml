@@ -1,0 +1,89 @@
+name: UC08 targeted diagnostics
+on:
+  push:
+    branches: [qualify/uc08-diagnostics]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: uc08-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  diagnose-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 35569003223
+          github-token: ${{ github.token }}
+          name: release-linux-x86_64
+          path: build/releases
+      - name: Free disk for the 1 GB snapshot and its WAL/storage copies
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
+      - run: docker build -f install/native/Dockerfile.qualify -t supabricks-release-test .
+      - name: Real installer and app workflow without external networking or build tools
+        run: |
+          mkdir -p build/reports
+          chmod 777 build/releases build/reports
+          docker run --rm --network=none --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
+            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
+            supabricks-release-test \
+            strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
+            python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
+            --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
+      - name: No attempted external telemetry or update destinations
+        run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uc08-diagnostic-linux
+          path: build/reports/*.json
+
+  diagnose-macos-policy:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 35569003223
+          github-token: ${{ github.token }}
+          name: release-macos-arm64
+          path: build/releases
+      - name: Prepare fixture tools and verify unchanged archive
+        run: |
+          python -m pip install -r e2e/native/catalog/requirements.txt
+          python - <<'PYCODE'
+          from pathlib import Path
+          import hashlib,tarfile
+          archive=next(Path('build/releases').glob('*.tar.gz'))
+          assert hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()==Path(str(archive)+'.sha256').read_text().split()[0]
+          with tarfile.open(archive) as source:source.extractall('build/extracted',filter='data')
+          PYCODE
+      - name: Prove outbound denial and qualify exact installed service
+        run: |
+          mkdir -p build/reports
+          sandbox-exec -f install/native/offline-macos.sb env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_UC00_NETWORK_EVIDENCE='Corrected directional macOS policy; unchanged diagnostic archive' \
+            "$(command -v python)" e2e/native/catalog/service.py --exact-installed \
+            --release build/extracted/supabricks --binary build/extracted/supabricks/bin/supabricks \
+            --uc-runtime build/extracted/supabricks/share/unity-catalog --report build/reports/service.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uc08-diagnostic-macos
+          path: build/reports/*.json
