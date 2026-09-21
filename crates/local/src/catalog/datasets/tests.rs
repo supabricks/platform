@@ -391,3 +391,96 @@ fn schema_fingerprint_ignores_physical_order_and_detects_logical_schema_changes(
         expected
     );
 }
+
+#[test]
+fn browser_dataset_drafts_are_fenced_validate_graph_and_preserve_comments() {
+    use sha2::{Digest, Sha256};
+    let (dir, mut store, _, mut p) = setup();
+    publish(&mut store, &mut p);
+    let b = consumer(&mut store, &dir.path().join("consumer"), &p);
+    let file = b.worktree.join("supabricks.toml");
+    let original = fs::read_to_string(&file).unwrap() + "\n# Keep my comment\n";
+    fs::write(&file, &original).unwrap();
+    let hash = hex::encode(Sha256::digest(original.as_bytes()));
+    let edit = |logical: &str, requirement: Option<&str>, expected: &str| Apply::DatasetDraft {
+        logical: logical.into(),
+        requirement: requirement.map(str::to_owned),
+        expected_manifest_sha256: expected.into(),
+    };
+    assert!(
+        project_apply::handle(
+            &mut store,
+            &b,
+            edit("dataset.new", Some("new"), &"0".repeat(64))
+        )
+        .is_err()
+    );
+    assert!(
+        project_apply::handle(&mut store, &b, edit("dataset../escape", Some("new"), &hash))
+            .is_err()
+    );
+    let v =
+        project_apply::handle(&mut store, &b, edit("dataset.new", Some("new.v1"), &hash)).unwrap();
+    assert_eq!(v["applied"], false);
+    assert!(
+        fs::read_to_string(&file)
+            .unwrap()
+            .contains("# Keep my comment")
+    );
+    assert_eq!(
+        projects::inspect(&b.worktree, None)
+            .unwrap()
+            .unresolved_bindings
+            .len(),
+        2
+    );
+    assert!(
+        installed(&store, store.binding_context(&b).unwrap().deployment_id)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(project_apply::handle(&mut store, &b, edit("dataset.sales", None, &hash)).is_err());
+    project_apply::handle(
+        &mut store,
+        &b,
+        edit("dataset.new", None, v["manifest_sha256"].as_str().unwrap()),
+    )
+    .unwrap();
+    // Hard-link and symlink replacement may not edit another source file.
+    let held = dir.path().join("held.toml");
+    fs::hard_link(&file, &held).unwrap();
+    let hash = hex::encode(Sha256::digest(fs::read(&file).unwrap()));
+    assert!(project_apply::handle(&mut store, &b, edit("dataset.sales", None, &hash)).is_err());
+    fs::remove_file(&file).unwrap();
+    std::os::unix::fs::symlink(&held, &file).unwrap();
+    assert!(project_apply::handle(&mut store, &b, edit("dataset.sales", None, &hash)).is_err());
+}
+#[test]
+fn discovery_is_metadata_only_and_owned_inventory_is_project_scoped() {
+    let (dir, mut store, _, mut p) = setup();
+    publish(&mut store, &mut p);
+    let b = consumer(&mut store, &dir.path().join("consumer"), &p);
+    let discovered = handle(&store, &b, Command::Discover { after: None }).unwrap();
+    assert_eq!(discovered["items"].as_array().unwrap().len(), 1);
+    assert!(!discovered.to_string().contains("file://"));
+    assert!(
+        handle(&store, &b, Command::Owned { after: None }).unwrap()["items"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        handle(
+            &store,
+            &b,
+            Command::Discover {
+                after: Some("bad".into())
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(
+        store.dataset_references(p.id).unwrap(),
+        json!({"binding":0,"apply":0,"session":0})
+    );
+}

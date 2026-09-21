@@ -3,10 +3,11 @@ use crate::{deployments::Context, store::Snapshot};
 use std::collections::BTreeSet;
 
 pub fn query() -> crate::query::Query {
-    crate::query::Query {sql:r#"SELECT json_build_object('oid',c.oid::text,'incarnation',json_build_array(c.oid::text,c.relfilenode::text,(SELECT oid::text FROM pg_database WHERE datname=current_database())), 'schema',n.nspname,'name',c.relname,'column_count',(SELECT count(*) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped),'columns',(SELECT json_agg(json_build_object('name',a.attname,'data_type',format_type(a.atttypid,a.atttypmod),'nullable',NOT a.attnotnull,'ordinal',a.attnum) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname NOT IN ('pg_catalog','information_schema','_supabricks') AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp_%' AND has_table_privilege(c.oid,'SELECT') ORDER BY n.nspname,c.relname LIMIT 129"#.into(),read_only:true,max_rows:129,timeout_ms:10000}
+    crate::query::Query {sql:r#"SELECT json_build_object('oid',c.oid::text,'incarnation',json_build_array(c.oid::text,c.relfilenode::text,(SELECT oid::text FROM pg_database WHERE datname=current_database())), 'schema',n.nspname,'name',c.relname,'comment',left(obj_description(c.oid,'pg_class'),4096),'column_count',(SELECT count(*) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped),'columns',(SELECT json_agg(json_build_object('name',a.attname,'data_type',format_type(a.atttypid,a.atttypmod),'nullable',NOT a.attnotnull,'ordinal',a.attnum,'comment',left(col_description(c.oid,a.attnum),4096)) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname NOT IN ('pg_catalog','information_schema','_supabricks') AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp_%' AND has_table_privilege(c.oid,'SELECT') ORDER BY n.nspname,c.relname LIMIT 129"#.into(),read_only:true,max_rows:129,timeout_ms:10000}
 }
 fn base(context: &Context, branch: BranchId, provider: &str, provider_id: &str) -> Asset {
     Asset {
+        comment: None,
         id: OperationId::new(),
         project_id: context.runtime_project_id,
         deployment_id: context.deployment_id,
@@ -105,6 +106,7 @@ pub fn postgres(
         a.incarnation = fingerprint(&v["incarnation"]);
         a.schema = label(&v["schema"])?;
         a.name = label(&v["name"])?;
+        a.comment = v["comment"].as_str().map(str::to_owned);
         a.columns = serde_json::from_value(v["columns"].clone())
             .map_err(|_| Fault::new(Code::InvalidResponse, "invalid PostgreSQL column metadata"))?;
         if v["column_count"].as_u64() != Some(a.columns.len() as u64) {
@@ -167,6 +169,7 @@ pub fn snapshot(
             .ok_or_else(|| Fault::new(Code::InvalidResponse, "snapshot columns missing"))?;
         for (i, c) in cols.iter().enumerate() {
             a.columns.push(Column {
+                comment: None,
                 name: label(&c["name"])?,
                 data_type: label(&c["arrow_type"])?,
                 nullable: c["nullable"].as_bool().ok_or_else(|| {

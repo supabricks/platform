@@ -5,6 +5,9 @@ on:
       - 'components/*unity-catalog*'
       - 'components/test_unity_catalog.py'
       - 'crates/local/**'
+      - 'schemas/catalog-*.schema.json'
+      - 'console'
+      - 'console/**'
       - 'python/analytics/**'
       - 'e2e/native/notebook-environments/client.py'
       - 'Cargo.lock'
@@ -33,11 +36,21 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build console and install browser qualification tools
+        run: |
+          npm ci --prefix console --no-audit --no-fund
+          npm run build --prefix console
+          npm exec --prefix console -- playwright install --with-deps chromium
       - name: Frozen worker contracts
         run: python -m unittest discover -s python/analytics -p test_session.py
       - name: Build the platform service owner
@@ -117,6 +130,31 @@ jobs:
             "$(command -v python)" e2e/native/catalog/service.py \
             --release build/baseline/supabricks --binary target/release/supabricks \
             --uc-runtime build/uc-runtime --report build/reports/service.json
+      - name: Qualify catalog browser workflow offline on Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          node_path=$(command -v node)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="unprivileged loopback-only Linux network namespace" \
+              "$2" e2e/native/catalog/console.py \
+              --release build/baseline/supabricks --binary target/release/supabricks \
+              --uc-runtime build/uc-runtime --console console --node "$3" \
+              --report build/reports/browser.json
+          ' bash "$(id -un)" "$python_path" "$node_path"
+      - name: Qualify catalog browser workflow offline on macOS
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f e2e/native/catalog/offline-macos.sb \
+            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS sandbox; external outbound connections and Homebrew denied" \
+            "$(command -v python)" e2e/native/catalog/console.py \
+            --release build/baseline/supabricks --binary target/release/supabricks \
+            --uc-runtime build/uc-runtime --console console --node "$(command -v node)" \
+            --report build/reports/browser.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

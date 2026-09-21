@@ -131,6 +131,7 @@ impl Args {
                         | "--include-deleted"
                         | "--no-open"
                         | "--no-header"
+                        | "--remove"
                 ) {
                     "true".into()
                 } else {
@@ -247,6 +248,7 @@ pub fn run() -> Result<u8> {
                 | "installed"
                 | "asset"
                 | "draft"
+                | "dataset-draft"
         )
     {
         let action = a.required(1)?;
@@ -551,7 +553,15 @@ pub fn run() -> Result<u8> {
     if command == "project"
         && matches!(
             a.required(1)?.as_str(),
-            "plan" | "apply" | "status" | "cancel" | "find" | "installed" | "asset" | "draft"
+            "plan"
+                | "apply"
+                | "status"
+                | "cancel"
+                | "find"
+                | "installed"
+                | "asset"
+                | "draft"
+                | "dataset-draft"
         )
     {
         use crate::project_apply::Command as P;
@@ -592,6 +602,23 @@ pub fn run() -> Result<u8> {
                         .ok_or_else(|| invalid("find requires --key"))?,
                 },
                 2,
+            ),
+            "dataset-draft" => (
+                P::DatasetDraft {
+                    logical: a.required(2)?,
+                    requirement: if a.flag("--remove") {
+                        None
+                    } else {
+                        Some(
+                            a.take("--requirement")
+                                .ok_or_else(|| invalid("supply --requirement or --remove"))?,
+                        )
+                    },
+                    expected_manifest_sha256: a
+                        .take("--expected-manifest")
+                        .ok_or_else(|| invalid("supply --expected-manifest SHA256"))?,
+                },
+                3,
             ),
             "installed" => (P::Installed, 2),
             "asset" => (
@@ -1190,6 +1217,16 @@ pub fn run() -> Result<u8> {
                 "list" => {
                     a.finish(3)?;
                     D::List
+                }
+                "owned" => {
+                    let after = a.take("--after");
+                    a.finish(3)?;
+                    D::Owned { after }
+                }
+                "discover" => {
+                    let after = a.take("--after");
+                    a.finish(3)?;
+                    D::Discover { after }
                 }
                 "updates" => {
                     let logical = a.required(3)?;

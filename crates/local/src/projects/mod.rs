@@ -4,7 +4,7 @@ pub mod data;
 pub mod manifest;
 pub mod package;
 pub(crate) mod publication;
-mod source;
+pub(crate) mod source;
 use crate::{
     project::ProjectConfig,
     store::{
@@ -112,7 +112,7 @@ pub fn inspect(directory: &Path, target: Option<&str>) -> Result<Inspection> {
     let mut source = Source::new(directory)?;
     inspect_inputs(&mut source, target)
 }
-fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspection> {
+pub(crate) fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspection> {
     let bytes = source.read("supabricks.toml")?;
     if bytes.len() > 256 * 1024 {
         return Err(invalid("supabricks.toml exceeds 256 KiB"));

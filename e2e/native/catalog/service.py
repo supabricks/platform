@@ -40,7 +40,7 @@ sys.path.insert(0,str(REPO/'install/native'))
 from unity_catalog import install
 
 
-def installed_fixture(baseline, binary, runtime, output):
+def installed_fixture(baseline, binary, runtime, output, console_assets=None):
     manifest=json.loads((baseline/'release.json').read_text())
     for name,entry in manifest['files'].items():
         assert (baseline/name).resolve().is_relative_to(baseline)
@@ -50,6 +50,9 @@ def installed_fixture(baseline, binary, runtime, output):
     workers=list(output.rglob('analytics/session.py'))
     assert len(workers)==1, workers
     shutil.copy2(REPO/'python/analytics/session.py',workers[0])
+    if console_assets:
+        shutil.rmtree(output/'share/console')
+        shutil.copytree(console_assets,output/'share/console')
     catalog=install(output,manifest['target'],runtime)
     manifest['provenance']['data_formats']['local_catalog']=15
     manifest['provenance']['unity_catalog']=catalog

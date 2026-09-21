@@ -1,6 +1,70 @@
 [
   {
     "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Edit a root-manifest dataset requirement with an expected manifest SHA-256. Null requirement removes it. This changes source only; review project_plan then project_apply separately.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_manifest_sha256": {
+          "type": "string"
+        },
+        "logical": {
+          "type": "string"
+        },
+        "requirement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "logical",
+        "requirement",
+        "expected_manifest_sha256"
+      ],
+      "type": "object"
+    },
+    "name": "project_dataset_draft",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api_version",
+            "logical",
+            "manifest_sha256",
+            "applied"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
       "destructiveHint": false,
       "openWorldHint": false,
       "readOnlyHint": true
@@ -6206,6 +6270,42 @@
                 "target"
               ],
               "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "owned"
+                },
+                "after": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "discover"
+                },
+                "after": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "type": "object"
             }
           ]
         }
@@ -7228,6 +7328,10 @@
                   "minItems": 1,
                   "type": "array"
                 },
+                "comment": {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
                 "deployment_id": {
                   "format": "uuid",
                   "type": "string"
@@ -7388,6 +7492,10 @@
             "column": {
               "additionalProperties": false,
               "properties": {
+                "comment": {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
                 "data_type": {
                   "type": "string"
                 },
@@ -7517,7 +7625,7 @@
                   "const": 1
                 },
                 "cross_project_bindings": {
-                  "const": false
+                  "const": true
                 },
                 "governed_multiuser": {
                   "const": false

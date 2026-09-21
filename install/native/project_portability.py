@@ -509,7 +509,7 @@ def main():
     for name in ('directory', 'output', 'bundles', 'package', 'report', 'previous-directory'):
         parser.add_argument('--'+name, type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.31')
+    parser.add_argument('--version', default='v0.1.0-alpha.32')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.22')
     parser.add_argument('--release', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()

@@ -19,6 +19,10 @@
         "ordinal": {
           "type": "integer",
           "minimum": 1
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 4096
         }
       },
       "required": [
@@ -130,6 +134,10 @@
             "active",
             "stale"
           ]
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 4096
         }
       },
       "required": [
@@ -335,7 +343,7 @@
           "const": true
         },
         "cross_project_bindings": {
-          "const": false
+          "const": true
         },
         "storage_access": {
           "const": false

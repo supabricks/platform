@@ -30,6 +30,13 @@ pub fn tools() -> Value {
     plan_options.as_object_mut().unwrap().remove("required");
     let defs = vec![
         (
+            "project_dataset_draft",
+            "Edit a root-manifest dataset requirement with an expected manifest SHA-256. Null requirement removes it. This changes source only; review project_plan then project_apply separately.",
+            json!({"logical":string,"requirement":{"type":["string","null"]},"expected_manifest_sha256":string}),
+            vec!["logical", "requirement", "expected_manifest_sha256"],
+            false,
+        ),
+        (
             "project_plan",
             "Read-only destination plan with source/package hashes, explicit adoption and expected revisions. Does not prepare or execute resources.",
             json!({"options":plan_options}),
@@ -489,6 +496,9 @@ fn output_schema(name: &str) -> Value {
         "project_asset" => {
             json!({"type":"object","required":["api_version","logical","revision","read_only","resource","content"]})
         }
+        "project_dataset_draft" => {
+            json!({"type":"object","required":["api_version","logical","manifest_sha256","applied"]})
+        }
         "project_draft" => {
             json!({"type":"object","required":["api_version","path","draft","origin_revision","logical"]})
         }
@@ -705,6 +715,7 @@ impl Session {
                         | "project_installed"
                         | "project_asset"
                         | "project_draft"
+                        | "project_dataset_draft"
                 ) {
                     args["action"] = json!(name.strip_prefix("project_").unwrap());
                     args = json!({"action":"project_apply","command":args});

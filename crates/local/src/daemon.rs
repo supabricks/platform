@@ -641,7 +641,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -868,12 +868,14 @@ impl Daemon {
                     .public_action(binding, crate::api::Action::CatalogDatasets { command });
             }
             C::CatalogPublication { command } => {
-                return self
-                    .public_action(binding, crate::api::Action::CatalogPublication { command });
+                let value = self
+                    .public_action(binding, crate::api::Action::CatalogPublication { command })?;
+                return Ok(crate::console::catalog::public_view(value));
             }
             C::CatalogMetadata { command } => {
-                return self
-                    .public_action(binding, crate::api::Action::CatalogMetadata { command });
+                let value =
+                    self.public_action(binding, crate::api::Action::CatalogMetadata { command })?;
+                return Ok(crate::console::catalog::public_view(value));
             }
             C::Environment { command } => {
                 self.consoles.owns(
