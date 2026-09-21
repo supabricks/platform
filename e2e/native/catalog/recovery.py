@@ -23,7 +23,10 @@ def main():
     parser.add_argument('--exact-installed', action='store_true')
     parser.add_argument('--workspace', type=Path)
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix='', dir=args.workspace or '/tmp')).resolve()
+    if args.workspace:
+        root=(args.workspace/'r').resolve();root.mkdir(mode=0o700)
+    else:
+        root=Path(tempfile.mkdtemp(prefix='sb-uc07-',dir='/tmp')).resolve()
     root.chmod(0o700)
     print('UC07 fixture:', root, flush=True)
     prefix=root/'install';(prefix/'releases').mkdir(parents=True);(prefix/'bin').mkdir()

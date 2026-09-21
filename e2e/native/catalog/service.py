@@ -113,7 +113,11 @@ def main():
     parser.add_argument("--exact-installed", action="store_true")
     parser.add_argument("--workspace", type=Path)
     args=parser.parse_args()
-    root=Path(tempfile.mkdtemp(prefix='',dir=args.workspace or '/tmp')).resolve();root.chmod(0o700)
+    # Keep nested exact-release fixtures within macOS's 104-byte socket budget.
+    if args.workspace:
+        root=(args.workspace/'s').resolve();root.mkdir(mode=0o700)
+    else:
+        root=Path(tempfile.mkdtemp(prefix='sb-uc01-',dir='/tmp')).resolve();root.chmod(0o700)
     print('Private service fixture:',root,flush=True)
     baseline,binary,runtime=args.release.resolve(),args.binary.resolve(),args.uc_runtime.resolve()
     report=dict(status='FAIL',checks=[],binary_sha256=sha(binary),uc_build=json.loads((runtime/'build.json').read_text()),
