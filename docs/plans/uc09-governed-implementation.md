@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: scoped, not implemented. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 developer probe implemented; UC09.1–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -63,6 +63,12 @@ integrated. Each slice may have coordinated repo PRs. Split further where a
 single review cannot cover its changes, without dropping acceptance criteria.
 
 ## UC09.0 / IAM00 — Prove the boundary first
+
+Implemented: [capability report and chosen design](../architecture/iam00-governance-probe.md),
+[reproducible harness](../../e2e/native/iam/README.md). Direct external UC federation
+and native UC groups are no-go at the pinned version; the private broker and
+per-execution OCI/gVisor candidate support proceeding to UC09.1. The product
+governed profile remains disabled.
 
 Build a developer-only Linux harness using the pinned product and UC fork, a
 pinned on-prem Keycloak fixture and a reviewed OCI/gVisor candidate. Do not expose

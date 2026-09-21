@@ -1,0 +1,717 @@
+{
+  "schema_version": 1,
+  "status": "PASS_WITH_LIMITATIONS",
+  "profile": "iam00-feasibility-only",
+  "governed_product_enabled": false,
+  "pins": {
+    "schema_version": 1,
+    "platform": {
+      "run_id": 35585995786,
+      "artifact": "release-linux-x86_64",
+      "archive": "supabricks-v0.1.0-alpha.34-linux-x86_64.tar.gz",
+      "sha256": "6fc53c0fe0006acade2aebbc9bfe8c854f926d6ec7c1aaff960fbfdfd4b68539",
+      "inventory_sha256": "8147fa38c6d855c7b72c0f590e902af4c708a2bb750e94111b02cb8d8ac6206e",
+      "commit": "a89d0484e284ca403309055939031211ac84eaaa"
+    },
+    "keycloak": {
+      "version": "26.7.4",
+      "repository": "https://github.com/keycloak/keycloak",
+      "image": "quay.io/keycloak/keycloak@sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c",
+      "commit": "aa9fe3fba0c6cd5770f19a49378c55f4378cf544"
+    },
+    "gvisor": {
+      "version": "release-20260914.0",
+      "repository": "https://github.com/google/gvisor",
+      "commit": "96928b6cccd8472a28b20bbffe6f3166c81cf9c5",
+      "url": "https://storage.googleapis.com/gvisor/releases/release/20260914.0/x86_64/gvisor.tar.bz2",
+      "sha512": "ff1c0577c8daa0e3511aedad554c3d5e20fa184b4ddd422454f573d60a8b9774f972755ca5c7f56588c5b4f42345b60b2ead077f35d7d3235e23f57c0fa194ca"
+    },
+    "rootfs": "ubuntu@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3"
+  },
+  "host": {
+    "kernel": "7.0.0-30-generic",
+    "machine": "x86_64",
+    "logical_cpus": 16,
+    "memory_bytes": 66504216576
+  },
+  "source_sha256": {
+    "e2e/native/iam/README.md": "86ae6ab513d952d97c8c050e167db0d40f3945f82dbfa6d0a7fb92b93734e190",
+    "e2e/native/iam/catalog_reader.py": "ea516789804d1a1a8bef594426aabd800cfdd8827a200d9f169d4b90469418d3",
+    "e2e/native/iam/common.py": "9fd4c8816a1136a6298cfcb01cc3dd6046f1eb9c702a06d08a771f7fa0b72e13",
+    "e2e/native/iam/controller.py": "88cb9dabc5a1c1eb3a9b3a68ddc5392221e09f069e0673e6eda41a94bce64b39",
+    "e2e/native/iam/identity.py": "d27c3864f4d55c645a0cc50d6f65f687cda65e3d2e687a774228c2248cca666c",
+    "e2e/native/iam/kernel_checks.py": "4298a00e0ee68133fcc4c94b7b5393409d9c05952043658c9258c9273d438edc",
+    "e2e/native/iam/lease_issuer.py": "5d23098d7db785a21c5f38a939189434836f901bfdef32ae9adefdb59dfb8a74",
+    "e2e/native/iam/open_file_query.py": "210f68164a8998b0573c59afa39e91f8f06f75d75ebff9b5f22ab67c0e9e9e1e",
+    "e2e/native/iam/pins.lock.json": "2e1667bc67fe31b6246314f5914ad02ffeaa001bb4c93cbb5ad81f6c439640e4",
+    "e2e/native/iam/postgres.py": "002700de51ef03424ebf58cdc7a5c31df8ef8901d6a7faa1d197a000c05b6d9d",
+    "e2e/native/iam/prepare.py": "9fa34890c472fdfe21d1732b357f6b681dc5f2aeca35fcc3bbf63f6f967381f1",
+    "e2e/native/iam/qualify.py": "b2459bc6ddc232a959240453ffe1f44874373dd107fff2484cdeb4e9071b0e5a",
+    "e2e/native/iam/run.py": "57d982d980d6aeffd3c6d2cdb3c29113c83993bdea7c8bf58a90ec171665058b",
+    "e2e/native/iam/sandbox.py": "ec310d111b9cc65b1d29b45e21fd4451a62eaf13ec4f3b4363e2d758d56044e1",
+    "e2e/native/iam/sandbox_sail.py": "ceeb82619c8586c02df0c5409bed8b1ce9daa862f9504307a72bd80fad7fcc44",
+    "e2e/native/iam/test_evidence.py": "fde222ad16103f756bf6414b833cebdc561c4f55955ecfa332f56aa115187d62",
+    "e2e/native/iam/workload.py": "b32dec57b7f23b1e61ca68c3ae834b5f9e53a6f94fa4ada9922c6550e7e56ae7"
+  },
+  "release_inventory_sha256": "8147fa38c6d855c7b72c0f590e902af4c708a2bb750e94111b02cb8d8ac6206e",
+  "platform_revision": "a89d0484e284ca403309055939031211ac84eaaa",
+  "sail": {
+    "build_manifest_sha256": "dab85b3d7be3a8334db825189ac8bbb47a4d16befca6500bf1d6e160005fedff",
+    "repository": "https://github.com/supabricks/sail",
+    "commit": "9544c9253e981a82c5f9e493c43ce98a4d9d41b7",
+    "source_dirty": false,
+    "source_lock_sha256": "a6c89a02741398bd6fbd3ad7118b3aa0a76ffc466020959410791ecd6c78bfca",
+    "version": "0.7.1",
+    "target": "linux-x86_64",
+    "builder_script_sha256": "672de658f13af6db6f468702b3b8aea485bf14eebb6b13d6c94aca421aaa4d80"
+  },
+  "catalog": {
+    "build_manifest_sha256": "7ad0c2f5b5f7137149389a3024ec82eb47283a1a1ec3f1e68c8549e542084474",
+    "source_commit": "8e195426ce03e593b03c92f87051d7bf013aeee1",
+    "source_dirty": false,
+    "source_pin_sha256": "4fb186be7bbb7986a183467d8925c16f31a36493869bd225a8e5a834f70c50bb",
+    "dependency_lock_sha256": "f2cfbe645a0c5c41f42473bf5f196d312f57b29c3531a8274a3b2bba4ca109d4",
+    "target": "linux-x86_64",
+    "builder_script_sha256": "4ff1e578350a954a4ed19ae8adb7aa08aa90f8c84617d6f22a73ad089880220a"
+  },
+  "python_packages": {
+    "psutil": "7.2.2",
+    "cryptography": "46.0.5",
+    "psycopg": "3.3.5",
+    "boto3": "1.42.63"
+  },
+  "phases": {
+    "postgres": "PASS",
+    "identity": "PASS",
+    "sandbox": "PASS"
+  },
+  "evidence": {
+    "checks": [
+      {
+        "name": "pg_restricted_positive_control",
+        "status": "PASS"
+      },
+      {
+        "name": "pg_denies_other_table",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_control_role",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_owner_role",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_server_file",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_server_program",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_superuser",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_create_role",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_grant_read_all",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_replication",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_bypass_rls",
+        "status": "PASS",
+        "sqlstate": "42501"
+      },
+      {
+        "name": "pg_denies_other_branch",
+        "status": "PASS"
+      },
+      {
+        "name": "pg_denies_control_login",
+        "status": "PASS"
+      },
+      {
+        "name": "pg_denies_owner_login",
+        "status": "PASS"
+      },
+      {
+        "name": "pg_running_query_terminated",
+        "status": "PASS",
+        "seconds": 0.008
+      },
+      {
+        "name": "signed_oidc_subjects_and_equal_emails_are_distinct",
+        "status": "PASS"
+      },
+      {
+        "name": "stable_mapping_survives_reopen",
+        "status": "PASS"
+      },
+      {
+        "name": "uc_table_access_alice",
+        "status": "PASS",
+        "http": 200
+      },
+      {
+        "name": "uc_table_access_bob",
+        "status": "PASS",
+        "http": 403
+      },
+      {
+        "name": "uc_metadata_filter_bob",
+        "status": "PASS"
+      },
+      {
+        "name": "uc_table_access_same-email",
+        "status": "PASS",
+        "http": 403
+      },
+      {
+        "name": "uc_metadata_filter_same-email",
+        "status": "PASS"
+      },
+      {
+        "name": "uc_table_access_service",
+        "status": "PASS",
+        "http": 403
+      },
+      {
+        "name": "uc_metadata_filter_service",
+        "status": "PASS"
+      },
+      {
+        "name": "sail_uc_table_read_alice",
+        "status": "PASS"
+      },
+      {
+        "name": "sail_uc_table_read_bob",
+        "status": "PASS"
+      },
+      {
+        "name": "sail_uc_table_read_service",
+        "status": "PASS"
+      },
+      {
+        "name": "signed_external_admin_label_positive_control",
+        "status": "PASS"
+      },
+      {
+        "name": "external_admin_label_has_no_broker_elevation",
+        "status": "PASS"
+      },
+      {
+        "name": "broker_admin_label_is_ordinary_principal",
+        "status": "PASS"
+      },
+      {
+        "name": "broker_admin_label_cannot_create_catalog",
+        "status": "PASS",
+        "http": 403
+      },
+      {
+        "name": "broker_rejects_wrong_audience",
+        "status": "PASS"
+      },
+      {
+        "name": "uc_exchange_rejects_wrong_audience",
+        "status": "PASS",
+        "http": 401
+      },
+      {
+        "name": "broker_rejects_forged_issuer",
+        "status": "PASS"
+      },
+      {
+        "name": "uc_exchange_rejects_forged_issuer",
+        "status": "PASS",
+        "http": 401
+      },
+      {
+        "name": "native_exchange_alice",
+        "status": "PASS",
+        "http": 200
+      },
+      {
+        "name": "native_exchange_same-email",
+        "status": "PASS",
+        "http": 200
+      },
+      {
+        "name": "native_external_admin_label_exchange_observed",
+        "status": "PASS",
+        "http": 200
+      },
+      {
+        "name": "native_group_endpoint_characterized",
+        "status": "PASS",
+        "http": 500
+      },
+      {
+        "name": "email_change_preserves_principal",
+        "status": "PASS"
+      },
+      {
+        "name": "recreated_subject_does_not_inherit_identity",
+        "status": "PASS"
+      },
+      {
+        "name": "recreated_subject_does_not_inherit_grants",
+        "status": "PASS",
+        "http": 403
+      },
+      {
+        "name": "introspection_active_positive_control",
+        "status": "PASS"
+      },
+      {
+        "name": "idp_disable_detected_before_jwt_expiry",
+        "status": "PASS",
+        "seconds": 0.059
+      },
+      {
+        "name": "disabled_identity_admission_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "recreated_identity_admission_positive_control",
+        "status": "PASS"
+      },
+      {
+        "name": "idp_outage_fences_admission",
+        "status": "PASS"
+      },
+      {
+        "name": "idp_recovery_requires_active_identity",
+        "status": "PASS"
+      },
+      {
+        "name": "forged_signature_rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "two_concurrent_managed_notebooks_and_sail_instances",
+        "status": "PASS"
+      },
+      {
+        "name": "both_sandbox_controllers_exit_successfully",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:native_numpy_pandas_arrow",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:python_user_is_unprivileged",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:cannot_elevate_to_root",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:raw_network_socket_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:own_admitted_data_readable",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/host-secrets/credential",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/host-secrets/control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/host-secrets/other/private-cache",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/host-secrets/other/private-credential",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/other-data/owner",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/other-data/data100/_delta_log/00000000000000000000.json",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/work/config.json",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:filesystem_denied:/proc/1/root/host-secrets/credential",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:unix_socket_denied:/var/run/docker.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:unix_socket_denied:/host-secrets/control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:unix_socket_denied:/run/runsc/alice_control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:127.0.0.1:36925",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:127.0.0.1:47547",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:127.0.0.1:43291",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:127.0.0.1:43292",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:127.0.0.1:32785",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:172.17.0.1:5432",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:tcp_denied:1.1.1.1:443",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:no_host_secret_environment",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:no_other_principal_processes",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:product_mount_is_readonly",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:scratch_quota_is_512m",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:scratch_over_quota_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:sail_raw_unadmitted_delta_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:sail_delta_10mb_full_payload",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:native_deltalake_10mb",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:sail_delta_100mb_full_payload",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:native_deltalake_100mb",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:bounded_execution_revocation",
+        "status": "PASS"
+      },
+      {
+        "name": "alice:outer_cgroup_limits",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:native_numpy_pandas_arrow",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:python_user_is_unprivileged",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:cannot_elevate_to_root",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:raw_network_socket_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:own_admitted_data_readable",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/host-secrets/credential",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/host-secrets/control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/host-secrets/other/private-cache",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/host-secrets/other/private-credential",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/other-data/owner",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/other-data/data100/_delta_log/00000000000000000000.json",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/work/config.json",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:filesystem_denied:/proc/1/root/host-secrets/credential",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:unix_socket_denied:/var/run/docker.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:unix_socket_denied:/host-secrets/control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:unix_socket_denied:/run/runsc/alice_control.sock",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:127.0.0.1:36925",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:127.0.0.1:47547",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:127.0.0.1:43291",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:127.0.0.1:43292",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:127.0.0.1:32785",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:172.17.0.1:5432",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:tcp_denied:1.1.1.1:443",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:no_host_secret_environment",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:no_other_principal_processes",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:product_mount_is_readonly",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:scratch_quota_is_512m",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:scratch_over_quota_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:sail_raw_unadmitted_delta_denied",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:sail_delta_10mb_full_payload",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:native_deltalake_10mb",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:sail_delta_100mb_full_payload",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:native_deltalake_100mb",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:bounded_execution_revocation",
+        "status": "PASS"
+      },
+      {
+        "name": "bob:outer_cgroup_limits",
+        "status": "PASS"
+      },
+      {
+        "name": "owned_sandbox_containers_removed",
+        "status": "PASS"
+      },
+      {
+        "name": "owned_sandbox_host_processes_reaped",
+        "status": "PASS"
+      }
+    ],
+    "limitations": [
+      {
+        "name": "native_uc_email_identity_collision",
+        "same_uc_subject": true
+      },
+      {
+        "name": "native_external_admin_label_not_safe_for_direct_federation",
+        "create_catalog_http": 200
+      },
+      {
+        "name": "native_groups_unavailable_use_materialized_direct_grants",
+        "http": 500
+      }
+    ],
+    "metrics": {
+      "pg_termination_seconds": 0.008,
+      "idp_disable_seconds": 0.059,
+      "alice": {
+        "metrics": {
+          "idle_process_rss_bytes": 1278431232,
+          "delta_10mb_read_seconds": 0.048,
+          "delta_100mb_read_seconds": 0.125
+        },
+        "packages": {
+          "numpy": "2.5.2",
+          "pandas": "2.3.3",
+          "pyarrow": "25.0.1",
+          "grpc": "1.83.1",
+          "zmq": "27.2.0"
+        },
+        "notebook_startup_seconds": 6.965,
+        "post_read_process_rss_bytes": 1833304064,
+        "kernel_pid": 46,
+        "uid": 1000,
+        "running_query_cpu_seconds": 0.29,
+        "kernel_busy_before_revoke": true,
+        "oci_config_sha256": "e94832bad28c200a4b285fa952343b9d09dd9e3e2b2493e5d6033caf106a13e2",
+        "scratch_capacity_bytes": 536870912,
+        "outer_cgroup_memory_max": "2147483648",
+        "outer_cgroup_cpu_max": "200000 100000",
+        "outer_cgroup_pids_max": "512",
+        "outer_memory_current_bytes": 967376896,
+        "revocation": {
+          "mode": "revoke",
+          "seconds": 0.125,
+          "open_descriptor_activity_before": true,
+          "heartbeat_stopped": true,
+          "runtime_empty": true,
+          "lease_seconds": 2,
+          "issuer_killed": false
+        },
+        "outer_memory_peak_bytes": 1062219776
+      },
+      "bob": {
+        "metrics": {
+          "idle_process_rss_bytes": 1266860032,
+          "delta_10mb_read_seconds": 0.048,
+          "delta_100mb_read_seconds": 0.124
+        },
+        "packages": {
+          "numpy": "2.5.2",
+          "pandas": "2.3.3",
+          "pyarrow": "25.0.1",
+          "grpc": "1.83.1",
+          "zmq": "27.2.0"
+        },
+        "notebook_startup_seconds": 6.776,
+        "post_read_process_rss_bytes": 1826893824,
+        "kernel_pid": 46,
+        "uid": 1000,
+        "running_query_cpu_seconds": 0.17,
+        "kernel_busy_before_revoke": true,
+        "oci_config_sha256": "e94832bad28c200a4b285fa952343b9d09dd9e3e2b2493e5d6033caf106a13e2",
+        "scratch_capacity_bytes": 536870912,
+        "outer_cgroup_memory_max": "2147483648",
+        "outer_cgroup_cpu_max": "200000 100000",
+        "outer_cgroup_pids_max": "512",
+        "outer_memory_current_bytes": 923246592,
+        "revocation": {
+          "mode": "daemon-loss",
+          "seconds": 2.085,
+          "open_descriptor_activity_before": true,
+          "heartbeat_stopped": true,
+          "runtime_empty": true,
+          "lease_seconds": 2,
+          "issuer_killed": true
+        },
+        "outer_memory_peak_bytes": 1017061376
+      }
+    }
+  },
+  "fixture_config_sha256": {
+    "keycloak": "640a10511952c7b0b600597361186c3ce8506cd88780db1aae19592fc1b9257d",
+    "uc": "fce5435dae8dba76a3d842df546ec535441558cffaa15f9e7d4b10843d2b9f1a"
+  },
+  "cleanup": [
+    {
+      "name": "catalog",
+      "status": "PASS"
+    },
+    {
+      "name": "keycloak",
+      "status": "PASS"
+    },
+    {
+      "name": "cell",
+      "status": "PASS"
+    }
+  ],
+  "elapsed_seconds": 69.004
+}

@@ -1,0 +1,52 @@
+name: iam-probe
+on:
+  pull_request:
+    paths:
+      - 'e2e/native/iam/**'
+      - 'e2e/native/catalog/server.py'
+      - 'e2e/native/catalog/probe.py'
+      - 'docs/architecture/iam00-*.md'
+      - 'docs/architecture/iam00-evidence/**'
+      - '.github/workflows/iam-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: iam-probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  feasibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install probe dependencies
+        run: python -m pip install -r e2e/native/catalog/requirements.txt
+      - name: Check recorded evidence
+        run: python -m unittest discover -s e2e/native/iam -p 'test_*.py'
+      - name: Fetch exact qualified platform
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 35585995786 --repo supabricks/platform --name release-linux-x86_64 --dir "$RUNNER_TEMP/iam00-artifact"
+          python e2e/native/iam/prepare.py \
+            --archive "$RUNNER_TEMP/iam00-artifact/supabricks-v0.1.0-alpha.34-linux-x86_64.tar.gz" \
+            --output "$RUNNER_TEMP/iam00-inputs"
+      - name: Qualify identity, PG and isolated execution
+        run: |
+          python e2e/native/iam/run.py \
+            --release "$RUNNER_TEMP/iam00-inputs/supabricks" \
+            --tools "$RUNNER_TEMP/iam00-inputs/gvisor" \
+            --report "$RUNNER_TEMP/iam00-report.json"
+          python e2e/native/iam/qualify.py "$RUNNER_TEMP/iam00-report.json"
+      - name: Upload capability report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iam00-linux-x86_64
+          path: ${{ runner.temp }}/iam00-report.json
+          if-no-files-found: warn
