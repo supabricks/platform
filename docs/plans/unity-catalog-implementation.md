@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is implemented in platform #63 with 241 Rust tests and 9 local native recovery scenarios passed; cross-platform CI and Linux ENOSPC qualification pending; UC08 implementation and exact-archive stabilization in progress; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 implementation and exact-archive stabilization in progress; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -351,7 +351,7 @@ advancing the platform submodule pin; existing browser gates remain mandatory.
 
 ## UC07 — Recovery and operational completion
 
-Implementation: [platform #63](https://github.com/supabricks/platform/pull/63) and the [stopped catalog recovery contract](../architecture/uc07-catalog-recovery.md). All 241 Rust tests and 9 installed native recovery scenarios passed locally, including moved-root bound reads, interruption and upgrade activation boundaries. Linux/macOS CI and actual Linux ENOSPC qualification remain pending; the exact-archive release gate remains UC08.
+Implementation: [platform #63](https://github.com/supabricks/platform/pull/63) and the [stopped catalog recovery contract](../architecture/uc07-catalog-recovery.md). All 241 Rust tests and 9 installed native recovery scenarios passed locally, including moved-root bound reads, interruption and upgrade activation boundaries. Both Linux/macOS native catalog/browser/recovery suites passed, including actual Linux ENOSPC, in [run 35565306929](https://github.com/supabricks/platform/actions/runs/35565306929). PR #63 is merged; the exact-archive release gate remains UC08.
 
 Extend stopped-cell backup/restore to the owned UC metadata backend, publication
 journal, object mappings, retention references and any newly managed data paths.

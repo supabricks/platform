@@ -78,7 +78,9 @@ silently retried.
 - PR #63 head `98142bb`: Linux native catalog passed; macOS browser drift assertion
   failed because PostgreSQL could change before the browser's original metadata
   observation completed. Console #8 adds that observation barrier; #63 reruns
-  against the merged console pin.
+  against the merged console pin. That barrier also needed to open the collapsed
+  schema panel before awaiting its controls (console #9). Both platforms then
+  passed run `35565306929`, and #63 merged as `14c35a6`.
 - Native release run `35558570208`: both assemblies passed; recovery and environment
   lifecycle rejected the additive catalog inventory; project portability failed
   during upgrade or predecessor preparation; Linux baseline failed in the
@@ -96,6 +98,13 @@ silently retried.
   The private resolver change passed a bundled-JRE probe with no DNS attempts;
   repeat full-product network qualification is pending. This is new evidence,
   not a claim that the prior notebook failure's cause is known.
+- The new isolated Linux catalog gate passed 37 native, 11 browser and 10 recovery
+  scenarios, including ENOSPC, and its report passed the catalog evidence collector.
+  It used the pre-DNS-fix candidate and does not replace final release evidence.
+- The DNS-fixed service gate subsequently exposed another readiness race: the
+  deliberate missing-catalog failure could be observed while PostgreSQL was still
+  starting. The fixture now waits for its PostgreSQL query before asserting that
+  catalog failure leaves PostgreSQL available. Cleanup recorded zero leaked processes.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

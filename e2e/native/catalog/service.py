@@ -193,14 +193,14 @@ def main():
         blocker=socket.socket();blocker.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         blocker.bind(('127.0.0.1',previous_port));blocker.listen()
         try:
-            assert cell.sql(branch,'SELECT 42')=='42'
+            wait(lambda:cell.sql(branch,'SELECT 42')=='42')
             recovered=wait(lambda:(s if (s:=status())['ready'] and s['endpoint']!=pending['endpoint'] else None))
             assert int(recovered['endpoint'].rsplit(':',1)[1])!=previous_port
             assert blocker.getsockname()[1]==previous_port
         finally:blocker.close()
         check('port_collision_retries_without_adopting_or_stopping_unrelated_listener')
         victim=owned()['pid'];os.kill(victim,signal.SIGKILL)
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         wait(lambda:(s if (s:=status())['ready'] and owned()['pid']!=victim else None))
         check('catalog_crash_leaves_postgres_usable')
         command('restart');ready()
@@ -211,7 +211,7 @@ def main():
             ready()
         assert status()['state']=='failed' and status()['start_attempts']==3
         time.sleep(2);assert status()['start_attempts']==3
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         command('restart');ready()
         check('bounded_restart_budget_and_explicit_recovery')
         with (cellroot/'catalog/process.log').open('ab') as log:log.write(b'x'*(6*1024*1024))
@@ -225,7 +225,7 @@ def main():
         cell.stop();saved_catalog=root/'saved-catalog';(cellroot/'catalog').rename(saved_catalog)
         cell.start();wait(lambda:status()['state']=='failed',timeout=40)
         assert not (cellroot/'catalog/etc/db/h2db.mv.db').exists()
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         cell.stop();shutil.rmtree(cellroot/'catalog');saved_catalog.rename(cellroot/'catalog')
         cell.start();restored=ready()
         assert restored['provider_id']==first['provider_id'] and restored['metastore_id']==first['metastore_id']
