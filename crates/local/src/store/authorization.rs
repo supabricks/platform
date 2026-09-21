@@ -29,7 +29,7 @@ fn owner(db: &Connection) -> Result<Context> {
         expires_ms: i64::MAX,
     })
 }
-fn validate_context(db: &Connection, ctx: &Context) -> Result<()> {
+pub(super) fn validate_context(db: &Connection, ctx: &Context) -> Result<()> {
     let realm: String = db.query_row("SELECT id FROM identity_realm", [], |r| r.get(0))?;
     if ctx.realm_id != realm
         || ctx.actor_id != ctx.effective_principal_id
@@ -365,6 +365,7 @@ impl Store {
             Command::SetRole { .. } => 3,
             Command::SaveSource { .. } => 2,
             Command::Projects {}
+            | Command::Catalog { .. }
             | Command::Project { .. }
             | Command::Policy { .. }
             | Command::Sources { .. }
@@ -457,7 +458,7 @@ impl Store {
                 let result=execution(&tx,&deployment,id)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.cancel",key,id,result["effective_principal_id"].as_str().ok_or_else(auth::denied)?)?;result
             },
-            Command::Projects {}|Command::Unavailable{..}=>return Err(auth::denied()),
+            Command::Projects {}|Command::Catalog{..}|Command::Unavailable{..}=>return Err(auth::denied()),
         };
         if let Some((_, key)) = command.mutation() {
             receipt(&tx, ctx, &deployment, key, &command, &result)?;

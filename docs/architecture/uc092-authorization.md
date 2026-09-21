@@ -5,6 +5,8 @@ boundary. The existing local-owner workflow remains an operator interface.
 Shared ingress and workload launch remain disabled until the later governance
 slices qualify data authority and execution isolation.
 
+UC09.3 extends this boundary with [UC-checked catalog discovery and grants](uc093-catalog-grants.md). The inventory below records the UC09.2 slice.
+
 ## Authority and roles
 
 Policy is scoped to the existing deployment UUID, not an arbitrary checkout path,

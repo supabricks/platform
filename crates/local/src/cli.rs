@@ -22,7 +22,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   identity login --provider NAME --redirect URL --output PRIVATE_JSON
   identity browser --provider NAME --redirect URL
   identity control --session-file PRIVATE_JSON --request-file PRIVATE_JSON
-  identity policy-admin --request-file PRIVATE_JSON
+  identity policy-admin | catalog-admin --request-file PRIVATE_JSON
   identity whoami | logout | mcp --session-file PRIVATE_JSON
                                Project control preview; data access and workload launch remain disabled
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
@@ -374,7 +374,7 @@ pub fn run() -> Result<u8> {
                     value
                 }
             }
-            "control" | "policy-admin" => {
+            "control" | "policy-admin" | "catalog-admin" => {
                 let path = PathBuf::from(
                     a.take("--request-file")
                         .ok_or_else(|| invalid("use --request-file PRIVATE_JSON"))?,
@@ -394,9 +394,15 @@ pub fn run() -> Result<u8> {
                     if session.is_some() {
                         return Err(invalid("policy administration is operator-only"));
                     }
-                    let command = serde_json::from_value(value)
-                        .map_err(|_| invalid("invalid project policy command"))?;
-                    client::request(&root, Request::AuthorizationAdmin { command })?
+                    if action == "catalog-admin" {
+                        let command = serde_json::from_value(value)
+                            .map_err(|_| invalid("invalid catalog governance command"))?;
+                        client::request(&root, Request::CatalogGovernance { command })?
+                    } else {
+                        let command = serde_json::from_value(value)
+                            .map_err(|_| invalid("invalid project policy command"))?;
+                        client::request(&root, Request::AuthorizationAdmin { command })?
+                    }
                 }
             }
             "login" | "browser" => {

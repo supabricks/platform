@@ -56,7 +56,7 @@ def run(args, **kwargs):
     return result.stdout.decode()
 
 
-def qualify(binary):
+def qualify(binary, uc_runtime=None):
     checks = []
     name = 'sb-uc091-' + uuid.uuid4().hex[:12]
     started = False
@@ -262,9 +262,41 @@ def qualify(binary):
             control(alice, dict(delegated, source_revision=edited, key='confused-deputy'), ok=False)
             checks.append('service execution approval binds the exact immutable source and rejects edited code')
 
+            if uc_runtime:
+                def owner(request):
+                    with socket.socket(socket.AF_UNIX) as sock:
+                        sock.settimeout(50); sock.connect(str(data/'control.sock'))
+                        sock.sendall((json.dumps(dict(version=1, request=request))+'\n').encode())
+                        with sock.makefile('rb') as reader:
+                            reply = json.loads(reader.readline())
+                    assert 'result' in reply, 'operator catalog request failed'
+                    return reply['result']
+
+                def catalog(command):
+                    path = root/'catalog.json'; path.write_text(json.dumps(command)); path.chmod(0o600)
+                    return cli('identity', 'catalog-admin', '--request-file', path)
+
+                owner(dict(method='catalog_service', command=dict(action='configure',
+                    provider=dict(mode='local', runtime=str(uc_runtime)))))
+                deadline = time.monotonic()+60
+                while owner(dict(method='catalog_service', command=dict(action='status')))['state'] != 'ready':
+                    assert time.monotonic()<deadline, 'managed UC startup timed out'
+                    time.sleep(.1)
+                discovery = dict(action='catalog', command=dict(action='list', search=''))
+                control(alice, discovery, ok=False)
+                for principal_id in (alice_id, bob_id):
+                    catalog(dict(action='map_principal', principal=principal_id))
+                plan = catalog(dict(action='plan', changes=[]))
+                catalog(dict(action='apply', plan=plan['id'], key='initialize-catalog'))
+                assert control(alice, discovery) == dict(items=[])
+                assert control(bob, discovery) == dict(items=[])
+                checks.append('real Keycloak users use distinct private UC mappings through the authenticated CLI and daemon; UC returns no ungranted metadata')
+
             users = keycloak_admin('GET', 'users?username=alice')
             keycloak_admin('PUT', 'users/'+users[0]['id'], dict(enabled=False))
             cli('identity', 'whoami', '--session-file', alice, ok=False)
+            if uc_runtime:
+                control(alice, discovery, ok=False)
             checks.append('IdP disable refuses an unexpired platform session')
             run(['docker', 'pause', name])
             try:
@@ -311,7 +343,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--uc-runtime', type=Path)
     args = parser.parse_args()
-    report = qualify(args.binary.resolve())
+    report = qualify(args.binary.resolve(), args.uc_runtime.resolve() if args.uc_runtime else None)
     args.output.write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(report))

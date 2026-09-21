@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 project policy/admission implemented for review; UC09.3–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 catalog identities/grants implemented for review; UC09.4–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -102,7 +102,7 @@ A design document or successful OIDC login alone does not complete IAM00.
 
 ## UC09.1 — Principals and login
 
-Implemented for review: [identity/session architecture and qualification](../architecture/uc091-principals-login.md). Schema 16 preserves local-owner IDs. OIDC/PKCE, private sessions, explicit bootstrap, groups, scoped service credentials and authenticated CLI/MCP/browser identity previews are implemented. Product ingress remains disabled; integration with product authorization and the complete console follows in UC09.2–.8.
+Merged in #67: [identity/session architecture and qualification](../architecture/uc091-principals-login.md). Schema 16 preserves local-owner IDs. OIDC/PKCE, private sessions, explicit bootstrap, groups, scoped service credentials and authenticated CLI/MCP/browser identity previews are implemented. Product ingress remains disabled; integration with product authorization and the complete console follows in UC09.2–.8.
 
 Add installation realm, stable principals, issuer/subject mappings, disabled state,
 service identities and initial platform-managed groups. Migrate local-owner state
@@ -121,7 +121,7 @@ unavailability must not create an implicit local-owner session.
 
 ## UC09.2 — Project and execution authorization
 
-Implemented for review: [project policy and admission](../architecture/uc092-authorization.md).
+Merged in #68: [project policy and admission](../architecture/uc092-authorization.md).
 Schema 17 adds deployment roles, separate execution/service-use/stop grants,
 immutable source revisions and transactional policy/audit/idempotency records.
 CLI, MCP and browser control requests share the authenticated handler. Admission
@@ -144,6 +144,14 @@ service-principal confused-deputy tests; failures to persist audit/authorization
 state deny the mutation. Permission checks apply equally to console and agents.
 
 ## UC09.3 — UC identities and grants
+
+Implemented for review: [private UC identities and reviewed grants](../architecture/uc093-catalog-grants.md).
+Schema 18 journals stable UC mappings and overlapping direct/group grant origins.
+Reviewed, UUID-fenced grant application and live UC checks deny access on drift,
+partial effects, provider failure or stale local/remote state. Authenticated
+catalog lists/search/details use ordinary UC credentials. The conditional-grant
+extension is tracked in [UC #4](https://github.com/supabricks/unitycatalog/pull/4).
+Data execution and installed-release qualification remain later slices.
 
 Implement the UC09.0-selected principal adapter. Keep metastore provisioning and
 user data access separate; short-lived user credentials never carry admin
@@ -246,7 +254,8 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.2, then implement UC09.3 UC identity mapping and governed
-grants. Integrate the same authenticated context and policy revision with the
-private principal broker. Keep shared ingress and actual workload launch disabled
-until the complete authority, isolation and release gates pass.
+Review and qualify UC09.3, then implement UC09.4 runtime/storage isolation.
+Use the broker with the admitted effective principal and immutable revision; keep
+shared ingress and actual workload launch disabled until isolation is qualified.
+UC09.8 must also qualify the installed upgrade to the changed UC component; the
+existing exact-backend gate remains closed to an unqualified transition.

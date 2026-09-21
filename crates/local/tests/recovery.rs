@@ -112,9 +112,22 @@ struct Fixture {
 }
 impl Fixture {
     fn new() -> Self {
+        Self::with_project(false)
+    }
+    fn with_project(project: bool) -> Self {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path().join("data");
-        drop(Store::open(&root).unwrap());
+        let mut store = Store::open(&root).unwrap();
+        if project {
+            store
+                .register_project(&ProjectConfig {
+                    id: supabricks_core::resource::ProjectId::new(),
+                    name: "migration-project".into(),
+                    format_version: 1,
+                })
+                .unwrap();
+        }
+        drop(store);
         let prefix = tmp.path().join("programs");
         fs::create_dir_all(prefix.join("releases")).unwrap();
         fs::create_dir(prefix.join("bin")).unwrap();
@@ -388,13 +401,20 @@ fn catalog_fifteen_migration_preserves_local_owner_identity() {
 fn catalog_sixteen_migration_preserves_identity_and_adds_no_remote_roles() {
     catalog_migration(16);
 }
+#[test]
+fn catalog_seventeen_migration_preserves_roles_and_starts_catalog_access_closed() {
+    catalog_migration(17);
+}
 fn catalog_migration(source_schema: u32) {
-    let f = Fixture::new();
-    // Construct the exact pre-I00 catalog with real migrations 1..8, then use
+    let f = Fixture::with_project(source_schema == 17);
+    // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TRIGGER authorization_new_deployment; DROP TRIGGER authorization_membership_added; DROP TRIGGER authorization_membership_removed; DROP TRIGGER authorization_principal_disabled; DROP TABLE authorization_audit; DROP TABLE authorization_mutations; DROP TABLE authorization_executions; DROP TABLE authorization_heads; DROP TABLE authorization_sources; DROP TABLE authorization_grants; DROP TABLE authorization_roles; DROP TABLE authorization_policy;").unwrap();
-    if source_schema == 16 {
+    db.execute_batch("DROP TRIGGER catalog_governance_membership_add; DROP TRIGGER catalog_governance_membership_remove; DROP TRIGGER catalog_governance_disabled; DROP TRIGGER catalog_governance_publication_insert; DROP TRIGGER catalog_governance_publication_update; DROP TABLE catalog_grant_audit; DROP TABLE catalog_grant_plans; DROP TABLE catalog_grant_origins; DROP TABLE catalog_principals; DROP TABLE catalog_governance;").unwrap();
+    if source_schema < 17 {
+        db.execute_batch("DROP TRIGGER authorization_new_deployment; DROP TRIGGER authorization_membership_added; DROP TRIGGER authorization_membership_removed; DROP TRIGGER authorization_principal_disabled; DROP TABLE authorization_audit; DROP TABLE authorization_mutations; DROP TABLE authorization_executions; DROP TABLE authorization_heads; DROP TABLE authorization_sources; DROP TABLE authorization_grants; DROP TABLE authorization_roles; DROP TABLE authorization_policy;").unwrap();
+    }
+    if source_schema >= 16 {
         db.execute_batch(r#"
             INSERT INTO identity_principals VALUES ('migration-service','service','Migration service',0);
             INSERT INTO identity_groups VALUES ('migration-group','Migration group');
@@ -402,6 +422,9 @@ fn catalog_migration(source_schema: u32) {
             INSERT INTO identity_sessions(token_hash,principal,csrf_hash,channel,scopes,expires_ms,epoch)
                 VALUES ('migration-token-hash','migration-service','','service','["identity:self"]',9999999999999,1);
         "#).unwrap();
+    }
+    if source_schema == 17 {
+        db.execute_batch("INSERT INTO authorization_roles SELECT id,'principal:migration-service','viewer' FROM deployments LIMIT 1; UPDATE authorization_policy SET revision=7;").unwrap();
     }
     if source_schema < 16 {
         db.execute_batch("DROP TABLE identity_audit; DROP TABLE identity_sessions; DROP TABLE identity_logins; DROP TABLE identity_providers; DROP TABLE identity_memberships; DROP TABLE identity_groups; DROP TABLE identity_subjects; DROP TABLE identity_principals; DROP TABLE identity_realm;").unwrap();
@@ -503,7 +526,7 @@ fn catalog_migration(source_schema: u32) {
             db.query_row("SELECT count(*) FROM authorization_roles", [], |r| r
                 .get::<_, i64>(0))
                 .unwrap(),
-            0
+            if source_schema == 17 { 1 } else { 0 }
         );
         assert_eq!(
             db.query_row("SELECT count(*) FROM authorization_grants", [], |r| r
@@ -511,8 +534,20 @@ fn catalog_migration(source_schema: u32) {
                 .unwrap(),
             0
         );
-        assert_eq!(db.query_row("SELECT count(*) FROM deployments d LEFT JOIN authorization_policy p ON p.deployment=d.id WHERE p.revision IS NULL OR p.revision!=1", [], |r| r.get::<_, i64>(0)).unwrap(), 0);
-        if source_schema == 16 {
+        assert_eq!(db.query_row("SELECT count(*) FROM deployments d LEFT JOIN authorization_policy p ON p.deployment=d.id WHERE p.revision IS NULL OR p.revision!=?1", [if source_schema == 17 {7} else {1}], |r| r.get::<_, i64>(0)).unwrap(), 0);
+        assert_eq!(
+            db.query_row("SELECT state FROM catalog_governance", [], |r| r
+                .get::<_, String>(0))
+                .unwrap(),
+            "dirty"
+        );
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM catalog_grant_origins", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+        if source_schema >= 16 {
             let preserved: (String, String, i64) = db.query_row(
                 "SELECT s.principal,s.scopes,s.expires_ms FROM identity_sessions s JOIN identity_memberships m ON m.principal=s.principal WHERE s.token_hash='migration-token-hash' AND m.group_id='migration-group'",
                 [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
@@ -529,7 +564,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=17",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=18",
                 [],
                 |r| r.get::<_, String>(0)
             )
