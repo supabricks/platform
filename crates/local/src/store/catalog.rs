@@ -18,6 +18,19 @@ impl Store {
         if self.deployment(n.deployment_id)?.runtime_project_id != n.project_id {
             return Err(conflict("catalog namespace ownership changed"));
         }
+        if self
+            .catalog_namespace(n.deployment_id, &n.provider_id)?
+            .is_none()
+        {
+            let count: i64 =
+                self.db
+                    .query_row("SELECT count(*) FROM catalog_namespaces", [], |r| r.get(0))?;
+            if count >= 128 {
+                return Err(conflict(
+                    "catalog namespace limit reached; use a fresh installation for additional provider identities",
+                ));
+            }
+        }
         self.db.execute("INSERT INTO catalog_namespaces VALUES (?1,?2,?3) ON CONFLICT(deployment_id,provider_id) DO UPDATE SET record_json=excluded.record_json",params![n.deployment_id.to_string(),n.provider_id,serde_json::to_string(n)?])?;
         Ok(())
     }
@@ -81,6 +94,8 @@ impl Store {
             return Err(conflict("catalog deployment changed"));
         }
         let tx = self.db.transaction()?;
+        let mut observed: i64 =
+            tx.query_row("SELECT count(*) FROM catalog_assets", [], |r| r.get(0))?;
         if postgres_complete {
             tx.execute("UPDATE catalog_assets SET state='stale' WHERE deployment_id=?1 AND branch_id=?2 AND kind='postgres_table'",params![context.deployment_id.to_string(),branch.to_string()])?;
         }
@@ -94,6 +109,13 @@ impl Store {
             let previous:Option<String>=tx.query_row("SELECT id FROM catalog_assets WHERE deployment_id=?1 AND provider_id=?2 AND resource_key=?3 AND incarnation=?4",params![asset.deployment_id.to_string(),asset.provider_id,asset.resource_key,asset.incarnation],|r|r.get(0)).optional()?;
             if let Some(id) = previous {
                 asset.id = parse(&id)?;
+            } else {
+                if observed >= 8192 {
+                    return Err(conflict(
+                        "catalog observation limit reached; existing assets remain readable; use a fresh installation for more identities",
+                    ));
+                }
+                observed += 1;
             }
             if let Some(epoch) = asset.epoch_id {
                 let publication:Option<String>=tx.query_row("SELECT record_json FROM catalog_publications WHERE deployment_id=?1 AND epoch_id=?2 AND state='published'",params![asset.deployment_id.to_string(),epoch.to_string()],|r|r.get(0)).optional()?;

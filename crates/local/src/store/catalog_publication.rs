@@ -1,6 +1,9 @@
 use super::*;
 use crate::catalog::publication::Publication as CatalogPublication;
 impl Store {
+    pub(crate) fn catalog_usage(&self) -> Result<serde_json::Value> {
+        crate::catalog::recovery::usage(self.root(), &self.db)
+    }
     pub(crate) fn catalog_dataset_choices(
         &self,
         owner: Option<DeploymentId>,
@@ -133,6 +136,33 @@ impl Store {
         {
             return Err(conflict(
                 "this epoch already has a catalog publication; use its request key or publish a new snapshot",
+            ));
+        }
+        let usage = self.catalog_usage()?;
+        let descriptor = s
+            .publication
+            .descriptor
+            .as_ref()
+            .ok_or_else(|| invalid("snapshot descriptor missing"))?;
+        let bytes = descriptor["manifest"]["files"]
+            .as_array()
+            .ok_or_else(|| invalid("snapshot inventory missing"))?
+            .iter()
+            .try_fold(0u64, |sum, f| {
+                sum.checked_add(f["bytes"].as_u64().unwrap_or(u64::MAX))
+            })
+            .ok_or_else(|| invalid("snapshot size exceeds catalog budget"))?;
+        use crate::catalog::recovery::{MAX_METADATA_BYTES, MAX_PUBLICATIONS, MAX_RETAINED_BYTES};
+        if usage["metadata_bytes"].as_u64().unwrap_or(u64::MAX) >= MAX_METADATA_BYTES
+            || usage["publication_records"].as_u64().unwrap_or(u64::MAX) >= MAX_PUBLICATIONS
+            || usage["retained_snapshot_bytes"]
+                .as_u64()
+                .unwrap_or(u64::MAX)
+                .saturating_add(bytes)
+                > MAX_RETAINED_BYTES
+        {
+            return Err(conflict(
+                "catalog capacity reached; retire unused publications or export to a fresh installation; existing data is retained",
             ));
         }
         let tx = self.db.transaction()?;

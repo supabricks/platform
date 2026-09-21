@@ -167,7 +167,8 @@ print(json.dumps(pid))
         journal = dict(version=1, previous=str(old_release), prefix=str(prefix),
                        backup=str(workspace / 'upgrade-backup'),
                        **{'from': completed['from'], 'to': completed['to']},
-                       database_sha256=saved['files']['state.sqlite3']['sha256'])
+                       database_sha256=saved['files']['state.sqlite3']['sha256'],
+                       catalog_state_sha256=completed.get('catalog_state_sha256'))
         for phase in ['before_migration', 'after_migration', 'runtime_rebound', 'current_activated']:
             (data / 'upgrade.json').write_text(json.dumps(journal))
             (data / 'upgrade.json').chmod(0o600)
@@ -313,7 +314,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.32')
+    parser.add_argument('--version', default='v0.1.0-alpha.33')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.8')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')

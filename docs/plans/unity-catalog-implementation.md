@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 console #7 is merged and platform integration is implemented with local browser qualification passed; cross-platform CI pending; UC07–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 recovery is implemented with qualification in progress; UC08–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -350,6 +350,8 @@ CLI/MCP exercise the same operation contracts. Merge console source before
 advancing the platform submodule pin; existing browser gates remain mandatory.
 
 ## UC07 — Recovery and operational completion
+
+Implementation: [stopped catalog recovery contract](../architecture/uc07-catalog-recovery.md). Native recovery and cross-platform qualification are in progress; the exact-archive release gate remains UC08.
 
 Extend stopped-cell backup/restore to the owned UC metadata backend, publication
 journal, object mappings, retention references and any newly managed data paths.

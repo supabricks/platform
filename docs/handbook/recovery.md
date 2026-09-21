@@ -102,3 +102,42 @@ created over existing storage files.
 Process-kill recovery is tested separately from actual OS reboot and power loss.
 The preview does not yet carry a power-loss durability claim. See the
 [R03 architecture and evidence boundaries](../architecture/r03-recovery-upgrades.md).
+
+## Unity Catalog checkpoints
+
+`supabricks backup create /private/checkpoint` also stops and verifies the owned
+Unity Catalog backend. Finish or explicitly resume/retire pending catalog
+publications and reviewed applies first. A checkpoint includes committed dataset
+bindings and their retention references; it grants no access to an external
+catalog's data or metadata backup.
+
+Restore with the source release:
+
+```bash
+supabricks backup verify /private/checkpoint
+supabricks backup restore /private/checkpoint --data-dir /private/restored
+supabricks up --data-dir /private/restored
+supabricks catalog service status --data-dir /private/restored
+```
+
+Owned publication locations and console-owned project directories are reconciled
+to the new root. Table IDs, publication revisions, grants and bindings remain;
+old catalog tokens are revoked by key rotation. Notebook environments need explicit
+preparation again. External project directories keep their original paths.
+
+If restore fails, keep the guarded partial destination for diagnosis and retry
+into a fresh directory from the intact backup. Do not remove `restore-incomplete`
+manually. Corrupt backend data, changed object identities or an incompatible
+backend contract require a known-good checkpoint and its matching source release.
+
+An external UC restore requires explicit `catalog service configure external`
+with the operator's endpoint, private token reference and expected metastore ID.
+Restart alone does not lift the restore block. Remote metadata/grants require the
+operator's separately coordinated backup; PostgreSQL remains available locally.
+
+Catalog service status reports backend and retained-snapshot usage. Withdraw
+unused publications and release their bindings/readers to reclaim snapshots.
+Lifetime journal/tombstone exhaustion requires a fresh installation and explicit
+project/data migration; history is not silently discarded. See the
+[UC07 recovery contract](../architecture/uc07-catalog-recovery.md) for limits and
+upgrade behavior.
