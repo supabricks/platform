@@ -118,7 +118,7 @@ def seed_predecessor(cell, project):
     if operation['state'] == 'succeeded':
         return False
     assert operation['state'] == 'failed' and 'database preparation failed or was superseded' in (operation.get('error') or ''), 'unexpected predecessor apply failure'
-    assert set(operation['resources']) == {'database.main'}, 'predecessor failure occurred beyond database preparation'
+    assert set(operation['resources']) <= {'database.main'}, 'predecessor failure occurred beyond database preparation'
     assert cell.cli(project, 'project', 'installed')['active_revision'] is None
     branches = cell.cli(project, 'database', 'list')['branches']
     assert len(branches) == 1
@@ -509,7 +509,7 @@ def main():
     for name in ('directory', 'output', 'bundles', 'package', 'report', 'previous-directory'):
         parser.add_argument('--'+name, type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.22')
     parser.add_argument('--release', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()

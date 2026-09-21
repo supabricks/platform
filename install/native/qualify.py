@@ -25,6 +25,7 @@ import time
 import urllib.request
 
 from stage import stage
+from diagnostics import summarize
 from project_apply import qualify as qualify_project_apply
 from project_offline import qualify as qualify_project_offline
 
@@ -409,7 +410,8 @@ def qualify(args):
                       checks=checks, measurements=measurements, network_qualification=args.network_evidence)
     except BaseException as error:
         report = dict(status='failed', host=platform.platform(), workspace=str(workspace), checks=checks,
-                      error=str(error), measurements=measurements, network_qualification=args.network_evidence)
+                      error=type(error).__name__, measurements=measurements, network_qualification=args.network_evidence,
+                      diagnostics={name:summarize(workspace/name) for name in ('pk05-notebook.log','pk05-command.log')})
         raise
     finally:
         for sampler, stop in samplers:
@@ -436,7 +438,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

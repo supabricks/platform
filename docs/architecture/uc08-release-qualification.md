@@ -1,0 +1,90 @@
+# UC08: qualify the complete installed local catalog product
+
+Status: implementation and local validation in progress. Alpha.34 is the new
+candidate; it is not yet a qualified release. Alpha.24 remains the last fully
+qualified predecessor recorded by the packaging workstream.
+
+The existing `native-release` workflow assembles one candidate per target from
+reviewed platform, console, Sail and Unity Catalog sources. UC08 adds a
+`release-catalog` job on Linux x86_64 and macOS arm64 and makes its evidence a
+required input to the existing combined R04 collector. PG, ingestion, console,
+notebook, environment, packaging, logical data transfer, recovery and benchmark
+gates remain in place.
+
+`qualify_catalog.py` stages the actual signed localhost installer, pipes curl into
+Bash and installs into a path containing spaces. It verifies the archive checksum,
+installed inventory and UC/JRE build inputs before exercising native catalog
+lifecycle/publication/read/binding scenarios, the console's two-project browser
+workflow, and stopped/moved-root recovery. These modes use the installed binary,
+workers, console assets and catalog closure without replacing files or inventing
+a new release manifest. The fixture-only upgrade candidate in the UC07 native
+suite is deliberately excluded from this exact-archive mode; the inherited
+signed-install upgrade gates and UC07 interruption gate remain separate.
+
+The native suite includes publication interruption/reconciliation, bound reads,
+GC protection and package requirement rebinding. Recovery includes an interrupted
+restore, moved data root with stable identities and relocated file URLs, revoked
+old credentials, retained snapshots, corrupt backend refusal, incompatible
+backend refusal and explicit external-provider rebinding. Linux additionally
+requires an actual bounded filesystem ENOSPC failure. The installed `CATALOG.md`
+walkthrough uses browser project creation, import, publication, binding, Sail SQL
+and a managed notebook without manual UC setup.
+
+Linux isolates the entire process tree in a loopback-only network namespace and
+masks the system JDK; macOS denies external networking, Homebrew and system Java.
+The native service asserts the executable is the candidate's private JRE. The
+existing Linux baseline traces all descendant network calls. Resource sampling
+includes the daemon's complete live descendant tree and separately records
+observed UC JVMs and peak JVM RSS. Sampling can miss short-lived peaks and RSS
+can double-count shared pages; these are engineering measurements, not capacity
+or isolation guarantees.
+
+A fixture runner records descendant cleanup and fails qualification if processes
+leak, even if the functional assertions pass. Failed-gate artifacts contain only
+bounded structural traceback information, fixed exception categories and typed
+outcomes; private logs, notebook output, SQL, credentials and source data are not
+uploaded by the new gate.
+
+The R04 collector binds the report to the same archive and manifest identities
+as the inherited gates. It validates exact source/build pins, JRE distribution,
+backend schema, publication format and capability profile, requires named
+coverage and measured UC resources, and rejects missing suites or cleanup
+failures. A green required PR check or merge does not substitute for both final
+candidate archives passing the complete combined evidence collector.
+
+## Upgrade stabilization
+
+Previously the additive UC closure made pre-UC releases fail the existing exact
+component inventory check. The first-catalog transition now compares the existing
+PG/storage/analytics inventory exactly and permits adding UC only when there is
+no prior catalog state or undeclared catalog component. The stopped backup and
+restartable upgrade journal remain mandatory. Existing UC backend/runtime
+changes retain the exact compatibility fence; this does not authorize arbitrary
+engine changes or backend migrations.
+
+The alpha.22 packaging predecessor can fail database preparation before producing
+its resource receipt. Its existing one-time explicit reconciliation now accepts
+that empty receipt case while still requiring the exact known database error,
+no active revision and one retained database. Candidate failures are never
+silently retried.
+
+## Evidence and retry ledger
+
+- PR #63 head `98142bb`: Linux native catalog passed; macOS browser drift assertion
+  failed because PostgreSQL could change before the browser's original metadata
+  observation completed. Console #8 adds that observation barrier; #63 reruns
+  against the merged console pin.
+- Native release run `35558570208`: both assemblies passed; recovery and environment
+  lifecycle rejected the additive catalog inventory; project portability failed
+  during upgrade or predecessor preparation; Linux baseline failed in the
+  packaged notebook. The original reports remain historical failure evidence.
+- Local UC08 native service: all 37 scenarios passed against unchanged alpha.33
+  Linux archive. This exercises exact-installed fixture mode and is not alpha.34
+  release evidence; host networking was not isolated.
+- Local exact-installed recovery initially reached the restored catalog before
+  PostgreSQL was ready. The fixture now waits for its restored SQL query; all nine
+  local exact-installed recovery scenarios passed on retry. Linux ENOSPC remains
+  a CI gate.
+- Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
+  complete until its final combined R04 evidence passes; record any further retry
+  and its cause here.

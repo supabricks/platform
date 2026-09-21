@@ -17,7 +17,8 @@ METRICS = ('source_bytes', 'rows', 'decoded_bytes', 'duration_ms', 'peak_rss_byt
            'elapsed_seconds', 'archive_bytes', 'unpacked_bytes', 'logical_bytes',
            'allocated_bytes', 'logical_cpus', 'host_memory_bytes', 'cgroup_memory_limit_bytes',
            'duration_seconds', 'cpu_seconds', 'mean_cpu_percent_one_core',
-           'source_payload_bytes', 'load_seconds', 'export_payload_mb_per_second')
+           'source_payload_bytes', 'load_seconds', 'export_payload_mb_per_second',
+           'catalog_peak_rss_bytes', 'catalog_processes_observed')
 
 
 def require(condition, message):
@@ -101,6 +102,9 @@ def collect(directory, revision, console, worker, version):
             reports[str(path.relative_to(directory))] = dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), checks=len(data['checks']))
             return data
 
+        from catalog_evidence import collect as catalog_evidence
+        catalog_data = read('release-catalog', 'catalog.json', 5, ('release_identity',))
+        catalog = catalog_evidence(catalog_data, env)
         browser = read('release-console', 'console.json', 49, ('release_sha256',))
         require(sum(c.startswith('PK06 ') for c in browser['checks']) >= 10, 'browser: missing PK06 packaging coverage')
         require(browser.get('release_identity') == identity and browser.get('release_version') == version,
@@ -143,7 +147,7 @@ def collect(directory, revision, console, worker, version):
             formats[name] = dict(source_sha256=sample['source_sha256'], budget_source_sha256=budget['source_sha256'], measurements=measured)
         require(env['notices'] and all(sha(v) for v in env['notices'].values()), 'missing notice inventory')
         result['targets'][target] = dict(
-            projects=portability[target], sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
+            catalog=catalog, projects=portability[target], sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
             source=dict(platform_commit=revision, console_commit=console,
                         console_manifest_sha256=source['console']['manifest_sha256'],
                         console_lock_sha256=source['console']['package_lock_sha256'], ingestion_worker_sha256=worker),
@@ -163,6 +167,7 @@ def markdown(report):
              '| Target | Chromium | Checks across reports | Manifest SHA-256 |', '| --- | --- | ---: | --- |']
     for target, data in report['targets'].items():
         lines.append(f"| {target} | {data['browser']['version']} | {sum(r['checks'] for r in data['reports'].values())} | `{data['release_sha256']}` |")
+    lines += ['', 'Unity Catalog: `' + report['targets']['linux-x86_64']['catalog']['commit'] + '`; bundled JRE and backend contract recorded per target. Catalog gates include native lifecycle, two-project browser workflow, retained reads and moved-root recovery against each installed archive.', '']
     lines += ['', '## Ingestion measurements', '',
               'Synthetic fixtures; throughput covers the worker interval, not upload, inspection or total user latency. RSS is sampled and can miss short peaks. Compressed Parquet source throughput is not decoded throughput.', '',
               '| Target | Format | Source bytes | Rows | Worker seconds | Source MiB/s | Sampled peak MiB |', '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
@@ -186,7 +191,7 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)

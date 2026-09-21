@@ -110,8 +110,10 @@ def tls_proxy(root, upstream):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ['release','binary','uc-runtime','report']:parser.add_argument('--'+name,type=Path,required=True)
+    parser.add_argument("--exact-installed", action="store_true")
+    parser.add_argument("--workspace", type=Path)
     args=parser.parse_args()
-    root=Path(tempfile.mkdtemp(prefix='sb-uc01-',dir='/tmp')).resolve();root.chmod(0o700)
+    root=Path(tempfile.mkdtemp(prefix='',dir=args.workspace or '/tmp')).resolve();root.chmod(0o700)
     print('Private service fixture:',root,flush=True)
     baseline,binary,runtime=args.release.resolve(),args.binary.resolve(),args.uc_runtime.resolve()
     report=dict(status='FAIL',checks=[],binary_sha256=sha(binary),uc_build=json.loads((runtime/'build.json').read_text()),
@@ -123,7 +125,12 @@ def main():
             assert error.errno in (errno.EPERM,errno.EACCES,errno.ENETUNREACH)
             report['external_tcp_denial']=errno.errorcode[error.errno]
         else:raise AssertionError('offline fixture has external TCP access')
-    installed=root/'release';installed_fixture(baseline,binary,runtime,installed)
+    installed = baseline if args.exact_installed else root/'release'
+    if not args.exact_installed:
+        installed_fixture(baseline,binary,runtime,installed)
+    else:
+        subprocess.run([str(installed/'bin/supabricks'), 'installation', 'verify'], check=True, capture_output=True)
+        report['release_identity'] = sha(installed/'release.json')
     cellroot=root/'data';cellroot.mkdir(mode=0o700)
     cell=CatalogCell(installed/'bin/supabricks',installed/'engine',installed/'helpers',cellroot)
     cell.binary=installed/'bin/supabricks'  # exercise installed discovery, not a copied development binary
@@ -136,6 +143,7 @@ def main():
     def token():return (cellroot/'catalog/etc/conf/token.txt').read_text().strip()
     try:
         cell.start();first=ready()
+        report["contract"]=json.loads((cellroot/"catalog-format.json").read_text())
         process=psutil.Process(owned()['pid'])
         listeners=[c for c in process.net_connections(kind='inet') if c.status=='LISTEN']
         assert len(listeners)>=2

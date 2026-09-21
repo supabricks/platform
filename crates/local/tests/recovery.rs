@@ -488,3 +488,40 @@ fn catalog_migration(source_schema: u32) {
         source_schema
     );
 }
+
+#[test]
+fn first_catalog_upgrade_preserves_engine_fences_and_requires_no_catalog_state() {
+    for case in ["add", "engine_changed", "existing_catalog"] {
+        let f = Fixture::new();
+        let file = f.new.join("share/unity-catalog/build.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, b"new catalog closure").unwrap();
+        let path = f.new.join("release.json");
+        let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        manifest["files"]["share/unity-catalog/build.json"] =
+            json!({"sha256":digest(&file),"executable":false});
+        manifest["provenance"]["data_formats"]["unity_catalog"] = json!(1);
+        if case == "engine_changed" {
+            let engine = f.new.join("engine/manifest.json");
+            fs::write(&engine, b"different PG engine").unwrap();
+            manifest["files"]["engine/manifest.json"]["sha256"] = json!(digest(&engine));
+        }
+        fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        if case == "existing_catalog" {
+            fs::create_dir(f.root.join("catalog")).unwrap();
+        }
+        let before = digest(&f.root.join("runtime.json"));
+        f.upgrade(case == "add");
+        if case == "add" {
+            assert_eq!(digest(&f.backup.join("data/runtime.json")), before);
+            for phase in ["prepared", "runtime_rebound", "current_activated"] {
+                f.pending(phase);
+                f.upgrade(true);
+            }
+        } else {
+            assert_eq!(digest(&f.root.join("runtime.json")), before);
+            assert!(!f.backup.exists());
+            assert!(!f.root.join("upgrade.json").exists());
+        }
+    }
+}

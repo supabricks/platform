@@ -10,3 +10,8 @@
 (deny file-read* (subpath "/opt/homebrew"))
 (deny file-read* (subpath "/usr/local/Cellar"))
 (deny file-read* (subpath "/usr/local/opt"))
+
+;; A catalog release must use its bundled JRE, even on a developer machine.
+(deny process-exec (literal "/usr/bin/java"))
+(deny file-read* (subpath "/Library/Java/JavaVirtualMachines"))
+(deny file-read* (subpath "/System/Library/Java/JavaVirtualMachines"))

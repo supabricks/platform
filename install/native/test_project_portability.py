@@ -29,6 +29,15 @@ class PredecessorTest(unittest.TestCase):
         self.assertEqual(cell.apply.call_args.args[1], 'predecessor-reconciled')
         self.assertEqual(cell.cli.call_count, 6)
 
+    def test_database_failure_before_receipt_is_reconciled_once(self):
+        cell=self.cell()
+        first=next(cell.apply.side_effect)
+        first['resources']={}
+        cell.apply.side_effect=[first,dict(state='succeeded')]
+        with patch('project_portability.time.sleep'):
+            self.assertTrue(seed_predecessor(cell,Path('/project')))
+        self.assertEqual(cell.apply.call_count,2)
+
     def test_unrelated_failure_is_not_retried(self):
         cell = self.cell('environment preparation failed')
         with self.assertRaisesRegex(AssertionError, 'unexpected predecessor'):

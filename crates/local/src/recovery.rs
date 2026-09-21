@@ -34,6 +34,9 @@ impl Release {
         Self::with_formats(i, formats(i))
     }
     pub(crate) fn with_formats(i: &Installation, formats: Value) -> Result<Self> {
+        Self::with_inventory(i, formats, true)
+    }
+    pub(crate) fn with_inventory(i: &Installation, formats: Value, catalog: bool) -> Result<Self> {
         // Exact engine/library inventory includes PG catalog and extension code;
         // worker lock binds Delta/Arrow/Python dependencies. No guessed engine
         // format compatibility, cross-target restore or major-version upgrade.
@@ -46,7 +49,7 @@ impl Release {
                     || *name == "helpers/weed"
                     || *name == "python/analytics/uv.lock"
                     || *name == "provenance/analytical-runtime.lock.json"
-                    || name.starts_with("share/unity-catalog/")
+                    || (catalog && name.starts_with("share/unity-catalog/"))
             })
             .map(|(name, f)| (name, (&f.sha256, f.executable)))
             .collect();

@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is implemented in platform #63 with 241 Rust tests and 9 local native recovery scenarios passed; cross-platform CI and Linux ENOSPC qualification pending; UC08–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is implemented in platform #63 with 241 Rust tests and 9 local native recovery scenarios passed; cross-platform CI and Linux ENOSPC qualification pending; UC08 implementation and exact-archive stabilization in progress; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -378,6 +378,11 @@ logs and reconciliation work. Surface health and repair guidance without secrets
 Ordinary `down` and uninstall do not silently delete user catalog data.
 
 ## UC08 — Qualify the installed local product
+
+Implementation: [UC08 release qualification](../architecture/uc08-release-qualification.md)
+and the installed [two-project catalog walkthrough](../handbook/catalog-demo.md).
+Alpha.34 is the candidate. Exact-archive CI is pending; implementation presence
+and local alpha.33 fixture validation do not complete this milestone.
 
 Extend the existing native-release/R04 evidence collector; preserve PG, ingest,
 console, notebooks, environments, project packaging, data transfer and recovery
