@@ -351,7 +351,7 @@ impl Daemon {
                 if !stopping {
                     self.sessions.last_error = self
                         .sessions
-                        .tick(&mut self.store)
+                        .tick(&mut self.store, &self.catalog)
                         .err()
                         .map(|e| e.to_string());
                     self.publisher.last_error = self

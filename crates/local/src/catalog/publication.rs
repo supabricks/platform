@@ -1,7 +1,7 @@
 //! Durable publication authority. UC names and properties never confer ownership.
 #[cfg(test)]
 mod tests;
-mod worker;
+pub(crate) mod worker;
 use crate::{
     api::Binding,
     catalog::{Manager, metadata::Namespace},
@@ -189,7 +189,7 @@ fn local_location(path: &Path) -> Result<String> {
             .join("/")
     ))
 }
-fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
+pub(crate) fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
     let snapshot = store.snapshot(p.project_id, p.epoch_id)?;
     let d = snapshot
         .publication
@@ -212,6 +212,14 @@ fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
         let oid = source["oid"]
             .as_u64()
             .ok_or_else(|| invalid("snapshot table OID missing"))?;
+        if source["path"] != oid.to_string()
+            || source["version"] != 0
+            || source["schema"] != t.source_schema
+            || source["name"] != t.source_name
+            || t.body["columns"] != json!(columns(&root, &root.join(oid.to_string()), &d, source)?)
+        {
+            return Err(conflict("catalog snapshot schema or Delta version changed"));
+        }
         if t.body["storage_location"] != local_location(&root.join(oid.to_string()))? {
             return Err(conflict("catalog publication location changed"));
         }

@@ -4212,13 +4212,17 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Open a bounded Sail session on a selected epoch or current branch snapshot. First access automatically refreshes if no snapshot exists. Poll analytics_session until ready for the Spark Connect endpoint.",
+    "description": "Open a bounded Sail session. catalog=true pins the published catalog revision (or a published explicit epoch) without fallback; otherwise use the local snapshot, refreshing on first access. Poll analytics_session until ready for the Spark Connect endpoint.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
         "branch": {
           "description": "Explicit project-local branch name or UUID. Omit only on read/SQL tools to use this worktree's selection.",
           "type": "string"
+        },
+        "catalog": {
+          "default": false,
+          "type": "boolean"
         },
         "epoch": {
           "type": "string"

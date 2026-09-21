@@ -4,6 +4,7 @@ mod config;
 mod http;
 pub mod metadata;
 pub mod publication;
+pub mod reads;
 mod runtime;
 #[cfg(test)]
 mod tests;

@@ -43,6 +43,8 @@ impl Limits {
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     Create {
+        #[serde(default)]
+        catalog: bool,
         key: String,
         target: Target,
         #[serde(default)]

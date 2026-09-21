@@ -53,11 +53,11 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
   analytics status ID | cancel ID
   analytics refresh --branch NAME [--key KEY] [--wait]
-  analytics open [--branch NAME] [--epoch ID] [--ttl-ms 900000] [--wait]
+  analytics open [--catalog] [--branch NAME] [--epoch ID] [--ttl-ms 900000] [--wait]
   analytics session ID | close ID | cancel-session ID
-  analytics sql --sql SQL [--session ID | --branch NAME] [--max-rows 200]
+  analytics sql --sql SQL [--catalog] [--session ID | --branch NAME] [--max-rows 200]
   analytics query SESSION_ID QUERY_ID
-  spark shell [--branch NAME] [--epoch ID] [--file SCRIPT.py]
+  spark shell [--catalog] [--branch NAME] [--epoch ID] [--file SCRIPT.py]
   env init [--template base] [--key KEY] [--wait]
   env status | prepare [--key KEY] [--wait] | operation ID | cancel ID | gc
   env add REQUIREMENT | remove PACKAGE | lock | sync [--offline] [--wait]
@@ -847,10 +847,12 @@ pub fn run() -> Result<u8> {
             .map(|s| s.parse())
             .transpose()
             .map_err(|_| invalid("invalid epoch ID"))?;
+        let catalog = a.flag("--catalog");
         let ttl_ms = a.number("--ttl-ms", 900000)?;
         let file = a.take("--file");
         a.finish(2)?;
         let session = c.call(Action::AnalyticsOpen {
+            catalog,
             branch,
             epoch,
             key: OperationId::new().to_string(),
@@ -900,6 +902,10 @@ pub fn run() -> Result<u8> {
         if session.is_some() && branch.is_some() {
             return Err(invalid("choose --session or --branch"));
         }
+        let catalog = a.flag("--catalog");
+        if catalog && session.is_some() {
+            return Err(invalid("--catalog applies when opening a session"));
+        }
         let max_rows = a.number("--max-rows", 200)?;
         let max_bytes = a.number("--max-bytes", 262144)?;
         let timeout_ms = a.number("--timeout-ms", 10000)?;
@@ -909,6 +915,7 @@ pub fn run() -> Result<u8> {
             Some(id) => id,
             None => serde_json::from_value(
                 c.call(Action::AnalyticsOpen {
+                    catalog,
                     branch,
                     epoch: None,
                     key: OperationId::new().to_string(),
@@ -975,9 +982,11 @@ pub fn run() -> Result<u8> {
                 let key = a
                     .take("--key")
                     .unwrap_or_else(|| OperationId::new().to_string());
+                let catalog = a.flag("--catalog");
                 let ttl_ms = a.number("--ttl-ms", 900000)?;
                 a.finish(2)?;
                 Action::AnalyticsOpen {
+                    catalog,
                     branch,
                     epoch,
                     key,

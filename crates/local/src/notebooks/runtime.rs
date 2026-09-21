@@ -263,6 +263,7 @@ impl Notebooks {
                 e.epoch,
                 format!("notebook:{}:{}", e.id, e.generation),
                 e.limits.lifetime_ms,
+                e.catalog,
             )?)?;
         e.session = Some(session.id);
         e.kernel = Some(OperationId::new());

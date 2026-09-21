@@ -96,6 +96,8 @@ pub enum Action {
         id: OperationId,
     },
     AnalyticsOpen {
+        #[serde(default)]
+        catalog: bool,
         branch: Option<String>,
         epoch: Option<EpochId>,
         key: String,
@@ -387,13 +389,14 @@ pub(crate) fn handle(
             return crate::sessions::Sessions::cancel_refresh(store, project, id);
         }
         Action::AnalyticsOpen {
+            catalog,
             branch,
             epoch,
             key,
             ttl_ms,
         } => {
             return crate::sessions::Sessions::open(
-                store, cell, binding, branch, epoch, key, ttl_ms,
+                store, cell, binding, branch, epoch, key, ttl_ms, catalog,
             );
         }
         Action::AnalyticsSession { id } => {

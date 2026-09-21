@@ -148,7 +148,7 @@ impl Service {
         Ok(false)
     }
 }
-fn identity(value: &Value, t: &Table) -> Outcome {
+pub(crate) fn identity(value: &Value, t: &Table) -> Outcome {
     if value["table_id"] != t.id.to_string() {
         return Err(Fault::new(
             Code::IdentityChanged,

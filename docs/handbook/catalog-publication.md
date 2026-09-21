@@ -54,5 +54,38 @@ and reconciliation. Until then, preserve the journal and metastore together.
 MCP tool `catalog_publication` and console workspace command
 `catalog_publication` accept the same nested `command` contract. Projectless
 operations are rejected. `resolve` describes a complete publication; it does not
-start a Sail reader. Catalog-backed Spark sessions follow in UC04, and browser
-Data controls in UC06.
+start a Sail reader. Use the catalog read commands below; browser Data controls
+remain UC06.
+
+## Read a published revision
+
+```sh
+supabricks analytics open --catalog --branch main --wait --project .
+supabricks analytics sql --catalog --branch main --sql 'SELECT * FROM public.orders' --project .
+supabricks spark shell --catalog --branch main --project .
+```
+
+`--catalog` resolves the branch's complete published revision once. Without it,
+the existing local snapshot workflow is unchanged. `--catalog --epoch EPOCH_UUID`
+selects an older still-published revision from this deployment. There is no
+fallback when publication, provider, UUID, schema or location validation fails.
+
+Session metadata includes `catalog.publication_id`, `revision`, namespace UUIDs
+and table UUIDs. Read it from session status, notebook epoch metadata or
+`SELECT metadata_json FROM _supabricks.epoch`. Tables are available as
+`public.orders` (or their original PostgreSQL schema), and as
+`<catalog>.<source_schema>.<table>`. The exact physical UC name
+`<catalog>.analytics.e_<epoch>_<oid>` is also an alias in that session.
+Quote each identifier with backticks when needed.
+
+Publishing another revision changes subsequent opens. Existing sessions and
+notebook restarts retain their selected revision. Close/reopen to adopt the new
+head. An unavailable catalog blocks new opens but does not interrupt an already
+validated reader before its session lifetime expires. Unpublishing withdraws new
+admission and waits for existing readers to stop.
+
+API selectors: `analytics_open` accepts `"catalog": true`; console workspace
+`analytics`/`open` and `notebook`/`create` accept the same field. These are backend
+contracts; the console Data selector is scheduled for UC06. Managed SQL remains
+read-only. Spark/Python kernels still run as the trusted local owner, not in a
+multiuser security sandbox.

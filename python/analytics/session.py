@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import threading
 import time
 
@@ -139,7 +140,50 @@ def validate_decimal_statistics(generation, tables):
                         raise ValueError('epoch contains unsafe decimal statistics; run analytics refresh to export a new safe epoch')
 
 
+def configure_catalog(catalog):
+    # The launcher already uses env_clear. Also make direct worker invocation
+    # deterministic: no inherited provider, cloud credentials, or shared caches.
+    prefixes = ('SAIL_', 'UC_', 'UNITY_', 'DATABRICKS_', 'AWS_', 'AZURE_',
+                'GOOGLE_', 'GCS_', 'GOOGLE_APPLICATION_')
+    for key in list(os.environ):
+        if key.startswith(prefixes):
+            del os.environ[key]
+    providers = ['{type="memory", name="spark_catalog", initial_database=["default"]}']
+    if catalog:
+        name = catalog['catalog']
+        if not isinstance(name, str) or not re.fullmatch(r'sb_[a-z0-9_]+', name):
+            raise ValueError('invalid frozen catalog namespace')
+        providers.append('{type="memory", name=' + json.dumps(name) + ', initial_database=["default"]}')
+    os.environ['SAIL_CATALOG__LIST'] = '[' + ','.join(providers) + ']'
+    os.environ['SAIL_CATALOG__DEFAULT_CATALOG'] = 'spark_catalog'
+
+
+def frozen_aliases(catalog, tables):
+    if not catalog:
+        return {}
+    records = catalog['tables']
+    expected = {(t['schema'], t['name']): t for t in tables}
+    if len(records) != len(tables) or len(expected) != len(tables):
+        raise ValueError('frozen catalog table set changed')
+    aliases, names, seen = {}, set(), set()
+    for record in records:
+        key = (record['schema'], record['name'])
+        table = expected.get(key)
+        if key in seen or table is None or record['delta_version'] != table['version']:
+            raise ValueError('frozen catalog table identity or Delta version changed')
+        seen.add(key)
+        targets = [(record['schema'], record['name']), (record['uc_schema'], record['uc_name'])]
+        for target in targets:
+            folded = tuple(part.lower() for part in target)
+            if folded in names:
+                raise ValueError('frozen catalog aliases collide')
+            names.add(folded)
+        aliases[table['oid']] = targets
+    return aliases
+
+
 def run(config):
+    configure_catalog(config.get("catalog"))
     os.environ['TZ'] = 'UTC'
     time.tzset()
     workspace = Path(config['workspace'])
@@ -178,11 +222,15 @@ def run(config):
     threading.Thread(target=watchdog, daemon=True).start()
     from pysail.spark import SparkConnectServer
     from pyspark.sql import SparkSession
-    server = SparkConnectServer(ip='127.0.0.1', port=0)
+    # Native IPv6 loopback avoids macOS Seatbelt misclassifying gRPC's
+    # IPv4-mapped IPv6 sockets (the same transport used by the UC00 probe).
+    host = '::1' if sys.platform == 'darwin' else '127.0.0.1'
+    authority = '[::1]' if host == '::1' else host
+    server = SparkConnectServer(ip=host, port=0)
     server.start()
     _, port = server.listening_address
     metadata = config['metadata']
-    endpoint = f"sc://127.0.0.1:{port}/;user_id=supabricks;session_id={metadata['session_id']}"
+    endpoint = f"sc://{authority}:{port}/;user_id=supabricks;session_id={metadata['session_id']}"
     spark = SparkSession.builder.remote(endpoint).getOrCreate()
     descriptor = config['descriptor']
     root = Path(config['root']).resolve()
@@ -199,6 +247,7 @@ def run(config):
         (workspace / 'snapshot').symlink_to(generation, target_is_directory=True)
         sail_generation = alias / 'snapshot'
     tables = descriptor['manifest']['tables']
+    aliases = frozen_aliases(config.get("catalog"), tables)
     validate_decimal_statistics(generation, tables)
     schemas = {t['schema'] for t in tables}
     if len({s.lower() for s in schemas}) != len(schemas):
@@ -214,14 +263,21 @@ def run(config):
     spark.sql('CREATE DATABASE _supabricks').collect()
     for schema in sorted({t['schema'] for t in tables} | {'public'}):
         spark.sql(f'CREATE DATABASE IF NOT EXISTS {identifier(schema)}').collect()
+    if config.get('catalog'):
+        catalog_name = identifier(config['catalog']['catalog'])
+        for schema in sorted({schema for targets in aliases.values() for schema, _ in targets}):
+            spark.sql(f'CREATE DATABASE IF NOT EXISTS {catalog_name}.{identifier(schema)}').collect()
     for table in tables:
-        source = f"_supabricks_source.t_{table['oid']}"
+        source = f"spark_catalog._supabricks_source.t_{table['oid']}"
         path = str(sail_generation / table['path'])
         spark.sql(f'CREATE TABLE {source} USING delta LOCATION {literal(path)}').collect()
         name = identifier(table['schema']) + '.' + identifier(table['name'])
         spark.sql(f"CREATE VIEW {name} AS SELECT * FROM {source} VERSION AS OF {int(table['version'])}").collect()
+        for schema, alias in aliases.get(table['oid'], []):
+            qualified = catalog_name + '.' + identifier(schema) + '.' + identifier(alias)
+            spark.sql(f"CREATE VIEW {qualified} AS SELECT * FROM {source} VERSION AS OF {int(table['version'])}").collect()
     fields = ', '.join(f'{literal(str(v)) if v is not None else "CAST(NULL AS STRING)"} AS {identifier(k)}'
-                       for k, v in metadata.items() if k != 'source')
+                       for k, v in metadata.items() if not isinstance(v, (dict, list)))
     fields += f", {literal(json.dumps(metadata, sort_keys=True))} AS metadata_json"
     spark.sql(f'CREATE VIEW _supabricks.epoch AS SELECT {fields}').collect()
     spark.sql('USE DATABASE public').collect()

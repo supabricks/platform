@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is implemented with qualification in progress; UC04–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is implemented with 32 local Linux installed catalog checks passed and cross-platform CI pending; UC05–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -259,6 +259,10 @@ sets or remove referenced data. Replays have one publication identity. Orphan
 cleanup is bounded and cannot delete unowned UC objects or arbitrary locations.
 
 ## UC04 — Read by catalog name without losing snapshot consistency
+
+Implementation: [frozen catalog reads](../architecture/uc04-catalog-reads.md).
+CLI/MCP, console workspace API and notebook creation share the explicit catalog
+selector; browser Data controls remain UC06.
 
 Adapt `python/analytics/session.py`, platform session descriptors and Sail's
 provider together. Resolve a logical dataset-set revision once, validate all UC
