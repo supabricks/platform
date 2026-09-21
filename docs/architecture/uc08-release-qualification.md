@@ -184,6 +184,12 @@ silently retried.
   that this check reads the recorded version rather than the latest files and
   rejects paths outside the analytical store. This does not claim the old
   predecessor's Spark endpoint runs under the corrected macOS policy.
+- The same run's macOS baseline passed the packaged notebook and then exposed an
+  uninitialized report variable in the newly added polling diagnostics. The
+  summary is now attached when the success report is constructed. This was a
+  harness regression, not a passing baseline; its full app/benchmark gate must
+  run again. The interim `de0f14b` build was cancelled before archive assembly
+  because it still contained this known error.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

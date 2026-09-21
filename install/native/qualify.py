@@ -267,7 +267,6 @@ def qualify(args):
 
         checks.append(qualify_project_apply(binary, prefix / 'current', source_project, workspace, env))
         checks.append(qualify_project_offline(binary, prefix / 'current', source_project.with_name("sales-runnable"), workspace, env))
-        report["notebook_readiness_polling"] = summarize(workspace / "pk05-notebook.log")
 
         cli('database', 'create', 'main', '--wait')
         cli('branch', 'use', 'main')
@@ -415,6 +414,7 @@ def qualify(args):
         reserved.close()
         report = dict(status='passed', host=platform.platform(), workspace=str(workspace),
                       release_identity=identity, install_seconds=round(install_seconds, 2),
+                      notebook_readiness_polling=summarize(workspace / 'pk05-notebook.log'),
                       checks=checks, measurements=measurements, network_qualification=args.network_evidence)
     except BaseException as error:
         report = dict(status='failed', host=platform.platform(), workspace=str(workspace), checks=checks,
