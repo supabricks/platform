@@ -873,8 +873,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install browser tools before isolating the host
+      - name: Install qualification tools before isolating the host
         run: |
+          python -m pip install -r e2e/native/catalog/requirements.txt
           npm ci --prefix console --no-audit --no-fund
           npm exec --prefix console -- playwright install --with-deps chromium
       - name: Catalog through localhost curl on offline Linux without system Java

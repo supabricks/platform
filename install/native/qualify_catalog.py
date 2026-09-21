@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -78,12 +79,12 @@ def qualify(args):
                 command=[args.node,str(args.console/'scripts/qualify-catalog.mjs'),'--binary',str(binary),
                          '--root',str(fixture),'--report',str(path)]
             else:
-                command=[str(installed/'python/analytics/python'),str(ROOT/f'e2e/native/catalog/{name}.py'),
+                command=[sys.executable,str(ROOT/f'e2e/native/catalog/{name}.py'),
                     '--exact-installed','--release',str(installed),'--binary',str(binary),
                     '--uc-runtime',str(installed/'share/unity-catalog'),'--workspace',str(fixture),'--report',str(path)]
                 if name=='recovery' and args.disk_full: command.append('--disk-full')
             cleanup=root/(name+'.cleanup.json')
-            command=[str(installed/'python/analytics/python'),str(ROOT/'install/native/catalog_gate.py'),
+            command=[sys.executable,str(ROOT/'install/native/catalog_gate.py'),
                      '--report',str(cleanup),'--',*command]
             started=time.monotonic()
             with (root/(name+'.private.log')).open('w') as log:
