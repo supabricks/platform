@@ -67,7 +67,33 @@ impl Store {
                 "deployment has a pending apply; inspect or cancel it first",
             ));
         }
-        self.db.execute(
+        let datasets = o
+            .plan
+            .steps
+            .iter()
+            .filter(|s| s.kind == "catalog_dataset" && s.action != "unbind")
+            .map(|s| Ok((s.logical.clone(), crate::catalog::datasets::selected(s)?)))
+            .collect::<Result<Vec<_>>>()?;
+        for (_, d) in &datasets {
+            crate::catalog::datasets::verify(self, d, true)?;
+        }
+        let count:i64=self.db.query_row("SELECT count(*) FROM catalog_publication_refs WHERE reference_key LIKE 'binding:%' OR reference_key LIKE 'apply:%'",[],|r|r.get(0))?;
+        if count + datasets.len() as i64 > 512 {
+            return Err(conflict(
+                "dataset retention limit reached; release unused bindings",
+            ));
+        }
+        let tx = self.db.unchecked_transaction()?;
+        for (logical, d) in &datasets {
+            tx.execute(
+                "INSERT INTO catalog_publication_refs VALUES (?1,?2)",
+                params![
+                    d.target.publication_id.to_string(),
+                    format!("apply:{}:{logical}", o.id)
+                ],
+            )?;
+        }
+        tx.execute(
             "INSERT INTO project_applies VALUES (?1,?2,?3,?4,?5)",
             params![
                 o.id.to_string(),
@@ -77,13 +103,22 @@ impl Store {
                 serde_json::to_string(o)?
             ],
         )?;
+        tx.commit()?;
         Ok(())
     }
     pub(crate) fn save_apply(&self, o: &Operation) -> Result<()> {
-        self.db.execute(
+        let tx = self.db.unchecked_transaction()?;
+        if !o.pending() {
+            tx.execute(
+                "DELETE FROM catalog_publication_refs WHERE reference_key LIKE ?1",
+                [format!("apply:{}:%", o.id)],
+            )?;
+        }
+        tx.execute(
             "UPDATE project_applies SET state=?2,record_json=?3 WHERE id=?1",
             params![o.id.to_string(), o.state, serde_json::to_string(o)?],
         )?;
+        tx.commit()?;
         Ok(())
     }
     // Allocation ownership is durable even if the enclosing apply is later cancelled.
@@ -106,6 +141,15 @@ impl Store {
         Ok(())
     }
     pub(crate) fn activate_deployment(&mut self, o: &mut Operation) -> Result<()> {
+        let datasets = o
+            .resources
+            .iter()
+            .filter(|(_, r)| r.kind == "catalog_dataset")
+            .map(|(k, r)| Ok((k.clone(), crate::catalog::datasets::from_resource(r)?)))
+            .collect::<Result<Vec<_>>>()?;
+        for (_, d) in &datasets {
+            crate::catalog::datasets::verify(self, d, true)?;
+        }
         let tx = self.db.transaction()?;
         let ctx = &o.plan.context;
         if tx.execute(
@@ -115,6 +159,25 @@ impl Store {
         {
             return Err(conflict("deployment revision changed before activation"));
         }
+        // Replace only dataset mappings. Older live readers hold independent pins.
+        tx.execute(
+            "DELETE FROM catalog_publication_refs WHERE reference_key LIKE ?1",
+            [format!("binding:{}:%", ctx.deployment_id)],
+        )?;
+        tx.execute("DELETE FROM deployment_resources WHERE deployment_id=?1 AND json_extract(record_json,'$.kind')='catalog_dataset'",[ctx.deployment_id.to_string()])?;
+        for (logical, d) in &datasets {
+            tx.execute(
+                "INSERT INTO catalog_publication_refs VALUES (?1,?2)",
+                params![
+                    d.target.publication_id.to_string(),
+                    format!("binding:{}:{logical}", ctx.deployment_id)
+                ],
+            )?;
+        }
+        tx.execute(
+            "DELETE FROM catalog_publication_refs WHERE reference_key LIKE ?1",
+            [format!("apply:{}:%", o.id)],
+        )?;
         for (logical, r) in &o.resources {
             tx.execute("INSERT INTO deployment_resources VALUES (?1,?2,?3) ON CONFLICT(deployment_id,logical) DO UPDATE SET record_json=excluded.record_json",params![ctx.deployment_id.to_string(),logical,serde_json::to_string(r)?])?;
         }

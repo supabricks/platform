@@ -160,6 +160,7 @@ pub struct Daemon {
     queries: Vec<std::thread::JoinHandle<()>>,
     ingest_error: Option<String>,
     project_apply_error: Option<String>,
+    dataset_checks: crate::catalog::datasets::Checks,
     project_migrations: crate::project_apply::migrations::Workers,
     ingestion: crate::ingest::service::Service,
     uploads: crate::console::ingestion::Uploads,
@@ -217,6 +218,7 @@ impl Daemon {
             queries: Vec::new(),
             ingest_error: None,
             project_apply_error: None,
+            dataset_checks: Default::default(),
             project_migrations: Default::default(),
             ingestion: Default::default(),
             uploads: Default::default(),
@@ -310,6 +312,8 @@ impl Daemon {
                         &mut self.environments,
                         self.cell.as_ref(),
                         &mut self.project_migrations,
+                        Some(&self.catalog),
+                        &mut self.dataset_checks,
                     )
                     .err()
                     .map(|e| e.to_string());
@@ -858,6 +862,10 @@ impl Daemon {
                     &owner,
                     command,
                 );
+            }
+            C::CatalogDatasets { command } => {
+                return self
+                    .public_action(binding, crate::api::Action::CatalogDatasets { command });
             }
             C::CatalogPublication { command } => {
                 return self

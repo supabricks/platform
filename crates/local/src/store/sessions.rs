@@ -17,6 +17,10 @@ pub struct AnalyticalSession {
     pub refresh_id: Option<OperationId>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog: Option<crate::catalog::reads::Read>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub datasets: std::collections::BTreeMap<String, crate::catalog::datasets::Dataset>,
+    #[serde(default)]
+    pub datasets_validated: bool,
     pub state: String,
     pub created_at_ms: i64,
     pub expires_at_ms: i64,
@@ -117,6 +121,8 @@ impl Store {
             epoch_id: epoch,
             refresh_id: refresh,
             catalog: None,
+            datasets: Default::default(),
+            datasets_validated: false,
             state: if epoch.is_some() {
                 "starting"
             } else {
@@ -196,6 +202,80 @@ impl Store {
                 .execute_batch("ROLLBACK TO catalog_session; RELEASE catalog_session")?;
         }
         result
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn admit_session_inputs(
+        &mut self,
+        project: ProjectId,
+        branch: BranchId,
+        key: &str,
+        request: Value,
+        epoch: Option<EpochId>,
+        refresh: Option<OperationId>,
+        ttl_ms: u64,
+        catalog: Option<&crate::catalog::publication::Publication>,
+        datasets: std::collections::BTreeMap<String, crate::catalog::datasets::Dataset>,
+    ) -> Result<AnalyticalSession> {
+        if let Some(s) = self.session_for_key(project, key, &request)? {
+            return Ok(s);
+        }
+        if datasets.len() > crate::catalog::datasets::MAX_DATASETS {
+            return Err(invalid("too many dataset inputs"));
+        }
+        for d in datasets.values() {
+            crate::catalog::datasets::verify(self, d, true)?;
+        }
+        self.db.execute_batch("SAVEPOINT dataset_session")?;
+        let result = (|| {
+            let mut s = if let Some(p) = catalog {
+                self.admit_catalog_session(p, key, request, ttl_ms)?
+            } else {
+                self.admit_analytical_session(
+                    project, branch, key, request, epoch, refresh, ttl_ms,
+                )?
+            };
+            for (logical, d) in &datasets {
+                self.db.execute(
+                    "INSERT INTO catalog_publication_refs VALUES (?1,?2)",
+                    params![
+                        d.target.publication_id.to_string(),
+                        format!("session:{}:{logical}", s.id)
+                    ],
+                )?;
+            }
+            s.datasets = datasets;
+            self.save_analytical_session(&s)?;
+            Ok(s)
+        })();
+        if result.is_ok() {
+            self.db.execute_batch("RELEASE dataset_session")?;
+        } else {
+            self.db
+                .execute_batch("ROLLBACK TO dataset_session; RELEASE dataset_session")?;
+        }
+        result
+    }
+    /// Called only after owned notebook/Sail workers are confirmed dead.
+    pub(crate) fn finish_session_inputs(&mut self, s: &AnalyticalSession) -> Result<()> {
+        if !matches!(s.state.as_str(), "closed" | "failed") {
+            return Err(conflict("session still active"));
+        }
+        let tx = self.db.transaction()?;
+        tx.execute(
+            "UPDATE analytical_sessions SET epoch_id=?2,state=?3,record=?4 WHERE id=?1",
+            params![
+                s.id.to_string(),
+                s.epoch_id.map(|e| e.to_string()),
+                s.state,
+                serde_json::to_string(s)?
+            ],
+        )?;
+        tx.execute(
+            "DELETE FROM catalog_publication_refs WHERE reference_key LIKE ?1",
+            [format!("session:{}:%", s.id)],
+        )?;
+        tx.commit()?;
+        Ok(())
     }
     pub(crate) fn save_analytical_session(&mut self, s: &AnalyticalSession) -> Result<()> {
         self.db.execute(

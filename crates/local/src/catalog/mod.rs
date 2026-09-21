@@ -1,6 +1,7 @@
 //! Independent local-owner OSS UC service. No project tables are registered here.
 mod adapter;
 mod config;
+pub mod datasets;
 mod http;
 pub mod metadata;
 pub mod publication;

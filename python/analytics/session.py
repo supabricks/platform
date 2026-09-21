@@ -140,7 +140,7 @@ def validate_decimal_statistics(generation, tables):
                         raise ValueError('epoch contains unsafe decimal statistics; run analytics refresh to export a new safe epoch')
 
 
-def configure_catalog(catalog):
+def configure_catalog(catalog, datasets=()):
     # The launcher already uses env_clear. Also make direct worker invocation
     # deterministic: no inherited provider, cloud credentials, or shared caches.
     prefixes = ('SAIL_', 'UC_', 'UNITY_', 'DATABRICKS_', 'AWS_', 'AZURE_',
@@ -149,10 +149,12 @@ def configure_catalog(catalog):
         if key.startswith(prefixes):
             del os.environ[key]
     providers = ['{type="memory", name="spark_catalog", initial_database=["default"]}']
-    if catalog:
+    names = set()
+    for catalog in ([catalog] if catalog else []) + list(datasets):
         name = catalog['catalog']
-        if not isinstance(name, str) or not re.fullmatch(r'sb_[a-z0-9_]+', name):
+        if not isinstance(name, str) or not re.fullmatch(r'(sb_|dataset_)[a-z0-9_-]+', name) or name in names:
             raise ValueError('invalid frozen catalog namespace')
+        names.add(name)
         providers.append('{type="memory", name=' + json.dumps(name) + ', initial_database=["default"]}')
     os.environ['SAIL_CATALOG__LIST'] = '[' + ','.join(providers) + ']'
     os.environ['SAIL_CATALOG__DEFAULT_CATALOG'] = 'spark_catalog'
@@ -183,7 +185,7 @@ def frozen_aliases(catalog, tables):
 
 
 def run(config):
-    configure_catalog(config.get("catalog"))
+    configure_catalog(config.get("catalog"), config.get("datasets", []))
     os.environ['TZ'] = 'UTC'
     time.tzset()
     workspace = Path(config['workspace'])
@@ -276,6 +278,28 @@ def run(config):
         for schema, alias in aliases.get(table['oid'], []):
             qualified = catalog_name + '.' + identifier(schema) + '.' + identifier(alias)
             spark.sql(f"CREATE VIEW {qualified} AS SELECT * FROM {source} VERSION AS OF {int(table['version'])}").collect()
+    for index, dataset in enumerate(config.get('datasets', [])):
+        generation = (root / dataset['descriptor']['generation']).resolve()
+        if not generation.is_relative_to(root / 'analytics' / 'generations'):
+            raise ValueError('dataset generation escapes the analytical store')
+        tables = dataset['descriptor']['manifest']['tables']
+        aliases = frozen_aliases(dataset, tables)
+        validate_decimal_statistics(generation, tables)
+        sail_generation = generation
+        if config.get('sail_workspace'):
+            link = f'dataset_{index}'
+            (workspace / link).symlink_to(generation, target_is_directory=True)
+            sail_generation = Path(config['sail_workspace']) / link
+        catalog_name = identifier(dataset['catalog'])
+        for schema in sorted({schema for targets in aliases.values() for schema, _ in targets}):
+            spark.sql(f'CREATE DATABASE IF NOT EXISTS {catalog_name}.{identifier(schema)}').collect()
+        for table in tables:
+            source = f"spark_catalog._supabricks_source.d_{index}_{table['oid']}"
+            path = str(sail_generation / table['path'])
+            spark.sql(f'CREATE TABLE {source} USING delta LOCATION {literal(path)}').collect()
+            for schema, alias in aliases[table['oid']]:
+                qualified = catalog_name + '.' + identifier(schema) + '.' + identifier(alias)
+                spark.sql(f"CREATE VIEW {qualified} AS SELECT * FROM {source} VERSION AS OF {int(table['version'])}").collect()
     fields = ', '.join(f'{literal(str(v)) if v is not None else "CAST(NULL AS STRING)"} AS {identifier(k)}'
                        for k, v in metadata.items() if not isinstance(v, (dict, list)))
     fields += f", {literal(json.dumps(metadata, sort_keys=True))} AS metadata_json"

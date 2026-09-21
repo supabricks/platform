@@ -18,6 +18,33 @@
                 "type": "string"
               },
               "type": "object"
+            },
+            "datasets": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "deployment_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "provider_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "publication_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "deployment_id",
+                  "provider_id",
+                  "publication_id"
+                ],
+                "type": "object"
+              },
+              "maxProperties": 8,
+              "type": "object"
             }
           },
           "type": "object"
@@ -128,6 +155,33 @@
                     "type": "string"
                   },
                   "type": "object"
+                },
+                "datasets": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "deployment_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "provider_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "publication_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "deployment_id",
+                      "provider_id",
+                      "publication_id"
+                    ],
+                    "type": "object"
+                  },
+                  "maxProperties": 8,
+                  "type": "object"
                 }
               },
               "required": [
@@ -162,7 +216,11 @@
                       "prepare_offline",
                       "install",
                       "transactional_migration",
-                      "load_new_table"
+                      "load_new_table",
+                      "bind",
+                      "update_binding",
+                      "unbind",
+                      "unresolved"
                     ]
                   },
                   "branch": {
@@ -207,7 +265,8 @@
                       "postgres_query",
                       "spark_query",
                       "migration",
-                      "fixture"
+                      "fixture",
+                      "catalog_dataset"
                     ]
                   },
                   "logical": {
@@ -385,6 +444,33 @@
                     "type": "string"
                   },
                   "type": "object"
+                },
+                "datasets": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "deployment_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "provider_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "publication_id": {
+                        "format": "uuid",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "deployment_id",
+                      "provider_id",
+                      "publication_id"
+                    ],
+                    "type": "object"
+                  },
+                  "maxProperties": 8,
+                  "type": "object"
                 }
               },
               "required": [
@@ -419,7 +505,11 @@
                       "prepare_offline",
                       "install",
                       "transactional_migration",
-                      "load_new_table"
+                      "load_new_table",
+                      "bind",
+                      "update_binding",
+                      "unbind",
+                      "unresolved"
                     ]
                   },
                   "branch": {
@@ -464,7 +554,8 @@
                       "postgres_query",
                       "spark_query",
                       "migration",
-                      "fixture"
+                      "fixture",
+                      "catalog_dataset"
                     ]
                   },
                   "logical": {
@@ -2032,6 +2123,62 @@
                           "mapping"
                         ],
                         "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "expected_content_sha256": {
+                            "pattern": "^[a-f0-9]{64}$",
+                            "type": "string"
+                          },
+                          "expected_schema_sha256": {
+                            "pattern": "^[a-f0-9]{64}$",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "catalog_dataset"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "deployment_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "provider_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "publication_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "deployment_id",
+                              "provider_id",
+                              "publication_id"
+                            ],
+                            "type": "object"
+                          },
+                          "requirement": {
+                            "maxLength": 256,
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "requirement"
+                        ],
+                        "type": "object"
                       }
                     ]
                   },
@@ -2092,7 +2239,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "kind": {
-                    "const": "destination_database"
+                    "enum": [
+                      "destination_database",
+                      "catalog_dataset"
+                    ]
                   },
                   "resource": {
                     "type": "string"
@@ -2653,6 +2803,62 @@
                           "mapping"
                         ],
                         "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "depends_on": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256,
+                            "type": "array"
+                          },
+                          "expected_content_sha256": {
+                            "pattern": "^[a-f0-9]{64}$",
+                            "type": "string"
+                          },
+                          "expected_schema_sha256": {
+                            "pattern": "^[a-f0-9]{64}$",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "catalog_dataset"
+                          },
+                          "provenance": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "deployment_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "provider_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "publication_id": {
+                                "format": "uuid",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "deployment_id",
+                              "provider_id",
+                              "publication_id"
+                            ],
+                            "type": "object"
+                          },
+                          "requirement": {
+                            "maxLength": 256,
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "requirement"
+                        ],
+                        "type": "object"
                       }
                     ]
                   },
@@ -2713,7 +2919,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "kind": {
-                    "const": "destination_database"
+                    "enum": [
+                      "destination_database",
+                      "catalog_dataset"
+                    ]
                   },
                   "resource": {
                     "type": "string"
@@ -5858,6 +6067,165 @@
             "username",
             "password",
             "database"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Inspect fixed project dataset bindings, describe an explicit destination publication, discover updates without adopting them, or inspect producer retention references. Bind/update/unbind only through reviewed project plan/apply; packages carry logical requirements, not authority.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$id": "https://supabricks.io/schemas/catalog-datasets-command-v1.schema.json",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "list"
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "describe"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "deployment_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "provider_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "publication_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deployment_id",
+                    "provider_id",
+                    "publication_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "updates"
+                },
+                "logical": {
+                  "pattern": "^dataset\\.[a-z0-9_-]{1,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "logical"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "references"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "deployment_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "provider_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "publication_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deployment_id",
+                    "provider_id",
+                    "publication_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "name": "catalog_datasets",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "properties": {
+            "api_version": {
+              "const": 1
+            }
+          },
+          "required": [
+            "api_version"
           ],
           "type": "object"
         },

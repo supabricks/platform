@@ -21,6 +21,8 @@ pub struct Options {
     /// Explicit adoption of existing branches. Names never imply adoption.
     #[serde(default)]
     pub adopt: BTreeMap<String, BranchId>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub datasets: BTreeMap<String, crate::catalog::datasets::Target>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
@@ -180,6 +182,57 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
             initialization: None,
         };
         match &report.resources[logical].declaration {
+            R::CatalogDataset {
+                expected_schema_sha256,
+                expected_content_sha256,
+                requirement,
+                ..
+            } => {
+                use crate::catalog::datasets;
+                step.kind = "catalog_dataset".into();
+                let previous = owned
+                    .get(logical)
+                    .map(datasets::from_resource)
+                    .transpose()?;
+                let target = options
+                    .datasets
+                    .get(logical)
+                    .cloned()
+                    .or_else(|| previous.as_ref().map(|d| d.target.clone()));
+                if let Some(target) = target {
+                    let selected = datasets::describe(store, &target, true)?;
+                    if expected_schema_sha256
+                        .as_ref()
+                        .is_some_and(|h| h != &selected.schema_sha256)
+                        || expected_content_sha256
+                            .as_ref()
+                            .is_some_and(|h| h != &selected.content_sha256)
+                    {
+                        return Err(conflict(
+                            "dataset requirement fingerprint differs from destination mapping",
+                        ));
+                    }
+                    step.action = if previous.as_ref() == Some(&selected) {
+                        "retain"
+                    } else if previous.is_some() {
+                        "update_binding"
+                    } else {
+                        "bind"
+                    }
+                    .into();
+                    step.initialization = Some(
+                        json!({"requirement":requirement,"selected":selected,"previous":previous,
+                        "schema_changed":previous.as_ref().is_some_and(|p|p.schema_sha256!=selected.schema_sha256),
+                        "content_changed":previous.as_ref().is_some_and(|p|p.content_sha256!=selected.content_sha256)}),
+                    );
+                } else {
+                    step.action = "unresolved".into();
+                    step.initialization = Some(
+                        json!({"requirement":requirement,"expected_schema_sha256":expected_schema_sha256,"expected_content_sha256":expected_content_sha256}),
+                    );
+                }
+            }
+
             R::PostgresDatabase { .. } => {
                 step.kind = "database".into();
                 let existing = owned.get(logical).and_then(|r| r.branch);
@@ -287,6 +340,33 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
     }) {
         return Err(invalid("adoption must reference a declared database"));
     }
+    if options.datasets.keys().any(|k| {
+        !steps
+            .iter()
+            .any(|s| s.logical == *k && s.kind == "catalog_dataset")
+    }) {
+        return Err(invalid(
+            "dataset mappings must reference declared dataset resources",
+        ));
+    }
+    // Removal is an explicit, reviewed step. Other resource kinds retain PK04 behavior.
+    for (logical, r) in &owned {
+        if r.kind == "catalog_dataset" && !steps.iter().any(|s| &s.logical == logical) {
+            steps.push(Step {
+                logical: logical.clone(),
+                kind: r.kind.clone(),
+                action: "unbind".into(),
+                branch: None,
+                expected_revision: None,
+                file: None,
+                database: None,
+                environment: None,
+                initialization: Some(
+                    json!({"previous":crate::catalog::datasets::from_resource(r)?}),
+                ),
+            });
+        }
+    }
     for step in &steps {
         if matches!(step.kind.as_str(), "migration" | "fixture") {
             let database = steps
@@ -361,6 +441,11 @@ pub fn handle(store: &mut Store, binding: &Binding, command: Command) -> Result<
             let current = plan(store, binding, requested.options.clone())?;
             if digest(&current)? != digest(&requested)? {
                 return Err(conflict("plan is stale or modified; plan again"));
+            }
+            if current.steps.iter().any(|s| s.action == "unresolved") {
+                return Err(conflict(
+                    "dataset requirements remain unresolved; supply explicit destination mappings and plan again",
+                ));
             }
             let op = Operation {
                 api_version: 1,
@@ -471,9 +556,20 @@ pub fn tick(
     environments: &mut crate::environments::Manager,
     cell: Option<&crate::engine::Cell>,
     migrations: &mut migrations::Workers,
+    catalog: Option<&crate::catalog::Manager>,
+    datasets: &mut crate::catalog::datasets::Checks,
 ) -> Result<()> {
+    datasets.reap(store)?;
     for mut o in store.pending_applies()? {
-        if let Err(e) = advance(store, environments, cell, migrations, &mut o) {
+        if let Err(e) = advance(
+            store,
+            environments,
+            cell,
+            migrations,
+            catalog,
+            datasets,
+            &mut o,
+        ) {
             if let Some(step) = o.plan.steps.get(o.next_step) {
                 let key = format!("{}:{}", o.id, step.logical);
                 if migrations.contains(&key) {
@@ -665,6 +761,8 @@ fn advance(
     environments: &mut crate::environments::Manager,
     cell: Option<&crate::engine::Cell>,
     migrations: &mut migrations::Workers,
+    catalog: Option<&crate::catalog::Manager>,
+    datasets: &mut crate::catalog::datasets::Checks,
     o: &mut Operation,
 ) -> Result<()> {
     let ctx = store.binding_context(&o.plan.context.binding(&o.plan.worktree))?;
@@ -753,7 +851,13 @@ fn advance(
             generation: None,
             receipt: None,
         };
-        if step.kind == "database" {
+        if step.kind == "catalog_dataset" {
+            if step.action != "unbind" {
+                let selected = crate::catalog::datasets::selected(&step)?;
+                crate::catalog::datasets::verify(store, &selected, true)?;
+                resource.receipt = Some(json!(selected));
+            }
+        } else if step.kind == "database" {
             if step.action == "create" {
                 if !record_database(store, cell, o, step.clone())? {
                     return Ok(());
@@ -790,7 +894,9 @@ fn advance(
                 _ => return Ok(()),
             }
         }
-        o.resources.insert(step.logical.clone(), resource);
+        if step.action != "unbind" {
+            o.resources.insert(step.logical.clone(), resource);
+        }
         o.next_step += 1;
         store.save_apply(o)?;
         checkpoint("step");
@@ -800,6 +906,9 @@ fn advance(
         o.state = "activating".into();
         store.save_apply(o)?;
         checkpoint("prepared");
+        return Ok(());
+    }
+    if !datasets.ready(store, catalog, o)? {
         return Ok(());
     }
     // Revalidate every external prerequisite immediately before the atomic pointer change.

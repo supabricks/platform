@@ -179,28 +179,50 @@ impl Sessions {
         } else {
             crate::api::resolve(store, binding, branch.as_deref())?
         };
+        let mut datasets = BTreeMap::new();
         if catalog {
             let owner = store.binding_context(binding)?;
+            datasets = crate::catalog::datasets::installed(store, owner.deployment_id)?;
+            for d in datasets.values() {
+                crate::catalog::datasets::verify(store, d, true)?;
+            }
             let p = if let Some(epoch) = epoch {
-                store.catalog_publication_epoch(owner.deployment_id, epoch)?
+                match store.catalog_publication_epoch(owner.deployment_id, epoch) {
+                    Ok(p) => Some(p),
+                    Err(Error::Operation(OperationError::NotFound(_))) if !datasets.is_empty() => {
+                        None
+                    }
+                    Err(e) => return Err(e),
+                }
             } else {
                 let (_, head) = store.catalog_head(owner.deployment_id, branch_id)?;
-                let id =
-                    head.ok_or_else(|| conflict("branch has no published catalog revision"))?;
-                store.catalog_publication(owner.deployment_id, id)?
+                head.map(|id| store.catalog_publication(owner.deployment_id, id))
+                    .transpose()?
             };
-            if p.project_id != binding.project_id
-                || p.branch_id != branch_id
-                || epoch.is_some_and(|e| e != p.epoch_id)
-            {
+            if let Some(p) = p {
+                if p.project_id != binding.project_id || p.branch_id != branch_id {
+                    return Err(conflict(
+                        "catalog publication belongs to another project or branch",
+                    ));
+                }
+                crate::catalog::publication::verify_locations(store, &p)?;
+                return Ok(json!(store.admit_session_inputs(
+                    binding.project_id,
+                    branch_id,
+                    &key,
+                    request,
+                    Some(p.epoch_id),
+                    None,
+                    ttl_ms,
+                    Some(&p),
+                    datasets
+                )?));
+            }
+            if datasets.is_empty() {
                 return Err(conflict(
-                    "requested epoch does not match the catalog publication",
+                    "branch has no published catalog revision or bound datasets",
                 ));
             }
-            crate::catalog::publication::verify_locations(store, &p)?;
-            return Ok(json!(
-                store.admit_catalog_session(&p, &key, request, ttl_ms)?
-            ));
         }
         let epoch = match epoch {
             Some(e) => Some(e),
@@ -232,14 +254,16 @@ impl Sessions {
         } else {
             None
         };
-        Ok(json!(store.admit_analytical_session(
+        Ok(json!(store.admit_session_inputs(
             binding.project_id,
             branch_id,
             &key,
             request,
             epoch,
             refresh,
-            ttl_ms
+            ttl_ms,
+            None,
+            datasets
         )?))
     }
     pub fn cancel_refresh(store: &mut Store, project: ProjectId, id: OperationId) -> Result<Value> {
@@ -348,7 +372,7 @@ impl Sessions {
                 q["error"] = json!(reason);
             }
         }
-        store.save_analytical_session(s)
+        store.finish_session_inputs(s)
     }
     pub fn stop(&mut self, store: &mut Store) -> Result<()> {
         for mut s in store.active_analytical_sessions()? {
@@ -421,6 +445,16 @@ impl Sessions {
                 .ok_or_else(|| invalid("missing snapshot descriptor"))?;
             let mut metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
             let catalog = crate::catalog::reads::frozen(store, s)?;
+            let datasets = crate::catalog::reads::frozen_datasets(store, s)?;
+            if !datasets.is_empty() {
+                metadata["datasets"] = json!(
+                    datasets
+                        .iter()
+                        .map(|d| d["provenance"].clone())
+                        .collect::<Vec<_>>()
+                );
+                metadata["shared_source_transaction"] = json!(false);
+            }
             if let Some(frozen) = &catalog {
                 metadata["catalog"] = frozen["provenance"].clone();
             }
@@ -429,7 +463,7 @@ impl Sessions {
             let sail_workspace = paths::create(&dir, s.id)?;
             supervisor::write_json(
                 &dir.join("input.json"),
-                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"catalog":catalog,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
+                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"catalog":catalog,"datasets":datasets,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
             )?;
             let env = BTreeMap::from([
                 ("PATH".into(), "/usr/bin:/bin".into()),

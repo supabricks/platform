@@ -31,6 +31,16 @@ class SessionTests(unittest.TestCase):
             configure_catalog(None)
             self.assertNotIn('sb_test',os.environ['SAIL_CATALOG__LIST'])
 
+    def test_multiple_binding_catalogs_are_explicit_and_collision_checked(self):
+        with patch.dict(os.environ,{},clear=True):
+            configure_catalog(None,[dict(catalog='dataset_sales'),dict(catalog='dataset_old')])
+            self.assertIn('dataset_sales',os.environ['SAIL_CATALOG__LIST'])
+            self.assertIn('dataset_old',os.environ['SAIL_CATALOG__LIST'])
+            with self.assertRaises(ValueError):
+                configure_catalog(None,[dict(catalog='dataset_sales'),dict(catalog='dataset_sales')])
+            with self.assertRaises(ValueError):
+                configure_catalog(None,[dict(catalog='spark_catalog')])
+
     def test_read_gate_handles_quotes_comments_and_mutating_ctes(self):
         for sql in ["SELECT 'delete; drop'", 'SELECT `delete` FROM `public`.`orders`',
                     '/* nested /* drop */ comment */ WITH t AS (SELECT 1) SELECT * FROM t',

@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is implemented with 32 local Linux installed catalog checks passed and cross-platform CI pending; UC05–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is implemented with 37 local Linux installed catalog checks passed and cross-platform CI pending; UC06–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -287,6 +287,9 @@ Test malicious path/URI metadata against the allowed storage roots/endpoints.
 
 ## UC05 — Bind datasets into projects and packages
 
+Implementation: [dataset bindings](../architecture/uc05-dataset-bindings.md) and
+[operator workflow](../handbook/catalog-datasets.md).
+
 Introduce an explicit catalog-dataset binding kind and capability version in
 project manifests, destination bindings and reviewed plan/apply. Proposed UI:
 **Add existing dataset** in the consuming project. Resolve the owning deployment,
@@ -309,6 +312,13 @@ ownership transfer; importing the same package elsewhere needs explicit bindings
 a changed object or schema produces a plan diff/failure; project deletion removes
 its bindings without deleting producer data. Source publication withdrawal and
 consumer-held retention references have visible, bounded lifecycle behavior.
+
+Lifecycle reconciliation: PK04 has no project-delete/uninstall operation and
+retains other installed resources. UC05 implements consumer decommission through
+reviewed removal of dataset declarations (`unbind`), before checkout removal.
+Deleting a checkout alone cannot release durable references. A future project
+delete operation must use this same binding cleanup without deleting producer
+data; it is not introduced by this slice. Browser binding forms belong to UC06.
 
 ## UC06 — Deliver the console and agent experience
 

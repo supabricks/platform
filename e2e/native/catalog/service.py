@@ -159,6 +159,8 @@ def main():
         publication_checks(cell,root,installed,branch,work,token,api,check)
         from reads import run as read_checks
         read_checks(cell,root,installed,branch,work,token,api,check)
+        from datasets import run as dataset_checks
+        dataset_checks(cell,root,installed,branch,work,token,api,check)
         old_token=token();command('rotate_key');rotated=ready()
         old_status=api(rotated['endpoint'],old_token)[0]
         assert old_status in (401,403), ('old_key_token_status',old_status)

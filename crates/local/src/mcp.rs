@@ -26,11 +26,13 @@ pub fn tools() -> Value {
     let plan: Value =
         serde_json::from_str(include_str!("../../../schemas/project-plan-v1.schema.json"))
             .expect("checked plan schema");
+    let mut plan_options = plan["properties"]["options"].clone();
+    plan_options.as_object_mut().unwrap().remove("required");
     let defs = vec![
         (
             "project_plan",
             "Read-only destination plan with source/package hashes, explicit adoption and expected revisions. Does not prepare or execute resources.",
-            json!({"options":{"type":"object","additionalProperties":false,"properties":{"adopt":{"type":"object","additionalProperties":{"type":"string","format":"uuid"}}}}}),
+            json!({"options":plan_options}),
             vec![],
             true,
         ),
@@ -420,6 +422,13 @@ pub fn tools() -> Value {
             true,
         ),
         (
+            "catalog_datasets",
+            "Inspect fixed project dataset bindings, describe an explicit destination publication, discover updates without adopting them, or inspect producer retention references. Bind/update/unbind only through reviewed project plan/apply; packages carry logical requirements, not authority.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/catalog-datasets-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            true,
+        ),
+        (
             "catalog_publication",
             "Durable publication of a complete frozen snapshot into the selected project's UC namespace. Preview first; publish requires its hash and source/binding revisions and an idempotency key. Poll status; resolve exposes only committed sets. Unpublish blocks new references and waits for readers before retiring owned UC objects. Resume explicitly retries a blocked journal.",
             json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/catalog-publication-command-v1.schema.json")).unwrap()}),
@@ -455,6 +464,9 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "catalog_datasets" => {
+            json!({"type":"object","properties":{"api_version":{"const":1}},"required":["api_version"]})
+        }
         "catalog_publication" => serde_json::from_str(include_str!(
             "../../../schemas/catalog-publication-response-v1.schema.json"
         ))

@@ -69,6 +69,17 @@ pub struct Environment {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Resource {
+    CatalogDataset {
+        requirement: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expected_schema_sha256: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expected_content_sha256: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        provenance: Option<crate::catalog::datasets::Target>,
+        #[serde(default)]
+        depends_on: Vec<String>,
+    },
     Migration {
         file: String,
         database: String,
@@ -120,6 +131,7 @@ impl Resource {
     pub fn group(&self) -> &str {
         match self {
             Self::PostgresDatabase { .. } => "database",
+            Self::CatalogDataset { .. } => "dataset",
             Self::Sql { .. } => "query",
             Self::Migration { .. } => "migration",
             Self::Fixture { .. } => "fixture",
@@ -128,7 +140,9 @@ impl Resource {
     }
     pub fn dependencies(&self) -> Vec<String> {
         let (depends, database) = match self {
-            Self::PostgresDatabase { depends_on, .. } => (depends_on, None),
+            Self::PostgresDatabase { depends_on, .. } | Self::CatalogDataset { depends_on, .. } => {
+                (depends_on, None)
+            }
             Self::Migration {
                 depends_on,
                 database,

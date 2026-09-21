@@ -73,7 +73,12 @@ pub struct Inspection {
     pub execution_supported: bool,
     pub limitations: Vec<String>,
 }
-const CAPABILITIES: &[&str] = &["postgres17", "spark-sql", "managed-notebooks"];
+const CAPABILITIES: &[&str] = &[
+    "postgres17",
+    "spark-sql",
+    "managed-notebooks",
+    crate::catalog::datasets::CAPABILITY,
+];
 
 /// Establish only public source identity for a fixed MCP session. Does not admit execution.
 pub fn source_identity(directory: &Path) -> Result<ProjectConfig> {
@@ -160,7 +165,7 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
         for (group, entries) in &model.resources {
             if !matches!(
                 group.as_str(),
-                "database" | "query" | "notebook" | "migration" | "fixture"
+                "database" | "query" | "notebook" | "migration" | "fixture" | "dataset"
             ) {
                 return Err(invalid("unsupported resource group"));
             }
@@ -174,6 +179,45 @@ fn inspect_inputs(source: &mut Source, target: Option<&str>) -> Result<Inspectio
                 }
                 let logical = format!("{group}.{name}");
                 match declaration {
+                    Resource::CatalogDataset {
+                        requirement,
+                        expected_schema_sha256,
+                        expected_content_sha256,
+                        ..
+                    } => {
+                        if requirement.is_empty()
+                            || requirement.len() > 256
+                            || requirement.chars().any(char::is_control)
+                        {
+                            return Err(invalid(
+                                "dataset requirement must contain 1–256 printable bytes",
+                            ));
+                        }
+                        for hash in [expected_schema_sha256, expected_content_sha256]
+                            .into_iter()
+                            .flatten()
+                        {
+                            if hash.len() != 64
+                                || !hash
+                                    .bytes()
+                                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                            {
+                                return Err(invalid(
+                                    "dataset fingerprints must be lowercase SHA-256",
+                                ));
+                            }
+                        }
+                        if entries.len() > crate::catalog::datasets::MAX_DATASETS {
+                            return Err(invalid("project exceeds eight dataset bindings"));
+                        }
+                        capabilities.insert(crate::catalog::datasets::CAPABILITY.into());
+                        capabilities.insert("spark-sql".into());
+                        unresolved_bindings.push(UnresolvedBinding {
+                            resource: logical.clone(),
+                            kind: "catalog_dataset".into(),
+                        });
+                    }
+
                     Resource::PostgresDatabase { .. } => {
                         capabilities.insert("postgres17".into());
                         unresolved_bindings.push(UnresolvedBinding {
