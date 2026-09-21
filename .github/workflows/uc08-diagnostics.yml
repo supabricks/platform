@@ -16,6 +16,10 @@ jobs:
         include:
           - runner: macos-15
             target: macos-arm64
+            policy: strict
+          - runner: macos-15
+            target: macos-arm64
+            policy: historical-control
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     steps:
@@ -48,15 +52,20 @@ jobs:
       - name: Offline macOS qualification without host Python, uv or cache
         if: runner.os == 'macOS'
         run: |
-          sandbox-exec -f install/native/offline-macos.sb \
-            /usr/bin/env SB_NE01_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+          policy=install/native/offline-macos.sb
+          if test "${{ matrix.policy }}" = historical-control; then
+            printf '(version 1) (allow default)\n' > /tmp/uc08-diagnostic-policy.sb
+            policy=/tmp/uc08-diagnostic-policy.sb
+          fi
+          sandbox-exec -f "$policy" \
+            /usr/bin/env SB_NE01_NETWORK_EVIDENCE="Diagnostic only: ${{ matrix.policy }}; not release qualification" \
             "build/ne01-package/relocated probe/service/python/runtime/bin/python3.12" -I -B \
             e2e/native/notebook-environments/run.py --probe "build/ne01-package/relocated probe" \
             --target macos-arm64 --report build/ne01-reports/qualification.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: notebook-environments-${{ matrix.target }}
+          name: notebook-environments-${{ matrix.target }}-${{ matrix.policy }}
           path: |
             build/ne01-reports/*.json
             build/ne01-package/relocated probe/probe.json
@@ -66,6 +75,6 @@ jobs:
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: notebook-kernel-payload-${{ matrix.target }}
+          name: notebook-kernel-payload-${{ matrix.target }}-${{ matrix.policy }}
           path: build/ne01-package/kernel-payload-*
           if-no-files-found: error

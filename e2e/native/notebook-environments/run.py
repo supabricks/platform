@@ -403,12 +403,18 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
             try:
                 known = {'starting', 'stopped', 'ready', 'busy', 'failed', 'lost', 'expired', 'stopping'}
                 self.report['notebook_states'] = [dict(state=e['state'] if e['state'] in known else 'unknown',
+                    error=e.get('error') if e.get('error') in {'bootstrap_failed', 'kernel_lost', 'spark_context_lost', 'server_lost', None} else 'unknown',
                     has_error=bool(e.get('error')), has_kernel=bool(e.get('kernel_id')))
                     for e in self.action(action='list')]
             except Exception:
                 self.report['notebook_state_unavailable'] = True
             self.report['ready_files'] = len(list(self.root.rglob('*.ready.json')))
             self.report['server_ready_files'] = len(list(self.root.rglob('ready.json')))
+            with sqlite3.connect(f'file:{self.root}/data/state.sqlite3?mode=ro', uri=True) as db:
+                self.report['analytical_states'] = [s if s in {'waiting','starting','ready','closing','closed','failed'} else 'unknown'
+                    for (s,) in db.execute('SELECT state FROM analytical_sessions')]
+            self.report['processes'] = [dict(kind=next((k for k in ['notebook-server', 'notebook-kernel', 'analytical', 'sail', 'compute'] if p['role'].startswith(k)), 'runtime'),
+                alive=psutil.pid_exists(p['pid'])) for p in self.processes()]
             raise
         finally:
             for project in self.projects:
