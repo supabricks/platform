@@ -11,17 +11,33 @@ import psutil
 def run(args):
     child=subprocess.Popen(args.command)
     owned={}
+    def census():
+        roots=[]
+        try:roots.append(psutil.Process(child.pid))
+        except psutil.NoSuchProcess:pass
+        # The console CLI can detach its daemon between samples. Recover the
+        # owner from this fixture's unique data-root prefix, never global PIDs.
+        if args.data_root:
+            for process in psutil.process_iter(['cmdline']):
+                cmd=process.info['cmdline'] or []
+                if 'daemon' not in cmd or '--data-dir' not in cmd:continue
+                position=cmd.index('--data-dir')+1
+                if position<len(cmd) and (cmd[position]==str(args.data_root) or cmd[position].startswith(str(args.data_root)+'/')):
+                    roots.append(process)
+        for root in roots:
+            try:
+                for p in [root,*root.children(recursive=True)]:
+                    if p.pid!=child.pid:owned[(p.pid,p.create_time())]=p
+            except psutil.NoSuchProcess:pass
     deadline=time.monotonic()+args.timeout
     timed_out=False
     while child.poll() is None:
-        try:
-            for p in psutil.Process(child.pid).children(recursive=True):
-                owned[(p.pid,p.create_time())]=p
-        except psutil.NoSuchProcess:pass
+        census()
         if time.monotonic()>deadline:
             timed_out=True;child.kill();break
         time.sleep(.1)
     code=child.wait()
+    census()
     def alive(p):
         try:return p.is_running() and p.status()!=psutil.STATUS_ZOMBIE
         except psutil.NoSuchProcess:return False
@@ -47,6 +63,7 @@ def run(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     p.add_argument('--timeout',type=int,default=1500)
+    p.add_argument('--data-root',type=Path)
     p.add_argument('--report',type=Path,required=True)
     p.add_argument('command',nargs=argparse.REMAINDER)
     args=p.parse_args()

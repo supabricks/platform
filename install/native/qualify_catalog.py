@@ -85,7 +85,7 @@ def qualify(args):
                 if name=='recovery' and args.disk_full: command.append('--disk-full')
             cleanup=root/(name+'.cleanup.json')
             command=[sys.executable,str(ROOT/'install/native/catalog_gate.py'),
-                     '--report',str(cleanup),'--',*command]
+                     '--report',str(cleanup),'--data-root',str(fixture),'--',*command]
             started=time.monotonic()
             with (root/(name+'.private.log')).open('w') as log:
                 result=subprocess.run(command,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=1550)
