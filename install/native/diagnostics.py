@@ -1,4 +1,5 @@
 """Bounded structural failure evidence; never export log messages or notebook data."""
+import json
 import re
 from pathlib import Path
 
@@ -21,5 +22,20 @@ def summarize(path):
     known=('AssertionError','TimeoutError','RuntimeError','CalledProcessError',
            'WebSocketTimeoutException','ConnectionRefusedError','FileNotFoundError',
            'SparkConnectGrpcException','AnalysisException','PermissionError')
-    return dict(available=True,bytes=size,truncated=size>32768,frames=frames,
+    api=[]
+    codes=('invalid_input','not_found','conflict','unavailable','sql_error','io_error','internal')
+    for status,raw in re.findall(r'console [a-z_/]+: HTTP (\d{3}): (\{[^\n]+\})',text):
+        try:
+            error=json.loads(raw).get('error',{})
+            if not isinstance(error,dict):continue
+        except (ValueError,TypeError):continue
+        value=dict(status=int(status),code=error.get('code') if error.get('code') in codes else 'unknown')
+        if isinstance(error.get('retryable'),bool):value['retryable']=error['retryable']
+        # Map only known OS diagnostics; never export the free-form message.
+        message=error.get('message','')
+        if isinstance(message,str):
+            if re.search(r'Resource temporarily unavailable \(os error (11|35)\)',message):value['io_kind']='would_block'
+            elif 'timed out' in message.lower():value['io_kind']='timed_out'
+        api.append(value)
+    return dict(available=True,bytes=size,truncated=size>32768,frames=frames,console_errors=api[-4:],
                 failure_types=[name for name in known if re.search(r'\b'+name+r'\b',text)])

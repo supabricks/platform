@@ -103,7 +103,14 @@ with psycopg.connect(os.environ['DATABASE_URL'], autocommit=True) as connection:
             load_seconds=load_seconds, disk_before=before, disk_after=disk(),
             export_payload_mb_per_second=(rows * 1024 / 1_000_000) / measurements[label]['elapsed_seconds'])
         cli('analytics', 'gc', '--branch', 'scale', '--keep', '1')
-    cli('branch', 'delete', 'scale', '--wait')
+    # The interactive --wait returns pending after 90 seconds. A 1 GB shutdown
+    # checkpoint can outlast that; submit once and await its durable operation.
+    deletion = cli('branch', 'delete', 'scale')
+    started = time.monotonic()
+    result = cli('operation', 'wait', deletion['id'], '--timeout-ms', '300000')
+    assert result['status'] == 'succeeded'
+    measurements['benchmark_cleanup'] = dict(elapsed_seconds=time.monotonic()-started,
+                                              status=result['status'])
 
 
 def qualify(args):

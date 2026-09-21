@@ -4,6 +4,16 @@ use std::io::Read;
 use std::net::TcpListener;
 use std::path::Component;
 
+// Java 17 derives native pathname encoding from the process locale. With an
+// empty environment, Linux cannot open even relative files below a Unicode root.
+pub(super) fn java_locale() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "en_US.UTF-8"
+    } else {
+        "C.UTF-8"
+    }
+}
+
 pub struct Runtime {
     pub root: PathBuf,
     pub classpath: String,

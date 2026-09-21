@@ -161,6 +161,7 @@ fn run_h2(root: &Path, provider: &Provider, script: &str, writable: bool) -> Res
             .current_dir(root.join("catalog"))
             .env_clear()
             .env("PATH", "/usr/bin:/bin")
+            .env("LC_ALL", runtime::java_locale())
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

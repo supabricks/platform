@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import tempfile
 import uuid
+from urllib.parse import unquote, urlparse
 
 from service import installed_fixture, api
 from probe import CatalogCell, sha
@@ -139,7 +140,7 @@ requirement="sales.v1"
         check('interrupted_restore_remains_guarded_and_original_backup_verifies')
         # The source directory is absent while verifying all restored locations.
         held=root/'source-held';data.rename(held)
-        restored=root/'restored root';cli('backup','restore',backup,at=restored)
+        restored=root/"r % ' é";cli('backup','restore',backup,at=restored)
         assert not (restored/'restore-incomplete').exists()
         assert json.loads((restored/'catalog-restore.json').read_text())['state']=='reconciled'
         scope['worktree']=str(restored/consumer.relative_to(data))
@@ -148,7 +149,7 @@ requirement="sales.v1"
         assert api(health['endpoint'],old_token)[0]==401
         current=publication('status',id=pub['id'])['publication']
         assert [t['id'] for t in current['tables']]==[t['id'] for t in pub['tables']]
-        assert all('/restored%20root/' in t['body']['storage_location'] for t in current['tables'])
+        assert all(Path(unquote(urlparse(t['body']['storage_location']).path)).is_relative_to(restored) for t in current['tables'])
         wait(lambda:cell.sql(branch,'SELECT sum(id) FROM sales')=='3')
         query(scope)
         check('moved_root_preserves_ids_and_bindings_relocates_files_and_rotates_credentials')

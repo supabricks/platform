@@ -294,6 +294,7 @@ impl Manager {
             ],
             env: BTreeMap::from([
                 ("PATH".into(), "/usr/bin:/bin".into()),
+                ("LC_ALL".into(), runtime::java_locale().into()),
                 ("OTEL_SDK_DISABLED".into(), "true".into()),
             ]),
             cwd: root.clone(),

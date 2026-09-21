@@ -138,6 +138,20 @@ silently retried.
   catalog probe. Prior macOS reports using the broad rule do not establish offline
   execution. Run `35572457251` was cancelled before qualification to avoid testing
   the same known policy error again.
+- The same run's Linux minimal-host workflow again failed while polling notebook
+  admission, before cell execution. Structural diagnostics retained the API request
+  stage; a four-CPU, 16 GiB traced local reproduction passed. Typed HTTP diagnostics
+  and a focused hosted-runner reproduction are needed before assigning a cause.
+- Linux environment lifecycle passed the pre-UC upgrade but failed restoring into
+  its Unicode destination. A direct bundled-H2 reproduction showed Java's empty
+  locale environment cannot open relative files below that path; `C.UTF-8` fixes
+  it. Managed catalog and recovery JVMs now receive the target's UTF-8 locale, and
+  native catalog recovery includes a Unicode/quote/percent destination. Run
+  `35572941407` was cancelled before testing this known issue again.
+- macOS completed 10 MB, 100 MB and 1 GB export/query measurements, then the
+  benchmark cleanup exceeded the CLI's interactive 90-second operation wait.
+  The fixture now submits deletion once and waits on that same durable operation
+  for up to five minutes; completion remains required and its duration is recorded.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.
