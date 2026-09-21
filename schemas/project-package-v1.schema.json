@@ -420,6 +420,62 @@
                           "mapping"
                         ],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "const": "catalog_dataset"
+                          },
+                          "requirement": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "expected_schema_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "expected_content_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "provenance": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "deployment_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "provider_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "publication_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "deployment_id",
+                              "provider_id",
+                              "publication_id"
+                            ]
+                          },
+                          "depends_on": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 256
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "requirement"
+                        ]
                       }
                     ]
                   },
@@ -546,7 +602,10 @@
                     "type": "string"
                   },
                   "kind": {
-                    "const": "destination_database"
+                    "enum": [
+                      "destination_database",
+                      "catalog_dataset"
+                    ]
                   }
                 },
                 "required": [

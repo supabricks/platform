@@ -1,6 +1,6 @@
 //! Durable publication authority. UC names and properties never confer ownership.
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 pub(crate) mod worker;
 use crate::{
     api::Binding,

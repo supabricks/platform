@@ -143,7 +143,7 @@ fn publish(
     panic!("publication never finished")
 }
 
-fn setup() -> (tempfile::TempDir, Store, Context, Publication) {
+pub(crate) fn setup() -> (tempfile::TempDir, Store, Context, Publication) {
     let (dir, mut store, owner, _, branch) = fixture();
     let mut publisher = Publisher::recover(&mut store).unwrap();
     let export = complete_export(&mut store, owner.runtime_project_id, branch, 1);

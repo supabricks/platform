@@ -27,7 +27,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   project data inspect PACKAGE.sbdata | verify PACKAGE.sbdata
   project data import PACKAGE.sbdata --branch NAME --key KEY
   project data status --branch NAME --key KEY
-  project plan [--adopt BINDINGS.json]      Preview destination changes as JSON
+  project plan [--adopt BINDINGS.json] [--datasets DATASETS.json]
   project apply PLAN.json --key KEY        Apply exactly the reviewed plan
   project status ID | cancel ID | find --key KEY
   project installed | asset LOGICAL | draft LOGICAL --path NEW_RELATIVE_PATH
@@ -70,6 +70,9 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics gc --branch NAME [--keep 2]
   operation get ID | wait ID [--timeout-ms 90000]
   connect [BRANCH] [--uri]      Print application credentials; keep output private
+  catalog datasets list | updates dataset.NAME
+  catalog datasets describe ID --owner DEPLOYMENT --provider PROVIDER
+  catalog datasets references ID --owner DEPLOYMENT --provider PROVIDER
   catalog publication preview EPOCH | publish EPOCH --key KEY --preview HASH --source-revision N --binding-revision N
   catalog publication status ID | resume ID | resolve [--branch NAME]
   catalog publication unpublish ID --key KEY --binding-revision N
@@ -561,7 +564,14 @@ pub fn run() -> Result<u8> {
                     .unwrap_or_default();
                 (
                     P::Plan {
-                        options: crate::project_apply::Options { adopt },
+                        options: crate::project_apply::Options {
+                            adopt,
+                            datasets: a
+                                .take("--datasets")
+                                .map(|p| read_project_json(&p))
+                                .transpose()?
+                                .unwrap_or_default(),
+                        },
                     },
                     2,
                 )
@@ -1173,6 +1183,52 @@ pub fn run() -> Result<u8> {
                 println!("{result}");
             }
             return Ok(0);
+        }
+        "catalog" if a.pos.get(1).is_some_and(|s| s == "datasets") => {
+            use crate::catalog::datasets::{Command as D, Target};
+            let command = match a.required(2)?.as_str() {
+                "list" => {
+                    a.finish(3)?;
+                    D::List
+                }
+                "updates" => {
+                    let logical = a.required(3)?;
+                    a.finish(4)?;
+                    D::Updates { logical }
+                }
+                verb @ ("describe" | "references") => {
+                    let verb = verb.to_owned();
+                    let deployment_id = a
+                        .take("--owner")
+                        .ok_or_else(|| invalid("supply --owner DEPLOYMENT_UUID"))?
+                        .parse()
+                        .map_err(|_| invalid("invalid deployment UUID"))?;
+                    let provider_id = a
+                        .take("--provider")
+                        .ok_or_else(|| invalid("supply --provider PROVIDER_UUID"))?;
+                    let publication_id = a
+                        .required(3)?
+                        .parse()
+                        .map_err(|_| invalid("invalid publication UUID"))?;
+                    a.finish(4)?;
+                    let target = Target {
+                        deployment_id,
+                        provider_id,
+                        publication_id,
+                    };
+                    if verb == "describe" {
+                        D::Describe { target }
+                    } else {
+                        D::References { target }
+                    }
+                }
+                _ => {
+                    return Err(invalid(
+                        "use catalog datasets list/describe/updates/references",
+                    ));
+                }
+            };
+            Action::CatalogDatasets { command }
         }
         "catalog" if a.pos.get(1).is_some_and(|s| s == "publication") => {
             use crate::catalog::publication::Command as P;

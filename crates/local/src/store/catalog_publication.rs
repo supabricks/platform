@@ -1,6 +1,37 @@
 use super::*;
 use crate::catalog::publication::Publication as CatalogPublication;
 impl Store {
+    pub(crate) fn dataset_holders(&self, id: OperationId) -> Result<Vec<serde_json::Value>> {
+        let keys=self.db.prepare("SELECT reference_key FROM catalog_publication_refs WHERE publication_id=?1 ORDER BY reference_key LIMIT 529")?
+            .query_map([id.to_string()],|r|r.get::<_,String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(keys.into_iter().map(|key|{let parts:Vec<_>=key.splitn(3,':').collect();
+            serde_json::json!({"kind":parts.first(),"owner_id":parts.get(1),"logical":parts.get(2)})}).collect())
+    }
+    pub(crate) fn dataset_other_references(&self, epoch: EpochId) -> Result<serde_json::Value> {
+        let active:i64=self.db.query_row("SELECT count(*) FROM analytical_sessions WHERE epoch_id=?1 AND state IN ('waiting','starting','ready','closing')",[epoch.to_string()],|r|r.get(0))?;
+        let snapshots: i64 = self.db.query_row(
+            "SELECT count(*) FROM snapshot_leases WHERE epoch_id=?1 AND expires_at_ms>?2",
+            params![epoch.to_string(), now_ms()?],
+            |r| r.get(0),
+        )?;
+        let leases: i64 = self.db.query_row(
+            "SELECT count(*) FROM leases WHERE epoch_id=?1 AND expires_at_ms>?2",
+            params![epoch.to_string(), now_ms()?],
+            |r| r.get(0),
+        )?;
+        Ok(
+            serde_json::json!({"primary_sessions":active,"snapshot_leases":snapshots,"epoch_leases":leases}),
+        )
+    }
+    pub(crate) fn dataset_references(&self, id: OperationId) -> Result<serde_json::Value> {
+        let mut counts = std::collections::BTreeMap::<String, i64>::new();
+        for kind in ["binding", "apply", "session"] {
+            let count=self.db.query_row("SELECT count(*) FROM catalog_publication_refs WHERE publication_id=?1 AND reference_key LIKE ?2",params![id.to_string(),format!("{kind}:%")],|r|r.get(0))?;
+            counts.insert(kind.into(), count);
+        }
+        Ok(serde_json::json!(counts))
+    }
+
     pub(crate) fn catalog_head(
         &self,
         owner: DeploymentId,

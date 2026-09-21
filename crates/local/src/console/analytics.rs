@@ -382,6 +382,8 @@ mod tests {
             epoch_id: None,
             refresh_id: None,
             catalog: None,
+            datasets: Default::default(),
+            datasets_validated: false,
             state: "failed".into(),
             created_at_ms: 0,
             expires_at_ms: 1,

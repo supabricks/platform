@@ -79,7 +79,15 @@ impl Fixture {
     fn finish(&self, s: &mut Store, id: OperationId) -> Operation {
         let mut env = Manager::default();
         for _ in 0..24 {
-            apply::tick(s, &mut env, None, &mut Default::default()).unwrap();
+            apply::tick(
+                s,
+                &mut env,
+                None,
+                &mut Default::default(),
+                None,
+                &mut Default::default(),
+            )
+            .unwrap();
             complete(s);
             let o = s.project_apply(self.ctx.deployment_id, id).unwrap();
             if !o.pending() {
@@ -181,6 +189,7 @@ fn adopted_databases_require_explicit_ids_and_revision_fences() {
     assert!(apply::plan(&s, &f.binding, Options::default()).is_err());
     let id = serde_json::from_value(r["branch_id"].clone()).unwrap();
     let options = Options {
+        datasets: Default::default(),
         adopt: BTreeMap::from([("database.main".into(), id)]),
     };
     let p = apply::plan(&s, &f.binding, options.clone()).unwrap();
@@ -222,11 +231,35 @@ fn cancellation_retains_allocations_and_previous_revision_missing_declarations_n
     let p = f.plan(&s);
     let o = f.apply(&mut s, p, "first");
     let mut env = Manager::default();
-    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
-    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     assert_eq!(s.branches().unwrap().len(), 1);
     apply::handle(&mut s, &f.binding, Command::Cancel { id: o.id }).unwrap();
-    apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     assert_eq!(
         s.project_apply(f.ctx.deployment_id, o.id).unwrap().state,
         "cancelled"
@@ -338,6 +371,7 @@ fn sigkill_recovers_each_journal_boundary_without_duplicate_databases_or_partial
             let r = create(&mut s, &f.binding, "existing");
             complete(&mut s);
             Options {
+                datasets: Default::default(),
                 adopt: BTreeMap::from([(
                     "database.main".into(),
                     serde_json::from_value(r["branch_id"].clone()).unwrap(),
@@ -616,7 +650,15 @@ fn killed_environment_submission_recovers_as_failed_without_activating_partial_s
     }
     let mut s = Store::open(&f.root).unwrap();
     let mut environments = Manager::recover(&mut s).unwrap();
-    apply::tick(&mut s, &mut environments, None, &mut Default::default()).unwrap();
+    apply::tick(
+        &mut s,
+        &mut environments,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     let failed = s.project_apply(f.ctx.deployment_id, o.id).unwrap();
     assert_eq!(failed.state, "failed");
     assert!(
@@ -676,6 +718,7 @@ fn initialization_plan_orders_checksums_and_rejects_implicit_adoption() {
     let branch = serde_json::from_value(result["branch_id"].clone()).unwrap();
     complete(&mut s);
     let options = Options {
+        datasets: Default::default(),
         adopt: BTreeMap::from([("database.main".into(), branch)]),
     };
     assert!(
@@ -695,8 +738,24 @@ fn pending_project_apply_protects_database_even_from_force_delete() {
     let o = f.apply(&mut s, plan, "protect");
     let mut env = Manager::default();
     let mut workers = Default::default();
-    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
-    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut workers,
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut workers,
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     complete(&mut s);
     let branch = s
         .project_apply(f.ctx.deployment_id, o.id)
@@ -718,7 +777,15 @@ fn pending_project_apply_protects_database_even_from_force_delete() {
         .contains("pending project apply")
     );
     apply::handle(&mut s, &f.binding, Command::Cancel { id: o.id }).unwrap();
-    apply::tick(&mut s, &mut env, None, &mut workers).unwrap();
+    apply::tick(
+        &mut s,
+        &mut env,
+        None,
+        &mut workers,
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     assert!(
         s.submit(
             f.binding.project_id,
@@ -740,7 +807,15 @@ fn database_retryable_error_keeps_apply_pending_but_terminal_error_fails() {
         let operation = f.apply(&mut s, plan, "retryable-database");
         let mut env = Manager::default();
         for _ in 0..2 {
-            apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+            apply::tick(
+                &mut s,
+                &mut env,
+                None,
+                &mut Default::default(),
+                None,
+                &mut Default::default(),
+            )
+            .unwrap();
         }
         let child = s.pending().unwrap().into_iter().next().unwrap();
         s.operation_error(
@@ -749,7 +824,15 @@ fn database_retryable_error_keeps_apply_pending_but_terminal_error_fails() {
             terminal,
         )
         .unwrap();
-        apply::tick(&mut s, &mut env, None, &mut Default::default()).unwrap();
+        apply::tick(
+            &mut s,
+            &mut env,
+            None,
+            &mut Default::default(),
+            None,
+            &mut Default::default(),
+        )
+        .unwrap();
         let observed = s.project_apply(f.ctx.deployment_id, operation.id).unwrap();
         assert_eq!(s.active_deployment(f.ctx.deployment_id).unwrap(), None);
         if terminal {

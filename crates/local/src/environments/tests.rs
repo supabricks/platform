@@ -826,7 +826,15 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
     )
     .unwrap();
     for _ in 0..3 {
-        apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
+        apply::tick(
+            &mut f.store,
+            &mut f.manager,
+            None,
+            &mut Default::default(),
+            None,
+            &mut Default::default(),
+        )
+        .unwrap();
     }
     assert_eq!(
         f.store.active_deployment(ctx.deployment_id).unwrap(),
@@ -853,8 +861,24 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
         .unwrap(),
     )
     .unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
+    apply::tick(
+        &mut f.store,
+        &mut f.manager,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
+    apply::tick(
+        &mut f.store,
+        &mut f.manager,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     let child = f
         .store
         .environment_operations()
@@ -872,7 +896,15 @@ fn failed_project_environment_preparation_keeps_existing_generation_and_never_ac
         )
         .unwrap();
     f.manager.tick(&mut f.store, false).unwrap();
-    apply::tick(&mut f.store, &mut f.manager, None, &mut Default::default()).unwrap();
+    apply::tick(
+        &mut f.store,
+        &mut f.manager,
+        None,
+        &mut Default::default(),
+        None,
+        &mut Default::default(),
+    )
+    .unwrap();
     assert_eq!(
         f.store
             .project_apply(ctx.deployment_id, o.id)

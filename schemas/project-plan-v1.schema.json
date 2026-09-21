@@ -100,6 +100,33 @@
             "type": "string",
             "format": "uuid"
           }
+        },
+        "datasets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "deployment_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "provider_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "publication_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "deployment_id",
+              "provider_id",
+              "publication_id"
+            ]
+          },
+          "maxProperties": 8
         }
       },
       "required": [
@@ -129,7 +156,8 @@
               "postgres_query",
               "spark_query",
               "migration",
-              "fixture"
+              "fixture",
+              "catalog_dataset"
             ]
           },
           "action": {
@@ -140,7 +168,11 @@
               "prepare_offline",
               "install",
               "transactional_migration",
-              "load_new_table"
+              "load_new_table",
+              "bind",
+              "update_binding",
+              "unbind",
+              "unresolved"
             ]
           },
           "branch": {
