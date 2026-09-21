@@ -6,6 +6,7 @@ mod http;
 pub mod metadata;
 pub mod publication;
 pub mod reads;
+pub(crate) mod recovery;
 mod runtime;
 #[cfg(test)]
 mod tests;
@@ -54,6 +55,7 @@ pub fn stop_owned(store: &mut Store) -> Result<()> {
 }
 
 pub struct Manager {
+    usage: Value,
     config: Option<config::Config>,
     runtime: Option<runtime::Runtime>,
     child: Option<Child>,
@@ -71,6 +73,7 @@ pub struct Manager {
 impl Manager {
     pub fn recover(store: &mut Store) -> Self {
         let mut manager = Self {
+            usage: json!({}),
             config: None,
             runtime: None,
             child: None,
@@ -101,6 +104,16 @@ impl Manager {
                 manager.state = "failed";
                 manager.error = Some("configuration_invalid");
             }
+        }
+        if store.root().join("catalog-external-restore.json").exists() {
+            manager.state = "failed";
+            manager.error = Some("external_restore_requires_explicit_rebind");
+        }
+        if store.root().join("catalog-format.json").exists()
+            && recovery::ensure_contract(store.root()).is_err()
+        {
+            manager.state = "failed";
+            manager.error = Some("backend_contract_requires_qualified_migration");
         }
         manager
     }
@@ -146,7 +159,7 @@ impl Manager {
             Provider::Local { .. } => "local",
             Provider::External { .. } => "external",
         });
-        json!({"protocol_version":1,"provider":"oss_unity_catalog","mode":mode,
+        json!({"protocol_version":1,"recovery_contract":recovery::contract(),"usage":self.usage,"provider":"oss_unity_catalog","mode":mode,
             "provider_id":self.config.as_ref().map(|c| &c.provider_id),"metastore_id":self.metastore,
             "state":self.state,"ready":self.state=="ready","error":self.error,"endpoint":self.endpoint,
             "start_attempts":self.attempts,"readiness_seconds":self.ready_seconds,
@@ -157,6 +170,13 @@ impl Manager {
     pub fn command(&mut self, store: &mut Store, command: Command) -> Result<Value> {
         if matches!(command, Command::Status) {
             return Ok(self.status());
+        }
+        if store.root().join("catalog-external-restore.json").exists()
+            && !matches!(command, Command::Configure { .. })
+        {
+            return Err(conflict(
+                "external catalog restore requires explicit provider configuration and identity verification",
+            ));
         }
         let replacement = if let Command::Configure { provider } = &command {
             if matches!(provider, Provider::Local { .. }) {
@@ -185,6 +205,11 @@ impl Manager {
         if let Some(config) = replacement {
             supervisor::write_json(&store.root().join("catalog-provider.json"), &config)?;
             self.config = Some(config);
+            let marker = store.root().join("catalog-external-restore.json");
+            if marker.try_exists()? {
+                fs::remove_file(marker)?;
+                crate::recovery::sync_dir(store.root())?;
+            }
         } else if matches!(command, Command::RotateKey) {
             let root = runtime::data_directory(store)?;
             // Durable intent survives interruption between individual key removals.
@@ -209,6 +234,7 @@ impl Manager {
     }
 
     fn start(&mut self, store: &mut Store) -> Result<()> {
+        recovery::ensure_contract(store.root())?;
         stop_owned(store)?;
         let provider = &self.config.as_ref().unwrap().provider;
         self.runtime = Some(runtime::resolve(provider)?);
@@ -411,6 +437,7 @@ impl Manager {
             self.next = Instant::now() + Duration::from_secs(2);
         }
         if self.probe.is_none() && Instant::now() >= self.next {
+            self.usage = store.catalog_usage()?;
             let probe = match &config.provider {
                 Provider::Local { .. } => {
                     let root = store.root().join("catalog");

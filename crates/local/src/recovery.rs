@@ -184,6 +184,18 @@ fn entry(path: &Path, destination: Option<&Path>) -> Result<Entry> {
     })
 }
 fn excluded(name: &str) -> bool {
+    if matches!(
+        name,
+        "catalog/launch.json"
+            | "catalog/process.log"
+            | "catalog/process.log.1"
+            | "catalog/recovery.sql"
+            | "catalog/etc/db/h2db.trace.db"
+    ) || name.starts_with("catalog/tmp/")
+        || name.starts_with("catalog/etc/logs/")
+    {
+        return true;
+    }
     // Recreated launch configuration and dead sockets carry no durable data.
     matches!(
         name,
@@ -343,6 +355,7 @@ impl Stopped {
         if schema >= 10 && db.prepare("SELECT 1 FROM environment_operations WHERE state IN ('queued','initializing','preparing','verifying') UNION ALL SELECT 1 FROM environment_leases")?.exists([])? {
             return Err(conflict("environment preparations or leases remain; complete shutdown first"));
         }
+        crate::catalog::recovery::checkpoint(&root, &db)?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))?;
         if busy != 0 {
@@ -599,6 +612,14 @@ pub fn restore_with_release(
         }
     }
     // Validate restored metadata without opening a daemon or running migrations.
+    let catalog_db = Connection::open_with_flags(
+        destination.join("state.sqlite3"),
+        OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+    )?;
+    relocate_owned_worktrees(&destination, &manifest.source_root, &catalog_db)?;
+    crate::catalog::recovery::restore(&destination, &manifest.source_root, &catalog_db)?;
+    catalog_db.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)")?;
+    drop(catalog_db);
     let db = Connection::open_with_flags(
         destination.join("state.sqlite3"),
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
@@ -653,5 +674,48 @@ fn validate_ingest(root: &Path, db: &Connection) -> Result<()> {
             return Err(conflict("staged source content differs from catalog"));
         }
     }
+    Ok(())
+}
+
+/// Restore preserves source/deployment identity while pinning the newly copied
+/// directory. External worktrees and historical operation records stay unchanged.
+fn relocate_owned_worktrees(root: &Path, source: &Path, db: &Connection) -> Result<()> {
+    let schema: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
+    if schema < 11 {
+        return Ok(());
+    }
+    let rows=db.prepare("SELECT w.path,d.definition_id,w.source_format FROM worktree_bindings w JOIN deployments d ON d.id=w.deployment_id")?.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,u32>(2)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+    let tx = db.unchecked_transaction()?;
+    for (old, definition, format) in rows {
+        let Ok(relative) = Path::new(&old).strip_prefix(source) else {
+            continue;
+        };
+        let path = root.join(relative);
+        let (identity, version) = crate::projects::source_identity_version(&path)?;
+        if identity.id.to_string() != definition
+            || version != format
+            || path.canonicalize()? != path
+        {
+            return Err(conflict(
+                "restored owned worktree identity differs from its deployment",
+            ));
+        }
+        let m = fs::metadata(&path)?;
+        let new = path
+            .to_str()
+            .ok_or_else(|| invalid("restored worktree path is not UTF-8"))?;
+        tx.execute(
+            "UPDATE worktree_bindings SET path=?2,device=?3,inode=?4 WHERE path=?1",
+            rusqlite::params![old, new, m.dev().to_string(), m.ino().to_string()],
+        )?;
+        tx.execute(
+            "UPDATE worktrees SET path=?2 WHERE path=?1",
+            rusqlite::params![old, new],
+        )?;
+        // Prepared environments are deliberately excluded from stopped bundles;
+        // the restored source must explicitly prepare a fresh local environment.
+        tx.execute("DELETE FROM environment_active WHERE worktree=?1", [&old])?;
+    }
+    tx.commit()?;
     Ok(())
 }

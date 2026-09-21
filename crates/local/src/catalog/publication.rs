@@ -171,17 +171,19 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
     v["preview_hash"] = json!(hash(&v));
     Ok(v)
 }
-fn local_location(path: &Path) -> Result<String> {
+pub(super) fn local_location(path: &Path) -> Result<String> {
     let canonical = path.canonicalize()?;
     if canonical != path {
         return Err(conflict(
             "snapshot location contains relocated or symlinked components",
         ));
     }
+    location_uri(&canonical)
+}
+pub(super) fn location_uri(path: &Path) -> Result<String> {
     Ok(format!(
         "file://{}",
-        canonical
-            .to_str()
+        path.to_str()
             .ok_or_else(|| invalid("non-UTF8 snapshot path"))?
             .split('/')
             .map(|part| percent_encoding::utf8_percent_encode(part, PATH_ESCAPE).to_string())
@@ -226,7 +228,7 @@ pub(crate) fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
     }
     Ok(())
 }
-fn columns(root: &Path, path: &Path, d: &Value, table: &Value) -> Result<Vec<Value>> {
+pub(super) fn columns(root: &Path, path: &Path, d: &Value, table: &Value) -> Result<Vec<Value>> {
     use sha2::{Digest, Sha256};
     let log = path.join("_delta_log/00000000000000000000.json");
     let meta = std::fs::symlink_metadata(&log)?;

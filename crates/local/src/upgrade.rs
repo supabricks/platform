@@ -26,6 +26,8 @@ struct Journal {
     from: Release,
     to: Release,
     database_sha256: String,
+    #[serde(default)]
+    catalog_state_sha256: Option<String>,
 }
 fn installed(path: &Path) -> Result<Installation> {
     Installation::at_executable(&path.join("bin/supabricks").canonicalize()?)?
@@ -198,6 +200,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     let mut stopped = Stopped::open_schema(&root, schema)?;
     let mut cfg = read_runtime(&root)?;
     let current_hash = recovery::file_hash(&root.join("state.sqlite3"))?;
+    let catalog_hash = crate::catalog::recovery::checkpoint_identity(&root)?;
     let journal = if let Some(mut j) = existing {
         if j.backup != backup && same_runtime(&cfg, &from) && schema == source_schema {
             // An explicit new backup path can refresh a prepared transaction if
@@ -207,9 +210,13 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             }
             j.backup = backup.clone();
             j.database_sha256 = current_hash.clone();
+            j.catalog_state_sha256 = catalog_hash.clone();
             recovery::atomic_json(&journal_path, &j)?;
         }
-        if j.backup != backup || (schema == source_schema && j.database_sha256 != current_hash) {
+        if j.backup != backup
+            || (schema == source_schema
+                && (j.database_sha256 != current_hash || j.catalog_state_sha256 != catalog_hash))
+        {
             return Err(conflict(
                 "data changed since upgrade preparation; retry with a new backup path while still on the old release",
             ));
@@ -227,6 +234,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             from: from.clone(),
             to: to.clone(),
             database_sha256: current_hash,
+            catalog_state_sha256: catalog_hash.clone(),
         };
         recovery::atomic_json(&journal_path, &j)?;
         j
@@ -240,6 +248,11 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         recovery::create_locked(&stopped, &backup, Some(from.clone()))?;
     }
     let saved = recovery::verify(&backup)?;
+    if crate::catalog::recovery::checkpoint_identity(&backup.join("data"))? != catalog_hash {
+        return Err(conflict(
+            "catalog state changed since upgrade backup; restore the verified checkpoint or restart preparation with a new backup path",
+        ));
+    }
     if saved.source_root != root
         || saved.release.as_ref() != Some(&from)
         || saved.files["state.sqlite3"].sha256 != journal.database_sha256
@@ -295,7 +308,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     recovery::sync_dir(&prefix)?;
     recovery::atomic_json(
         &root.join("last-upgrade.json"),
-        &json!({"from":from,"to":to,"backup_id":saved.id,"backup":backup}),
+        &json!({"from":from,"to":to,"backup_id":saved.id,"backup":backup,"catalog_state_sha256":catalog_hash}),
     )?;
     fs::remove_file(journal_path)?;
     recovery::sync_dir(&root)?;

@@ -33,7 +33,7 @@ jobs:
           - runner: macos-15
             target: macos-arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -155,6 +155,40 @@ jobs:
             --release build/baseline/supabricks --binary target/release/supabricks \
             --uc-runtime build/uc-runtime --console console --node "$(command -v node)" \
             --report build/reports/browser.json
+      - name: Reclaim completed fixture release copies
+        run: |
+          python - <<'PYTHON'
+          from pathlib import Path
+          import shutil
+          # These preceding fixtures have completed and stopped every process.
+          # Keep their data/diagnostics; immutable engine copies are reproducible.
+          for pattern in ('sb-uc01-*/release', 'sb-uc06-*/release'):
+              for release in Path('/tmp').glob(pattern):
+                  if release.is_dir() and not release.is_symlink():
+                      shutil.rmtree(release)
+          PYTHON
+      - name: Qualify stopped catalog recovery offline on Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_UC00_NETWORK_EVIDENCE="unprivileged loopback-only Linux network namespace" \
+              "$2" e2e/native/catalog/recovery.py \
+              --release build/baseline/supabricks --binary target/release/supabricks \
+              --uc-runtime build/uc-runtime --disk-full --report build/reports/recovery.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Qualify stopped catalog recovery offline on macOS
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f e2e/native/catalog/offline-macos.sb \
+            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_UC00_NETWORK_EVIDENCE="macOS sandbox; external outbound connections and Homebrew denied" \
+            "$(command -v python)" e2e/native/catalog/recovery.py \
+            --release build/baseline/supabricks --binary target/release/supabricks \
+            --uc-runtime build/uc-runtime --report build/reports/recovery.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
