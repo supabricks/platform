@@ -491,7 +491,12 @@ fn catalog_migration(source_schema: u32) {
 
 #[test]
 fn first_catalog_upgrade_preserves_engine_fences_and_requires_no_catalog_state() {
-    for case in ["add", "engine_changed", "existing_catalog"] {
+    for case in [
+        "add",
+        "engine_changed",
+        "existing_catalog",
+        "unsupported_schema",
+    ] {
         let f = Fixture::new();
         let file = f.new.join("share/unity-catalog/build.json");
         fs::create_dir_all(file.parent().unwrap()).unwrap();
@@ -509,6 +514,18 @@ fn first_catalog_upgrade_preserves_engine_fences_and_requires_no_catalog_state()
         fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
         if case == "existing_catalog" {
             fs::create_dir(f.root.join("catalog")).unwrap();
+        }
+        if case == "unsupported_schema" {
+            let path = f.old.join("release.json");
+            let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+            manifest["provenance"]["data_formats"]["local_catalog"] = json!(7);
+            fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+            let runtime = f.root.join("runtime.json");
+            let mut cfg: Value = serde_json::from_slice(&fs::read(&runtime).unwrap()).unwrap();
+            cfg["installation_identity"] = json!(digest(&path));
+            fs::write(runtime, serde_json::to_vec(&cfg).unwrap()).unwrap();
+            let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
+            db.pragma_update(None, "user_version", 7).unwrap();
         }
         let before = digest(&f.root.join("runtime.json"));
         f.upgrade(case == "add");

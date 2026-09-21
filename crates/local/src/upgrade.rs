@@ -152,7 +152,10 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     if adding_catalog {
         normalized["unity_catalog"] = json!(1);
     }
-    if adding_catalog && normalized == target_formats {
+    if adding_catalog
+        && (migration || source_schema == SCHEMA_VERSION)
+        && normalized == target_formats
+    {
         compatible(
             &Release::for_upgrade(&old, normalized, false)?,
             &Release::for_upgrade(&candidate, target_formats.clone(), false)?,
