@@ -251,7 +251,7 @@ mod tests {
     use super::*;
     fn fixture() -> (tempfile::TempDir, Input) {
         let dir = tempfile::tempdir().unwrap();
-        let root = dir.path().join("producer");
+        let root = dir.path().canonicalize().unwrap().join("producer");
         fs::create_dir_all(root.join("42/_delta_log")).unwrap();
         let log=[json!({"protocol":{"minReaderVersion":1,"minWriterVersion":2}}),json!({"metaData":{"format":{"provider":"parquet"},"partitionColumns":[],"configuration":{}}}),json!({"add":{"path":"data.parquet","size":4}})].iter().map(Value::to_string).collect::<Vec<_>>().join("\n");
         fs::write(root.join("42/data.parquet"), b"test").unwrap();
