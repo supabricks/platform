@@ -155,6 +155,18 @@ jobs:
             --release build/baseline/supabricks --binary target/release/supabricks \
             --uc-runtime build/uc-runtime --console console --node "$(command -v node)" \
             --report build/reports/browser.json
+      - name: Reclaim completed fixture release copies
+        run: |
+          python - <<'PYTHON'
+          from pathlib import Path
+          import shutil
+          # These preceding fixtures have completed and stopped every process.
+          # Keep their data/diagnostics; immutable engine copies are reproducible.
+          for pattern in ('sb-uc01-*/release', 'sb-uc06-*/release'):
+              for release in Path('/tmp').glob(pattern):
+                  if release.is_dir() and not release.is_symlink():
+                      shutil.rmtree(release)
+          PYTHON
       - name: Qualify stopped catalog recovery offline on Linux
         if: runner.os == 'Linux'
         run: |
