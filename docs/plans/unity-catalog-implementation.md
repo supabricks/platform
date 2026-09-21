@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is implemented with browser qualification in progress; UC07–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 console #7 is merged and platform integration is implemented with local browser qualification passed; cross-platform CI pending; UC07–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -322,7 +322,7 @@ data; it is not introduced by this slice. Browser binding forms belong to UC06.
 
 ## UC06 — Deliver the console and agent experience
 
-Implementation: [console Data workflow](../architecture/uc06-console-data.md) and
+Implementation: [console #7](https://github.com/supabricks/console/pull/7) merged at `16b27f4`; platform pins that merged source. Local native qualification passed all 11 catalog browser scenarios, 54 existing console checks, 13 notebook checks, 16 environment checks and 237 Rust tests. Linux/macOS catalog CI and full release-archive qualification remain separate. See [console Data workflow](../architecture/uc06-console-data.md) and
 [operator workflow](../handbook/catalog-datasets.md#console-workflow).
 
 Build a project-scoped **Data** browser in `supabricks/console`. Show owned and

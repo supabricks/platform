@@ -47,3 +47,11 @@ The native browser fixture stages the current console, platform binary and pinne
 source-built UC over the qualified PG/Sail baseline. It is a component workflow
 qualification, not a claim that the entire new archive passed release gates.
 Existing console, notebook, ingestion and package browser suites remain mandatory.
+
+Local qualification passed 11 catalog browser scenarios, including schema drift,
+historical epochs, unavailable provider, withdrawal and lost-response recovery;
+54 existing console/ingestion/analytics/package checks; 13 notebook checks; 16
+environment checks; and 237 core/local Rust tests. Console #7 passed Linux/macOS
+build CI before merge. The platform pins merged console `16b27f4`. The catalog
+workflow adds the real browser fixture to both offline native CI jobs; their
+results and full release-archive qualification must be reported separately.
