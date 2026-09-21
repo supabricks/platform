@@ -44,6 +44,12 @@ observed UC JVMs and peak JVM RSS. Sampling can miss short-lived peaks and RSS
 can double-count shared pages; these are engineering measurements, not capacity
 or isolation guarantees.
 
+The catalog job is a reusable workflow. Its standalone dispatch accepts an existing
+archive run for harness diagnosis without rebuilding unchanged components. Such
+a partial report does not qualify a release; the combined R04 collector still
+requires every gate against one exact candidate. The full native-release workflow
+calls it with its own archive run.
+
 A fixture runner records descendant cleanup and fails qualification if processes
 leak, even if the functional assertions pass. Failed-gate artifacts contain only
 bounded structural traceback information, fixed exception categories and typed
@@ -125,6 +131,13 @@ silently retried.
   native recovery includes the timing-only UC rebuild through every interrupted
   activation boundary. The complete release pipeline and corrected demo archive
   still require qualification.
+- Run `35569003223` exposed an inherited macOS isolation-policy error: a broad
+  local-address network allowance also permitted external TCP connections. The
+  new service canary rejected it before catalog startup. Release qualification
+  now uses the directional outbound restriction already qualified by the native
+  catalog probe. Prior macOS reports using the broad rule do not establish offline
+  execution. Run `35572457251` was cancelled before qualification to avoid testing
+  the same known policy error again.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

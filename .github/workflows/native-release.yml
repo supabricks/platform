@@ -25,6 +25,7 @@ on:
       - 'agents/**'
       - 'LICENSE'
       - '.github/workflows/native-release.yml'
+      - '.github/workflows/catalog-release.yml'
   workflow_dispatch:
 
 concurrency:
@@ -849,67 +850,9 @@ jobs:
 
   release-catalog:
     needs: assemble
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            target: linux-x86_64
-          - runner: macos-15
-            target: macos-arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 50
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-${{ matrix.target }}
-          path: build/releases
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install qualification tools before isolating the host
-        run: |
-          python -m pip install -r e2e/native/catalog/requirements.txt
-          npm ci --prefix console --no-audit --no-fund
-          npm exec --prefix console -- playwright install --with-deps chromium
-      - name: Catalog through localhost curl on offline Linux without system Java
-        if: runner.os == 'Linux'
-        run: |
-          python_path=$(command -v python)
-          node_path=$(command -v node)
-          sudo unshare --net --mount /bin/bash -c '
-            set -euo pipefail
-            ip link set lo up
-            mount --make-rprivate /
-            # Mask the host JDK; the candidate must execute its own JRE.
-            if test -d /usr/lib/jvm; then mount -t tmpfs tmpfs /usr/lib/jvm; fi
-            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-              "$2" install/native/qualify_catalog.py --directory build/releases \
-              --console console --node "$3" --target linux-x86_64 --disk-full \
-              --network-evidence "Linux loopback-only namespace; private JRE; all descendants isolated" \
-              --report build/catalog-reports/catalog.json
-          ' bash "$(id -un)" "$python_path" "$node_path"
-      - name: Catalog through localhost curl on offline macOS without system Java
-        if: runner.os == 'macOS'
-        run: |
-          sandbox-exec -f install/native/offline-macos.sb \
-            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            "$(command -v python)" install/native/qualify_catalog.py --directory build/releases \
-            --console console --node "$(command -v node)" --target macos-arm64 \
-            --network-evidence "macOS Seatbelt; external network, system Java and Homebrew denied for all descendants" \
-            --report build/catalog-reports/catalog.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: release-catalog-${{ matrix.target }}
-          path: build/catalog-reports/*.json
-          if-no-files-found: error
+    uses: ./.github/workflows/catalog-release.yml
+    with:
+      archive_run_id: ${{ format('{0}', github.run_id) }}
 
   environment-evidence:
     needs: [release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
