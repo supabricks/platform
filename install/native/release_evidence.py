@@ -148,6 +148,7 @@ def collect(directory, revision, console, worker, version):
         require(env['notices'] and all(sha(v) for v in env['notices'].values()), 'missing notice inventory')
         result['targets'][target] = dict(
             catalog=catalog, projects=portability[target], sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
+            environment_lifecycle_network=env['network'],
             source=dict(platform_commit=revision, console_commit=console,
                         console_manifest_sha256=source['console']['manifest_sha256'],
                         console_lock_sha256=source['console']['package_lock_sha256'], ingestion_worker_sha256=worker),
@@ -168,6 +169,7 @@ def markdown(report):
     for target, data in report['targets'].items():
         lines.append(f"| {target} | {data['browser']['version']} | {sum(r['checks'] for r in data['reports'].values())} | `{data['release_sha256']}` |")
     lines += ['', 'Unity Catalog: `' + report['targets']['linux-x86_64']['catalog']['commit'] + '`; bundled JRE and backend contract recorded per target. Catalog gates include native lifecycle, two-project browser workflow, retained reads and moved-root recovery against each installed archive.', '']
+    lines += ['The historical macOS notebook predecessor is prepared before isolation. Candidate upgrade, rebuilt/restored kernels and the resolver run under Seatbelt; the JSON evidence records child outbound denial and predecessor process shutdown.', '']
     lines += ['', '## Ingestion measurements', '',
               'Synthetic fixtures; throughput covers the worker interval, not upload, inspection or total user latency. RSS is sampled and can miss short peaks. Compressed Parquet source throughput is not decoded throughput.', '',
               '| Target | Format | Source bytes | Rows | Worker seconds | Source MiB/s | Sampled peak MiB |', '| --- | --- | ---: | ---: | ---: | ---: | ---: |']

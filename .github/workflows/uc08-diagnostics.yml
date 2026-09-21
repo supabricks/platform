@@ -9,87 +9,7 @@ concurrency:
   group: uc08-fixed-gates-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  clean-linux:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-linux-x86_64
-          path: build/releases
-          run-id: 35577160676
-          github-token: ${{ github.token }}
-      - name: Free disk for the 1 GB snapshot and its WAL/storage copies
-        run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
-            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
-          df -h /
-      - run: docker build -f install/native/Dockerfile.qualify -t supabricks-release-test .
-      - name: Real installer and app workflow without external networking or build tools
-        run: |
-          mkdir -p build/reports
-          chmod 777 build/releases build/reports
-          docker run --rm --network=none --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --ulimit core=0:0 \
-            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
-            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
-            supabricks-release-test \
-            strace --seccomp-bpf -f -qq -e trace=network -s 256 -o /reports/network.trace \
-            python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
-            --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
-      - name: No attempted external telemetry or update destinations
-        run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
-      - name: Measure full snapshots offline without syscall tracing overhead
-        run: |
-          docker run --rm --network=none --memory=16g --cpus=4 --ulimit core=0:0 \
-            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
-            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
-            supabricks-release-test \
-            python3 /harness/install/native/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
-            --network-evidence 'Ubuntu 24.04 unprivileged container; network=none; 16 GiB and 4 CPU limits; no syscall tracing during measurements'
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: release-qualification-linux-x86_64
-          path: build/reports/*.json
-
-  isolated-macos:
-    runs-on: macos-15
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-macos-arm64
-          path: build/releases
-          run-id: 35577160676
-          github-token: ${{ github.token }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install application test dependency before network isolation
-        run: python -m pip install -r examples/orders/requirements.txt
-      - name: Qualify on separate Mac runner with external network and Homebrew denied
-        run: |
-          mkdir -p build/reports
-          ulimit -c 0
-          sandbox-exec -f install/native/offline-macos.sb \
-            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            "$(command -v python)" install/native/qualify.py --directory build/releases \
-            --report build/reports/qualification.json --benchmarks \
-            --network-evidence 'Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac'
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: release-qualification-macos-arm64
-          path: build/reports/*.json
-
-  release-environment-lifecycle:
+  release-projects:
     strategy:
       fail-fast: false
       matrix:
@@ -97,58 +17,152 @@ jobs:
           - runner: macos-15
             target: macos-arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
           path: build/releases
-          run-id: 35577160676
+          run-id: 35585995786
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
-          name: environment-bundle-${{ matrix.target }}
-          path: build/package-fixture
-          run-id: 35577160676
+          name: project-source
+          path: build/project
+          run-id: 35585995786
           github-token: ${{ github.token }}
-      - name: Download the exact qualified NE05 predecessor
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           repository: supabricks/platform
-          run-id: 34733919344
+          run-id: 35460901104
           name: release-${{ matrix.target }}
           path: build/previous
           github-token: ${{ github.token }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Upgrade, cold restore and controlled resolver on loopback-only Linux
+      - name: Shared project through clean install, upgrade and restore on isolated Linux
         if: runner.os == 'Linux'
         run: |
           python_path=$(command -v python)
-          sudo unshare --net /bin/bash -c '
+          sudo unshare --net --mount /bin/bash -c '
             set -euo pipefail
             ip link set lo up
+            mount --make-rprivate /
+            pressure_mount=$(mktemp -d /tmp/sb-pk07-volume.XXXXXX)
+            mount -t tmpfs -o size=80m,mode=1777 tmpfs "$pressure_mount"
             exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-              SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches" \
-              "$2" install/native/qualify_environments.py --lifecycle --directory build/releases \
-              --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
-              --target linux-x86_64 --report build/environment-lifecycle-reports/qualification.json
+              SUPABRICKS_PROJECT_PRESSURE_DIR="$pressure_mount" \
+              SUPABRICKS_PROJECT_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; private HOME and caches" \
+              "$2" install/native/project_portability.py consume --directory build/releases \
+              --previous-directory build/previous --package build/project --target linux-x86_64 \
+              --report build/project-reports/projects.json
           ' bash "$(id -un)" "$python_path"
-      - name: Upgrade, cold restore and controlled resolver on isolated macOS
+      - name: Shared project on macOS with external network and Homebrew denied
         if: runner.os == 'macOS'
         run: |
-          /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches" \
-            "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
-            --macos-upgrade-policy install/native/offline-macos.sb \
-            --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
-            --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
+          pressure_mount=$(mktemp -d /tmp/sb-pk07-volume.XXXXXX)
+          hdiutil create -size 100m -fs HFS+ -volname SupabricksProjects build/project-pressure.dmg
+          hdiutil attach build/project-pressure.dmg -mountpoint "$pressure_mount" -nobrowse
+          trap 'qualification_status=$?; trap - EXIT; if ! bash install/native/detach_macos_volume.sh "$pressure_mount"; then qualification_status=1; fi; exit "$qualification_status"' EXIT
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_PROJECT_PRESSURE_DIR="$pressure_mount" \
+            SUPABRICKS_PROJECT_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied; private HOME and caches" \
+            "$(command -v python)" install/native/project_portability.py consume --directory build/releases \
+            --previous-directory build/previous --package build/project --target macos-arm64 \
+            --report build/project-reports/projects.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: release-environment-lifecycle-${{ matrix.target }}
-          path: build/environment-lifecycle-reports/*.json
+          name: release-projects-${{ matrix.target }}
+          path: build/project-reports/*.json
           if-no-files-found: error
 
+  environment-evidence:
+    needs: release-projects
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-environment*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-packages-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-notebooks-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-console-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-ingest-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-recovery-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-qualification-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: project-source
+          path: build/evidence/project-source
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-projects-linux-x86_64
+          path: build/evidence/release-projects-linux-x86_64
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-catalog-*
+          path: build/evidence
+          run-id: 35585995786
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-projects-macos-arm64
+          path: build/evidence/release-projects-macos-arm64
+      - name: Require complete local workflow evidence for both exact releases
+        run: |
+          python3 install/native/environment_evidence.py --directory build/evidence --revision a89d0484e284ca403309055939031211ac84eaaa --report build/ne06-evidence.json
+          python3 install/native/release_evidence.py --directory build/evidence --revision a89d0484e284ca403309055939031211ac84eaaa \
+            --console "$(git rev-parse HEAD:console)" --worker python/ingest/worker.py --report build/r04-evidence.json
+          python3 -c 'import json; from pathlib import Path; p=Path("build/r04-evidence.json"); d=json.loads(p.read_text()); d["qualification_runs"]={"archive_and_original_gates":35585995786,"macos_projects_and_collector":${{ github.run_id }},"harness_commit":"${{ github.sha }}"}; p.write_text(json.dumps(d,indent=2)+"\n")'
+          cat build/r04-evidence.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ne06-evidence
+          path: build/ne06-evidence.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r04-evidence
+          path: build/r04-evidence.*
+          if-no-files-found: error

@@ -23,6 +23,7 @@ def enter(path):
     library.sandbox_init.argtypes = [ctypes.c_char_p, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char_p)]
     library.sandbox_init.restype = ctypes.c_int
     library.sandbox_free_error.argtypes = [ctypes.c_char_p]
+    library.sandbox_free_error.restype = None
     error = ctypes.c_char_p()
     if library.sandbox_init(policy, 0, ctypes.byref(error)) != 0:
         if error.value:
