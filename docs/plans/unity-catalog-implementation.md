@@ -1,9 +1,10 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 implementation and exact-archive stabilization in progress; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
-PK08 #54 and project creation #55, with console #6 merged. Packaging is
-implemented; release qualification remains incomplete. This plan expands the
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 implemented and alpha.34 exact archives qualified in #64, pending merge; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+PK08 #54 and project creation #55, with console #6 merged. At that baseline packaging was
+implemented and release qualification was incomplete. UC08 now qualifies the
+complete local workflow on alpha.34; see its evidence below. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
 
 [Packaging architecture](../architecture/project-packaging.md) ·
@@ -210,7 +211,7 @@ Missing/dirty source artifacts fail assembly. Document resource measurements.
 
 ## UC02 — Project ownership, identities and metadata contracts
 
-Implementation merged in [platform #58](https://github.com/supabricks/platform/pull/58); see the [UC02 contract](../architecture/uc02-catalog-metadata.md) and [walkthrough](../handbook/catalog-metadata.md). Control schema 14 adds ownership records through the existing backed-up upgrade path. Both native targets passed 14 compatibility and 22 installed-service checks; full archive qualification remains incomplete.
+Implementation merged in [platform #58](https://github.com/supabricks/platform/pull/58); see the [UC02 contract](../architecture/uc02-catalog-metadata.md) and [walkthrough](../handbook/catalog-metadata.md). Control schema 14 adds ownership records through the existing backed-up upgrade path. Both native targets passed 14 compatibility and 22 installed-service checks; that historical alpha.28 archive remains unqualified; UC08 qualifies alpha.34.
 
 Implement the provider adapter and versioned API/MCP contracts: capabilities,
 list/describe, resolve object/version, health and typed errors. Bound pagination,
@@ -381,8 +382,13 @@ Ordinary `down` and uninstall do not silently delete user catalog data.
 
 Implementation: [UC08 release qualification](../architecture/uc08-release-qualification.md)
 and the installed [two-project catalog walkthrough](../handbook/catalog-demo.md).
-Alpha.34 is the candidate. Exact-archive CI is pending; implementation presence
-and local alpha.33 fixture validation do not complete this milestone.
+Alpha.34 is qualified on Linux x86_64 and macOS arm64 by
+[combined collector run 35593587805](https://github.com/supabricks/platform/actions/runs/35593587805),
+using the immutable archives from run `35585995786` (tested merge `a89d0484e284ca403309055939031211ac84eaaa`).
+A corrected predecessor fixture passed the remaining macOS portability gate; all
+inherited and catalog reports passed the same complete collector. The contract
+records both runs, exact archive/source hashes, resource measurements and retry
+history. [Platform #64](https://github.com/supabricks/platform/pull/64) awaits merge.
 
 Extend the existing native-release/R04 evidence collector; preserve PG, ingest,
 console, notebooks, environments, project packaging, data transfer and recovery
@@ -434,14 +440,17 @@ own enforcement and consistency qualification before being advertised.
 
 ## Existing release debt and completion accounting
 
-PK08 and console project creation are merged. Alpha.24 remains the last fully
-qualified predecessor recorded by the packaging workstream. The latest checked
+PK08 and console project creation are merged. Alpha.24 was the qualified
+predecessor recorded by the packaging workstream. The historical
 [alpha.25 run](https://github.com/supabricks/platform/actions/runs/35495263448)
 and [alpha.26 run](https://github.com/supabricks/platform/actions/runs/35496334403)
 both concluded failure. The former includes macOS notebook/Spark and snapshot
-export failures; the latter failed Linux assembly. Preserve these reports and
-triage them in release stabilization. UC00 may run independently; UC08 cannot
-mark a candidate qualified while inherited failures remain unresolved.
+export failures; the latter failed Linux assembly. These reports remain failure evidence. UC08 closes the inherited gates on the
+exact alpha.34 archives through the complete collector above; it does not
+retroactively qualify alpha.25 or alpha.26. Its local-owner milestone is complete
+in #64, pending merge. Historical macOS offline claims are corrected in the
+UC08 ledger; the current candidate uses the strict policy and explicit
+predecessor boundary.
 
 Completion of UC08 means the local catalog workflow is implemented and qualified.
 Completion of UC09 means the explicitly tested governed deployment profile is

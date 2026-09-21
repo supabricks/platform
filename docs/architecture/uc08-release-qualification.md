@@ -1,8 +1,9 @@
 # UC08: qualify the complete installed local catalog product
 
-Status: implementation and local validation in progress. Alpha.34 is the new
-candidate; it is not yet a qualified release. Alpha.24 remains the last fully
-qualified predecessor recorded by the packaging workstream.
+Status: implemented and qualified on Linux x86_64 and macOS arm64 in
+[platform #64](https://github.com/supabricks/platform/pull/64), pending merge.
+Alpha.34 is the qualified local engineering candidate; UC09 governed access
+remains separate.
 
 The existing `native-release` workflow assembles one candidate per target from
 reviewed platform, console, Sail and Unity Catalog sources. UC08 adds a
@@ -73,6 +74,52 @@ backend schema, publication format and capability profile, requires named
 coverage and measured UC resources, and rejects missing suites or cleanup
 failures. A green required PR check or merge does not substitute for both final
 candidate archives passing the complete combined evidence collector.
+
+## Qualified candidate
+
+The complete R04 collector passed in [run 35593587805](https://github.com/supabricks/platform/actions/runs/35593587805).
+The [retained JSON evidence](uc08-evidence/r04-evidence.json) records every report
+hash and both qualification runs. Archives and all original passed gates came
+from [35585995786](https://github.com/supabricks/platform/actions/runs/35585995786);
+its macOS portability fixture failed twice before the corrected gate and full
+collector passed in 35593587805. This is qualification of the same immutable
+archives, not a claim that the first workflow passed. The retry ledger below
+records the failures and corrections.
+
+- Archive source (tested PR merge): `a89d0484e284ca403309055939031211ac84eaaa`;
+  feature head: `610cddbbe2aa0d06fbb70eda28dc0c72a1401a6d`.
+- Corrected qualification harness: `dc75eb8af586d27bb2f3ed8f448f698f47d04ce5`.
+  Its predecessor guard and regression tests are included in #64. Follow-up
+  changes after the archive source affect only qualification and non-packaged
+  documentation; installed runtime, source pins and shipped handbooks are unchanged.
+- Console: `a5d2e7f2209595dd3c3cd8dcaa0686fcfe5b1119`;
+  Sail: `9544c9253e981a82c5f9e493c43ce98a4d9d41b7`;
+  Unity Catalog: `8e195426ce03e593b03c92f87051d7bf013aeee1`.
+- Private JRE: Eclipse Temurin `17.0.20.1+1`; H2 `2.2.224`, backend schema 1,
+  publication manifest 1, control schema 15, capability `local-owner-files-v1`.
+
+| Target | Archive SHA-256 | Release manifest identity | Reports / checks |
+| --- | --- | --- | --- |
+| linux-x86_64 | `6fc53c0fe0006acade2aebbc9bfe8c854f926d6ec7c1aaff960fbfdfd4b68539` | `8147fa38c6d855c7b72c0f590e902af4c708a2bb750e94111b02cb8d8ac6206e` | 16 / 258 |
+| macos-arm64 | `5653c92cd251c859da74f3f84567dc902f8babddc1a5a4e272a8ac0f708c80fa` | `bb3e7dee6909c382938bc684161df46551343d21214e5cf7f68e30182852086d` | 14 / 245 |
+
+These totals count top-level checks across reports, not distinct product features.
+Catalog reports additionally contain 37 service and 11 browser scenarios per
+target, plus 10 Linux / 9 macOS recovery scenarios. All catalog suites recorded
+zero timeouts and zero leaked descendants. Linux includes real ENOSPC and its
+full-app trace observed 6,029 destinations with zero external attempts.
+
+| Catalog measurement | Linux x86_64 | macOS arm64 |
+| --- | ---: | ---: |
+| Bootstrap readiness seconds | 8.04 | 9.72 |
+| Idle JVM RSS bytes | 300,220,416 | 293,863,424 |
+| Sampled peak JVM RSS bytes | 375,357,440 | 326,156,288 |
+| Sampled peak daemon-tree RSS bytes | 2,641,694,720 | 1,789,165,568 |
+
+Both targets passed 10 MB, 100 MB and 1 GB snapshot benchmarks. The 1 GB export
+measured 307.98 seconds on Linux and 379.30 seconds on macOS; subsequent queries
+measured 3.38 and 5.53 seconds. These are synthetic runner measurements, with the
+sampling and isolation scope described below; they are not laptop capacity claims.
 
 ## Upgrade stabilization
 
@@ -225,9 +272,36 @@ silently retried.
   policy transition and complete predecessor shutdown. Its macOS baseline passed
   all 12 checks and the 10 MB/100 MB/1 GB benchmarks; the 1 GB export took
   401.06 seconds, and deletion of the benchmark branch completed in 2.75 seconds.
-  The Linux traced app and network audit passed with the filtered trace; its
-  independent benchmark run remains pending. These targeted results do not
+  The Linux traced app and network audit passed with the filtered trace: 5,979
+  observed destinations and zero external attempts. Its independent 10 MB/100 MB/
+  1 GB benchmark run also passed. Neither baseline needed a readiness HTTP 503
+  retry. These targeted results do not
   replace the final combined release collector.
-- Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
-  complete until its final combined R04 evidence passes; record any further retry
-  and its cause here.
+- Run `35585995786`, attempt 1, passed both exact-installed catalog gates but
+  macOS project portability stopped after eight candidate checks while preparing
+  the immutable alpha.22 predecessor. Its apply reported the known database
+  preparation error, but its resource set was outside the fixture's narrowly
+  allowed recovery case. The guard correctly refused to retry it automatically;
+  no candidate upgrade had occurred. The report does not retain the private
+  operation contents, so the additional resource state is not diagnosed. The
+  original failed report SHA-256 is
+  `0ce5a87c9fed250eb1e450b0098a1b8d49a5de5aaead53e5857329cd705c6b6f`.
+  A single unchanged-job retry failed at the same guard; no archive, policy or
+  assertion was changed for it. All other 28 jobs passed, including both app/
+  benchmark gates and macOS lifecycle. Linux observed 6,029 network destinations
+  and zero external attempts.
+- Source inspection located the predecessor-fixture mistake: alpha.22 prepares
+  the notebook environment before creating its database. The guard assumed only
+  the database receipt could exist. It now requires the recorded current step to
+  be `database.main` creation, permits only the completed preceding notebook
+  environment with its own apply identity and generation, and rejects later,
+  missing or foreign receipts. Existing no-activation, single retained database
+  and one-explicit-reconciliation requirements remain. Nine regression tests
+  pass. Corrected macOS qualification passed all 15 portability checks, including the
+  explicit predecessor reconciliation, signed upgrade and cold restore, in
+  `35593587805`. Its complete collector reused the unchanged archives and all
+  other passed reports from `35585995786`, recording both archive revision and
+  corrected harness. No release payload was replaced or resealed.
+- Alpha.34 cross-platform qualification is complete. The combined evidence above
+  closes UC08 and the inherited release gates on this candidate. Prior failed
+  archives remain unqualified; public delivery and governed access are separate.
