@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from environment_evidence import SUITES, collect
+from environment_evidence import SUITES, MACOS_NETWORK_TRANSITION, collect
 
 
 class EvidenceTest(unittest.TestCase):
@@ -27,6 +27,8 @@ class EvidenceTest(unittest.TestCase):
                             archives=dict(new=dict(target=target), old={}), release_identity=target,
                             python_version='3.12.13', kernel_contract_sha256='contract',
                             wheels={}, notices={}, measurements={}, project_bundle={})
+                        if target == 'macos-arm64':
+                            value['network_transition'] = dict(MACOS_NETWORK_TRANSITION)
                     path.write_text(json.dumps(value))
 
     def change(self, suite, name, **fields):
@@ -64,6 +66,16 @@ class EvidenceTest(unittest.TestCase):
         for source in (dict(platform_commit='old', platform_dirty=False), dict(platform_commit='final', platform_dirty=True)):
             self.change('release-environment-lifecycle', 'qualification.json', source=source)
             with self.assertRaises(AssertionError): collect(self.root, 'final')
+
+    def test_macos_requires_candidate_policy_and_predecessor_shutdown(self):
+        path = self.root / 'release-environment-lifecycle-macos-arm64/qualification.json'
+        value = json.loads(path.read_text())
+        for field in MACOS_NETWORK_TRANSITION:
+            value['network_transition'] = dict(MACOS_NETWORK_TRANSITION)
+            del value['network_transition'][field]
+            path.write_text(json.dumps(value))
+            with self.assertRaisesRegex(AssertionError, 'isolation boundary'):
+                collect(self.root, 'final')
 
 
 if __name__ == '__main__':

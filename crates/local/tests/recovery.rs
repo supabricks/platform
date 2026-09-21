@@ -488,3 +488,122 @@ fn catalog_migration(source_schema: u32) {
         source_schema
     );
 }
+
+#[test]
+fn first_catalog_upgrade_preserves_engine_fences_and_requires_no_catalog_state() {
+    for case in [
+        "add",
+        "engine_changed",
+        "existing_catalog",
+        "unsupported_schema",
+    ] {
+        let f = Fixture::new();
+        let file = f.new.join("share/unity-catalog/build.json");
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(&file, b"new catalog closure").unwrap();
+        let path = f.new.join("release.json");
+        let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        manifest["files"]["share/unity-catalog/build.json"] =
+            json!({"sha256":digest(&file),"executable":false});
+        manifest["provenance"]["data_formats"]["unity_catalog"] = json!(1);
+        if case == "engine_changed" {
+            let engine = f.new.join("engine/manifest.json");
+            fs::write(&engine, b"different PG engine").unwrap();
+            manifest["files"]["engine/manifest.json"]["sha256"] = json!(digest(&engine));
+        }
+        fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        if case == "existing_catalog" {
+            fs::create_dir(f.root.join("catalog")).unwrap();
+        }
+        if case == "unsupported_schema" {
+            let path = f.old.join("release.json");
+            let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+            manifest["provenance"]["data_formats"]["local_catalog"] = json!(7);
+            fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+            let runtime = f.root.join("runtime.json");
+            let mut cfg: Value = serde_json::from_slice(&fs::read(&runtime).unwrap()).unwrap();
+            cfg["installation_identity"] = json!(digest(&path));
+            fs::write(runtime, serde_json::to_vec(&cfg).unwrap()).unwrap();
+            let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
+            db.pragma_update(None, "user_version", 7).unwrap();
+        }
+        let before = digest(&f.root.join("runtime.json"));
+        f.upgrade(case == "add");
+        if case == "add" {
+            assert_eq!(digest(&f.backup.join("data/runtime.json")), before);
+            for phase in ["prepared", "runtime_rebound", "current_activated"] {
+                f.pending(phase);
+                f.upgrade(true);
+            }
+        } else {
+            assert_eq!(digest(&f.root.join("runtime.json")), before);
+            assert!(!f.backup.exists());
+            assert!(!f.root.join("upgrade.json").exists());
+        }
+    }
+}
+
+#[test]
+fn catalog_build_timings_do_not_change_upgrade_payload_compatibility() {
+    for changed_payload in [false, true] {
+        let f = Fixture::new();
+        for (release, duration) in [(&f.old, 1), (&f.new, 2)] {
+            let report = release.join("share/unity-catalog/build.json");
+            let jar = release.join("share/unity-catalog/jars/server.jar");
+            fs::create_dir_all(jar.parent().unwrap()).unwrap();
+            fs::write(&report, format!("{{\"build_seconds\":{duration}}}")).unwrap();
+            fs::write(
+                &jar,
+                if changed_payload && release == &f.new {
+                    b"changed backend".as_slice()
+                } else {
+                    b"same backend".as_slice()
+                },
+            )
+            .unwrap();
+            let path = release.join("release.json");
+            let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+            for file in [&report, &jar] {
+                manifest["files"][file.strip_prefix(release).unwrap().to_str().unwrap()] =
+                    json!({"sha256":digest(file),"executable":false});
+            }
+            manifest["provenance"]["data_formats"]["unity_catalog"] = json!(1);
+            fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        }
+        let path = f.root.join("runtime.json");
+        let mut runtime: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        runtime["installation_identity"] = json!(digest(&f.old.join("release.json")));
+        fs::write(path, serde_json::to_vec(&runtime).unwrap()).unwrap();
+        f.upgrade(!changed_payload);
+        if !changed_payload {
+            let backup = recovery::verify(&f.backup).unwrap();
+            let completed: Value =
+                serde_json::from_slice(&fs::read(f.root.join("last-upgrade.json")).unwrap())
+                    .unwrap();
+            // Distinct full fingerprints survive in the persisted journal and
+            // backup, even though the payload-only upgrade comparison passed.
+            assert_ne!(
+                completed["from"]["compatibility"],
+                completed["to"]["compatibility"]
+            );
+            assert_eq!(
+                backup.release.unwrap().compatibility,
+                completed["from"]["compatibility"]
+            );
+            command(
+                &f.new.join("bin/supabricks"),
+                &[
+                    "backup",
+                    "restore",
+                    f.backup.to_str().unwrap(),
+                    "--release",
+                    f.old.to_str().unwrap(),
+                ],
+                &f._tmp.path().join("restored"),
+                true,
+            );
+        } else {
+            assert!(!f.backup.exists());
+        }
+    }
+}

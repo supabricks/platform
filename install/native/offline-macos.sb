@@ -2,11 +2,20 @@
 (version 1)
 (allow default)
 (deny network*)
-(allow network* (local ip "localhost:*"))
-(allow network* (remote ip "localhost:*"))
+;; A generic network* local-address allow can authorize outbound connections.
+;; Separate bind/inbound from the remote-address restriction, as the qualified
+;; native catalog policy does. Product listeners are checked on loopback.
+(allow network-bind)
+(allow network-inbound)
+(allow network-outbound (remote ip "localhost:*"))
 (allow network* (local unix-socket))
 (allow network* (remote unix-socket))
 ;; A release must resolve bundled libraries, not Homebrew build dependencies.
 (deny file-read* (subpath "/opt/homebrew"))
 (deny file-read* (subpath "/usr/local/Cellar"))
 (deny file-read* (subpath "/usr/local/opt"))
+
+;; A catalog release must use its bundled JRE, even on a developer machine.
+(deny process-exec (literal "/usr/bin/java"))
+(deny file-read* (subpath "/Library/Java/JavaVirtualMachines"))
+(deny file-read* (subpath "/System/Library/Java/JavaVirtualMachines"))

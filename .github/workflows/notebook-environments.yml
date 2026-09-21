@@ -1,11 +1,9 @@
-name: notebook-environments
+name: notebook-environments (historical NE01)
 on:
-  pull_request:
-    paths:
-      - 'e2e/native/notebook-environments/**'
-      - 'components/notebook-uv.lock.json'
-      - 'python/notebooks/uv.lock'
-      - '.github/workflows/notebook-environments.yml'
+  # Frozen alpha.8 feasibility experiment, superseded by NE02–NE06 and the
+  # exact-archive native-release environment/notebook/package/lifecycle gates.
+  # Its old macOS IPv4-mapped gRPC endpoint cannot pass the corrected offline
+  # policy; retain manual reproduction without treating it as current CI.
   workflow_dispatch:
 permissions:
   contents: read

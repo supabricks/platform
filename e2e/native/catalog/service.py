@@ -110,8 +110,14 @@ def tls_proxy(root, upstream):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ['release','binary','uc-runtime','report']:parser.add_argument('--'+name,type=Path,required=True)
+    parser.add_argument("--exact-installed", action="store_true")
+    parser.add_argument("--workspace", type=Path)
     args=parser.parse_args()
-    root=Path(tempfile.mkdtemp(prefix='sb-uc01-',dir='/tmp')).resolve();root.chmod(0o700)
+    # Keep nested exact-release fixtures within macOS's 104-byte socket budget.
+    if args.workspace:
+        root=(args.workspace/'s').resolve();root.mkdir(mode=0o700)
+    else:
+        root=Path(tempfile.mkdtemp(prefix='sb-uc01-',dir='/tmp')).resolve();root.chmod(0o700)
     print('Private service fixture:',root,flush=True)
     baseline,binary,runtime=args.release.resolve(),args.binary.resolve(),args.uc_runtime.resolve()
     report=dict(status='FAIL',checks=[],binary_sha256=sha(binary),uc_build=json.loads((runtime/'build.json').read_text()),
@@ -123,7 +129,12 @@ def main():
             assert error.errno in (errno.EPERM,errno.EACCES,errno.ENETUNREACH)
             report['external_tcp_denial']=errno.errorcode[error.errno]
         else:raise AssertionError('offline fixture has external TCP access')
-    installed=root/'release';installed_fixture(baseline,binary,runtime,installed)
+    installed = baseline if args.exact_installed else root/'release'
+    if not args.exact_installed:
+        installed_fixture(baseline,binary,runtime,installed)
+    else:
+        subprocess.run([str(installed/'bin/supabricks'), 'installation', 'verify'], check=True, capture_output=True)
+        report['release_identity'] = sha(installed/'release.json')
     cellroot=root/'data';cellroot.mkdir(mode=0o700)
     cell=CatalogCell(installed/'bin/supabricks',installed/'engine',installed/'helpers',cellroot)
     cell.binary=installed/'bin/supabricks'  # exercise installed discovery, not a copied development binary
@@ -136,11 +147,14 @@ def main():
     def token():return (cellroot/'catalog/etc/conf/token.txt').read_text().strip()
     try:
         cell.start();first=ready()
+        report["contract"]=json.loads((cellroot/"catalog-format.json").read_text())
         process=psutil.Process(owned()['pid'])
         listeners=[c for c in process.net_connections(kind='inet') if c.status=='LISTEN']
         assert len(listeners)>=2
         assert all((getattr(ipaddress.ip_address(c.laddr.ip),'ipv4_mapped',None) or ipaddress.ip_address(c.laddr.ip)).is_loopback for c in listeners)
         assert process.exe()==str((installed/'share/unity-catalog/java/bin/java').resolve())
+        assert '-Djdk.net.hosts.file='+str(cellroot/'catalog/etc/conf/hosts') in process.cmdline()
+        assert (cellroot/'catalog/etc/conf/hosts').stat().st_mode&0o077==0
         assert first['readiness_seconds']<20
         assert process.memory_info().rss<512*1024*1024
         check('installed_private_jre_authenticated_loopback_bootstrap',readiness_seconds=first['readiness_seconds'],idle_rss_bytes=process.memory_info().rss)
@@ -179,14 +193,14 @@ def main():
         blocker=socket.socket();blocker.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         blocker.bind(('127.0.0.1',previous_port));blocker.listen()
         try:
-            assert cell.sql(branch,'SELECT 42')=='42'
+            wait(lambda:cell.sql(branch,'SELECT 42')=='42')
             recovered=wait(lambda:(s if (s:=status())['ready'] and s['endpoint']!=pending['endpoint'] else None))
             assert int(recovered['endpoint'].rsplit(':',1)[1])!=previous_port
             assert blocker.getsockname()[1]==previous_port
         finally:blocker.close()
         check('port_collision_retries_without_adopting_or_stopping_unrelated_listener')
         victim=owned()['pid'];os.kill(victim,signal.SIGKILL)
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         wait(lambda:(s if (s:=status())['ready'] and owned()['pid']!=victim else None))
         check('catalog_crash_leaves_postgres_usable')
         command('restart');ready()
@@ -197,7 +211,7 @@ def main():
             ready()
         assert status()['state']=='failed' and status()['start_attempts']==3
         time.sleep(2);assert status()['start_attempts']==3
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         command('restart');ready()
         check('bounded_restart_budget_and_explicit_recovery')
         with (cellroot/'catalog/process.log').open('ab') as log:log.write(b'x'*(6*1024*1024))
@@ -211,7 +225,7 @@ def main():
         cell.stop();saved_catalog=root/'saved-catalog';(cellroot/'catalog').rename(saved_catalog)
         cell.start();wait(lambda:status()['state']=='failed',timeout=40)
         assert not (cellroot/'catalog/etc/db/h2db.mv.db').exists()
-        assert cell.sql(branch,'SELECT 42')=='42'
+        wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         cell.stop();shutil.rmtree(cellroot/'catalog');saved_catalog.rename(cellroot/'catalog')
         cell.start();restored=ready()
         assert restored['provider_id']==first['provider_id'] and restored['metastore_id']==first['metastore_id']

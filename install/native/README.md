@@ -23,6 +23,11 @@ launch URL into Chromium instead of the OS's default Safari.
 fixture hashes and sampled throughput/resources. Build/test tooling is not a
 runtime dependency. This artifact supplements the existing notebook evidence.
 
+UC08 adds the installed `CATALOG-DEMO.md` [two-project walkthrough](../../docs/handbook/catalog-demo.md)
+and exact catalog evidence to the same R04 collector. Alpha.34 is a candidate;
+see the [qualification ledger](../../docs/architecture/uc08-release-qualification.md)
+for completed gates and outstanding failures.
+
 ## Try the staged installer
 
 On a host serving the prepared release directory:
@@ -55,7 +60,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current preview uses version `v0.1.0-alpha.33` and catalog 15. Product notebook kernels
+The current preview uses version `v0.1.0-alpha.34` and catalog 15. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).

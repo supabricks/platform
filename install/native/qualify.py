@@ -25,6 +25,7 @@ import time
 import urllib.request
 
 from stage import stage
+from diagnostics import summarize
 from project_apply import qualify as qualify_project_apply
 from project_offline import qualify as qualify_project_offline
 
@@ -102,7 +103,14 @@ with psycopg.connect(os.environ['DATABASE_URL'], autocommit=True) as connection:
             load_seconds=load_seconds, disk_before=before, disk_after=disk(),
             export_payload_mb_per_second=(rows * 1024 / 1_000_000) / measurements[label]['elapsed_seconds'])
         cli('analytics', 'gc', '--branch', 'scale', '--keep', '1')
-    cli('branch', 'delete', 'scale', '--wait')
+    # The interactive --wait returns pending after 90 seconds. A 1 GB shutdown
+    # checkpoint can outlast that; submit once and await its durable operation.
+    deletion = cli('branch', 'delete', 'scale')
+    started = time.monotonic()
+    result = cli('operation', 'wait', deletion['id'], '--timeout-ms', '300000')
+    assert result['status'] == 'succeeded'
+    measurements['benchmark_cleanup'] = dict(elapsed_seconds=time.monotonic()-started,
+                                              status=result['status'])
 
 
 def qualify(args):
@@ -406,10 +414,12 @@ def qualify(args):
         reserved.close()
         report = dict(status='passed', host=platform.platform(), workspace=str(workspace),
                       release_identity=identity, install_seconds=round(install_seconds, 2),
+                      notebook_readiness_polling=summarize(workspace / 'pk05-notebook.log'),
                       checks=checks, measurements=measurements, network_qualification=args.network_evidence)
     except BaseException as error:
         report = dict(status='failed', host=platform.platform(), workspace=str(workspace), checks=checks,
-                      error=str(error), measurements=measurements, network_qualification=args.network_evidence)
+                      error=type(error).__name__, measurements=measurements, network_qualification=args.network_evidence,
+                      diagnostics={name:summarize(workspace/name) for name in ('pk05-notebook.log','pk05-command.log')})
         raise
     finally:
         for sampler, stop in samplers:
@@ -436,7 +446,7 @@ def qualify(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--keep', action='store_true')
     parser.add_argument('--benchmarks', action='store_true', help='measure 10 MB, 100 MB and 1 GB full snapshots')

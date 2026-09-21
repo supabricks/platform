@@ -8,10 +8,16 @@ import urllib.error
 import uuid
 import websocket
 
+class ConsoleHTTPError(RuntimeError):
+    def __init__(self,path,status,detail):
+        super().__init__(f'console {path}: HTTP {status}: {detail}')
+        self.status=status
+
 class Console:
     def __init__(self,project,cli,channels):
         self.cli=cli;self.channels=channels
         self.created={}
+        self.readiness_poll_retries=0
         self.project=project;url=cli(project,'console','--no-open')['url'];self.origin=url.split('/#')[0].rstrip('/')
         self.jar=http.cookiejar.CookieJar();self.http=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
         self.csrf=self.request('session',{'token':url.split('#launch=')[1]})['csrf']
@@ -27,16 +33,31 @@ class Console:
             # Preserve the bounded API diagnostic; a bare 503 hides whether
             # startup hit a transport deadline or the daemon rejected it.
             detail=error.read(8192).decode('utf-8',errors='replace')
-            raise RuntimeError(f'console {path}: HTTP {error.code}: {detail}') from None
+            raise ConsoleHTTPError(path,error.code,detail) from None
     def action(self,action,**fields):return self.request('workspace',{'action':'notebook','command':{'action':action,**fields}})['value']
     def wait(self,e,state='ready'):
         deadline=time.monotonic()+150
+        last_unavailable=None
         while time.monotonic()<deadline:
-            e=next(item for item in self.action('list') if item['id']==e['id'])
+            try:
+                current=next((item for item in self.action('list') if item['id']==e['id']),None)
+                if current is None:
+                    raise RuntimeError('notebook handle disappeared during admission') from last_unavailable
+                e=current
+            except ConsoleHTTPError as error:
+                # Admission can occupy the daemon beyond one control request's
+                # deadline. Only repeat this read within the original wait bound;
+                # create/start/restart/shutdown calls are never retried here.
+                if error.status!=503:raise
+                last_unavailable=error
+                self.readiness_poll_retries+=1
+                print('NOTEBOOK_READINESS_TRANSIENT_503',flush=True)
+                time.sleep(.15)
+                continue
             if e['state']==state:return e
             if e['state'] in ['failed','lost','expired']:raise AssertionError('notebook '+e['state']+': '+str(e.get('error')))
             time.sleep(.15)
-        raise TimeoutError('kernel readiness')
+        raise TimeoutError('kernel readiness') from last_unavailable
     def start(self,environment=None,epoch=None):
         request=dict(key=str(uuid.uuid4()),target=self.target,environment=environment,epoch=epoch)
         e=self.action('create',**request);self.created[e['id']]=request

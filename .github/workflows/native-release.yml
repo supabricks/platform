@@ -12,6 +12,7 @@ on:
       - 'python/analytics/**'
       - 'python/ingest/**'
       - 'python/notebooks/**'
+      - 'e2e/native/catalog/**'
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
       - 'docs/handbook/**'
@@ -24,6 +25,7 @@ on:
       - 'agents/**'
       - 'LICENSE'
       - '.github/workflows/native-release.yml'
+      - '.github/workflows/catalog-release.yml'
   workflow_dispatch:
 
 concurrency:
@@ -190,6 +192,8 @@ jobs:
           python install/native/test_project_portability.py
           python install/native/test_demo.py
           python install/native/test_cleanup.py
+          python install/native/test_diagnostics.py
+          python e2e/native/notebook-environments/test_client.py
       - uses: actions/download-artifact@v4
         with:
           name: source-sail-${{ matrix.target }}
@@ -221,7 +225,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.33-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.34-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
@@ -268,7 +272,7 @@ jobs:
             -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
             -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
             supabricks-release-test \
-            strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
+            strace --seccomp-bpf -f -qq -e trace=network -s 256 -o /reports/network.trace \
             python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
@@ -740,10 +744,10 @@ jobs:
       - name: Upgrade, cold restore and controlled resolver on isolated macOS
         if: runner.os == 'macOS'
         run: |
-          sandbox-exec -f install/native/offline-macos.sb \
-            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied; cold private HOME and caches" \
+          /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches" \
             "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
+            --macos-upgrade-policy install/native/offline-macos.sb \
             --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
             --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
       - uses: actions/upload-artifact@v4
@@ -845,8 +849,14 @@ jobs:
           path: build/project-reports/*.json
           if-no-files-found: error
 
+  release-catalog:
+    needs: assemble
+    uses: ./.github/workflows/catalog-release.yml
+    with:
+      archive_run_id: ${{ format('{0}', github.run_id) }}
+
   environment-evidence:
-    needs: [release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
+    needs: [release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -885,6 +895,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: release-projects-*
+          path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-catalog-*
           path: build/evidence
       - name: Require complete local workflow evidence for both exact releases
         run: |

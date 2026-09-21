@@ -135,6 +135,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copy2(ROOT / 'docs/handbook/project-data.md', destination / 'PROJECT-DATA.md')
     shutil.copy2(ROOT / 'docs/handbook/project-creation.md', destination / 'PROJECT-CREATION.md')
     shutil.copy2(ROOT / 'docs/handbook/local-demo.md', destination / 'DEMO.md')
+    shutil.copy2(ROOT / 'docs/handbook/catalog-demo.md', destination / 'CATALOG-DEMO.md')
     shutil.copy2(ROOT / 'docs/handbook/notebooks.md', destination / 'NOTEBOOKS.md')
     shutil.copy2(ROOT / 'docs/handbook/file-ingestion.md', destination / 'INGESTION.md')
     shutil.copy2(ROOT / 'docs/handbook/analytical-workspace.md', destination / 'ANALYTICS.md')
@@ -264,7 +265,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--target', required=True, choices=['linux-x86_64', 'macos-arm64'])
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--postgres-only', action='store_true', help='explicit smaller profile without analytical dependencies')
     for name in ['binary', 'engine', 'helpers', 'output']:
         parser.add_argument('--' + name, required=True, type=Path)

@@ -30,6 +30,34 @@ class Checks(list):
         print('[R03] ' + message, flush=True)
 
 
+def predecessor_epoch_rows(release, data, snapshot, env):
+    """Read the predecessor's exact Delta version without its obsolete transport.
+
+    Alpha.8 gRPC uses IPv4-mapped IPv6 sockets, which macOS Seatbelt does not
+    classify as localhost. Its unchanged bundled Delta/Arrow runtime verifies
+    the source epoch; the candidate must still query it through actual Sail.
+    """
+    publication = snapshot['publication']
+    assert snapshot['state'] == 'available' and publication['state'] == 'published'
+    descriptor = publication['descriptor']
+    table = next(t for t in descriptor['manifest']['tables']
+                 if t['schema'] == 'public' and t['name'] == 'recovery_rows')
+    path = (data / descriptor['generation'] / table['path']).resolve()
+    assert path.is_relative_to((data / 'analytics/generations').resolve())
+    version = table['version']
+    assert type(version) is int and version >= 0
+    reader = '''import json,sys
+from deltalake import DeltaTable
+import pyarrow.fs as fs
+path,version=sys.argv[1:]
+filesystem=fs.SubTreeFileSystem(path,fs.LocalFileSystem())
+rows=DeltaTable(path,version=int(version)).to_pyarrow_table(filesystem=filesystem).to_pylist()
+print(json.dumps([[str(r['id']),r['note']] for r in sorted(rows,key=lambda r:r['id'])]))
+'''
+    return json.loads(run([release / 'python/analytics/python', '-c', reader, path, str(version)],
+                          env=env, timeout=60))
+
+
 def qualify(args):
     workspace = Path(tempfile.mkdtemp(prefix='sb-r03-', dir='/tmp')).resolve()
     prefix = workspace / 'programs with spaces'
@@ -147,11 +175,13 @@ print(json.dumps(pid))
         epochs = {}
         for branch in ['main', 'experiment']:
             cli('analytics', 'refresh', '--branch', branch, '--wait')
-            epochs[branch] = cli('analytics', 'snapshot', '--branch', branch)['publication']['epoch_id']
-            assert analytic_count(branch) == [['2']]
+            snapshot = cli('analytics', 'snapshot', '--branch', branch)
+            epochs[branch] = snapshot['publication']['epoch_id']
+            rows = sql('SELECT * FROM recovery_rows ORDER BY id', branch)
+            assert len(rows) == 2 and predecessor_epoch_rows(old_release, data, snapshot, env) == rows
         credentials = (data / 'storage.pk8').read_bytes()
         before = {branch: sql('SELECT * FROM recovery_rows ORDER BY id', branch) for branch in epochs}
-        checks.append('actual PR34 archive creates acknowledged parent/child data and both analytical epochs')
+        checks.append('actual PR34 archive creates acknowledged parent/child data and both Delta epochs match exact source rows')
         install('new', upgrade=True)
         assert (prefix / 'current').resolve() != old_release
         current_release = (prefix / 'current').resolve()
@@ -314,7 +344,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', required=True, type=Path)
     parser.add_argument('--previous-directory', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.8')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--network-evidence', default='not externally isolated')

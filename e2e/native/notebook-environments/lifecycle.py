@@ -1,7 +1,9 @@
 """NE06 signed installer upgrade and cold recovery using real console kernels.
 
-Run in a loopback-only OS network sandbox. All roots, processes and keys belong
-to this fixture. No release bytes, runtime policy or catalog records are patched.
+Linux runs entirely in a loopback-only OS network sandbox. On macOS, prepare the
+historical live kernel before entering Seatbelt for candidate upgrade/recovery.
+All roots, processes and keys belong to this fixture. No release bytes, runtime
+policy or catalog records are patched.
 """
 import argparse
 from functools import partial
@@ -159,12 +161,27 @@ def qualify(args):
         document = dict(nbformat=4, nbformat_minor=5, metadata={'supabricks': {'binding': {k: live[k] for k in ('branch_id', 'epoch_id', 'environment')}}}, cells=[dict(id='saved', cell_type='code', source="raise RuntimeError('must not replay')", execution_count=1, metadata={'supabricks_outputs': {k: live[k] for k in ('branch_id', 'epoch_id', 'environment')}}, outputs=[dict(output_type='stream', name='stdout', text='retained output\n')])])
         a.request('notebooks/contents', dict(action='save', path='lifecycle.ipynb', document=document, expected_revision=None))
         assert records('environment_leases')
+        predecessor_processes = {}
+        for record in records('native_processes'):
+            process = psutil.Process(record['pid'])
+            for child in [process, *process.children(recursive=True)]:
+                predecessor_processes[child.pid] = child.create_time()
+        if args.macos_upgrade_policy:
+            from macos_policy import enter
+            report['network_transition'] = enter(args.macos_upgrade_policy)
         current = install('new', upgrade=True)
         ws.close()
         identity = cli(project, 'installation', 'verify')['identity']
         assert old_identity != identity and old_release.exists() and current != old_release
         assert digest(current / 'release.json') == digest(args.release / 'release.json')
         assert not records('environment_leases') and not records('native_processes')
+        for pid, created in predecessor_processes.items():
+            try:
+                assert psutil.Process(pid).create_time() != created, 'predecessor process survived upgrade'
+            except psutil.NoSuchProcess:
+                pass
+        if args.macos_upgrade_policy:
+            report['network_transition']['predecessor_processes_stopped'] = True
         backup = json.loads((root / 'upgrade-backup/backup.json').read_text())
         assert backup['release']['identity'] == old_identity
         cli(project, 'backup', 'verify', root / 'upgrade-backup')
@@ -315,4 +332,5 @@ if __name__ == '__main__':
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--version', required=True)
     parser.add_argument('--previous-version', required=True)
+    parser.add_argument('--macos-upgrade-policy', type=Path)
     qualify(parser.parse_args())

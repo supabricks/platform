@@ -134,11 +134,43 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     let migration = matches!(source_schema, 8 | 9 | 10 | 11 | 12 | 13 | 14);
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);
-    if migration && normalized == target_formats {
-        // Compare the full original inventory with ONLY the named catalog format changed.
-        compatible(&Release::with_formats(&old, normalized)?, &to)?;
+    // Adding the first catalog has no existing UC storage to migrate. Preserve
+    // the exact PG/storage/analytics inventory check and fence any catalog state.
+    let adding_catalog = source_formats.get("unity_catalog").is_none()
+        && target_formats.get("unity_catalog") == Some(&json!(1));
+    if adding_catalog
+        && old
+            .manifest
+            .files
+            .keys()
+            .any(|name| name.starts_with("share/unity-catalog/"))
+    {
+        return Err(conflict(
+            "previous release has undeclared catalog components",
+        ));
+    }
+    if adding_catalog {
+        normalized["unity_catalog"] = json!(1);
+    }
+    if adding_catalog
+        && (migration || source_schema == SCHEMA_VERSION)
+        && normalized == target_formats
+    {
+        compatible(
+            &Release::for_upgrade(&old, normalized, false)?,
+            &Release::for_upgrade(&candidate, target_formats.clone(), false)?,
+        )?;
+    } else if migration && normalized == target_formats {
+        // Compare runtime payloads with only the named catalog format changed.
+        compatible(
+            &Release::for_upgrade(&old, normalized, true)?,
+            &Release::for_upgrade(&candidate, target_formats.clone(), true)?,
+        )?;
     } else {
-        compatible(&from, &to)?;
+        compatible(
+            &Release::for_upgrade(&old, source_formats, true)?,
+            &Release::for_upgrade(&candidate, target_formats, true)?,
+        )?;
     }
     if old.root != prefix.join("releases").join(&from.version) {
         return Err(invalid("previous release is outside this installation"));
@@ -201,6 +233,11 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     let mut cfg = read_runtime(&root)?;
     let current_hash = recovery::file_hash(&root.join("state.sqlite3"))?;
     let catalog_hash = crate::catalog::recovery::checkpoint_identity(&root)?;
+    if adding_catalog && (catalog_hash.is_some() || root.join("catalog").try_exists()?) {
+        return Err(conflict(
+            "first-catalog upgrade requires an empty catalog state",
+        ));
+    }
     let journal = if let Some(mut j) = existing {
         if j.backup != backup && same_runtime(&cfg, &from) && schema == source_schema {
             // An explicit new backup path can refresh a prepared transaction if

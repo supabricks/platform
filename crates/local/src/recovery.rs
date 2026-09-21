@@ -34,6 +34,20 @@ impl Release {
         Self::with_formats(i, formats(i))
     }
     pub(crate) fn with_formats(i: &Installation, formats: Value) -> Result<Self> {
+        Self::fingerprint(i, formats, true, true)
+    }
+    // Upgrade comparisons exclude the UC build report's measured duration, not
+    // executable/configuration payloads. Persisted backup/journal fingerprints
+    // retain the original full inventory for backward compatibility.
+    pub(crate) fn for_upgrade(i: &Installation, formats: Value, catalog: bool) -> Result<Self> {
+        Self::fingerprint(i, formats, catalog, false)
+    }
+    fn fingerprint(
+        i: &Installation,
+        formats: Value,
+        catalog: bool,
+        build_report: bool,
+    ) -> Result<Self> {
         // Exact engine/library inventory includes PG catalog and extension code;
         // worker lock binds Delta/Arrow/Python dependencies. No guessed engine
         // format compatibility, cross-target restore or major-version upgrade.
@@ -46,7 +60,9 @@ impl Release {
                     || *name == "helpers/weed"
                     || *name == "python/analytics/uv.lock"
                     || *name == "provenance/analytical-runtime.lock.json"
-                    || name.starts_with("share/unity-catalog/")
+                    || (catalog
+                        && name.starts_with("share/unity-catalog/")
+                        && (build_report || *name != "share/unity-catalog/build.json"))
             })
             .map(|(name, f)| (name, (&f.sha256, f.executable)))
             .collect();

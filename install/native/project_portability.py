@@ -19,6 +19,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import uuid
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -118,7 +119,27 @@ def seed_predecessor(cell, project):
     if operation['state'] == 'succeeded':
         return False
     assert operation['state'] == 'failed' and 'database preparation failed or was superseded' in (operation.get('error') or ''), 'unexpected predecessor apply failure'
-    assert set(operation['resources']) == {'database.main'}, 'predecessor failure occurred beyond database preparation'
+    # Alpha.22 plans the notebook environment before the database. Its completed
+    # environment receipt is legitimate here; migrations, fixtures and activated
+    # resources are not. Validate the durable step boundary, not just a key set.
+    steps, position = operation['plan']['steps'], operation['next_step']
+    assert type(position) is int and 0 <= position < len(steps)
+    step = steps[position]
+    assert (step['logical'], step['kind'], step['action']) == ('database.main', 'database', 'create'), 'predecessor failure occurred beyond database preparation'
+    completed = steps[:position]
+    assert len(completed) <= 1 and all(
+        (s['logical'], s['kind'], s['action'], s['environment']) ==
+        ('environment.notebook', 'environment', 'prepare_offline', 'notebook')
+        for s in completed), 'unexpected predecessor preparation order'
+    resources = operation['resources']
+    expected = {s['logical'] for s in completed}
+    assert expected <= set(resources) <= expected | {'database.main'}, 'unexpected predecessor resource receipt'
+    for prior in completed:
+        resource = resources[prior['logical']]
+        assert resource['kind'] == 'environment' and resource['environment'] == 'notebook'
+        assert resource['origin'] == operation['id']
+        assert not any(resource.get(k) for k in ('branch', 'file', 'database', 'receipt'))
+        uuid.UUID(resource['generation'])
     assert cell.cli(project, 'project', 'installed')['active_revision'] is None
     branches = cell.cli(project, 'database', 'list')['branches']
     assert len(branches) == 1
@@ -509,7 +530,7 @@ def main():
     for name in ('directory', 'output', 'bundles', 'package', 'report', 'previous-directory'):
         parser.add_argument('--'+name, type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--version', default='v0.1.0-alpha.33')
+    parser.add_argument('--version', default='v0.1.0-alpha.34')
     parser.add_argument('--previous-version', default='v0.1.0-alpha.22')
     parser.add_argument('--release', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()

@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import tempfile
 import uuid
+from urllib.parse import unquote, urlparse
 
 from service import installed_fixture, api
 from probe import CatalogCell, sha
@@ -20,14 +21,22 @@ def main():
     for name in ['release', 'binary', 'uc-runtime', 'report']:
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--disk-full',action='store_true')
+    parser.add_argument('--exact-installed', action='store_true')
+    parser.add_argument('--workspace', type=Path)
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix='sb-uc07-', dir='/tmp')).resolve()
+    if args.workspace:
+        root=(args.workspace/'r').resolve();root.mkdir(mode=0o700)
+    else:
+        root=Path(tempfile.mkdtemp(prefix='sb-uc07-',dir='/tmp')).resolve()
     root.chmod(0o700)
     print('UC07 fixture:', root, flush=True)
     prefix=root/'install';(prefix/'releases').mkdir(parents=True);(prefix/'bin').mkdir()
     old_version=json.loads((args.release/'release.json').read_text())['version']
     installed = prefix/'releases'/old_version
-    installed_fixture(args.release.resolve(), args.binary.resolve(), args.uc_runtime.resolve(), installed)
+    if args.exact_installed:
+        installed = args.release.resolve()
+    else:
+        installed_fixture(args.release.resolve(), args.binary.resolve(), args.uc_runtime.resolve(), installed)
     (prefix/'current').symlink_to(Path('releases')/old_version)
     for name in ['supabricks','psql']:(prefix/'bin'/name).symlink_to(Path('../current/bin')/name)
     data = root / 'data'
@@ -40,6 +49,8 @@ def main():
     cell.work = work
     report = dict(status='FAIL', checks=[], binary_sha256=sha(args.binary),
         network_evidence=os.environ.get('SB_UC00_NETWORK_EVIDENCE', 'local development; host network not isolated'))
+    if args.exact_installed:
+        report['release_identity'] = sha(installed/'release.json')
     running = False
     def check(name):
         report['checks'].append(name)
@@ -129,7 +140,7 @@ requirement="sales.v1"
         check('interrupted_restore_remains_guarded_and_original_backup_verifies')
         # The source directory is absent while verifying all restored locations.
         held=root/'source-held';data.rename(held)
-        restored=root/'restored root';cli('backup','restore',backup,at=restored)
+        restored=root/"r % ' é";cli('backup','restore',backup,at=restored)
         assert not (restored/'restore-incomplete').exists()
         assert json.loads((restored/'catalog-restore.json').read_text())['state']=='reconciled'
         scope['worktree']=str(restored/consumer.relative_to(data))
@@ -138,7 +149,7 @@ requirement="sales.v1"
         assert api(health['endpoint'],old_token)[0]==401
         current=publication('status',id=pub['id'])['publication']
         assert [t['id'] for t in current['tables']]==[t['id'] for t in pub['tables']]
-        assert all('/restored%20root/' in t['body']['storage_location'] for t in current['tables'])
+        assert all(Path(unquote(urlparse(t['body']['storage_location']).path)).is_relative_to(restored) for t in current['tables'])
         wait(lambda:cell.sql(branch,'SELECT sum(id) FROM sales')=='3')
         query(scope)
         check('moved_root_preserves_ids_and_bindings_relocates_files_and_rotates_credentials')
@@ -170,36 +181,57 @@ requirement="sales.v1"
         wait(lambda:cell.sql(branch,'SELECT count(*) FROM sales')=='2')
         check('missing_external_provider_requires_explicit_rebind_and_preserves_postgres')
         cell.stop();running=False
-        candidate=prefix/'releases/v0.1.0-alpha.33'
-        shutil.copytree(installed,candidate,copy_function=os.link)
-        release=json.loads((candidate/'release.json').read_text());release['version']='v0.1.0-alpha.33'
-        (candidate/'release.json').unlink();(candidate/'release.json').write_text(json.dumps(release,indent=2)+'\n')
-        cell.binary=candidate/'bin/supabricks'
-        upgrade_backup=root/'upgrade-backup'
-        def upgrade():return cli('installation','upgrade','--prefix',prefix,'--previous',installed,'--backup',upgrade_backup)
-        upgrade()
-        completed=json.loads((cell.root/'last-upgrade.json').read_text())
-        saved=json.loads((upgrade_backup/'backup.json').read_text())
-        assert completed['catalog_state_sha256']
-        journal=dict(version=1,previous=str(installed),prefix=str(prefix),backup=str(upgrade_backup),
-            **{'from':completed['from'],'to':completed['to']},
-            database_sha256=saved['files']['state.sqlite3']['sha256'],catalog_state_sha256=completed['catalog_state_sha256'])
-        for phase in ['prepared','runtime_rebound','current_activated']:
-            (cell.root/'upgrade.json').write_text(json.dumps(journal));(cell.root/'upgrade.json').chmod(0o600)
-            if phase=='prepared':shutil.copy2(upgrade_backup/'data/runtime.json',cell.root/'runtime.json')
-            if phase!='current_activated':
-                (prefix/'current').unlink();(prefix/'current').symlink_to(Path('releases')/old_version)
-            cli('up',success=False)
+        upgrade_backup=backup
+        if args.exact_installed:
+            cell.start();running=True
+            cli('catalog','service','configure','local');ready()
+            scope['worktree']=str(cell.root/consumer.relative_to(data))
+            query(scope)
+            subprocess.run([str(cell.binary),'installation','verify'],check=True,capture_output=True)
+            assert sha(installed/'release.json') == report['release_identity']
+            check('exact_archive_unchanged_after_catalog_restore_and_rebind')
+        else:
+            candidate=prefix/'releases/v0.1.0-alpha.33'
+            shutil.copytree(installed,candidate,copy_function=os.link)
+            release=json.loads((candidate/'release.json').read_text());release['version']='v0.1.0-alpha.33'
+            # Synthetic upgrade coverage only: rebuild timing changes provenance,
+            # while the exact catalog runtime payload must remain compatible.
+            build=json.loads((candidate/'share/unity-catalog/build.json').read_text())
+            build['build_seconds']+=1
+            for name in ['share/unity-catalog/build.json','provenance/unity-catalog/build.json']:
+                path=candidate/name
+                path.unlink()  # break the hardlink; never mutate the old installation
+                path.write_text(json.dumps(build,indent=2)+'\n')
+                release['files'][name]['sha256']=sha(path)
+            release['provenance']['unity_catalog']['build_sha256']=sha(candidate/'share/unity-catalog/build.json')
+            (candidate/'release.json').unlink();(candidate/'release.json').write_text(json.dumps(release,indent=2)+'\n')
+            cell.binary=candidate/'bin/supabricks'
+            upgrade_backup=root/'upgrade-backup'
+            def upgrade():return cli('installation','upgrade','--prefix',prefix,'--previous',installed,'--backup',upgrade_backup)
             upgrade()
-            assert not (cell.root/'upgrade.json').exists()
-        cell.binary=installed/'bin/supabricks'
-        cli('installation','upgrade','--prefix',prefix,'--previous',candidate,'--backup',root/'downgrade',success=False)
-        cell.binary=candidate/'bin/supabricks';cell.bundle=candidate/'engine';cell.helpers=candidate/'helpers'
-        cell.start();running=True
-        cli('catalog','service','configure','local');ready()
-        scope['worktree']=str(cell.root/consumer.relative_to(data))
-        query(scope)
-        check('catalog_upgrade_checkpoint_resumes_each_activation_boundary_and_refuses_downgrade')
+            completed=json.loads((cell.root/'last-upgrade.json').read_text())
+            saved=json.loads((upgrade_backup/'backup.json').read_text())
+            assert completed['catalog_state_sha256']
+            assert completed['from']['compatibility'] != completed['to']['compatibility']
+            journal=dict(version=1,previous=str(installed),prefix=str(prefix),backup=str(upgrade_backup),
+                **{'from':completed['from'],'to':completed['to']},
+                database_sha256=saved['files']['state.sqlite3']['sha256'],catalog_state_sha256=completed['catalog_state_sha256'])
+            for phase in ['prepared','runtime_rebound','current_activated']:
+                (cell.root/'upgrade.json').write_text(json.dumps(journal));(cell.root/'upgrade.json').chmod(0o600)
+                if phase=='prepared':shutil.copy2(upgrade_backup/'data/runtime.json',cell.root/'runtime.json')
+                if phase!='current_activated':
+                    (prefix/'current').unlink();(prefix/'current').symlink_to(Path('releases')/old_version)
+                cli('up',success=False)
+                upgrade()
+                assert not (cell.root/'upgrade.json').exists()
+            cell.binary=installed/'bin/supabricks'
+            cli('installation','upgrade','--prefix',prefix,'--previous',candidate,'--backup',root/'downgrade',success=False)
+            cell.binary=candidate/'bin/supabricks';cell.bundle=candidate/'engine';cell.helpers=candidate/'helpers'
+            cell.start();running=True
+            cli('catalog','service','configure','local');ready()
+            scope['worktree']=str(cell.root/consumer.relative_to(data))
+            query(scope)
+            check('catalog_upgrade_checkpoint_resumes_each_activation_boundary_and_refuses_downgrade')
         if args.disk_full:
             assert os.uname().sysname=='Linux'
             volume=root/'full-volume';volume.mkdir()
