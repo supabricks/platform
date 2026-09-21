@@ -267,6 +267,7 @@ def qualify(args):
 
         checks.append(qualify_project_apply(binary, prefix / 'current', source_project, workspace, env))
         checks.append(qualify_project_offline(binary, prefix / 'current', source_project.with_name("sales-runnable"), workspace, env))
+        report["notebook_readiness_polling"] = summarize(workspace / "pk05-notebook.log")
 
         cli('database', 'create', 'main', '--wait')
         cli('branch', 'use', 'main')

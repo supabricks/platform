@@ -152,6 +152,16 @@ silently retried.
   benchmark cleanup exceeded the CLI's interactive 90-second operation wait.
   The fixture now submits deletion once and waits on that same durable operation
   for up to five minutes; completion remains required and its duration is recorded.
+- Focused run `35575076407` passed the Linux app workflow against the unchanged
+  `3c81659` archive. Its macOS job proved external TCP denial (`EPERM`) and passed
+  all 37 exact-installed service scenarios with the corrected directional policy.
+  The earlier notebook failure's HTTP status was not retained, so its precise
+  cause remains unconfirmed. Read-only readiness polling now tolerates HTTP 503
+  within its original deadline and records those interruptions; regression tests
+  ensure mutations are submitted once and terminal errors/deadlines remain fatal.
+  This does not authorize retrying an entire failed qualification run as success.
+- The UTF-8 fix passed 50 affected Rust tests and all nine native recovery scenarios,
+  including bound reads and upgrade activation from the Unicode destination.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

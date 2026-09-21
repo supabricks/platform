@@ -27,6 +27,8 @@ class Diagnostics(unittest.TestCase):
             result=summarize(p)
             self.assertEqual(result['console_errors'],[dict(status=503,code='io_error',retryable=False,io_kind='would_block')])
             self.assertNotIn('secret',str(result))
+            p.write_text('NOTEBOOK_READINESS_TRANSIENT_503\n')
+            self.assertEqual(summarize(p)['readiness_poll_503_observed'],1)
             p.write_text('RuntimeError: console workspace: HTTP 409: {"error":{"code":"secret","message":"secret"}}\n')
             result=summarize(p)
             self.assertEqual(result['console_errors'],[dict(status=409,code='unknown')])
