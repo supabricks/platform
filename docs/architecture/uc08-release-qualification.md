@@ -162,6 +162,28 @@ silently retried.
   This does not authorize retrying an entire failed qualification run as success.
 - The UTF-8 fix passed 50 affected Rust tests and all nine native recovery scenarios,
   including bound reads and upgrade activation from the Unicode destination.
+- The historical NE01 alpha.8 macOS derivative failed twice in run `35577160546`
+  under the corrected policy. Diagnostic `35579771611` located the stall in
+  analytical admission, before any kernel process was registered. The unisolated
+  control in `35579258637` passed all 18 checks; it is not offline evidence.
+  Transport diagnostic `35580318967` proved ordinary IPv4 loopback connects while
+  IPv4-mapped IPv6 and external TCP are denied. Alpha.8 uses the old IPv4 gRPC
+  endpoint; current product workers use native IPv6 since UC04. The historical
+  feasibility workflow is now manual-only: NE02–NE06 integrated the feature, and
+  it does not import the modern shared client that triggered this unrelated
+  experiment. Its manual run and original evidence remain available, with the
+  macOS offline claim corrected.
+  Every current exact-archive notebook/environment gate remains required.
+- Run `35577160676` reached the same alpha.8 transport limitation while the R03
+  macOS gate prepared its predecessor, before candidate upgrade. The fixture now
+  uses the predecessor's unchanged bundled Delta/Arrow runtime to compare each
+  exact exported table version with its source PostgreSQL rows. After upgrade,
+  the candidate must still query those retained epochs through actual Sail at
+  every existing recovery boundary. The archived predecessor is not patched and
+  the offline policy is unchanged. A local two-version Delta fixture confirmed
+  that this check reads the recorded version rather than the latest files and
+  rejects paths outside the analytical store. This does not claim the old
+  predecessor's Spark endpoint runs under the corrected macOS policy.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

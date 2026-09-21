@@ -2,6 +2,19 @@
 
 *Qualified for NE02 integration · 2026-09-10 · Production behavior remains unchanged*
 
+Historical experiment: the statements below describe NE01 before integration.
+UC08 found that the original macOS network policy also allowed outbound traffic,
+so the recorded macOS pass does **not** establish offline operation. The frozen
+alpha.8 derivative stalls in analytical admission under the corrected policy,
+before a kernel starts; its ordinary IPv4 gRPC endpoint uses mapped IPv6 sockets
+that Seatbelt does not recognize as localhost. The current product uses native
+IPv6 loopback since [UC04](uc04-catalog-reads.md) and is qualified separately by
+the complete installed-release gates. This superseded feasibility workflow
+remains runnable manually for historical reproduction. Current notebook,
+environment and package changes run the exact-release gates rather than this
+unused baseline.
+See the [UC08 retry ledger](uc08-release-qualification.md) for the diagnostic runs.
+
 ## Decision and scope
 
 Use bundled uv 0.11.21 and the existing bundled CPython 3.12.13 to prepare a
