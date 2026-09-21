@@ -393,6 +393,22 @@ print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.exec
         except BaseException as error:
             self.report['status'] = 'failed'
             self.report['failure_type'] = type(error).__name__
+            # Temporary diagnostic branch: only fixed states, counts and typed
+            # exceptions leave the synthetic private fixture.
+            sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'install/native'))
+            from diagnostics import summarize
+            logs = list(self.root.rglob('*.log'))[:32]
+            self.report['startup_logs'] = [dict(kind='server' if p.name == 'server.log' else 'runtime',
+                **summarize(p)) for p in logs]
+            try:
+                known = {'starting', 'stopped', 'ready', 'busy', 'failed', 'lost', 'expired', 'stopping'}
+                self.report['notebook_states'] = [dict(state=e['state'] if e['state'] in known else 'unknown',
+                    has_error=bool(e.get('error')), has_kernel=bool(e.get('kernel_id')))
+                    for e in self.action(action='list')]
+            except Exception:
+                self.report['notebook_state_unavailable'] = True
+            self.report['ready_files'] = len(list(self.root.rglob('*.ready.json')))
+            self.report['server_ready_files'] = len(list(self.root.rglob('ready.json')))
             raise
         finally:
             for project in self.projects:
