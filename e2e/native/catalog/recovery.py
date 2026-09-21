@@ -139,7 +139,7 @@ requirement="sales.v1"
         current=publication('status',id=pub['id'])['publication']
         assert [t['id'] for t in current['tables']]==[t['id'] for t in pub['tables']]
         assert all('/restored%20root/' in t['body']['storage_location'] for t in current['tables'])
-        assert cell.sql(branch,'SELECT sum(id) FROM sales')=='3'
+        wait(lambda:cell.sql(branch,'SELECT sum(id) FROM sales')=='3')
         query(scope)
         check('moved_root_preserves_ids_and_bindings_relocates_files_and_rotates_credentials')
         assert call(producer,'collect_snapshots',branch='main',keep=1)['deleting']==[]
