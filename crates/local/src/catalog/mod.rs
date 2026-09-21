@@ -281,6 +281,10 @@ impl Manager {
                 "-Xmx256m".into(),
                 "-XX:ActiveProcessorCount=2".into(),
                 "-Djava.net.preferIPv4Stack=true".into(),
+                format!(
+                    "-Djdk.net.hosts.file={}",
+                    root.join("etc/conf/hosts").display()
+                ),
                 format!("-Djava.io.tmpdir={}", root.join("tmp").display()),
                 "-cp".into(),
                 runtime.classpath.clone(),

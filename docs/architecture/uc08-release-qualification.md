@@ -32,7 +32,12 @@ and a managed notebook without manual UC setup.
 
 Linux isolates the entire process tree in a loopback-only network namespace and
 masks the system JDK; macOS denies external networking, Homebrew and system Java.
-The native service asserts the executable is the candidate's private JRE. The
+The native service asserts the executable is the candidate's private JRE.
+Its managed loopback/file profile uses a private hosts-only resolver, including
+the OS hostname, so startup logging cannot trigger external DNS when the host
+has no matching system hosts entry. This is a deliberately finite name set;
+external operator-managed UC and the platform's HTTP resolver are unchanged.
+The mechanism is documented in the [JDK release notes](https://www.oracle.com/java/technologies/javase/9-relnotes.html). The
 existing Linux baseline traces all descendant network calls. Resource sampling
 includes the daemon's complete live descendant tree and separately records
 observed UC JVMs and peak JVM RSS. Sampling can miss short-lived peaks and RSS
@@ -85,6 +90,12 @@ silently retried.
   PostgreSQL was ready. The fixture now waits for its restored SQL query; all nine
   local exact-installed recovery scenarios passed on retry. Linux ENOSPC remains
   a CI gate.
+- A local alpha.34 curl-installed Linux app workflow passed, including the
+  packaged notebook that previously failed in CI. Its network trace then exposed
+  DNS attempts from managed JVM hostname lookup (no network traffic escaped).
+  The private resolver change passed a bundled-JRE probe with no DNS attempts;
+  repeat full-product network qualification is pending. This is new evidence,
+  not a claim that the prior notebook failure's cause is known.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

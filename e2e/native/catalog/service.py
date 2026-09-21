@@ -149,6 +149,8 @@ def main():
         assert len(listeners)>=2
         assert all((getattr(ipaddress.ip_address(c.laddr.ip),'ipv4_mapped',None) or ipaddress.ip_address(c.laddr.ip)).is_loopback for c in listeners)
         assert process.exe()==str((installed/'share/unity-catalog/java/bin/java').resolve())
+        assert '-Djdk.net.hosts.file='+str(cellroot/'catalog/etc/conf/hosts') in process.cmdline()
+        assert (cellroot/'catalog/etc/conf/hosts').stat().st_mode&0o077==0
         assert first['readiness_seconds']<20
         assert process.memory_info().rss<512*1024*1024
         check('installed_private_jre_authenticated_loopback_bootstrap',readiness_seconds=first['readiness_seconds'],idle_rss_bytes=process.memory_info().rss)

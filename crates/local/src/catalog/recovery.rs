@@ -134,6 +134,10 @@ fn run_h2(root: &Path, provider: &Provider, script: &str, writable: bool) -> Res
     // Relative JDBC path prevents the filesystem path from being interpreted as JDBC options.
     let result = (|| -> Result<()> {
         let mut child = Command::new(runtime.root.join("java/bin/java"))
+            .arg(format!(
+                "-Djdk.net.hosts.file={}",
+                root.join("catalog/etc/conf/hosts").display()
+            ))
             .args([
                 "-Xms32m",
                 "-Xmx256m",

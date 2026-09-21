@@ -158,6 +158,27 @@ pub fn data_directory(store: &Store) -> Result<PathBuf> {
 pub fn prepare(store: &Store, runtime: &Runtime) -> Result<PathBuf> {
     let root = data_directory(store)?;
     let conf = root.join("etc/conf");
+    // This managed profile has only loopback peers and local files. Java's
+    // host-file resolver avoids DNS when logging libraries ask for the local
+    // hostname on a machine/container with no corresponding /etc/hosts entry.
+    let mut hostname = [0u8; 256];
+    if unsafe { libc::gethostname(hostname.as_mut_ptr().cast(), hostname.len()) } != 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let end = hostname
+        .iter()
+        .position(|b| *b == 0)
+        .unwrap_or(hostname.len());
+    let hostname = std::str::from_utf8(&hostname[..end]).unwrap_or("");
+    let mut hosts = String::from("127.0.0.1 localhost\n::1 localhost\n");
+    if !hostname.is_empty()
+        && hostname
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_'))
+    {
+        hosts.push_str(&format!("127.0.0.1 {hostname}\n"));
+    }
+    supervisor::write_private(&conf.join("hosts"), hosts.as_bytes())?;
     // Fail closed on incomplete key state after first successful bootstrap.
     // Explicit key rotation removes the sentinel while stopped.
     if root.join("bootstrapped.json").try_exists()? {
