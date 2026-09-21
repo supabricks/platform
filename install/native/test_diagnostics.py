@@ -13,6 +13,10 @@ class Diagnostics(unittest.TestCase):
             self.assertEqual(result['failure_types'],['WebSocketTimeoutException'])
             self.assertTrue(result['truncated'])
             self.assertNotIn('secret',str(result))
+            p.write_text('  File "/private/secret-project.py", line 99, in secret_function\nRuntimeError: password=secret\n')
+            result=summarize(p)
+            self.assertNotIn('secret',str(result))
+            self.assertEqual(result['frames'],[dict(file='runtime',line=99,function='runtime')])
             p.unlink();p.symlink_to('/etc/passwd')
             self.assertFalse(summarize(p)['available'])
 
