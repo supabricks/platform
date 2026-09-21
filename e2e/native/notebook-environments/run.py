@@ -243,6 +243,13 @@ class Probe:
         end = time.monotonic() + seconds
         while time.monotonic() < end:
             entry = next(e for e in self.action(action='list') if e['id'] == entry['id'])
+            with sqlite3.connect(f'file:{self.root}/data/state.sqlite3?mode=ro', uri=True) as db:
+                states_now = [s if s in {'waiting','starting','ready','closing','closed','failed'} else 'unknown'
+                    for (s,) in db.execute('SELECT state FROM analytical_sessions')]
+            snapshot = dict(analytical=states_now, kernel_records=sum(p['role'].startswith('notebook-kernel') for p in self.processes()))
+            history = self.report.setdefault('admission_states', [])
+            if not history or history[-1] != snapshot:
+                history.append(snapshot)
             if entry['state'] in states:
                 return entry
             if entry['state'] in ['failed', 'lost', 'expired']:

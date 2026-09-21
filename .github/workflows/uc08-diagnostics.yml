@@ -17,9 +17,6 @@ jobs:
           - runner: macos-15
             target: macos-arm64
             policy: strict
-          - runner: macos-15
-            target: macos-arm64
-            policy: historical-control
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     steps:
@@ -62,6 +59,24 @@ jobs:
             "build/ne01-package/relocated probe/service/python/runtime/bin/python3.12" -I -B \
             e2e/native/notebook-environments/run.py --probe "build/ne01-package/relocated probe" \
             --target macos-arm64 --report build/ne01-reports/qualification.json
+      - name: Bounded sandbox denial diagnostics
+        if: always()
+        run: |
+          sudo /usr/bin/log show --last 15m --style json --predicate 'process == "sandboxd"' > /tmp/uc08-sandbox-private.json
+          python - <<'PYCODE'
+          import json,re
+          from pathlib import Path
+          rows=json.loads(Path('/tmp/uc08-sandbox-private.json').read_text())
+          counts={}
+          for row in rows:
+              message=row.get('eventMessage','')
+              match=re.search(r'deny\(\d+\) ([a-z-]+)',message)
+              if match:
+                  op=match[1] if match[1] in {'network-outbound','network-inbound','network-bind','file-read-data','file-read-metadata','process-exec'} else 'other'
+                  counts[op]=counts.get(op,0)+1
+          p=Path('build/ne01-reports/sandbox.json');p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps(dict(events=len(rows),denials=counts)))
+          PYCODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
