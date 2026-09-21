@@ -30,6 +30,13 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    IdentityAdmin {
+        command: crate::identity::AdminCommand,
+    },
+    IdentityAuth {
+        api_version: u32,
+        command: crate::identity::AuthCommand,
+    },
     CatalogService {
         command: crate::catalog::Command,
     },
@@ -158,6 +165,10 @@ pub struct Daemon {
     validator: Option<crate::engine::validation::Validator>,
     gateway: Option<crate::connections::Gateway>,
     queries: Vec<std::thread::JoinHandle<()>>,
+    identity_jobs: Vec<(
+        UnixStream,
+        std::thread::JoinHandle<Result<crate::store::IdentityCommit>>,
+    )>,
     ingest_error: Option<String>,
     project_apply_error: Option<String>,
     dataset_checks: crate::catalog::datasets::Checks,
@@ -216,6 +227,7 @@ impl Daemon {
             publisher,
             sessions,
             queries: Vec::new(),
+            identity_jobs: Vec::new(),
             ingest_error: None,
             project_apply_error: None,
             dataset_checks: Default::default(),
@@ -247,6 +259,21 @@ impl Daemon {
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
         loop {
+            for index in (0..self.identity_jobs.len()).rev() {
+                if self.identity_jobs[index].1.is_finished() {
+                    let (mut reply, worker) = self.identity_jobs.swap_remove(index);
+                    let result = if stopping {
+                        Err(conflict("daemon is stopping"))
+                    } else {
+                        worker
+                            .join()
+                            .map_err(|_| invalid("identity worker unavailable"))
+                            .and_then(|r| r)
+                            .and_then(|commit| commit(&mut self.store))
+                    };
+                    let _ = writeln!(reply, "{}", response(result));
+                }
+            }
             self.queries.retain(|t| !t.is_finished());
             if stopping {
                 self.console_queries.cancel_all();
@@ -482,6 +509,30 @@ impl Daemon {
                 if stopping && !matches!(envelope.request, Request::Status | Request::Shutdown) {
                     return Err(conflict("daemon is stopping"));
                 }
+                if let Request::IdentityAuth {
+                    api_version,
+                    command,
+                } = envelope.request
+                {
+                    if api_version != crate::identity::VERSION {
+                        return Err(invalid("unsupported identity API version"));
+                    }
+                    if matches!(command, crate::identity::AuthCommand::Logout { .. }) {
+                        return self.store.identity_auth(command).map(Some);
+                    }
+                    if self.identity_jobs.len() >= 4 {
+                        return Err(conflict("identity workers are busy"));
+                    }
+                    let job = self.store.identity_job(command)?;
+                    let reply = stream.try_clone()?;
+                    self.identity_jobs.push((
+                        reply,
+                        std::thread::Builder::new()
+                            .name("identity-oidc".into())
+                            .spawn(job)?,
+                    ));
+                    return Ok(None);
+                }
                 if let Request::Api {
                     api_version,
                     binding,
@@ -553,6 +604,16 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::IdentityAdmin { command } => self.store.identity_admin(command)?,
+            Request::IdentityAuth {
+                api_version,
+                command,
+            } => {
+                if api_version != crate::identity::VERSION {
+                    return Err(invalid("unsupported identity API version"));
+                }
+                self.store.identity_auth(command)?
+            }
             Request::NotebookTransport {
                 binding,
                 generation,

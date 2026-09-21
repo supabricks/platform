@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 developer probe implemented; UC09.1–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation implemented for review; UC09.2–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -101,6 +101,8 @@ no-go for unsupported paths. Record required UC/Sail patches and component pins.
 A design document or successful OIDC login alone does not complete IAM00.
 
 ## UC09.1 — Principals and login
+
+Implemented for review: [identity/session architecture and qualification](../architecture/uc091-principals-login.md). Schema 16 preserves local-owner IDs. OIDC/PKCE, private sessions, explicit bootstrap, groups, scoped service credentials and authenticated CLI/MCP/browser identity previews are implemented. Product ingress remains disabled; integration with product authorization and the complete console follows in UC09.2–.8.
 
 Add installation realm, stable principals, issuer/subject mappings, disabled state,
 service identities and initial platform-managed groups. Migrate local-owner state
@@ -237,6 +239,8 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Implement UC09.0 / IAM00. Its concrete deliverable is the bounded two-principal
-identity/isolation probe and decision report. Do not start with a large role UI,
-replace Neon storage, adopt Kubernetes or implement a general policy engine.
+Review and qualify UC09.1, then implement UC09.2 project/execution authorization.
+Use the authenticated actor/effective-principal context on every admitted path;
+keep governed product ingress disabled until the complete isolation and release
+gates pass. IAM00 is merged and its selected identity/runtime design is the
+foundation for these slices.
