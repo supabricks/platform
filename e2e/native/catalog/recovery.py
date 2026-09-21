@@ -215,7 +215,7 @@ requirement="sales.v1"
                 subprocess.run(['sudo','-n','umount',str(volume)],check=True)
         else:
             report['disk_exhaustion']='not run locally; Linux CI uses a disposable 16 MiB tmpfs'
-        report['status']='PASS' 
+        report['status']='PASS'
     except Exception as e:
         report['error']=str(e)[:2000]
         raise

@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 recovery is implemented with qualification in progress; UC08–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is implemented in platform #63 with 241 Rust tests and 9 local native recovery scenarios passed; cross-platform CI and Linux ENOSPC qualification pending; UC08–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -322,7 +322,7 @@ data; it is not introduced by this slice. Browser binding forms belong to UC06.
 
 ## UC06 — Deliver the console and agent experience
 
-Implementation: [console #7](https://github.com/supabricks/console/pull/7) merged at `16b27f4`; platform pins that merged source. Local native qualification passed all 11 catalog browser scenarios, 54 existing console checks, 13 notebook checks, 16 environment checks and 237 Rust tests. Linux/macOS catalog CI and full release-archive qualification remain separate. See [console Data workflow](../architecture/uc06-console-data.md) and
+Implementation: [platform #62](https://github.com/supabricks/platform/pull/62) merged at `35e5463`, pinning [console #7](https://github.com/supabricks/console/pull/7) at `16b27f4`. Both native Linux/macOS catalog and browser suites passed. Local native qualification passed all 11 catalog browser scenarios, 54 existing console checks, 13 notebook checks, 16 environment checks and 237 Rust tests. Linux/macOS catalog CI and full release-archive qualification remain separate. See [console Data workflow](../architecture/uc06-console-data.md) and
 [operator workflow](../handbook/catalog-datasets.md#console-workflow).
 
 Build a project-scoped **Data** browser in `supabricks/console`. Show owned and
@@ -351,7 +351,7 @@ advancing the platform submodule pin; existing browser gates remain mandatory.
 
 ## UC07 — Recovery and operational completion
 
-Implementation: [stopped catalog recovery contract](../architecture/uc07-catalog-recovery.md). Native recovery and cross-platform qualification are in progress; the exact-archive release gate remains UC08.
+Implementation: [platform #63](https://github.com/supabricks/platform/pull/63) and the [stopped catalog recovery contract](../architecture/uc07-catalog-recovery.md). All 241 Rust tests and 9 installed native recovery scenarios passed locally, including moved-root bound reads, interruption and upgrade activation boundaries. Linux/macOS CI and actual Linux ENOSPC qualification remain pending; the exact-archive release gate remains UC08.
 
 Extend stopped-cell backup/restore to the owned UC metadata backend, publication
 journal, object mappings, retention references and any newly managed data paths.

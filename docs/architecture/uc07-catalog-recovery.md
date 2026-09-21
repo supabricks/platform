@@ -78,3 +78,9 @@ and downgrade refusal. Linux CI also uses a dedicated 16 MiB tmpfs to inject rea
 ENOSPC; macOS exercises the remaining cases. Existing UC and browser suites stay
 mandatory. These component fixtures do not replace UC08's exact-archive release
 qualification.
+
+Local validation passed 241 core/local Rust tests and all 9 native recovery
+scenarios on Linux, including interruption during restore and three upgrade
+activation boundaries. The final affected catalog suite passed 40 tests after
+configuration/limit hardening. Privileged tmpfs ENOSPC was not run locally; it is
+a separate Linux CI check. Host networking was not isolated in the local run.
