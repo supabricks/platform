@@ -928,3 +928,350 @@ fn catalog_governance_real_uc_partial_apply_outage_recovery_and_object_recreatio
         403 | 404
     ));
 }
+
+fn execution_admit(store: &mut Store, who: &Context, deployment: &str, code: &str) -> String {
+    use crate::authorization::Command as C;
+    let revision: i64 = store
+        .db
+        .query_row(
+            "SELECT revision FROM authorization_policy WHERE deployment=?1",
+            [deployment],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let contents=json!({"nbformat":4,"nbformat_minor":5,"metadata":{},"cells":[{"cell_type":"code","source":[code],"metadata":{},"outputs":[],"execution_count":null}]}).to_string();
+    let saved = store
+        .authorized_command(
+            who,
+            C::SaveSource {
+                deployment: deployment.into(),
+                asset: identity::id(),
+                kind: "notebook".into(),
+                contents,
+                expected_head: None,
+                expected_policy: revision,
+                key: identity::id(),
+            },
+        )
+        .unwrap();
+    store
+        .authorized_command(
+            who,
+            C::AdmitExecution {
+                deployment: deployment.into(),
+                source_revision: saved["revision"].as_str().unwrap().into(),
+                effective_principal: None,
+                expected_policy: revision,
+                key: identity::id(),
+            },
+        )
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .into()
+}
+fn execution_fixture(store: &mut Store, who: &Context, deployment: &str) {
+    use crate::authorization::{AdminCommand as A, Grant, Role};
+    for action in [false, true] {
+        let revision = store
+            .db
+            .query_row(
+                "SELECT revision FROM authorization_policy WHERE deployment=?1",
+                [deployment],
+                |r| r.get(0),
+            )
+            .unwrap();
+        store
+            .authorization_admin(if action {
+                A::SetGrant {
+                    deployment: deployment.into(),
+                    subject: Subject::Principal(who.actor_id.clone()),
+                    grant: Grant::Execute,
+                    effective_principal: None,
+                    source_revision: None,
+                    present: true,
+                    expected_policy: revision,
+                    key: identity::id(),
+                }
+            } else {
+                A::SetRole {
+                    deployment: deployment.into(),
+                    subject: Subject::Principal(who.actor_id.clone()),
+                    role: Some(Role::Editor),
+                    expected_policy: revision,
+                    key: identity::id(),
+                }
+            })
+            .unwrap();
+    }
+}
+#[test]
+#[ignore = "requires Linux Docker/gVisor, verified UC09.4 inputs and the pinned real UC runtime"]
+fn isolated_execution_real_uc_two_users_and_independent_expiry() {
+    use crate::execution::{self as exec, Command as C};
+    use sha2::{Digest, Sha256};
+    let (_root, mut store, _owner, mut publication) = crate::catalog::publication::tests::setup();
+    let config =
+        PathBuf::from(std::env::var("SUPABRICKS_UC094_CONFIG").expect("verified execution config"));
+    crate::supervisor::write_private(
+        &store.root().join("execution-runtime.json"),
+        &fs::read(&config).unwrap(),
+    )
+    .unwrap();
+    let settings: Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
+    // Replace only fixture bytes with an actual Arrow/Delta producer, then bind
+    // their exact hashes in the same immutable publication descriptor.
+    let snapshot = store
+        .snapshot(publication.project_id, publication.epoch_id)
+        .unwrap();
+    let mut descriptor = snapshot.publication.descriptor.unwrap();
+    let generation = store
+        .root()
+        .join("analytics/generations")
+        .join(snapshot.publication.export_id.to_string());
+    fs::remove_dir_all(generation.join("101")).unwrap();
+    assert!(Command::new(PathBuf::from(settings["release"].as_str().unwrap()).join("python/analytics/python")).args(["-c","import sys;import pyarrow as pa;from deltalake import write_deltalake;write_deltalake(sys.argv[1],pa.table({'id':pa.array([1,2,3],type=pa.int32())}))"]).arg(generation.join("101")).status().unwrap().success());
+    let mut files = descriptor["manifest"]["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|v| !v["path"].as_str().unwrap().starts_with("101/"))
+        .cloned()
+        .collect::<Vec<_>>();
+    for directory in [generation.join("101"), generation.join("101/_delta_log")] {
+        for entry in fs::read_dir(directory).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_file() {
+                let bytes = fs::read(&path).unwrap();
+                files.push(json!({"path":path.strip_prefix(&generation).unwrap().to_str().unwrap(),"bytes":bytes.len(),"sha256":hex::encode(Sha256::digest(bytes))}));
+            }
+        }
+    }
+    descriptor["manifest"]["files"] = json!(files);
+    descriptor["manifest_sha256"] = json!(hex::encode(Sha256::digest(
+        descriptor["manifest"].to_string().as_bytes()
+    )));
+    publication.manifest_hash = descriptor["manifest_sha256"].as_str().unwrap().into();
+    store
+        .db
+        .execute(
+            "UPDATE publications SET descriptor=?1 WHERE epoch_id=?2",
+            params![descriptor.to_string(), publication.epoch_id.to_string()],
+        )
+        .unwrap();
+    let uc = real_uc(&store, &mut publication);
+    seed(&mut store, &mut publication);
+    let alice = principal(&mut store);
+    let bob = principal(&mut store);
+    let deployment = publication.deployment_id.to_string();
+    for who in [&alice, &bob] {
+        execution_fixture(&mut store, &who.0, &deployment);
+        run(
+            &mut store,
+            &uc.broker,
+            AdminCommand::MapPrincipal {
+                principal: who.0.actor_id.clone(),
+            },
+        )
+        .unwrap();
+    }
+    apply(
+        &mut store,
+        &uc.broker,
+        vec![change(
+            &publication,
+            Subject::Principal(alice.0.actor_id.clone()),
+            true,
+        )],
+    )
+    .unwrap();
+    let table = publication.tables[0].id.to_string();
+    let datasets = vec![exec::Dataset {
+        publication: publication.id.to_string(),
+        publication_revision: publication.revision.unwrap(),
+        table: table.clone(),
+    }];
+    let denied_id = execution_admit(
+        &mut store,
+        &bob.0,
+        &deployment,
+        "raise RuntimeError('must never execute')",
+    );
+    let manager = exec::Manager::default();
+    assert!(
+        store
+            .execution_job(
+                bob.0.clone(),
+                bob.1.clone(),
+                deployment.clone(),
+                C::Start {
+                    id: denied_id,
+                    datasets: datasets.clone()
+                },
+                uc.broker.fresh(),
+                manager.clone()
+            )
+            .unwrap()()
+        .unwrap()(&mut store)
+        .is_err()
+    );
+    let canary = store.root().join("host-canary");
+    fs::write(&canary, b"host credential must not cross").unwrap();
+    let socket_path = store.root().join("host-control.sock");
+    let _socket = std::os::unix::net::UnixListener::bind(&socket_path).unwrap();
+    let host_process = ManagedChild(
+        Command::new("sleep")
+            .arg("120")
+            .env("HOST_CREDENTIAL", "host-canary")
+            .spawn()
+            .unwrap(),
+    );
+    let source = include_str!("../../../../e2e/native/execution/kernel_checks.py")
+        .replace("TABLE_UUID", &table)
+        .replace("HOST_CANARY_JSON", &json!(canary).to_string())
+        .replace("HOST_SOCKET_JSON", &json!(socket_path).to_string())
+        .replace("HOST_PROCESS_PID", &host_process.0.id().to_string())
+        .replace(
+            "HOST_UC_PORT",
+            uc.broker.test_endpoint().rsplit(':').next().unwrap(),
+        );
+    let a = execution_admit(&mut store, &alice.0, &deployment, &source);
+    let b = execution_admit(
+        &mut store,
+        &bob.0,
+        &deployment,
+        &format!(
+            "import time\nfrom pathlib import Path\nassert not Path('/admission/data/{table}').exists()\nassert not Path('/scratch/private-cache').exists()\nassert spark.sql('select 7 AS n').collect()[0].n==7\nprint('BOB_ISOLATED',flush=True)\ntime.sleep(18)\n"
+        ),
+    );
+    let mut jobs = Vec::new();
+    for (who, id, data) in [(&alice, &a, datasets.clone()), (&bob, &b, vec![])] {
+        let job = store
+            .execution_job(
+                who.0.clone(),
+                who.1.clone(),
+                deployment.clone(),
+                C::Start {
+                    id: id.clone(),
+                    datasets: data,
+                },
+                uc.broker.fresh(),
+                manager.clone(),
+            )
+            .unwrap();
+        jobs.push(std::thread::spawn(job));
+    }
+    let commits = jobs
+        .into_iter()
+        .map(|job| job.join().unwrap().unwrap())
+        .collect::<Vec<_>>();
+    for commit in commits {
+        commit(&mut store).unwrap();
+    }
+    let start = Instant::now();
+    let mut renew = Instant::now();
+    let mut complete = std::collections::BTreeSet::new();
+    while complete.len() != 2 {
+        manager.tick(&mut store, false).unwrap();
+        if renew.elapsed() > Duration::from_secs(3) {
+            for (who, id, marker) in [
+                (&alice, &a, "UC094_CHECKS_PASSED"),
+                (&bob, &b, "BOB_ISOLATED"),
+            ] {
+                if complete.contains(id) {
+                    continue;
+                }
+                let result = store
+                    .execution_job(
+                        who.0.clone(),
+                        who.1.clone(),
+                        deployment.clone(),
+                        C::Poll { id: id.clone() },
+                        uc.broker.fresh(),
+                        manager.clone(),
+                    )
+                    .unwrap()()
+                .unwrap()(&mut store)
+                .unwrap();
+                assert_ne!(result["state"], "failed", "{result}");
+                if result["state"] == "finished" {
+                    assert_eq!(result["result"]["exit_code"], 0, "{result}");
+                    assert!(
+                        result["result"]["output"]
+                            .as_str()
+                            .unwrap()
+                            .contains(marker),
+                        "{result}"
+                    );
+                    complete.insert(id.clone());
+                }
+            }
+            renew = Instant::now();
+        }
+        assert!(start.elapsed() < Duration::from_secs(100));
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    // A lease actively reading an already-open admitted file is killed by the
+    // outside watchdog after the control-plane renewal handle disappears.
+    let open_file = format!(
+        "import time,threading\nf=open('/admission/data/{table}/_delta_log/00000000000000000000.json','rb')\ndef read_forever():\n while True:\n  f.seek(0);f.read();time.sleep(.01)\nthreading.Thread(target=read_forever,daemon=True).start()\nopen('/scratch/open-ready','w').write('ready')\nspark.sql('SELECT sum(id) FROM range(10000000000)').collect()\n"
+    );
+    let id = execution_admit(&mut store, &alice.0, &deployment, &open_file);
+    store
+        .execution_job(
+            alice.0.clone(),
+            alice.1.clone(),
+            deployment.clone(),
+            C::Start {
+                id: id.clone(),
+                datasets,
+            },
+            uc.broker.fresh(),
+            manager.clone(),
+        )
+        .unwrap()()
+    .unwrap()(&mut store)
+    .unwrap();
+    let name = format!("sb-exec-{id}");
+    let ready = Instant::now();
+    loop {
+        let check = Command::new("docker")
+            .args([
+                "exec",
+                &name,
+                "/tools/runsc",
+                "--root=/work/runsc",
+                "exec",
+                "lease",
+                "/usr/bin/test",
+                "-f",
+                "/scratch/open-ready",
+            ])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .unwrap();
+        if check.success() {
+            break;
+        }
+        assert!(ready.elapsed() < Duration::from_secs(25));
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    drop(manager);
+    let began = Instant::now();
+    loop {
+        let status = Command::new("docker")
+            .args(["inspect", &name])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .unwrap();
+        if !status.success() {
+            break;
+        }
+        assert!(began.elapsed() < Duration::from_secs(35));
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    store.recover_executions().unwrap();
+    assert!(store.execution_live(&id).is_err());
+}

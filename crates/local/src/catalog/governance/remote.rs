@@ -303,6 +303,11 @@ impl Broker {
         )
         .map_err(|_| denied())
     }
+    pub(crate) fn fresh(&self) -> Self {
+        let mut b = self.clone();
+        b.deadline = Instant::now() + Duration::from_secs(20);
+        b
+    }
     pub fn read(
         &self,
         snapshot: &Snapshot,
@@ -437,11 +442,6 @@ impl Broker {
         body: Option<Value>,
     ) -> Result<Value> {
         self.admin(method, control, path, body)
-    }
-    pub(crate) fn fresh(&self) -> Self {
-        let mut b = self.clone();
-        b.deadline = Instant::now() + Duration::from_secs(20);
-        b
     }
     pub(crate) fn test_user_request(
         &self,

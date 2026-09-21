@@ -1,4 +1,4 @@
-//! Loopback-only identity and project-control adapters; data/workload routes stay gated.
+//! Loopback-only identity and authorized control adapters; shared ingress stays gated.
 use super::*;
 use crate::{client, daemon::Request};
 use reqwest::Url;
@@ -554,7 +554,7 @@ pub fn mcp(root: &Path, path: &Path) -> Result<()> {
                     json!({"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"supabricks-identity","version":"1"}}})
                 }
                 Some("tools/list") => {
-                    json!({"result":{"tools":[{"name":"identity_whoami","description":"Inspect the authenticated identity.","inputSchema":{"type":"object","properties":{},"additionalProperties":false}},{"name":"project_control","description":"Project roles, immutable source revisions and execution admission; UC-checked catalog discovery is available; PG and workload launch remain disabled.","inputSchema":{"type":"object","properties":{"command":{"type":"object"}},"required":["command"],"additionalProperties":false}}]}})
+                    json!({"result":{"tools":[{"name":"identity_whoami","description":"Inspect the authenticated identity.","inputSchema":{"type":"object","properties":{},"additionalProperties":false}},{"name":"project_control","description":"Project roles, immutable source revisions and execution admission; UC-checked catalog discovery and opt-in isolated execution; PG and shared ingress remain disabled.","inputSchema":{"type":"object","properties":{"command":{"type":"object"}},"required":["command"],"additionalProperties":false}}]}})
                 }
                 Some("tools/call")
                     if request["params"]["name"] == "identity_whoami"

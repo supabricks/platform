@@ -48,7 +48,7 @@ fn members(db: &Connection, subject: &str) -> Result<Vec<String>> {
         Err(gov::denied())
     }
 }
-fn snapshot(db: &Connection, broker: &Broker, changes: &[Change]) -> Result<Snapshot> {
+pub(super) fn snapshot(db: &Connection, broker: &Broker, changes: &[Change]) -> Result<Snapshot> {
     let mut origins=db.prepare("SELECT publication,subject,publication_revision,tables_json FROM catalog_grant_origins ORDER BY publication,subject")?
         .query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?,r.get::<_,String>(3)?)))?
         .map(|r|{let(p,s,v,t)=r?;Ok(Origin{publication:p,subject:s,revision:v,tables:serde_json::from_str(&t)?})}).collect::<Result<Vec<_>>>()?;

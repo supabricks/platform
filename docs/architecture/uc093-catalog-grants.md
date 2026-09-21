@@ -3,8 +3,9 @@
 UC09.3 implements the IAM00 private principal broker for the managed local Unity
 Catalog provider. Catalog discovery is available through the authenticated
 project-control CLI, MCP and loopback browser adapters. UC itself checks ordinary
-principal requests. Data execution, shared ingress, PostgreSQL access and output
-streams remain gated by the later governance slices.
+principal requests. [UC09.4](uc094-isolated-execution.md) adds opt-in isolated
+execution; shared ingress, PostgreSQL access and interactive output streams
+remain gated by later governance slices.
 
 ## Principal and credential boundary
 
