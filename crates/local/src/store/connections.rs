@@ -233,7 +233,12 @@ mod tests {
     #[test]
     fn persisted_listener_conflicts_are_not_reallocated_on_restart() {
         let (_root, mut store, project, branch) = fixture();
-        let blocker = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        // This test intentionally releases and rebinds the same port. Avoid the
+        // OS ephemeral range so concurrent OIDC clients cannot claim it as an
+        // outbound source port during those gaps (observed on macOS CI).
+        let blocker = (20000..30000)
+            .find_map(|port| std::net::TcpListener::bind(("127.0.0.1", port)).ok())
+            .expect("an available non-ephemeral test port");
         let port = blocker.local_addr().unwrap().port();
         store.reserve_connection_port(branch, port).unwrap();
         let before = store.stable_connection_json(project, branch).unwrap();
