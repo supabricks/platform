@@ -18,6 +18,11 @@ use supabricks_core::resource::{DesiredState, OperationId};
 const HELP: &str = r#"Supabricks local (PG17)
 Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
 
+  identity admin --request-file PRIVATE_JSON [--output PRIVATE_JSON]
+  identity login --provider NAME --redirect URL --output PRIVATE_JSON
+  identity browser --provider NAME --redirect URL
+  identity whoami | logout | mcp --session-file PRIVATE_JSON
+                               Identity preview only; governed product access remains disabled
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
   project pack --output PATH.sbproj [--target NAME]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
@@ -334,6 +339,80 @@ pub fn run() -> Result<u8> {
     };
     let project = a.take("--project").map(PathBuf::from);
     a.flag("--json");
+    if command == "identity" {
+        use crate::identity::{self, transport};
+        if project.is_some() {
+            return Err(invalid("identity commands are installation-scoped"));
+        }
+        let action = a.required(1)?;
+        let result = match action.as_str() {
+            "admin" => {
+                let path = PathBuf::from(
+                    a.take("--request-file")
+                        .ok_or_else(|| invalid("use --request-file PRIVATE_JSON"))?,
+                );
+                let output = a.take("--output").map(PathBuf::from);
+                a.finish(2)?;
+                let command: identity::AdminCommand =
+                    serde_json::from_value(transport::read_private(&path)?)
+                        .map_err(|_| invalid("invalid identity administration request"))?;
+                if matches!(&command, identity::AdminCommand::IssueService { .. })
+                    && output.is_none()
+                {
+                    return Err(invalid("service credentials require --output PRIVATE_JSON"));
+                }
+                if output.as_ref().is_some_and(|p| p.exists()) {
+                    return Err(invalid("output must be a new private file"));
+                }
+                let value = client::request(&root, Request::IdentityAdmin { command })?;
+                if let Some(output) = output {
+                    transport::write_private(&output, &value)?;
+                    json!({"saved":true})
+                } else {
+                    value
+                }
+            }
+            "login" | "browser" => {
+                let provider = a
+                    .take("--provider")
+                    .ok_or_else(|| invalid("use --provider NAME"))?;
+                let redirect = a
+                    .take("--redirect")
+                    .ok_or_else(|| invalid("use --redirect URL"))?;
+                let output = a.take("--output").map(PathBuf::from);
+                a.finish(2)?;
+                if action == "browser" {
+                    if output.is_some() {
+                        return Err(invalid("browser does not write credentials"));
+                    }
+                    transport::browser(&root, &provider, &redirect)?;
+                    json!({})
+                } else {
+                    transport::login(
+                        &root,
+                        &provider,
+                        &redirect,
+                        &output.ok_or_else(|| invalid("use --output PRIVATE_JSON"))?,
+                    )?
+                }
+            }
+            "whoami" | "logout" | "mcp" => {
+                let path = PathBuf::from(
+                    a.take("--session-file")
+                        .ok_or_else(|| invalid("use --session-file PRIVATE_JSON"))?,
+                );
+                a.finish(2)?;
+                if action == "mcp" {
+                    transport::mcp(&root, &path)?;
+                    return Ok(0);
+                }
+                transport::whoami(&root, &path, action == "logout")?
+            }
+            _ => return Err(invalid("unknown identity command")),
+        };
+        println!("{result}");
+        return Ok(0);
+    }
     if command == "console-serve" {
         let config = a
             .take("--config")

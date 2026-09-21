@@ -1,0 +1,35 @@
+name: identity-login
+on:
+  pull_request:
+    paths:
+      - 'crates/local/**'
+      - 'Cargo.lock'
+      - 'e2e/native/identity/**'
+      - 'e2e/native/iam/pins.lock.json'
+      - '.github/workflows/identity-login.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: identity-login-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  keycloak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the actual CLI and daemon
+        run: cargo build --locked -p supabricks-local --bin supabricks
+      - name: Qualify on-prem login against the pinned TLS provider
+        run: |
+          python3 e2e/native/identity/qualify.py \
+            --binary target/debug/supabricks \
+            --output "$RUNNER_TEMP/uc091-identity.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uc091-identity-linux-x86_64
+          path: ${{ runner.temp }}/uc091-identity.json
+          if-no-files-found: error

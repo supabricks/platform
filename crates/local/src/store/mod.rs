@@ -7,6 +7,8 @@ mod deployments;
 mod environments;
 pub(crate) mod error;
 mod exports;
+mod identity;
+pub(crate) use identity::IdentityCommit;
 mod ingest;
 mod journal;
 pub(crate) mod migrations;

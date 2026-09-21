@@ -380,12 +380,19 @@ fn catalog_thirteen_migration_is_additive_and_resumes_durable_boundaries() {
 fn catalog_fourteen_migration_preserves_publication_predecessor() {
     catalog_migration(14);
 }
+#[test]
+fn catalog_fifteen_migration_preserves_local_owner_identity() {
+    catalog_migration(15);
+}
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::new();
     // Construct the exact pre-I00 catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE catalog_publication_refs; DROP TABLE catalog_retention; DROP TABLE catalog_heads; DROP TABLE catalog_publications;").unwrap();
+    db.execute_batch("DROP TABLE identity_audit; DROP TABLE identity_sessions; DROP TABLE identity_logins; DROP TABLE identity_providers; DROP TABLE identity_memberships; DROP TABLE identity_groups; DROP TABLE identity_subjects; DROP TABLE identity_principals; DROP TABLE identity_realm;").unwrap();
+    if source_schema < 15 {
+        db.execute_batch("DROP TABLE catalog_publication_refs; DROP TABLE catalog_retention; DROP TABLE catalog_heads; DROP TABLE catalog_publications;").unwrap();
+    }
     if source_schema < 14 {
         db.execute_batch("DROP TABLE catalog_assets; DROP TABLE catalog_namespaces;")
             .unwrap();
@@ -402,6 +409,18 @@ fn catalog_migration(source_schema: u32) {
     if source_schema == 8 {
         db.execute_batch("DROP TABLE ingest_jobs; DROP TABLE ingest_sources; DROP TABLE ingest_identity; DROP TABLE catalog_migrations;").unwrap();
     }
+    let predecessor_identity = if source_schema >= 11 {
+        Some(
+            db.query_row(
+                "SELECT r.id,p.id FROM realms r JOIN principals p ON p.realm_id=r.id",
+                [],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+            )
+            .unwrap(),
+        )
+    } else {
+        None
+    };
     db.pragma_update(None, "user_version", source_schema)
         .unwrap();
     drop(db);
@@ -451,6 +470,14 @@ fn catalog_migration(source_schema: u32) {
         f.upgrade(true);
         assert_eq!(backup_hash, digest(&f.backup.join("data/state.sqlite3")));
         let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
+        if let Some(expected) = &predecessor_identity {
+            let actual: (String, String) = db
+                .query_row("SELECT id,local_owner FROM identity_realm", [], |r| {
+                    Ok((r.get(0)?, r.get(1)?))
+                })
+                .unwrap();
+            assert_eq!(&actual, expected);
+        }
         assert_eq!(
             db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
                 .unwrap(),
@@ -458,7 +485,7 @@ fn catalog_migration(source_schema: u32) {
         );
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=15",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=16",
                 [],
                 |r| r.get::<_, String>(0)
             )
