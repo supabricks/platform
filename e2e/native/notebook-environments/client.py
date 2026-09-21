@@ -40,7 +40,10 @@ class Console:
         last_unavailable=None
         while time.monotonic()<deadline:
             try:
-                e=next(item for item in self.action('list') if item['id']==e['id'])
+                current=next((item for item in self.action('list') if item['id']==e['id']),None)
+                if current is None:
+                    raise RuntimeError('notebook handle disappeared during admission') from last_unavailable
+                e=current
             except ConsoleHTTPError as error:
                 # Admission can occupy the daemon beyond one control request's
                 # deadline. Only repeat this read within the original wait bound;

@@ -1,5 +1,14 @@
 # NE06 — Installed environment lifecycle qualification
 
+Historical scope correction from [UC08](uc08-release-qualification.md): the
+original macOS policy permitted outbound traffic, so its recorded passes do not
+prove offline execution. Current qualification prepares the immutable alpha.12
+live predecessor first, then enters the corrected policy before candidate
+upgrade. Child outbound denial and complete predecessor shutdown are required
+evidence; the candidate's upgrade, rebuild, restore and kernels are restricted.
+Linux continues to isolate the entire lifecycle. The original NE06 design and
+results below are retained as historical evidence.
+
 NE06 completes the planned environment qualification layer for the localhost
 preview. The release is `v0.1.0-alpha.13`, catalog 10; console source stays pinned
 to NE05. Completion requires passing final-revision CI evidence on both targets.

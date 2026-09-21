@@ -50,6 +50,17 @@ a partial report does not qualify a release; the combined R04 collector still
 requires every gate against one exact candidate. The full native-release workflow
 calls it with its own archive run.
 
+The macOS environment-lifecycle fixture prepares its immutable alpha.12 live
+notebook before entering network qualification: that predecessor predates the
+native IPv6 transport. The harness then applies the same Seatbelt policy to
+itself before invoking the candidate installer, rejects any inherited external
+connection, and proves a new child receives `EPERM` for external TCP. Upgrade
+must stop all recorded predecessor processes before the candidate starts. The
+candidate upgrade, rebuild, restore and subsequent kernels remain restricted;
+the separate resolver fixture enters Seatbelt from launch. The collector requires
+this boundary evidence and reports its scope explicitly. This does not qualify
+the predecessor's networking. Linux retains isolation for the entire lifecycle.
+
 A fixture runner records descendant cleanup and fails qualification if processes
 leak, even if the functional assertions pass. Failed-gate artifacts contain only
 bounded structural traceback information, fixed exception categories and typed
@@ -190,6 +201,33 @@ silently retried.
   harness regression, not a passing baseline; its full app/benchmark gate must
   run again. The interim `de0f14b` build was cancelled before archive assembly
   because it still contained this known error.
+- The focused macOS R03 retry `35581453824` passed all 18 checks against the
+  unchanged candidate archive, with exact predecessor Delta rows and candidate
+  Sail queries. Both catalog gates and both project-portability gates passed in
+  `35577160676`; that run still failed the two baselines and macOS environment
+  lifecycle, so it is not complete release evidence.
+- The environment-lifecycle failure was alpha.12 notebook admission before
+  candidate upgrade, again using the old mapped-IPv6 transport. macOS rejects
+  explicit address exceptions (`host must be * or localhost`), as diagnostic
+  `35582582418` records. The fixture now separates historical preparation from
+  candidate isolation as described above; all live-kernel upgrade assertions
+  remain in place. Interim build `35582285488` was cancelled before assembly.
+- Linux's traced baseline recorded three transient unavailable reads followed by
+  a missing notebook handle. Readiness now retains the last API error as the
+  cause when a handle disappears. This remains fatal; no kernel mutation is
+  retried. The trace uses `--seccomp-bpf` to stop only for the selected network
+  syscalls, avoiding ptrace overhead on unrelated file operations. A container
+  negative control proved the filter was active and the collector still rejected
+  a child's attempted external connection. The full traced app must pass; the
+  precise cause of the historical admission failures remains unconfirmed.
+- Focused run `35583580080` passed all eight macOS environment-lifecycle checks
+  plus six resolver checks against the unchanged archive, including the required
+  policy transition and complete predecessor shutdown. Its macOS baseline passed
+  all 12 checks and the 10 MB/100 MB/1 GB benchmarks; the 1 GB export took
+  401.06 seconds, and deletion of the benchmark branch completed in 2.75 seconds.
+  The Linux traced app and network audit passed with the filtered trace; its
+  independent benchmark run remains pending. These targeted results do not
+  replace the final combined release collector.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

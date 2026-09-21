@@ -46,5 +46,14 @@ class Readiness(unittest.TestCase):
         self.assertIsInstance(caught.exception.__cause__,ConsoleHTTPError)
         self.assertEqual(c.action.call_count,1)
 
+    def test_lost_handle_preserves_the_last_unavailable_response(self):
+        c=self.console();error=ConsoleHTTPError('workspace',503,'unavailable')
+        c.action=Mock(side_effect=[error,[]])
+        with patch.object(client.time,'sleep'),contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError,'handle disappeared') as caught:
+                c.wait({'id':'kernel'})
+        self.assertIs(caught.exception.__cause__,error)
+        self.assertEqual(c.action.call_count,2)
+
 
 if __name__=='__main__':unittest.main()

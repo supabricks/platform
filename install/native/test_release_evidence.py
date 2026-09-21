@@ -7,7 +7,7 @@ import unittest
 from demo import FILES
 from catalog_evidence import expected_build, REQUIRED, MINIMUM, digest, ROOT
 from test_sail import sample_report
-from environment_evidence import SUITES
+from environment_evidence import SUITES, MACOS_NETWORK_TRANSITION
 from release_evidence import collect, markdown
 from test_project_evidence import fixture as project_fixture
 
@@ -36,6 +36,8 @@ class ReleaseEvidence(unittest.TestCase):
                             archives=dict(new=dict(version='alpha',target=target,sha256=HASH),old={}),
                             release_identity=HASH,python_version='3.12',kernel_contract_sha256=HASH,
                             wheels={},notices={'licenses/platform.txt':HASH},measurements={},project_bundle={})
+                        if target == 'macos-arm64':
+                            data['network_transition'] = dict(MACOS_NETWORK_TRANSITION)
                     self.write(target,suite,name,data)
             self.write(target,'release-console','console.json',dict(status='passed',checks=self.checks(39)+['PK06 check-'+str(n) for n in range(10)],
                 release_sha256=HASH,release_identity=HASH,release_version='alpha',browser='153.0.1.2',network_qualification='isolated',demo={name:HASH for name in FILES}))

@@ -272,7 +272,7 @@ jobs:
             -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
             -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
             supabricks-release-test \
-            strace -f -qq -e trace=network -s 256 -o /reports/network.trace \
+            strace --seccomp-bpf -f -qq -e trace=network -s 256 -o /reports/network.trace \
             python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
             --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
       - name: No attempted external telemetry or update destinations
@@ -744,10 +744,10 @@ jobs:
       - name: Upgrade, cold restore and controlled resolver on isolated macOS
         if: runner.os == 'macOS'
         run: |
-          sandbox-exec -f install/native/offline-macos.sb \
-            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; external networking and Homebrew denied; cold private HOME and caches" \
+          /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches" \
             "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
+            --macos-upgrade-policy install/native/offline-macos.sb \
             --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
             --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
       - uses: actions/upload-artifact@v4

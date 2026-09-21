@@ -15,6 +15,10 @@ SUITES = {
     'release-console': {'console.json': 1},
 }
 
+MACOS_NETWORK_TRANSITION = dict(predecessor_preparation='outside_network_qualification',
+    candidate_policy_entered=True, child_external_tcp_errno=1,
+    inherited_external_connections=0, predecessor_processes_stopped=True)
+
 
 def passed_checks(data, minimum, label):
     assert data.get('status') == 'passed', f'{label}: failed suite'
@@ -34,6 +38,8 @@ def collect(directory, revision):
         assert lifecycle['source']['platform_commit'] == revision
         assert lifecycle['source']['platform_dirty'] is False
         assert lifecycle['archives']['new']['target'] == target
+        if target == 'macos-arm64':
+            assert lifecycle.get('network_transition') == MACOS_NETWORK_TRANSITION, 'macOS lifecycle: missing candidate isolation boundary'
         identity = lifecycle['release_sha256']
         reports = {}
         for suite, files in SUITES.items():
@@ -48,6 +54,8 @@ def collect(directory, revision):
             python_version=lifecycle['python_version'], kernel_contract_sha256=lifecycle['kernel_contract_sha256'],
             source=lifecycle['source'], wheels=lifecycle['wheels'], notices=lifecycle['notices'],
             measurements=lifecycle['measurements'], project_bundle=lifecycle['project_bundle'], reports=reports)
+        result['targets'][target]['network'] = dict(scope=lifecycle.get('network_evidence'),
+            transition=lifecycle.get('network_transition'))
     return result
 
 

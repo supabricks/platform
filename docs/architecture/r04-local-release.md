@@ -1,5 +1,10 @@
 # R04 — Complete local workflow qualification and handoff
 
+Historical scope correction: [UC08](uc08-release-qualification.md) found that the
+original macOS policy allowed outbound traffic. The reports below retain their
+functional evidence but do not prove macOS offline execution. UC08 requalifies
+the current candidate with corrected isolation and explicit predecessor scope.
+
 R04 merged in platform #44 and closes the console/ingestion release slice after platform #43 and console #4
 (C03), with I03 and N00–N06 / NE01–NE06 already merged. The qualified release is
 `v0.1.0-alpha.16`, catalog 10, PG17.8, with the reviewed `supabricks/console`
