@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 implemented and alpha.34 exact archives qualified in #64, pending merge; UC09 remains planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 merged in #64 as `c44fab5`, with alpha.34 exact archives qualified; UC09 scoped for Linux-server-first implementation; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. At that baseline packaging was
 implemented and release qualification was incomplete. UC08 now qualifies the
 complete local workflow on alpha.34; see its evidence below. This plan expands the
@@ -129,7 +129,7 @@ These paths now contain the UC00/UC01 implementations. Do not use the archived
 | UC06 | Complete console Data and agent workflows | UC05 |
 | UC07 | Recovery, upgrade, reconciliation and operational limits | UC05; validate UC06 flows |
 | UC08 | Exact installed-release qualification and local demo | UC00–UC07; existing release failures resolved |
-| UC09 | Governed on-prem access | UC08, IAM00 implementation and execution-isolation qualification |
+| UC09 | Governed on-prem access; [UC09.0–UC09.8 slices](uc09-governed-implementation.md) | UC08; implemented identity, authorization and execution isolation before profile enablement |
 
 Each slice should fit a reviewable platform PR plus a coordinated Sail, UC or
 console PR where needed. Split a slice further if its acceptance criteria cannot
@@ -232,7 +232,7 @@ existing projects need no destructive automatic migration.
 
 ## UC03 — Publish complete snapshots durably
 
-Implementation is on `feat/uc03-durable-publication`; see the [journal contract](../architecture/uc03-durable-publication.md) and [workflow](../handbook/catalog-publication.md). Control schema 15 and [UC fork #3](https://github.com/supabricks/unitycatalog/pull/3) add durable publication/retention and identity-conditioned provider writes. Qualification is in progress.
+Implementation merged in platform #59 and [UC fork #3](https://github.com/supabricks/unitycatalog/pull/3); see the [journal contract](../architecture/uc03-durable-publication.md) and [workflow](../handbook/catalog-publication.md). Control schema 15 adds durable publication/retention and identity-conditioned provider writes. Both native suites passed; UC08 subsequently qualified the complete alpha.34 archives.
 
 Add explicit preview/publish/status/unpublish operations with a request key and
 expected source/binding revision. Reuse frozen exports and immutable epoch
@@ -388,7 +388,7 @@ using the immutable archives from run `35585995786` (tested merge `a89d0484e284c
 A corrected predecessor fixture passed the remaining macOS portability gate; all
 inherited and catalog reports passed the same complete collector. The contract
 records both runs, exact archive/source hashes, resource measurements and retry
-history. [Platform #64](https://github.com/supabricks/platform/pull/64) awaits merge.
+history. [Platform #64](https://github.com/supabricks/platform/pull/64) is merged as `c44fab5`.
 
 Extend the existing native-release/R04 evidence collector; preserve PG, ingest,
 console, notebooks, environments, project packaging, data transfer and recovery
@@ -411,6 +411,12 @@ manual UC CLI setup. Update this plan, delivery status and handbook from the
 recorded evidence, not from implementation presence.
 
 ## UC09 — Governed on-prem profile with IAM
+
+Scope: [governed on-prem architecture](../architecture/uc09-governed-on-prem.md)
+and [UC09.0–UC09.8 implementation plan](uc09-governed-implementation.md).
+Linux server first is confirmed; macOS retains local-owner mode. UC09.0 is the
+IAM00 feasibility foundation; subsequent slices implement the actual identity,
+authorization and isolation prerequisites. No governed capability is shipped yet.
 
 This slice is a joint milestone, blocked on actual IAM principal/group/run-as
 implementation and qualified isolation of untrusted execution. IAM00 as a design
@@ -448,7 +454,7 @@ both concluded failure. The former includes macOS notebook/Spark and snapshot
 export failures; the latter failed Linux assembly. These reports remain failure evidence. UC08 closes the inherited gates on the
 exact alpha.34 archives through the complete collector above; it does not
 retroactively qualify alpha.25 or alpha.26. Its local-owner milestone is complete
-in #64, pending merge. Historical macOS offline claims are corrected in the
+in merged #64 (`c44fab5`). Historical macOS offline claims are corrected in the
 UC08 ledger; the current candidate uses the strict policy and explicit
 predecessor boundary.
 

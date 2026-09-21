@@ -1,7 +1,7 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-21 through merged platform #63 (`14c35a6`), Unity Catalog #3 and console #9 (`a5d2e7f`).
-UC08 is implemented and qualified in [platform #64](https://github.com/supabricks/platform/pull/64), pending merge.
+Reconciled 2026-09-21 through merged platform #64 (`c44fab5`), Unity Catalog #3 and console #9 (`a5d2e7f`).
+UC08 is merged and qualified. UC09 is [scoped for a shared Linux server](uc09-governed-implementation.md); implementation has not started.
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -16,7 +16,7 @@ starting point and original acceptance criteria, not the current backlog.
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
 | Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile merged in #54; alpha.25 failed; inherited gates now qualified on alpha.34 | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog local profile qualified in UC08; IAM/governed access remains separate |
 | Console project creation | Merged in platform #55 and console #6 | Browser-created project with selected main database; mandatory project ownership; alpha.26 failed; workflow now qualified on alpha.34 |
-| Open-source Unity Catalog | UC00 merged in platform #56, Linux/macOS qualified (14 checks each); UC01 merged in #57 with both native offline suites qualified; UC02 merged in #58 with both native catalog suites passed; UC03 merged in platform #59 and Unity Catalog #3, Linux/macOS native catalog suites passed; UC04 merged in #60 with required checks and both native catalog suites passed; UC05 merged in #61 with required checks and both native catalog suites passed; UC06 merged in platform #62 and console #7; required checks and both native catalog/browser suites passed; UC07 merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 implemented and alpha.34 exact archives qualified in platform #64, pending merge; UC09 remains planned | [UC00 capability report](../architecture/uc00-catalog-probe.md), [UC00–UC09 plan](unity-catalog-implementation.md): local catalog workflow first; governed access depends on IAM and isolation |
+| Open-source Unity Catalog | UC00 merged in platform #56, Linux/macOS qualified (14 checks each); UC01 merged in #57 with both native offline suites qualified; UC02 merged in #58 with both native catalog suites passed; UC03 merged in platform #59 and Unity Catalog #3, Linux/macOS native catalog suites passed; UC04 merged in #60 with required checks and both native catalog suites passed; UC05 merged in #61 with required checks and both native catalog suites passed; UC06 merged in platform #62 and console #7; required checks and both native catalog/browser suites passed; UC07 merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 merged in platform #64 (`c44fab5`) with alpha.34 exact archives qualified; UC09 scoped, not implemented | [UC00 capability report](../architecture/uc00-catalog-probe.md), [UC00–UC09 plan](unity-catalog-implementation.md): local catalog workflow first; governed access depends on IAM and isolation |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -113,5 +113,6 @@ zero leaked descendants. The Linux trace recorded 6,029 destinations and no
 external attempts. The [UC08 evidence and retry ledger](../architecture/uc08-release-qualification.md)
 records source pins, archive hashes, resource costs and the explicit historical
 macOS predecessor isolation boundary. UC00–UC08's local-owner milestone is
-implemented and qualified; #64 awaits merge. UC09 needs actual IAM and qualified
-execution isolation and is not implemented.
+merged and qualified. UC09 needs actual IAM and qualified execution isolation;
+the [Linux-first scope and slice plan](uc09-governed-implementation.md) starts
+with UC09.0 / IAM00 feasibility. No governed multi-user profile is implemented.

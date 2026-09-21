@@ -1,7 +1,7 @@
 # UC08: qualify the complete installed local catalog product
 
 Status: implemented and qualified on Linux x86_64 and macOS arm64 in
-[platform #64](https://github.com/supabricks/platform/pull/64), pending merge.
+[platform #64](https://github.com/supabricks/platform/pull/64), merged as `c44fab5`.
 Alpha.34 is the qualified local engineering candidate; UC09 governed access
 remains separate.
 
