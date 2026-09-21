@@ -85,7 +85,7 @@ def qualify(args):
     checks = Checks()
     report = dict(status='failed', checks=checks, network_qualification=args.network_evidence,
                   limits=['process-failure recovery; no kernel reboot or power-loss qualification',
-                          'same-target physical restore and catalog-9-to-16 upgrade; identical engine/dependency inventories'])
+                          'same-target physical restore and catalog-9-to-17 upgrade; identical engine/dependency inventories'])
     binary = prefix / 'bin/supabricks'
     roots = [data]
     identify = workspace / 'identify-process.py'
@@ -213,14 +213,14 @@ print(json.dumps(pid))
             assert blocked.returncode != 0, 'pending migration must block startup'
             install('new', upgrade=True)
             with sqlite3.connect(data / 'state.sqlite3') as db:
-                assert db.execute('PRAGMA user_version').fetchone()[0] == 16
-                assert db.execute('SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=16').fetchone() == (journal['database_sha256'], identity)
+                assert db.execute('PRAGMA user_version').fetchone()[0] == 17
+                assert db.execute('SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=17').fetchone() == (journal['database_sha256'], identity)
             assert not (data / 'upgrade.json').exists()
         before_hash = hashlib.sha256((data / 'state.sqlite3').read_bytes()).hexdigest()
         blocked = subprocess.run([str(old_release / 'bin/supabricks'), 'up', '--data-dir', str(data)], env=env, capture_output=True, timeout=90)
         assert blocked.returncode != 0
         assert hashlib.sha256((data / 'state.sqlite3').read_bytes()).hexdigest() == before_hash
-        checks.append('catalog 9-to-16 resumes before/after migration and both activation boundaries; old binary refuses migrated root')
+        checks.append('catalog 9-to-17 resumes before/after migration and both activation boundaries; old binary refuses migrated root')
         cli('up')
         deployment = cli('project', 'binding')
         assert deployment['legacy'] and deployment['runtime_project_id'] == deployment['definition_id']

@@ -223,7 +223,7 @@ impl Store {
                 scopes,
                 ttl_seconds,
             } => {
-                if scopes!=[iam::SELF_SCOPE] || !(1..=3600).contains(&ttl_seconds) || !tx.prepare("SELECT 1 FROM identity_principals WHERE id=?1 AND kind='service' AND disabled=0")?.exists([&principal])? {return Err(denied());}
+                if (scopes.is_empty() || scopes.len()>2 || !scopes.iter().any(|s|s==iam::SELF_SCOPE) || scopes.iter().any(|s|s!=iam::SELF_SCOPE && s!=crate::authorization::CONTROL_SCOPE) || scopes.iter().collect::<std::collections::HashSet<_>>().len()!=scopes.len()) || !(1..=3600).contains(&ttl_seconds) || !tx.prepare("SELECT 1 FROM identity_principals WHERE id=?1 AND kind='service' AND disabled=0")?.exists([&principal])? {return Err(denied());}
                 let result = issue(
                     &tx,
                     Grant {
@@ -364,7 +364,10 @@ impl Store {
                             Grant {
                                 principal: &id,
                                 channel,
-                                scopes: vec![iam::SELF_SCOPE.into()],
+                                scopes: vec![
+                                    iam::SELF_SCOPE.into(),
+                                    crate::authorization::CONTROL_SCOPE.into(),
+                                ],
                                 expires: verified.expires_ms,
                                 provider: Some(&name),
                                 access_token: Some(&verified.access_token),

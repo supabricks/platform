@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation implemented for review; UC09.2–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 project policy/admission implemented for review; UC09.3–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -121,6 +121,13 @@ unavailability must not create an implicit local-owner session.
 
 ## UC09.2 — Project and execution authorization
 
+Implemented for review: [project policy and admission](../architecture/uc092-authorization.md).
+Schema 17 adds deployment roles, separate execution/service-use/stop grants,
+immutable source revisions and transactional policy/audit/idempotency records.
+CLI, MCP and browser control requests share the authenticated handler. Admission
+records are intents only; data access, package/data movement and workload/stream
+routes remain denied until UC09.3–.5 supply their required boundaries.
+
 Build one capability-checking path for every control API, including list/detail,
 logs, artifact downloads, WebSockets, source edits, imports, deployment, restore,
 backup and deletion. Add project roles and explicit execution/`act_as` grants.
@@ -239,8 +246,7 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.1, then implement UC09.2 project/execution authorization.
-Use the authenticated actor/effective-principal context on every admitted path;
-keep governed product ingress disabled until the complete isolation and release
-gates pass. IAM00 is merged and its selected identity/runtime design is the
-foundation for these slices.
+Review and qualify UC09.2, then implement UC09.3 UC identity mapping and governed
+grants. Integrate the same authenticated context and policy revision with the
+private principal broker. Keep shared ingress and actual workload launch disabled
+until the complete authority, isolation and release gates pass.

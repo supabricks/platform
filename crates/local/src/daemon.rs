@@ -30,6 +30,12 @@ pub struct Envelope {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    AuthorizationAdmin {
+        command: crate::authorization::AdminCommand,
+    },
+    Authorized {
+        envelope: crate::authorization::Envelope,
+    },
     IdentityAdmin {
         command: crate::identity::AdminCommand,
     },
@@ -509,6 +515,20 @@ impl Daemon {
                 if stopping && !matches!(envelope.request, Request::Status | Request::Shutdown) {
                     return Err(conflict("daemon is stopping"));
                 }
+                self.store.authorize_operator_route(&envelope.request)?;
+                if let Request::Authorized { envelope } = envelope.request {
+                    if self.identity_jobs.len() >= 4 {
+                        return Err(conflict("identity workers are busy"));
+                    }
+                    let job = self.store.authorization_job(envelope)?;
+                    self.identity_jobs.push((
+                        stream.try_clone()?,
+                        std::thread::Builder::new()
+                            .name("project-auth".into())
+                            .spawn(job)?,
+                    ));
+                    return Ok(None);
+                }
                 if let Request::IdentityAuth {
                     api_version,
                     command,
@@ -604,6 +624,12 @@ impl Daemon {
     }
     fn handle(&mut self, request: Request) -> Result<Value> {
         Ok(match request {
+            Request::AuthorizationAdmin { command } => self.store.authorization_admin(command)?,
+            Request::Authorized { .. } => {
+                return Err(invalid(
+                    "authorized requests require authentication workers",
+                ));
+            }
             Request::IdentityAdmin { command } => self.store.identity_admin(command)?,
             Request::IdentityAuth {
                 api_version,

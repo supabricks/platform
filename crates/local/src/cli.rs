@@ -21,8 +21,10 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   identity admin --request-file PRIVATE_JSON [--output PRIVATE_JSON]
   identity login --provider NAME --redirect URL --output PRIVATE_JSON
   identity browser --provider NAME --redirect URL
+  identity control --session-file PRIVATE_JSON --request-file PRIVATE_JSON
+  identity policy-admin --request-file PRIVATE_JSON
   identity whoami | logout | mcp --session-file PRIVATE_JSON
-                               Identity preview only; governed product access remains disabled
+                               Project control preview; data access and workload launch remain disabled
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
   project pack --output PATH.sbproj [--target NAME]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj
@@ -370,6 +372,31 @@ pub fn run() -> Result<u8> {
                     json!({"saved":true})
                 } else {
                     value
+                }
+            }
+            "control" | "policy-admin" => {
+                let path = PathBuf::from(
+                    a.take("--request-file")
+                        .ok_or_else(|| invalid("use --request-file PRIVATE_JSON"))?,
+                );
+                let session = a.take("--session-file").map(PathBuf::from);
+                a.finish(2)?;
+                let value = transport::read_private(&path)?;
+                if action == "control" {
+                    let command = serde_json::from_value(value)
+                        .map_err(|_| invalid("invalid project control command"))?;
+                    transport::control(
+                        &root,
+                        &session.ok_or_else(|| invalid("use --session-file PRIVATE_JSON"))?,
+                        command,
+                    )?
+                } else {
+                    if session.is_some() {
+                        return Err(invalid("policy administration is operator-only"));
+                    }
+                    let command = serde_json::from_value(value)
+                        .map_err(|_| invalid("invalid project policy command"))?;
+                    client::request(&root, Request::AuthorizationAdmin { command })?
                 }
             }
             "login" | "browser" => {

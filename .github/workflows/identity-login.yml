@@ -23,13 +23,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build the actual CLI and daemon
         run: cargo build --locked -p supabricks-local --bin supabricks
-      - name: Qualify on-prem login against the pinned TLS provider
+      - name: Qualify login and project authorization against the pinned TLS provider
         run: |
           python3 e2e/native/identity/qualify.py \
             --binary target/debug/supabricks \
-            --output "$RUNNER_TEMP/uc091-identity.json"
+            --output "$RUNNER_TEMP/uc092-authorization.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: uc091-identity-linux-x86_64
-          path: ${{ runner.temp }}/uc091-identity.json
+          name: uc092-authorization-linux-x86_64
+          path: ${{ runner.temp }}/uc092-authorization.json
           if-no-files-found: error
