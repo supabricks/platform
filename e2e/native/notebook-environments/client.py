@@ -37,6 +37,7 @@ class Console:
     def action(self,action,**fields):return self.request('workspace',{'action':'notebook','command':{'action':action,**fields}})['value']
     def wait(self,e,state='ready'):
         deadline=time.monotonic()+150
+        last_unavailable=None
         while time.monotonic()<deadline:
             try:
                 e=next(item for item in self.action('list') if item['id']==e['id'])
@@ -45,6 +46,7 @@ class Console:
                 # deadline. Only repeat this read within the original wait bound;
                 # create/start/restart/shutdown calls are never retried here.
                 if error.status!=503:raise
+                last_unavailable=error
                 self.readiness_poll_retries+=1
                 print('NOTEBOOK_READINESS_TRANSIENT_503',flush=True)
                 time.sleep(.15)
@@ -52,7 +54,7 @@ class Console:
             if e['state']==state:return e
             if e['state'] in ['failed','lost','expired']:raise AssertionError('notebook '+e['state']+': '+str(e.get('error')))
             time.sleep(.15)
-        raise TimeoutError('kernel readiness')
+        raise TimeoutError('kernel readiness') from last_unavailable
     def start(self,environment=None,epoch=None):
         request=dict(key=str(uuid.uuid4()),target=self.target,environment=environment,epoch=epoch)
         e=self.action('create',**request);self.created[e['id']]=request

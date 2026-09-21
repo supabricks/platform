@@ -42,7 +42,8 @@ class Readiness(unittest.TestCase):
     def test_unavailable_read_cannot_extend_the_readiness_deadline(self):
         c=self.console();c.action=Mock(side_effect=ConsoleHTTPError('workspace',503,'unavailable'))
         with patch.object(client.time,'monotonic',side_effect=[0,0,151]),patch.object(client.time,'sleep'),contextlib.redirect_stdout(io.StringIO()):
-            with self.assertRaises(TimeoutError):c.wait({'id':'kernel'})
+            with self.assertRaises(TimeoutError) as caught:c.wait({'id':'kernel'})
+        self.assertIsInstance(caught.exception.__cause__,ConsoleHTTPError)
         self.assertEqual(c.action.call_count,1)
 
 
