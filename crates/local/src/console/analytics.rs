@@ -15,7 +15,7 @@ use std::{
     collections::HashMap,
     time::{Duration, Instant},
 };
-use supabricks_core::resource::{OperationId, ProjectId};
+use supabricks_core::resource::{EpochId, OperationId, ProjectId};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
@@ -34,6 +34,8 @@ pub enum Command {
         id: OperationId,
     },
     Open {
+        #[serde(default)]
+        epoch: Option<EpochId>,
         #[serde(default)]
         catalog: bool,
         target: Target,
@@ -168,6 +170,7 @@ impl Workspace {
                 target,
                 key: k,
                 catalog,
+                epoch: requested_epoch,
             } => {
                 target.validate(store, binding)?;
                 if self.sessions.len() >= 128 {
@@ -177,8 +180,13 @@ impl Workspace {
                 }
                 // Explicit publication first: no orphaned implicit refresh if the browser disappears.
                 let epoch = if catalog {
-                    None
+                    requested_epoch
                 } else {
+                    if requested_epoch.is_some() {
+                        return Err(conflict(
+                            "explicit publication epoch requires catalog inputs",
+                        ));
+                    }
                     Some(
                         store
                             .current_snapshot(project, target.branch)?

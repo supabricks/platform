@@ -1,7 +1,7 @@
 # Open-source Unity Catalog integration plan
 
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
-UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is implemented with 37 local Linux installed catalog checks passed and cross-platform CI pending; UC06–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
+UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is implemented with browser qualification in progress; UC07–UC09 remain planned; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. Packaging is
 implemented; release qualification remains incomplete. This plan expands the
 UC00 follow-on in the [packaging plan](project-packaging-implementation.md).
@@ -321,6 +321,9 @@ delete operation must use this same binding cleanup without deleting producer
 data; it is not introduced by this slice. Browser binding forms belong to UC06.
 
 ## UC06 — Deliver the console and agent experience
+
+Implementation: [console Data workflow](../architecture/uc06-console-data.md) and
+[operator workflow](../handbook/catalog-datasets.md#console-workflow).
 
 Build a project-scoped **Data** browser in `supabricks/console`. Show owned and
 explicitly bound datasets; allow discovery of other available datasets only as

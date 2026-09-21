@@ -87,3 +87,32 @@ supabricks catalog datasets references PUBLICATION_UUID --project ./producer \
 Withdrawn bindings reject new readers. Unbind the listed consumer mappings and
 close remaining readers to let producer unpublication finish. Existing snapshots
 remain subject to ordinary snapshot GC after catalog retention is released.
+
+## Console workflow
+
+Open **Data** in a project. After importing a file, **Publish imported data**
+opens this view. Choose **Refresh analytical snapshot**, **Review publication**,
+then **Publish reviewed snapshot**. This publishes the complete snapshot set.
+
+In another project, choose **Add existing dataset**, select a publication, name
+the logical requirement and review the binding plan before applying. **Review
+update** discovers a newer revision; running readers remain pinned. **Query**
+opens a Spark SQL draft; explicitly open a session before running it. **Notebook**
+creates a saved notebook, which you open and start explicitly.
+
+**Review removal** removes the source requirement and prepares an unbind plan.
+Discarding a plan does not undo source edits. Requirements declared in included
+manifest fragments must be edited in that fragment, then planned through Project
+packages. Source changes alone do not release installed bindings.
+
+Equivalent agent/source operations are `catalog datasets discover`,
+`catalog datasets owned` and:
+
+```sh
+supabricks project dataset-draft dataset.sales --requirement sales.orders.v1 \
+  --expected-manifest SHA256 --project ./consumer
+supabricks project dataset-draft dataset.sales --remove \
+  --expected-manifest SHA256 --project ./consumer
+```
+
+Use the `supabricks.toml` hash from `project inspect` and review a fresh plan.

@@ -42,6 +42,7 @@ fn fixture() -> (tempfile::TempDir, Store, Context, Binding, BranchId) {
 }
 fn asset(context: &Context, branch: BranchId) -> Asset {
     Asset {
+        comment: None,
         id: OperationId::new(),
         project_id: context.runtime_project_id,
         deployment_id: context.deployment_id,
@@ -56,6 +57,7 @@ fn asset(context: &Context, branch: BranchId) -> Asset {
         schema: "public".into(),
         name: "orders".into(),
         columns: vec![Column {
+            comment: None,
             name: "id".into(),
             data_type: "integer".into(),
             nullable: false,
@@ -208,6 +210,7 @@ fn analytical_resolution_rejects_case_and_quoting_collisions() {
     ));
     let mut b = a.clone();
     b.columns.push(Column {
+        comment: None,
         name: "ID".into(),
         ..b.columns[0].clone()
     });

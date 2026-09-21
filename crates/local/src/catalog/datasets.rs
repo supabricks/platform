@@ -50,9 +50,23 @@ pub struct Dataset {
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     List,
-    References { target: Target },
-    Describe { target: Target },
-    Updates { logical: String },
+    Owned {
+        #[serde(default)]
+        after: Option<String>,
+    },
+    Discover {
+        #[serde(default)]
+        after: Option<String>,
+    },
+    References {
+        target: Target,
+    },
+    Describe {
+        target: Target,
+    },
+    Updates {
+        logical: String,
+    },
 }
 pub fn describe(store: &Store, target: &Target, admitting: bool) -> Result<Dataset> {
     let p = store.catalog_publication(target.deployment_id, target.publication_id)?;
@@ -136,6 +150,10 @@ pub fn handle(store: &Store, binding: &Binding, command: Command) -> Result<Valu
     let owner = store.binding_context(binding)?;
     let bindings = installed(store, owner.deployment_id)?;
     match command {
+        Command::Owned { after } => {
+            store.catalog_dataset_choices(Some(owner.deployment_id), after.as_deref())
+        }
+        Command::Discover { after } => store.catalog_dataset_choices(None, after.as_deref()),
         Command::References { target } => {
             if owner.deployment_id != target.deployment_id {
                 return Err(conflict(
@@ -161,7 +179,8 @@ pub fn handle(store: &Store, binding: &Binding, command: Command) -> Result<Valu
                         .catalog_publication(d.target.deployment_id, d.target.publication_id)
                         .map(|p| p.state)
                         .unwrap_or_else(|_| "unavailable".into());
-                    json!({"logical":logical,"dataset":d,"state":state,"retained":true})
+                    let name = store.deployment(d.target.deployment_id).and_then(|ctx| store.project(ctx.runtime_project_id)).map(|p|p.name).ok();
+                    json!({"logical":logical,"owner":name,"dataset":d,"state":state,"retained":true})
                 })
                 .collect();
             Ok(

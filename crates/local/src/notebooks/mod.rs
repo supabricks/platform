@@ -71,7 +71,7 @@ impl Entry {
         Ok(
             json!({"id":self.id,"generation":self.generation,"daemon_generation":store.generation(),
             "project_id":self.binding.project_id,"branch_id":self.target.branch,"worktree":self.binding.worktree,
-            "state":self.state,"error":self.error,"kernel_id":self.kernel,"session_id":self.session,
+            "state":self.state,"catalog":self.catalog,"error":self.error,"kernel_id":self.kernel,"session_id":self.session,
             "epoch_id":session.as_ref().and_then(|s|s.epoch_id).or(self.epoch),
             "environment":self.environment,"environment_operation":self.environment_operation,"prepared_environment_id":store.active_environment(self.binding.project_id,&self.binding.worktree)?,
             "environment_preparation_needed":self.environment.as_ref().is_some_and(|i|crate::environments::Manager::declarations_changed(store,&self.binding,i)),"epoch":session.as_ref().and_then(|s|s.metadata.clone()),

@@ -1,6 +1,37 @@
 use super::*;
 use crate::catalog::publication::Publication as CatalogPublication;
 impl Store {
+    pub(crate) fn catalog_dataset_choices(
+        &self,
+        owner: Option<DeploymentId>,
+        after: Option<&str>,
+    ) -> Result<serde_json::Value> {
+        if after.is_some_and(|a| a.parse::<OperationId>().is_err()) {
+            return Err(invalid("invalid dataset discovery cursor"));
+        }
+        let mut query = self.db.prepare("SELECT record_json FROM catalog_publications WHERE (?1 IS NULL OR deployment_id=?1) AND id>?2 AND state!='retired' ORDER BY id LIMIT 51")?;
+        let rows = query
+            .query_map(
+                params![owner.map(|o| o.to_string()), after.unwrap_or("")],
+                |r| r.get::<_, String>(0),
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let more = rows.len() > 50;
+        let mut items = vec![];
+        for raw in rows.iter().take(50) {
+            let p: CatalogPublication = serde_json::from_str(raw)?;
+            let (head_revision, head) = self.catalog_head(p.deployment_id, p.branch_id)?;
+            let name = self.project(p.project_id)?.name;
+            items.push(serde_json::json!({"target":{"deployment_id":p.deployment_id,"provider_id":p.namespace.provider_id,"publication_id":p.id},"owner":name,"branch_id":p.branch_id,"branch":self.branch(p.branch_id)?.branch.name,"epoch_id":p.epoch_id,"revision":p.revision,"snapshot_at_ms":p.snapshot_at_ms,"state":p.state,"needs_attention":p.error.is_some(),"head":head==Some(p.id),"binding_revision":head_revision,"table_count":p.tables.len()}));
+        }
+        let next = if more {
+            items.last().map(|v| v["target"]["publication_id"].clone())
+        } else {
+            None
+        };
+        Ok(serde_json::json!({"api_version":1,"items":items,"next":next}))
+    }
+
     pub(crate) fn dataset_holders(&self, id: OperationId) -> Result<Vec<serde_json::Value>> {
         let keys=self.db.prepare("SELECT reference_key FROM catalog_publication_refs WHERE publication_id=?1 ORDER BY reference_key LIMIT 529")?
             .query_map([id.to_string()],|r|r.get::<_,String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;

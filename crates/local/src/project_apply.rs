@@ -7,6 +7,7 @@ use crate::{
         error::{conflict, invalid},
     },
 };
+mod dataset_draft;
 mod fixtures;
 pub mod migrations;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,11 @@ pub struct Options {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    DatasetDraft {
+        logical: String,
+        requirement: Option<String>,
+        expected_manifest_sha256: String,
+    },
     Plan {
         #[serde(default)]
         options: Options,
@@ -421,6 +427,17 @@ pub fn plan(store: &Store, binding: &Binding, options: Options) -> Result<Plan> 
 pub fn handle(store: &mut Store, binding: &Binding, command: Command) -> Result<Value> {
     let context = store.binding_context(binding)?;
     match command {
+        Command::DatasetDraft {
+            logical,
+            requirement,
+            expected_manifest_sha256,
+        } => dataset_draft::edit(
+            store,
+            binding,
+            &logical,
+            requirement.as_deref(),
+            &expected_manifest_sha256,
+        ),
         Command::Plan { options } => Ok(json!(plan(store, binding, options)?)),
         Command::Apply {
             plan: requested,

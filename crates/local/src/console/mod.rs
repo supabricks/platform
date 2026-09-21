@@ -1,6 +1,7 @@
 //! Project-bound browser bridge. The daemon owns children; HTTP never opens Store.
 pub(crate) mod analytics;
 pub mod assets;
+pub(crate) mod catalog;
 pub(crate) mod ingestion;
 pub mod projects;
 mod server;
