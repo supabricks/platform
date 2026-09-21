@@ -149,8 +149,8 @@ finally:
     completed = subprocess.run([str(release / 'python/runtime/bin/python3.12'), '-I', '-B', str(script),
                                str(client_root), str(binary), str(environment), generation],
                               env=env, capture_output=True, text=True, timeout=240)
+    (workspace / 'pk05-notebook.log').write_text(completed.stdout + completed.stderr)
     if completed.returncode:
-        (workspace / 'pk05-notebook.log').write_text(completed.stdout + completed.stderr)
         raise RuntimeError('PK05 notebook failed; inspect private pk05-notebook.log')
     cli(destination, 'branch', 'suspend', 'main', '--wait')
     qualify_crash(binary, workspace, env)

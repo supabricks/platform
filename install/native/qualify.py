@@ -414,6 +414,7 @@ def qualify(args):
         reserved.close()
         report = dict(status='passed', host=platform.platform(), workspace=str(workspace),
                       release_identity=identity, install_seconds=round(install_seconds, 2),
+                      notebook_readiness_polling=summarize(workspace / 'pk05-notebook.log'),
                       checks=checks, measurements=measurements, network_qualification=args.network_evidence)
     except BaseException as error:
         report = dict(status='failed', host=platform.platform(), workspace=str(workspace), checks=checks,

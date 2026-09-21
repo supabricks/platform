@@ -19,7 +19,7 @@ def summarize(path):
                  line=int(line),function=function if function in functions else 'runtime')
         for file,line,function in re.findall(r'^\s*File "([^"\n]+)", line (\d{1,8}), in ([A-Za-z_][A-Za-z_0-9]*)\s*$',text,re.M)][-8:]
     # Only recognize predefined failures. Unknown class names can contain data.
-    known=('AssertionError','TimeoutError','RuntimeError','CalledProcessError',
+    known=('AssertionError','TimeoutError','RuntimeError','ConsoleHTTPError','CalledProcessError',
            'WebSocketTimeoutException','ConnectionRefusedError','FileNotFoundError',
            'SparkConnectGrpcException','AnalysisException','PermissionError')
     api=[]
@@ -38,4 +38,5 @@ def summarize(path):
             elif 'timed out' in message.lower():value['io_kind']='timed_out'
         api.append(value)
     return dict(available=True,bytes=size,truncated=size>32768,frames=frames,console_errors=api[-4:],
+                readiness_poll_503_observed=len(re.findall(r'^NOTEBOOK_READINESS_TRANSIENT_503$',text,re.M)),
                 failure_types=[name for name in known if re.search(r'\b'+name+r'\b',text)])

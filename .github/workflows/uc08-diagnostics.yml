@@ -4,21 +4,151 @@ on:
     branches: [qualify/uc08-diagnostics]
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: uc08-mapped-${{ github.ref }}
+  group: uc08-fixed-gates-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  mapped-loopback:
-    runs-on: macos-15
+  clean-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Verify explicit mapped-loopback policy without permitting external TCP
-        run: python e2e/native/notebook-environments/mapped_probe.py
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux-x86_64
+          path: build/releases
+          run-id: 35577160676
+          github-token: ${{ github.token }}
+      - name: Free disk for the 1 GB snapshot and its WAL/storage copies
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
+      - run: docker build -f install/native/Dockerfile.qualify -t supabricks-release-test .
+      - name: Real installer and app workflow without external networking or build tools
+        run: |
+          mkdir -p build/reports
+          chmod 777 build/releases build/reports
+          docker run --rm --network=none --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
+            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
+            supabricks-release-test \
+            strace --seccomp-bpf -f -qq -e trace=network -s 256 -o /reports/network.trace \
+            python3 /harness/install/native/qualify.py --directory /releases --report /reports/qualification.json --minimal-host \
+            --network-evidence 'Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced'
+      - name: No attempted external telemetry or update destinations
+        run: python3 install/native/check_network.py build/reports/network.trace --report build/reports/network.json
+      - name: Measure full snapshots offline without syscall tracing overhead
+        run: |
+          docker run --rm --network=none --memory=16g --cpus=4 --ulimit core=0:0 \
+            -v "$PWD/build/releases:/releases" -v "$PWD/build/reports:/reports" -v "$PWD/install/native:/harness/install/native:ro" \
+            -v "$PWD/e2e/native/notebook-environments:/harness/e2e/native/notebook-environments:ro" \
+            supabricks-release-test \
+            python3 /harness/install/native/qualify.py --directory /releases --report /reports/benchmarks.json --minimal-host --benchmarks \
+            --network-evidence 'Ubuntu 24.04 unprivileged container; network=none; 16 GiB and 4 CPU limits; no syscall tracing during measurements'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mapped-loopback
-          path: build/mapped.json
+          name: release-qualification-linux-x86_64
+          path: build/reports/*.json
+
+  isolated-macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-macos-arm64
+          path: build/releases
+          run-id: 35577160676
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install application test dependency before network isolation
+        run: python -m pip install -r examples/orders/requirements.txt
+      - name: Qualify on separate Mac runner with external network and Homebrew denied
+        run: |
+          mkdir -p build/reports
+          ulimit -c 0
+          sandbox-exec -f install/native/offline-macos.sb \
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            "$(command -v python)" install/native/qualify.py --directory build/releases \
+            --report build/reports/qualification.json --benchmarks \
+            --network-evidence 'Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-qualification-macos-arm64
+          path: build/reports/*.json
+
+  release-environment-lifecycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+          run-id: 35577160676
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: environment-bundle-${{ matrix.target }}
+          path: build/package-fixture
+          run-id: 35577160676
+          github-token: ${{ github.token }}
+      - name: Download the exact qualified NE05 predecessor
+        uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34733919344
+          name: release-${{ matrix.target }}
+          path: build/previous
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Upgrade, cold restore and controlled resolver on loopback-only Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches" \
+              "$2" install/native/qualify_environments.py --lifecycle --directory build/releases \
+              --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+              --target linux-x86_64 --report build/environment-lifecycle-reports/qualification.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Upgrade, cold restore and controlled resolver on isolated macOS
+        if: runner.os == 'macOS'
+        run: |
+          /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches" \
+            "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
+            --macos-upgrade-policy install/native/offline-macos.sb \
+            --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+            --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-environment-lifecycle-${{ matrix.target }}
+          path: build/environment-lifecycle-reports/*.json
+          if-no-files-found: error
+
