@@ -39,6 +39,7 @@ struct Entry {
     key: String,
     target: Target,
     epoch: Option<supabricks_core::resource::EpochId>,
+    catalog: bool,
     creation_epoch: Option<supabricks_core::resource::EpochId>,
     creation_environment: Option<OperationId>,
     requested_environment: Option<OperationId>,
@@ -147,6 +148,7 @@ impl Notebooks {
     ) -> Result<Value> {
         match command {
             Command::Create {
+                catalog,
                 key,
                 target,
                 epoch,
@@ -161,6 +163,7 @@ impl Notebooks {
                 }) {
                     if e.target != target
                         || e.limits != limits
+                        || e.catalog != catalog
                         || e.creation_epoch != epoch
                         || e.creation_environment != environment
                     {
@@ -182,6 +185,7 @@ impl Notebooks {
                     key,
                     target,
                     epoch,
+                    catalog,
                     creation_epoch: epoch,
                     creation_environment: environment,
                     requested_environment: environment,
@@ -427,6 +431,7 @@ mod tests {
                 owner: owner.clone(),
                 key: "create".into(),
                 epoch: None,
+                catalog: false,
                 creation_epoch: None,
                 creation_environment: None,
                 requested_environment: None,

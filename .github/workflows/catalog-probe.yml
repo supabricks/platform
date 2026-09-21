@@ -5,6 +5,8 @@ on:
       - 'components/*unity-catalog*'
       - 'components/test_unity_catalog.py'
       - 'crates/local/**'
+      - 'python/analytics/**'
+      - 'e2e/native/notebook-environments/client.py'
       - 'Cargo.lock'
       - 'install/native/unity_catalog.py'
       - 'install/native/test_unity_catalog.py'
@@ -36,6 +38,8 @@ jobs:
           python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Frozen worker contracts
+        run: python -m unittest discover -s python/analytics -p test_session.py
       - name: Build the platform service owner
         run: cargo build --locked --release -p supabricks-local --bin supabricks
       - name: Read reviewed source and baseline pins

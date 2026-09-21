@@ -47,6 +47,9 @@ def installed_fixture(baseline, binary, runtime, output):
         assert sha(baseline/name)==entry['sha256'],name
     shutil.copytree(baseline,output)
     shutil.copy2(binary,output/'bin/supabricks')
+    workers=list(output.rglob('analytics/session.py'))
+    assert len(workers)==1, workers
+    shutil.copy2(REPO/'python/analytics/session.py',workers[0])
     catalog=install(output,manifest['target'],runtime)
     manifest['provenance']['data_formats']['local_catalog']=15
     manifest['provenance']['unity_catalog']=catalog
@@ -154,6 +157,8 @@ def main():
         metadata_checks(cell,root,installed,branch,work,first['endpoint'],token,api,check)
         from publication import run as publication_checks
         publication_checks(cell,root,installed,branch,work,token,api,check)
+        from reads import run as read_checks
+        read_checks(cell,root,installed,branch,work,token,api,check)
         old_token=token();command('rotate_key');rotated=ready()
         old_status=api(rotated['endpoint'],old_token)[0]
         assert old_status in (401,403), ('old_key_token_status',old_status)

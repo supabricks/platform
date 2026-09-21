@@ -34,6 +34,8 @@ pub enum Command {
         id: OperationId,
     },
     Open {
+        #[serde(default)]
+        catalog: bool,
         target: Target,
         key: String,
     },
@@ -162,7 +164,11 @@ impl Workspace {
             Command::CancelRefresh { id } => {
                 Ok(refresh(Sessions::cancel_refresh(store, project, id)?))
             }
-            Command::Open { target, key: k } => {
+            Command::Open {
+                target,
+                key: k,
+                catalog,
+            } => {
                 target.validate(store, binding)?;
                 if self.sessions.len() >= 128 {
                     return Err(conflict(
@@ -170,18 +176,25 @@ impl Workspace {
                     ));
                 }
                 // Explicit publication first: no orphaned implicit refresh if the browser disappears.
-                let epoch = store
-                    .current_snapshot(project, target.branch)?
-                    .publication
-                    .epoch_id;
+                let epoch = if catalog {
+                    None
+                } else {
+                    Some(
+                        store
+                            .current_snapshot(project, target.branch)?
+                            .publication
+                            .epoch_id,
+                    )
+                };
                 let v = Sessions::open(
                     store,
                     cell,
                     binding,
                     Some(target.branch.to_string()),
-                    Some(epoch),
+                    epoch,
                     key(scope, &k)?,
                     900_000,
+                    catalog,
                 )?;
                 let s: AnalyticalSession = serde_json::from_value(v)?;
                 self.sessions.insert(
@@ -368,6 +381,7 @@ mod tests {
             branch_id: BranchId::new(),
             epoch_id: None,
             refresh_id: None,
+            catalog: None,
             state: "failed".into(),
             created_at_ms: 0,
             expires_at_ms: 1,

@@ -15,6 +15,8 @@ pub struct AnalyticalSession {
     pub branch_id: BranchId,
     pub epoch_id: Option<EpochId>,
     pub refresh_id: Option<OperationId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog: Option<crate::catalog::reads::Read>,
     pub state: String,
     pub created_at_ms: i64,
     pub expires_at_ms: i64,
@@ -114,6 +116,7 @@ impl Store {
             branch_id: branch,
             epoch_id: epoch,
             refresh_id: refresh,
+            catalog: None,
             state: if epoch.is_some() {
                 "starting"
             } else {
@@ -144,6 +147,55 @@ impl Store {
             ],
         )?;
         Ok(s)
+    }
+    pub(crate) fn admit_catalog_session(
+        &mut self,
+        p: &crate::catalog::publication::Publication,
+        key: &str,
+        request: Value,
+        ttl_ms: u64,
+    ) -> Result<AnalyticalSession> {
+        if let Some(s) = self.session_for_key(p.project_id, key, &request)? {
+            if s.catalog
+                .as_ref()
+                .is_some_and(|r| r.publication_id == p.id && r.deployment_id == p.deployment_id)
+            {
+                return Ok(s);
+            }
+            return Err(conflict("session key is pinned to another publication"));
+        }
+        if p.state != "published" || p.revision.is_none() {
+            return Err(conflict(
+                "catalog publication is unavailable for new sessions",
+            ));
+        }
+        self.db.execute_batch("SAVEPOINT catalog_session")?;
+        let result = (|| {
+            let mut s = self.admit_analytical_session(
+                p.project_id,
+                p.branch_id,
+                key,
+                request,
+                Some(p.epoch_id),
+                None,
+                ttl_ms,
+            )?;
+            s.catalog = Some(crate::catalog::reads::Read {
+                deployment_id: p.deployment_id,
+                publication_id: p.id,
+                revision: p.revision.unwrap(),
+                validated: false,
+            });
+            self.save_analytical_session(&s)?;
+            Ok(s)
+        })();
+        if result.is_ok() {
+            self.db.execute_batch("RELEASE catalog_session")?;
+        } else {
+            self.db
+                .execute_batch("ROLLBACK TO catalog_session; RELEASE catalog_session")?;
+        }
+        result
     }
     pub(crate) fn save_analytical_session(&mut self, s: &AnalyticalSession) -> Result<()> {
         self.db.execute(

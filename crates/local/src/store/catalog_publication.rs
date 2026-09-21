@@ -26,6 +26,17 @@ impl Store {
             .ok_or_else(|| missing("catalog publication in deployment"))?;
         Ok(serde_json::from_str(&s)?)
     }
+    pub(crate) fn catalog_publication_epoch(
+        &self,
+        owner: DeploymentId,
+        epoch: EpochId,
+    ) -> Result<CatalogPublication> {
+        let text: String = self.db.query_row(
+            "SELECT record_json FROM catalog_publications WHERE deployment_id=?1 AND epoch_id=?2",
+            params![owner.to_string(),epoch.to_string()],|r|r.get(0)).optional()?
+            .ok_or_else(|| missing("catalog publication for epoch in deployment"))?;
+        Ok(serde_json::from_str(&text)?)
+    }
     pub(crate) fn catalog_publication_key(
         &self,
         owner: DeploymentId,

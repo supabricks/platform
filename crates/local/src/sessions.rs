@@ -27,6 +27,7 @@ use supabricks_core::{
 pub struct Sessions {
     children: BTreeMap<String, Child>,
     pub last_error: Option<String>,
+    catalog_reads: crate::catalog::reads::Pending,
 }
 fn now() -> i64 {
     chrono::Utc::now().timestamp_millis()
@@ -113,8 +114,11 @@ impl Sessions {
         epoch: Option<EpochId>,
         key: String,
         ttl_ms: u64,
+        catalog: bool,
     ) -> Result<Value> {
-        Self::open_context(store, cell, binding, branch, epoch, key, ttl_ms, false)
+        Self::open_context(
+            store, cell, binding, branch, epoch, key, ttl_ms, false, catalog,
+        )
     }
     pub(crate) fn open_notebook(
         store: &mut Store,
@@ -124,8 +128,19 @@ impl Sessions {
         epoch: Option<EpochId>,
         key: String,
         ttl_ms: u64,
+        catalog: bool,
     ) -> Result<Value> {
-        Self::open_context(store, cell, binding, Some(branch), epoch, key, ttl_ms, true)
+        Self::open_context(
+            store,
+            cell,
+            binding,
+            Some(branch),
+            epoch,
+            key,
+            ttl_ms,
+            true,
+            catalog,
+        )
     }
     #[allow(clippy::too_many_arguments)]
     fn open_context(
@@ -137,8 +152,12 @@ impl Sessions {
         key: String,
         ttl_ms: u64,
         notebook: bool,
+        catalog: bool,
     ) -> Result<Value> {
         let mut request = json!({"branch":branch,"epoch":epoch,"ttl_ms":ttl_ms});
+        if catalog {
+            request["catalog"] = json!(true);
+        }
         if notebook {
             request["notebook"] = json!(true);
         }
@@ -160,6 +179,29 @@ impl Sessions {
         } else {
             crate::api::resolve(store, binding, branch.as_deref())?
         };
+        if catalog {
+            let owner = store.binding_context(binding)?;
+            let p = if let Some(epoch) = epoch {
+                store.catalog_publication_epoch(owner.deployment_id, epoch)?
+            } else {
+                let (_, head) = store.catalog_head(owner.deployment_id, branch_id)?;
+                let id =
+                    head.ok_or_else(|| conflict("branch has no published catalog revision"))?;
+                store.catalog_publication(owner.deployment_id, id)?
+            };
+            if p.project_id != binding.project_id
+                || p.branch_id != branch_id
+                || epoch.is_some_and(|e| e != p.epoch_id)
+            {
+                return Err(conflict(
+                    "requested epoch does not match the catalog publication",
+                ));
+            }
+            crate::catalog::publication::verify_locations(store, &p)?;
+            return Ok(json!(
+                store.admit_catalog_session(&p, &key, request, ttl_ms)?
+            ));
+        }
         let epoch = match epoch {
             Some(e) => Some(e),
             None => match store.current_snapshot(binding.project_id, branch_id) {
@@ -314,7 +356,8 @@ impl Sessions {
         }
         Ok(())
     }
-    pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+    pub fn tick(&mut self, store: &mut Store, catalog: &crate::catalog::Manager) -> Result<()> {
+        self.catalog_reads.reap(store)?;
         for (project, id) in store.pending_refreshes()? {
             if store.export(id)?.state == "complete" {
                 if let Err(e) = store.publish_export(project, id) {
@@ -344,7 +387,12 @@ impl Sessions {
                 }
                 continue;
             }
-            let result = self.tick_worker(store, &mut s);
+            let result = (|| {
+                if !self.catalog_reads.ready(store, catalog, &mut s)? {
+                    return Ok(());
+                }
+                self.tick_worker(store, &mut s)
+            })();
             if let Err(e) = result {
                 self.finish(store, &mut s, &e.to_string())?;
             }
@@ -371,13 +419,17 @@ impl Sessions {
                 .publication
                 .descriptor
                 .ok_or_else(|| invalid("missing snapshot descriptor"))?;
-            let metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
+            let mut metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
+            let catalog = crate::catalog::reads::frozen(store, s)?;
+            if let Some(frozen) = &catalog {
+                metadata["catalog"] = frozen["provenance"].clone();
+            }
             // The durable starting session identifies this alias even if the
             // daemon stops between its creation and worker launch.
             let sail_workspace = paths::create(&dir, s.id)?;
             supervisor::write_json(
                 &dir.join("input.json"),
-                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
+                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"catalog":catalog,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
             )?;
             let env = BTreeMap::from([
                 ("PATH".into(), "/usr/bin:/bin".into()),
@@ -437,8 +489,14 @@ impl Sessions {
                     .as_u64()
                     .filter(|p| *p > 0 && *p <= 65535)
                     .ok_or_else(|| invalid("invalid Spark Connect port"))?;
+                // Must match the fixed loopback listener selected by session.py.
+                let host = if cfg!(target_os = "macos") {
+                    "[::1]"
+                } else {
+                    "127.0.0.1"
+                };
                 s.endpoint = Some(format!(
-                    "sc://127.0.0.1:{port}/;user_id=supabricks;session_id={}",
+                    "sc://{host}:{port}/;user_id=supabricks;session_id={}",
                     s.id
                 ));
                 s.state = "ready".into();

@@ -281,8 +281,8 @@ pub fn tools() -> Value {
         ),
         (
             "analytics_open",
-            "Open a bounded Sail session on a selected epoch or current branch snapshot. First access automatically refreshes if no snapshot exists. Poll analytics_session until ready for the Spark Connect endpoint.",
-            json!({"branch":branch,"epoch":string,"key":key,"ttl_ms":{"type":"integer","minimum":10000,"maximum":3600000,"default":900000}}),
+            "Open a bounded Sail session. catalog=true pins the published catalog revision (or a published explicit epoch) without fallback; otherwise use the local snapshot, refreshing on first access. Poll analytics_session until ready for the Spark Connect endpoint.",
+            json!({"catalog":{"type":"boolean","default":false},"branch":branch,"epoch":string,"key":key,"ttl_ms":{"type":"integer","minimum":10000,"maximum":3600000,"default":900000}}),
             vec!["key"],
             false,
         ),

@@ -489,3 +489,81 @@ fn symlinked_or_relocated_locations_cannot_be_registered() {
     assert!(local_location(&link).is_err());
     assert!(local_location(&target.canonicalize().unwrap()).is_ok());
 }
+
+#[test]
+fn catalog_session_lease_pins_withdrawn_revision_until_recovery_confirms_worker_death() {
+    let (_dir, mut store, _, mut p) = setup();
+    store.begin_catalog_publication(&p).unwrap();
+    for t in &mut p.tables {
+        t.state = "verified".into();
+    }
+    store.commit_catalog_publication(&mut p).unwrap();
+    let request = json!({"catalog":true});
+    let mut s = store
+        .admit_catalog_session(&p, "read", request.clone(), 60000)
+        .unwrap();
+    assert!(crate::catalog::reads::frozen(&store, &s).is_err());
+    s.catalog.as_mut().unwrap().validated = true;
+    store.save_analytical_session(&s).unwrap();
+    let frozen = crate::catalog::reads::frozen(&store, &s).unwrap().unwrap();
+    assert_eq!(frozen["provenance"]["publication_id"], p.id.to_string());
+    assert_eq!(frozen["tables"].as_array().unwrap().len(), 2);
+    let saved = store
+        .session_for_key(p.project_id, "read", &request)
+        .unwrap()
+        .unwrap();
+    assert_eq!(saved.catalog.unwrap().publication_id, p.id);
+    p = store
+        .retire_catalog_publication(p.deployment_id, p.id, "withdraw", 1)
+        .unwrap();
+    assert!(store.catalog_references(&p).unwrap());
+    assert!(
+        store
+            .admit_catalog_session(&p, "new", request, 60000)
+            .is_err()
+    );
+    assert_eq!(
+        crate::catalog::reads::frozen(&store, &s).unwrap().unwrap(),
+        frozen
+    );
+    let root = store.root().to_owned();
+    drop(store);
+    let mut store = Store::open(&root).unwrap();
+    assert!(store.catalog_references(&p).unwrap());
+    crate::sessions::Sessions::recover(&mut store).unwrap();
+    assert!(!store.catalog_references(&p).unwrap());
+    assert_eq!(
+        store.analytical_session(p.project_id, s.id).unwrap().state,
+        "failed"
+    );
+}
+
+#[test]
+fn catalog_reads_reject_foreign_locations_and_changed_delta_metadata() {
+    let (_dir, store, _, p) = setup();
+    verify_locations(&store, &p).unwrap();
+    for location in [
+        "s3://foreign/data",
+        "https://host/data",
+        "file:///etc",
+        "file://host/etc",
+        "file:///tmp/../etc",
+        "file:///tmp/%2e%2e/etc",
+    ] {
+        let mut changed = p.clone();
+        changed.tables[0].body["storage_location"] = json!(location);
+        assert!(verify_locations(&store, &changed).is_err(), "{location}");
+    }
+    let mut changed = p.clone();
+    changed.tables[0].source_name = "other".into();
+    assert!(verify_locations(&store, &changed).is_err());
+    let snapshot = store.snapshot(p.project_id, p.epoch_id).unwrap();
+    let dir = store
+        .root()
+        .join("analytics/generations")
+        .join(snapshot.publication.export_id.to_string());
+    let table = dir.join("101");
+    std::fs::rename(&table, dir.join("replacement")).unwrap();
+    std::os::unix::fs::symlink(dir.join("replacement"), &table).unwrap();
+    assert!(verify_locations(&store, &p).is_err());
+}
