@@ -525,3 +525,68 @@ fn first_catalog_upgrade_preserves_engine_fences_and_requires_no_catalog_state()
         }
     }
 }
+
+#[test]
+fn catalog_build_timings_do_not_change_upgrade_payload_compatibility() {
+    for changed_payload in [false, true] {
+        let f = Fixture::new();
+        for (release, duration) in [(&f.old, 1), (&f.new, 2)] {
+            let report = release.join("share/unity-catalog/build.json");
+            let jar = release.join("share/unity-catalog/jars/server.jar");
+            fs::create_dir_all(jar.parent().unwrap()).unwrap();
+            fs::write(&report, format!("{{\"build_seconds\":{duration}}}")).unwrap();
+            fs::write(
+                &jar,
+                if changed_payload && release == &f.new {
+                    b"changed backend".as_slice()
+                } else {
+                    b"same backend".as_slice()
+                },
+            )
+            .unwrap();
+            let path = release.join("release.json");
+            let mut manifest: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+            for file in [&report, &jar] {
+                manifest["files"][file.strip_prefix(release).unwrap().to_str().unwrap()] =
+                    json!({"sha256":digest(file),"executable":false});
+            }
+            manifest["provenance"]["data_formats"]["unity_catalog"] = json!(1);
+            fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        }
+        let path = f.root.join("runtime.json");
+        let mut runtime: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        runtime["installation_identity"] = json!(digest(&f.old.join("release.json")));
+        fs::write(path, serde_json::to_vec(&runtime).unwrap()).unwrap();
+        f.upgrade(!changed_payload);
+        if !changed_payload {
+            let backup = recovery::verify(&f.backup).unwrap();
+            let completed: Value =
+                serde_json::from_slice(&fs::read(f.root.join("last-upgrade.json")).unwrap())
+                    .unwrap();
+            // Distinct full fingerprints survive in the persisted journal and
+            // backup, even though the payload-only upgrade comparison passed.
+            assert_ne!(
+                completed["from"]["compatibility"],
+                completed["to"]["compatibility"]
+            );
+            assert_eq!(
+                backup.release.unwrap().compatibility,
+                completed["from"]["compatibility"]
+            );
+            command(
+                &f.new.join("bin/supabricks"),
+                &[
+                    "backup",
+                    "restore",
+                    f.backup.to_str().unwrap(),
+                    "--release",
+                    f.old.to_str().unwrap(),
+                ],
+                &f._tmp.path().join("restored"),
+                true,
+            );
+        } else {
+            assert!(!f.backup.exists());
+        }
+    }
+}

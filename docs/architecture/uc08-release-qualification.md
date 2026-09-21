@@ -64,8 +64,15 @@ component inventory check. The first-catalog transition now compares the existin
 PG/storage/analytics inventory exactly and permits adding UC only when there is
 no prior catalog state or undeclared catalog component. The stopped backup and
 restartable upgrade journal remain mandatory. Existing UC backend/runtime
-changes retain the exact compatibility fence; this does not authorize arbitrary
+changes retain the exact payload compatibility fence; this does not authorize arbitrary
 engine changes or backend migrations.
+
+Upgrade comparison excludes the UC build report, whose elapsed build duration
+changes even when every runtime file is identical. Every executable, JAR, private
+JRE and configuration file remains in the comparison. Persisted backup and journal
+fingerprints retain the full original inventory, including that report, so old
+checkpoints remain verifiable. Native recovery exercises a timing-only rebuild
+through all activation boundaries; unit coverage rejects a changed runtime JAR.
 
 The alpha.22 packaging predecessor can fail database preparation before producing
 its resource receipt. Its existing one-time explicit reconciliation now accepts
@@ -96,7 +103,8 @@ silently retried.
   packaged notebook that previously failed in CI. Its network trace then exposed
   DNS attempts from managed JVM hostname lookup (no network traffic escaped).
   The private resolver change passed a bundled-JRE probe with no DNS attempts;
-  repeat full-product network qualification is pending. This is new evidence,
+  the repeated full-product trace passed with 6,251 destinations and zero external
+  attempts. This is new evidence,
   not a claim that the prior notebook failure's cause is known.
 - The new isolated Linux catalog gate passed 37 native, 11 browser and 10 recovery
   scenarios, including ENOSPC, and its report passed the catalog evidence collector.
@@ -105,6 +113,10 @@ silently retried.
   deliberate missing-catalog failure could be observed while PostgreSQL was still
   starting. The fixture now waits for its PostgreSQL query before asserting that
   catalog failure leaves PostgreSQL available. Cleanup recorded zero leaked processes.
+- The DNS-fixed local archive passed the complete isolated catalog gate after
+  those readiness fixes: 37 service, 11 browser and 10 recovery scenarios, including
+  ENOSPC. The detached-daemon census observed 143 browser descendants and no leaks.
+  This locally assembled candidate predates the final branch head.
 - Alpha.34 cross-platform candidate qualification is pending. Do not mark UC08
   complete until its final combined R04 evidence passes; record any further retry
   and its cause here.

@@ -154,14 +154,20 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     }
     if adding_catalog && normalized == target_formats {
         compatible(
-            &Release::with_inventory(&old, normalized, false)?,
-            &Release::with_inventory(&candidate, target_formats.clone(), false)?,
+            &Release::for_upgrade(&old, normalized, false)?,
+            &Release::for_upgrade(&candidate, target_formats.clone(), false)?,
         )?;
     } else if migration && normalized == target_formats {
-        // Compare the full original inventory with ONLY the named catalog format changed.
-        compatible(&Release::with_formats(&old, normalized)?, &to)?;
+        // Compare runtime payloads with only the named catalog format changed.
+        compatible(
+            &Release::for_upgrade(&old, normalized, true)?,
+            &Release::for_upgrade(&candidate, target_formats.clone(), true)?,
+        )?;
     } else {
-        compatible(&from, &to)?;
+        compatible(
+            &Release::for_upgrade(&old, source_formats, true)?,
+            &Release::for_upgrade(&candidate, target_formats, true)?,
+        )?;
     }
     if old.root != prefix.join("releases").join(&from.version) {
         return Err(invalid("previous release is outside this installation"));

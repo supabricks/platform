@@ -193,6 +193,16 @@ requirement="sales.v1"
             candidate=prefix/'releases/v0.1.0-alpha.33'
             shutil.copytree(installed,candidate,copy_function=os.link)
             release=json.loads((candidate/'release.json').read_text());release['version']='v0.1.0-alpha.33'
+            # Synthetic upgrade coverage only: rebuild timing changes provenance,
+            # while the exact catalog runtime payload must remain compatible.
+            build=json.loads((candidate/'share/unity-catalog/build.json').read_text())
+            build['build_seconds']+=1
+            for name in ['share/unity-catalog/build.json','provenance/unity-catalog/build.json']:
+                path=candidate/name
+                path.unlink()  # break the hardlink; never mutate the old installation
+                path.write_text(json.dumps(build,indent=2)+'\n')
+                release['files'][name]['sha256']=sha(path)
+            release['provenance']['unity_catalog']['build_sha256']=sha(candidate/'share/unity-catalog/build.json')
             (candidate/'release.json').unlink();(candidate/'release.json').write_text(json.dumps(release,indent=2)+'\n')
             cell.binary=candidate/'bin/supabricks'
             upgrade_backup=root/'upgrade-backup'
@@ -201,6 +211,7 @@ requirement="sales.v1"
             completed=json.loads((cell.root/'last-upgrade.json').read_text())
             saved=json.loads((upgrade_backup/'backup.json').read_text())
             assert completed['catalog_state_sha256']
+            assert completed['from']['compatibility'] != completed['to']['compatibility']
             journal=dict(version=1,previous=str(installed),prefix=str(prefix),backup=str(upgrade_backup),
                 **{'from':completed['from'],'to':completed['to']},
                 database_sha256=saved['files']['state.sqlite3']['sha256'],catalog_state_sha256=completed['catalog_state_sha256'])
