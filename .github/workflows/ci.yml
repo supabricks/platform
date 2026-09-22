@@ -28,7 +28,9 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Migration recovery exercises every durable boundary across supported schemas.
+    # The SY05 run exceeded 20 minutes on hosted runners without assertion failures.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
