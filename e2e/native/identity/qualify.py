@@ -165,7 +165,7 @@ def qualify(binary, uc_runtime=None, execution_config=None, exact_installed=Fals
 
         try:
             network=['--network','container:'+os.environ['SUPABRICKS_QUALIFIER_CONTAINER']] if os.environ.get('SUPABRICKS_QUALIFIER_CONTAINER') else ['-p','127.0.0.1:'+base.rsplit(':',1)[1]+':8443']
-            run(['docker', 'run', '--pull=never', '-d', *network, '--name', name, '--memory=1g', '--cpus=2', '--pids-limit=256',
+            run(['docker', 'run', *(['--pull=never'] if exact_installed else []), '-d', *network, '--name', name, '--memory=1g', '--cpus=2', '--pids-limit=256',
                  '--env-file', env,
                  '-v', str(realm_file)+':/opt/keycloak/data/import/realm.json:ro',
                  '-v', str(root/'cert.pem')+':/tls/cert.pem:ro', '-v', str(root/'key.pem')+':/tls/key.pem:ro',
