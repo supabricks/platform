@@ -148,6 +148,21 @@ fn group_cursor_commit_rolls_back_on_mapping_failure_and_competing_head() {
     prepare(&mut s, &c, &mut first, 0);
     finish(&mut s, &first);
     let old = head(&s, &c);
+    let mut regressed = c.clone();
+    regressed.captured_lsn = Some("0/64".into());
+    s.save_capture(&regressed).unwrap();
+    assert!(
+        s.incremental_command(
+            p,
+            I::Apply {
+                capture_id: c.id,
+                key: "regressed".into()
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(head(&s, &c), old);
+    s.save_capture(&c).unwrap();
     let mut next = apply(&mut s, &c, "next");
     let descriptor = prepare(&mut s, &c, &mut next, 1);
     let mut broken = descriptor.clone();

@@ -93,7 +93,10 @@ retention is deliberately conservative; a long-lived generation eventually needs
 explicit deletion and a new baseline when its finite budget is exhausted. SY07
 owns maintenance and broader recovery qualification. Merge may scan unaffected
 files and rewrite whole affected files; it is not byte-level row storage. Manifests
-report input bytes, generation bytes and Delta merge metrics.
+report input bytes, generation bytes, Delta merge metrics, new Parquet bytes per
+commit and retained Parquet bytes, including reconciled commits. Each run still
+re-verifies previous files and hashes its publication inventory; checksum read I/O
+grows with retained storage. A small input batch is not a constant-cost operation.
 
 ## Evidence and remaining gates
 

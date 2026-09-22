@@ -67,6 +67,18 @@ def plan(config,root,previous):
     return result
 
 
+def commit_metrics(path,version,metrics):
+    # Report physical amplification, including on replay; operation metrics alone
+    # expose row/file counts but omit the bytes written by this Delta commit.
+    added=0
+    with (path/'_delta_log'/f'{version:020}.json').open() as stream:
+        while line:=stream.readline(2*1024*1024+1):
+            if len(line)>2*1024*1024:raise CaptureError('delta_metadata_budget')
+            added+=json.loads(line).get('add',{}).get('size',0)
+    return dict(metrics,new_parquet_bytes=added,
+        retained_parquet_bytes=sum(p.stat().st_size for p in path.glob('*.parquet')))
+
+
 def apply_table(config,root,table,planned,checksum):
     path=root/table['path'];delta=DeltaTable(str(path));before=planned['before']
     marker=dict(sb_run=config['id'],sb_plan=checksum)
@@ -75,7 +87,7 @@ def apply_table(config,root,table,planned,checksum):
         if any(record.get(k)!=v for k,v in marker.items()):raise CaptureError('foreign_delta_commit')
         # A committed Delta log after SIGKILL may precede the worker receipt.
         durable(path)
-        return delta.version(),dict(replayed=True)
+        return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True))
     if delta.version()!=before:raise CaptureError('foreign_delta_version')
     if before>=1023:raise CaptureError('delta_version_budget')
     columns=planned['columns'];pk=next(c[1] for c in columns if c[0]==1)
@@ -103,7 +115,7 @@ def apply_table(config,root,table,planned,checksum):
         .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
     fault('after_table_commit')
     durable(path);boundary(root,config['deadline_ms'])
-    return delta.version(),metrics
+    return delta.version(),commit_metrics(path,delta.version(),metrics)
 
 
 def run(config):

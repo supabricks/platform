@@ -172,10 +172,16 @@ impl Store {
                     let target = if previous.is_none() {
                         bootstrap
                     } else {
-                        c.captured_lsn
+                        let captured = c
+                            .captured_lsn
                             .clone()
-                            .filter(|v| lsn(v).ok() >= lsn(&after).ok())
-                            .unwrap_or_else(|| after.clone())
+                            .ok_or_else(|| conflict("missing captured boundary"))?;
+                        if lsn(&captured)? < lsn(&after)? {
+                            return Err(conflict(
+                                "captured history is behind the published boundary",
+                            ));
+                        }
+                        captured
                     };
                     let r = Run {
                         id: OperationId::new(),
