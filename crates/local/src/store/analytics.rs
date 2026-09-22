@@ -66,7 +66,7 @@ impl Store {
         project: ProjectId,
         id: OperationId,
     ) -> Result<Publication> {
-        self.export_in_project(project, id)?;
+        self.artifact_in_project(project, id)?;
         self.publication(id)
     }
     pub fn publish_export(&mut self, project: ProjectId, id: OperationId) -> Result<Publication> {
@@ -106,7 +106,7 @@ impl Store {
         }
         if tx.prepare("SELECT 1 FROM publications WHERE branch_id=?1 AND state IN ('requested','files_complete')")?.exists([e.source_id.to_string()])? {return Err(conflict("one publication per branch may be in flight"));}
         let order: i64 = tx.query_row(
-            "SELECT rowid FROM operations WHERE id=?1",
+            "SELECT ordinal FROM analytical_artifacts WHERE id=?1",
             [id.to_string()],
             |r| r.get(0),
         )?;
@@ -413,6 +413,7 @@ impl Store {
           WHERE p.branch_id=?1 AND s.state IN ('available','unavailable'))
           SELECT epoch_id,export_id FROM ranked r WHERE rank>?2
           AND NOT EXISTS(SELECT 1 FROM snapshot_heads h WHERE h.epoch_id=r.epoch_id)
+          AND NOT EXISTS(SELECT 1 FROM incremental_runs ir WHERE ir.state IN ('requested','running','ready') AND json_extract(ir.record,'$.previous_epoch')=r.epoch_id)
           AND NOT EXISTS(SELECT 1 FROM catalog_retention c WHERE c.epoch_id=r.epoch_id)
           AND NOT EXISTS(SELECT 1 FROM snapshot_leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)
           AND NOT EXISTS(SELECT 1 FROM leases l WHERE l.epoch_id=r.epoch_id AND expires_at_ms>?3)

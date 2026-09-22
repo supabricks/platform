@@ -23,6 +23,7 @@ remains beside its owning record in the existing evidence directories.
 ## Analytics, console and ingestion
 
 - [SY01: managed snapshot policies and scheduling](sy01-managed-snapshots.md)
+- [SY03: incremental row application and atomic version maps](sy03-incremental-epochs.md)
 - [SY02: durable PostgreSQL capture and isolated bootstrap](sy02-durable-capture.md)
 - [SY00: managed capture and bootstrap probe](sy00-capture-probe.md)
 - [A01: frozen Postgres exports](a01-frozen-exports.md)

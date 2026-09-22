@@ -1,5 +1,6 @@
 //! Native configuration, durable local state and the single-writer daemon.
 pub mod analytics;
+pub(crate) mod analytics_v2;
 pub mod api;
 pub mod authorization;
 pub mod capture;
@@ -14,6 +15,7 @@ pub mod environments;
 pub mod execution;
 pub mod governed;
 pub mod identity;
+pub mod incremental;
 pub mod ingest;
 pub mod installation;
 pub mod mcp;

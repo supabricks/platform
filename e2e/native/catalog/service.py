@@ -54,7 +54,7 @@ def installed_fixture(baseline, binary, runtime, output, console_assets=None):
         shutil.rmtree(output/'share/console')
         shutil.copytree(console_assets,output/'share/console')
     catalog=install(output,manifest['target'],runtime)
-    manifest['provenance']['data_formats']['local_catalog']=24
+    manifest['provenance']['data_formats']['local_catalog']=25
     manifest['provenance']['unity_catalog']=catalog
     manifest['provenance']['data_formats']['unity_catalog']=1
     manifest['provenance']['uc01_fixture']='current platform binary and UC closure over immutable alpha.24 engines; not full release qualification'

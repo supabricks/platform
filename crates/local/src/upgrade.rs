@@ -123,6 +123,9 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         .and_then(|n| u32::try_from(n).ok())
         .ok_or_else(|| conflict("invalid source catalog format"))?;
     let mut expected_formats = json!({"local_catalog":SCHEMA_VERSION,"runtime_config":2,"postgres_major":17,"analytical_snapshot":1});
+    if target_formats.get("incremental_snapshot").is_some() {
+        expected_formats["incremental_snapshot"] = json!(2);
+    }
     if target_formats.get("unity_catalog").is_some() {
         expected_formats["unity_catalog"] = json!(1);
     }
@@ -137,10 +140,17 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     }
     let migration = matches!(
         source_schema,
-        8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23
+        8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
     );
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);
+    // V2 is additive: existing immutable V1 snapshots keep their format. The
+    // stopped catalog upgrade fences older runtimes from new incremental intent.
+    let adding_incremental = source_formats.get("incremental_snapshot").is_none()
+        && target_formats.get("incremental_snapshot") == Some(&json!(2));
+    if adding_incremental {
+        normalized["incremental_snapshot"] = json!(2);
+    }
     // Adding the first catalog has no existing UC storage to migrate. Preserve
     // the exact PG/storage/analytics inventory check and fence any catalog state.
     let adding_catalog = source_formats.get("unity_catalog").is_none()
@@ -167,7 +177,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             &Release::for_upgrade(&old, normalized, false)?,
             &Release::for_upgrade(&candidate, target_formats.clone(), false)?,
         )?;
-    } else if migration && normalized == target_formats {
+    } else if (migration || adding_incremental) && normalized == target_formats {
         // Compare runtime payloads with only the named catalog format changed.
         compatible(
             &Release::for_upgrade(&old, normalized, true)?,

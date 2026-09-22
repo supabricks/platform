@@ -2,7 +2,7 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Delivery ledger](../plans/status.md) · [SY00 decisions](sy00-capture-probe.md)
 
-Status: implemented for review, 2026-09-22. This is an explicit local-owner capture
+Status: merged in [platform #80](https://github.com/supabricks/platform/pull/80), 2026-09-22. This is an explicit local-owner capture
 foundation. It does not apply rows to Delta, publish incremental epochs, or enable
 triggered/continuous product modes. SY03 owns application/publication; SY04 and
 SY05 own the corresponding product policies.
@@ -121,8 +121,7 @@ backed-up upgrade path, including from schema 23.
 analytical runtime. Ten local Linux checks passed: isolated bootstrap with a
 long multi-table transaction spanning F; durable acknowledgment/abort behavior;
 worker SIGKILL and daemon/compute restart; pause/resume; corrupt-spool cleanup;
-empty create/drop fence; lost slot; acknowledgment ahead of the spool; paused WAL pressure; and rejection of a user `pgapp` schema without misclassifying it as system metadata. The same harness runs
-in Linux/macOS native-cell CI. macOS qualification remains pending for this PR.
+empty create/drop fence; lost slot; acknowledgment ahead of the spool; paused WAL pressure; and rejection of a user `pgapp` schema without misclassifying it as system metadata. The same harness passed on Linux/macOS in [native-cell run 35786273435](https://github.com/supabricks/platform/actions/runs/35786273435), at head `a951180d56b8c119bc67002ed817ba6bc346939b`. Required merge checks also passed.
 
 `python/analytics/test_capture.py` exercises process exits before/after spool commit
 and feedback, duplicate replay, chain corruption, identity/ownership, simulated

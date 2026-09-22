@@ -237,7 +237,12 @@ def run(config):
     descriptor = config['descriptor']
     root = Path(config['root']).resolve()
     generation = (root / descriptor['generation']).resolve()
-    if not generation.is_relative_to(root / 'analytics' / 'generations'):
+    if descriptor['format_version']==2:
+        import uuid
+        capture=str(uuid.UUID(descriptor['manifest']['capture_identity']['generation']))
+        if generation != root/'analytics/incremental'/capture:
+            raise ValueError('incremental generation identity changed')
+    elif descriptor['format_version']!=1 or not generation.is_relative_to(root/'analytics/generations'):
         raise ValueError('generation must be inside the analytical store')
     sail_generation = generation
     if config.get('sail_workspace'):

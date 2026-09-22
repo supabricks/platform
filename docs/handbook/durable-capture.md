@@ -3,8 +3,9 @@
 [Analytical workspace](analytical-workspace.md) · [Capture contract](../architecture/sy02-durable-capture.md)
 
 This explicit local-owner command prepares the capture foundation for incremental
-analytics. It does not update a Sail snapshot. Continue using SY01 full snapshot
-runs for published analytical results.
+analytics. Capture alone does not update a Sail snapshot. Use [SY03 explicit
+incremental application](incremental-epochs.md) or SY01 full snapshot runs to
+publish analytical results.
 
 With the SY02 native binary and analytical worker installed/configured, create a
 manual snapshot policy on a running branch, then enroll its current revision:

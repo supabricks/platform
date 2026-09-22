@@ -135,7 +135,9 @@ tenant security boundaries.
 [Managed analytical synchronization](plans/analytical-sync-implementation.md)
 plans triggered and continuous PostgreSQL → analytics modes after the delivered
 snapshot baseline. “No user-managed CDC” allows platform-owned change capture;
-these modes are planned, not available today. Reverse sync is later scope.
+these modes are planned, not available today. SY01 delivers managed snapshot
+scheduling, SY02 adds durable capture, and [SY03](architecture/sy03-incremental-epochs.md)
+adds explicit local incremental epochs for review. Reverse sync is later scope.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list

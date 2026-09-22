@@ -353,7 +353,16 @@ pub(crate) fn check_ready(root: &Path, d: &Value) -> Result<()> {
             && serde_json::from_slice::<Value>(&bytes)? == d["manifest"],
         "export manifest differs from journal",
     )?;
-    layout(root, &d["manifest"])?;
+    if d["format_version"] == 2 {
+        let installation = root
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::parent)
+            .ok_or_else(|| invalid("invalid epoch location"))?;
+        crate::analytics_v2::layout(installation, d)?;
+    } else {
+        layout(root, &d["manifest"])?;
+    }
     Ok(())
 }
 impl Publisher {
@@ -366,7 +375,10 @@ impl Publisher {
                 let known = name
                     .to_str()
                     .and_then(|s| s.parse::<OperationId>().ok())
-                    .is_some_and(|id| store.export(id).is_ok());
+                    .is_some_and(|id| {
+                        store.export(id).is_ok()
+                            || store.is_incremental_artifact(id).unwrap_or(false)
+                    });
                 if !known {
                     untracked += 1;
                 }
@@ -418,6 +430,9 @@ impl Publisher {
         }
         if let Some(p) = pending.first() {
             let result = (|| -> Result<()> {
+                if store.is_incremental_artifact(p.export_id)? {
+                    return self.tick_incremental(store, p, &stage, &generations, hook);
+                }
                 if p.state == "requested" {
                     if self.verifier.is_none() {
                         self.verifier = Some(Verifier::open(
@@ -464,7 +479,17 @@ impl Publisher {
                 // If commit succeeded, an injected post-commit error cannot
                 // undo publication or authorize deletion of the live epoch.
                 if store.publication(p.export_id)?.state != "published" {
-                    store.fail_publication(p.export_id, &e.to_string())?;
+                    if store.is_incremental_artifact(p.export_id)? {
+                        let project = store.branch(p.branch_id)?.branch.project_id;
+                        let mut run = store.incremental_run(project, p.export_id)?;
+                        store.fail_incremental(
+                            &mut run,
+                            "incremental_publication_failed",
+                            false,
+                        )?;
+                    } else {
+                        store.fail_publication(p.export_id, &e.to_string())?;
+                    }
                 }
                 return Err(e);
             }
@@ -485,6 +510,74 @@ impl Publisher {
             hook("after_gc_files")?;
             store.finish_analytics_gc(*id)?;
             hook("after_gc_commit")?;
+        }
+        Ok(())
+    }
+}
+
+impl Publisher {
+    fn tick_incremental(
+        &mut self,
+        store: &mut Store,
+        p: &Publication,
+        stage: &Path,
+        generations: &Path,
+        hook: &mut impl FnMut(&str) -> Result<()>,
+    ) -> Result<()> {
+        let Some(d) = p.descriptor.as_ref() else {
+            return Ok(());
+        };
+        let project = store.branch(p.branch_id)?.branch.project_id;
+        let mut run = store.incremental_run(project, p.export_id)?;
+        let capture = store.incremental_live(&run)?;
+        // A short source outage does not publish from a stale status observation.
+        if capture.state != "capturing"
+            || capture
+                .observed_at_ms
+                .is_none_or(|at| chrono::Utc::now().timestamp_millis() - at > 5000)
+        {
+            return Ok(());
+        }
+        if p.state == "requested" {
+            if self.verifier.is_none() {
+                let files = crate::analytics_v2::layout(store.root(), d)?
+                    .into_iter()
+                    .map(|(path, bytes, hash)| FileCheck { path, bytes, hash })
+                    .collect();
+                self.verifier = Some(Verifier {
+                    id: p.export_id,
+                    root: crate::analytics_v2::data_root(store.root(), d)?,
+                    manifest: d["manifest"].clone(),
+                    manifest_hash: d["manifest_sha256"].as_str().unwrap_or("").into(),
+                    files,
+                    index: 0,
+                    current: None,
+                });
+            }
+            if self.verifier.as_mut().unwrap().advance(hook)? {
+                atomic_descriptor(&stage.join(p.export_id.to_string()), d, hook)?;
+                store.publication_ready(p, d)?;
+                self.verifier = None;
+                hook("files_complete")?;
+            }
+        } else {
+            let from = stage.join(p.export_id.to_string());
+            let to = generations.join(p.export_id.to_string());
+            require(
+                !(from.exists() && to.exists()),
+                "duplicate epoch directories",
+            )?;
+            check_ready(if to.exists() { &to } else { &from }, d)?;
+            hook("before_rename")?;
+            if !to.exists() {
+                fs::rename(&from, &to)?;
+            }
+            File::open(stage)?.sync_all()?;
+            File::open(generations)?.sync_all()?;
+            hook("after_rename")?;
+            hook("before_commit")?;
+            store.commit_incremental(&mut run, d)?;
+            hook("after_commit")?;
         }
         Ok(())
     }

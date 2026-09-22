@@ -335,7 +335,7 @@ impl Stopped {
     fn open_checkpoint(root: &Path, expected: u32, catalog: bool) -> Result<Self> {
         if !matches!(
             expected,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25
         ) {
             return Err(conflict("unsupported recovery schema"));
         }
@@ -514,7 +514,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     if manifest.format_version != 1
         || !matches!(
             manifest.schema_version,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25
         )
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()
@@ -653,6 +653,9 @@ pub fn restore_with_release(
     )?;
     // Restored declarative schedules require explicit owner resume. Never replay
     // copied background intent against a restored source without review.
+    if manifest.schema_version >= 25 {
+        crate::store::incremental::restore(&catalog_db)?;
+    }
     if manifest.schema_version >= 24 {
         // Restore never silently resumes a copied cursor against a live source.
         crate::store::capture::restore(&catalog_db)?;
