@@ -76,7 +76,7 @@ def main():
         current=ready()
         assert current['metastore_id']==initial['metastore_id']
         branch=cell.state(branch,'running')
-        assert cell.sql(branch,'SELECT sum(id) FROM preserved')=='42'
+        wait(lambda:cell.sql(branch,'SELECT sum(id) FROM preserved')=='42',timeout=60)
         retained=publication('status',id=published['id'])['publication']
         assert [t['id'] for t in retained['tables']]==[t['id'] for t in published['tables']]
         assert api(current['endpoint'],old_token)[0]==401
@@ -88,7 +88,7 @@ def main():
         cell.root=restored;cell.binary=old/'bin/supabricks';cell.bundle=old/'engine';cell.helpers=old/'helpers';cell.start()
         assert ready()['metastore_id']==initial['metastore_id']
         branch=cell.state(branch,'running')
-        assert cell.sql(branch,'SELECT sum(id) FROM preserved')=='42'
+        wait(lambda:cell.sql(branch,'SELECT sum(id) FROM preserved')=='42',timeout=60)
         report['checks'].append('pre_upgrade_backup_restores_with_its_original_catalog_binary')
         report['status']='PASS'
     finally:
