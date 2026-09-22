@@ -22,6 +22,7 @@ import uuid
 
 from qualify import Handler, run
 from stage import stage
+from diagnostics import summarize
 
 ROOT = Path(__file__).resolve().parents[2]
 PINS = json.loads((ROOT/'components/execution-runtime.lock.json').read_text())
@@ -79,6 +80,13 @@ def inside(args):
         release=(prefix/'current').resolve();binary=release/'bin/supabricks'
         identity=json.loads(run([binary,'installation','verify'],env=env))['identity']
         manifest=json.loads((release/'release.json').read_text())
+        # The guest is UID 1000; the installing server owner need not be. Only
+        # public product files are readable through this read-only mount. Host
+        # ancestors remain private, as do all data and execution configuration.
+        for path in [release,*release.rglob('*')]:
+            needed=5 if path.is_dir() or (path.stat().st_mode & 0o111) else 4
+            assert path.stat().st_mode & needed==needed, 'installed product is not readable by the guest UID'
+        report['checks'].append('installed_payload_readable_by_distinct_guest_uid')
         report.update(release_identity=identity,archive=dict(version=args.version,target=TARGET,sha256=archive_hash),
                       source=manifest['provenance'],binary_sha256=digest(binary),
                       console_manifest_sha256=digest(release/'share/console/console.json'))
@@ -97,6 +105,7 @@ def inside(args):
             gvisor_inventory_sha256=config['tools_sha256'],execution_config_sha256=digest(runtime),
             execution_release_identity=config['inventory_sha256'],
             execution_pin_sha256=digest(ROOT/'components/execution-runtime.lock.json'),
+            installer_template_sha256=digest(ROOT/'install/native/install.sh.in'),
             supervisor_sha256=digest(ROOT/'python/execution/supervisor.py'),
             workload_sha256=digest(ROOT/'python/execution/workload.py'))
         common=['--binary',str(binary)]
@@ -120,14 +129,16 @@ def inside(args):
             suite=dict(status=value.get('status','failed'),checks=value.get('checks',[]),exit_code=result.returncode,
                        cleanup=census,report_sha256=digest(path) if path.exists() else None,
                        release_identity=identity,binary_sha256=value.get('binary_sha256'),duration_seconds=time.monotonic()-started)
+            if result.returncode:
+                suite['diagnostics']=summarize(root/(name+'.private.log'))
             if name=='identity':suite['measurements']=value.get('measurements',{})
             if name=='upgrade':suite['predecessor_identity']=value.get('predecessor_identity')
             if name=='browser':
                 for field in ['revocation_observed_ms','resource_envelope','execution_memory','tls','exact_installed','console_manifest_sha256']:
                     suite[field]=value.get(field)
-                assert value.get('release_identity')==identity
             report['suites'][name]=suite
             assert result.returncode==0 and value.get('status') in ('PASS','passed'), name+' failed; inspect private diagnostics'
+            if name=='browser':assert value.get('release_identity')==identity
             assert value.get('binary_sha256')==report['binary_sha256'], name+' used another binary'
             assert census.get('leaked_descendants')==0 and census.get('remaining_descendants')==0
             report['checks'].append('exact_installed_'+name)

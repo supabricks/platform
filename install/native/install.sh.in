@@ -95,7 +95,10 @@ SUPABRICKS_RELEASE_KEY
         tar -tvzf "$stage/release.tar.gz" > "$stage/types"
         awk 'substr($0,1,1)!="-" && substr($0,1,1)!="d" {exit 1}' "$stage/types" || fail 'release archive contains links or special files'
         mkdir "$stage/unpack"
-        tar -xzf "$stage/release.tar.gz" -C "$stage/unpack"
+        # The verified payload is public product code. Preserve readability for
+        # the sandbox's unprivileged UID even when the operator has another UID.
+        # The surrounding staging/prefix/releases directories remain private.
+        (umask 022; tar -xzf "$stage/release.tar.gz" -C "$stage/unpack")
         "$stage/unpack/supabricks/bin/supabricks" installation verify >/dev/null || fail 'release inventory verification failed'
         mkdir -p "$prefix/releases"
         printf '%s\n' "$expected" > "$stage/archive.sha256"

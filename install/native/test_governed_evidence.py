@@ -24,6 +24,7 @@ def fixture(env):
             rootfs_image=pins['rootfs'],rootfs_sha256=HASH,gvisor_inventory_sha256=pins['gvisor']['inventory_sha256'],
             execution_config_sha256=HASH,execution_release_identity=env['release_sha256'],
             execution_pin_sha256=digest(ROOT/'components/execution-runtime.lock.json'),
+            installer_template_sha256=digest(ROOT/'install/native/install.sh.in'),
             supervisor_sha256=digest(ROOT/'python/execution/supervisor.py'),workload_sha256=digest(ROOT/'python/execution/workload.py')),
         suites=suites)
 
@@ -49,6 +50,7 @@ class GovernedEvidence(unittest.TestCase):
             lambda d:d['components'].update(execution_release_identity='b'*64),
             lambda d:d['components'].update(gvisor_inventory_sha256='b'*64),
             lambda d:d['components'].update(workload_sha256='b'*64),
+            lambda d:d['components'].update(installer_template_sha256='b'*64),
             lambda d:d['suites']['browser'].update(binary_sha256='b'*64),
             lambda d:d['suites']['browser'].update(tls=False),
             lambda d:d['suites']['browser'].update(exact_installed=False),

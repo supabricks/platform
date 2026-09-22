@@ -8,6 +8,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'linux-governed-shared-v1'
 TOP_CHECKS = {'signed_curl_install_and_verified_unchanged_candidate',
+              'installed_payload_readable_by_distinct_guest_uid',
               'installed_private_runtime_preparation_without_downloads',
               'archive_and_installed_inventory_unchanged_after_all_suites',
               *('exact_installed_'+name for name in ('identity','data','upgrade','browser'))}
@@ -97,6 +98,7 @@ def collect(data, env):
     require(components.get('keycloak')==idp and components.get('rootfs_image')==pins['rootfs']
             and components.get('gvisor_inventory_sha256')==pins['gvisor']['inventory_sha256'],'unreviewed isolation/IdP inputs')
     for key,path in [('execution_pin_sha256','components/execution-runtime.lock.json'),
+                     ('installer_template_sha256','install/native/install.sh.in'),
                      ('supervisor_sha256','python/execution/supervisor.py'),('workload_sha256','python/execution/workload.py')]:
         require(components.get(key)==digest(ROOT/path),'changed '+key)
     require(all(sha(components.get(k)) for k in ('rootfs_sha256','execution_config_sha256')),'missing runtime configuration hashes')
@@ -134,7 +136,7 @@ def collect(data, env):
             and 0<=interval[1]-interval[0]<300,'IdP disable missed its bound')
     return dict(status='passed',profile=PROFILE,release_identity=identity,reports=reports,
                 components={k:components[k] for k in ('keycloak','rootfs_image','rootfs_sha256','gvisor_inventory_sha256',
-                    'execution_config_sha256','execution_release_identity','execution_pin_sha256','supervisor_sha256','workload_sha256')},
+                    'execution_config_sha256','execution_release_identity','execution_pin_sha256','installer_template_sha256','supervisor_sha256','workload_sha256')},
                 revocation_observed_ms=latency,idp_disable_seconds=interval[1]-interval[0],resource_envelope=browser['resource_envelope'],
                 host_capacity=dict(cpu_count=4,memory_bytes=host['memory_bytes']),
                 execution_memory=[{k:m[k] for k in ('current_bytes','peak_bytes')} for m in memory])

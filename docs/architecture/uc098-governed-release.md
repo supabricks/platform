@@ -22,6 +22,11 @@ Execution accepts the verified inventory of its own installed candidate while
 retaining the historical alpha.34 pin for source probes. The packaged runtime
 preparation tool verifies reviewed gVisor input, exports the already-staged rootfs
 image without pulling, and writes a private configuration bound to that archive.
+The installer extracts public product files with readable/executable payload
+permissions for the fixed guest UID, while staging, installation ancestors and
+all data/configuration stay private. This is checked independently of the host
+operator UID; an owner-only payload happened to work for UID 1000 but failed
+for a different server account.
 The installed [server guide](../handbook/governed-server.md) covers setup,
 administration, the two-user/service demonstration, limits and recovery.
 
@@ -75,6 +80,10 @@ Portable Rust, TLS ingress, named-transition unit tests and native evidence
 collector tests are exercised locally. Installed archive checks are development
 runs until the complete CI matrix has passed. Failed attempts exposed fixture-only
 runtime overrides, overlong PostgreSQL socket paths, audit-capacity filling and
-branch restart assumptions; retain these diagnostics rather than counting retries
+branch restart assumptions. CI also exposed owner-only installed payload modes
+when the server account differed from guest UID 1000, and a crash test that could
+miss the durable publication intent. Payload extraction now preserves public
+readability under private ancestors; the crash fixture pauses the real provider
+until the writer is killed. Retain these diagnostics rather than counting retries
 as successful qualification. Final PR validation records identify the completed
 runs and any still-pending exact-archive evidence.
