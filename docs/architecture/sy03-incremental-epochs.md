@@ -2,9 +2,10 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Delivery ledger](../plans/status.md) · [Workflow](../handbook/incremental-epochs.md)
 
-Status: implemented for review, 2026-09-22. SY03 adds explicit local-owner row
+Status: [merged in #81](https://github.com/supabricks/platform/pull/81), 2026-09-22. SY03 adds explicit local-owner row
 application and publication on SY02's durable capture. It does not enable triggered
-or continuous policies; those remain SY04/SY05. Governed source admission and
+or continuous policies itself; managed triggered runs are added by
+[SY04](sy04-triggered-sync.md), and continuous mode remains SY05. Governed source admission and
 versioned-root Unity Catalog publication remain closed pending SY06 qualification.
 
 ## Boundary and row application
@@ -118,7 +119,10 @@ upgrade path and a final foreign-key check.
 checks real source updates and external TOAST, pinned readers, a worker killed
 between two table commits, daemon/compute restart, unchanged A02 bytes, and cleanup
 after capture deletion and the final reader reference drains. Linux source tests
-are recorded with the PR; Linux/macOS native CI runs the same harness. A complete
+are recorded with the PR. All six required GitHub checks and both Linux/macOS
+native-cell suites passed at `23c995f`, merged as `fe46d72`. The stopped
+installed-upgrade regression also accepts the additive `incremental_snapshot=2`
+format declaration and rejects unknown versions. A complete
 new release archive and physical power-loss durability are not qualified by these
 source tests.
 
