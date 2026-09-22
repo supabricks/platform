@@ -60,7 +60,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sync apply CAPTURE [--key KEY] | applied RUN | cancel-apply RUN [--key KEY]
   sync capture start POLICY --revision N [--key KEY] [--spool-bytes N] [--wal-bytes N]
   sync capture status|pause|resume|delete CAPTURE [--key KEY]
-  sync create --branch NAME [--every-seconds N] [--key KEY]
+  sync create --branch NAME [--mode snapshot|triggered] [--strategy full|incremental] [--every-seconds N] [--key KEY]
   sync update POLICY_ID --revision N [--every-seconds N] [--key KEY]
   sync list | show POLICY_ID | runs POLICY_ID [--limit 50] | status RUN_ID
   sync run POLICY_ID --revision N [--key KEY]
@@ -2177,9 +2177,17 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
                     timezone: "UTC".into(),
                     missed_run: "coalesce".into(),
                 });
+            let mode = a.take("--mode").unwrap_or_else(|| "snapshot".into());
+            let strategy = a.take("--strategy").unwrap_or_else(|| {
+                if mode == "triggered" {
+                    "incremental".into()
+                } else {
+                    "full".into()
+                }
+            });
             let config = Config {
-                mode: a.take("--mode").unwrap_or_else(|| "snapshot".into()),
-                strategy: a.take("--strategy").unwrap_or_else(|| "full".into()),
+                mode,
+                strategy,
                 schedule,
                 limits: crate::store::ExportLimits {
                     max_bytes: a.number("--max-bytes", 1024 * 1024 * 1024)?,

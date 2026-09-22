@@ -65,6 +65,7 @@ impl Store {
         Ok(())
     }
     pub(crate) fn incremental_live(&self, r: &Run) -> Result<Capture> {
+        self.triggered_publication_live(r)?;
         let c = self.capture(r.project_id, r.capture_id)?;
         self.capture_live(&c)?;
         if c.desired != "running" || c.state == "resync_required" || c.state == "deleted" {
@@ -80,6 +81,15 @@ impl Store {
         project: ProjectId,
         command: Command,
     ) -> Result<Value> {
+        self.incremental_command_at(project, command, None, None)
+    }
+    pub(crate) fn incremental_command_at(
+        &mut self,
+        project: ProjectId,
+        command: Command,
+        target: Option<&str>,
+        owner: Option<OperationId>,
+    ) -> Result<Value> {
         if let Command::Status { id } = command {
             return Ok(json!(self.incremental_run(project, id)?));
         }
@@ -90,7 +100,11 @@ impl Store {
         if key.is_empty() || key.len() > 256 {
             return Err(invalid("incremental key requires 1–256 bytes"));
         }
-        let request = serde_json::to_string(&command)?;
+        let request = if owner.is_some() {
+            json!({"command":command,"target":target,"owner":owner}).to_string()
+        } else {
+            serde_json::to_string(&command)?
+        };
         let previous:Option<(String,String)>=self.db.query_row("SELECT request,response FROM incremental_requests WHERE project_id=?1 AND request_key=?2",params![project.to_string(),key],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
         if let Some((old, response)) = previous {
             if old != request {
@@ -112,6 +126,12 @@ impl Store {
                 Command::Apply { capture_id, .. } => {
                     let c = self.capture(project, *capture_id)?;
                     self.capture_live(&c)?;
+                    if self.sync_policy(project, c.policy_id)?.config.triggered() && owner.is_none()
+                    {
+                        return Err(conflict(
+                            "triggered capture is owned by managed runs; use sync run",
+                        ));
+                    }
                     if c.desired != "running"
                         || c.state != "capturing"
                         || c.observed_at_ms
@@ -181,11 +201,16 @@ impl Store {
                                 "captured history is behind the published boundary",
                             ));
                         }
-                        captured
+                        let requested = target.unwrap_or(&captured).to_owned();
+                        if lsn(&requested)? < lsn(&after)? || lsn(&requested)? > lsn(&captured)? {
+                            return Err(conflict("target outside captured prefix"));
+                        }
+                        requested
                     };
                     let r = Run {
                         id: OperationId::new(),
                         capture_id: c.id,
+                        sync_run_id: owner,
                         project_id: project,
                         branch_id: c.branch_id,
                         epoch_id: EpochId::new(),

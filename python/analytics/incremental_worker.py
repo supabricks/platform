@@ -29,7 +29,7 @@ def plan(config,root,previous):
     schema,transactions,end,input_bytes=journal(config)
     operations=[]
     for end,payload in transactions:
-        operations.extend(changes(payload,schema,end))
+        operations.extend(changes(payload,schema,end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None))
         if len(operations)>MAX_ROWS:raise CaptureError('apply_row_budget')
     touched={}
     for oid,tag,old,new,row in operations:

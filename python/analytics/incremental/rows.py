@@ -2,7 +2,7 @@
 from decimal import Decimal, InvalidOperation
 import struct
 from capture.spool import CaptureError, frames, MAX_MESSAGE
-from capture.protocol import Reader
+from capture.protocol import Reader,barrier_message
 
 UNCHANGED = object()
 MAX_ROWS = 16384
@@ -45,7 +45,7 @@ def tuple_values(reader,columns):
     return result
 
 
-def changes(payload,schema,end):
+def changes(payload,schema,end,barrier_prefix=None):
     result=[];begun=False;finished=False;final=None
     for frame in frames(payload):
         r=Reader(frame);tag=r.take(1)
@@ -54,6 +54,9 @@ def changes(payload,schema,end):
         elif tag==b'C' and begun and not finished:
             if r.number('B')!=0 or r.number('Q')!=final or r.number('Q')!=end:raise CaptureError('spool_commit_mismatch')
             r.number('q');finished=True
+        elif tag==b'M' and begun and not finished:
+            flags=r.number('B');r.number('Q');prefix=r.string();content=r.take(r.number('I'))
+            barrier_message(flags,prefix,content,barrier_prefix)
         elif tag in (b'I',b'U',b'D') and begun and not finished:
             oid=str(r.number('I'))
             if oid not in schema:raise CaptureError('schema_changed')

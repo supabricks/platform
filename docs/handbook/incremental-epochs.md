@@ -41,5 +41,5 @@ Capture deletion removes source resources and the spool; retained epochs still
 keep their shared analytical root. Close sessions/unpin snapshots and use the
 existing snapshot retention workflow before the final root can be collected.
 Finite spool and Delta budgets still apply: SY03 has no background compaction or
-spool pruning. Triggered/continuous scheduling and Unity Catalog publication of
-these versioned roots are not enabled in this slice.
+spool pruning. [SY04](triggered-sync.md) adds local triggered policies. Continuous scheduling
+and Unity Catalog publication of these roots remain later work.

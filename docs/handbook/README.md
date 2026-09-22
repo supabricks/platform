@@ -71,3 +71,6 @@ For subsystem implementation and acceptance suites, use the
 The [SY02 local durable capture workflow](durable-capture.md) enrolls an explicit
 local capture generation. [SY03 incremental epochs](incremental-epochs.md) adds
 explicit bounded application and publication for local readers.
+
+[SY04 triggered sync](triggered-sync.md) adds local CLI/API run-to-boundary and
+UTC interval scheduling over an explicitly enrolled capture.

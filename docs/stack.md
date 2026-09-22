@@ -133,11 +133,12 @@ deployment profiles need separate work. Local-owner project boundaries are not
 tenant security boundaries.
 
 [Managed analytical synchronization](plans/analytical-sync-implementation.md)
-plans triggered and continuous PostgreSQL → analytics modes after the delivered
-snapshot baseline. “No user-managed CDC” allows platform-owned change capture;
-these modes are planned, not available today. SY01 delivers managed snapshot
-scheduling, SY02 adds durable capture, and [SY03](architecture/sy03-incremental-epochs.md)
-adds explicit local incremental epochs for review. Reverse sync is later scope.
+adds PostgreSQL → analytics incrementality after the delivered snapshot baseline.
+“No user-managed CDC” allows platform-owned change capture. SY01 delivers managed
+snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
+[SY04](architecture/sy04-triggered-sync.md) adds local triggered CLI/API policies
+for review. Continuous mode, console/governed integration and reverse sync remain
+later scope.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list
