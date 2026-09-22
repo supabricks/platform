@@ -74,3 +74,6 @@ explicit bounded application and publication for local readers.
 
 [SY04 triggered sync](triggered-sync.md) adds local CLI/API run-to-boundary and
 UTC interval scheduling over an explicitly enrolled capture.
+
+[SY05 continuous sync](continuous-sync.md) adds automatic catch-up, observed
+freshness and pause at a complete batch boundary.

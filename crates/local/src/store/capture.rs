@@ -43,7 +43,7 @@ impl Store {
     pub(crate) fn capture_live(&self, c: &Capture) -> Result<()> {
         let p = self.sync_policy(c.project_id, c.policy_id)?;
         if if c.identity["decoder_version"] == 2 {
-            !p.config.triggered() || !matches!(p.state.as_str(), "active" | "paused")
+            !p.config.incremental() || !matches!(p.state.as_str(), "active" | "paused")
         } else {
             p.revision != c.policy_revision || p.state != "active" || p.config.schedule.is_some()
         } {
@@ -89,7 +89,7 @@ impl Store {
                     let p = self.sync_policy(project, *policy_id)?;
                     if p.revision != *expected_revision
                         || p.state != "active"
-                        || (p.config.schedule.is_some() && !p.config.triggered())
+                        || (p.config.schedule.is_some() && !p.config.incremental())
                     {
                         return Err(conflict(
                             "capture requires an active manual snapshot or triggered policy and current revision",
@@ -119,7 +119,7 @@ impl Store {
                         policy_revision: p.revision,
                         project_id: project,
                         branch_id: p.branch_id,
-                        identity: json!({"installation_id":p.installation_id,"deployment_id":p.deployment_id,"project_id":project,"branch_id":p.branch_id,"tenant_id":p.tenant_id,"timeline_id":p.timeline_id,"database":"postgres","policy_revision":p.revision,"generation":id,"decoder_version":if p.config.triggered(){2}else{1},"spool_format_version":1}),
+                        identity: json!({"installation_id":p.installation_id,"deployment_id":p.deployment_id,"project_id":project,"branch_id":p.branch_id,"tenant_id":p.tenant_id,"timeline_id":p.timeline_id,"database":"postgres","policy_revision":p.revision,"generation":id,"decoder_version":if p.config.incremental(){2}else{1},"spool_format_version":1}),
                         limits: limits.clone(),
                         desired: "running".into(),
                         state: "requested".into(),
@@ -129,6 +129,7 @@ impl Store {
                         bootstrap_id: None,
                         bootstrap_lsn: None,
                         barrier: None,
+                        progress: None,
                         observed_at_ms: None,
                         start_lsn: None,
                         captured_lsn: None,
@@ -148,7 +149,7 @@ impl Store {
                             serde_json::to_string(&c)?
                         ],
                     )?;
-                    if p.config.triggered() {
+                    if p.config.incremental() {
                         self.db.execute("UPDATE sync_policies SET record=json_set(record,'$.capture_id',?2) WHERE id=?1",params![p.id.to_string(),c.id.to_string()])?;
                     }
                     json!(c)

@@ -127,10 +127,10 @@ class Wire:
             tag,data=self.packet()
             if tag==b'W':return
             if tag not in (b'N',b'S'):raise CaptureError('replication_start_failed')
-    def feedback(self,captured):
+    def feedback(self,captured,request=False):
         fault('before_source_ack')
         stamp=int((time.time()-946684800)*1000000)
-        body=b'r'+struct.pack('!QQQqB',captured,captured,0,stamp,0)
+        body=b'r'+struct.pack('!QQQqB',captured,captured,0,stamp,int(request))
         self.socket.sendall(b'd'+struct.pack('!I',len(body)+4)+body)
         fault('after_source_ack')
     def receive(self):

@@ -221,7 +221,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     provenance = dict(
         console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
-        data_formats=dict(local_catalog=26, runtime_config=2, postgres_major=17, analytical_snapshot=1, incremental_snapshot=2),
+        data_formats=dict(local_catalog=27, runtime_config=2, postgres_major=17, analytical_snapshot=1, incremental_snapshot=2),
         platform_commit=output('git', 'rev-parse', 'HEAD'),
         platform_dirty=bool(output('git', 'status', '--porcelain', '--untracked-files=normal')),
         cargo_lock_sha256=digest(ROOT / 'Cargo.lock'),

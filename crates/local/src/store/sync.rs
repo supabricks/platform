@@ -92,7 +92,7 @@ impl Store {
     }
     fn admit_sync_run(&self, p: &Policy, trigger: &str, due: Option<i64>, now: i64) -> Result<Run> {
         self.sync_source(p)?;
-        if p.state != "active" {
+        if p.state != "active" || p.pause_requested {
             return Err(conflict("snapshot policy is not active"));
         }
         if self.db.prepare("SELECT 1 FROM sync_runs WHERE branch_id=?1 AND state IN ('queued','starting','running')")?.exists([p.branch_id.to_string()])? {
@@ -112,7 +112,7 @@ impl Store {
             project_id: p.project_id,
             branch_id: p.branch_id,
             trigger: trigger.into(),
-            capture_id: if p.config.triggered() {
+            capture_id: if p.config.incremental() {
                 Some(self.triggered_capture(p)?.id)
             } else {
                 None
@@ -120,7 +120,7 @@ impl Store {
             target_lsn: None,
             apply_id: None,
             batches: 0,
-            deadline_ms: if p.config.triggered() {
+            deadline_ms: if p.config.incremental() {
                 Some(now.saturating_add(p.config.limits.timeout_ms as i64))
             } else {
                 None
@@ -146,7 +146,7 @@ impl Store {
         if matches!(r.state.as_str(), "failed" | "cancelled") {
             return Ok(r);
         }
-        if r.config.triggered() {
+        if r.config.incremental() {
             self.cancel_triggered_apply(&r, reason)?;
         }
         if let Some(id) = r.refresh_id {
@@ -169,6 +169,12 @@ impl Store {
         r.error = Some(reason.into());
         r.finished_at_ms = Some(now);
         self.save_sync_run(&r)?;
+        if r.config.continuous() && reason == "user_cancelled" {
+            let mut p = self.sync_policy(r.project_id, r.policy_id)?;
+            p.state = "paused".into();
+            p.pause_requested = false;
+            self.save_sync_policy(&p)?;
+        }
         Ok(r)
     }
     pub(crate) fn sync_command(
@@ -230,6 +236,8 @@ impl Store {
                     let p = Policy {
                         id: OperationId::new(),
                         capture_id: None,
+                        pause_requested: false,
+                        observation: None,
                         project_id: project,
                         deployment_id: deployment,
                         branch_id,
@@ -259,10 +267,10 @@ impl Store {
                             serde_json::to_string(&p)?
                         ],
                     )?;
-                    if p.config.triggered() {
+                    if p.config.incremental() {
                         self.enroll_triggered(&p)?;
                     }
-                    json!(self.sync_policy(project, p.id)?)
+                    self.sync_policy_view(&self.sync_policy(project, p.id)?, now)?
                 }
                 Command::Update {
                     id,
@@ -285,15 +293,32 @@ impl Store {
                     ..
                 } => {
                     let mut p = self.sync_expected(project, *id, *expected_revision)?;
+                    if p.pause_requested && !matches!(command, Command::Delete { .. }) {
+                        return Err(conflict(
+                            "wait for continuous pause to reach a batch boundary",
+                        ));
+                    }
+                    let graceful =
+                        p.config.continuous() && matches!(command, Command::Pause { .. });
                     if let Command::Update { config, .. } = &command {
                         config.validate()?;
                         self.sync_source(&p)?;
                         if config.mode != p.config.mode
+                            && config.incremental()
+                            && p.config.incremental()
+                            && self.active_sync_runs()?.iter().any(|r| r.policy_id == p.id)
+                        {
+                            return Err(conflict(
+                                "pause and drain before changing incremental mode",
+                            ));
+                        }
+                        if config.incremental() != p.config.incremental()
                             && self.captures()?.iter().any(|c| c.policy_id == p.id)
                         {
                             return Err(conflict("delete capture before changing sync mode"));
                         }
                         p.config = config.clone();
+                        p.error = None;
                     }
                     if matches!(command, Command::Resume { .. }) {
                         self.sync_source(&p)?;
@@ -305,13 +330,22 @@ impl Store {
                     }
                     if matches!(command, Command::Delete { .. }) {
                         p.state = "deleted".into();
+                        p.pause_requested = false;
                     }
                     for r in self
                         .active_sync_runs()?
                         .into_iter()
                         .filter(|r| r.policy_id == p.id)
                     {
-                        self.cancel_sync_run(r, "policy_revised", now)?;
+                        if graceful && r.apply_id.is_some() {
+                            let mut r = r;
+                            r.policy_revision = p.revision + 1;
+                            self.save_sync_run(&r)?;
+                            p.state = "active".into();
+                            p.pause_requested = true;
+                        } else {
+                            self.cancel_sync_run(r, "policy_revised", now)?;
+                        }
                     }
                     p.revision += 1;
                     p.next_due_at_ms = if p.state == "active" {
@@ -323,13 +357,13 @@ impl Store {
                     if p.state == "deleted" {
                         self.delete_policy_capture(&p)?;
                     }
-                    if p.config.triggered()
+                    if p.config.incremental()
                         && matches!(command, Command::Update { .. })
                         && !self.captures()?.iter().any(|c| c.policy_id == p.id)
                     {
                         self.enroll_triggered(&p)?;
                     }
-                    json!(self.sync_policy(project, p.id)?)
+                    self.sync_policy_view(&self.sync_policy(project, p.id)?, now)?
                 }
                 Command::RunNow {
                     id,
@@ -337,6 +371,11 @@ impl Store {
                     ..
                 } => {
                     let p = self.sync_expected(project, *id, *expected_revision)?;
+                    if p.config.continuous() {
+                        return Err(conflict(
+                            "continuous runs are supervised; use pause or resume",
+                        ));
+                    }
                     json!(self.admit_sync_run(&p, "manual", None, now)?)
                 }
                 Command::Cancel { id, .. } => json!(self.cancel_sync_run(
@@ -344,12 +383,15 @@ impl Store {
                     "user_cancelled",
                     now
                 )?),
-                Command::Get { id } => json!(self.sync_policy(project, *id)?),
+                Command::Get { id } => {
+                    self.sync_policy_view(&self.sync_policy(project, *id)?, now)?
+                }
                 Command::List => json!(
                     self.sync_policies()?
                         .into_iter()
                         .filter(|p| p.project_id == project)
-                        .collect::<Vec<_>>()
+                        .map(|p| self.sync_policy_view(&p, now))
+                        .collect::<Result<Vec<_>>>()?
                 ),
                 Command::Run { id } => json!(self.sync_run(project, *id)?),
                 Command::Runs { id, limit } => {
@@ -428,7 +470,7 @@ impl Store {
         Ok(self
             .active_sync_runs()?
             .into_iter()
-            .find(|r| !r.config.triggered() && (r.state == "queued" || r.state == "starting")))
+            .find(|r| !r.config.incremental() && (r.state == "queued" || r.state == "starting")))
     }
     pub(crate) fn start_sync_run(&self, id: OperationId) -> Result<()> {
         let mut r = self
@@ -484,6 +526,10 @@ impl Store {
         self.save_sync_run(&r)?;
         let mut p = self.sync_policy(r.project_id, r.policy_id)?;
         p.error = r.error;
+        if p.pause_requested {
+            p.state = "paused".into();
+            p.pause_requested = false;
+        }
         self.save_sync_policy(&p)
     }
     pub(crate) fn reconcile_sync(&mut self, now: i64) -> Result<()> {
@@ -491,7 +537,7 @@ impl Store {
         self.reconcile_triggered(now)?;
         // Repair admission crash gaps before cancellation or validation. No duplicate export.
         for r in self.active_sync_runs()? {
-            if !r.config.triggered() && r.refresh_id.is_none() {
+            if !r.config.incremental() && r.refresh_id.is_none() {
                 let id: Option<String> = self
                     .db
                     .query_row(
@@ -628,12 +674,13 @@ pub(crate) fn restore(db: &rusqlite::Connection, now: i64) -> Result<()> {
         UPDATE exports SET cancel_requested=1 WHERE id IN (SELECT refresh_id FROM sync_runs WHERE state IN ('queued','starting','running'));
         INSERT INTO analytical_refreshes(export_id,error) SELECT refresh_id,'cancelled' FROM sync_runs WHERE refresh_id IS NOT NULL AND state IN ('queued','starting','running') ON CONFLICT(export_id) DO UPDATE SET error='cancelled';
         UPDATE publications SET state='cancelled',error='restored_requires_resume' WHERE export_id IN (SELECT refresh_id FROM sync_runs WHERE state IN ('queued','starting','running')) AND state IN ('requested','files_complete');
-        UPDATE sync_policies SET state='paused',record=json_set(record,'$.state','paused','$.revision',json_extract(record,'$.revision')+1,'$.next_due_at_ms',NULL,'$.error','restored_requires_resume') WHERE state!='deleted';")?;
+        UPDATE sync_policies SET state='paused',record=json_set(record,'$.state','paused','$.pause_requested',json('false'),'$.revision',json_extract(record,'$.revision')+1,'$.next_due_at_ms',NULL,'$.error','restored_requires_resume') WHERE state!='deleted';")?;
     tx.execute("UPDATE sync_runs SET state='cancelled',record=json_set(record,'$.state','cancelled','$.refresh_id',refresh_id,'$.finished_at_ms',?1,'$.error','restored_requires_resume') WHERE state IN ('queued','starting','running')",[now])?;
     tx.commit()?;
     Ok(())
 }
 
+mod continuous;
 mod triggered;
 
 #[cfg(test)]

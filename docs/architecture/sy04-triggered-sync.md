@@ -83,6 +83,8 @@ wins a cancellation race, the run remains successful and cannot be undone.
 Deleting a policy cancels work and requests owned capture cleanup. Historical
 reader references still retain shared analytical roots under SY03's rules. Changing
 between snapshot and triggered modes requires deleting the old capture first.
+[SY05](sy05-continuous-sync.md) adds checkpoint-preserving transitions between
+triggered and continuous modes after active runs drain.
 Resync requires explicit capture deletion and enrollment; no automatic full-copy
 fallback occurs. Another workflow moving the branch head causes batch admission
 to fail rather than silently overwrite that head.

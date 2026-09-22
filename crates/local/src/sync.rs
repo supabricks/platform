@@ -1,4 +1,4 @@
-//! Local-owner snapshot and triggered incremental policies. Continuous mode stays gated.
+//! Local-owner snapshot, triggered and supervised continuous policies.
 use crate::{
     api::Binding,
     store::{ExportLimits, Result, Store, error::invalid},
@@ -15,11 +15,27 @@ pub struct Schedule {
     pub missed_run: String,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Continuous {
+    pub freshness_ms: u64,
+    pub batch_interval_ms: u64,
+}
+impl Default for Continuous {
+    fn default() -> Self {
+        Self {
+            freshness_ms: 5000,
+            batch_interval_ms: 500,
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub mode: String,
     pub strategy: String,
     pub schedule: Option<Schedule>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub continuous: Option<Continuous>,
     #[serde(default)]
     pub limits: ExportLimits,
 }
@@ -29,19 +45,40 @@ impl Default for Config {
             mode: "snapshot".into(),
             strategy: "full".into(),
             schedule: None,
+            continuous: None,
             limits: Default::default(),
         }
     }
 }
 impl Config {
-    pub fn triggered(&self) -> bool {
-        self.mode == "triggered" && self.strategy == "incremental"
+    pub fn incremental(&self) -> bool {
+        matches!(self.mode.as_str(), "triggered" | "continuous") && self.strategy == "incremental"
+    }
+    pub fn continuous(&self) -> bool {
+        self.mode == "continuous"
+    }
+    pub fn continuous_config(&self) -> Continuous {
+        self.continuous.clone().unwrap_or_default()
     }
     pub fn validate(&self) -> Result<()> {
-        if !((self.mode == "snapshot" && self.strategy == "full") || self.triggered()) {
+        if !((self.mode == "snapshot" && self.strategy == "full") || self.incremental()) {
             return Err(invalid(
-                "supported policies are snapshot/full and triggered/incremental; continuous mode is unavailable",
+                "supported policies are snapshot/full, triggered/incremental and continuous/incremental",
             ));
+        }
+        if self.continuous() {
+            let c = self.continuous_config();
+            if self.schedule.is_some()
+                || !(1000..=300000).contains(&c.freshness_ms)
+                || !(200..=60000).contains(&c.batch_interval_ms)
+                || c.batch_interval_ms > c.freshness_ms
+            {
+                return Err(invalid(
+                    "continuous requires no schedule, freshness 1000–300000 ms and batch interval 200–60000 ms no greater than freshness",
+                ));
+            }
+        } else if self.continuous.is_some() {
+            return Err(invalid("continuous settings require continuous mode"));
         }
         self.limits.validate()?;
         if let Some(s) = &self.schedule {
@@ -67,6 +104,10 @@ pub struct Policy {
     pub id: OperationId,
     #[serde(default)]
     pub capture_id: Option<OperationId>,
+    #[serde(default)]
+    pub pause_requested: bool,
+    #[serde(default)]
+    pub observation: Option<Value>,
     pub project_id: ProjectId,
     pub deployment_id: DeploymentId,
     pub branch_id: BranchId,
@@ -198,6 +239,7 @@ pub(crate) fn tick(store: &mut Store, cell: Option<&crate::engine::Cell>) -> Res
     store.reconcile_sync(now)?;
     store.schedule_sync(now)?;
     if cell.is_some() {
+        store.schedule_continuous(now)?;
         store.tick_triggered(now)?;
     }
     if cell.is_none()

@@ -23,15 +23,17 @@ def run(path):
     config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
     spool=source=wire=None
-    last_report=0;last_ack=0;observed=None;baseline=None;verified=None;emitted=None
+    last_report=0;last_source_check=0;last_ack=0;observed=None;baseline=None;verified=None;emitted=None;stream_observed=None;current=config
     def report(state,error=None):
         nonlocal last_report
         last_report=time.monotonic()
+        progress=spool.progress(current.get('published_lsn')) if spool else None
+        if progress is not None:progress['stream_observed_at_ms']=stream_observed
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
             source_lsn=observed['source'] if observed else None,retained_wal_bytes=observed['retained_bytes'] if observed else None,
-            spool_bytes=spool.path.stat().st_size if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None))
+            spool_bytes=spool.path.stat().st_size if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
     try:
         if config['desired']=='deleted':
             source=Source(config,None)
@@ -49,8 +51,9 @@ def run(path):
                 if baseline is None:baseline=verify(current,spool)
                 try:verified=next(baseline)
                 except StopIteration:raise CaptureError('bootstrap_verification')
-            if time.monotonic()-last_report>=1:
-                observed=source.check()
+            if time.monotonic()-last_source_check>=1:
+                observed=source.check();last_source_check=time.monotonic()
+            if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
                 report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':
                 if wire:wire.close();wire=None
@@ -74,9 +77,10 @@ def run(path):
                 decoder=Decoder(profile['relations'],source.fence,'supabricks.barrier.'+identity['generation'] if identity.get('decoder_version')==2 else None)
             if not select.select([wire.socket],[],[],.2)[0]:
                 if time.monotonic()-last_ack>=1:
-                    wire.feedback(spool.captured);last_ack=time.monotonic()
+                    wire.feedback(spool.captured,request=True);last_ack=time.monotonic()
                 continue
             kind,end,data=wire.receive()
+            stream_observed=int(time.time()*1000)
             if kind=='data':
                 tx=decoder.feed(data)
                 if tx:

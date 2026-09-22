@@ -126,7 +126,8 @@ impl Store {
                 Command::Apply { capture_id, .. } => {
                     let c = self.capture(project, *capture_id)?;
                     self.capture_live(&c)?;
-                    if self.sync_policy(project, c.policy_id)?.config.triggered() && owner.is_none()
+                    if self.sync_policy(project, c.policy_id)?.config.incremental()
+                        && owner.is_none()
                     {
                         return Err(conflict(
                             "triggered capture is owned by managed runs; use sync run",

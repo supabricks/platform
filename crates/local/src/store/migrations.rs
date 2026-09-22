@@ -27,6 +27,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0024_capture.sql"),
     include_str!("migrations/0025_incremental.sql"),
     include_str!("migrations/0026_triggered.sql"),
+    include_str!("migrations/0027_continuous.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -192,7 +193,24 @@ fn catalog_upgrade_inner(
     if version != from
         || !matches!(
             from,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25
+            8 | 9
+                | 10
+                | 11
+                | 12
+                | 13
+                | 14
+                | 15
+                | 16
+                | 17
+                | 18
+                | 19
+                | 20
+                | 21
+                | 22
+                | 23
+                | 24
+                | 25
+                | 26
         )
     {
         return Err(conflict(
