@@ -4,7 +4,7 @@
 
 Status: 2026-09-22. [SY00 capture probe](../architecture/sy00-capture-probe.md)
 is complete with Linux/macOS qualification. [SY01 managed snapshot policies](../architecture/sy01-managed-snapshots.md)
-are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented for review. SY03–SY08 remain planned. No triggered or continuous
+are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented for review. SY04–SY08 remain planned. No triggered or continuous
 product mode is delivered.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
@@ -276,7 +276,7 @@ without logging row contents or secrets. Reuse UC09's isolation and audit model.
 ## Delivery slices and exit evidence
 
 Each row is a separately reviewable slice. SY00 has a qualified probe implementation;
-SY01 is implemented; SY02 is implemented for review; SY03–SY08 remain **planned**. Implementation
+SY01 and SY02 are implemented; SY03 is implemented for review; SY04–SY08 remain **planned**. Implementation
 must update the ledger and add an architecture/qualification record before a
 capability is reported as delivered.
 

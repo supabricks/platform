@@ -415,8 +415,26 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE capture_requests; DROP TABLE sync_captures;")
-        .unwrap();
+    // Rebuild the legacy parent FKs before removing schema 25's artifact registry.
+    for table in ["publications", "analytics_gc"] {
+        let sql: String = db
+            .query_row(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name=?1",
+                [table],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let columns = sql.split_once('(').unwrap().1.replace(
+            "REFERENCES analytical_artifacts(id)",
+            "REFERENCES exports(id)",
+        );
+        db.execute_batch(&format!("CREATE TABLE {table}_legacy ({columns}; INSERT INTO {table}_legacy SELECT * FROM {table}; DROP TABLE {table}; ALTER TABLE {table}_legacy RENAME TO {table};")).unwrap();
+    }
+    db.execute_batch("CREATE UNIQUE INDEX publication_in_flight ON publications(branch_id) WHERE state IN ('requested','files_complete'); DROP TRIGGER export_artifact; DROP TABLE incremental_requests; DROP TABLE incremental_heads; DROP TABLE incremental_runs; DROP TABLE analytical_artifacts;").unwrap();
+    if source_schema < 24 {
+        db.execute_batch("DROP TABLE capture_requests; DROP TABLE sync_captures;")
+            .unwrap();
+    }
     if source_schema < 23 {
         db.execute_batch(
             "DROP TABLE sync_requests; DROP TABLE sync_runs; DROP TABLE sync_policies;",
@@ -596,7 +614,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=24",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=25",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -905,4 +923,9 @@ fn schema_twenty_two_upgrade_preserves_existing_state_and_adds_snapshot_policies
 #[test]
 fn catalog_twenty_three_migration_adds_capture_without_source_resources() {
     catalog_migration(23);
+}
+
+#[test]
+fn schema_twenty_four_upgrade_preserves_capture_and_adds_incremental_publications() {
+    catalog_migration(24);
 }

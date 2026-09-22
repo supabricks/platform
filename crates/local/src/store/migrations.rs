@@ -25,13 +25,27 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0022_governed_console.sql"),
     include_str!("migrations/0023_sync.sql"),
     include_str!("migrations/0024_capture.sql"),
+    include_str!("migrations/0025_incremental.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
 pub(super) fn migrate(db: &mut Connection) -> Result<()> {
     apply(db, MIGRATIONS)
 }
+fn foreign_key_migration(
+    db: &mut Connection,
+    f: impl FnOnce(&mut Connection) -> Result<()>,
+) -> Result<()> {
+    let enabled: bool = db.pragma_query_value(None, "foreign_keys", |r| r.get(0))?;
+    db.pragma_update(None, "foreign_keys", false)?;
+    let result = f(db);
+    db.pragma_update(None, "foreign_keys", enabled)?;
+    result
+}
 fn apply(db: &mut Connection, migrations: &[&str]) -> Result<()> {
+    foreign_key_migration(db, |db| apply_inner(db, migrations))
+}
+fn apply_inner(db: &mut Connection, migrations: &[&str]) -> Result<()> {
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let current: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
     if current as usize > migrations.len() {
@@ -115,7 +129,7 @@ mod tests {
 }
 
 /// Existing roots migrate only through the verified stopped-backup upgrade.
-pub(crate) fn catalog_upgrade(
+fn catalog_upgrade_inner(
     db: &mut Connection,
     from: u32,
     source: &str,
@@ -126,7 +140,7 @@ pub(crate) fn catalog_upgrade(
     if version != from
         || !matches!(
             from,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
         )
     {
         return Err(conflict(
@@ -224,4 +238,13 @@ mod deployment_tests {
             2
         );
     }
+}
+
+pub(crate) fn catalog_upgrade(
+    db: &mut Connection,
+    from: u32,
+    source: &str,
+    release: &str,
+) -> Result<()> {
+    foreign_key_migration(db, |db| catalog_upgrade_inner(db, from, source, release))
 }

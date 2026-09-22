@@ -127,6 +127,11 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
     let d = p
         .descriptor
         .ok_or_else(|| invalid("snapshot descriptor missing"))?;
+    if d["format_version"] != 1 {
+        return Err(conflict(
+            "catalog publication requires an immutable full snapshot; versioned incremental roots are local-reader only",
+        ));
+    }
     let root = store
         .root()
         .join("analytics/generations")

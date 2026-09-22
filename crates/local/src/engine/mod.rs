@@ -3,6 +3,7 @@ mod branches;
 mod captures;
 mod exports;
 mod http;
+mod incremental;
 mod lifecycle;
 mod pageserver;
 mod s3;
@@ -969,6 +970,7 @@ impl Cell {
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
         // Cancellation and deadlines fence workers even while shared storage is down.
+        self.control_incremental(store)?;
         self.control_captures(store)?;
         self.control_exports(store)?;
         self.storage_ready = false;
@@ -1037,6 +1039,7 @@ impl Cell {
             return Ok(());
         }
         self.tick_captures(store)?;
+        self.tick_incremental(store)?;
         self.tick_exports(store)?;
         store.reconcile_parent_pins()?;
         store.mark_expired()?;
