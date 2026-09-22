@@ -865,6 +865,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      - name: Make room for both installed releases and offline test infrastructure
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+            /usr/lib/google-cloud-sdk /usr/local/share/powershell /opt/microsoft
+          df -h /
       - uses: actions/checkout@v4
         with:
           submodules: true
