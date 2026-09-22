@@ -65,14 +65,18 @@ pub(super) fn set_grant(
         id,
         &ctx.actor_id,
     )?;
+    super::security::policy_change(
+        db,
+        ctx,
+        deployment,
+        json!({"kind":"data_grant","branch_id":id,"subject":subject,"capability":cap,"present":present}),
+    )?;
     let result = json!({"policy_revision":a::policy(db,deployment)?,"branch":id,"capability":cap,"present":present});
     a::receipt(db, ctx, deployment, key, command, &result)?;
     Ok(result)
 }
 fn session(db: &Connection, ctx: &Context, hash: &str) -> Result<()> {
-    a::validate_context(db, ctx)?;
-    if !db.prepare("SELECT 1 FROM identity_sessions s JOIN identity_realm r ON r.session_epoch=s.epoch WHERE s.token_hash=?1 AND s.principal=?2 AND s.expires_ms>?3")?.exists(params![hash,ctx.actor_id,identity::now()])? {return Err(denied());}
-    Ok(())
+    super::security::session(db, ctx, hash)
 }
 impl Store {
     pub(crate) fn governed_branch(&self, id: BranchId) -> Result<bool> {
@@ -115,7 +119,32 @@ impl Store {
             .exists([child.to_string()])?)
     }
     pub(crate) fn recover_data(&mut self) -> Result<()> {
-        self.db.execute("UPDATE data_operations SET state=CASE WHEN state='committing' THEN 'uncertain' ELSE 'interrupted' END,result_json=NULL WHERE state IN ('preparing','committing')",[])?;
+        let tx = self.db.transaction()?;
+        let records = tx.prepare("SELECT id,context_json,deployment,policy_revision,actor FROM data_operations WHERE state IN ('preparing','committing')")?.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        tx.execute("UPDATE data_operations SET state=CASE WHEN state='committing' THEN 'uncertain' ELSE 'interrupted' END,result_json=NULL WHERE state IN ('preparing','committing')",[])?;
+        let room: i64 = tx.query_row("SELECT 10000-count(*) FROM security_audit", [], |r| {
+            r.get(0)
+        })?;
+        if records.len() as i64 <= room {
+            for (id, context, deployment, revision, actor) in records {
+                a::audit(
+                    &tx,
+                    &serde_json::from_str(&context)?,
+                    &deployment,
+                    revision,
+                    "data.recovered_closed",
+                    &id,
+                    &id,
+                    &actor,
+                )?;
+            }
+        } else {
+            tx.execute(
+                "UPDATE security_state SET recovery_pending=recovery_pending+?1",
+                [records.len() as i64],
+            )?;
+        }
+        tx.commit()?;
         Ok(())
     }
     fn data_live(&self, id: &str) -> Result<(Context, String, String)> {
@@ -467,10 +496,22 @@ impl Store {
                             json!({"export_id":operation.id})
                         }
                     };
-                    store.db.execute(
+                    let tx = store.db.transaction()?;
+                    tx.execute(
                         "UPDATE data_operations SET state='complete',result_json=?2 WHERE id=?1",
                         params![id, value.to_string()],
                     )?;
+                    a::audit(
+                        &tx,
+                        &ctx,
+                        &deployment,
+                        expected,
+                        "data.finish",
+                        &key,
+                        &id,
+                        &ctx.actor_id,
+                    )?;
+                    tx.commit()?;
                     Ok(json!({"id":id,"result":value}))
                 })();
                 if result.is_err() {

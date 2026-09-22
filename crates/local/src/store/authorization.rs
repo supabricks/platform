@@ -31,6 +31,10 @@ fn owner(db: &Connection) -> Result<Context> {
 }
 pub(super) fn validate_context(db: &Connection, ctx: &Context) -> Result<()> {
     let realm: String = db.query_row("SELECT id FROM identity_realm", [], |r| r.get(0))?;
+    let local: String = db.query_row("SELECT local_owner FROM identity_realm", [], |r| r.get(0))?;
+    if ctx.actor_id != local {
+        super::security::admission(db)?;
+    }
     if ctx.realm_id != realm
         || ctx.actor_id != ctx.effective_principal_id
         || ctx.expires_ms <= identity::now()
@@ -312,6 +316,12 @@ impl Store {
                     &subject.key(),
                     &ctx.actor_id,
                 )?;
+                super::security::policy_change(
+                    &tx,
+                    &ctx,
+                    deployment,
+                    json!({"kind":"role","subject":subject.key(),"role":role}),
+                )?;
                 let result = read_policy(&tx, deployment)?;
                 receipt(&tx, &ctx, deployment, key, &command, &result)?;
                 result
@@ -362,6 +372,12 @@ impl Store {
                     &subject,
                     &ctx.actor_id,
                 )?;
+                super::security::policy_change(
+                    &tx,
+                    &ctx,
+                    deployment,
+                    json!({"kind":"execution_grant","subject":subject,"capability":grant,"effective_principal_id":effective,"source_revision":source,"present":present}),
+                )?;
                 let result = read_policy(&tx, deployment)?;
                 receipt(&tx, &ctx, deployment, key, &command, &result)?;
                 result
@@ -371,6 +387,14 @@ impl Store {
         Ok(result)
     }
     pub(crate) fn authorized_command(&mut self, ctx: &Context, command: Command) -> Result<Value> {
+        let deployment = command.deployment().map(str::to_owned);
+        let result = self.authorized_inner(ctx, command);
+        if result.is_err() {
+            let _ = self.audit_denial(ctx, deployment.as_deref());
+        }
+        result
+    }
+    fn authorized_inner(&mut self, ctx: &Context, command: Command) -> Result<Value> {
         validate_context(&self.db, ctx)?;
         if matches!(command, Command::Projects {}) {
             let mut projects = Vec::new();
@@ -448,6 +472,7 @@ impl Store {
                 // Project administrators manage membership, never execution or act_as grants.
                 set_role(&tx,&deployment,subject,role)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"policy.role",key,&subject.key(),&ctx.actor_id)?;
+                super::security::policy_change(&tx,ctx,&deployment,json!({"kind":"role","subject":subject.key(),"role":role}))?;
                 read_policy(&tx,&deployment)?
             },
             Command::Sources{..}=>{

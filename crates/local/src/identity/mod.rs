@@ -93,6 +93,19 @@ impl std::fmt::Debug for AuthCommand {
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AdminCommand {
     Status,
+    AuditExport {
+        after: i64,
+    },
+    AuditAcknowledge {
+        after: i64,
+        through: i64,
+        sha256: String,
+    },
+    RestoreStatus,
+    RestoreReconcile {
+        restore_id: String,
+        realm_id: String,
+    },
     Configure {
         provider: String,
         config: oidc::Config,

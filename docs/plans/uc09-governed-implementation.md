@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 governed data implemented in #71 for review; UC09.6–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery implemented in #72 for review; UC09.7–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -210,6 +210,8 @@ crash recovery and current single-user format guarantees remain intact.
 
 ## UC09.6 — Revocation, audit and recovery
 
+Implementation and operator workflow: [bounded revocation, audit and governed recovery](../architecture/uc096-revocation-recovery.md). Schema 21 adds authoritative freshness, bounded audit export and closed restore reconciliation. Shared ingress remains disabled.
+
 Finish authoritative renewal, denial propagation, process/connection termination
 and result-stream closure. Test platform revocation separately from IdP account
 disable. Record acknowledged deny time and last successful access; include open
@@ -264,7 +266,7 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.5, then implement UC09.6 bounded revocation, audit operations and governed recovery.
+Review and qualify UC09.6, then implement UC09.7 console administration and user workflows.
 Use the isolated adapter with the admitted effective principal and immutable
 revision; keep shared ingress and unqualified transfer/artifact routes disabled.
 UC09.8 must also qualify the installed upgrade to the changed UC component; the

@@ -102,7 +102,7 @@ no data authority is granted by migration. Restart marks uncommitted work
 interrupted and a lost commit acknowledgment uncertain, without replay. An
 uncertain SQL commit requires inspecting the destination; it is never reported
 as a confirmed rollback. PG supplies atomicity for the complete import table set.
-Full governed restore/revocation reconciliation remains UC09.6; shared restore
+Governed restore/revocation reconciliation is described in [UC09.6](uc096-revocation-recovery.md); shared restore
 admission stays closed.
 
 ## Example and qualification

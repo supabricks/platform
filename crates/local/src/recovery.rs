@@ -326,7 +326,7 @@ impl Stopped {
     pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
         if !matches!(
             expected,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21
         ) {
             return Err(conflict("unsupported recovery schema"));
         }
@@ -503,7 +503,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     if manifest.format_version != 1
         || !matches!(
             manifest.schema_version,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21
         )
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()
@@ -640,6 +640,27 @@ pub fn restore_with_release(
         destination.join("state.sqlite3"),
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NOFOLLOW,
     )?;
+    let governed_closed = crate::store::security::restore(&catalog_db, &manifest.id)?;
+    if governed_closed {
+        if runtime.exists() {
+            let mut cfg: crate::engine::RuntimeConfig =
+                serde_json::from_slice(&fs::read(&runtime)?)?;
+            cfg.s3_access = crate::identity::secret()?;
+            cfg.s3_secret = crate::identity::secret()?;
+            cfg.supervisor_token = crate::identity::secret()?;
+            cfg.validation_token = crate::identity::secret()?;
+            atomic_json(&runtime, &cfg)?;
+        }
+        if destination.join("storage.pk8").exists() {
+            let key = supabricks_core::keys::ComputeKey::generate()
+                .map_err(|_| conflict("restore key rotation failed"))?;
+            crate::supervisor::write_private(&destination.join("storage.pk8"), key.pkcs8())?;
+            crate::supervisor::write_private(
+                &destination.join("storage.pub"),
+                key.public_pem().as_bytes(),
+            )?;
+        }
+    }
     relocate_owned_worktrees(&destination, &manifest.source_root, &catalog_db)?;
     crate::catalog::recovery::restore(&destination, &manifest.source_root, &catalog_db)?;
     catalog_db.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)")?;
@@ -656,14 +677,14 @@ pub fn restore_with_release(
     drop(db);
     atomic_json(
         &destination.join("restore.json"),
-        &json!({"backup_id":manifest.id,"source_root":manifest.source_root,"credentials_restored":true}),
+        &json!({"backup_id":manifest.id,"source_root":manifest.source_root,"credentials_restored":!governed_closed,"governed_closed":governed_closed}),
     )?;
     fs::remove_file(destination.join("restore-incomplete"))?;
     sync_dir(&destination)?;
     sync_dir(destination.parent().unwrap())?;
     drop(owner);
     Ok(
-        json!({"restored":true,"backup_id":manifest.id,"data_dir":destination,"runtime":"stopped","credentials_restored":true}),
+        json!({"restored":true,"backup_id":manifest.id,"data_dir":destination,"runtime":"stopped","credentials_restored":!governed_closed,"governed_closed":governed_closed}),
     )
 }
 

@@ -53,6 +53,7 @@ struct Grant<'a> {
     subject: Option<&'a str>,
 }
 fn issue(db: &Connection, grant: Grant<'_>) -> Result<Value> {
+    super::security::checkpoint_clock(db)?;
     db.execute(
         "DELETE FROM identity_sessions WHERE expires_ms<=?1",
         [now()],
@@ -81,9 +82,29 @@ fn check_identity_fence(db: &Connection, name: &str, expected: (i64, i64)) -> Re
 impl Store {
     /// Only called by the private operator control socket, never by an HTTP route.
     pub fn identity_admin(&mut self, command: AdminCommand) -> Result<Value> {
+        match &command {
+            AdminCommand::AuditExport { after } => {
+                return super::security::export(&self.db, *after);
+            }
+            AdminCommand::AuditAcknowledge {
+                after,
+                through,
+                sha256,
+            } => return super::security::acknowledge(&mut self.db, *after, *through, sha256),
+            AdminCommand::RestoreStatus => return super::security::restore_status(&self.db),
+            AdminCommand::RestoreReconcile {
+                restore_id,
+                realm_id,
+            } => return super::security::reconcile(&mut self.db, restore_id, realm_id),
+            _ => {}
+        }
         let tx = self.db.transaction()?;
         let actor = owner(&tx)?;
         let result = match command {
+            AdminCommand::AuditExport { .. }
+            | AdminCommand::AuditAcknowledge { .. }
+            | AdminCommand::RestoreStatus
+            | AdminCommand::RestoreReconcile { .. } => unreachable!(),
             AdminCommand::Status => {
                 let realm: String =
                     tx.query_row("SELECT id FROM identity_realm", [], |r| r.get(0))?;
@@ -296,6 +317,9 @@ impl Store {
     /// Snapshot/consume on the writer, perform OIDC I/O on a bounded worker,
     /// then revalidate the snapshot before committing on the writer.
     pub(crate) fn identity_job(&mut self, command: AuthCommand) -> Result<IdentityJob> {
+        super::security::admission(&self.db)?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
+        let authoritative_until = now() + super::security::FRESH_MS;
         match command {
             AuthCommand::Begin {
                 provider: name,
@@ -312,6 +336,10 @@ impl Store {
                 Ok(Box::new(move || {
                     let login = oidc::begin(&config, &redirect)?;
                     Ok(Box::new(move |store: &mut Store| {
+                        if std::time::Instant::now() >= deadline {
+                            return Err(denied());
+                        }
+                        super::security::admission(&store.db)?;
                         check_identity_fence(&store.db, &name, fence)?;
                         let tx = store.db.transaction()?;
                         tx.execute("DELETE FROM identity_logins WHERE expires_ms<=?1", [now()])?;
@@ -352,6 +380,10 @@ impl Store {
                 Ok(Box::new(move || {
                     let verified = oidc::complete(&config, &redirect, code, nonce, verifier)?;
                     Ok(Box::new(move |store: &mut Store| {
+                        if std::time::Instant::now() >= deadline {
+                            return Err(denied());
+                        }
+                        super::security::admission(&store.db)?;
                         check_identity_fence(&store.db, &name, fence)?;
                         if verified.expires_ms <= now() {
                             return Err(denied());
@@ -396,13 +428,32 @@ impl Store {
                     Some((name, config, access, subject, fence))
                 };
                 Ok(Box::new(move || {
-                    if let Some((_, config, access, subject, _)) = &upstream {
-                        oidc::active(config, access, subject)?;
-                    }
+                    let active = upstream
+                        .as_ref()
+                        .map(|(_, config, access, subject, _)| {
+                            oidc::active(config, access, subject)
+                        })
+                        .transpose();
                     Ok(Box::new(move |store: &mut Store| {
+                        if active.is_err() {
+                            // Negative provider answers/outages cannot leave a reusable
+                            // authority. Local logout remains available.
+                            store.db.execute(
+                                "UPDATE identity_sessions SET authoritative_until_ms=0 WHERE token_hash=?1",
+                                [hash(&token)],
+                            )?;
+                            let _ = store.audit_denial(&context, None);
+                            return Err(denied());
+                        }
+                        if std::time::Instant::now() >= deadline {
+                            return Err(denied());
+                        }
+                        super::security::admission(&store.db)?;
                         if let Some((name, _, _, _, fence)) = upstream {
                             check_identity_fence(&store.db, &name, fence)?;
                         }
+                        super::security::checkpoint_clock(&store.db)?;
+                        store.db.execute("UPDATE identity_sessions SET authoritative_until_ms=?2 WHERE token_hash=?1", params![hash(&token), authoritative_until])?;
                         Ok(serde_json::to_value(store.identity_context_local(
                             &token,
                             channel,
@@ -420,6 +471,7 @@ impl Store {
         channel: Channel,
         csrf: Option<&str>,
     ) -> Result<Context> {
+        super::security::admission(&self.db)?;
         if token.len() != 64 {
             return Err(denied());
         }

@@ -27,8 +27,7 @@ fn admission(
     Ok((actor, effective, source, policy))
 }
 fn session(db: &Connection, ctx: &Context, hash: &str) -> Result<()> {
-    if !db.prepare("SELECT 1 FROM identity_sessions s JOIN identity_realm r ON s.epoch=r.session_epoch WHERE s.token_hash=?1 AND s.principal=?2 AND s.expires_ms>?3")?.exists(params![hash,ctx.actor_id,crate::identity::now()])?{return Err(run::denied());}
-    Ok(())
+    super::security::session(db, ctx, hash)
 }
 fn catalog(db: &Connection, revision: i64) -> Result<()> {
     if !db
@@ -56,7 +55,32 @@ impl Store {
                 }
             }
         }
-        self.db.execute("UPDATE isolated_executions SET state='failed',result_json=NULL WHERE state IN ('preparing','running')",[])?;
+        let tx = self.db.transaction()?;
+        let records = tx.prepare("SELECT e.id,e.context_json,a.deployment,a.policy_revision,a.effective_principal FROM isolated_executions e JOIN authorization_executions a ON a.id=e.id WHERE e.state IN ('preparing','running')")?.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        tx.execute("UPDATE isolated_executions SET state='failed',result_json=NULL WHERE state IN ('preparing','running')",[])?;
+        let room: i64 = tx.query_row("SELECT 10000-count(*) FROM security_audit", [], |r| {
+            r.get(0)
+        })?;
+        if records.len() as i64 <= room {
+            for (id, context, deployment, revision, effective) in records {
+                super::authorization::audit(
+                    &tx,
+                    &serde_json::from_str(&context)?,
+                    &deployment,
+                    revision,
+                    "runtime.recovered_closed",
+                    &id,
+                    &id,
+                    &effective,
+                )?;
+            }
+        } else {
+            tx.execute(
+                "UPDATE security_state SET recovery_pending=recovery_pending+?1",
+                [records.len() as i64],
+            )?;
+        }
+        tx.commit()?;
         Ok(())
     }
     pub(crate) fn execution_live(&self, id: &str) -> Result<()> {
@@ -75,6 +99,10 @@ impl Store {
         } else {
             "failed"
         };
+        tx.execute(
+            "UPDATE isolated_executions SET state=?2,result_json=?3 WHERE id=?1",
+            params![id, state, result.map(|v| v.to_string())],
+        )?;
         super::authorization::audit(
             &tx,
             &ctx,
@@ -84,10 +112,6 @@ impl Store {
             id,
             id,
             &effective,
-        )?;
-        tx.execute(
-            "UPDATE isolated_executions SET state=?2,result_json=?3 WHERE id=?1",
-            params![id, state, result.map(|v| v.to_string())],
         )?;
         tx.commit()?;
         Ok(())
