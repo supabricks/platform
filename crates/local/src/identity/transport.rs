@@ -329,6 +329,18 @@ pub fn login(root: &Path, provider: &str, redirect: &str, output: &Path) -> Resu
 /// Authentication-only browser preview, intentionally independent of local-owner
 /// console tickets. There is no route forwarding to project/SQL/notebook APIs.
 pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
+    browser_with_assets(root, provider, redirect, None)
+}
+pub fn governed_console(root: &Path, provider: &str, redirect: &str) -> Result<()> {
+    let assets = crate::console::assets::Assets::load(&crate::console::assets::discover()?)?;
+    browser_with_assets(root, provider, redirect, Some(assets))
+}
+fn browser_with_assets(
+    root: &Path,
+    provider: &str,
+    redirect: &str,
+    assets: Option<crate::console::assets::Assets>,
+) -> Result<()> {
     let (server, host) = listener(redirect)?;
     let origin = format!("http://{host}");
     // Random cookie names avoid conflicts with other loopback applications.
@@ -339,7 +351,30 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
     let set_cookie = |name: &str, value: &str, age: i64| {
         format!("{name}={value}; Path=/auth/v1; HttpOnly; SameSite=Lax; Max-Age={age}")
     };
-    eprintln!("Identity preview: {origin}/auth/v1/");
+    let landing = if assets.is_some() {
+        "/auth/v1/console"
+    } else {
+        "/auth/v1/session"
+    };
+    eprintln!(
+        "{}: {origin}{}",
+        if assets.is_some() {
+            "Governed console"
+        } else {
+            "Identity preview"
+        },
+        if assets.is_some() {
+            landing
+        } else {
+            "/auth/v1/"
+        }
+    );
+    // A bounded pool keeps session checks and administrator revocation responsive
+    // while another browser waits for isolated execution admission.
+    std::thread::scope(|scope| {
+        let mut workers = Vec::new();
+        for _ in 0..4 {
+            workers.push(scope.spawn(|| -> Result<()> {
     loop {
         let request = server.recv()?;
         if single(&request, "host") != Some(&host) {
@@ -347,6 +382,38 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
             continue;
         }
         let path = request.url().split('?').next().unwrap_or("");
+        if let Some(assets) = &assets {
+            if request.method() == &Method::Get && request.url() == "/auth/v1/context" {
+                let csrf = cookie(&request, &csrf_name).unwrap_or_default();
+                let result = call(root, AuthCommand::Authenticate {
+                    token: cookie(&request, &session_name).unwrap_or_default(),
+                    channel: Channel::Browser, csrf: Some(csrf.clone()),
+                });
+                match result {
+                    Ok(context) => json_reply(request, 200, json!({"authenticated":true,"context":context,"csrf":csrf})),
+                    Err(_) => {
+                        let binding = secret()?;
+                        let mut response = Response::from_string(json!({"authenticated":false,"csrf":binding}).to_string());
+                        for (name,value) in [("Content-Type","application/json".to_owned()),("Cache-Control","no-store".to_owned()),("X-Content-Type-Options","nosniff".to_owned()),("Set-Cookie",set_cookie(&pending_name,&binding,300))] {
+                            response.add_header(Header::from_bytes(name,value).unwrap());
+                        }
+                        let _ = request.respond(response);
+                    }
+                }
+                continue;
+            }
+            if request.method() == &Method::Get && request.url() == path {
+                let asset = if matches!(path, "/auth/v1/" | "/auth/v1/console") { "/index.html" } else { path };
+                if let Some((mime, bytes)) = assets.files.get(asset) {
+                    let mut response = Response::from_data(bytes.clone());
+                    for (name,value) in [("Content-Type",mime.as_str()),("Cache-Control","no-store"),("Referrer-Policy","same-origin"),("X-Content-Type-Options","nosniff"),("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self' https:; frame-ancestors 'none'; base-uri 'none'")] {
+                        response.add_header(Header::from_bytes(name,value).unwrap());
+                    }
+                    let _ = request.respond(response);
+                    continue;
+                }
+            }
+        }
         if request.method() == &Method::Get && request.url() == "/auth/v1/" {
             let binding = secret()?;
             let body = format!(
@@ -388,7 +455,7 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
                             set_cookie(&csrf_name, csrf, 3600),
                             set_cookie(&pending_name, "", 0),
                         ],
-                        Some("/auth/v1/session"),
+                        Some(landing),
                     );
                 }
                 Err(_) => reply(request, 403, "Sign-in refused.", &[], None),
@@ -439,6 +506,7 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
             }
             let token = cookie(&request, &session_name).unwrap_or_default();
             let csrf = single(&request, "x-csrf-token").map(str::to_owned);
+                let session_csrf = cookie(&request, &csrf_name);
             let mut request = request;
             let mut bytes = Vec::new();
             if request
@@ -453,11 +521,14 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
             }
             let command = serde_json::from_slice(&bytes).map_err(|_| denied());
             let result = command.and_then(|command| {
-                control_credential(root, token, Channel::Browser, csrf, command)
+                control_credential(root, token.clone(), Channel::Browser, csrf.clone(), command)
             });
             match result {
                 Ok(value) => json_reply(request, 200, value),
-                Err(_) => json_reply(request, 403, json!({"error":"Project action refused"})),
+                Err(_) => {
+                    let authenticated = call(root, AuthCommand::Authenticate { token, channel: Channel::Browser, csrf: session_csrf }).is_ok();
+                    json_reply(request, if authenticated || assets.is_none() { 403 } else { 401 }, json!({"error": if authenticated { "Action denied or state changed. Refresh and ask an administrator to review the project role, data grant, source revision and execution permission." } else { "Session expired or revoked. Sign in again." }}));
+                },
             }
             continue;
         }
@@ -526,6 +597,15 @@ pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
             Err(_) => reply(request, 403, "Authentication unavailable.", &[], None),
         }
     }
+            }));
+        }
+        for worker in workers {
+            worker
+                .join()
+                .map_err(|_| invalid("browser worker unavailable"))??;
+        }
+        Ok(())
+    })
 }
 /// Authenticated identity and project control tools; all capabilities are checked by the daemon.
 /// Credential paths are process configuration, never tool arguments or results.

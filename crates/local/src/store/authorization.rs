@@ -195,7 +195,7 @@ fn set_role(
     )?;
     Ok(())
 }
-fn project(db: &Connection, deployment: &str) -> Result<Value> {
+pub(super) fn project(db: &Connection, deployment: &str) -> Result<Value> {
     let (name,target):(String,String)=db.query_row("SELECT p.name,d.target FROM deployments d JOIN project_definitions p ON p.id=d.definition_id WHERE d.id=?1",[deployment],|r|Ok((r.get(0)?,r.get(1)?))).optional()?.ok_or_else(auth::denied)?;
     Ok(
         json!({"deployment_id":deployment,"name":name,"target":target,"policy_revision":policy(db,deployment)?,"workload_launch_enabled":false,"isolated_execution":"operator_opt_in"}),
@@ -265,7 +265,14 @@ impl Store {
     }
     pub fn authorization_admin(&mut self, command: AdminCommand) -> Result<Value> {
         let ctx = owner(&self.db)?;
-        validate_context(&self.db, &ctx)?;
+        self.authorization_admin_as(&ctx, command)
+    }
+    pub(super) fn authorization_admin_as(
+        &mut self,
+        ctx: &Context,
+        command: AdminCommand,
+    ) -> Result<Value> {
+        validate_context(&self.db, ctx)?;
         let tx = self.db.transaction()?;
         let result = match &command {
             AdminCommand::SetDataGrant {
@@ -278,7 +285,7 @@ impl Store {
                 key,
             } => super::governed::set_grant(
                 &tx,
-                &ctx,
+                ctx,
                 &command,
                 deployment,
                 branch,
@@ -301,14 +308,14 @@ impl Store {
                 expected_policy,
                 key,
             } => {
-                if let Some(result) = replay(&tx, &ctx, deployment, key, &command)? {
+                if let Some(result) = replay(&tx, ctx, deployment, key, &command)? {
                     return Ok(result);
                 }
                 expected(&tx, deployment, *expected_policy)?;
                 set_role(&tx, deployment, subject, role)?;
                 audit(
                     &tx,
-                    &ctx,
+                    ctx,
                     deployment,
                     *expected_policy,
                     "policy.role",
@@ -318,12 +325,12 @@ impl Store {
                 )?;
                 super::security::policy_change(
                     &tx,
-                    &ctx,
+                    ctx,
                     deployment,
                     json!({"kind":"role","subject":subject.key(),"role":role}),
                 )?;
                 let result = read_policy(&tx, deployment)?;
-                receipt(&tx, &ctx, deployment, key, &command, &result)?;
+                receipt(&tx, ctx, deployment, key, &command, &result)?;
                 result
             }
             AdminCommand::SetGrant {
@@ -336,7 +343,7 @@ impl Store {
                 expected_policy,
                 key,
             } => {
-                if let Some(result) = replay(&tx, &ctx, deployment, key, &command)? {
+                if let Some(result) = replay(&tx, ctx, deployment, key, &command)? {
                     return Ok(result);
                 }
                 expected(&tx, deployment, *expected_policy)?;
@@ -364,7 +371,7 @@ impl Store {
                 )?;
                 audit(
                     &tx,
-                    &ctx,
+                    ctx,
                     deployment,
                     *expected_policy,
                     "policy.grant",
@@ -374,12 +381,12 @@ impl Store {
                 )?;
                 super::security::policy_change(
                     &tx,
-                    &ctx,
+                    ctx,
                     deployment,
                     json!({"kind":"execution_grant","subject":subject,"capability":grant,"effective_principal_id":effective,"source_revision":source,"present":present}),
                 )?;
                 let result = read_policy(&tx, deployment)?;
-                receipt(&tx, &ctx, deployment, key, &command, &result)?;
+                receipt(&tx, ctx, deployment, key, &command, &result)?;
                 result
             }
         };
@@ -394,8 +401,22 @@ impl Store {
         }
         result
     }
-    fn authorized_inner(&mut self, ctx: &Context, command: Command) -> Result<Value> {
+    fn authorized_inner(&mut self, ctx: &Context, mut command: Command) -> Result<Value> {
         validate_context(&self.db, ctx)?;
+        if let Command::SaveSource { kind, contents, .. } = &mut command {
+            if kind == "notebook" {
+                if contents.len() > 32768 {
+                    return Err(auth::denied());
+                }
+                *contents = String::from_utf8(crate::projects::package::strip_notebook(
+                    contents.as_bytes(),
+                )?)
+                .map_err(|_| auth::denied())?;
+            }
+        }
+        if let Command::Workspace { command } = command {
+            return self.workspace_command(ctx, command);
+        }
         if matches!(command, Command::Projects {}) {
             let mut projects = Vec::new();
             for id in self
@@ -414,7 +435,8 @@ impl Store {
         let rank = match &command {
             Command::SetRole { .. } => 3,
             Command::SaveSource { .. } => 2,
-            Command::Projects {}
+            Command::Workspace { .. }
+            | Command::Projects {}
             | Command::Catalog { .. }
             | Command::Data { .. }
             | Command::Runtime { .. }
@@ -511,7 +533,7 @@ impl Store {
                 let result=execution(&tx,&deployment,id)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.cancel",key,id,result["effective_principal_id"].as_str().ok_or_else(auth::denied)?)?;result
             },
-            Command::Data{..}|Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
+            Command::Workspace{..}|Command::Data{..}|Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
         };
         if let Some((_, key)) = command.mutation() {
             receipt(&tx, ctx, &deployment, key, &command, &result)?;

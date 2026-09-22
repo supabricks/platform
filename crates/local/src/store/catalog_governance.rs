@@ -12,6 +12,10 @@ use std::collections::{BTreeMap, BTreeSet};
 fn revision(db: &Connection) -> Result<i64> {
     Ok(db.query_row("SELECT revision FROM catalog_governance", [], |r| r.get(0))?)
 }
+fn audit_as(db: &Connection, actor: &str, action: &str, target: &str) -> Result<()> {
+    db.execute("INSERT INTO catalog_grant_audit(at_ms,actor,action,target,revision) VALUES (?1,?2,?3,?4,(SELECT revision FROM catalog_governance))",params![crate::identity::now(),actor,action,target])?;
+    Ok(())
+}
 fn audit(db: &Connection, action: &str, target: &str) -> Result<()> {
     db.execute("INSERT INTO catalog_grant_audit(at_ms,actor,action,target,revision) SELECT ?1,local_owner,?2,?3,(SELECT revision FROM catalog_governance) FROM identity_realm",params![crate::identity::now(),action,target])?;
     Ok(())
@@ -292,6 +296,17 @@ impl Store {
         command: AdminCommand,
         broker: Broker,
     ) -> Result<super::identity::IdentityJob> {
+        let actor: String =
+            self.db
+                .query_row("SELECT local_owner FROM identity_realm", [], |r| r.get(0))?;
+        self.catalog_governance_admin_as(actor, command, broker)
+    }
+    pub(super) fn catalog_governance_admin_as(
+        &mut self,
+        actor: String,
+        command: AdminCommand,
+        broker: Broker,
+    ) -> Result<super::identity::IdentityJob> {
         match command {
             AdminCommand::Status {} => {
                 let value = self.catalog_governance_status()?;
@@ -308,7 +323,7 @@ impl Store {
                     uc_id: expected_uc_id,
                 };
                 let rev = revision(&self.db)?;
-                audit(&self.db, "principal.resolve_intent", &principal)?;
+                audit_as(&self.db, &actor, "principal.resolve_intent", &principal)?;
                 Ok(Box::new(move || {
                     broker.principal(&mapped)?;
                     Ok(Box::new(move |store| {
@@ -319,7 +334,7 @@ impl Store {
                             "UPDATE catalog_governance SET revision=revision+1,state='dirty'",
                             [],
                         )?;
-                        audit(&tx, "principal.resolved", &principal)?;
+                        audit_as(&tx, &actor, "principal.resolved", &principal)?;
                         tx.commit()?;
                         Ok(json!({"principal":principal,"uc_id":mapped.uc_id}))
                     }))
@@ -358,7 +373,7 @@ impl Store {
                     "UPDATE catalog_governance SET revision=revision+1,state='dirty'",
                     [],
                 )?;
-                audit(&tx, "principal.intent", &principal)?;
+                audit_as(&tx, &actor, "principal.intent", &principal)?;
                 tx.commit()?;
                 Ok(Box::new(move || {
                     let result = broker.create_principal(&principal, &subject);
@@ -370,7 +385,7 @@ impl Store {
                             "UPDATE catalog_governance SET revision=revision+1,state='dirty'",
                             [],
                         )?;
-                        audit(&tx, "principal.mapped", &principal)?;
+                        audit_as(&tx, &actor, "principal.mapped", &principal)?;
                         tx.commit()?;
                         Ok(json!({"principal":principal,"uc_id":mapped.uc_id}))
                     }))
@@ -386,7 +401,7 @@ impl Store {
                         let id = gov::digest(&plan)?;
                         let tx = store.db.transaction()?;
                         tx.execute("INSERT OR IGNORE INTO catalog_grant_plans VALUES (?1,?2,?3,'planned',NULL)",params![id,plan.snapshot.revision,serde_json::to_string(&plan)?])?;
-                        audit(&tx, "grant.plan", &id)?;
+                        audit_as(&tx, &actor, "grant.plan", &id)?;
                         tx.commit()?;
                         Ok(
                             json!({"id":id,"revision":plan.snapshot.revision,"observed":plan.observed,"desired":plan.snapshot.desired,"origins":plan.snapshot.origins}),
@@ -445,7 +460,7 @@ impl Store {
                         ],
                     )?;
                 }
-                audit(&tx, "grant.apply_intent", &id)?;
+                audit_as(&tx, &actor, "grant.apply_intent", &id)?;
                 tx.commit()?;
                 Ok(Box::new(move || {
                     let result = broker.apply(&plan);
@@ -461,8 +476,9 @@ impl Store {
                             "UPDATE catalog_governance SET revision=revision+1,state=?1",
                             [if ok { "ready" } else { "dirty" }],
                         )?;
-                        audit(
+                        audit_as(
                             &tx,
+                            &actor,
                             if ok {
                                 "grant.applied"
                             } else {

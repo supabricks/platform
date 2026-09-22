@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery implemented in #72 for review; UC09.7–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console implemented and source-qualified for review; UC09.8 remains open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -244,6 +244,8 @@ Spark query/notebook, revocation during execution and a correlated audit event.
 Server checks remain authoritative for crafted API requests. Preserve the
 single-user reconnect and offline workflows.
 
+Implementation and source qualification: [UC09.7 signed-in console](../architecture/uc097-governed-console.md).
+
 ## UC09.8 — Qualify the complete governed release
 
 Add governed reports to the existing R04 collector, tied to exact platform,
@@ -266,7 +268,8 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.6, then implement UC09.7 console administration and user workflows.
+Review UC09.7 console administration and user workflows, then implement UC09.8
+exact-archive governed release qualification.
 Use the isolated adapter with the admitted effective principal and immutable
 revision; keep shared ingress and unqualified transfer/artifact routes disabled.
 UC09.8 must also qualify the installed upgrade to the changed UC component; the

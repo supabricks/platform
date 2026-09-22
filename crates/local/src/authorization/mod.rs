@@ -61,6 +61,9 @@ impl Grant {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Workspace {
+        command: crate::console::governed::Command,
+    },
     Data {
         deployment: String,
         command: crate::governed::Command,
@@ -132,6 +135,7 @@ impl Command {
     pub(crate) fn deployment(&self) -> Option<&str> {
         match self {
             Self::Projects {} | Self::Catalog { .. } => None,
+            Self::Workspace { command } => command.deployment(),
             Self::Data { deployment, .. }
             | Self::Runtime { deployment, .. }
             | Self::Project { deployment }
@@ -169,7 +173,8 @@ impl Command {
                 key,
                 ..
             } => Some((*expected_policy, key)),
-            Self::Projects {}
+            Self::Workspace { .. }
+            | Self::Projects {}
             | Self::Data { .. }
             | Self::Catalog { .. }
             | Self::Runtime { .. }

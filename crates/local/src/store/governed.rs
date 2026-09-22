@@ -10,7 +10,7 @@ fn branch(db: &Connection, deployment: &str, id: &str) -> Result<()> {
     if !db.prepare("SELECT 1 FROM branches b JOIN deployments d ON d.runtime_project_id=b.project_id WHERE b.id=?1 AND d.id=?2 AND b.expired=0 AND b.desired!='deleted'")?.exists(params![id,deployment])? {return Err(denied());}
     Ok(())
 }
-fn grant(
+pub(super) fn grant(
     db: &Connection,
     ctx: &Context,
     deployment: &str,
@@ -80,7 +80,7 @@ fn session(db: &Connection, ctx: &Context, hash: &str) -> Result<()> {
 }
 impl Store {
     pub(crate) fn governed_branch(&self, id: BranchId) -> Result<bool> {
-        Ok(self.db.prepare("SELECT 1 FROM governed_branches WHERE branch=?1 UNION SELECT 1 FROM operations WHERE branch_id=?1 AND request_key LIKE 'governed:%' AND json_extract(request,'$.kind')='branch_from'")?.exists([id.to_string()])?)
+        Ok(self.db.prepare("SELECT 1 FROM governed_branches WHERE branch=?1 UNION SELECT 1 FROM branches b JOIN deployments d ON d.runtime_project_id=b.project_id JOIN governed_project_requests g ON g.deployment=d.id WHERE b.id=?1 UNION SELECT 1 FROM operations WHERE branch_id=?1 AND request_key LIKE 'governed:%' AND json_extract(request,'$.kind')='branch_from'")?.exists([id.to_string()])?)
     }
     pub(crate) fn governed_clone_ready(&mut self, id: BranchId) -> Result<()> {
         let operation:Option<String>=self.db.query_row("SELECT id FROM operations WHERE branch_id=?1 AND request_key LIKE 'governed:%' AND json_extract(request,'$.kind')='branch_from'",[id.to_string()],|r|r.get(0)).optional()?;

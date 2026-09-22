@@ -155,6 +155,7 @@ pub enum Request {
 }
 
 enum AuthorizedFollowup {
+    Workspace(crate::console::governed::Command),
     Data(String, crate::governed::Command),
     Catalog(crate::catalog::governance::ReadCommand),
     Runtime(String, crate::execution::Command),
@@ -300,8 +301,20 @@ impl Daemon {
                                     AuthorizedFollowup::Data(d, _)
                                     | AuthorizedFollowup::Runtime(d, _) => Some(d.clone()),
                                     AuthorizedFollowup::Catalog(_) => None,
+                                    AuthorizedFollowup::Workspace(command) => {
+                                        command.deployment().map(str::to_owned)
+                                    }
                                 };
                                 let job = match command {
+                                    AuthorizedFollowup::Workspace(command) => {
+                                        self.store.workspace_job(
+                                            ctx,
+                                            token_hash,
+                                            command,
+                                            &self.catalog,
+                                            &mut self.catalog_metadata,
+                                        )
+                                    }
                                     AuthorizedFollowup::Data(deployment, command) => {
                                         self.store.data_job(ctx, token_hash, deployment, command)
                                     }
@@ -594,6 +607,16 @@ impl Daemon {
                         return Err(invalid("unsupported project authorization API version"));
                     }
                     let followup = match &envelope.command {
+                        crate::authorization::Command::Workspace { command }
+                            if matches!(
+                                command,
+                                crate::console::governed::Command::Catalog { .. }
+                                    | crate::console::governed::Command::Publication { .. }
+                                    | crate::console::governed::Command::Namespace { .. }
+                            ) =>
+                        {
+                            Some(AuthorizedFollowup::Workspace(command.clone()))
+                        }
                         crate::authorization::Command::Data {
                             deployment,
                             command,

@@ -2,6 +2,7 @@
 pub(crate) mod analytics;
 pub mod assets;
 pub(crate) mod catalog;
+pub mod governed;
 pub(crate) mod ingestion;
 pub mod projects;
 mod server;
