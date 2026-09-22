@@ -10,6 +10,9 @@ pub enum Capability {
     CopySource,
     Receive,
     Share,
+    ManageSync,
+    ExecuteSync,
+    ReadSync,
 }
 impl Capability {
     pub(crate) fn name(self) -> &'static str {
@@ -20,6 +23,9 @@ impl Capability {
             Self::CopySource => "copy_source",
             Self::Receive => "receive",
             Self::Share => "share",
+            Self::ManageSync => "manage_sync",
+            Self::ExecuteSync => "execute_sync",
+            Self::ReadSync => "read_sync",
         }
     }
 }

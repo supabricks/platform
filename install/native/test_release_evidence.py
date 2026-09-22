@@ -33,7 +33,7 @@ class ReleaseEvidence(unittest.TestCase):
                         data.update(target=target, source=dict(sail=sample_report(target),platform_commit='reviewed',platform_dirty=False,
                             console=dict(manifest_sha256=HASH,package_lock_sha256=HASH,source=dict(commit='console',dirty=False,manifest_sha256=HASH,package_lock_sha256=HASH)),
                             unity_catalog=dict(build_sha256=HASH,source_commit=expected_build(target)['source_commit'],metadata_backend='h2-2.2.224',profile='local-owner-files'),
-                            ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=27,postgres_major=17)),
+                            ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=28,postgres_major=17)),
                             archives=dict(new=dict(version='alpha',target=target,sha256=HASH),old={}),
                             release_identity=HASH,python_version='3.12',kernel_contract_sha256=HASH,
                             wheels={},notices={'licenses/platform.txt':HASH},measurements={},project_bundle={})

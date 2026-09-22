@@ -179,7 +179,7 @@ impl Store {
                     return Err(denied());
                 }
                 if tx.execute(
-                    "UPDATE identity_principals SET disabled=?1 WHERE id=?2",
+                    "UPDATE identity_principals SET disabled=?1,sync_generation=sync_generation+1 WHERE id=?2",
                     params![disabled, principal],
                 )? != 1
                 {
@@ -270,6 +270,10 @@ impl Store {
             }
             AdminCommand::Revoke { principal } => {
                 tx.execute(
+                    "UPDATE identity_principals SET sync_generation=sync_generation+1 WHERE id=?1",
+                    [&principal],
+                )?;
+                tx.execute(
                     "DELETE FROM identity_sessions WHERE principal=?1",
                     [&principal],
                 )?;
@@ -277,6 +281,10 @@ impl Store {
                 json!({"revoked":true})
             }
             AdminCommand::RotateSessions => {
+                tx.execute(
+                    "UPDATE identity_principals SET sync_generation=sync_generation+1",
+                    [],
+                )?;
                 tx.execute(
                     "UPDATE identity_realm SET session_epoch=session_epoch+1",
                     [],

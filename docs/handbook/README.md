@@ -39,6 +39,7 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 | [File ingestion](file-ingestion.md) | CSV/TSV, JSON/JSONL/document and Parquet |
 | [CSV/TSV ingestion](csv-ingestion.md) | CLI/MCP mappings and durable import jobs |
 | [Browser imports](browser-imports.md) | File selection, approval and import recovery |
+| [Managed analytical sync](managed-sync.md) | Console/agent controls, reviewed resync and governed snapshot service authority |
 | [Analytical workspace](analytical-workspace.md) | Snapshot publication, pinned Spark SQL and bounded comparison |
 | [Notebooks](notebooks.md) | Project files, editor, Sail kernels and snapshots |
 | [Notebook environments](notebook-environments.md) | Dependency locks, packages, offline bundles and environment recovery |

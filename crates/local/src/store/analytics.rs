@@ -249,7 +249,11 @@ impl Store {
         Ok(())
     }
     pub fn snapshot(&self, project: ProjectId, id: EpochId) -> Result<Snapshot> {
-        self.snapshot_record(project, id, true)
+        let s = self.snapshot_record(project, id, true)?;
+        if let Some(p) = self.sync_export_policy(s.publication.export_id)? {
+            self.sync_authority_live(&p)?;
+        }
+        Ok(s)
     }
     fn snapshot_record(
         &self,

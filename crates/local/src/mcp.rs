@@ -30,6 +30,13 @@ pub fn tools() -> Value {
     plan_options.as_object_mut().unwrap().remove("required");
     let defs = vec![
         (
+            "managed_snapshots",
+            "Manage project-bound analytical sync. Inspect prerequisites without enrolling capture; create/update snapshot, triggered or continuous policies explicitly. Use expected policy revisions and stable retry keys. List/get show observed lag (null means unknown), capture pressure and retained epochs. Poll runs; pause drains continuous batches; cancel fences a run. Review resync before submitting its hash, then explicitly resume after cleanup. Delete keeps pinned publications. Existing readers never retarget. Continuous keeps compute awake. Governed authority is a separate signed-in workspace route.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/sync-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            false,
+        ),
+        (
             "project_dataset_draft",
             "Edit a root-manifest dataset requirement with an expected manifest SHA-256. Null requirement removes it. This changes source only; review project_plan then project_apply separately.",
             json!({"logical":string,"requirement":{"type":["string","null"]},"expected_manifest_sha256":string}),
@@ -471,6 +478,7 @@ fn output_schema(name: &str) -> Value {
     let operation = json!({"type":"object","properties":{"id":string,"project_id":string,"branch_id":string,"revision":{"type":"integer"},"status":{"enum":["pending","succeeded","failed","superseded"]},"steps":{"type":"array","items":{"type":"string"}},"next_step":{"type":"integer"},"results":{"type":"array"},"error":{"type":["object","null"]}},"required":["id","project_id","branch_id","revision","status","steps","next_step","results","error"]});
     let branch = json!({"type":"object","properties":{"branch":{"type":"object","required":["id","project_id","name","parent_id"]},"endpoint":{"type":"object","required":["id","desired_state"]},"revision":{"type":"integer"},"observed_revision":{"type":"integer"},"is_default":{"type":"boolean"},"expired":{"type":"boolean"}},"required":["branch","endpoint","revision","observed_revision","is_default","expired"]});
     let success = match name {
+        "managed_snapshots" => json!({"type":"object","required":["value"]}),
         "catalog_datasets" => {
             json!({"type":"object","properties":{"api_version":{"const":1}},"required":["api_version"]})
         }
@@ -743,6 +751,7 @@ impl Session {
                 let (body, error) = match client.call(action) {
                     Ok(v) => (
                         match name {
+                            "managed_snapshots" => json!({"value":v}),
                             "ingest_list" => json!({"jobs":v}),
                             "ingest_find" => json!({"job":v}),
                             _ => v,

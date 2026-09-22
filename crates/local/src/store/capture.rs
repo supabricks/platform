@@ -42,6 +42,9 @@ impl Store {
     }
     pub(crate) fn capture_live(&self, c: &Capture) -> Result<()> {
         let p = self.sync_policy(c.project_id, c.policy_id)?;
+        if p.service_authority.is_some() {
+            return Err(conflict("governed capture is not qualified"));
+        }
         if if c.identity["decoder_version"] == 2 {
             !p.config.incremental() || !matches!(p.state.as_str(), "active" | "paused")
         } else {
@@ -87,6 +90,9 @@ impl Store {
                 } => {
                     limits.validate()?;
                     let p = self.sync_policy(project, *policy_id)?;
+                    if p.service_authority.is_some() {
+                        return Err(conflict("governed capture is not qualified"));
+                    }
                     if p.revision != *expected_revision
                         || p.state != "active"
                         || (p.config.schedule.is_some() && !p.config.incremental())

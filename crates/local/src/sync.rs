@@ -101,6 +101,8 @@ impl Config {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Policy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub service_authority: Option<ServiceAuthority>,
     pub id: OperationId,
     #[serde(default)]
     pub capture_id: Option<OperationId>,
@@ -126,6 +128,23 @@ pub struct Policy {
     pub last_success_at_ms: Option<i64>,
     pub last_epoch_id: Option<String>,
     pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ServiceAuthority {
+    pub principal_id: String,
+    pub realm_id: String,
+    pub policy_revision: i64,
+    pub generation: i64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GovernedCommand {
+    pub command: Command,
+    pub expected_policy: Option<i64>,
+    pub service_principal: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Run {
@@ -158,6 +177,19 @@ pub struct Run {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    /// Read-only prerequisites; detailed source qualification happens in the worker.
+    Inspect {
+        branch: String,
+    },
+    ReviewResync {
+        id: OperationId,
+    },
+    Resync {
+        id: OperationId,
+        expected_revision: i64,
+        review_hash: String,
+        key: String,
+    },
     Create {
         branch: String,
         key: String,
@@ -219,6 +251,7 @@ impl Command {
             | Self::Delete { key, .. }
             | Self::RunNow { key, .. }
             | Self::Cancel { key, .. } => Some(key),
+            Self::Resync { key, .. } => Some(key),
             _ => None,
         }
     }
@@ -231,6 +264,13 @@ pub fn handle(store: &mut Store, binding: &Binding, command: Command) -> Result<
         command,
         chrono::Utc::now().timestamp_millis(),
     )
+}
+
+pub(crate) fn runtime_available(store: &Store) -> bool {
+    crate::installation::analytical_worker(store.root()).is_ok_and(|(_, worker)| {
+        worker.with_file_name("capture_worker.py").is_file()
+            && worker.with_file_name("incremental_worker.py").is_file()
+    })
 }
 
 /// One daemon writer, one native export at a time. No browser/worktree lifetime dependency.

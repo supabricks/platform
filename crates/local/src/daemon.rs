@@ -887,7 +887,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"managed_snapshot_scheduling":!console_home,"incremental_triggered":false,"continuous_sync":false,"sync_event_triggers":false,"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"managed_snapshot_scheduling":!console_home,"sync_controls":1,"incremental_triggered":!console_home && self.cell.is_some() && crate::sync::runtime_available(&self.store),"continuous_sync":!console_home && self.cell.is_some() && crate::sync::runtime_available(&self.store),"sync_event_triggers":false,"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {

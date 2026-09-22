@@ -1,0 +1,513 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Managed analytical sync command",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "list"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "inspect"
+        },
+        "branch": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "branch"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "create"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "snapshot",
+                "triggered",
+                "continuous"
+              ]
+            },
+            "strategy": {
+              "enum": [
+                "full",
+                "incremental"
+              ]
+            },
+            "schedule": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "interval_seconds": {
+                      "type": "integer",
+                      "minimum": 60,
+                      "maximum": 2592000
+                    },
+                    "timezone": {
+                      "const": "UTC"
+                    },
+                    "missed_run": {
+                      "const": "coalesce"
+                    }
+                  },
+                  "required": [
+                    "interval_seconds",
+                    "timezone",
+                    "missed_run"
+                  ]
+                }
+              ]
+            },
+            "continuous": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "freshness_ms": {
+                  "type": "integer",
+                  "minimum": 1000,
+                  "maximum": 300000
+                },
+                "batch_interval_ms": {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 60000
+                }
+              },
+              "required": [
+                "freshness_ms",
+                "batch_interval_ms"
+              ]
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "max_bytes": {
+                  "type": "integer",
+                  "minimum": 16777216,
+                  "maximum": 17179869184
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 10000,
+                  "maximum": 1800000
+                }
+              },
+              "required": [
+                "max_bytes",
+                "timeout_ms"
+              ]
+            }
+          },
+          "required": [
+            "mode",
+            "strategy",
+            "schedule"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "branch",
+        "config",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "update"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "snapshot",
+                "triggered",
+                "continuous"
+              ]
+            },
+            "strategy": {
+              "enum": [
+                "full",
+                "incremental"
+              ]
+            },
+            "schedule": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "interval_seconds": {
+                      "type": "integer",
+                      "minimum": 60,
+                      "maximum": 2592000
+                    },
+                    "timezone": {
+                      "const": "UTC"
+                    },
+                    "missed_run": {
+                      "const": "coalesce"
+                    }
+                  },
+                  "required": [
+                    "interval_seconds",
+                    "timezone",
+                    "missed_run"
+                  ]
+                }
+              ]
+            },
+            "continuous": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "freshness_ms": {
+                  "type": "integer",
+                  "minimum": 1000,
+                  "maximum": 300000
+                },
+                "batch_interval_ms": {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 60000
+                }
+              },
+              "required": [
+                "freshness_ms",
+                "batch_interval_ms"
+              ]
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "max_bytes": {
+                  "type": "integer",
+                  "minimum": 16777216,
+                  "maximum": 17179869184
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 10000,
+                  "maximum": 1800000
+                }
+              },
+              "required": [
+                "max_bytes",
+                "timeout_ms"
+              ]
+            }
+          },
+          "required": [
+            "mode",
+            "strategy",
+            "schedule"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "config",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "resync"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "review_hash": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "review_hash",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "runs"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "limit"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "get"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "run"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "review_resync"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "pause"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "resume"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "delete"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "run_now"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expected_revision",
+        "key"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "cancel"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "key"
+      ]
+    }
+  ]
+}

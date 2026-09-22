@@ -66,6 +66,8 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sync run POLICY_ID --revision N [--key KEY]
   sync pause|resume|delete POLICY_ID --revision N [--key KEY]
   sync cancel RUN_ID [--key KEY]
+  sync inspect --branch NAME | review-resync POLICY_ID
+  sync resync POLICY_ID --revision N --review-hash HASH [--key KEY]
                                Managed full snapshots; UTC intervals, coalesced missed runs
   analytics configure --python PATH --worker PATH  Configure the A01 developer worker
   analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
@@ -2136,14 +2138,17 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
     if verb == "capture" {
         return capture_cli(a, c);
     }
-    let read = matches!(verb.as_str(), "list" | "show" | "runs" | "status");
+    let read = matches!(
+        verb.as_str(),
+        "list" | "show" | "runs" | "status" | "inspect" | "review-resync"
+    );
     let key = if read {
         String::new()
     } else {
         a.take("--key")
             .unwrap_or_else(|| OperationId::new().to_string())
     };
-    let id = if matches!(verb.as_str(), "create" | "list") {
+    let id = if matches!(verb.as_str(), "create" | "list" | "inspect") {
         None
     } else {
         Some(
@@ -2153,6 +2158,20 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
         )
     };
     let command = match verb.as_str() {
+        "inspect" => S::Inspect {
+            branch: a
+                .take("--branch")
+                .ok_or_else(|| invalid("inspect requires --branch"))?,
+        },
+        "review-resync" => S::ReviewResync { id: id.unwrap() },
+        "resync" => S::Resync {
+            id: id.unwrap(),
+            expected_revision: sync_revision(a)?,
+            review_hash: a
+                .take("--review-hash")
+                .ok_or_else(|| invalid("resync requires --review-hash"))?,
+            key,
+        },
         "list" => S::List,
         "show" => S::Get { id: id.unwrap() },
         "status" => S::Run { id: id.unwrap() },
@@ -2249,7 +2268,7 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
         }
         _ => return Err(invalid("unknown sync command; use --help")),
     };
-    a.finish(if matches!(verb.as_str(), "create" | "list") {
+    a.finish(if matches!(verb.as_str(), "create" | "list" | "inspect") {
         2
     } else {
         3

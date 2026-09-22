@@ -139,8 +139,10 @@ adds PostgreSQL → analytics incrementality after the delivered snapshot baseli
 snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 [SY04](architecture/sy04-triggered-sync.md) adds local triggered CLI/API policies
 and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
-application for review. Console/governed integration, storage maintenance,
-installed sync qualification and reverse sync remain later scope.
+application for review. [SY06](architecture/sy06-sync-surfaces.md) starts shared
+console/agent controls and governed snapshot service authority. Governed
+incremental storage/readers, remaining SY06 qualification, storage maintenance,
+installed sync qualification and reverse sync remain open.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list

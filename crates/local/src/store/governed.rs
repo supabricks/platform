@@ -111,6 +111,35 @@ impl Store {
         Ok(())
     }
     pub(crate) fn governed_export(&self, child: BranchId) -> Result<bool> {
+        let export: Option<String> = self
+            .db
+            .query_row(
+                "SELECT id FROM exports WHERE child_id=?1",
+                [child.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if let Some(export) = export {
+            if self
+                .sync_export_policy(export.parse().map_err(|_| denied())?)?
+                .is_some_and(|p| p.service_authority.is_some())
+            {
+                return Ok(true);
+            }
+        }
+        let source: Option<String> = self
+            .db
+            .query_row(
+                "SELECT source_id FROM exports WHERE child_id=?1",
+                [child.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if let Some(source) = source {
+            if self.governed_branch(source.parse().map_err(|_| denied())?)? {
+                return Ok(true);
+            }
+        }
         Ok(self
             .db
             .prepare(
@@ -166,6 +195,9 @@ impl Store {
     /// Every private exporter tick and final publication commit consults the
     /// original actor's session and policy, even through an operator retry.
     pub(crate) fn data_export_live(&self, id: OperationId, sharing: bool) -> Result<()> {
+        if let Some(p) = self.sync_export_policy(id)? {
+            self.sync_authority_live(&p)?;
+        }
         let admitted: Option<String> = self
             .db
             .query_row(

@@ -88,6 +88,15 @@ pub(super) fn snapshot(db: &Connection, broker: &Broker, changes: &[Change]) -> 
     objects.insert(metastore.key(), metastore);
     let mut tables = Vec::new();
     for p in publications {
+        if p.state == "published" {
+            let record: Option<String> = db.query_row("SELECT sp.record FROM sync_policies sp JOIN sync_runs sr ON sr.policy_id=sp.id JOIN publications p ON p.export_id=sr.refresh_id WHERE p.epoch_id=?1", [p.epoch_id.to_string()], |r|r.get(0)).optional()?;
+            if let Some(record) = record {
+                let policy: crate::sync::Policy = serde_json::from_str(&record)?;
+                if let Some(authority) = &policy.service_authority {
+                    super::sync::governed::service_live(db, &policy, authority)?;
+                }
+            }
+        }
         if p.namespace.provider_id != broker.provider
             || p.namespace.metastore_id != broker.metastore
         {

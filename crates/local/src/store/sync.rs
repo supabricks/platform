@@ -67,7 +67,6 @@ impl Store {
         let b = self.branch_in_project(p.project_id, p.branch_id)?;
         let d = self.deployment(p.deployment_id)?;
         if self.is_export(p.branch_id)?
-            || self.governed_branch(p.branch_id)?
             || b.expired
             || b.endpoint.desired_state == DesiredState::Deleted
             || self.installation_id()? != p.installation_id
@@ -79,6 +78,7 @@ impl Store {
                 "snapshot source unavailable, changed lineage, or requires governed authority",
             ));
         }
+        self.sync_authority_live(p)?;
         Ok(())
     }
     fn sync_expected(&self, project: ProjectId, id: OperationId, revision: i64) -> Result<Policy> {
@@ -184,6 +184,16 @@ impl Store {
         command: Command,
         now: i64,
     ) -> Result<Value> {
+        self.sync_command_authority(project, deployment, command, now, None)
+    }
+    pub(crate) fn sync_command_authority(
+        &mut self,
+        project: ProjectId,
+        deployment: DeploymentId,
+        command: Command,
+        now: i64,
+        authority: Option<crate::sync::ServiceAuthority>,
+    ) -> Result<Value> {
         if self.deployment(deployment)?.runtime_project_id != project {
             return Err(missing("deployment in project"));
         }
@@ -210,6 +220,35 @@ impl Store {
         self.db.execute_batch("SAVEPOINT sync_command")?;
         let result = (|| {
             let result = match &command {
+                Command::Inspect { branch } => self.inspect_sync(project, deployment, branch)?,
+                Command::ReviewResync { id } => self.review_sync_resync(project, *id)?,
+                Command::Resync {
+                    id,
+                    expected_revision,
+                    review_hash,
+                    ..
+                } => {
+                    let mut p = self.sync_expected(project, *id, *expected_revision)?;
+                    if self.review_sync_resync(project, *id)?["review_hash"] != *review_hash {
+                        return Err(conflict("resync review changed; inspect and review again"));
+                    }
+                    for r in self
+                        .active_sync_runs()?
+                        .into_iter()
+                        .filter(|r| r.policy_id == p.id)
+                    {
+                        self.cancel_sync_run(r, "reviewed_resync", now)?;
+                    }
+                    self.delete_policy_capture(&p)?;
+                    p.revision += 1;
+                    p.state = "paused".into();
+                    p.pause_requested = false;
+                    p.observation = None;
+                    p.next_due_at_ms = None;
+                    p.error = Some("resync_cleanup_pending".into());
+                    self.save_sync_policy(&p)?;
+                    self.sync_policy_view(&p, now)?
+                }
                 Command::Create { branch, config, .. } => {
                     config.validate()?;
                     let branch_id = crate::api::resolve(
@@ -234,6 +273,7 @@ impl Store {
                         return Err(conflict("source group already has a snapshot policy"));
                     }
                     let p = Policy {
+                        service_authority: authority.clone(),
                         id: OperationId::new(),
                         capture_id: None,
                         pause_requested: false,
@@ -246,7 +286,12 @@ impl Store {
                         timeline_id: b.branch.timeline_id.to_string(),
                         database: "postgres".into(),
                         membership: "all_supported_application_tables_at_snapshot".into(),
-                        authority: "local_owner".into(),
+                        authority: if authority.is_some() {
+                            "scoped_service"
+                        } else {
+                            "local_owner"
+                        }
+                        .into(),
                         revision: 1,
                         state: "active".into(),
                         config: config.clone(),
@@ -322,6 +367,15 @@ impl Store {
                     }
                     if matches!(command, Command::Resume { .. }) {
                         self.sync_source(&p)?;
+                        if self
+                            .captures()?
+                            .iter()
+                            .any(|c| c.policy_id == p.id && c.desired == "deleted")
+                        {
+                            return Err(conflict(
+                                "resync cleanup is still pending; inspect status before resuming",
+                            ));
+                        }
                         p.state = "active".into();
                         p.error = None;
                     }
@@ -358,7 +412,8 @@ impl Store {
                         self.delete_policy_capture(&p)?;
                     }
                     if p.config.incremental()
-                        && matches!(command, Command::Update { .. })
+                        && p.state == "active"
+                        && matches!(command, Command::Update { .. } | Command::Resume { .. })
                         && !self.captures()?.iter().any(|c| c.policy_id == p.id)
                     {
                         self.enroll_triggered(&p)?;
@@ -681,6 +736,8 @@ pub(crate) fn restore(db: &rusqlite::Connection, now: i64) -> Result<()> {
 }
 
 mod continuous;
+pub(crate) mod governed;
+mod surfaces;
 mod triggered;
 
 #[cfg(test)]

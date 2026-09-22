@@ -5,6 +5,7 @@ use crate::{
     sync::{Config, Schedule},
 };
 use supabricks_core::resource::BranchId;
+mod surfaces;
 fn setup() -> (tempfile::TempDir, Store, ProjectId, DeploymentId, BranchId) {
     let dir = tempfile::tempdir().unwrap();
     use std::os::unix::fs::PermissionsExt;
