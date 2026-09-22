@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 catalog identities/grants implemented for review; UC09.4–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 isolated execution implemented for review; UC09.5–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -145,7 +145,7 @@ state deny the mutation. Permission checks apply equally to console and agents.
 
 ## UC09.3 — UC identities and grants
 
-Implemented for review: [private UC identities and reviewed grants](../architecture/uc093-catalog-grants.md).
+Merged in #69, with UC fork #4: [private UC identities and reviewed grants](../architecture/uc093-catalog-grants.md).
 Schema 18 journals stable UC mappings and overlapping direct/group grant origins.
 Reviewed, UUID-fenced grant application and live UC checks deny access on drift,
 partial effects, provider failure or stale local/remote state. Authenticated
@@ -166,6 +166,13 @@ provider outage, out-of-band drift and grant changes between plan and execution.
 New sessions cannot use an unresolved grant; never fall back to an admin read.
 
 ## UC09.4 — Runtime and storage isolation
+
+Implemented for review: [isolated execution and admitted file closure](../architecture/uc094-isolated-execution.md).
+Schema 19 binds authenticated admission, live UC checks, verified source/data and
+runtime inventories to private gVisor Jupyter/Sail executions. The opt-in Linux
+adapter enforces resource budgets and independent monotonic renewal/cleanup.
+Governed PG, transfer/artifact activation, shared ingress and exact installed
+release qualification remain UC09.5–.8.
 
 Integrate the qualified OCI runtime behind a platform execution adapter. Isolate
 Jupyter server/kernel, Sail session, ingestion parsers and executable package preparation, with
@@ -254,8 +261,8 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.3, then implement UC09.4 runtime/storage isolation.
-Use the broker with the admitted effective principal and immutable revision; keep
-shared ingress and actual workload launch disabled until isolation is qualified.
+Review and qualify UC09.4, then implement UC09.5 governed PG and data-copy paths.
+Use the isolated adapter with the admitted effective principal and immutable
+revision; keep shared ingress and unqualified transfer/artifact routes disabled.
 UC09.8 must also qualify the installed upgrade to the changed UC component; the
 existing exact-backend gate remains closed to an unqualified transition.

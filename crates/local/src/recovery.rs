@@ -224,10 +224,12 @@ fn excluded(name: &str) -> bool {
             | "restore-incomplete"
             | "process-compose.json"
             | "supervisor.token"
+            | "execution-runtime.json"
     ) || matches!(
         name.split('/').next(),
         Some(
-            "logs"
+            "isolated-work"
+                | "logs"
                 | "tmp"
                 | "launches"
                 | "notebook-work"
@@ -322,7 +324,10 @@ impl Stopped {
         Self::open_schema(root, SCHEMA_VERSION)
     }
     pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
-        if !matches!(expected, 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18) {
+        if !matches!(
+            expected,
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19
+        ) {
             return Err(conflict("unsupported recovery schema"));
         }
         let root = private_root(root)?;
@@ -498,7 +503,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
     if manifest.format_version != 1
         || !matches!(
             manifest.schema_version,
-            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18
+            8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19
         )
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()

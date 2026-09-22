@@ -24,7 +24,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   identity control --session-file PRIVATE_JSON --request-file PRIVATE_JSON
   identity policy-admin | catalog-admin --request-file PRIVATE_JSON
   identity whoami | logout | mcp --session-file PRIVATE_JSON
-                               Project control preview; data access and workload launch remain disabled
+                               Authenticated control; isolated execution requires explicit Linux operator setup
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
   project pack --output PATH.sbproj [--target NAME]
   project inspect PACKAGE.sbproj | verify PACKAGE.sbproj

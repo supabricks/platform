@@ -8,6 +8,7 @@ mod connections;
 mod deployments;
 mod environments;
 pub(crate) mod error;
+mod execution;
 mod exports;
 mod identity;
 pub(crate) use identity::IdentityCommit;
@@ -90,6 +91,7 @@ impl Store {
                     "analytics",
                     "notebook-environments",
                     "notebook-environment-work",
+                    "isolated-work",
                     "project-revisions",
                     "storage.pk8",
                     "storage.pub",

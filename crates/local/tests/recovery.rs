@@ -404,13 +404,17 @@ fn catalog_sixteen_migration_preserves_identity_and_adds_no_remote_roles() {
 #[test]
 fn catalog_seventeen_migration_preserves_roles_and_starts_catalog_access_closed() {
     catalog_migration(17);
+    catalog_migration(18);
 }
 fn catalog_migration(source_schema: u32) {
-    let f = Fixture::with_project(source_schema == 17);
+    let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TRIGGER catalog_governance_membership_add; DROP TRIGGER catalog_governance_membership_remove; DROP TRIGGER catalog_governance_disabled; DROP TRIGGER catalog_governance_publication_insert; DROP TRIGGER catalog_governance_publication_update; DROP TABLE catalog_grant_audit; DROP TABLE catalog_grant_plans; DROP TABLE catalog_grant_origins; DROP TABLE catalog_principals; DROP TABLE catalog_governance;").unwrap();
+    if source_schema < 18 {
+        db.execute_batch("DROP TRIGGER catalog_governance_membership_add; DROP TRIGGER catalog_governance_membership_remove; DROP TRIGGER catalog_governance_disabled; DROP TRIGGER catalog_governance_publication_insert; DROP TRIGGER catalog_governance_publication_update; DROP TABLE catalog_grant_audit; DROP TABLE catalog_grant_plans; DROP TABLE catalog_grant_origins; DROP TABLE catalog_principals; DROP TABLE catalog_governance;").unwrap();
+    }
+    db.execute_batch("DROP TABLE isolated_executions;").unwrap();
     if source_schema < 17 {
         db.execute_batch("DROP TRIGGER authorization_new_deployment; DROP TRIGGER authorization_membership_added; DROP TRIGGER authorization_membership_removed; DROP TRIGGER authorization_principal_disabled; DROP TABLE authorization_audit; DROP TABLE authorization_mutations; DROP TABLE authorization_executions; DROP TABLE authorization_heads; DROP TABLE authorization_sources; DROP TABLE authorization_grants; DROP TABLE authorization_roles; DROP TABLE authorization_policy;").unwrap();
     }
@@ -423,7 +427,7 @@ fn catalog_migration(source_schema: u32) {
                 VALUES ('migration-token-hash','migration-service','','service','["identity:self"]',9999999999999,1);
         "#).unwrap();
     }
-    if source_schema == 17 {
+    if source_schema >= 17 {
         db.execute_batch("INSERT INTO authorization_roles SELECT id,'principal:migration-service','viewer' FROM deployments LIMIT 1; UPDATE authorization_policy SET revision=7;").unwrap();
     }
     if source_schema < 16 {
@@ -526,7 +530,7 @@ fn catalog_migration(source_schema: u32) {
             db.query_row("SELECT count(*) FROM authorization_roles", [], |r| r
                 .get::<_, i64>(0))
                 .unwrap(),
-            if source_schema == 17 { 1 } else { 0 }
+            if source_schema >= 17 { 1 } else { 0 }
         );
         assert_eq!(
             db.query_row("SELECT count(*) FROM authorization_grants", [], |r| r
@@ -534,7 +538,7 @@ fn catalog_migration(source_schema: u32) {
                 .unwrap(),
             0
         );
-        assert_eq!(db.query_row("SELECT count(*) FROM deployments d LEFT JOIN authorization_policy p ON p.deployment=d.id WHERE p.revision IS NULL OR p.revision!=?1", [if source_schema == 17 {7} else {1}], |r| r.get::<_, i64>(0)).unwrap(), 0);
+        assert_eq!(db.query_row("SELECT count(*) FROM deployments d LEFT JOIN authorization_policy p ON p.deployment=d.id WHERE p.revision IS NULL OR p.revision!=?1", [if source_schema >= 17 {7} else {1}], |r| r.get::<_, i64>(0)).unwrap(), 0);
         assert_eq!(
             db.query_row("SELECT state FROM catalog_governance", [], |r| r
                 .get::<_, String>(0))
@@ -564,7 +568,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=18",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=19",
                 [],
                 |r| r.get::<_, String>(0)
             )

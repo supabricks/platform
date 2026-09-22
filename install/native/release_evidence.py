@@ -75,7 +75,7 @@ def collect(directory, revision, console, worker, version):
         require(source['ingestion']['worker_sha256'] == worker, 'ingestion worker differs from reviewed source')
         require(env['archive']['version'] == version and env['archive']['target'] == target and sha(env['archive']['sha256']),
                 'archive version, target or checksum mismatch')
-        require(source['data_formats']['local_catalog'] == 18 and source['data_formats']['postgres_major'] == 17,
+        require(source['data_formats']['local_catalog'] == 19 and source['data_formats']['postgres_major'] == 17,
                 'unqualified catalog or PostgreSQL major')
         require(env['release_identity'] == identity, 'lifecycle manifest identity mismatch')
         reports = dict(env['reports'])

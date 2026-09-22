@@ -154,6 +154,10 @@ pub enum Request {
     },
 }
 
+enum AuthorizedFollowup {
+    Catalog(crate::catalog::governance::ReadCommand),
+    Runtime(String, crate::execution::Command),
+}
 pub struct Daemon {
     catalog: crate::catalog::Manager,
     catalog_publication: crate::catalog::publication::Service,
@@ -174,10 +178,11 @@ pub struct Daemon {
     validator: Option<crate::engine::validation::Validator>,
     gateway: Option<crate::connections::Gateway>,
     queries: Vec<std::thread::JoinHandle<()>>,
+    isolated: crate::execution::Manager,
     identity_jobs: Vec<(
         UnixStream,
         std::thread::JoinHandle<Result<crate::store::IdentityCommit>>,
-        Option<(crate::catalog::governance::ReadCommand, String)>,
+        Option<(AuthorizedFollowup, String)>,
     )>,
     ingest_error: Option<String>,
     project_apply_error: Option<String>,
@@ -191,6 +196,7 @@ impl Daemon {
         // Acquire ownership before touching a stale socket or migrating state.
         let mut store = Store::open(root)?;
         store.recover_catalog_governance()?;
+        store.recover_executions()?;
         let catalog = crate::catalog::Manager::recover(&mut store);
         let catalog_publication = crate::catalog::publication::Service::recover(&mut store)?;
         let catalog_metadata = crate::catalog::metadata::Service::recover(&mut store)?;
@@ -239,6 +245,7 @@ impl Daemon {
             sessions,
             queries: Vec::new(),
             identity_jobs: Vec::new(),
+            isolated: Default::default(),
             ingest_error: None,
             project_apply_error: None,
             dataset_checks: Default::default(),
@@ -290,12 +297,25 @@ impl Daemon {
                                     &self.catalog,
                                     &self.store,
                                 )?;
-                                self.store
-                                    .catalog_governance_read(ctx, token_hash, command, broker)
+                                match command {
+                                    AuthorizedFollowup::Catalog(command) => self
+                                        .store
+                                        .catalog_governance_read(ctx, token_hash, command, broker),
+                                    AuthorizedFollowup::Runtime(deployment, command) => {
+                                        self.store.execution_job(
+                                            ctx,
+                                            token_hash,
+                                            deployment,
+                                            command,
+                                            broker,
+                                            self.isolated.clone(),
+                                        )
+                                    }
+                                }
                             })
                             .and_then(|job| {
                                 Ok(std::thread::Builder::new()
-                                    .name("catalog-read".into())
+                                    .name("authorized-work".into())
                                     .spawn(job)?)
                             });
                         match next {
@@ -325,6 +345,7 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                self.isolated.tick(&mut self.store, stopping)?;
                 let metadata_stopped =
                     match self
                         .catalog_metadata
@@ -451,6 +472,7 @@ impl Daemon {
                         && environments_stopped
                         && analytical_stopped
                         && notebooks_stopped
+                        && self.isolated.idle()
                         && self.consoles.last_error.is_none()
                         && self.ingest_error.is_none()
                         && ingestion_stopped
@@ -483,6 +505,7 @@ impl Daemon {
                     && environments_stopped
                     && analytical_stopped
                     && notebooks_stopped
+                    && self.isolated.idle()
                     && self.consoles.last_error.is_none()
                     && self.ingest_error.is_none()
                     && ingestion_stopped
@@ -552,9 +575,20 @@ impl Daemon {
                     if envelope.api_version != crate::authorization::VERSION {
                         return Err(invalid("unsupported project authorization API version"));
                     }
-                    let (job, catalog) = if let crate::authorization::Command::Catalog { command } =
-                        envelope.command
-                    {
+                    let followup = match &envelope.command {
+                        crate::authorization::Command::Catalog { command } => {
+                            Some(AuthorizedFollowup::Catalog(command.clone()))
+                        }
+                        crate::authorization::Command::Runtime {
+                            deployment,
+                            command,
+                        } => Some(AuthorizedFollowup::Runtime(
+                            deployment.clone(),
+                            command.clone(),
+                        )),
+                        _ => None,
+                    };
+                    let (job, catalog) = if let Some(command) = followup {
                         let hash = crate::identity::hash(&envelope.token);
                         (
                             self.store.identity_job(

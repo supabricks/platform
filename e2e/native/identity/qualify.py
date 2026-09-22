@@ -56,7 +56,7 @@ def run(args, **kwargs):
     return result.stdout.decode()
 
 
-def qualify(binary, uc_runtime=None):
+def qualify(binary, uc_runtime=None, execution_config=None):
     checks = []
     name = 'sb-uc091-' + uuid.uuid4().hex[:12]
     started = False
@@ -292,11 +292,50 @@ def qualify(binary, uc_runtime=None):
                 assert control(bob, discovery) == dict(items=[])
                 checks.append('real Keycloak users use distinct private UC mappings through the authenticated CLI and daemon; UC returns no ungranted metadata')
 
+            if execution_config:
+                assert uc_runtime, 'isolated execution requires the managed UC fixture'
+                private_config = data/'execution-runtime.json'
+                private_config.write_bytes(execution_config.read_bytes()); private_config.chmod(0o600)
+                revision = policy(dict(action='policy', deployment=deployment))['policy_revision']
+                execution = control(alice, dict(admission, expected_policy=revision, key='isolated-sql'))['id']
+                launch = dict(action='runtime', deployment=deployment,
+                              command=dict(action='start', id=execution, datasets=[]))
+                assert control(alice, launch)['state'] == 'running'
+                poll = dict(action='runtime', deployment=deployment, command=dict(action='poll', id=execution))
+                control(bob, poll, ok=False)
+                deadline = time.monotonic()+90
+                while True:
+                    result = control(alice, poll)
+                    assert result['state'] != 'failed'
+                    if result['state'] == 'finished':
+                        assert result['result']['exit_code'] == 0
+                        assert '1' in result['result']['output']
+                        break
+                    assert time.monotonic()<deadline
+                    time.sleep(2)
+                checks.append('real OIDC, CLI, daemon, project admission and UC broker launch isolated Jupyter/Sail SQL; another actor cannot read results')
+                notebook = json.dumps(dict(nbformat=4, nbformat_minor=5, metadata={},
+                    cells=[dict(cell_type='code', source=['import time; time.sleep(120)'], metadata={}, outputs=[], execution_count=None)]))
+                long_source = control(alice, dict(action='save_source', deployment=deployment,
+                    asset='long-notebook', kind='notebook', contents=notebook,
+                    expected_head=None, expected_policy=revision, key='long-source'))['revision']
+                long_execution = control(alice, dict(admission, source_revision=long_source,
+                    expected_policy=revision, key='isolated-long'))['id']
+                control(alice, dict(launch, command=dict(action='start', id=long_execution, datasets=[])))
+                long_poll = dict(poll, command=dict(action='poll', id=long_execution))
+
             users = keycloak_admin('GET', 'users?username=alice')
             keycloak_admin('PUT', 'users/'+users[0]['id'], dict(enabled=False))
             cli('identity', 'whoami', '--session-file', alice, ok=False)
             if uc_runtime:
                 control(alice, discovery, ok=False)
+            if execution_config:
+                control(alice, long_poll, ok=False)
+                deadline = time.monotonic()+35
+                while subprocess.run(['docker','inspect','sb-exec-'+long_execution], capture_output=True).returncode == 0:
+                    assert time.monotonic()<deadline, 'disabled identity execution survived renewal deadline'
+                    time.sleep(.2)
+                checks.append('IdP disable blocks execution renewal and the independent watchdog removes the sandbox within 35 seconds')
             checks.append('IdP disable refuses an unexpired platform session')
             run(['docker', 'pause', name])
             try:
@@ -344,7 +383,9 @@ if __name__ == '__main__':
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--uc-runtime', type=Path)
+    parser.add_argument('--execution-config', type=Path)
     args = parser.parse_args()
-    report = qualify(args.binary.resolve(), args.uc_runtime.resolve() if args.uc_runtime else None)
+    report = qualify(args.binary.resolve(), args.uc_runtime.resolve() if args.uc_runtime else None,
+                     args.execution_config.resolve() if args.execution_config else None)
     args.output.write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(report))

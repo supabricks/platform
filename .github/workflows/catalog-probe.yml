@@ -3,12 +3,15 @@ on:
   pull_request:
     paths:
       - 'components/*unity-catalog*'
+      - 'components/execution-runtime.lock.json'
       - 'components/test_unity_catalog.py'
       - 'crates/local/**'
       - 'schemas/catalog-*.schema.json'
       - 'console'
       - 'console/**'
       - 'python/analytics/**'
+      - 'python/execution/**'
+      - 'e2e/native/execution/**'
       - 'e2e/native/notebook-environments/client.py'
       - 'Cargo.lock'
       - 'install/native/unity_catalog.py'
@@ -90,6 +93,22 @@ jobs:
           mkdir -p build/reports
           python e2e/native/identity/qualify.py --binary target/release/supabricks \
             --uc-runtime build/uc-runtime --output build/reports/uc093-identity.json
+      - name: Qualify UC09.4 isolated execution with the real broker and gVisor
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 35585995786 --repo supabricks/platform --name release-linux-x86_64 --dir "$RUNNER_TEMP/uc094-artifact"
+          python e2e/native/iam/prepare.py \
+            --archive "$RUNNER_TEMP/uc094-artifact/supabricks-v0.1.0-alpha.34-linux-x86_64.tar.gz" \
+            --output "$RUNNER_TEMP/uc094 inputs"
+          python e2e/native/execution/prepare.py --inputs "$RUNNER_TEMP/uc094 inputs" --output "$RUNNER_TEMP/uc094-runtime.json"
+          SUPABRICKS_UC093_RUNTIME="$PWD/build/uc-runtime" \
+            SUPABRICKS_UC094_CONFIG="$RUNNER_TEMP/uc094-runtime.json" \
+            cargo test --release --locked -p supabricks-local --lib isolated_execution_real_uc -- --ignored --test-threads=1
+          python e2e/native/identity/qualify.py --binary target/release/supabricks \
+            --uc-runtime build/uc-runtime --execution-config "$RUNNER_TEMP/uc094-runtime.json" \
+            --output build/reports/uc094-identity.json
       - name: Download and verify the qualified source-built Sail/PG baseline
         env:
           GH_TOKEN: ${{ github.token }}

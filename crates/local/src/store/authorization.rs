@@ -5,7 +5,7 @@ use crate::{
 };
 use serde_json::{Value, json};
 
-fn policy(db: &Connection, deployment: &str) -> Result<i64> {
+pub(super) fn policy(db: &Connection, deployment: &str) -> Result<i64> {
     db.query_row(
         "SELECT revision FROM authorization_policy WHERE deployment=?1",
         [deployment],
@@ -70,7 +70,7 @@ fn subjects(db: &Connection, id: &str) -> Result<Vec<String>> {
     }
     Ok(values)
 }
-fn role(db: &Connection, id: &str, deployment: &str) -> Result<u8> {
+pub(super) fn role(db: &Connection, id: &str, deployment: &str) -> Result<u8> {
     let mut rank = 0;
     for subject in subjects(db, id)? {
         let value: Option<String> = db
@@ -89,7 +89,7 @@ fn role(db: &Connection, id: &str, deployment: &str) -> Result<u8> {
     }
     Ok(rank)
 }
-fn require(db: &Connection, ctx: &Context, deployment: &str, rank: u8) -> Result<()> {
+pub(super) fn require(db: &Connection, ctx: &Context, deployment: &str, rank: u8) -> Result<()> {
     validate_context(db, ctx)?;
     policy(db, deployment)?;
     if !is_owner(db, ctx)? && role(db, &ctx.actor_id, deployment)? < rank {
@@ -97,7 +97,7 @@ fn require(db: &Connection, ctx: &Context, deployment: &str, rank: u8) -> Result
     }
     Ok(())
 }
-fn granted(
+pub(super) fn granted(
     db: &Connection,
     id: &str,
     deployment: &str,
@@ -110,7 +110,7 @@ fn granted(
     }
     Ok(false)
 }
-fn audit(
+pub(super) fn audit(
     db: &Connection,
     ctx: &Context,
     deployment: &str,
@@ -194,7 +194,7 @@ fn set_role(
 fn project(db: &Connection, deployment: &str) -> Result<Value> {
     let (name,target):(String,String)=db.query_row("SELECT p.name,d.target FROM deployments d JOIN project_definitions p ON p.id=d.definition_id WHERE d.id=?1",[deployment],|r|Ok((r.get(0)?,r.get(1)?))).optional()?.ok_or_else(auth::denied)?;
     Ok(
-        json!({"deployment_id":deployment,"name":name,"target":target,"policy_revision":policy(db,deployment)?,"workload_launch_enabled":false}),
+        json!({"deployment_id":deployment,"name":name,"target":target,"policy_revision":policy(db,deployment)?,"workload_launch_enabled":false,"isolated_execution":"operator_opt_in"}),
     )
 }
 fn read_policy(db: &Connection, deployment: &str) -> Result<Value> {
@@ -211,7 +211,10 @@ fn read_policy(db: &Connection, deployment: &str) -> Result<Value> {
     Ok(json!({"deployment_id":deployment,"policy_revision":revision,"roles":roles,"grants":grants}))
 }
 fn execution(db: &Connection, deployment: &str, id: &str) -> Result<Value> {
-    db.query_row("SELECT actor,effective_principal,source_revision,policy_revision,state FROM authorization_executions WHERE deployment=?1 AND id=?2",params![deployment,id],|r|Ok(json!({"id":id,"deployment_id":deployment,"actor_id":r.get::<_,String>(0)?,"effective_principal_id":r.get::<_,String>(1)?,"source_revision":r.get::<_,String>(2)?,"policy_revision":r.get::<_,i64>(3)?,"state":r.get::<_,String>(4)?,"runtime_started":false}))).optional()?.ok_or_else(auth::denied)
+    db.query_row("SELECT a.actor,a.effective_principal,a.source_revision,a.policy_revision,a.state,e.state FROM authorization_executions a LEFT JOIN isolated_executions e ON e.id=a.id WHERE a.deployment=?1 AND a.id=?2",params![deployment,id],|r|{
+        let runtime:Option<String>=r.get(5)?;
+        Ok(json!({"id":id,"deployment_id":deployment,"actor_id":r.get::<_,String>(0)?,"effective_principal_id":r.get::<_,String>(1)?,"source_revision":r.get::<_,String>(2)?,"policy_revision":r.get::<_,i64>(3)?,"state":r.get::<_,String>(4)?,"runtime_started":runtime.as_deref().is_some_and(|s|matches!(s,"running"|"finished")),"runtime_state":runtime}))
+    }).optional()?.ok_or_else(auth::denied)
 }
 fn execution_access(db: &Connection, ctx: &Context, deployment: &str, value: &Value) -> Result<()> {
     if value["actor_id"].as_str() != Some(&ctx.actor_id)
@@ -366,6 +369,7 @@ impl Store {
             Command::SaveSource { .. } => 2,
             Command::Projects {}
             | Command::Catalog { .. }
+            | Command::Runtime { .. }
             | Command::Project { .. }
             | Command::Policy { .. }
             | Command::Sources { .. }
@@ -441,8 +445,8 @@ impl Store {
             Command::AdmitExecution{source_revision,effective_principal,expected_policy,key,..}=>{
                 if !tx.prepare("SELECT 1 FROM authorization_sources WHERE deployment=?1 AND revision=?2")?.exists(params![deployment,source_revision])? {return Err(auth::denied());}
                 let effective=effective_principal.as_deref().unwrap_or(&ctx.actor_id);let id=identity::id();
-                // This is durable admission intent only. No local-owner worker
-                // may consume it; the qualified isolated runtime is UC09.4.
+                // This is durable admission intent only. Only the private
+                // isolated execution adapter may consume it.
                 tx.execute("INSERT INTO authorization_executions VALUES (?1,?2,?3,?4,?5,?6,'admitted')",params![id,deployment,ctx.actor_id,effective,source_revision,expected_policy])?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.admit",key,&id,effective)?;
                 execution(&tx,&deployment,&id)?
@@ -458,7 +462,7 @@ impl Store {
                 let result=execution(&tx,&deployment,id)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.cancel",key,id,result["effective_principal_id"].as_str().ok_or_else(auth::denied)?)?;result
             },
-            Command::Projects {}|Command::Catalog{..}|Command::Unavailable{..}=>return Err(auth::denied()),
+            Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
         };
         if let Some((_, key)) = command.mutation() {
             receipt(&tx, ctx, &deployment, key, &command, &result)?;
