@@ -114,6 +114,10 @@ class CaptureTests(unittest.TestCase):
         path=root/'manifest.json';path.write_text(json.dumps(manifest))
         config=dict(identity=identity,bootstrap=dict(id='export',manifest=str(path)))
         self.assertEqual(list(verify(config,s))[-1],'0/C8')
+        alias=Path(self.temp.name)/'baseline-alias'
+        alias.symlink_to(root,target_is_directory=True)
+        aliased=dict(config,bootstrap=dict(id='export',manifest=str(alias/'manifest.json')))
+        self.assertEqual(list(verify(aliased,s))[-1],'0/C8')
         (root/'data').write_bytes(b'x'*len(data))
         with self.assertRaises(CaptureError):list(verify(config,s))
         (root/'data').write_bytes(data);manifest['source']['lsn']='0/50';path.write_text(json.dumps(manifest))

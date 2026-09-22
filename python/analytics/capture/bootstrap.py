@@ -10,6 +10,9 @@ def verify(config, spool):
     path = Path(baseline['manifest'])
     if path.is_symlink() or path.stat().st_size > 4*1024*1024:
         raise CaptureError('bootstrap_manifest_budget')
+    # macOS exposes /var and /tmp through aliases. Compare one canonical path
+    # spelling throughout the inventory without allowing a symlinked manifest.
+    path = path.resolve(strict=True)
     manifest = json.loads(path.read_bytes())
     identity = config['identity']
     source = manifest['source']
