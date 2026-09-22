@@ -85,6 +85,13 @@ impl Cell {
         for mut e in store.active_exports()? {
             let now = chrono::Utc::now().timestamp_millis();
             if e.state != "cleaning" {
+                if store.data_export_live(e.id, false).is_err() {
+                    store.export_outcome(
+                        e.id,
+                        json!({"status":"failed","code":"authorization_changed"}),
+                    )?;
+                    continue;
+                }
                 if e.cancel_requested {
                     store.export_outcome(e.id, json!({"status":"cancelled","code":"cancelled"}))?;
                 } else if now >= e.deadline_ms {

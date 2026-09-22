@@ -46,7 +46,7 @@ pub(super) fn validate_context(db: &Connection, ctx: &Context) -> Result<()> {
 fn is_owner(db: &Connection, ctx: &Context) -> Result<bool> {
     Ok(ctx.actor_id == owner(db)?.actor_id)
 }
-fn subject(db: &Connection, subject: &Subject) -> Result<String> {
+pub(super) fn subject(db: &Connection, subject: &Subject) -> Result<String> {
     let exists = match subject {
         Subject::Principal(id) => db
             .prepare("SELECT 1 FROM identity_principals WHERE id=?1 AND kind!='local_owner'")?
@@ -60,7 +60,7 @@ fn subject(db: &Connection, subject: &Subject) -> Result<String> {
     }
     Ok(subject.key())
 }
-fn subjects(db: &Connection, id: &str) -> Result<Vec<String>> {
+pub(super) fn subjects(db: &Connection, id: &str) -> Result<Vec<String>> {
     let mut values = vec![format!("principal:{id}")];
     for group in db
         .prepare("SELECT group_id FROM identity_memberships WHERE principal=?1")?
@@ -123,7 +123,7 @@ pub(super) fn audit(
     db.execute("INSERT INTO authorization_audit(at_ms,realm,deployment,actor,effective_principal,policy_revision,action,request_key,target) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",params![identity::now(),ctx.realm_id,deployment,ctx.actor_id,effective,revision,action,key,target])?;
     Ok(())
 }
-fn replay(
+pub(super) fn replay(
     db: &Connection,
     ctx: &Context,
     deployment: &str,
@@ -142,7 +142,7 @@ fn replay(
     }
     Ok(None)
 }
-fn receipt(
+pub(super) fn receipt(
     db: &Connection,
     ctx: &Context,
     deployment: &str,
@@ -162,7 +162,7 @@ fn receipt(
     )?;
     Ok(())
 }
-fn expected(db: &Connection, deployment: &str, revision: i64) -> Result<()> {
+pub(super) fn expected(db: &Connection, deployment: &str, revision: i64) -> Result<()> {
     if policy(db, deployment)? != revision {
         return Err(conflict(
             "project policy changed; refresh before retrying with a new request key",
@@ -208,7 +208,10 @@ fn read_policy(db: &Connection, deployment: &str) -> Result<Value> {
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     let grants=db.prepare("SELECT subject,capability,effective_principal,source_revision FROM authorization_grants WHERE deployment=?1 ORDER BY subject,capability,effective_principal,source_revision")?.query_map([deployment],|r|Ok(json!({"subject":r.get::<_,String>(0)?,"capability":r.get::<_,String>(1)?,"effective_principal":r.get::<_,String>(2)?,"source_revision":r.get::<_,String>(3)?})))?.collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(json!({"deployment_id":deployment,"policy_revision":revision,"roles":roles,"grants":grants}))
+    let data_grants=db.prepare("SELECT branch,subject,capability FROM data_grants WHERE deployment=?1 ORDER BY branch,subject,capability")?.query_map([deployment],|r|Ok(json!({"branch":r.get::<_,String>(0)?,"subject":r.get::<_,String>(1)?,"capability":r.get::<_,String>(2)?})))?.collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(
+        json!({"deployment_id":deployment,"policy_revision":revision,"roles":roles,"grants":grants,"data_grants":data_grants}),
+    )
 }
 fn execution(db: &Connection, deployment: &str, id: &str) -> Result<Value> {
     db.query_row("SELECT a.actor,a.effective_principal,a.source_revision,a.policy_revision,a.state,e.state FROM authorization_executions a LEFT JOIN isolated_executions e ON e.id=a.id WHERE a.deployment=?1 AND a.id=?2",params![deployment,id],|r|{
@@ -261,6 +264,26 @@ impl Store {
         validate_context(&self.db, &ctx)?;
         let tx = self.db.transaction()?;
         let result = match &command {
+            AdminCommand::SetDataGrant {
+                deployment,
+                branch,
+                subject: who,
+                capability,
+                present,
+                expected_policy,
+                key,
+            } => super::governed::set_grant(
+                &tx,
+                &ctx,
+                &command,
+                deployment,
+                branch,
+                who,
+                *capability,
+                *present,
+                *expected_policy,
+                key,
+            )?,
             AdminCommand::Policy { deployment } => read_policy(&tx, deployment)?,
             AdminCommand::Audit { deployment, after } => {
                 policy(&tx, deployment)?;
@@ -369,6 +392,7 @@ impl Store {
             Command::SaveSource { .. } => 2,
             Command::Projects {}
             | Command::Catalog { .. }
+            | Command::Data { .. }
             | Command::Runtime { .. }
             | Command::Project { .. }
             | Command::Policy { .. }
@@ -462,7 +486,7 @@ impl Store {
                 let result=execution(&tx,&deployment,id)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.cancel",key,id,result["effective_principal_id"].as_str().ok_or_else(auth::denied)?)?;result
             },
-            Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
+            Command::Data{..}|Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
         };
         if let Some((_, key)) = command.mutation() {
             receipt(&tx, ctx, &deployment, key, &command, &result)?;

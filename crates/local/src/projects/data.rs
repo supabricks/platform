@@ -1,5 +1,5 @@
 //! PK08: bounded PostgreSQL logical table sets, without executable dump SQL.
-mod postgres;
+pub(crate) mod postgres;
 
 use crate::store::{
     Result,

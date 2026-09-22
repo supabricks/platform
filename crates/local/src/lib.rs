@@ -11,6 +11,7 @@ pub mod daemon;
 pub mod engine;
 pub mod environments;
 pub mod execution;
+pub mod governed;
 pub mod identity;
 pub mod ingest;
 pub mod installation;

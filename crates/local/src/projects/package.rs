@@ -494,6 +494,9 @@ mod tests {
         }
         for change in [
             json!({"hooks":{"install":"run me"}}),
+            json!({"grants":[{"principal":"foreign","capability":"read"}]}),
+            json!({"effective_principal":"foreign-service"}),
+            json!({"identity_sessions":["foreign-token"]}),
             json!({"profile":"offline"}),
             json!({"format_version":2}),
         ] {

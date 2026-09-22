@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 isolated execution implemented for review; UC09.5–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 governed data implemented for review; UC09.6–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -188,6 +188,9 @@ the sandbox capability or renewal channel fails closed; no host-process fallback
 
 ## UC09.5 — PG and all data-copy paths
 
+Implementation and admitted profile: [UC09.5 governed data boundary](../architecture/uc095-governed-data.md).
+Shared ingress remains disabled; legacy host runners remain operator-only.
+
 Provision explicit per-principal branch roles/credentials, restrict backend
 reachability and close sessions on expiry. Keep control SQL credentials private.
 Separate PG read/write/DDL authority from project control and catalog consumption.
@@ -261,7 +264,7 @@ then enable the governed profile and mark UC09 complete.
 
 ## Immediate next action
 
-Review and qualify UC09.4, then implement UC09.5 governed PG and data-copy paths.
+Review and qualify UC09.5, then implement UC09.6 bounded revocation, audit operations and governed recovery.
 Use the isolated adapter with the admitted effective principal and immutable
 revision; keep shared ingress and unqualified transfer/artifact routes disabled.
 UC09.8 must also qualify the installed upgrade to the changed UC component; the

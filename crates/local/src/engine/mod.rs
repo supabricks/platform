@@ -787,7 +787,19 @@ impl Cell {
                 return Ok(false);
             }
             if !self.configured.contains(&(role.clone(), record.pid)) {
+                if store.governed_branch(branch.branch.id)? {
+                    crate::governed::postgres::sanitize(crate::governed::postgres::Target {
+                        port: ports.sql,
+                        password: store.endpoint_password(branch.endpoint.id)?,
+                    })?;
+                }
                 if export {
+                    if store.governed_export(branch.branch.id)? {
+                        crate::governed::postgres::inspect(crate::governed::postgres::Target {
+                            port: ports.sql,
+                            password: store.endpoint_password(branch.endpoint.id)?,
+                        })?;
+                    }
                     self.sql.provision_export(
                         &Self::export_user(branch),
                         ports.sql,
@@ -799,9 +811,10 @@ impl Cell {
                         ports.sql,
                         &store.endpoint_password(branch.endpoint.id)?,
                         &store.app_password(branch.endpoint.id)?,
-                        branch.expired,
+                        branch.expired || store.governed_branch(branch.branch.id)?,
                     )?;
                 }
+                store.governed_clone_ready(branch.branch.id)?;
                 self.configured.insert((role, record.pid));
             }
             return Ok(true);

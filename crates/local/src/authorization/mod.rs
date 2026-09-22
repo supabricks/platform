@@ -61,6 +61,10 @@ impl Grant {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    Data {
+        deployment: String,
+        command: crate::governed::Command,
+    },
     Runtime {
         deployment: String,
         command: crate::execution::Command,
@@ -128,7 +132,8 @@ impl Command {
     pub(crate) fn deployment(&self) -> Option<&str> {
         match self {
             Self::Projects {} | Self::Catalog { .. } => None,
-            Self::Runtime { deployment, .. }
+            Self::Data { deployment, .. }
+            | Self::Runtime { deployment, .. }
             | Self::Project { deployment }
             | Self::Policy { deployment }
             | Self::SetRole { deployment, .. }
@@ -165,6 +170,7 @@ impl Command {
                 ..
             } => Some((*expected_policy, key)),
             Self::Projects {}
+            | Self::Data { .. }
             | Self::Catalog { .. }
             | Self::Runtime { .. }
             | Self::Project { .. }
@@ -180,6 +186,15 @@ impl Command {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AdminCommand {
+    SetDataGrant {
+        deployment: String,
+        branch: String,
+        subject: Subject,
+        capability: crate::governed::Capability,
+        present: bool,
+        expected_policy: i64,
+        key: String,
+    },
     SetRole {
         deployment: String,
         subject: Subject,

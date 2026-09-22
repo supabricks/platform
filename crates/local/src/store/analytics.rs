@@ -70,6 +70,7 @@ impl Store {
         self.publication(id)
     }
     pub fn publish_export(&mut self, project: ProjectId, id: OperationId) -> Result<Publication> {
+        self.data_export_live(id, true)?;
         let e = self.export_in_project(project, id)?;
         if self
             .db
@@ -160,6 +161,7 @@ impl Store {
     /// All table mappings, the immutable descriptor and the branch pointer
     /// become visible in this single FULL-synchronous SQLite transaction.
     pub(crate) fn commit_publication(&mut self, p: &Publication) -> Result<()> {
+        self.data_export_live(p.export_id, true)?;
         let p = self.publication(p.export_id)?;
         if p.state == "published" {
             return Ok(());
