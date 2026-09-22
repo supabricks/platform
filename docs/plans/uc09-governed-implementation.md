@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 exact-archive qualification implemented for review in platform #74 / console #11, with complete R04 acceptance still required. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 merged in platform #74 / console #11–#12; alpha.35 passed the complete Linux/macOS R04 matrix and Linux governed acceptance. UC09.0–UC09.8 are complete for the qualified profiles. See the [retained evidence and retry ledger](../architecture/uc098-governed-release.md). Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -8,9 +8,10 @@ Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in
 UC09 remains one product milestone, divided below into reviewable slices. These
 IDs expand UC09; they do not imply nine new features beyond its original IAM and
 isolation requirement. UC09.0 is the previously referenced IAM00 foundation.
-No governed mode is enabled until the final acceptance gate passes. Foundational
-identity plumbing can ship behind a disabled profile while preserving local-owner
-behavior. This document authorizes no automatic migration of an existing cell.
+Shared ingress requires the complete exact-archive R04 receipt. Foundational
+slices initially shipped behind a disabled profile while preserving local-owner
+behavior. Existing cells are not automatically migrated; governed setup remains
+an explicit operator action.
 
 ## Target and release contract
 
@@ -102,7 +103,7 @@ A design document or successful OIDC login alone does not complete IAM00.
 
 ## UC09.1 — Principals and login
 
-Merged in #67: [identity/session architecture and qualification](../architecture/uc091-principals-login.md). Schema 16 preserves local-owner IDs. OIDC/PKCE, private sessions, explicit bootstrap, groups, scoped service credentials and authenticated CLI/MCP/browser identity previews are implemented. Product ingress remains disabled; integration with product authorization and the complete console follows in UC09.2–.8.
+Merged in #67: [identity/session architecture and qualification](../architecture/uc091-principals-login.md). Schema 16 preserves local-owner IDs. OIDC/PKCE, private sessions, explicit bootstrap, groups, scoped service credentials and authenticated CLI/MCP/browser identity previews are implemented. Product ingress remained disabled in this slice; UC09.2–.8 subsequently integrated authorization, the complete console and qualified TLS ingress.
 
 Add installation realm, stable principals, issuer/subject mappings, disabled state,
 service identities and initial platform-managed groups. Migrate local-owner state
@@ -167,7 +168,7 @@ New sessions cannot use an unresolved grant; never fall back to an admin read.
 
 ## UC09.4 — Runtime and storage isolation
 
-Implemented for review: [isolated execution and admitted file closure](../architecture/uc094-isolated-execution.md).
+Merged in #70: [isolated execution and admitted file closure](../architecture/uc094-isolated-execution.md).
 Schema 19 binds authenticated admission, live UC checks, verified source/data and
 runtime inventories to private gVisor Jupyter/Sail executions. The opt-in Linux
 adapter enforces resource budgets and independent monotonic renewal/cleanup.
@@ -268,12 +269,15 @@ then enable the governed profile and mark UC09 complete.
 
 Implementation: [UC09.8 installed governed release](../architecture/uc098-governed-release.md).
 The collector rejects partial or mixed-archive reports and emits a shared-ingress
-receipt only after every inherited and governed gate passes. This candidate is
-not yet a qualified shared release; UC09 remains incomplete until that gate passes.
+receipt only after every inherited and governed gate passes. The exact alpha.35
+archives passed [run 35700396118](https://github.com/supabricks/platform/actions/runs/35700396118),
+including the dedicated 4-CPU/16-GiB host acceptance and all 46 governed suite checks.
 
-## Immediate next action
+## Completion and operation
 
-Review UC09.8 and run the complete alpha.35 Linux/macOS archive matrix. Preserve
-failed attempts and distinguish workstation diagnostics from the dedicated
-4-CPU/16-GiB host acceptance. Enable shared ingress only with the complete R04
-receipt for the installed archive; do not reuse the alpha.34 qualification.
+All planned UC09 slices are merged and qualified. Enable shared ingress only
+with the operator-reviewed R04 receipt for the exact installed Linux archive.
+The [qualification ledger](../architecture/uc098-governed-release.md) retains
+archive identities, measurements, failed attempts and deployment limits. macOS
+retains its qualified local-owner profile. Any changed archive needs its own
+complete qualification; alpha.34 and workstation diagnostics are not substitutes.
