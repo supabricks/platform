@@ -929,3 +929,16 @@ fn catalog_twenty_three_migration_adds_capture_without_source_resources() {
 fn schema_twenty_four_upgrade_preserves_capture_and_adds_incremental_publications() {
     catalog_migration(24);
 }
+
+#[test]
+fn installed_upgrade_accepts_incremental_v2_declaration_and_rejects_unknown_formats() {
+    for version in [2, 3] {
+        let f = Fixture::new();
+        let path = f.new.join("release.json");
+        let mut release: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        release["provenance"]["data_formats"]["incremental_snapshot"] = json!(version);
+        fs::write(&path, serde_json::to_vec(&release).unwrap()).unwrap();
+        f.upgrade(version == 2);
+        assert_eq!(f.backup.exists(), version == 2);
+    }
+}
