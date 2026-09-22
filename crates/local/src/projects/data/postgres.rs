@@ -282,7 +282,14 @@ fn data_type(oid: u32, modifier: i32) -> Result<Type> {
     Ok(plain)
 }
 async fn describe(client: &Client, name: TableName) -> Result<Table> {
-    let row=client.query_one("SELECT c.oid,c.relkind::text,c.relpersistence::text,c.relrowsecurity,c.relforcerowsecurity,c.relispartition,c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user),c.reloptions IS NOT NULL,c.reltablespace<>0,EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid),EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e'),EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal),EXISTS(SELECT 1 FROM pg_rewrite r WHERE r.ev_class=c.oid),c.relam<>(SELECT oid FROM pg_am WHERE amname='heap') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1 AND c.relname=$2",&[&name.schema,&name.name]).await.map_err(db)?;
+    describe_governed(client, name, true).await
+}
+pub(crate) async fn describe_governed(
+    client: &impl tokio_postgres::GenericClient,
+    name: TableName,
+    local_owner: bool,
+) -> Result<Table> {
+    let row=client.query_one("SELECT c.oid,c.relkind::text,c.relpersistence::text,c.relrowsecurity,c.relforcerowsecurity,c.relispartition,c.relowner=(SELECT oid FROM pg_roles WHERE rolname=CASE WHEN $3 THEN current_user ELSE 'sb_governed_owner' END),c.reloptions IS NOT NULL,c.reltablespace<>0,EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid),EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e'),EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal),EXISTS(SELECT 1 FROM pg_rewrite r WHERE r.ev_class=c.oid),c.relam<>(SELECT oid FROM pg_am WHERE amname='heap') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1 AND c.relname=$2",&[&name.schema,&name.name,&local_owner]).await.map_err(db)?;
     if row.get::<_, String>(1) != "r"
         || row.get::<_, String>(2) != "p"
         || !row.get::<_, bool>(6)

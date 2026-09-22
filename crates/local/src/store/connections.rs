@@ -124,6 +124,11 @@ impl Store {
         project: ProjectId,
         branch: BranchId,
     ) -> Result<serde_json::Value> {
+        if self.governed_branch(branch)? {
+            return Err(conflict(
+                "governed branches require authenticated data commands",
+            ));
+        }
         let b = self.branch_in_project(project, branch)?;
         self.accepting_work(branch)?;
         let port = self

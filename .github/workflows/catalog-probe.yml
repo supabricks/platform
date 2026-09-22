@@ -211,6 +211,12 @@ jobs:
               --release build/baseline/supabricks --binary target/release/supabricks \
               --uc-runtime build/uc-runtime --disk-full --report build/reports/recovery.json
           ' bash "$(id -un)" "$python_path"
+      - name: Qualify governed PostgreSQL and data transfer on Linux
+        if: runner.os == 'Linux'
+        run: |
+          python e2e/native/governed/qualify.py \
+            --binary target/release/supabricks --release build/baseline/supabricks \
+            --report build/reports/governed-data.json
       - name: Qualify stopped catalog recovery offline on macOS
         if: runner.os == 'macOS'
         run: |

@@ -155,6 +155,7 @@ pub enum Request {
 }
 
 enum AuthorizedFollowup {
+    Data(String, crate::governed::Command),
     Catalog(crate::catalog::governance::ReadCommand),
     Runtime(String, crate::execution::Command),
 }
@@ -197,6 +198,7 @@ impl Daemon {
         let mut store = Store::open(root)?;
         store.recover_catalog_governance()?;
         store.recover_executions()?;
+        store.recover_data()?;
         let catalog = crate::catalog::Manager::recover(&mut store);
         let catalog_publication = crate::catalog::publication::Service::recover(&mut store)?;
         let catalog_metadata = crate::catalog::metadata::Service::recover(&mut store)?;
@@ -293,15 +295,25 @@ impl Daemon {
                         let next = result
                             .and_then(|value| {
                                 let ctx = serde_json::from_value(value)?;
-                                let broker = crate::catalog::governance::Broker::managed(
-                                    &self.catalog,
-                                    &self.store,
-                                )?;
+
                                 match command {
-                                    AuthorizedFollowup::Catalog(command) => self
-                                        .store
-                                        .catalog_governance_read(ctx, token_hash, command, broker),
+                                    AuthorizedFollowup::Data(deployment, command) => {
+                                        self.store.data_job(ctx, token_hash, deployment, command)
+                                    }
+                                    AuthorizedFollowup::Catalog(command) => {
+                                        let broker = crate::catalog::governance::Broker::managed(
+                                            &self.catalog,
+                                            &self.store,
+                                        )?;
+                                        self.store.catalog_governance_read(
+                                            ctx, token_hash, command, broker,
+                                        )
+                                    }
                                     AuthorizedFollowup::Runtime(deployment, command) => {
+                                        let broker = crate::catalog::governance::Broker::managed(
+                                            &self.catalog,
+                                            &self.store,
+                                        )?;
                                         self.store.execution_job(
                                             ctx,
                                             token_hash,
@@ -576,6 +588,13 @@ impl Daemon {
                         return Err(invalid("unsupported project authorization API version"));
                     }
                     let followup = match &envelope.command {
+                        crate::authorization::Command::Data {
+                            deployment,
+                            command,
+                        } => Some(AuthorizedFollowup::Data(
+                            deployment.clone(),
+                            command.clone(),
+                        )),
                         crate::authorization::Command::Catalog { command } => {
                             Some(AuthorizedFollowup::Catalog(command.clone()))
                         }

@@ -406,15 +406,25 @@ fn catalog_seventeen_migration_preserves_roles_and_starts_catalog_access_closed(
     catalog_migration(17);
     catalog_migration(18);
 }
+#[test]
+fn catalog_nineteen_migration_adds_no_data_grants_or_admitted_branches() {
+    catalog_migration(19);
+}
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
+    db.execute_batch(
+        "DROP TABLE data_operations; DROP TABLE data_grants; DROP TABLE governed_branches;",
+    )
+    .unwrap();
     if source_schema < 18 {
         db.execute_batch("DROP TRIGGER catalog_governance_membership_add; DROP TRIGGER catalog_governance_membership_remove; DROP TRIGGER catalog_governance_disabled; DROP TRIGGER catalog_governance_publication_insert; DROP TRIGGER catalog_governance_publication_update; DROP TABLE catalog_grant_audit; DROP TABLE catalog_grant_plans; DROP TABLE catalog_grant_origins; DROP TABLE catalog_principals; DROP TABLE catalog_governance;").unwrap();
     }
-    db.execute_batch("DROP TABLE isolated_executions;").unwrap();
+    if source_schema < 19 {
+        db.execute_batch("DROP TABLE isolated_executions;").unwrap();
+    }
     if source_schema < 17 {
         db.execute_batch("DROP TRIGGER authorization_new_deployment; DROP TRIGGER authorization_membership_added; DROP TRIGGER authorization_membership_removed; DROP TRIGGER authorization_principal_disabled; DROP TABLE authorization_audit; DROP TABLE authorization_mutations; DROP TABLE authorization_executions; DROP TABLE authorization_heads; DROP TABLE authorization_sources; DROP TABLE authorization_grants; DROP TABLE authorization_roles; DROP TABLE authorization_policy;").unwrap();
     }
@@ -551,6 +561,7 @@ fn catalog_migration(source_schema: u32) {
                 .unwrap(),
             0
         );
+        assert_eq!(db.query_row("SELECT (SELECT count(*) FROM data_grants)+(SELECT count(*) FROM governed_branches)+(SELECT count(*) FROM data_operations)",[],|r|r.get::<_,i64>(0)).unwrap(),0);
         if source_schema >= 16 {
             let preserved: (String, String, i64) = db.query_row(
                 "SELECT s.principal,s.scopes,s.expires_ms FROM identity_sessions s JOIN identity_memberships m ON m.principal=s.principal WHERE s.token_hash='migration-token-hash' AND m.group_id='migration-group'",
@@ -568,7 +579,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=19",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=20",
                 [],
                 |r| r.get::<_, String>(0)
             )

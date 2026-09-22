@@ -10,6 +10,7 @@ mod environments;
 pub(crate) mod error;
 mod execution;
 mod exports;
+mod governed;
 mod identity;
 pub(crate) use identity::IdentityCommit;
 mod ingest;
