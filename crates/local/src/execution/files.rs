@@ -225,9 +225,9 @@ fn validate_delta(root: &Path, names: &BTreeSet<String>) -> Result<()> {
                 || m["partitionColumns"]
                     .as_array()
                     .is_none_or(|a| !a.is_empty())
-                || m["configuration"]
-                    .as_object()
-                    .is_some_and(|a| !a.is_empty())
+                // The pinned native exporter disables statistics collection.
+                // This property changes no reader capability or storage path.
+                || m["configuration"].as_object().is_none_or(|a| a.iter().any(|(key,value)| key != "delta.dataSkippingNumIndexedCols" || value != "0"))
             {
                 return Err(denied());
             }
@@ -313,6 +313,39 @@ mod tests {
         let (root, mut input) = fixture();
         input.files[0]["bytes"] = json!(MAX_BYTES + 1);
         assert!(Prepared::build(root.path(), "sql", "", vec![input]).is_err());
+    }
+    #[test]
+    fn native_export_statistics_setting_is_supported_without_enabling_delta_features() {
+        for (configuration, allowed) in [
+            (json!({"delta.dataSkippingNumIndexedCols":"0"}), true),
+            (json!({"delta.columnMapping.mode":"name"}), false),
+            (
+                json!({"delta.dataSkippingNumIndexedCols":"0","delta.enableDeletionVectors":"true"}),
+                false,
+            ),
+            (json!("not a configuration"), false),
+        ] {
+            let (root, mut input) = fixture();
+            let p = input.root.join("42/_delta_log/00000000000000000000.json");
+            let mut lines: Vec<Value> = fs::read_to_string(&p)
+                .unwrap()
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect();
+            lines[1]["metaData"]["configuration"] = configuration;
+            let s = lines
+                .iter()
+                .map(Value::to_string)
+                .collect::<Vec<_>>()
+                .join("\n");
+            fs::write(&p, &s).unwrap();
+            input.files[1]["bytes"] = json!(s.len());
+            input.files[1]["sha256"] = json!(hex::encode(Sha256::digest(s.as_bytes())));
+            assert_eq!(
+                Prepared::build(root.path(), "sql", "", vec![input]).is_ok(),
+                allowed
+            );
+        }
     }
     #[test]
     fn delta_log_cannot_name_unadmitted_files_or_versions() {

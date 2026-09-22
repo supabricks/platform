@@ -362,7 +362,7 @@ fn decode(compressed: &[u8], target: Option<&str>) -> Result<(Report, BTreeMap<S
     };
     Ok((report, files))
 }
-fn strip_notebook(bytes: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn strip_notebook(bytes: &[u8]) -> Result<Vec<u8>> {
     let mut notebook: Value =
         serde_json::from_slice(bytes).map_err(|_| invalid("invalid notebook JSON in package"))?;
     crate::notebooks::files::validate_document(&notebook)?;

@@ -415,7 +415,11 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TRIGGER security_identity_audit; DROP TRIGGER security_authorization_audit; DROP TRIGGER security_catalog_grant_audit; DROP TABLE security_audit; DROP TABLE security_state; ALTER TABLE identity_sessions DROP COLUMN authoritative_until_ms;").unwrap();
+    db.execute_batch("DROP TABLE governed_project_requests;")
+        .unwrap();
+    if source_schema < 21 {
+        db.execute_batch("DROP TRIGGER security_identity_audit; DROP TRIGGER security_authorization_audit; DROP TRIGGER security_catalog_grant_audit; DROP TABLE security_audit; DROP TABLE security_state; ALTER TABLE identity_sessions DROP COLUMN authoritative_until_ms;").unwrap();
+    }
     if source_schema < 20 {
         db.execute_batch(
             "DROP TABLE data_operations; DROP TABLE data_grants; DROP TABLE governed_branches;",
@@ -582,7 +586,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=21",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=22",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -603,7 +607,24 @@ fn catalog_migration(source_schema: u32) {
         &rollback,
         true,
     );
-    assert_eq!(backup_hash, digest(&rollback.join("state.sqlite3")));
+    if source_schema < 21 {
+        assert_eq!(backup_hash, digest(&rollback.join("state.sqlite3")));
+    } else {
+        let restored = rusqlite::Connection::open(rollback.join("state.sqlite3")).unwrap();
+        assert!(
+            restored
+                .query_row("SELECT restore_closed FROM security_state", [], |r| r
+                    .get::<_, bool>(0))
+                .unwrap()
+        );
+        assert_eq!(
+            restored
+                .query_row("SELECT count(*) FROM identity_sessions", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+    }
     assert_eq!(
         rusqlite::Connection::open(rollback.join("state.sqlite3"))
             .unwrap()
@@ -859,4 +880,9 @@ fn governed_backup_rollback_cannot_resurrect_sessions_principals_or_grants() {
             })
             .is_ok()
     );
+}
+
+#[test]
+fn schema_twenty_one_upgrade_preserves_security_and_adds_console_requests() {
+    catalog_migration(21);
 }

@@ -197,6 +197,12 @@ impl Store {
             .collect()
     }
     pub(crate) fn commit_catalog_publication(&mut self, p: &mut CatalogPublication) -> Result<()> {
+        self.data_export_live(
+            self.snapshot(p.project_id, p.epoch_id)?
+                .publication
+                .export_id,
+            true,
+        )?;
         let b = self.branch_in_project(p.project_id, p.branch_id)?;
         let (revision, _) = self.catalog_head(p.deployment_id, p.branch_id)?;
         if b.revision != p.source_revision

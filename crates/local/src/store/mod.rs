@@ -11,6 +11,7 @@ pub(crate) mod error;
 mod execution;
 mod exports;
 mod governed;
+mod governed_console;
 mod identity;
 pub(crate) mod security;
 pub(crate) use identity::IdentityCommit;

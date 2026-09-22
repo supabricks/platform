@@ -49,6 +49,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   down                         Stop the cell, retain all data
   status | doctor              Runtime status / actionable diagnostics
   console [--no-open]           Open the local project overview in your browser
+  console --governed --provider NAME --redirect URL  Serve the signed-in loopback console
   capabilities                 Project binding, features and resource limits
   database create NAME [--key KEY] [--wait]
   database list
@@ -137,6 +138,7 @@ impl Args {
                         | "--uri"
                         | "--include-deleted"
                         | "--no-open"
+                        | "--governed"
                         | "--no-header"
                         | "--remove"
                 ) {
@@ -455,6 +457,17 @@ pub fn run() -> Result<u8> {
         return Ok(0);
     }
     if command == "console" {
+        if a.flag("--governed") {
+            let provider = a
+                .take("--provider")
+                .ok_or_else(|| invalid("use --provider NAME"))?;
+            let redirect = a
+                .take("--redirect")
+                .ok_or_else(|| invalid("use --redirect http://127.0.0.1:PORT/auth/v1/callback"))?;
+            a.finish(1)?;
+            crate::identity::transport::governed_console(&root, &provider, &redirect)?;
+            return Ok(0);
+        }
         let no_open = a.flag("--no-open");
         a.finish(1)?;
         let directory = match project.as_deref() {

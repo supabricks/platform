@@ -193,6 +193,9 @@ pub(super) fn location_uri(path: &Path) -> Result<String> {
 }
 pub(crate) fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
     let snapshot = store.snapshot(p.project_id, p.epoch_id)?;
+    if p.state == "registering" {
+        store.data_export_live(snapshot.publication.export_id, true)?;
+    }
     let d = snapshot
         .publication
         .descriptor

@@ -82,6 +82,14 @@ fn check_identity_fence(db: &Connection, name: &str, expected: (i64, i64)) -> Re
 impl Store {
     /// Only called by the private operator control socket, never by an HTTP route.
     pub fn identity_admin(&mut self, command: AdminCommand) -> Result<Value> {
+        let actor = owner(&self.db)?;
+        self.identity_admin_as(&actor, command)
+    }
+    pub(super) fn identity_admin_as(
+        &mut self,
+        actor: &str,
+        command: AdminCommand,
+    ) -> Result<Value> {
         match &command {
             AdminCommand::AuditExport { after } => {
                 return super::security::export(&self.db, *after);
@@ -99,7 +107,7 @@ impl Store {
             _ => {}
         }
         let tx = self.db.transaction()?;
-        let actor = owner(&tx)?;
+        let actor = actor.to_owned();
         let result = match command {
             AdminCommand::AuditExport { .. }
             | AdminCommand::AuditAcknowledge { .. }
@@ -124,7 +132,7 @@ impl Store {
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 let mut memberships=tx.prepare("SELECT group_id,principal FROM identity_memberships ORDER BY group_id,principal")?;
                 let memberships=memberships.query_map([],|r|Ok(json!({"group_id":r.get::<_,String>(0)?,"principal_id":r.get::<_,String>(1)?})))?.collect::<std::result::Result<Vec<_>,_>>()?;
-                json!({"api_version":iam::VERSION,"realm_id":realm,"local_owner_id":actor,"bootstrap_principal_id":bootstrap,"principals":principals,"groups":groups,"memberships":memberships,"governed_ingress":false})
+                json!({"api_version":iam::VERSION,"realm_id":realm,"local_owner_id":owner(&tx)?,"bootstrap_principal_id":bootstrap,"principals":principals,"groups":groups,"memberships":memberships,"governed_ingress":false})
             }
             AdminCommand::Configure {
                 provider: name,
@@ -167,7 +175,7 @@ impl Store {
                 principal,
                 disabled,
             } => {
-                if principal == actor {
+                if principal == actor || principal == owner(&tx)? {
                     return Err(denied());
                 }
                 if tx.execute(
