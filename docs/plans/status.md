@@ -1,7 +1,10 @@
 # Supabricks delivery status
 
-Reconciled 2026-09-21 through merged platform #64 (`c44fab5`), Unity Catalog #3 and console #9 (`a5d2e7f`).
-UC08 is merged and qualified. UC09 is [scoped for a shared Linux server](uc09-governed-implementation.md); IAM00 feasibility is merged in #66; UC09.1 identity/login is merged in #67; UC09.2 authorization is merged in #68; UC09.3 catalog grants merged in #69; UC09.4–.7 are merged; [UC09.8 installed qualification](../architecture/uc098-governed-release.md) is implemented for review. Complete exact-archive R04 acceptance remains required before shared-profile qualification.
+Reconciled 2026-09-22 through merged platform #74, Unity Catalog #4 and console #11–#12.
+UC00–UC09 is complete for its planned profiles. Alpha.35 passed the full Linux/macOS
+local-owner matrix and Linux governed shared-server acceptance. The
+[UC09.8 evidence ledger](../architecture/uc098-governed-release.md) retains exact
+archive identities, R04 evidence, the ingress receipt and qualification limits.
 This page records delivered scope. Older dated design sections describe their
 starting point and original acceptance criteria, not the current backlog.
 
@@ -14,9 +17,9 @@ starting point and original acceptance criteria, not the current backlog.
 | N00–N06 / NE00–NE06 | Merged, including holistic repairs: browser notebooks and managed project environments | Separate kernels, dependency locks, package controls, offline bundles and cold restores |
 | R04 | Merged in #44: combined local release evidence and installed demo | Both alpha.16 archives qualified; 29 CI checks, 39 browser and 39 ingestion checks per target |
 | Controlled Sail source build | Merged in platform #45; both alpha.17 archives qualified, 33 final CI checks passed | `supabricks/sail` at the reviewed 0.7.1 commit; deployed Sail wheels are built from source |
-| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile merged in #54; alpha.25 failed; inherited gates now qualified on alpha.34 | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog local profile qualified in UC08; IAM/governed access remains separate |
+| Project packaging PK00–PK08 | PK00 merged in #46; PK01 inspection merged in #47; PK02 source packaging merged in #48; PK03 deployment identities merged in #49; PK04 plan/apply merged in #50; PK05 offline bundles and bounded initialization merged in #51; PK06 console packaging merged in platform #52 and console #5; PK07 merged in platform #53 and fully qualified on alpha.24; PK08 typed logical table-data profile merged in #54; alpha.25 failed; inherited gates now qualified on alpha.34 | [Architecture](../architecture/project-packaging.md), [research](../research/project-packaging-industry.md), [slice plan](project-packaging-implementation.md); OSS Unity Catalog local profile qualified in UC08; governed access subsequently delivered in UC09 |
 | Console project creation | Merged in platform #55 and console #6 | Browser-created project with selected main database; mandatory project ownership; alpha.26 failed; workflow now qualified on alpha.34 |
-| Open-source Unity Catalog | UC00 merged in platform #56, Linux/macOS qualified (14 checks each); UC01 merged in #57 with both native offline suites qualified; UC02 merged in #58 with both native catalog suites passed; UC03 merged in platform #59 and Unity Catalog #3, Linux/macOS native catalog suites passed; UC04 merged in #60 with required checks and both native catalog suites passed; UC05 merged in #61 with required checks and both native catalog suites passed; UC06 merged in platform #62 and console #7; required checks and both native catalog/browser suites passed; UC07 merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 merged in platform #64 (`c44fab5`) with alpha.34 exact archives qualified; UC09.0 / IAM00 merged in #66; UC09.1 identity/login merged in #67; UC09.2 merged in #68; UC09.3 merged in #69; UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation/audit/recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 exact-archive qualification implemented for review in platform #74 / console #11, with complete R04 acceptance still required | [UC00 capability report](../architecture/uc00-catalog-probe.md), [UC00–UC09 plan](unity-catalog-implementation.md): local catalog workflow first; governed access depends on IAM and isolation |
+| Open-source Unity Catalog | UC00 merged in platform #56, Linux/macOS qualified (14 checks each); UC01 merged in #57 with both native offline suites qualified; UC02 merged in #58 with both native catalog suites passed; UC03 merged in platform #59 and Unity Catalog #3, Linux/macOS native catalog suites passed; UC04 merged in #60 with required checks and both native catalog suites passed; UC05 merged in #61 with required checks and both native catalog suites passed; UC06 merged in platform #62 and console #7; required checks and both native catalog/browser suites passed; UC07 merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 merged in platform #64 (`c44fab5`) with alpha.34 exact archives qualified; UC09.0 / IAM00 merged in #66; UC09.1 identity/login merged in #67; UC09.2 merged in #68; UC09.3 merged in #69; UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation/audit/recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 merged in platform #74 / console #11–#12, with complete alpha.35 R04 acceptance and Linux shared-server qualification | [UC00 capability report](../architecture/uc00-catalog-probe.md), [UC00–UC09 plan](unity-catalog-implementation.md): local catalog workflow and Linux governed access complete; [exact-archive evidence](../architecture/uc098-governed-release.md) |
 | W01 / hosted console | Deliberately deferred | No production `supabricks.io/install.sh` or hosted console transport yet |
 | V01 / L01 | Optional follow-ons | Thin VS Code integration and direct analytical datasets are not prerequisites for the delivered local preview |
 
@@ -59,7 +62,7 @@ durability, or support for other browsers/operating systems.
 
 Public hosting, publisher signing/notarization, transitive redistribution audit,
 and physical-machine/reboot/power-loss qualification remain open. UC08 alpha.34 now qualifies project portability and PK08 logical table-data transfer with the complete local workflow.
-Expanded logical data profiles, governed multi-user catalog/IAM/RBAC,
+Expanded logical data profiles, additional governed deployment profiles,
 HA/distributed execution, upstream-only PostgreSQL, custom Scintilla and PGlite
 synchronization require separately scoped work. The first local preview never
 promised those enterprise capabilities.
@@ -113,6 +116,11 @@ zero leaked descendants. The Linux trace recorded 6,029 destinations and no
 external attempts. The [UC08 evidence and retry ledger](../architecture/uc08-release-qualification.md)
 records source pins, archive hashes, resource costs and the explicit historical
 macOS predecessor isolation boundary. UC00–UC08's local-owner milestone is
-merged and qualified. UC09 needs actual IAM and qualified execution isolation;
-the [Linux-first scope and slice plan](uc09-governed-implementation.md) starts
-with [UC09.0 / IAM00 feasibility](../architecture/iam00-governance-probe.md), now implemented and locally qualified. No governed multi-user profile is implemented.
+merged and qualified. UC09 subsequently delivered IAM, authorization, isolated
+execution, governed data access, recovery and the signed-in console through
+platform #66–#74 and console #10–#12. Alpha.35 passed all inherited archive gates
+and the Linux governed profile in [run 35700396118](https://github.com/supabricks/platform/actions/runs/35700396118).
+The [retained UC09.8 evidence](../architecture/uc098-governed-release.md) records
+all 46 governed suite checks, bounded revocation, concurrent resource measurements
+and zero cleanup leaks on the dedicated host envelope. macOS remains local-owner
+only. Shared ingress requires the exact installed archive’s reviewed R04 receipt.

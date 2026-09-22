@@ -1,7 +1,10 @@
 # UC09: governed on-prem scope
 
-Status: scoped, 2026-09-21; Linux-server-first target confirmed by the project owner. No governed runtime is implemented by this
-document. Baseline: UC08 merged in platform #64 as `c44fab5`; its qualified
+Status: implemented and qualified through UC09.8 in platform #74 / console #11–#12.
+The Linux shared profile and both local-owner targets passed the complete alpha.35
+archive matrix; see the [evidence and deployment limits](uc098-governed-release.md).
+This document records the Linux-first scope and threat model established on
+2026-09-21. Baseline: UC08 merged in platform #64 as `c44fab5`; its qualified
 alpha.34 archives and original tested source remain recorded in the
 [UC08 evidence](uc08-release-qualification.md). Execution sequence and acceptance
 criteria are in the [UC09 implementation plan](../plans/uc09-governed-implementation.md).
