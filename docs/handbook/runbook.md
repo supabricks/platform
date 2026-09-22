@@ -1,5 +1,9 @@
 # Runbook: failure modes and fire drills
 
+> Scope: the earlier Kubernetes/operator profile. For the current native and
+> governed product, use the [stack overview](../stack.md),
+> [handbook](README.md) and [delivery ledger](../plans/status.md).
+
 First moves for anything wrong:
 
 ```sh

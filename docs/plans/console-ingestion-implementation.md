@@ -1,5 +1,8 @@
 # Console and ingestion implementation plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 *Status: C01-C03 / I00-I03 / R04 merged · Reconciled: 2026-09-13*
 
 Implement in `supabricks/platform`, starting from

@@ -1,5 +1,9 @@
 # Architecture as built (M1.5)
 
+> Scope: the earlier Kubernetes/operator profile. For the current native and
+> governed product, use the [stack overview](../stack.md),
+> [handbook](README.md) and [delivery ledger](../plans/status.md).
+
 One kind/Kubernetes cluster, namespace `sspc-cell`, ≤8 platform pods. Two
 layers: a **cell** (Neon's stock, unmodified storage engine) and **our
 platform** (one Rust binary: reconcilers + lifecycle loop + MCP server + UI).

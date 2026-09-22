@@ -1,9 +1,13 @@
-# Native local console preview (R04)
+# Build and install the native stack
 
-Alpha.18 adds [offline project inspection](../../docs/handbook/project-inspection.md)
-and builds Sail from [the controlled fork](../../docs/architecture/source-built-sail.md).
-Native assembly requires `build/sail-artifacts/<target>` from that source build;
-it does not download a PyPI Sail wheel.
+[Documentation home](../../docs/README.md) · [Stack overview](../../docs/stack.md) ·
+[Current release evidence](../../docs/architecture/uc098-governed-release.md)
+
+The current release line is alpha.35. This guide covers full native assembly and
+the local-owner installer; [governed server setup](../../docs/handbook/governed-server.md)
+adds its explicit operator prerequisites and exact-archive qualification receipt.
+Native assembly consumes the pinned console, engine/helpers, source-built Sail
+and Unity Catalog, and locked Python/notebook dependencies.
 
 The localhost preview uses the same bootstrap and signed archives intended for
 `curl -fsSL https://supabricks.io/install.sh | bash`. Domain deployment is deferred.
@@ -24,9 +28,10 @@ fixture hashes and sampled throughput/resources. Build/test tooling is not a
 runtime dependency. This artifact supplements the existing notebook evidence.
 
 UC08 adds the installed `CATALOG-DEMO.md` [two-project walkthrough](../../docs/handbook/catalog-demo.md)
-and exact catalog evidence to the same R04 collector. Alpha.34 is a candidate;
-see the [qualification ledger](../../docs/architecture/uc08-release-qualification.md)
-for completed gates and outstanding failures.
+and exact catalog evidence to the same R04 collector. Alpha.34 passed UC08;
+alpha.35 subsequently passed the inherited local gates and Linux governed
+acceptance. See the [current qualification ledger](../../docs/architecture/uc098-governed-release.md)
+for exact archives, historical retries and support limits.
 
 ## Try the staged installer
 
@@ -100,7 +105,27 @@ engine archive using the native CI workflow and prepare helpers as documented in
 `components/README.md`. Apple Silicon helper compilation additionally needs the
 pinned Go toolchain. Prepare release helpers with `--offline-runtime`: unchanged
 Process Compose source is built with its upstream update-check option disabled.
-No Go compiler is shipped or required by the installer. Then:
+No Go compiler is shipped or required by the installer.
+
+Before assembly, prepare both source-built runtime inputs on the target platform:
+
+- Sail: follow the [source build instructions](../../docs/architecture/source-built-sail.md).
+  The output must be `build/sail-artifacts/<target>`; there is no PyPI Sail fallback.
+- Unity Catalog: check out the commit in
+  [unity-catalog-source.lock.json](../../components/unity-catalog-source.lock.json)
+  into `build/uc-source`, then run:
+
+  ```sh
+  python3 components/build-unity-catalog.py --source build/uc-source \
+    --tools build/uc-tools --output build/uc-artifacts/linux-x86_64
+  ```
+
+Use `macos-arm64` paths on Apple Silicon. The
+[native release workflow](../../.github/workflows/native-release.yml) records the
+complete build sequence and same-run artifact handoff. Build inputs and output
+directories must satisfy the scripts' source and inventory checks.
+
+With those inputs ready, assemble on Linux as follows:
 
 ```sh
 cargo build --locked --release -p supabricks-local

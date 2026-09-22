@@ -1,5 +1,8 @@
 # Supabricks local runtime implementation plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 *Status: P00/E01/P01–P06/A00–A03 and localhost R01–R03 merged; W01 deferred · Reconciled: 2026-09-13*
 
 See [delivery status](status.md) for the current complete milestone map and
