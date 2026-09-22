@@ -476,3 +476,5 @@ impl Manager {
         Ok(())
     }
 }
+
+pub(crate) mod upgrade;

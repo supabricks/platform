@@ -329,27 +329,49 @@ pub fn login(root: &Path, provider: &str, redirect: &str, output: &Path) -> Resu
 /// Authentication-only browser preview, intentionally independent of local-owner
 /// console tickets. There is no route forwarding to project/SQL/notebook APIs.
 pub fn browser(root: &Path, provider: &str, redirect: &str) -> Result<()> {
-    browser_with_assets(root, provider, redirect, None)
+    browser_with_assets(root, provider, redirect, None, None)
 }
-pub fn governed_console(root: &Path, provider: &str, redirect: &str) -> Result<()> {
+pub fn governed_console(
+    root: &Path,
+    provider: &str,
+    redirect: &str,
+    ingress: Option<&Path>,
+) -> Result<()> {
     let assets = crate::console::assets::Assets::load(&crate::console::assets::discover()?)?;
-    browser_with_assets(root, provider, redirect, Some(assets))
+    let ingress = ingress
+        .map(|path| super::ingress::Config::load(path, redirect))
+        .transpose()?;
+    browser_with_assets(root, provider, redirect, Some(assets), ingress)
 }
 fn browser_with_assets(
     root: &Path,
     provider: &str,
     redirect: &str,
     assets: Option<crate::console::assets::Assets>,
+    ingress: Option<super::ingress::Config>,
 ) -> Result<()> {
-    let (server, host) = listener(redirect)?;
-    let origin = format!("http://{host}");
+    let (server, host, origin, secure) = if let Some(config) = ingress {
+        let origin = config.origin.clone();
+        let host = origin
+            .strip_prefix("https://")
+            .ok_or_else(denied)?
+            .to_owned();
+        (config.start(root)?, host, origin, true)
+    } else {
+        let (server, host) = listener(redirect)?;
+        let origin = format!("http://{host}");
+        (server, host, origin, false)
+    };
     // Random cookie names avoid conflicts with other loopback applications.
     let suffix = &secret()?[..16];
     let pending_name = format!("sb_login_{suffix}");
     let session_name = format!("sb_identity_{suffix}");
     let csrf_name = format!("sb_csrf_{suffix}");
     let set_cookie = |name: &str, value: &str, age: i64| {
-        format!("{name}={value}; Path=/auth/v1; HttpOnly; SameSite=Lax; Max-Age={age}")
+        format!(
+            "{name}={value}; Path=/auth/v1; HttpOnly; SameSite=Lax; Max-Age={age}{}",
+            if secure { "; Secure" } else { "" }
+        )
     };
     let landing = if assets.is_some() {
         "/auth/v1/console"
@@ -390,7 +412,7 @@ fn browser_with_assets(
                     channel: Channel::Browser, csrf: Some(csrf.clone()),
                 });
                 match result {
-                    Ok(context) => json_reply(request, 200, json!({"authenticated":true,"context":context,"csrf":csrf})),
+                    Ok(context) => json_reply(request, 200, json!({"authenticated":true,"context":context,"csrf":csrf,"transport":if secure {"tls"} else {"loopback_http"}})),
                     Err(_) => {
                         let binding = secret()?;
                         let mut response = Response::from_string(json!({"authenticated":false,"csrf":binding}).to_string());

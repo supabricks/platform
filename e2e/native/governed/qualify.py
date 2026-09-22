@@ -25,12 +25,14 @@ def main():
     p.add_argument('--binary',type=Path,required=True)
     p.add_argument('--release',type=Path,required=True)
     p.add_argument('--report',type=Path)
+    p.add_argument('--exact-installed',action='store_true')
     args=p.parse_args()
     os.umask(0o077)
-    root=Path(tempfile.mkdtemp(prefix='sb-uc095-'))
+    root=Path(tempfile.mkdtemp(prefix='s5-' if args.exact_installed else 'sb-uc095-'))
     print('Private diagnostics: '+str(root),flush=True)
     cellroot=root/'cell';cellroot.mkdir()
     cell=CatalogCell(args.binary.resolve(),args.release.resolve()/'engine',args.release.resolve()/'helpers',cellroot)
+    if args.exact_installed:cell.binary=args.binary.resolve()
     cell.work=root/'project';cell.work.mkdir()
     (cell.work/'supabricks.toml').write_text(f'format_version=1\nid="{cell.project}"\nname="governed"\n')
     checks=[]
@@ -178,7 +180,7 @@ def main():
 
         # The real frozen exporter and publication keep the source policy fence.
         cell.python=args.release.resolve()/'python/analytics/python'
-        cell.configure(args.release.resolve()/'python/analytics/export.py')
+        if not args.exact_installed:cell.configure(args.release.resolve()/'python/analytics/export.py')
         exported=request(action='export',branch=bid,expected_policy=policy(),key=str(uuid.uuid4()))['result']['export_id']
         record=cell.api('get_export',id=exported)
         cell.terminal(record)
@@ -263,6 +265,29 @@ def main():
         identity(action='audit_acknowledge',after=0,through=audit['through'],sha256=audit['sha256'])
         checks.append('governed_backup_restore_closes_historical_grants_and_rotates_pg_and_sessions')
         checks.append('bounded_audit_export_contains_correlated_metadata_without_credentials_or_sql')
+
+        # Inject a real SQLite audit append failure into the running installed
+        # daemon; the identity mutation must roll back with its audit transaction.
+        with sqlite3.connect(cell.root/'state.sqlite3') as db:
+            db.execute("CREATE TRIGGER qualification_audit_failure BEFORE INSERT ON identity_audit BEGIN SELECT RAISE(ABORT,'qualification audit failure'); END")
+        deny(lambda:identity(action='service',label='must-not-exist'))
+        with sqlite3.connect(cell.root/'state.sqlite3') as db:
+            assert db.execute("SELECT count(*) FROM identity_principals WHERE label='must-not-exist'").fetchone()[0]==0
+            db.execute('DROP TRIGGER qualification_audit_failure')
+            remaining=10000-db.execute("SELECT count(*) FROM security_audit").fetchone()[0]
+            db.executemany("INSERT INTO security_audit(at_ms,event) VALUES(?,'{}')", ((i,) for i in range(remaining)))
+        deny(lambda:request(as_token=fresh,action='sql',branch=bid,capability='read',sql='SELECT 1',expected_policy=policy(),key=str(uuid.uuid4())))
+        cell.stop();cell.start()
+        deny(lambda:request(as_token=fresh,action='sql',branch=bid,capability='read',sql='SELECT 1',expected_policy=policy(),key=str(uuid.uuid4())))
+        exported=0
+        while True:
+            page=identity(action='audit_export',after=0)
+            if not page['events']:break
+            exported+=len(page['events'])
+            identity(action='audit_acknowledge',after=0,through=page['through'],sha256=page['sha256'])
+        assert exported>=10000
+        checks.append('audit_append_failure_rolls_back_identity_mutation')
+        checks.append('audit_capacity_closes_admission_across_restart_and_remains_exportable')
 
     finally:
         if cell.daemons and cell.daemons[-1].poll() is None:cell.stop()

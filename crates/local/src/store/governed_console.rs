@@ -60,7 +60,7 @@ impl Store {
                     |r| r.get(0),
                 )?;
                 Ok(
-                    json!({"identity":ctx,"label":label,"realm_administrator":realm_admin(&self.db,ctx).is_ok(),"shared_ingress":false,"mode":"governed_loopback"}),
+                    json!({"identity":ctx,"label":label,"realm_administrator":realm_admin(&self.db,ctx).is_ok(),"authorization":"governed"}),
                 )
             }
             Command::Branches { deployment } => {

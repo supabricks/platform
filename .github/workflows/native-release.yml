@@ -13,6 +13,10 @@ on:
       - 'python/ingest/**'
       - 'python/notebooks/**'
       - 'e2e/native/catalog/**'
+      - 'e2e/native/governed/**'
+      - 'e2e/native/governed-console/**'
+      - 'e2e/native/identity/**'
+      - 'python/execution/**'
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
       - 'docs/handbook/**'
@@ -188,6 +192,7 @@ jobs:
           python install/native/test_unity_catalog.py
           python install/native/test_environment_evidence.py
           python install/native/test_release_evidence.py
+          python install/native/test_governed_evidence.py
           python install/native/test_project_evidence.py
           python install/native/test_project_portability.py
           python install/native/test_demo.py
@@ -225,7 +230,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.34-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.35-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
@@ -855,8 +860,49 @@ jobs:
     with:
       archive_run_id: ${{ format('{0}', github.run_id) }}
 
+  release-governed:
+    needs: assemble
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux-x86_64
+          path: build/releases
+      - name: Prepare pinned test infrastructure before network isolation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m pip install -r e2e/native/requirements.txt psutil==7.2.2
+          npm ci --prefix console --no-audit --no-fund
+          gh run download 35585995786 --repo supabricks/platform --name release-linux-x86_64 --dir "$RUNNER_TEMP/uc098-predecessor"
+          python e2e/native/iam/prepare.py \
+            --archive "$RUNNER_TEMP/uc098-predecessor/supabricks-v0.1.0-alpha.34-linux-x86_64.tar.gz" \
+            --output "$RUNNER_TEMP/uc098-inputs"
+          python e2e/native/execution/prepare.py --inputs "$RUNNER_TEMP/uc098-inputs" --output "$RUNNER_TEMP/uc098-runtime.json"
+          docker build -f install/native/Dockerfile.governed -t supabricks-uc098-qualifier .
+      - name: Qualify unchanged installed TLS, identity, native data, isolation and backend upgrade offline
+        run: |
+          python install/native/qualify_governed.py --directory build/releases --console console \
+            --execution-config "$RUNNER_TEMP/uc098-runtime.json" --report build/governed/governed.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-governed-linux-x86_64
+          path: build/governed/governed.json
+          if-no-files-found: error
+
   environment-evidence:
-    needs: [release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
+    needs: [release-governed, release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -900,7 +946,11 @@ jobs:
         with:
           pattern: release-catalog-*
           path: build/evidence
-      - name: Require complete local workflow evidence for both exact releases
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-governed-*
+          path: build/evidence
+      - name: Require complete inherited and governed evidence for the exact releases
         run: |
           python3 install/native/environment_evidence.py --directory build/evidence --revision "${{ github.sha }}" --report build/ne06-evidence.json
           python3 install/native/release_evidence.py --directory build/evidence --revision "${{ github.sha }}" \

@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console implemented and source-qualified in platform #73 / console #10 for review; UC09.8 remains open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 exact-archive qualification implemented for review, with complete R04 acceptance still required. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
@@ -266,11 +266,14 @@ archive; resource budgets and revocation targets from UC09.0 are met; no leaked
 processes or broad credentials; unsupported endpoints remain unreachable. Only
 then enable the governed profile and mark UC09 complete.
 
+Implementation: [UC09.8 installed governed release](../architecture/uc098-governed-release.md).
+The collector rejects partial or mixed-archive reports and emits a shared-ingress
+receipt only after every inherited and governed gate passes. This candidate is
+not yet a qualified shared release; UC09 remains incomplete until that gate passes.
+
 ## Immediate next action
 
-Review UC09.7 console administration and user workflows, then implement UC09.8
-exact-archive governed release qualification.
-Use the isolated adapter with the admitted effective principal and immutable
-revision; keep shared ingress and unqualified transfer/artifact routes disabled.
-UC09.8 must also qualify the installed upgrade to the changed UC component; the
-existing exact-backend gate remains closed to an unqualified transition.
+Review UC09.8 and run the complete alpha.35 Linux/macOS archive matrix. Preserve
+failed attempts and distinguish workstation diagnostics from the dedicated
+4-CPU/16-GiB host acceptance. Enable shared ingress only with the complete R04
+receipt for the installed archive; do not reuse the alpha.34 qualification.

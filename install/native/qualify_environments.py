@@ -17,7 +17,7 @@ parser.add_argument('--bundle-fixture', type=Path)
 parser.add_argument('--lifecycle', action='store_true')
 parser.add_argument('--previous-directory', type=Path)
 parser.add_argument('--previous-version', default='v0.1.0-alpha.12')
-parser.add_argument('--version', default='v0.1.0-alpha.34')
+parser.add_argument('--version', default='v0.1.0-alpha.35')
 parser.add_argument('--macos-upgrade-policy', type=Path)
 args = parser.parse_args()
 if args.lifecycle and (args.packages or not args.previous_directory or not args.bundle_fixture):

@@ -10,6 +10,7 @@ from test_sail import sample_report
 from environment_evidence import SUITES, MACOS_NETWORK_TRANSITION
 from release_evidence import collect, markdown
 from test_project_evidence import fixture as project_fixture
+from test_governed_evidence import fixture as governed_fixture
 
 HASH = 'a' * 64
 OTHER = 'b' * 64
@@ -67,6 +68,9 @@ class ReleaseEvidence(unittest.TestCase):
 
         project_fixture(self.root, {t:dict(release_sha256=HASH, kernel_contract_sha256=HASH, archive=dict(version='alpha',target=t,sha256=HASH)) for t in ('linux-x86_64','macos-arm64')})
 
+        env=json.loads((self.root/'release-environment-lifecycle-linux-x86_64/qualification.json').read_text())
+        self.write('linux-x86_64','release-governed','governed.json',governed_fixture(dict(release_sha256=HASH,archive=env['archives']['new'],source=env['source'])))
+
     @staticmethod
     def checks(count):
         return [f'check-{n}' for n in range(count)]
@@ -86,9 +90,10 @@ class ReleaseEvidence(unittest.TestCase):
     def test_complete_release_includes_all_suites_and_sanitized_metrics(self):
         self.change('release-ingest','ingest.json',lambda d:d['formats']['json']['budget'].update(sql='secret SQL',rows_payload=['secret rows'],path='/private/source'))
         report=self.collect()
-        self.assertEqual(len(report['targets']['linux-x86_64']['reports']),16)
+        self.assertEqual(len(report['targets']['linux-x86_64']['reports']),17)
         self.assertEqual(len(report['targets']['macos-arm64']['reports']),14)
-        self.assertNotIn('secret',json.dumps(report))
+        self.assertNotIn('secret SQL',json.dumps(report))
+        self.assertNotIn('secret rows',json.dumps(report))
         self.assertNotIn('/private',json.dumps(report))
         self.assertIn('worker interval',markdown(report))
 
