@@ -18,8 +18,11 @@ def run(args):
         # The console CLI can detach its daemon between samples. Recover the
         # owner from this fixture's unique data-root prefix, never global PIDs.
         if args.data_root:
-            for process in psutil.process_iter(['cmdline']):
-                cmd=process.info['cmdline'] or []
+            for process in psutil.process_iter():
+                # macOS denies inspection of unrelated protected processes.
+                # Only inspectable commands can identify this fixture's daemon.
+                try:cmd=process.cmdline()
+                except (psutil.NoSuchProcess, psutil.AccessDenied, PermissionError):continue
                 if 'daemon' not in cmd or '--data-dir' not in cmd:continue
                 position=cmd.index('--data-dir')+1
                 if position<len(cmd) and (cmd[position]==str(args.data_root) or cmd[position].startswith(str(args.data_root)+'/')):
