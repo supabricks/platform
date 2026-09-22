@@ -26,6 +26,7 @@ mod runtime_cli;
 pub mod sessions;
 pub mod store;
 pub mod supervisor;
+pub mod sync;
 mod upgrade;
 use std::{net::SocketAddr, path::Path};
 use supabricks_core::{

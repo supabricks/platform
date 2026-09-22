@@ -20,6 +20,9 @@ use supabricks_core::resource::{EpochId, OperationId, ProjectId};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
+    ManagedSnapshots {
+        command: crate::sync::Command,
+    },
     Snapshot {
         target: Target,
     },
@@ -141,6 +144,7 @@ impl Workspace {
     ) -> Result<Value> {
         let project = binding.project_id;
         match command {
+            Command::ManagedSnapshots { command } => crate::sync::handle(store, binding, command),
             Command::Snapshot { target } => {
                 store.branch_in_project(project, target.branch)?;
                 match store.current_snapshot(project, target.branch) {

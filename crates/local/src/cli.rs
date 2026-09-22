@@ -57,6 +57,13 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   branch list | get NAME | use NAME | rename NAME NEW_NAME
   branch suspend NAME | resume NAME | delete NAME [--force]
   branch default NAME | ttl NAME --expires-at-ms TIMESTAMP_OR_none
+  sync create --branch NAME [--every-seconds N] [--key KEY]
+  sync update POLICY_ID --revision N [--every-seconds N] [--key KEY]
+  sync list | show POLICY_ID | runs POLICY_ID [--limit 50] | status RUN_ID
+  sync run POLICY_ID --revision N [--key KEY]
+  sync pause|resume|delete POLICY_ID --revision N [--key KEY]
+  sync cancel RUN_ID [--key KEY]
+                               Managed full snapshots; UTC intervals, coalesced missed runs
   analytics configure --python PATH --worker PATH  Configure the A01 developer worker
   analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
   analytics status ID | cancel ID
@@ -1119,6 +1126,9 @@ pub fn run() -> Result<u8> {
         }
         return result;
     }
+    if command == "sync" {
+        return sync_cli(&mut a, &c);
+    }
     if command == "ingest" {
         return ingest_cli(&mut a, &c);
     }
@@ -2091,4 +2101,123 @@ fn read_project_json<T: serde::de::DeserializeOwned>(path: &str) -> Result<T> {
         return Err(invalid("project plan/bindings file exceeds 48 KiB"));
     }
     serde_json::from_slice(&bytes).map_err(|_| invalid("invalid project plan/bindings JSON"))
+}
+
+fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
+    use crate::sync::{Command as S, Config, Schedule};
+    let verb = a.required(1)?;
+    let read = matches!(verb.as_str(), "list" | "show" | "runs" | "status");
+    let key = if read {
+        String::new()
+    } else {
+        a.take("--key")
+            .unwrap_or_else(|| OperationId::new().to_string())
+    };
+    let id = if matches!(verb.as_str(), "create" | "list") {
+        None
+    } else {
+        Some(
+            a.required(2)?
+                .parse::<OperationId>()
+                .map_err(|_| invalid("invalid snapshot policy/run ID"))?,
+        )
+    };
+    let command = match verb.as_str() {
+        "list" => S::List,
+        "show" => S::Get { id: id.unwrap() },
+        "status" => S::Run { id: id.unwrap() },
+        "runs" => S::Runs {
+            id: id.unwrap(),
+            limit: a.number("--limit", 50)? as usize,
+        },
+        "cancel" => S::Cancel {
+            id: id.unwrap(),
+            key,
+        },
+        "create" | "update" => {
+            let schedule = a
+                .take("--every-seconds")
+                .map(|s| {
+                    s.parse::<u64>()
+                        .map_err(|_| invalid("invalid --every-seconds"))
+                })
+                .transpose()?
+                .map(|interval_seconds| Schedule {
+                    interval_seconds,
+                    timezone: "UTC".into(),
+                    missed_run: "coalesce".into(),
+                });
+            let config = Config {
+                mode: a.take("--mode").unwrap_or_else(|| "snapshot".into()),
+                strategy: a.take("--strategy").unwrap_or_else(|| "full".into()),
+                schedule,
+                limits: crate::store::ExportLimits {
+                    max_bytes: a.number("--max-bytes", 1024 * 1024 * 1024)?,
+                    timeout_ms: a.number("--timeout-ms", 300000)?,
+                },
+            };
+            config.validate()?;
+            if verb == "create" {
+                S::Create {
+                    branch: a
+                        .take("--branch")
+                        .ok_or_else(|| invalid("snapshot policy requires --branch"))?,
+                    key,
+                    config,
+                }
+            } else {
+                S::Update {
+                    id: id.unwrap(),
+                    expected_revision: sync_revision(a)?,
+                    key,
+                    config,
+                }
+            }
+        }
+        "run" | "pause" | "resume" | "delete" => {
+            let id = id.unwrap();
+            let expected_revision = sync_revision(a)?;
+            match verb.as_str() {
+                "run" => S::RunNow {
+                    id,
+                    expected_revision,
+                    key,
+                },
+                "pause" => S::Pause {
+                    id,
+                    expected_revision,
+                    key,
+                },
+                "resume" => S::Resume {
+                    id,
+                    expected_revision,
+                    key,
+                },
+                _ => S::Delete {
+                    id,
+                    expected_revision,
+                    key,
+                },
+            }
+        }
+        _ => return Err(invalid("unknown sync command; use --help")),
+    };
+    a.finish(if matches!(verb.as_str(), "create" | "list") {
+        2
+    } else {
+        3
+    })?;
+    println!("{}", c.call(Action::ManagedSnapshots { command })?);
+    Ok(0)
+}
+fn sync_revision(a: &mut Args) -> Result<i64> {
+    let n = a
+        .take("--revision")
+        .ok_or_else(|| invalid("snapshot policy requires --revision"))?
+        .parse::<i64>()
+        .map_err(|_| invalid("invalid snapshot policy revision"))?;
+    if n < 1 {
+        return Err(invalid("snapshot policy revision must be positive"));
+    }
+    Ok(n)
 }
