@@ -23,7 +23,7 @@ def run(path):
     config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
     spool=source=wire=None
-    last_report=0;last_ack=0;observed=None;baseline=None;verified=None
+    last_report=0;last_ack=0;observed=None;baseline=None;verified=None;emitted=None
     def report(state,error=None):
         nonlocal last_report
         last_report=time.monotonic()
@@ -31,7 +31,7 @@ def run(path):
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
             source_lsn=observed['source'] if observed else None,retained_wal_bytes=observed['retained_bytes'] if observed else None,
-            spool_bytes=spool.path.stat().st_size if spool else None,bootstrap_lsn=verified))
+            spool_bytes=spool.path.stat().st_size if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None))
     try:
         if config['desired']=='deleted':
             source=Source(config,None)
@@ -55,11 +55,23 @@ def run(path):
             if current['desired']=='paused':
                 if wire:wire.close();wire=None
                 time.sleep(.1);continue
+            requested=current.get('barrier_request')
+            if verified and requested and requested!=emitted and (spool.get('barrier') or {}).get('run_id')!=requested:
+                from capture.protocol import barrier_message
+                prefix='supabricks.barrier.'+identity['generation']
+                barrier_message(1,prefix,requested.encode(),prefix if identity.get('decoder_version')==2 else None)
+                # A transactional message provides a complete commit boundary even
+                # on an idle source. A restart may emit it again; the first durable
+                # occurrence for the run wins, and a pinned target never moves.
+                with source.conn.transaction():
+                    source.conn.execute('SET LOCAL synchronous_commit=on')
+                    source.conn.execute('SELECT pg_logical_emit_message(true,%s,%s)',(prefix,requested))
+                emitted=requested
             if wire is None:
                 observed=source.check()
                 wire=Wire(config['socket_dir'],config['port'])
                 wire.start(source.slot,source.publication,spool.captured)
-                decoder=Decoder(profile['relations'],source.fence)
+                decoder=Decoder(profile['relations'],source.fence,'supabricks.barrier.'+identity['generation'] if identity.get('decoder_version')==2 else None)
             if not select.select([wire.socket],[],[],.2)[0]:
                 if time.monotonic()-last_ack>=1:
                     wire.feedback(spool.captured);last_ack=time.monotonic()

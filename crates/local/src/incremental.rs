@@ -5,6 +5,8 @@ use supabricks_core::resource::{BranchId, EpochId, OperationId, ProjectId};
 pub struct Run {
     pub id: OperationId,
     pub capture_id: OperationId,
+    #[serde(default)]
+    pub sync_run_id: Option<OperationId>,
     pub project_id: ProjectId,
     pub branch_id: BranchId,
     pub epoch_id: EpochId,

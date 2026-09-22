@@ -1,4 +1,4 @@
-//! SY01 local-owner managed full snapshots. Incremental modes are explicitly gated.
+//! Local-owner snapshot and triggered incremental policies. Continuous mode stays gated.
 use crate::{
     api::Binding,
     store::{ExportLimits, Result, Store, error::invalid},
@@ -34,10 +34,13 @@ impl Default for Config {
     }
 }
 impl Config {
+    pub fn triggered(&self) -> bool {
+        self.mode == "triggered" && self.strategy == "incremental"
+    }
     pub fn validate(&self) -> Result<()> {
-        if self.mode != "snapshot" || self.strategy != "full" {
+        if !((self.mode == "snapshot" && self.strategy == "full") || self.triggered()) {
             return Err(invalid(
-                "SY01 supports snapshot/full only; triggered and continuous incrementality are unavailable",
+                "supported policies are snapshot/full and triggered/incremental; continuous mode is unavailable",
             ));
         }
         self.limits.validate()?;
@@ -62,6 +65,8 @@ impl Config {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Policy {
     pub id: OperationId,
+    #[serde(default)]
+    pub capture_id: Option<OperationId>,
     pub project_id: ProjectId,
     pub deployment_id: DeploymentId,
     pub branch_id: BranchId,
@@ -90,6 +95,16 @@ pub struct Run {
     pub project_id: ProjectId,
     pub branch_id: BranchId,
     pub trigger: String,
+    #[serde(default)]
+    pub capture_id: Option<OperationId>,
+    #[serde(default)]
+    pub target_lsn: Option<String>,
+    #[serde(default)]
+    pub apply_id: Option<OperationId>,
+    #[serde(default)]
+    pub batches: u32,
+    #[serde(default)]
+    pub deadline_ms: Option<i64>,
     pub state: String,
     pub admitted_at_ms: i64,
     pub scheduled_for_ms: Option<i64>,
@@ -182,6 +197,9 @@ pub(crate) fn tick(store: &mut Store, cell: Option<&crate::engine::Cell>) -> Res
     let now = chrono::Utc::now().timestamp_millis();
     store.reconcile_sync(now)?;
     store.schedule_sync(now)?;
+    if cell.is_some() {
+        store.tick_triggered(now)?;
+    }
     if cell.is_none()
         || !store.active_exports()?.is_empty()
         || !store.pending_refreshes()?.is_empty()

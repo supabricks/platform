@@ -90,6 +90,8 @@ jobs:
         run: python e2e/native/capture.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-capture.json
       - name: Incremental versions, atomic groups, worker crashes and retained readers
         run: python e2e/native/incremental.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-incremental.json
+      - name: Triggered barriers, bounded catch-up, schedules and cancellation
+        run: python e2e/native/triggered.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-triggered.json
       - name: Analytical worker boundary tests
         run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py'
       - name: Coding-agent setup adapter contracts
@@ -99,6 +101,8 @@ jobs:
         with:
           name: native-cell-${{ matrix.target }}
           path: |
+            native-triggered.json
+            native-triggered.log
             native-incremental.json
             native-incremental.log
             native-capture.json

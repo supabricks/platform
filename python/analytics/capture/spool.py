@@ -86,6 +86,7 @@ class Spool:
         try: fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             raise CaptureError('spool_already_owned') from None
+        self.identity = identity
         self.limit = limit
         self.path = self.root/'spool.sqlite3'
         existed = self.path.exists()
@@ -142,14 +143,25 @@ class Spool:
         if self.db.execute('PRAGMA quick_check').fetchone() != ('ok',): raise CaptureError('spool_corrupt')
         previous=self.get('start')
         if self.db.execute('SELECT 1 FROM transactions WHERE length(payload)>? LIMIT 1',(MAX_TRANSACTION,)).fetchone():raise CaptureError('spool_corrupt')
-        total=0
+        total=0;barrier=None
         for end,prior,commit,payload,digest in self.db.execute('SELECT end_lsn,previous_lsn,commit_lsn,payload,sha256 FROM transactions ORDER BY seq'):
             end,prior,commit=int(end,16),int(prior,16),int(commit,16)
             if previous is None or prior!=previous or not previous<end or not commit<end or len(payload)>MAX_TRANSACTION or hashlib.sha256(payload).hexdigest()!=digest:
                 raise CaptureError('spool_corrupt')
+            barrier=self.barrier_for(payload,end,barrier)
             previous=end;total+=len(payload)
             if total>self.limit: raise CaptureError('spool_budget')
-        if previous!=self.captured or total!=(self.get('bytes') or 0): raise CaptureError('spool_corrupt')
+        if previous!=self.captured or total!=(self.get('bytes') or 0) or barrier!=self.get('barrier'): raise CaptureError('spool_corrupt')
+
+    def barrier_for(self,payload,end,previous):
+        if self.identity.get('decoder_version')!=2:return previous
+        from .protocol import Reader,barrier_message
+        for frame in frames(payload):
+            if frame[:1]!=b'M':continue
+            r=Reader(frame);r.take(1);flags=r.number('B');r.number('Q');prefix=r.string();content=r.take(r.number('I'));r.finish()
+            run=barrier_message(flags,prefix,content,'supabricks.barrier.'+self.identity['generation'])
+            if previous is None or previous['run_id']!=run:previous=dict(run_id=run,end_lsn=pg_lsn(end))
+        return previous
 
     def append(self, commit, end, payload):
         if len(payload)>MAX_TRANSACTION: raise CaptureError('transaction_budget')
@@ -171,6 +183,8 @@ class Spool:
             self.db.execute('INSERT INTO transactions(end_lsn,previous_lsn,commit_lsn,payload,sha256) VALUES (?,?,?,?,?)',
                 (f'{end:016x}',f'{previous:016x}',f'{commit:016x}',payload,digest))
             self.set('captured',end);self.set('bytes',(self.get('bytes') or 0)+len(payload))
+            barrier=self.barrier_for(payload,end,self.get('barrier'))
+            if barrier is not None:self.set('barrier',barrier)
             fault('before_spool_commit')
             self.db.execute('COMMIT')
         except BaseException:

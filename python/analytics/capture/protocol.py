@@ -30,9 +30,19 @@ class Reader:
         if self.offset!=len(self.data):raise CaptureError('invalid_pgoutput')
 
 
+def barrier_message(flags,prefix,content,expected):
+    import uuid
+    if flags!=1 or expected is None or prefix!=expected or len(content)!=36:raise CaptureError('unsupported_message')
+    try:
+        run=content.decode('ascii')
+        if str(uuid.UUID(run))!=run:raise ValueError()
+    except (ValueError,UnicodeError):raise CaptureError('invalid_barrier') from None
+    return run
+
+
 class Decoder:
-    def __init__(self,schema,fence):
-        self.expected=schema;self.fence=fence;self.relations=set();self.pending=None
+    def __init__(self,schema,fence,barrier_prefix=None):
+        self.expected=schema;self.fence=fence;self.barrier_prefix=barrier_prefix;self.relations=set();self.pending=None
     def feed(self,payload):
         r=Reader(payload);tag=r.take(1);result=None;store=True
         if tag==b'B':
@@ -58,11 +68,10 @@ class Decoder:
                 if marker!=b'N':raise CaptureError('invalid_tuple')
                 r.tuple(count)
         elif tag==b'M':
-            flags=r.number('B');r.number('Q');prefix=r.string();r.take(r.number('I'))
+            flags=r.number('B');r.number('Q');prefix=r.string();content=r.take(r.number('I'))
             if flags!=1 or self.pending is None:raise CaptureError('unsupported_message')
             if prefix==self.fence:raise CaptureError('schema_changed')
-            # Other logical messages are outside the admitted source profile.
-            raise CaptureError('unsupported_message')
+            barrier_message(flags,prefix,content,self.barrier_prefix)
         elif tag==b'C':
             if self.pending is None or r.number('B')!=0:raise CaptureError('invalid_transaction')
             commit,end,stamp=r.number('Q'),r.number('Q'),r.number('q')

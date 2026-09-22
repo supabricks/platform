@@ -50,6 +50,8 @@ pub struct Capture {
     pub worker_generation: i64,
     pub bootstrap_id: Option<OperationId>,
     pub bootstrap_lsn: Option<String>,
+    #[serde(default)]
+    pub barrier: Option<Value>,
     pub observed_at_ms: Option<i64>,
     pub start_lsn: Option<String>,
     pub captured_lsn: Option<String>,

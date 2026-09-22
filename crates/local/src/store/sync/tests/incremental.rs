@@ -29,7 +29,7 @@ fn apply(s: &mut Store, c: &crate::capture::Capture, key: &str) -> Apply {
     )
     .unwrap()
 }
-fn prepare(
+pub(super) fn prepare(
     s: &mut Store,
     c: &crate::capture::Capture,
     r: &mut Apply,
@@ -58,7 +58,7 @@ fn prepare(
     s.incremental_ready(r, &descriptor).unwrap();
     descriptor
 }
-fn finish(s: &mut Store, r: &Apply) {
+pub(super) fn finish(s: &mut Store, r: &Apply) {
     let mut publisher = Publisher::recover(s).unwrap();
     for _ in 0..10 {
         publisher.tick(s).unwrap();

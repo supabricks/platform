@@ -112,6 +112,19 @@ impl Store {
             project_id: p.project_id,
             branch_id: p.branch_id,
             trigger: trigger.into(),
+            capture_id: if p.config.triggered() {
+                Some(self.triggered_capture(p)?.id)
+            } else {
+                None
+            },
+            target_lsn: None,
+            apply_id: None,
+            batches: 0,
+            deadline_ms: if p.config.triggered() {
+                Some(now.saturating_add(p.config.limits.timeout_ms as i64))
+            } else {
+                None
+            },
             state: "queued".into(),
             admitted_at_ms: now,
             scheduled_for_ms: due,
@@ -132,6 +145,9 @@ impl Store {
         }
         if matches!(r.state.as_str(), "failed" | "cancelled") {
             return Ok(r);
+        }
+        if r.config.triggered() {
+            self.cancel_triggered_apply(&r, reason)?;
         }
         if let Some(id) = r.refresh_id {
             if self
@@ -213,6 +229,7 @@ impl Store {
                     }
                     let p = Policy {
                         id: OperationId::new(),
+                        capture_id: None,
                         project_id: project,
                         deployment_id: deployment,
                         branch_id,
@@ -242,7 +259,10 @@ impl Store {
                             serde_json::to_string(&p)?
                         ],
                     )?;
-                    json!(p)
+                    if p.config.triggered() {
+                        self.enroll_triggered(&p)?;
+                    }
+                    json!(self.sync_policy(project, p.id)?)
                 }
                 Command::Update {
                     id,
@@ -268,6 +288,11 @@ impl Store {
                     if let Command::Update { config, .. } = &command {
                         config.validate()?;
                         self.sync_source(&p)?;
+                        if config.mode != p.config.mode
+                            && self.captures()?.iter().any(|c| c.policy_id == p.id)
+                        {
+                            return Err(conflict("delete capture before changing sync mode"));
+                        }
                         p.config = config.clone();
                     }
                     if matches!(command, Command::Resume { .. }) {
@@ -295,7 +320,16 @@ impl Store {
                         None
                     };
                     self.save_sync_policy(&p)?;
-                    json!(p)
+                    if p.state == "deleted" {
+                        self.delete_policy_capture(&p)?;
+                    }
+                    if p.config.triggered()
+                        && matches!(command, Command::Update { .. })
+                        && !self.captures()?.iter().any(|c| c.policy_id == p.id)
+                    {
+                        self.enroll_triggered(&p)?;
+                    }
+                    json!(self.sync_policy(project, p.id)?)
                 }
                 Command::RunNow {
                     id,
@@ -394,7 +428,7 @@ impl Store {
         Ok(self
             .active_sync_runs()?
             .into_iter()
-            .find(|r| r.state == "queued" || r.state == "starting"))
+            .find(|r| !r.config.triggered() && (r.state == "queued" || r.state == "starting")))
     }
     pub(crate) fn start_sync_run(&self, id: OperationId) -> Result<()> {
         let mut r = self
@@ -454,9 +488,10 @@ impl Store {
     }
     pub(crate) fn reconcile_sync(&mut self, now: i64) -> Result<()> {
         self.db.execute("INSERT INTO analytics_gc SELECT e.id,NULL,'pending' FROM exports e JOIN sync_runs r ON r.refresh_id=e.id WHERE r.state='cancelled' AND e.state IN ('complete','failed','cancelled') AND NOT EXISTS(SELECT 1 FROM publications p WHERE p.export_id=e.id AND p.state='published') ON CONFLICT DO NOTHING", [])?;
+        self.reconcile_triggered(now)?;
         // Repair admission crash gaps before cancellation or validation. No duplicate export.
         for r in self.active_sync_runs()? {
-            if r.refresh_id.is_none() {
+            if !r.config.triggered() && r.refresh_id.is_none() {
                 let id: Option<String> = self
                     .db
                     .query_row(
@@ -568,6 +603,7 @@ impl Store {
 /// Called only on a verified stopped backup copy, before any daemon can execute.
 pub(crate) fn restore(db: &rusqlite::Connection, now: i64) -> Result<()> {
     let tx = db.unchecked_transaction()?;
+    triggered::restore_success(&tx)?;
     // A stopped backup can land after epoch commit but before run reconciliation.
     // Preserve that success before cancelling copied unfinished intent.
     let published = tx.prepare("SELECT r.record,p.epoch_id,p.published_at_ms,p.descriptor FROM sync_runs r JOIN publications p ON p.export_id=r.refresh_id WHERE r.state IN ('starting','running') AND p.state='published'")?
@@ -597,6 +633,8 @@ pub(crate) fn restore(db: &rusqlite::Connection, now: i64) -> Result<()> {
     tx.commit()?;
     Ok(())
 }
+
+mod triggered;
 
 #[cfg(test)]
 mod tests;
