@@ -38,10 +38,17 @@ impl Config {
         let pins: Value = serde_json::from_str(include_str!(
             "../../../../components/execution-runtime.lock.json"
         ))?;
-        if pins["platform"]["inventory_sha256"] != self.inventory_sha256
-            || pins["gvisor"]["inventory_sha256"] != self.tools_sha256
-            || pins["rootfs"] != IMAGE
-        {
+        // Source probes retain the reviewed alpha.34 runtime. Installed candidates
+        // must execute their own complete verified archive, never a caller-selected
+        // replacement runtime with a self-authored hash.
+        if pins["platform"]["inventory_sha256"] != self.inventory_sha256 {
+            let installed = crate::installation::Installation::discover()?.ok_or_else(denied)?;
+            if installed.root != self.release || installed.identity != self.inventory_sha256 {
+                return Err(denied());
+            }
+            installed.verify()?;
+        }
+        if pins["gvisor"]["inventory_sha256"] != self.tools_sha256 || pins["rootfs"] != IMAGE {
             return Err(denied());
         }
         for path in [&self.release, &self.tools, &self.rootfs] {

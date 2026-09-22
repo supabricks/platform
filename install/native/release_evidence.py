@@ -158,6 +158,15 @@ def collect(directory, revision, console, worker, version):
             baseline=dict(network=baseline['network_qualification'],
                           scope='Daemon and sampled live descendants; excludes harness and CLI. RSS can double-count shared pages and miss short peaks.', measurements={k:metrics(v) for k,v in benchmark['measurements'].items()}),
             network_destinations=network['observed_destinations'] if network else None)
+        if target == 'linux-x86_64':
+            from governed_evidence import collect as governed_evidence
+            path=directory/f'release-governed-{target}/governed.json'
+            governed=governed_evidence(json.loads(path.read_text()),env)
+            result['targets'][target]['governed']=governed
+            reports[str(path.relative_to(directory))]=dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                checks=sum(len(v['checks']) for v in governed['reports'].values()))
+        else:
+            result['targets'][target]['governed']=dict(status='unsupported',reason='Linux-only qualified isolation profile')
     return result
 
 
@@ -170,6 +179,7 @@ def markdown(report):
         lines.append(f"| {target} | {data['browser']['version']} | {sum(r['checks'] for r in data['reports'].values())} | `{data['release_sha256']}` |")
     lines += ['', 'Unity Catalog: `' + report['targets']['linux-x86_64']['catalog']['commit'] + '`; bundled JRE and backend contract recorded per target. Catalog gates include native lifecycle, two-project browser workflow, retained reads and moved-root recovery against each installed archive.', '']
     lines += ['The historical macOS notebook predecessor is prepared before isolation. Candidate upgrade, rebuilt/restored kernels and the resolver run under Seatbelt; the JSON evidence records child outbound denial and predecessor process shutdown.', '']
+    lines += ['', 'Governed profile: Linux TLS console, real on-prem identity, native data and isolated execution passed on the same Linux archive. macOS has no governed qualification.', '']
     lines += ['', '## Ingestion measurements', '',
               'Synthetic fixtures; throughput covers the worker interval, not upload, inspection or total user latency. RSS is sampled and can miss short peaks. Compressed Parquet source throughput is not decoded throughput.', '',
               '| Target | Format | Source bytes | Rows | Worker seconds | Source MiB/s | Sampled peak MiB |', '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
@@ -193,11 +203,18 @@ if __name__ == '__main__':
     parser.add_argument('--revision', required=True)
     parser.add_argument('--console', required=True)
     parser.add_argument('--worker', required=True, type=Path)
-    parser.add_argument('--version', default='v0.1.0-alpha.34')
+    parser.add_argument('--version', default='v0.1.0-alpha.35')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
     report = collect(args.directory, args.revision, args.console, hashlib.sha256(args.worker.read_bytes()).hexdigest(), args.version)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2)+'\n')
     args.report.with_suffix('.md').write_text(markdown(report))
-    print('R04: complete local workflow qualified for both exact archives')
+    receipt=dict(schema_version=1,status='passed',profile='linux-governed-shared-v1',target='linux-x86_64',
+                 release_identity=report['targets']['linux-x86_64']['release_sha256'],
+                 r04_sha256=hashlib.sha256(args.report.read_bytes()).hexdigest())
+    import os
+    receipt_path=args.report.with_suffix('.governed.json')
+    fd=os.open(receipt_path,os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)
+    with os.fdopen(fd,'w') as out:json.dump(receipt,out,indent=2);out.write('\n')
+    print('R04: both local archives and the Linux governed profile qualified')

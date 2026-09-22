@@ -529,3 +529,151 @@ fn identity_browser_pkce_cookie_csrf_logout_and_product_gate() {
         403
     );
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn installed_governed_tls_rejects_cross_origin_legacy_and_unqualified_shared_bindings() {
+    use sha2::{Digest, Sha256};
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let release = f.temp.path().join("release");
+    fs::create_dir_all(release.join("bin")).unwrap();
+    fs::create_dir_all(release.join("share/console")).unwrap();
+    let binary = release.join("bin/supabricks");
+    fs::copy(env!("CARGO_BIN_EXE_supabricks"), &binary).unwrap();
+    let index = b"<!doctype html><title>Governed TLS fixture</title>";
+    fs::write(release.join("share/console/index.html"), index).unwrap();
+    fs::write(
+        release.join("share/console/console.json"),
+        json!({"api_version":1,"files":{"index.html":hex::encode(Sha256::digest(index))}})
+            .to_string(),
+    )
+    .unwrap();
+    let mut files = serde_json::Map::new();
+    for name in [
+        "bin/supabricks",
+        "share/console/index.html",
+        "share/console/console.json",
+    ] {
+        let path = release.join(name);
+        files.insert(name.into(),json!({"sha256":hex::encode(Sha256::digest(fs::read(&path).unwrap())),"executable":fs::metadata(&path).unwrap().permissions().mode() & 0o111 != 0}));
+    }
+    fs::write(release.join("release.json"),json!({"format_version":1,"version":"v0.1.0-tls-test","target":"linux-x86_64","profile":"local-postgres-alpha","provenance":{},"files":files}).to_string()).unwrap();
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/identity");
+    for name in ["cert.pem", "key.pem"] {
+        let path = f.temp.path().join(name);
+        fs::copy(fixture.join(name), &path).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+    }
+    let address = TcpListener::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap();
+    let origin = format!("https://{address}");
+    let redirect = format!("{origin}/auth/v1/callback");
+    let config = f.temp.path().join("ingress.json");
+    let mut ingress = json!({"listen":address.to_string(),"origin":origin,"certificate":f.temp.path().join("cert.pem"),"private_key":f.temp.path().join("key.pem"),"qualification":null});
+    transport::write_private(&config, &ingress).unwrap();
+    let launch = || {
+        Command::new(&binary)
+            .args([
+                "console",
+                "--governed",
+                "--provider",
+                "fixture",
+                "--redirect",
+                &redirect,
+                "--ingress",
+            ])
+            .arg(&config)
+            .arg("--data-dir")
+            .arg(&f.root)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap()
+    };
+    let mut browser = Process(launch());
+    let until = Instant::now() + Duration::from_secs(15);
+    loop {
+        if f.http
+            .get(format!("{origin}/auth/v1/console"))
+            .send()
+            .is_ok()
+        {
+            break;
+        }
+        assert!(Instant::now() < until, "TLS ingress did not start");
+        assert!(
+            browser.0.try_wait().unwrap().is_none(),
+            "TLS ingress exited"
+        );
+        std::thread::sleep(Duration::from_millis(30));
+    }
+    let response = f
+        .http
+        .get(format!("{origin}/auth/v1/context"))
+        .send()
+        .unwrap();
+    let cookie = response.headers()["set-cookie"].to_str().unwrap();
+    assert!(
+        cookie.contains("Secure") && cookie.contains("HttpOnly") && cookie.contains("SameSite=Lax")
+    );
+    assert_eq!(
+        serde_json::from_str::<Value>(&response.text().unwrap()).unwrap()["authenticated"],
+        false
+    );
+    assert_eq!(
+        f.http
+            .get(format!("{origin}/api/session"))
+            .send()
+            .unwrap()
+            .status(),
+        403
+    );
+    assert_eq!(
+        f.http
+            .get(format!("{origin}/auth/v1/context"))
+            .header("Host", "evil.example")
+            .send()
+            .unwrap()
+            .status(),
+        403
+    );
+    assert_eq!(
+        f.http
+            .post(format!("{origin}/auth/v1/control"))
+            .header("Origin", "https://evil.example")
+            .header("Content-Type", "application/json")
+            .body(json!({"action":"projects"}).to_string())
+            .send()
+            .unwrap()
+            .status(),
+        403
+    );
+    assert!(
+        Client::new()
+            .get(format!("{origin}/auth/v1/console"))
+            .send()
+            .is_err(),
+        "untrusted certificate accepted"
+    );
+    browser.0.kill().unwrap();
+    browser.0.wait().unwrap();
+    ingress["listen"] = json!(format!("0.0.0.0:{}", address.port()));
+    fs::write(&config, ingress.to_string()).unwrap();
+    let mut refused = Process(launch());
+    assert!(
+        !refused.0.wait().unwrap().success(),
+        "unqualified shared listener enabled"
+    );
+    let receipt = f.temp.path().join("receipt.json");
+    transport::write_private(&receipt,&json!({"schema_version":1,"status":"passed","profile":"linux-governed-shared-v1","release_identity":"wrong-archive","target":"linux-x86_64","r04_sha256":"a".repeat(64)})).unwrap();
+    ingress["qualification"] = json!(receipt);
+    fs::write(&config, ingress.to_string()).unwrap();
+    let mut refused = Process(launch());
+    assert!(
+        !refused.0.wait().unwrap().success(),
+        "mixed-archive receipt accepted"
+    );
+}

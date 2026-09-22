@@ -132,7 +132,7 @@ def qualify(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('directory','console','report'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--version',default='v0.1.0-alpha.34')
+    p.add_argument('--version',default='v0.1.0-alpha.35')
     p.add_argument('--target',choices=('linux-x86_64','macos-arm64'),required=True)
     p.add_argument('--node',required=True)
     p.add_argument('--network-evidence',required=True)

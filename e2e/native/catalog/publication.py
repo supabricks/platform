@@ -41,19 +41,28 @@ def run(cell, root, installed, branch, work, token, api, check):
     first=request('preview',epoch_id=snapshot['epoch_id'])
     assert first['retention']['durable'] and len(first['tables'])>=2
     assert request('resolve',branch='main')['publication'] is None
-    p=accept(first,'uc03-first');ids=[t['id'] for t in p['tables']]
-    assert accept(first,'uc03-first')['id']==p['id']
-    rejected('publish',epoch_id=first['epoch_id'],key='uc03-first',expected_preview='0'*64,expected_source_revision=first['source_revision'],expected_binding_revision=first['binding_revision'])
-    # Kill after the write intent, before completion; every preassigned identity must survive.
-    def intent():
-        with sqlite3.connect(cell.root/'state.sqlite3') as db:
-            saved=json.loads(db.execute('SELECT record_json FROM catalog_publications WHERE id=?',(p['id'],)).fetchone()[0])
-        assert saved['state']=='registering', 'missed crash boundary'
-        return any(t['state']=='creating' for t in saved['tables'])
-    wait(intent,timeout=10)
-    cell.daemons[-1].kill();cell.daemons[-1].wait(timeout=5)
+    # Hold the actual provider before publishing so registration cannot finish
+    # between API/schema validation and our durable-intent observation. Crash
+    # the writer at that boundary, then release UC even if the assertion fails.
+    pid=next(record['pid'] for record in cell.records() if record['role']=='unity-catalog')
+    os.kill(pid,signal.SIGSTOP)
+    try:
+        p=accept(first,'uc03-first');ids=[t['id'] for t in p['tables']]
+        def intent():
+            with sqlite3.connect(cell.root/'state.sqlite3') as db:
+                saved=json.loads(db.execute('SELECT record_json FROM catalog_publications WHERE id=?',(p['id'],)).fetchone()[0])
+            assert saved['state']=='registering', 'missed crash boundary'
+            assert not saved['error'],saved['error']
+            return any(t['state']=='creating' for t in saved['tables'])
+        wait(intent,timeout=10)
+        cell.daemons[-1].kill();cell.daemons[-1].wait(timeout=5)
+    finally:
+        try:os.kill(pid,signal.SIGCONT)
+        except ProcessLookupError:pass
     cell.start();ready()
     p=complete(p['id']);assert [t['id'] for t in p['tables']]==ids
+    assert accept(first,'uc03-first')['id']==p['id']
+    rejected('publish',epoch_id=first['epoch_id'],key='uc03-first',expected_preview='0'*64,expected_source_revision=first['source_revision'],expected_binding_revision=first['binding_revision'])
     assert request('resolve',branch='main')['publication']['id']==p['id']
     endpoint=provider()['endpoint']
     cli=json.loads(subprocess.check_output([str(cell.binary),'catalog','publication','status',p['id'],'--project',str(work),'--data-dir',str(cell.root)],text=True))

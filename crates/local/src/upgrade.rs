@@ -131,6 +131,10 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             "candidate format declaration does not match this binary",
         ));
     }
+    let catalog_transition = crate::catalog::upgrade::supported(&old, &candidate)?;
+    if catalog_transition {
+        crate::catalog::upgrade::preflight(&root, &old.root, existing.is_some())?;
+    }
     let migration = matches!(
         source_schema,
         8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21
@@ -155,7 +159,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
     if adding_catalog {
         normalized["unity_catalog"] = json!(1);
     }
-    if adding_catalog
+    if (adding_catalog || catalog_transition)
         && (migration || source_schema == SCHEMA_VERSION)
         && normalized == target_formats
     {
@@ -232,7 +236,29 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         }
     }
     // The lock also excludes a daemon starting between shutdown and acquisition.
-    let mut stopped = Stopped::open_schema(&root, schema)?;
+    if catalog_transition && !backup.exists() {
+        if existing.is_some() || schema != source_schema || !same_runtime(&cfg, &from) {
+            return Err(conflict(
+                "source catalog checkpoint is missing; recover the original upgrade backup",
+            ));
+        }
+        let output = Command::new(old.root.join("bin/supabricks"))
+            .args(["backup", "create"])
+            .arg(&backup)
+            .arg("--data-dir")
+            .arg(&root)
+            .output()?;
+        if !output.status.success() {
+            return Err(conflict(
+                "previous catalog could not create a stopped checkpoint",
+            ));
+        }
+    }
+    let mut stopped = if catalog_transition {
+        Stopped::open_catalog_transition(&root, schema)?
+    } else {
+        Stopped::open_schema(&root, schema)?
+    };
     let mut cfg = read_runtime(&root)?;
     let current_hash = recovery::file_hash(&root.join("state.sqlite3"))?;
     let catalog_hash = crate::catalog::recovery::checkpoint_identity(&root)?;
@@ -240,6 +266,18 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         return Err(conflict(
             "first-catalog upgrade requires an empty catalog state",
         ));
+    }
+    if catalog_transition && existing.is_none() {
+        let saved = recovery::verify(&backup)?;
+        if saved.source_root != root
+            || saved.release.as_ref() != Some(&from)
+            || saved.files["state.sqlite3"].sha256 != current_hash
+            || crate::catalog::recovery::checkpoint_identity(&backup.join("data"))? != catalog_hash
+        {
+            return Err(conflict(
+                "source changed after its catalog checkpoint; choose a fresh backup path",
+            ));
+        }
     }
     let journal = if let Some(mut j) = existing {
         if j.backup != backup && same_runtime(&cfg, &from) && schema == source_schema {
@@ -263,7 +301,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         }
         j
     } else {
-        if backup.exists() {
+        if backup.exists() && !catalog_transition {
             return Err(conflict("upgrade backup destination already exists"));
         }
         let j = Journal {
@@ -288,7 +326,9 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
         recovery::create_locked(&stopped, &backup, Some(from.clone()))?;
     }
     let saved = recovery::verify(&backup)?;
-    if crate::catalog::recovery::checkpoint_identity(&backup.join("data"))? != catalog_hash {
+    if crate::catalog::recovery::checkpoint_identity(&backup.join("data"))?
+        != journal.catalog_state_sha256
+    {
         return Err(conflict(
             "catalog state changed since upgrade backup; restore the verified checkpoint or restart preparation with a new backup path",
         ));
@@ -331,6 +371,9 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             return Err(conflict("migration checkpoint is busy; retry upgrade"));
         }
         recovery::sync_dir(&root)?;
+    }
+    if catalog_transition {
+        crate::catalog::upgrade::finish(&root, &stopped.db)?;
     }
     cfg["installation_identity"] = json!(to.identity);
     cfg["bundle"] = json!(candidate.bundle());

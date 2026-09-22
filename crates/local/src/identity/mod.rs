@@ -1,5 +1,6 @@
 //! UC09.1 authentication foundation. No governed product ingress is enabled.
 //! The control socket is operator-only; remote adapters expose only AuthCommand.
+pub mod ingress;
 pub mod oidc;
 pub mod transport;
 use crate::store::{Result, error::invalid};

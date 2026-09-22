@@ -13,7 +13,8 @@ def summarize(path):
         text=f.read(32768).decode('utf-8',errors='replace')
     files={'client.py','pk05-notebook.py','qualify_catalog.py','catalog_gate.py',
            'service.py','recovery.py','datasets.py','publication.py','reads.py',
-           'metadata.py','cell.py','epochs.py','project_offline.py'}
+           'metadata.py','cell.py','epochs.py','project_offline.py',
+           'qualify.py','qualify_governed.py','governed_upgrade.py'}
     functions={'execute','main','qualify','run','wait','start','connect','request','stop'}
     frames=[dict(file=Path(file).name if Path(file).name in files else 'runtime',
                  line=int(line),function=function if function in functions else 'runtime')

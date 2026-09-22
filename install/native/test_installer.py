@@ -90,6 +90,15 @@ class Installer(unittest.TestCase):
         self.assertIn('signature verification failed', self.install(False).stderr)
         self.assertFalse((self.prefix / 'current').exists())
 
+    def test_payload_is_readable_by_guest_uid_inside_private_installation(self):
+        self.package()
+        self.install(True)
+        for path in (self.prefix, self.prefix/'releases'):
+            self.assertEqual(path.stat().st_mode & 0o077, 0)
+        release=(self.prefix/'current').resolve()
+        for path in (release, release/'bin', release/'bin/supabricks'):
+            self.assertEqual(path.stat().st_mode & 0o007, 0o005)
+
     def test_changed_archive_does_not_activate(self):
         self.package()
         with self.archive.open('ab') as stream:

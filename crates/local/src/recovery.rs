@@ -222,6 +222,7 @@ fn excluded(name: &str) -> bool {
             | "state.sqlite3-shm"
             | "upgrade.json"
             | "restore-incomplete"
+            | "governed-console.sock"
             | "process-compose.json"
             | "supervisor.token"
             | "execution-runtime.json"
@@ -324,6 +325,14 @@ impl Stopped {
         Self::open_schema(root, SCHEMA_VERSION)
     }
     pub(crate) fn open_schema(root: &Path, expected: u32) -> Result<Self> {
+        Self::open_checkpoint(root, expected, true)
+    }
+    // Only the named backend upgrade uses this after its source binary made a
+    // verified stopped checkpoint; upgrade compares those bytes under this lock.
+    pub(crate) fn open_catalog_transition(root: &Path, expected: u32) -> Result<Self> {
+        Self::open_checkpoint(root, expected, false)
+    }
+    fn open_checkpoint(root: &Path, expected: u32, catalog: bool) -> Result<Self> {
         if !matches!(
             expected,
             8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22
@@ -376,7 +385,9 @@ impl Stopped {
         if schema >= 10 && db.prepare("SELECT 1 FROM environment_operations WHERE state IN ('queued','initializing','preparing','verifying') UNION ALL SELECT 1 FROM environment_leases")?.exists([])? {
             return Err(conflict("environment preparations or leases remain; complete shutdown first"));
         }
-        crate::catalog::recovery::checkpoint(&root, &db)?;
+        if catalog {
+            crate::catalog::recovery::checkpoint(&root, &db)?;
+        }
         db.pragma_update(None, "synchronous", "FULL")?;
         let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get(0))?;
         if busy != 0 {

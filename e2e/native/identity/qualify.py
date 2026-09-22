@@ -10,6 +10,7 @@ import hashlib
 import http.cookiejar
 from html.parser import HTMLParser
 import json
+import os
 from pathlib import Path
 import secrets
 import select
@@ -56,7 +57,7 @@ def run(args, **kwargs):
     return result.stdout.decode()
 
 
-def qualify(binary, uc_runtime=None, execution_config=None):
+def qualify(binary, uc_runtime=None, execution_config=None, exact_installed=False):
     checks = []
     measurements = {}
     name = 'sb-uc091-' + uuid.uuid4().hex[:12]
@@ -163,11 +164,13 @@ def qualify(binary, uc_runtime=None, execution_config=None):
             return body
 
         try:
-            run(['docker', 'run', '-d', '--name', name, '--memory=1g', '--cpus=2', '--pids-limit=256',
-                 '-p', '127.0.0.1:'+base.rsplit(':', 1)[1]+':8443', '--env-file', env,
+            network=['--network','container:'+os.environ['SUPABRICKS_QUALIFIER_CONTAINER']] if os.environ.get('SUPABRICKS_QUALIFIER_CONTAINER') else ['-p','127.0.0.1:'+base.rsplit(':',1)[1]+':8443']
+            run(['docker', 'run', *(['--pull=never'] if exact_installed else []), '-d', *network, '--name', name, '--memory=1g', '--cpus=2', '--pids-limit=256',
+                 '--env-file', env,
                  '-v', str(realm_file)+':/opt/keycloak/data/import/realm.json:ro',
                  '-v', str(root/'cert.pem')+':/tls/cert.pem:ro', '-v', str(root/'key.pem')+':/tls/key.pem:ro',
                  PINS['keycloak']['image'], 'start-dev', '--import-realm', '--http-enabled=false',
+                 *(['--https-port='+base.rsplit(':',1)[1]] if os.environ.get('SUPABRICKS_QUALIFIER_CONTAINER') else []),
                  '--https-certificate-file=/tls/cert.pem', '--https-certificate-key-file=/tls/key.pem',
                  '--hostname='+base])
             started = True
@@ -277,8 +280,11 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                     path = root/'catalog.json'; path.write_text(json.dumps(command)); path.chmod(0o600)
                     return cli('identity', 'catalog-admin', '--request-file', path)
 
-                owner(dict(method='catalog_service', command=dict(action='configure',
-                    provider=dict(mode='local', runtime=str(uc_runtime)))))
+                if exact_installed:
+                    assert uc_runtime==binary.parent.parent/'share/unity-catalog'
+                else:
+                    owner(dict(method='catalog_service', command=dict(action='configure',
+                        provider=dict(mode='local', runtime=str(uc_runtime)))))
                 deadline = time.monotonic()+60
                 while owner(dict(method='catalog_service', command=dict(action='status')))['state'] != 'ready':
                     assert time.monotonic()<deadline, 'managed UC startup timed out'
@@ -369,7 +375,9 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                     process.kill()
                 process.wait(timeout=10)
             if daemon:
-                daemon.terminate()
+                if daemon.poll() is None:
+                    run([binary,'down','--data-dir',data])
+                daemon.terminate() if daemon.poll() is None else None
                 try:
                     daemon.wait(timeout=10)
                 except subprocess.TimeoutExpired:
@@ -387,11 +395,12 @@ def qualify(binary, uc_runtime=None, execution_config=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', type=Path, required=True)
+    parser.add_argument('--exact-installed', action='store_true')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--uc-runtime', type=Path)
     parser.add_argument('--execution-config', type=Path)
     args = parser.parse_args()
     report = qualify(args.binary.resolve(), args.uc_runtime.resolve() if args.uc_runtime else None,
-                     args.execution_config.resolve() if args.execution_config else None)
+                     args.execution_config.resolve() if args.execution_config else None, args.exact_installed)
     args.output.write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(report))
