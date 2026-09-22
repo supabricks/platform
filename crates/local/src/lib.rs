@@ -2,6 +2,7 @@
 pub mod analytics;
 pub mod api;
 pub mod authorization;
+pub mod capture;
 pub mod catalog;
 pub mod cli;
 pub mod client;

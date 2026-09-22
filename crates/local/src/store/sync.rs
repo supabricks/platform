@@ -63,7 +63,7 @@ impl Store {
         )?;
         Ok(())
     }
-    fn sync_source(&self, p: &Policy) -> Result<()> {
+    pub(crate) fn sync_source(&self, p: &Policy) -> Result<()> {
         let b = self.branch_in_project(p.project_id, p.branch_id)?;
         let d = self.deployment(p.deployment_id)?;
         if self.is_export(p.branch_id)?

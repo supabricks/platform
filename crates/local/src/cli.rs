@@ -57,6 +57,8 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   branch list | get NAME | use NAME | rename NAME NEW_NAME
   branch suspend NAME | resume NAME | delete NAME [--force]
   branch default NAME | ttl NAME --expires-at-ms TIMESTAMP_OR_none
+  sync capture start POLICY --revision N [--key KEY] [--spool-bytes N] [--wal-bytes N]
+  sync capture status|pause|resume|delete CAPTURE [--key KEY]
   sync create --branch NAME [--every-seconds N] [--key KEY]
   sync update POLICY_ID --revision N [--every-seconds N] [--key KEY]
   sync list | show POLICY_ID | runs POLICY_ID [--limit 50] | status RUN_ID
@@ -2106,6 +2108,9 @@ fn read_project_json<T: serde::de::DeserializeOwned>(path: &str) -> Result<T> {
 fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
     use crate::sync::{Command as S, Config, Schedule};
     let verb = a.required(1)?;
+    if verb == "capture" {
+        return capture_cli(a, c);
+    }
     let read = matches!(verb.as_str(), "list" | "show" | "runs" | "status");
     let key = if read {
         String::new()
@@ -2208,6 +2213,39 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
         3
     })?;
     println!("{}", c.call(Action::ManagedSnapshots { command })?);
+    Ok(0)
+}
+fn capture_cli(a: &mut Args, c: &Client) -> Result<u8> {
+    use crate::capture::{Command as C, Limits};
+    let verb = a.required(2)?;
+    let id = a
+        .required(3)?
+        .parse::<OperationId>()
+        .map_err(|_| invalid("invalid policy/capture ID"))?;
+    let key = if verb == "status" {
+        String::new()
+    } else {
+        a.take("--key")
+            .unwrap_or_else(|| OperationId::new().to_string())
+    };
+    let command = match verb.as_str() {
+        "start" => C::Start {
+            policy_id: id,
+            expected_revision: sync_revision(a)?,
+            key,
+            limits: Limits {
+                spool_bytes: a.number("--spool-bytes", 512 * 1024 * 1024)?,
+                wal_bytes: a.number("--wal-bytes", 512 * 1024 * 1024)?,
+            },
+        },
+        "status" => C::Status { id },
+        "pause" => C::Pause { id, key },
+        "resume" => C::Resume { id, key },
+        "delete" => C::Delete { id, key },
+        _ => return Err(invalid("unknown capture command")),
+    };
+    a.finish(4)?;
+    println!("{}", c.call(Action::ManagedCapture { command })?);
     Ok(0)
 }
 fn sync_revision(a: &mut Args) -> Result<i64> {

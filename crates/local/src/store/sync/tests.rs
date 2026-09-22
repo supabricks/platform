@@ -544,3 +544,198 @@ fn failed_receipt_write_rolls_back_policy_revision_and_cancellation_together() {
     .unwrap();
     assert_eq!(s.sync_run(p, r.id).unwrap().state, "cancelled");
 }
+
+fn capture_policy(s: &mut Store, p: ProjectId, d: DeploymentId, b: BranchId) -> Policy {
+    serde_json::from_value(
+        s.sync_command(
+            p,
+            d,
+            Command::Create {
+                branch: b.to_string(),
+                key: "capture-policy".into(),
+                config: Config::default(),
+            },
+            0,
+        )
+        .unwrap(),
+    )
+    .unwrap()
+}
+fn capture_start(s: &mut Store, p: &Policy, key: &str) -> crate::capture::Capture {
+    serde_json::from_value(
+        s.capture_command(
+            p.project_id,
+            crate::capture::Command::Start {
+                policy_id: p.id,
+                expected_revision: p.revision,
+                key: key.into(),
+                limits: Default::default(),
+            },
+        )
+        .unwrap(),
+    )
+    .unwrap()
+}
+#[test]
+fn capture_admission_is_idempotent_scoped_and_globally_bounded() {
+    use crate::capture::Command as C;
+    let (_dir, mut s, p, d, b) = setup();
+    let policy = capture_policy(&mut s, p, d, b);
+    let c = capture_start(&mut s, &policy, "start");
+    assert_eq!(c.id, capture_start(&mut s, &policy, "start").id);
+    assert!(
+        s.capture_command(
+            p,
+            C::Start {
+                policy_id: policy.id,
+                expected_revision: 1,
+                key: "another".into(),
+                limits: Default::default()
+            }
+        )
+        .is_err()
+    );
+    assert!(
+        s.capture_command(ProjectId::new(), C::Status { id: c.id })
+            .is_err()
+    );
+    assert!(
+        s.capture_command(
+            p,
+            C::Pause {
+                id: c.id,
+                key: "start".into()
+            }
+        )
+        .is_err()
+    );
+    s.capture_command(
+        p,
+        C::Pause {
+            id: c.id,
+            key: "pause".into(),
+        },
+    )
+    .unwrap();
+    s.recover_captures().unwrap();
+    assert_eq!(s.capture(p, c.id).unwrap().desired, "paused");
+    let mut c = s.capture(p, c.id).unwrap();
+    c.state = "resync_required".into();
+    c.desired = "fenced".into();
+    s.save_capture(&c).unwrap();
+    assert!(
+        s.capture_command(
+            p,
+            C::Resume {
+                id: c.id,
+                key: "resume".into()
+            }
+        )
+        .is_err()
+    );
+    s.capture_command(
+        p,
+        C::Delete {
+            id: c.id,
+            key: "delete".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(s.capture(p, c.id).unwrap().state, "deleting");
+    assert!(
+        s.capture_command(
+            p,
+            C::Start {
+                policy_id: policy.id,
+                expected_revision: 1,
+                key: "blocked".into(),
+                limits: Default::default()
+            }
+        )
+        .is_err()
+    );
+}
+#[test]
+fn capture_policy_revision_fences_and_stale_status_does_not_claim_health() {
+    use crate::capture::Command as C;
+    let (_dir, mut s, p, d, b) = setup();
+    let policy = capture_policy(&mut s, p, d, b);
+    let mut c = capture_start(&mut s, &policy, "start");
+    c.state = "capturing".into();
+    c.observed_at_ms = Some(0);
+    s.save_capture(&c).unwrap();
+    assert_eq!(
+        s.capture_command(p, C::Status { id: c.id }).unwrap()["state"],
+        "unavailable"
+    );
+    s.sync_command(
+        p,
+        d,
+        Command::Pause {
+            id: policy.id,
+            expected_revision: 1,
+            key: "pause-policy".into(),
+        },
+        1,
+    )
+    .unwrap();
+    assert!(s.capture_live(&c).is_err());
+    assert!(
+        s.capture_command(
+            p,
+            C::Resume {
+                id: c.id,
+                key: "resume".into()
+            }
+        )
+        .is_err()
+    );
+}
+#[test]
+fn scheduled_policy_cannot_accidentally_enable_capture() {
+    use crate::capture::Command as C;
+    let (_dir, mut s, p, d, b) = setup();
+    let policy = create(&mut s, p, d, b);
+    assert!(
+        s.capture_command(
+            p,
+            C::Start {
+                policy_id: policy.id,
+                expected_revision: 1,
+                key: "no".into(),
+                limits: Default::default()
+            }
+        )
+        .is_err()
+    );
+    assert!(s.captures().unwrap().is_empty());
+}
+
+#[test]
+fn capture_restore_never_executes_copied_capture_intent() {
+    let (_dir, mut s, p, d, b) = setup();
+    let policy = capture_policy(&mut s, p, d, b);
+    let c = capture_start(&mut s, &policy, "start");
+    super::super::capture::restore(&s.db).unwrap();
+    s.recover_captures().unwrap();
+    let restored = s.capture(p, c.id).unwrap();
+    assert_eq!(restored.state, "resync_required");
+    assert_eq!(restored.desired, "fenced");
+    assert!(restored.cleanup_complete);
+    assert_eq!(restored.error.as_deref(), Some("restored_requires_resync"));
+}
+
+#[test]
+fn capture_lineage_installation_and_governance_changes_fence_the_generation() {
+    for change in [
+        "UPDATE analytics_installation SET id='different'",
+        "UPDATE branches SET timeline_id='11111111111111111111111111111111'",
+        "INSERT INTO governed_branches SELECT id,'ready' FROM branches",
+    ] {
+        let (_dir, mut s, p, d, b) = setup();
+        let policy = capture_policy(&mut s, p, d, b);
+        let c = capture_start(&mut s, &policy, "start");
+        s.db.execute_batch(change).unwrap();
+        assert!(s.capture_live(&c).is_err());
+    }
+}

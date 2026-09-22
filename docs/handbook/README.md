@@ -67,3 +67,6 @@ governed profile.
 
 For subsystem implementation and acceptance suites, use the
 [architecture index](../architecture/README.md) and [review records](../reviews/README.md).
+
+The [SY02 local durable capture workflow](durable-capture.md) enrolls an explicit
+local capture generation; incremental publication remains future work.
