@@ -4,8 +4,10 @@
 
 This explicit local-owner command prepares the capture foundation for incremental
 analytics. Capture alone does not update a Sail snapshot. Use [SY03 explicit
-incremental application](incremental-epochs.md) or SY01 full snapshot runs to
-publish analytical results.
+incremental application](incremental-epochs.md), [SY04 managed triggered
+runs](triggered-sync.md), or SY01 full snapshot runs to publish analytical results.
+Triggered policies enroll capture automatically; the commands below describe the
+manual snapshot-policy path.
 
 With the SY02 native binary and analytical worker installed/configured, create a
 manual snapshot policy on a running branch, then enroll its current revision:
@@ -43,4 +45,5 @@ On `resync_required`, inspect the error, correct the unsupported schema or resou
 condition, delete the generation, wait for `deleted`, and explicitly start a new
 one. Restore requires the same explicit re-enrollment. Changing or pausing the
 attached snapshot policy fences its capture revision. Opening the console or
-running a full snapshot does not enable capture.
+running a full snapshot does not enable capture. An idle SY04 triggered-policy
+pause instead keeps its capture active; see its [workflow](triggered-sync.md).

@@ -98,7 +98,8 @@ incremental-descriptor format declaration while rejecting unknown format version
 
 Rust tests cover retries, overlapping runs, fixed targets across restart and
 multiple batches, direct-apply rejection, deadline/policy fencing, late cancel,
-schedule coalescing, benign pause/resume revisions and restored publication intent.
+schedule coalescing, benign pause/resume revisions, capture-generation replacement
+and restored publication intent.
 Python tests validate message ownership, idle barrier application, duplicate
 emission, journal corruption and process exits before/after the barrier/cursor
 transaction commits.
@@ -108,7 +109,8 @@ Its scenarios include enrollment, a transaction opened before but committed afte
 the fixed barrier, writes beyond an already pinned target, old
 readers, an idle run, over 16 MiB of captured input split across batches with the
 original bootstrap unchanged, missed schedules, pause/resume and cancellation with
-owned cleanup. The harness runs on Linux/macOS native-cell CI. Source-level results
+owned cleanup. All six scenarios passed locally on Linux on 2026-09-22. The harness is wired
+into Linux/macOS native-cell CI; SY04 remote results are pending. Source-level results
 are not complete installed-archive qualification or a physical power-loss claim.
 
 The inherited 1,024 incremental-run and 4,096 retry-receipt journal limits are
