@@ -3,8 +3,9 @@
 [Implementation plan](../plans/analytical-sync-implementation.md) ·
 [Delivery ledger](../plans/status.md) · [Probe instructions](../../e2e/native/sync/README.md)
 
-Status: probe implemented, 2026-09-22. Local Linux experiments pass; the dedicated
-Linux/macOS exact-alpha.35 CI matrix is the qualification gate. This does not
+Status: SY00 probe complete, 2026-09-22. Both native targets passed the
+[exact-alpha.35 qualification matrix](sy00-evidence/README.md), with 33 live checks
+and 12 unit tests per target. This does not
 implement a managed sync policy, durable consumer, or triggered/continuous mode.
 
 ## Decision
