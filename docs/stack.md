@@ -22,6 +22,7 @@ not automatically transfer to a new build from the same branch or version label.
 | Projects and databases | Create a project and main database; branch PostgreSQL; query, cancel and save SQL | [Projects](handbook/project-creation.md), [database workspace](handbook/database-workspace.md) |
 | File ingestion | Preview and import CSV/TSV, JSON/JSONL/document and Parquet into new PostgreSQL tables | [File ingestion](handbook/file-ingestion.md) |
 | Analytics | Explicitly publish immutable Delta/Parquet snapshots and query pinned versions with Sail/Spark SQL | [Analytical workspace](handbook/analytical-workspace.md) |
+| Managed sync | Local-owner scheduled snapshots, triggered incremental runs and bounded continuous catch-up | [Triggered](handbook/triggered-sync.md), [continuous](handbook/continuous-sync.md) |
 | Notebooks | Edit project notebooks in the browser, execute Sail-backed kernels and manage locked Python environments | [Notebooks](handbook/notebooks.md), [environments](handbook/notebook-environments.md) |
 | Catalog and sharing | Discover published datasets, inspect schema/freshness and explicitly bind datasets into another project | [Catalog demo](handbook/catalog-demo.md), [dataset bindings](handbook/catalog-datasets.md) |
 | Portable projects | Inspect, package, bind and apply source; carry offline dependencies and bounded logical table data | [Portability](handbook/project-portability.md), [logical data](handbook/project-data.md) |

@@ -55,7 +55,9 @@ Healthy means no known pending data at a recent observed source barrier. It is
 not a promise that a transaction committed just now is already queryable. Unknown
 lag is null. Source/capture outages become unavailable; schema/history failures
 block publication and retain the last complete epoch. Inspect capture status and
-use the explicit [resync workflow](triggered-sync.md) when required.
+use the explicit [resync workflow](triggered-sync.md) when required. After capture
+re-enrollment, explicitly resume the continuous policy to clear a failed-run
+admission error; it then bootstraps and catches up automatically.
 
 ```bash
 supabricks sync capture status CAPTURE_ID

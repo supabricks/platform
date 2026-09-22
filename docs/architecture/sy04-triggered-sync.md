@@ -2,11 +2,11 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Workflow](../handbook/triggered-sync.md) · [SY03](sy03-incremental-epochs.md)
 
-Status: implemented for review, 2026-09-22. Local-owner policies support
+Status: [merged in #82](https://github.com/supabricks/platform/pull/82), 2026-09-22. Local-owner policies support
 `mode=triggered, strategy=incremental` through the existing managed-sync API and
 CLI. Manual and UTC interval runs share the same durable controller. Continuous
-application, event producers, console controls and governed capture remain gated
-for later slices. The console capability stays false until its SY06 integration;
+application is added by [SY05](sy05-continuous-sync.md); event producers, console
+controls and governed capture remain gated for later slices. The console capability stays false until its SY06 integration;
 the local IPC capability advertises triggered support.
 
 ## Enrollment and run boundary
@@ -112,7 +112,8 @@ the fixed barrier, writes beyond an already pinned target, old
 readers, an idle run, over 16 MiB of captured input split across batches with the
 original bootstrap unchanged, missed schedules, pause/resume and cancellation with
 owned cleanup. All six scenarios passed locally on Linux on 2026-09-22. The harness is wired
-into Linux/macOS native-cell CI; SY04 remote results are pending. Source-level results
+into Linux/macOS native-cell CI. All six required checks and both native-cell
+suites passed at `b3cf513`, merged as `f3804f2`. Source-level results
 are not complete installed-archive qualification or a physical power-loss claim.
 
 The inherited 1,024 incremental-run and 4,096 retry-receipt journal limits are

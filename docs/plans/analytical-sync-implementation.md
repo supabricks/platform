@@ -4,7 +4,7 @@
 
 Status: 2026-09-22. [SY00 capture probe](../architecture/sy00-capture-probe.md)
 is complete with Linux/macOS qualification. [SY01 managed snapshot policies](../architecture/sy01-managed-snapshots.md)
-are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is implemented for review. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is implemented for review. SY06–SY08 remain planned. Console/governed continuous controls and installed-release qualification remain gated.
+are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is merged. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is implemented for review. SY06–SY08 remain planned. Console/governed continuous controls and installed-release qualification remain gated.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
 storage → Sail first. Lakehouse → PostgreSQL serving follows separately.**

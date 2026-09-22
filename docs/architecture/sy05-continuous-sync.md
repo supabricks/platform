@@ -115,9 +115,28 @@ RSS/CPU, allocated data bytes, spool and retained WAL maxima. Source XIDs are ma
 to durable complete end LSNs and the first published group covering each end.
 The gate retains SY00's p95 <= 5 seconds and requires the burst within five seconds.
 
+The [local Linux source report](sy05-evidence/linux-source.json) records eight
+passing checks on 2026-09-22, with binary/engine and selected source-file hashes.
+This x86_64 host exposed 16 CPUs; the two source tables occupied 1,277,952 bytes.
+The final run sustained 50.05 changed rows/s:
+
+| Measurement | Observed |
+| --- | --- |
+| Commit-to-publication p50 / p95 / p99 | 3.065 / 4.057 / 4.307 s |
+| 200-row burst publication | 2.943 s |
+| OLTP transaction p95 before enrollment / during continuous load | 8.225 / 12.838 ms |
+| Sampled peak owned-process RSS | 1,503,891,456 bytes (whole native stack, not only the materializer) |
+| Sampled peak allocated data | 372,629,504 bytes |
+| Observed spool / retained WAL maxima | 245,760 / 358,440 bytes |
+
+The OLTP phases report actual timings, not a causal overhead estimate: the baseline
+uses a hot key before enrollment while the paced workload touches many keys.
+GitHub Linux/macOS results for SY05 are pending.
+
 Lifecycle cases include long transactions, pinned Sail readers, pause/resume,
-a stale/stopped capture worker, SIGKILL replacement, full daemon/compute restart,
-and schema fencing/cleanup. Linux/macOS CI runs this harness. Measurements are
+a held materializer reporting lag, a stale/stopped capture worker, SIGKILL
+replacement, a delayed controller tick, full daemon/compute restart, schema fencing,
+explicit resync and cleanup. Linux/macOS CI runs this harness. Measurements are
 source-level and hardware-specific; sampled RSS can double-count shared memory,
 short-lived CPU peaks can be missed, and the disk sample excludes runtime archives.
 They do not establish an indefinite-duration or installed-release SLA.
