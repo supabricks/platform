@@ -1,0 +1,57 @@
+name: sync-probe
+on:
+  pull_request:
+    paths:
+      - 'e2e/native/sync/**'
+      - 'e2e/native/cell.py'
+      - 'e2e/native/branches.py'
+      - 'docs/architecture/sy00-*.md'
+      - 'docs/architecture/sy00-evidence/**'
+      - '.github/workflows/sync-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sync-probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  capture:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install native probe dependencies
+        run: python -m pip install -r e2e/native/requirements.txt
+      - name: Decoder, replay and evidence rejection tests
+        run: python -m unittest discover -s e2e/native/sync -p 'test_*.py'
+      - name: Download exact qualified alpha.35
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 35700396118 --repo supabricks/platform --name release-${{ matrix.target }} --dir "$RUNNER_TEMP/sy00-archive"
+          python e2e/native/sync/prepare.py \
+            --archive "$RUNNER_TEMP/sy00-archive/supabricks-v0.1.0-alpha.35-${{ matrix.target }}.tar.gz" \
+            --target "${{ matrix.target }}" --output "$RUNNER_TEMP/sy00-inputs"
+      - name: Qualify real capture, isolated bootstrap and versioned columnar reads
+        run: |
+          python e2e/native/sync/run.py --release "$RUNNER_TEMP/sy00-inputs/supabricks" --report "$RUNNER_TEMP/sy00-report.json"
+          python e2e/native/sync/qualify.py "$RUNNER_TEMP/sy00-report.json"
+      - name: Upload report only, never private fixture state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sy00-${{ matrix.target }}
+          path: ${{ runner.temp }}/sy00-report.json
+          if-no-files-found: warn

@@ -22,6 +22,7 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [SY00: managed capture and bootstrap probe](sy00-capture-probe.md)
 - [A01: frozen Postgres exports](a01-frozen-exports.md)
 - [A02: atomic analytical epochs](a02-analytical-epochs.md)
 - [A03: pinned Sail sessions and analytical queries](a03-analytical-sessions.md)
