@@ -939,7 +939,7 @@ fn execution_admit(store: &mut Store, who: &Context, deployment: &str, code: &st
             |r| r.get(0),
         )
         .unwrap();
-    let contents=json!({"nbformat":4,"nbformat_minor":5,"metadata":{},"cells":[{"cell_type":"code","source":[code],"metadata":{},"outputs":[],"execution_count":null}]}).to_string();
+    let contents=json!({"nbformat":4,"nbformat_minor":5,"metadata":{},"cells":[{"id":"qualification","cell_type":"code","source":[code],"metadata":{},"outputs":[],"execution_count":null}]}).to_string();
     let saved = store
         .authorized_command(
             who,

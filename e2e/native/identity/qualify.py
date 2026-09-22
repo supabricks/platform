@@ -316,7 +316,7 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                     time.sleep(2)
                 checks.append('real OIDC, CLI, daemon, project admission and UC broker launch isolated Jupyter/Sail SQL; another actor cannot read results')
                 notebook = json.dumps(dict(nbformat=4, nbformat_minor=5, metadata={},
-                    cells=[dict(cell_type='code', source=['import time; time.sleep(120)'], metadata={}, outputs=[], execution_count=None)]))
+                    cells=[dict(id='qualification', cell_type='code', source=['import time; time.sleep(120)'], metadata={}, outputs=[], execution_count=None)]))
                 long_source = control(alice, dict(action='save_source', deployment=deployment,
                     asset='long-notebook', kind='notebook', contents=notebook,
                     expected_head=None, expected_policy=revision, key='long-source'))['revision']
