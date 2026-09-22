@@ -1,6 +1,6 @@
 # UC09 governed on-prem implementation plan
 
-Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 governed data implemented for review; UC09.6–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
+Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 governed data implemented in #71 for review; UC09.6–UC09.8 remain open. Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·
 [UC workstream](unity-catalog-implementation.md) · [Status](status.md).
