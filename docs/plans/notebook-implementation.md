@@ -1,5 +1,8 @@
 # Console notebook implementation plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 Follow-up: the [managed notebook environments plan](notebook-environments-implementation.md)
 starts from merged PRs #33/#34 and defines NE00–NE06 for project dependency
 isolation, package management and reproducible kernel environments. It is

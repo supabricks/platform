@@ -1,15 +1,19 @@
 # Project packaging implementation plan
 
-Status: PK00–PK07 are merged through platform #53 (`87f4898`) and console #5
-(`cd35222` source pin). PK07's exact alpha.24 archives passed the complete
-[R04 run 35484139360](https://github.com/supabricks/platform/actions/runs/35484139360),
-testing `6ab87e0`. Alpha.24 is the latest fully qualified predecessor.
-PK08 implements the bounded PostgreSQL table-data companion profile described in
-[its contract](../architecture/pk08-logical-data.md), targeting alpha.25/catalog 13;
-it is merged in platform #54, while release qualification remains incomplete.
-Console project creation is merged in platform #55 and console #6.
-UC/IAM remain separate follow-ons; see the
-[UC00–UC09 integration plan](unity-catalog-implementation.md).
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
+Status: PK00–PK08 and console project creation are merged through platform #55
+and console #6. Alpha.24 was the packaging workstream's qualified predecessor;
+alpha.25/alpha.26 failed their full release gates and remain unqualified.
+UC08 subsequently qualified the inherited packaging and logical-data workflows
+on alpha.34, and UC09.8 retained them in the complete alpha.35 matrix.
+See the [current delivery ledger](status.md) and
+[exact-archive evidence](../architecture/uc098-governed-release.md).
+
+The original slice definitions below retain their starting assumptions and
+acceptance criteria. UC/IAM were follow-ons at that baseline and have since
+shipped; see the [UC00–UC09 plan](unity-catalog-implementation.md).
 
 [Architecture](../architecture/project-packaging.md) ·
 [Primary-source research](../research/project-packaging-industry.md) ·

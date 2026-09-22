@@ -1,5 +1,9 @@
 # Deferred work and known debt
 
+> Scope: the earlier Kubernetes/operator profile. For the current native and
+> governed product, use the [stack overview](../stack.md),
+> [handbook](README.md) and [delivery ledger](../plans/status.md).
+
 Two lists. The first is *strategy* — decided scope, do not build without a
 ratified RFC addendum. The second is *debt* — agreed-imperfect implementation
 detail, fair game when it blocks you, each with its exit condition.

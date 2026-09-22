@@ -1,5 +1,8 @@
 # Supabricks delivery status
 
+[Documentation home](../README.md) · [Stack overview](../stack.md) ·
+[Implementation plan index](README.md)
+
 Reconciled 2026-09-22 through merged platform #74, Unity Catalog #4 and console #11–#12.
 UC00–UC09 is complete for its planned profiles. Alpha.35 passed the full Linux/macOS
 local-owner matrix and Linux governed shared-server acceptance. The

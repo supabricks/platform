@@ -1,7 +1,8 @@
-# Supabricks repository and component map
+# Historical repository and component investigation
 
-Current ownership/status: [delivery ledger](status.md). The inspected commits
-below are historical baselines. The console now lives in `supabricks/console`;
+Current ownership: [stack component map](../stack.md#components-and-source-ownership).
+Current status: [delivery ledger](status.md). [Documentation home](../README.md).
+The inspected commits below are historical baselines. The console now lives in `supabricks/console`;
 `supabricks/sail` owns the maintained analytical engine source consumed by
 [the platform source build](../architecture/source-built-sail.md). Legacy PR #1
 is closed without merging as of 2026-09-13.
@@ -16,11 +17,12 @@ PR #34 extracted the repaired console from platform into `supabricks/console`.
 Platform consumes it through the pinned `console/` submodule; see the
 [current ownership and build contract](../architecture/console-source-split.md).
 The [notebook environment follow-up](notebook-environments-implementation.md)
-maps upcoming runtime work to platform and package/environment controls to console.
+maps the now-delivered runtime work to platform and package/environment controls to console.
 The original inventory below is preserved as the September 5 baseline.
 
-The authenticated organization listing contains five repositories. There is no
-`ui`, `website`, `scintilla`, or separate analytical-engine repository yet.
+At inspection, the authenticated organization listing contained five repositories.
+It did not yet contain `ui`, `website`, `scintilla`, or a separate analytical-engine
+repository. The current stack also includes console, Sail and Unity Catalog.
 
 | Repository | Visibility / working branch | Current contents | Role in the local product |
 |---|---|---|---|

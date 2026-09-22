@@ -1,5 +1,9 @@
 # The dev loop — and its landmines
 
+> Scope: the earlier Kubernetes/operator profile. For the current native and
+> governed product, use the [stack overview](../stack.md),
+> [handbook](README.md) and [delivery ledger](../plans/status.md).
+
 ## Build / test / deploy a change
 
 ```sh

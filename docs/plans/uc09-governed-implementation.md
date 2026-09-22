@@ -1,5 +1,8 @@
 # UC09 governed on-prem implementation plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 Status: UC09.0 / IAM00 merged in #66; UC09.1 authentication foundation merged in #67; UC09.2 merged in #68; UC09.3 merged in #69 (UC fork #4); UC09.4 merged in #70; UC09.5 merged in #71; UC09.6 revocation, audit and recovery merged in #72; UC09.7 signed-in console merged in platform #73 / console #10; UC09.8 merged in platform #74 / console #11–#12; alpha.35 passed the complete Linux/macOS R04 matrix and Linux governed acceptance. UC09.0–UC09.8 are complete for the qualified profiles. See the [retained evidence and retry ledger](../architecture/uc098-governed-release.md). Baseline 2026-09-21: UC08 #64 merged as
 `c44fab5`; Linux/macOS alpha.34 local-owner qualification is complete.
 [Architecture and threat model](../architecture/uc09-governed-on-prem.md) ·

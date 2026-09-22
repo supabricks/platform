@@ -1,73 +1,69 @@
-# Supabricks engineering handbook
+# Supabricks handbook
 
-This is the operational knowledge that isn't in the RFCs: how the system is
-actually built, how to work on it without stepping on the landmines we already
-found, what to do when it breaks, and what is deliberately NOT built yet.
-The RFCs (`https://github.com/supabricks/rfcs/blob/main/design/`) record *decisions*; this handbook records *reality*.
+[Documentation home](../README.md) · [Stack overview](../stack.md) ·
+[Implementation plans](../plans/README.md)
 
-| Doc | Question it answers |
-|---|---|
-| [Installed local walkthrough](local-demo.md) | How do I install and demonstrate the native product without a source checkout? |
-| [R04 qualification](../architecture/r04-local-release.md) | Which exact release gates and artifacts establish the local preview contract? |
-| [architecture.md](architecture.md) | How does it actually work, end to end? |
-| [dev-loop.md](dev-loop.md) | How do I build, test, and deploy a change — and what will bite me? |
-| [runbook.md](runbook.md) | It broke / I need to break it — what do I do and what should I see? |
-| [backlog.md](backlog.md) | Why isn't X built? Is that a gap or a decision? |
-| [Local runtime plan](../plans/local-runtime-implementation.md) | What are we building for the native Supabricks product, and in what order? |
-| [Console and ingestion architecture](../architecture/local-console-ingestion.md) | What should the local browser console and shared file importer do? |
-| [Local console](local-console.md) | How do I launch the project overview and recover an expired browser session? |
-| [Local notebooks](notebooks.md) | How do I query Sail, save notebooks and manage snapshots and kernels? |
-| [CSV/TSV ingestion](csv-ingestion.md) | How do I approve mappings, import local files and recover an interrupted import? |
-| [Console and ingestion plan](../plans/console-ingestion-implementation.md) | Which PR slices build the first file-import and branching demo? |
-| [Notebook architecture](../architecture/local-notebooks.md) | How should embedded Jupyter notebooks use local kernels, project files and analytical snapshots? |
-| [Notebook implementation plan](../plans/notebook-implementation.md) | Which PR slices qualify and ship the proposed notebook capability? |
-| [Repository map](../plans/repository-map.md) | Which organization repo owns each component and which sources have been inspected? |
-| [Component baseline](../../components/README.md) | Which sources are selected, what has been tested, and how do I validate the inventory? |
+Use this handbook to run and operate the delivered product. For completion status
+and exact release qualification, use the [delivery ledger](../plans/status.md).
 
-## Earlier Kubernetes profile: first week
+## Start and operate the stack
 
-1. Read [architecture.md](architecture.md) (20 minutes) with `crates/operator/src/` open next to it.
-2. Run `install/up.sh` on your laptop. It should end with a working
-   UI at http://localhost:30080/ and a smoke-tested MCP server. If it doesn't,
-   that's a bug — file it.
-3. Run the gates: `./e2e/run.sh` (~2 min) then `./e2e/chaos.sh` (~3 min, it
-   reboots the kind node on purpose). Both must pass before and after any
-   change you make.
-4. Do one fire drill from [runbook.md](runbook.md) by hand, watching
-   `kubectl -n sspc-cell logs deploy/sspc-operator -f` while you do it.
-5. Read [backlog.md](backlog.md) **before** building anything new. Several
-   "obvious missing features" (gateway, TLS, IAM, HA) are deliberately
-   deferred with rationale — building them now is scope creep, not initiative.
+| Guide | What it covers |
+| --- | --- |
+| [Local walkthrough](local-demo.md) | Install and demonstrate import, SQL, snapshots, branching and notebooks |
+| [Local console](local-console.md) | Launch the browser console, source development and session recovery |
+| [Local CLI and MCP](local-workflow.md) | Project selection, commands and agent workflows |
+| [Governed Linux server](governed-server.md) | TLS/OIDC, administration, isolated execution, audit and recovery |
+| [Recovery and upgrades](recovery.md) | Stopped backups, new-root restore and supported upgrades |
+| [Local state](local-state.md) | SQLite control state and durable operations |
+| [Build and installation](../../install/native/README.md) | Native assembly, verified installation and release checks |
 
-## Ground rules we learned the hard way
+## Projects and portability
 
-- **Verify behavior, not strings.** Never gate a deploy on grep'ing a binary
-  or a log; assert what the system *does*. A grep-gated deploy chain once ran
-  old code for a day while every diagnostic said the fix was in.
-- **The e2e gate is the spec.** If a promise matters, it has a step in
-  `e2e/run.sh` or `e2e/chaos.sh`. A change that weakens a step needs an RFC
-  addendum, not a quiet edit.
-- **CI is the arbiter.** Green on your laptop is an anecdote; green on the PR
-  is the fact (`.github/workflows/ci.yml` runs unit + installer + e2e + chaos).
-- **One writer.** The operator is single-replica by design (no leader
-  election yet — see backlog). Never scale the Deployment to 2.
-- **File naming.** Ecosystem-mandated names keep their canonical casing
-  (`Chart.yaml`, `Cargo.toml`, `Dockerfile`, `README.md`); everything we
-  name ourselves is lowercase-kebab (`hardening.md`, `check-hardening.sh`,
-  `rfcs/business/vision.md`).
+| Guide | What it covers |
+| --- | --- |
+| [Create projects](project-creation.md) | Browser setup and mandatory project ownership |
+| [Project inspection](project-inspection.md) | Offline source validation and resource graphs |
+| [Source packages](project-packages.md) | Export, verify and unpack deterministic `.sbproj` packages |
+| [Deployment bindings](project-deployments.md) | Independent runtime identities, attach/adopt and source forks |
+| [Reviewed plan/apply](project-apply.md) | Review changes, retain resources and apply immutable revisions |
+| [Offline runnable projects](project-offline.md) | Target dependencies, migrations and explicit fixtures |
+| [Portability walkthrough](project-portability.md) | Package and reopen a project on another installation |
+| [Logical table data](project-data.md) | Bounded `.sbdata` export and transactional import |
 
-Native runtime work: [local state and durable operations (P02)](local-state.md),
-[native storage cell (P03)](../architecture/native-cell.md), and
-[databases and branches (P04)](../architecture/native-branches.md), and
-[stable connections and suspension (P05)](../architecture/native-connections.md).
-The [local application and agent workflow (P06)](local-workflow.md) is the native
-CLI/MCP entry point; the first-week Kubernetes instructions above describe the
-older operator deployment.
+## Data, analytics and notebooks
 
-- [PostgreSQL database workspace](database-workspace.md): branch controls, SQL, cancellation and saved queries.
+| Guide | What it covers |
+| --- | --- |
+| [Database workspace](database-workspace.md) | Branches, SQL, cancellation and saved queries |
+| [File ingestion](file-ingestion.md) | CSV/TSV, JSON/JSONL/document and Parquet |
+| [CSV/TSV ingestion](csv-ingestion.md) | CLI/MCP mappings and durable import jobs |
+| [Browser imports](browser-imports.md) | File selection, approval and import recovery |
+| [Analytical workspace](analytical-workspace.md) | Snapshot publication, pinned Spark SQL and bounded comparison |
+| [Notebooks](notebooks.md) | Project files, editor, Sail kernels and snapshots |
+| [Notebook environments](notebook-environments.md) | Dependency locks, packages, offline bundles and environment recovery |
 
-- [Browser CSV/TSV imports](browser-imports.md): file selection, mapping approval and durable import jobs.
+## Unity Catalog
 
-- [Logical project data](project-data.md): export selected PostgreSQL tables and import them transactionally into a destination project.
+| Guide | What it covers |
+| --- | --- |
+| [Catalog walkthrough](catalog-demo.md) | Publish, discover and consume data across two projects |
+| [Catalog service](catalog-service.md) | Managed service lifecycle, readiness and configuration |
+| [Metadata browser](catalog-metadata.md) | Catalog discovery, identities, schema and freshness |
+| [Publication](catalog-publication.md) | Durable publication of explicit snapshots |
+| [Dataset bindings](catalog-datasets.md) | Cross-project consumption and pinned data |
 
-- [Create projects in the console](project-creation.md): one form provisions the project and database; all assets belong to a project.
+## Earlier Kubernetes profile
+
+These guides describe the operator/Helm prototype. Its architecture, open-mode
+MCP authentication and deferred features must not be applied to the native or
+governed profile.
+
+- [Kubernetes quickstart and limits](kubernetes-profile.md)
+- [Kubernetes architecture](architecture.md)
+- [Kubernetes development loop](dev-loop.md)
+- [Kubernetes runbook](runbook.md)
+- [Kubernetes backlog](backlog.md)
+
+For subsystem implementation and acceptance suites, use the
+[architecture index](../architecture/README.md) and [review records](../reviews/README.md).

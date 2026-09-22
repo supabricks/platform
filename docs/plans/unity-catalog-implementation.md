@@ -1,5 +1,8 @@
 # Open-source Unity Catalog integration plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 Status: UC00 merged in platform #56; UC01 merged in #57 with both native offline suites qualified.
 UC02 is merged in #58 with Linux/macOS native qualification; UC03 is merged in platform #59 and Unity Catalog #3 with both native catalog suites passed; UC04 is merged in #60 with both native catalog suites passed; UC05 is merged in #61 with both native catalog suites passed; UC06 is merged in platform #62 and console #7 with required checks and both native catalog/browser suites passed; UC07 is merged in platform #63 with required checks and both native catalog/browser/recovery suites passed, including Linux ENOSPC; UC08 merged in #64 as `c44fab5`, with alpha.34 exact archives qualified; UC09.0–UC09.8 merged through platform #74 and console #11–#12, with alpha.35 exact archives and the Linux shared profile qualified ([evidence](../architecture/uc098-governed-release.md)); UC00–UC09 is complete for the planned profiles; see the [UC00 capability report](../architecture/uc00-catalog-probe.md) for qualification and selected boundaries. Baseline: platform `8c81417` after
 PK08 #54 and project creation #55, with console #6 merged. At that baseline packaging was

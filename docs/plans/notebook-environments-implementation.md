@@ -1,5 +1,8 @@
 # Managed notebook environments implementation plan
 
+[Documentation home](../README.md) · [All implementation plans](README.md) ·
+[Current delivery status](status.md)
+
 *Status: NE00–NE06 merged; NE06 landed in platform #41 · Reconciled: 2026-09-13*
 
 The historical baseline below describes the starting point. Managed environments
