@@ -87,3 +87,10 @@ readability under private ancestors; the crash fixture pauses the real provider
 until the writer is killed. Retain these diagnostics rather than counting retries
 as successful qualification. Final PR validation records identify the completed
 runs and any still-pending exact-archive evidence.
+
+Run 35695556245 passed the installed identity, data and named-upgrade suites,
+then timed out in browser audit pagination after concurrent execution and
+revocation passed. Console #12 serializes audit loads and waits for each rendered
+page in the harness; its delayed-response regression fails on the former assets
+and passes on Linux/macOS with the fix. The changed console assets require new
+archives and complete qualification; that failed run is not release acceptance.
