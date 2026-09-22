@@ -118,10 +118,10 @@ backed-up upgrade path, including from schema 23.
 ## Qualification and remaining gates
 
 `e2e/native/capture.py` qualifies real native PostgreSQL, the daemon and the locked
-analytical runtime. Nine local Linux checks passed: isolated bootstrap with a
+analytical runtime. Ten local Linux checks passed: isolated bootstrap with a
 long multi-table transaction spanning F; durable acknowledgment/abort behavior;
 worker SIGKILL and daemon/compute restart; pause/resume; corrupt-spool cleanup;
-empty create/drop fence; lost slot; acknowledgment ahead of the spool; and paused WAL pressure. The same harness runs
+empty create/drop fence; lost slot; acknowledgment ahead of the spool; paused WAL pressure; and rejection of a user `pgapp` schema without misclassifying it as system metadata. The same harness runs
 in Linux/macOS native-cell CI. macOS qualification remains pending for this PR.
 
 `python/analytics/test_capture.py` exercises process exits before/after spool commit

@@ -140,6 +140,11 @@ class Capture(Policies):
         bad=self.state_is(cap,'resync_required');assert bad['error'].startswith(('wal_budget','source_history_lost')),bad
         self.delete_capture(cap)
         self.check('paused_wal_pressure_releases_owned_resources_and_requires_new_baseline')
+        self.sql(self.parent,'CREATE SCHEMA pgapp; CREATE TABLE pgapp.outside(id int PRIMARY KEY)')
+        cap=self.begin_capture(p,'non-system-schema')
+        bad=self.state_is(cap,'resync_required');assert bad['error'].startswith('unsupported_source_relation'),bad
+        self.delete_capture(cap)
+        self.check('user_pg_prefix_schema_is_not_silently_classified_as_system_metadata')
         self.stop()
 
 

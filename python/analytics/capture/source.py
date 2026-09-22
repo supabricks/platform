@@ -20,7 +20,7 @@ def inspect(conn,identity):
     relations=conn.execute("""SELECT c.oid,n.nspname,c.relname,c.relkind,c.relpersistence,c.relrowsecurity,c.relispartition,c.relreplident,
         c.relowner='cloud_admin'::regrole,EXISTS(SELECT 1 FROM pg_inherits i WHERE i.inhrelid=c.oid OR i.inhparent=c.oid),
         EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e')
-        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT LIKE 'pg_%%'
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname !~ '^pg_'
         AND n.nspname NOT IN ('information_schema','_supabricks') AND c.relkind IN ('r','p','f','m') ORDER BY c.oid LIMIT 131""").fetchall()
     expected={};controls=[]
     for oid,namespace,name,kind,persistence,rls,partition,identity_mode,engine_owner,inherits,extension in relations:
@@ -84,11 +84,11 @@ class Source:
                 body=sql.SQL("""CREATE FUNCTION {}.fence() RETURNS event_trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $f$
                 DECLARE relevant boolean; BEGIN
                   IF TG_EVENT='sql_drop' THEN
-                    SELECT EXISTS(SELECT 1 FROM pg_event_trigger_dropped_objects() WHERE schema_name NOT LIKE 'pg_%%'
+                    SELECT EXISTS(SELECT 1 FROM pg_event_trigger_dropped_objects() WHERE schema_name !~ '^pg_'
                         AND schema_name NOT IN ('information_schema','_supabricks',{}) AND objid<>ALL({}::oid[])
                         AND object_type IN ('table','table column','index','schema')) INTO relevant;
                   ELSE
-                    SELECT EXISTS(SELECT 1 FROM pg_event_trigger_ddl_commands() WHERE schema_name NOT LIKE 'pg_%%'
+                    SELECT EXISTS(SELECT 1 FROM pg_event_trigger_ddl_commands() WHERE schema_name !~ '^pg_'
                         AND schema_name NOT IN ('information_schema','_supabricks',{}) AND objid<>ALL({}::oid[])
                         AND object_type IN ('table','table column','index','schema')) INTO relevant;
                   END IF;
