@@ -2,7 +2,9 @@
 
 [Plan index](README.md) · [Delivery status](status.md) · [Stack overview](../stack.md)
 
-Status: proposed, 2026-09-22. No SY slice is implemented or release-qualified.
+Status: 2026-09-22. [SY00 capture probe](../architecture/sy00-capture-probe.md)
+is implemented for qualification. SY01–SY08 remain planned; no triggered or
+continuous product mode is delivered.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
 storage → Sail first. Lakehouse → PostgreSQL serving follows separately.**
@@ -272,7 +274,8 @@ without logging row contents or secrets. Reuse UC09's isolation and audit model.
 
 ## Delivery slices and exit evidence
 
-Each row is a separately reviewable slice. All start **planned**. Implementation
+Each row is a separately reviewable slice. SY00 has a probe implementation;
+SY01–SY08 remain **planned**. Implementation
 must update the ledger and add an architecture/qualification record before a
 capability is reported as delivered.
 
