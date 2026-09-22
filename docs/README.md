@@ -16,6 +16,7 @@ build or operate the stack.
 | Find a user or operator workflow | [Handbook](handbook/README.md) |
 | See what shipped and what remains | [Delivery status and release history](plans/status.md) |
 | Find implementation plans, including IAM00 and UC09 | [Implementation plan index](plans/README.md) |
+| Understand planned triggered/continuous analytics | [Managed synchronization plan](plans/analytical-sync-implementation.md) |
 | Understand a subsystem or its acceptance evidence | [Architecture and evidence index](architecture/README.md) |
 | Build the stack from source | [Native build and installation](../install/native/README.md), [component inputs](../components/README.md) |
 | Find the code owner or source pin | [Stack component map](stack.md#components-and-source-ownership) |

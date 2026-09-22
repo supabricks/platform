@@ -25,6 +25,15 @@ All listed workstreams are merged within their stated profiles. Alpha.35's
 retained evidence for the combined local product and the Linux governed profile.
 This does not retroactively qualify failed predecessor archives.
 
+## Planned workstreams
+
+| Plan | Slice IDs | Proposed scope |
+| --- | --- | --- |
+| [Managed analytical synchronization](analytical-sync-implementation.md) | SY00–SY08 | PostgreSQL → analytics: managed snapshot scheduling, incremental triggered and continuous modes; recovery, governance and installed qualification. Reverse sync is later scope. |
+
+SY00–SY08 are not implemented. Snapshot analytics remains the delivered baseline;
+managed internal change capture is compatible with **no user-managed CDC/ETL**.
+
 ## IAM00 and UC09 navigation
 
 IAM00 is **UC09.0**, the governance/identity/isolation probe. It is not a missing
