@@ -154,3 +154,30 @@ sockets. The local audit is not tamper-resistant against that administrator.
 External append-only archival and protection against malicious host operators
 are separate capabilities. UC09.8 must qualify the exact installed archive;
 these source-level checks do not enable shared ingress.
+
+Reproduce the source checks with an optimized candidate binary and the pinned
+UC09.4 runtime configuration described in [runtime qualification](uc094-isolated-execution.md):
+
+```sh
+cargo test --locked -p supabricks-core -p supabricks-local
+cargo build --release --locked -p supabricks-local --bin supabricks
+python3 e2e/native/governed/qualify.py --binary target/release/supabricks --release "$PINNED_RELEASE" --report /tmp/governed-data.json
+python3 e2e/native/identity/qualify.py --binary target/release/supabricks --uc-runtime "$UC_RUNTIME" --execution-config "$EXECUTION_CONFIG" --output /tmp/governed-identity.json
+SUPABRICKS_UC093_RUNTIME="$UC_RUNTIME" SUPABRICKS_UC094_CONFIG="$EXECUTION_CONFIG" cargo test --release --locked -p supabricks-local --lib isolated_execution_real_uc -- --ignored --nocapture
+```
+
+The PG harness needs the native catalog Python requirements and `psycopg[binary]`.
+The sandbox configuration verifies the complete pinned release inventory; use
+optimized builds for that qualification. Debug inventory hashing exceeded the
+admission deadline in development and was refused, as intended. Initial native
+runs also exposed and fixed a restored branch restart fence and the
+completion/renewal pipe race; failed runs were not counted as passes.
+
+The reviewed candidate passed all 15 native PG check groups and the TLS
+Keycloak/UC/gVisor flow. The final native reports identify binary SHA-256
+`e9f6482c47f668e2e8ca774bb757b861ef91163cf38ff81d99903c201fbcff81` and
+PG harness SHA-256
+`af3cd0487ec7e1616a4ddd021625445fb95087f82845dc040f12b515fd377900`.
+Observed PG closure after platform acknowledgement was 1.44 seconds; IdP disable
+through sandbox closure was 0.85 seconds. These are local qualification results,
+not installed-release evidence or a guarantee about arbitrary provider behavior.
