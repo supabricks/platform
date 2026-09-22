@@ -84,6 +84,8 @@ jobs:
         run: python e2e/native/epochs.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-epochs.json
       - name: Sail sessions, analytical SQL and Spark Connect ownership
         run: python e2e/native/sessions.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-sessions.json
+      - name: Managed snapshot policies, scheduling, cancellation and pinned readers
+        run: python e2e/native/snapshot_policies.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-snapshot-policies.json
       - name: Analytical worker boundary tests
         run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py'
       - name: Coding-agent setup adapter contracts
@@ -93,6 +95,7 @@ jobs:
         with:
           name: native-cell-${{ matrix.target }}
           path: |
+            native-snapshot-policies.json
             native-project-data.json
             native-cell.json
             native-cell.log

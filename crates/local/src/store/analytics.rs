@@ -79,6 +79,7 @@ impl Store {
         {
             return self.publication(id);
         }
+        self.sync_publication_live(id)?;
         let b = self.branch(e.source_id)?;
         if e.state != "complete"
             || e.outcome
@@ -166,6 +167,7 @@ impl Store {
         if p.state == "published" {
             return Ok(());
         }
+        self.sync_publication_live(p.export_id)?;
         if p.state != "files_complete" {
             return Err(conflict("publication is not ready"));
         }

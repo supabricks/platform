@@ -415,8 +415,12 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE governed_project_requests;")
+    db.execute_batch("DROP TABLE sync_requests; DROP TABLE sync_runs; DROP TABLE sync_policies;")
         .unwrap();
+    if source_schema < 22 {
+        db.execute_batch("DROP TABLE governed_project_requests;")
+            .unwrap();
+    }
     if source_schema < 21 {
         db.execute_batch("DROP TRIGGER security_identity_audit; DROP TRIGGER security_authorization_audit; DROP TRIGGER security_catalog_grant_audit; DROP TABLE security_audit; DROP TABLE security_state; ALTER TABLE identity_sessions DROP COLUMN authoritative_until_ms;").unwrap();
     }
@@ -586,7 +590,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=22",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=23",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -885,4 +889,9 @@ fn governed_backup_rollback_cannot_resurrect_sessions_principals_or_grants() {
 #[test]
 fn schema_twenty_one_upgrade_preserves_security_and_adds_console_requests() {
     catalog_migration(21);
+}
+
+#[test]
+fn schema_twenty_two_upgrade_preserves_existing_state_and_adds_snapshot_policies() {
+    catalog_migration(22);
 }

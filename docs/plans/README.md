@@ -32,7 +32,8 @@ This does not retroactively qualify failed predecessor archives.
 | [Managed analytical synchronization](analytical-sync-implementation.md) | SY00–SY08 | PostgreSQL → analytics: managed snapshot scheduling, incremental triggered and continuous modes; recovery, governance and installed qualification. Reverse sync is later scope. |
 
 [SY00](../architecture/sy00-capture-probe.md) supplies the capture/boundary probe.
-SY01–SY08 remain planned. Snapshot analytics remains the delivered baseline;
+[SY01](../architecture/sy01-managed-snapshots.md) adds managed full-snapshot policies
+and scheduling for review; SY02–SY08 remain planned. Snapshot analytics remains the baseline;
 managed internal change capture is compatible with **no user-managed CDC/ETL**.
 
 ## IAM00 and UC09 navigation

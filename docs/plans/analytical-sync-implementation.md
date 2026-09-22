@@ -3,8 +3,9 @@
 [Plan index](README.md) · [Delivery status](status.md) · [Stack overview](../stack.md)
 
 Status: 2026-09-22. [SY00 capture probe](../architecture/sy00-capture-probe.md)
-is complete with Linux/macOS qualification. SY01–SY08 remain planned; no triggered or
-continuous product mode is delivered.
+is complete with Linux/macOS qualification. [SY01 managed snapshot policies](../architecture/sy01-managed-snapshots.md)
+are implemented for review; SY02–SY08 remain planned. No triggered or continuous
+product mode is delivered.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
 storage → Sail first. Lakehouse → PostgreSQL serving follows separately.**
@@ -275,7 +276,7 @@ without logging row contents or secrets. Reuse UC09's isolation and audit model.
 ## Delivery slices and exit evidence
 
 Each row is a separately reviewable slice. SY00 has a qualified probe implementation;
-SY01–SY08 remain **planned**. Implementation
+SY01 is implemented for review; SY02–SY08 remain **planned**. Implementation
 must update the ledger and add an architecture/qualification record before a
 capability is reported as delivered.
 
@@ -343,7 +344,7 @@ independent performance/qualification. No dual-writer or automatic round-trip
 replication is promised. Reuse policy/run vocabulary only where semantics match.
 
 SY00 must decide the exact capture/bootstrap protocol, supported schema/identity
-matrix, incremental storage layout and resource/freshness thresholds. SY01 must
-settle schedule/timezone policy and capture behavior between runs. SY04 must name
+matrix, incremental storage layout and resource/freshness thresholds. SY01 chooses UTC elapsed intervals with coalesced missed runs and no logical
+capture between full snapshot runs; see its architecture record. SY04 must name
 any supported event producer. None of these open engineering decisions relaxes
 the correctness, authority or no-user-managed-pipeline requirements above.

@@ -187,6 +187,7 @@ pub struct Daemon {
         Option<(AuthorizedFollowup, String)>,
     )>,
     ingest_error: Option<String>,
+    sync_error: Option<String>,
     project_apply_error: Option<String>,
     dataset_checks: crate::catalog::datasets::Checks,
     project_migrations: crate::project_apply::migrations::Workers,
@@ -250,6 +251,7 @@ impl Daemon {
             identity_jobs: Vec::new(),
             isolated: Default::default(),
             ingest_error: None,
+            sync_error: None,
             project_apply_error: None,
             dataset_checks: Default::default(),
             project_migrations: Default::default(),
@@ -467,6 +469,9 @@ impl Daemon {
                 };
                 self.consoles.last_error = console_result.err().map(|e| e.to_string());
                 if !stopping {
+                    self.sync_error = crate::sync::tick(&mut self.store, self.cell.as_ref())
+                        .err()
+                        .map(|e| e.to_string());
                     self.sessions.last_error = self
                         .sessions
                         .tick(&mut self.store, &self.catalog)
@@ -882,7 +887,7 @@ impl Daemon {
                     "runtime":{"ready":runtime.as_ref().is_some_and(|r|r["ready"]==true),
                         "engine_enabled":self.cell.is_some(),"generation":generation,"postgres_major":17,
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
-                    "capabilities":{"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
+                    "capabilities":{"managed_snapshot_scheduling":!console_home,"incremental_triggered":false,"continuous_sync":false,"sync_event_triggers":false,"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
             }
             Request::Api { .. } => {
@@ -891,7 +896,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"catalog_publication_error":self.catalog_publication.last_error,"catalog_metadata_error":self.catalog_metadata_error,"catalog_metadata_active":self.catalog_metadata.active(),"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"managed_snapshots_error":self.sync_error,"catalog_publication_error":self.catalog_publication.last_error,"catalog_metadata_error":self.catalog_metadata_error,"catalog_metadata_active":self.catalog_metadata.active(),"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::CatalogService { command } => {
                 self.catalog.command(&mut self.store, command)?
