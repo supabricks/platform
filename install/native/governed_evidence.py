@@ -136,4 +136,5 @@ def collect(data, env):
                 components={k:components[k] for k in ('keycloak','rootfs_image','rootfs_sha256','gvisor_inventory_sha256',
                     'execution_config_sha256','execution_release_identity','execution_pin_sha256','supervisor_sha256','workload_sha256')},
                 revocation_observed_ms=latency,idp_disable_seconds=interval[1]-interval[0],resource_envelope=browser['resource_envelope'],
-                host_capacity=host,execution_memory=memory)
+                host_capacity=dict(cpu_count=4,memory_bytes=host['memory_bytes']),
+                execution_memory=[{k:m[k] for k in ('current_bytes','peak_bytes')} for m in memory])

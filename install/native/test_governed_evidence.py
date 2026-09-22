@@ -37,6 +37,8 @@ class GovernedEvidence(unittest.TestCase):
     def test_complete_evidence_is_sanitized(self):
         self.data['private_token']='qualification-private-token'
         self.data['suites']['data']['sql']='qualification-private-token'
+        self.data['host_capacity']['private_token']='qualification-private-token'
+        self.data['suites']['browser']['execution_memory'][0]['private_token']='qualification-private-token'
         result=collect(self.data,self.env)
         self.assertEqual(result['status'],'passed')
         self.assertNotIn('qualification-private-token',json.dumps(result))
