@@ -127,10 +127,15 @@ qualification suite.
 
 Public `supabricks.io` delivery, publisher signing/notarization, the transitive
 redistribution audit, and physical-machine/reboot/power-loss qualification remain
-open. Hosted console transport, HA/distributed execution, continuous CDC,
+open. Hosted console transport, HA/distributed execution, managed incremental sync,
 writable analytical tables, row filters, column masks and additional governed
 deployment profiles need separate work. Local-owner project boundaries are not
 tenant security boundaries.
+
+[Managed analytical synchronization](plans/analytical-sync-implementation.md)
+plans triggered and continuous PostgreSQL → analytics modes after the delivered
+snapshot baseline. “No user-managed CDC” allows platform-owned change capture;
+these modes are planned, not available today. Reverse sync is later scope.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list
