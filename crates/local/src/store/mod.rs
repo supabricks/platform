@@ -12,6 +12,7 @@ mod execution;
 mod exports;
 mod governed;
 mod identity;
+pub(crate) mod security;
 pub(crate) use identity::IdentityCommit;
 mod ingest;
 mod journal;

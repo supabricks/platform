@@ -204,7 +204,17 @@ impl Manager {
         if lease.revoked || Instant::now() >= lease.deadline {
             return Err(denied());
         }
-        renew(lease)
+        match renew(lease) {
+            // The supervisor may finish between the writer's tick and this
+            // renewal. Keep its old deadline; tick must reap and validate the
+            // exit/result. A closed pipe never creates new lease authority.
+            Err(crate::store::Error::Io(error))
+                if error.kind() == std::io::ErrorKind::BrokenPipe =>
+            {
+                Ok(())
+            }
+            result => result,
+        }
     }
     pub(crate) fn tick(&self, store: &mut crate::store::Store, stopping: bool) -> Result<()> {
         let mut leases = self.0.lock().map_err(|_| denied())?;
@@ -256,5 +266,45 @@ impl Drop for Lease {
         let _ = self.child.kill();
         let _ = self.child.wait();
         // The independent supervisor retains a hard deadline after client death.
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn completion_racing_renewal_keeps_the_original_deadline() {
+        let manager = Manager::default();
+        let mut child = std::process::Command::new("/bin/sh")
+            .args(["-c", "exit 0"])
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let input = child.stdin.take();
+        child.wait().unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        manager.0.lock().unwrap().insert(
+            "finished".into(),
+            Lease {
+                child,
+                input,
+                output: None,
+                deadline,
+                revoked: false,
+                _files: Prepared {
+                    dir: tempfile::tempdir().unwrap(),
+                },
+            },
+        );
+        manager.renew("finished").unwrap();
+        assert_eq!(manager.0.lock().unwrap()["finished"].deadline, deadline);
+        manager
+            .0
+            .lock()
+            .unwrap()
+            .get_mut("finished")
+            .unwrap()
+            .deadline = Instant::now() - Duration::from_secs(1);
+        assert!(manager.renew("finished").is_err());
     }
 }

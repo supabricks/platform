@@ -58,6 +58,7 @@ def run(args, **kwargs):
 
 def qualify(binary, uc_runtime=None, execution_config=None):
     checks = []
+    measurements = {}
     name = 'sb-uc091-' + uuid.uuid4().hex[:12]
     started = False
     daemon = None
@@ -324,8 +325,11 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                 control(alice, dict(launch, command=dict(action='start', id=long_execution, datasets=[])))
                 long_poll = dict(poll, command=dict(action='poll', id=long_execution))
 
+            cli('identity', 'whoami', '--session-file', alice)
+            last_success = time.monotonic()
             users = keycloak_admin('GET', 'users?username=alice')
             keycloak_admin('PUT', 'users/'+users[0]['id'], dict(enabled=False))
+            disabled_at = time.monotonic()
             cli('identity', 'whoami', '--session-file', alice, ok=False)
             if uc_runtime:
                 control(alice, discovery, ok=False)
@@ -336,6 +340,8 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                     assert time.monotonic()<deadline, 'disabled identity execution survived renewal deadline'
                     time.sleep(.2)
                 checks.append('IdP disable blocks execution renewal and the independent watchdog removes the sandbox within 35 seconds')
+            measurements['idp_disable'] = dict(last_success_monotonic=last_success, acknowledged_deny_monotonic=disabled_at, observed_closed_monotonic=time.monotonic(), bound_seconds=300)
+            assert measurements['idp_disable']['observed_closed_monotonic']-disabled_at < 300
             checks.append('IdP disable refuses an unexpired platform session')
             run(['docker', 'pause', name])
             try:
@@ -374,7 +380,7 @@ def qualify(binary, uc_runtime=None, execution_config=None):
                 run(['docker', 'rm', '-f', name])
         checks.append('disposable provider, login clients and daemon cleaned up')
     return dict(status='passed', binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
-                keycloak=PINS['keycloak'], checks=checks,
+                keycloak=PINS['keycloak'], checks=checks, measurements=measurements,
                 governed_product_ingress=False)
 
 

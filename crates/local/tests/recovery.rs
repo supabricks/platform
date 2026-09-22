@@ -415,10 +415,13 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch(
-        "DROP TABLE data_operations; DROP TABLE data_grants; DROP TABLE governed_branches;",
-    )
-    .unwrap();
+    db.execute_batch("DROP TRIGGER security_identity_audit; DROP TRIGGER security_authorization_audit; DROP TRIGGER security_catalog_grant_audit; DROP TABLE security_audit; DROP TABLE security_state; ALTER TABLE identity_sessions DROP COLUMN authoritative_until_ms;").unwrap();
+    if source_schema < 20 {
+        db.execute_batch(
+            "DROP TABLE data_operations; DROP TABLE data_grants; DROP TABLE governed_branches;",
+        )
+        .unwrap();
+    }
     if source_schema < 18 {
         db.execute_batch("DROP TRIGGER catalog_governance_membership_add; DROP TRIGGER catalog_governance_membership_remove; DROP TRIGGER catalog_governance_disabled; DROP TRIGGER catalog_governance_publication_insert; DROP TRIGGER catalog_governance_publication_update; DROP TABLE catalog_grant_audit; DROP TABLE catalog_grant_plans; DROP TABLE catalog_grant_origins; DROP TABLE catalog_principals; DROP TABLE catalog_governance;").unwrap();
     }
@@ -579,7 +582,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=20",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=21",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -727,4 +730,133 @@ fn catalog_build_timings_do_not_change_upgrade_payload_compatibility() {
             assert!(!f.backup.exists());
         }
     }
+}
+
+#[test]
+fn schema_twenty_upgrade_preserves_governed_data() {
+    catalog_migration(20);
+}
+
+#[test]
+fn governed_backup_rollback_cannot_resurrect_sessions_principals_or_grants() {
+    use supabricks_local::identity::{AdminCommand as A, AuthCommand, Channel};
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("source");
+    let mut store = Store::open(&root).unwrap();
+    let id = store
+        .identity_admin(A::Service {
+            label: "historical".into(),
+        })
+        .unwrap()["principal_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let token = store
+        .identity_admin(A::IssueService {
+            principal: id.clone(),
+            scopes: vec!["identity:self".into()],
+            ttl_seconds: 3600,
+        })
+        .unwrap()["token"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let realm = store.identity_admin(A::Status).unwrap()["realm_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    drop(store);
+    let backup = tmp.path().join("backup");
+    recovery::create(&root, &backup).unwrap();
+    let mut store = Store::open(&root).unwrap();
+    store
+        .identity_admin(A::Disable {
+            principal: id.clone(),
+            disabled: true,
+        })
+        .unwrap();
+    drop(store);
+    let target = tmp.path().join("restored");
+    let restored = recovery::restore(&backup, &target).unwrap();
+    assert_eq!(restored["governed_closed"], true);
+    assert_eq!(restored["credentials_restored"], false);
+    let mut store = Store::open(&target).unwrap();
+    let status = store.identity_admin(A::RestoreStatus).unwrap();
+    let restore_id = status["restore_id"].as_str().unwrap().to_owned();
+    assert_eq!(status["closed"], true);
+    assert!(
+        store
+            .identity_auth(AuthCommand::Authenticate {
+                token: token.clone(),
+                channel: Channel::Service,
+                csrf: None
+            })
+            .is_err()
+    );
+    assert!(
+        store
+            .identity_admin(A::IssueService {
+                principal: id.clone(),
+                scopes: vec!["identity:self".into()],
+                ttl_seconds: 300
+            })
+            .is_err()
+    );
+    assert!(
+        store
+            .identity_admin(A::RestoreReconcile {
+                restore_id: restore_id.clone(),
+                realm_id: "foreign-realm".into()
+            })
+            .is_err()
+    );
+    store
+        .identity_admin(A::RestoreReconcile {
+            restore_id,
+            realm_id: realm,
+        })
+        .unwrap();
+    assert!(
+        store
+            .identity_auth(AuthCommand::Authenticate {
+                token,
+                channel: Channel::Service,
+                csrf: None
+            })
+            .is_err()
+    );
+    assert!(
+        store
+            .identity_admin(A::IssueService {
+                principal: id.clone(),
+                scopes: vec!["identity:self".into()],
+                ttl_seconds: 300
+            })
+            .is_err()
+    );
+    store
+        .identity_admin(A::Disable {
+            principal: id.clone(),
+            disabled: false,
+        })
+        .unwrap();
+    let fresh = store
+        .identity_admin(A::IssueService {
+            principal: id,
+            scopes: vec!["identity:self".into()],
+            ttl_seconds: 300,
+        })
+        .unwrap()["token"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        store
+            .identity_auth(AuthCommand::Authenticate {
+                token: fresh,
+                channel: Channel::Service,
+                csrf: None
+            })
+            .is_ok()
+    );
 }

@@ -291,13 +291,13 @@ fn prepare_work(
                     let tx=client.transaction().await.map_err(pg)?;
                     tx.batch_execute("SET LOCAL search_path=public,pg_catalog; SET LOCAL row_security=off; SET LOCAL DateStyle='ISO, YMD'; SET LOCAL IntervalStyle='postgres'; SET LOCAL TimeZone='UTC'; SET LOCAL extra_float_digits=3; SET LOCAL bytea_output='hex'").await.map_err(pg)?;
                     if cap==Capability::Ddl {tx.batch_execute("SET LOCAL ROLE sb_governed_owner").await.map_err(pg)?;}
-                    let value=if let Work::Export(selection,source)=&work {
-                        tx.batch_execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY").await.map_err(pg)?;
+                    tx.batch_execute(if cap==Capability::Read {"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"} else {"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"}).await.map_err(pg)?;
+                    let snapshot:String=tx.query_one("SELECT pg_current_snapshot()::text",&[]).await.map_err(pg)?.get(0);
+                    let mut value=if let Work::Export(selection,source)=&work {
                         export(&tx,selection,source.clone()).await?
                     } else if let Work::Import(archive)=&work {
                         import(&tx,archive).await?
                     } else if let Work::Sql(sql)=&work { if cap==Capability::Read {
-                        tx.batch_execute("SET TRANSACTION READ ONLY").await.map_err(pg)?;
                         let sql=format!("SELECT left(row_to_json(q)::text,32769) FROM ({}) q LIMIT 201",sql.trim().trim_end_matches(';'));
                         let stmt=tx.prepare(&sql).await.map_err(pg)?;
                         let rows=tx.query_raw(&stmt,std::iter::empty::<&str>()).await.map_err(pg)?;
@@ -316,6 +316,8 @@ fn prepare_work(
                         let count=tx.execute(&stmt,&[]).await.map_err(pg)?;
                         json!({"affected":count})
                     }} else {return Err(denied());};
+                    let transaction:Option<String>=tx.query_one("SELECT pg_current_xact_id_if_assigned()::text",&[]).await.map_err(pg)?.get(0);
+                    value["data_revision"]=json!({"pg_snapshot":snapshot,"pg_transaction":transaction});
                     ready_tx.send(Ok(())).map_err(|_|denied())?;
                     // The sole writer rechecks session, branch and exact policy.
                     // Dropping Pending or writer failure means rollback.

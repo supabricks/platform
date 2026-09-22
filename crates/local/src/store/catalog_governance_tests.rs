@@ -1211,67 +1211,113 @@ fn isolated_execution_real_uc_two_users_and_independent_expiry() {
         assert!(start.elapsed() < Duration::from_secs(100));
         std::thread::sleep(Duration::from_millis(50));
     }
-    // A lease actively reading an already-open admitted file is killed by the
-    // outside watchdog after the control-plane renewal handle disappears.
-    let open_file = format!(
-        "import time,threading\nf=open('/admission/data/{table}/_delta_log/00000000000000000000.json','rb')\ndef read_forever():\n while True:\n  f.seek(0);f.read();time.sleep(.01)\nthreading.Thread(target=read_forever,daemon=True).start()\nopen('/scratch/open-ready','w').write('ready')\nspark.sql('SELECT sum(id) FROM range(10000000000)').collect()\n"
-    );
-    let id = execution_admit(&mut store, &alice.0, &deployment, &open_file);
-    store
-        .execution_job(
-            alice.0.clone(),
-            alice.1.clone(),
-            deployment.clone(),
-            C::Start {
-                id: id.clone(),
-                datasets,
-            },
-            uc.broker.fresh(),
-            manager.clone(),
-        )
-        .unwrap()()
-    .unwrap()(&mut store)
-    .unwrap();
-    let name = format!("sb-exec-{id}");
-    let ready = Instant::now();
-    loop {
-        let check = Command::new("docker")
-            .args([
-                "exec",
-                &name,
-                "/tools/runsc",
-                "--root=/work/runsc",
-                "exec",
-                "lease",
-                "/usr/bin/test",
-                "-f",
-                "/scratch/open-ready",
-            ])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .unwrap();
-        if check.success() {
-            break;
-        }
-        assert!(ready.elapsed() < Duration::from_secs(25));
-        std::thread::sleep(Duration::from_millis(200));
-    }
     drop(manager);
-    let began = Instant::now();
-    loop {
-        let status = Command::new("docker")
-            .args(["inspect", &name])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .unwrap();
-        if !status.success() {
-            break;
+    // Exercise real open descriptors, cached bytes and a concurrent Sail query.
+    // Losing the writer/renewal worker and failing audit persistence must stop
+    // the same sandbox as an acknowledged platform disable.
+    for mode in ["renewal_loss", "audit_failure", "platform_disable"] {
+        let manager = exec::Manager::default();
+        let open_file = format!(
+            "import time,threading\nf=open('/admission/data/{table}/_delta_log/00000000000000000000.json','rb')\ncached=f.read()\ndef read_forever():\n while True:\n  f.seek(0);assert f.read()==cached\n  open('/scratch/open-ready','w').write(str(time.monotonic()))\n  time.sleep(.05)\nthreading.Thread(target=read_forever,daemon=True).start()\nspark.sql('SELECT sum(id) FROM range(10000000000)').collect()\n"
+        );
+        let id = execution_admit(&mut store, &alice.0, &deployment, &open_file);
+        store
+            .execution_job(
+                alice.0.clone(),
+                alice.1.clone(),
+                deployment.clone(),
+                C::Start {
+                    id: id.clone(),
+                    datasets: datasets.clone(),
+                },
+                uc.broker.fresh(),
+                manager.clone(),
+            )
+            .unwrap()()
+        .unwrap()(&mut store)
+        .unwrap();
+        let name = format!("sb-exec-{id}");
+        let ready = Instant::now();
+        let last_access = loop {
+            let check = Command::new("docker")
+                .args([
+                    "exec",
+                    &name,
+                    "/tools/runsc",
+                    "--root=/work/runsc",
+                    "exec",
+                    "lease",
+                    "/bin/cat",
+                    "/scratch/open-ready",
+                ])
+                .output()
+                .unwrap();
+            if check.status.success() && !check.stdout.is_empty() {
+                break crate::identity::now();
+            }
+            assert!(ready.elapsed() < Duration::from_secs(25));
+            std::thread::sleep(Duration::from_millis(200));
+        };
+        if mode == "platform_disable" {
+            store
+                .identity_admin(crate::identity::AdminCommand::Disable {
+                    principal: alice.0.actor_id.clone(),
+                    disabled: true,
+                })
+                .unwrap();
+        } else if mode == "audit_failure" {
+            store.db.execute_batch("CREATE TRIGGER deny_renewal_audit BEFORE INSERT ON authorization_audit BEGIN SELECT RAISE(ABORT,'disk full'); END;").unwrap();
+            let poll = store
+                .execution_job(
+                    alice.0.clone(),
+                    alice.1.clone(),
+                    deployment.clone(),
+                    C::Poll { id: id.clone() },
+                    uc.broker.fresh(),
+                    manager.clone(),
+                )
+                .unwrap();
+            assert!(poll().unwrap()(&mut store).is_err());
         }
-        assert!(began.elapsed() < Duration::from_secs(35));
-        std::thread::sleep(Duration::from_millis(200));
+        let acknowledged = crate::identity::now();
+        let began = Instant::now();
+        if mode == "platform_disable" {
+            manager.tick(&mut store, false).unwrap();
+        }
+        // No cooperative worker or writer is required to close the descriptors.
+        let manager = if mode == "renewal_loss" {
+            drop(manager);
+            None
+        } else {
+            Some(manager)
+        };
+        loop {
+            if let Some(manager) = &manager {
+                let _ = manager.tick(&mut store, false);
+            }
+            let status = Command::new("docker")
+                .args(["inspect", &name])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .unwrap();
+            if !status.success() {
+                break;
+            }
+            assert!(began.elapsed() < Duration::from_secs(35));
+            std::thread::sleep(Duration::from_millis(200));
+        }
+        eprintln!(
+            "UC096_REVOCATION {}",
+            json!({"mode":mode,"last_success_observed_ms":last_access,"acknowledged_deny_ms":acknowledged,"closed_ms":crate::identity::now(),"closure_seconds":began.elapsed().as_secs_f64(),"bound_seconds":60})
+        );
+        if mode == "audit_failure" {
+            store
+                .db
+                .execute_batch("DROP TRIGGER deny_renewal_audit")
+                .unwrap();
+        }
+        store.recover_executions().unwrap();
+        assert!(store.execution_live(&id).is_err());
     }
-    store.recover_executions().unwrap();
-    assert!(store.execution_live(&id).is_err());
 }

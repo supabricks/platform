@@ -273,7 +273,16 @@ impl Store {
             "UPDATE catalog_governance SET revision=revision+1,state='dirty'",
             [],
         )?;
-        audit(&tx, "grant.recovery_closed", "")?;
+        if tx.query_row("SELECT count(*)<10000 FROM security_audit", [], |r| {
+            r.get::<_, bool>(0)
+        })? {
+            audit(&tx, "grant.recovery_closed", "")?;
+        } else {
+            tx.execute(
+                "UPDATE security_state SET recovery_pending=recovery_pending+1",
+                [],
+            )?;
+        }
         tx.commit()?;
         Ok(())
     }
@@ -493,12 +502,16 @@ impl Store {
         if !self.db.prepare("SELECT 1 FROM catalog_principals WHERE principal=?1 AND state='ready' AND provider=?2")?.exists(params![ctx.actor_id,broker.provider])? {return Err(gov::denied());}
         let snapshot = snapshot(&self.db, &broker, &[])?;
         let rev = snapshot.revision;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(25);
         Ok(Box::new(move || {
             let result = broker.read(&snapshot, &ctx.actor_id, ctx.expires_ms, &command);
             Ok(Box::new(move |store| {
+                if std::time::Instant::now() >= deadline {
+                    return Err(gov::denied());
+                }
                 fence(&store.db, rev)?;
                 super::authorization::validate_context(&store.db, &ctx)?;
-                if !store.db.prepare("SELECT 1 FROM identity_sessions s JOIN identity_realm r ON s.epoch=r.session_epoch WHERE s.token_hash=?1 AND s.principal=?2 AND s.expires_ms>?3")?.exists(params![token_hash,ctx.actor_id,crate::identity::now()])? {return Err(gov::denied());}
+                super::security::session(&store.db, &ctx, &token_hash)?;
                 if result.is_err() {
                     let tx = store.db.transaction()?;
                     tx.execute(

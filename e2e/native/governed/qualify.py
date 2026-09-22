@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
 import tempfile
 import threading
@@ -33,6 +34,7 @@ def main():
     cell.work=root/'project';cell.work.mkdir()
     (cell.work/'supabricks.toml').write_text(f'format_version=1\nid="{cell.project}"\nname="governed"\n')
     checks=[]
+    measurements={}
     try:
         cell.start()
         binding=cell.request(method='resolve_binding',source=dict(definition_id=cell.project,worktree=str(cell.work)))
@@ -92,13 +94,18 @@ def main():
         cell.sql(branch,'ALTER TABLE example DISABLE ROW LEVEL SECURITY')
         checks.append('rls_source_is_not_whole_branch')
         # A grant changed while a write is executing must roll back the SQL.
+        sql('SELECT count(*) AS n FROM example')
+        last_success=time.monotonic()
         failures=[]
         def changing_write():
             try:sql('INSERT INTO example SELECT 99 FROM pg_sleep(1.5)','write')
             except RuntimeError:failures.append(True)
         worker=threading.Thread(target=changing_write);worker.start()
         wait(lambda:cell.sql(branch,"SELECT count(*) FROM pg_stat_activity WHERE usename LIKE 'sbg_%' AND state='active'")=='1',10)
-        grant('write',False);worker.join(15)
+        grant('write',False);acknowledged=time.monotonic();worker.join(15)
+        wait(lambda:cell.sql(branch,"SELECT count(*) FROM pg_stat_activity WHERE usename LIKE 'sbg_%'")=='0',15)
+        measurements['platform_revoke']=dict(last_success_monotonic=last_success,acknowledged_deny_monotonic=acknowledged,closed_monotonic=time.monotonic(),bound_seconds=60)
+        assert measurements['platform_revoke']['closed_monotonic']-acknowledged<60
         assert failures==[True] and not worker.is_alive()
         assert cell.sql(branch,'SELECT count(*) FROM example WHERE id=99')=='0'
         grant('write')
@@ -207,10 +214,60 @@ def main():
         assert cell.sql(branch,"SELECT count(*) FROM pg_stat_activity WHERE usename LIKE 'sbg_%'")=='0'
         checks.append('writer_crash_rolls_back_and_never_replays_sql')
 
+        # Restore a real stopped PG cell from an earlier allow state after the
+        # source principal was revoked. No token, grant or copied password revives.
+        before_password=cell.credentials(branch)
+        before_storage=hashlib.sha256((cell.root/'storage.pk8').read_bytes()).hexdigest()
+        before_s3=cell.config['s3_secret']
+        realm=identity(action='status')['realm_id']
+        cell.stop()
+        backup=root/'governed-backup'
+        def backup_command(action,path,data):
+            process=subprocess.run([str(cell.binary),'backup',action,str(path),'--data-dir',str(data)],capture_output=True,text=True,timeout=120)
+            assert process.returncode==0,process.stderr
+            return json.loads(process.stdout)
+        backup_command('create',backup,cellroot)
+        cell.start()
+        identity(action='disable',principal=actor,disabled=True)
+        cell.stop()
+        restored=root/'restored'
+        assert backup_command('restore',backup,restored)['governed_closed'] is True
+        cell.root=restored
+        cell.start()
+        state=identity(action='restore_status')
+        assert state['closed'] is True
+        deny(lambda:sql('SELECT * FROM example'))
+        assert admin(action='policy',deployment=deployment)['data_grants']==[]
+        assert cell.credentials(branch)!=before_password
+        assert hashlib.sha256((cell.root/'storage.pk8').read_bytes()).hexdigest()!=before_storage
+        assert cell.config['s3_secret']!=before_s3
+        wait(lambda:cell.sql(branch,'SELECT count(*) FROM example')=='2',60)
+        try:
+            with psycopg.connect(host='127.0.0.1',port=branch['ports']['sql'],dbname='postgres',user='cloud_admin',password=before_password,connect_timeout=2):pass
+        except psycopg.OperationalError as error:assert 'password authentication failed' in str(error)
+        else:raise AssertionError('backup control password revived')
+        deny(lambda:identity(action='restore_reconcile',restore_id=state['restore_id'],realm_id=str(uuid.uuid4())))
+        identity(action='restore_reconcile',restore_id=state['restore_id'],realm_id=realm)
+        deny(lambda:sql('SELECT * FROM example'))
+        identity(action='disable',principal=actor,disabled=False)
+        fresh=identity(action='issue_service',principal=actor,scopes=['identity:self','project:control'],ttl_seconds=300)['token']
+        admin(action='set_role',deployment=deployment,subject=dict(kind='principal',id=actor),role='viewer',expected_policy=policy(),key=str(uuid.uuid4()))
+        grant('read')
+        value=request(as_token=fresh,action='sql',branch=bid,capability='read',sql='SELECT count(*) AS n FROM example',expected_policy=policy(),key=str(uuid.uuid4()))
+        assert value['result']['rows']==[dict(n=2)]
+        audit=identity(action='audit_export',after=0)
+        serialized=json.dumps(audit)
+        for secret in (token,bobtoken,fresh,before_password,'SELECT count(*) AS n FROM example'):
+            assert secret not in serialized
+        assert any(e['event']['action']=='access.denied' for e in audit['events'])
+        identity(action='audit_acknowledge',after=0,through=audit['through'],sha256=audit['sha256'])
+        checks.append('governed_backup_restore_closes_historical_grants_and_rotates_pg_and_sessions')
+        checks.append('bounded_audit_export_contains_correlated_metadata_without_credentials_or_sql')
+
     finally:
         if cell.daemons and cell.daemons[-1].poll() is None:cell.stop()
 
-    report=dict(status='PASS',checks=checks,binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),shared_ingress=False)
+    report=dict(status='PASS',checks=checks,measurements=measurements,binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest(),source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),shared_ingress=False)
     if args.report:
         args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps(report,indent=2)+'\n')

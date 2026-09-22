@@ -294,9 +294,14 @@ impl Daemon {
                     if let Some((command, token_hash)) = catalog {
                         let next = result
                             .and_then(|value| {
-                                let ctx = serde_json::from_value(value)?;
-
-                                match command {
+                                let ctx: crate::identity::Context = serde_json::from_value(value)?;
+                                let audit_ctx = ctx.clone();
+                                let deployment = match &command {
+                                    AuthorizedFollowup::Data(d, _)
+                                    | AuthorizedFollowup::Runtime(d, _) => Some(d.clone()),
+                                    AuthorizedFollowup::Catalog(_) => None,
+                                };
+                                let job = match command {
                                     AuthorizedFollowup::Data(deployment, command) => {
                                         self.store.data_job(ctx, token_hash, deployment, command)
                                     }
@@ -323,7 +328,8 @@ impl Daemon {
                                             self.isolated.clone(),
                                         )
                                     }
-                                }
+                                };
+                                self.store.audit_authorized_job(audit_ctx, deployment, job)
                             })
                             .and_then(|job| {
                                 Ok(std::thread::Builder::new()
