@@ -104,7 +104,7 @@ and restored-state admission gates also apply to service workers.
 ## Qualification and remaining SY06 work
 
 Recorded evidence: [Linux native, 7 checks](sy06-evidence/linux-native.json) and
-[Chromium/native console, 16 checks](sy06-evidence/linux-browser.json). Rust
+[Chromium/native console, 17 checks](sy06-evidence/linux-browser.json). Rust
 validation passed 332 core/local tests across the suite and targeted recovery/state
 reruns (3 intentional ignores), with a final 35-test sync rerun and 8 release
 evidence tests. These are source checks, not installed-release qualification.
