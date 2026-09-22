@@ -167,9 +167,10 @@ def assemble_analytics(destination, target):
     (site / 'sitecustomize.py').write_text('import sys\nsys.dont_write_bytecode = True\n')
     worker = destination / 'python/analytics'
     worker.mkdir()
-    for name in ['export.py', 'session.py', 'shell.py', 'qualify.py', 'runtime_environment.py', 'read_delta.py',
+    for name in ['capture_worker.py', 'export.py', 'session.py', 'shell.py', 'qualify.py', 'runtime_environment.py', 'read_delta.py',
                  'uv.lock', 'requirements.lock', '.python-version']:
         shutil.copy2(ROOT / 'python/analytics' / name, worker / name)
+    shutil.copytree(ROOT / 'python/analytics/capture', worker / 'capture', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     (destination / 'components').mkdir(exist_ok=True)
     shutil.copy2(ROOT / 'components/components.lock.json', destination / 'components/components.lock.json')
     wrapper = worker / 'python'

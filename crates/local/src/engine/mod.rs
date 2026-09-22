@@ -1,5 +1,6 @@
 //! Native single-owner cell. Process Compose is an executor, never desired state.
 mod branches;
+mod captures;
 mod exports;
 mod http;
 mod lifecycle;
@@ -295,6 +296,7 @@ impl Cell {
         // Stop the old executor before inspecting its children: it must not be
         // able to race recovery by launching another generation of writers.
         Self::recover(store)?;
+        store.recover_captures()?;
         let config = RuntimeConfig::load(store)?;
         let root = store.root().to_owned();
         for name in [
@@ -898,6 +900,9 @@ impl Cell {
                 settings.push(json!({"name":name,"value":value,"vartype":"string"}));
             }
         }
+        if let Some(bytes) = store.capture_wal_budget(branch.branch.id)? {
+            settings.push(json!({"name":"max_slot_wal_keep_size","value":format!("{}MB",bytes/(1024*1024)),"vartype":"string"}));
+        }
         settings.push(json!({"name":"hba_file","value":hba,"vartype":"string"}));
         if let Some(tls) = &self.config.compute_tls {
             settings.push(json!({"name":"ssl","value":"on","vartype":"enum"}));
@@ -964,6 +969,7 @@ impl Cell {
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
         // Cancellation and deadlines fence workers even while shared storage is down.
+        self.control_captures(store)?;
         self.control_exports(store)?;
         self.storage_ready = false;
         if let Some(child) = &mut self.supervisor {
@@ -1030,6 +1036,7 @@ impl Cell {
         if !self.storage_ready {
             return Ok(());
         }
+        self.tick_captures(store)?;
         self.tick_exports(store)?;
         store.reconcile_parent_pins()?;
         store.mark_expired()?;

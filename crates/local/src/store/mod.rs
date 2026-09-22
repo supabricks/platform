@@ -1,6 +1,7 @@
 mod analytics;
 mod authorization;
 mod branches;
+pub(crate) mod capture;
 mod catalog;
 mod catalog_governance;
 mod catalog_publication;

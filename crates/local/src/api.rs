@@ -28,6 +28,9 @@ impl Binding {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
+    ManagedCapture {
+        command: crate::capture::Command,
+    },
     ManagedSnapshots {
         command: crate::sync::Command,
     },
@@ -283,7 +286,7 @@ fn timeout() -> u64 {
 
 pub fn capabilities(binding: &Binding) -> Value {
     json!({"api":"supabricks.local", "api_version":VERSION,"project_id":binding.project_id,"worktree":binding.worktree,
-        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"managed_snapshot_scheduling":true,"incremental_triggered":false,"continuous_sync":false,"sync_event_triggers":false,"ingestion":true,"notebook_environments":true,"notebook_packages":true,"logical_data_packages":true,"catalog_metadata":true,"catalog_datasets":true},
+        "postgres_major":17,"features":{"branching":true,"stable_connections":true,"wake_on_connect":true,"automatic_idle_suspend":false,"analytics":true,"unpublished_exports":true,"atomic_snapshots":true,"managed_snapshot_scheduling":true,"local_durable_capture":true,"incremental_triggered":false,"continuous_sync":false,"sync_event_triggers":false,"ingestion":true,"notebook_environments":true,"notebook_packages":true,"logical_data_packages":true,"catalog_metadata":true,"catalog_datasets":true},
         "limits":{"request_bytes":65536,"sql_bytes":32768,"sql_rows":1000,"sql_result_bytes":262144,"sql_frame_bytes":1048576,"sql_timeout_ms":30000,"sql_workers":4,"sql_total_deadline_ms":45000,"analytical_sessions":2,"analytical_session_ttl_ms":3600000,"analytical_sql_rows":1000,"analytical_sql_result_bytes":262144,"analytical_sql_timeout_ms":30000,"active_branches":32,"connections":256,"connections_per_branch":64},
         "ingestion":{"formats":["csv","tsv","json_lines","json_array","json_document","parquet"],"json_bytes":10485760,"json_missing":"sql_null","nested_mapping":"jsonb","jsonb_analytics":false,"new_tables_only":true,"approved_mapping_required":true,"source_bytes":104857600,"decoded_bytes":536870912,"sampled_rss_bytes":536870912,"preview_rows":100,"preview_bytes":262144,"active_imports":1,"deadline_ms":600000},
         "logical_data":{"profile":"postgres_tables","format_version":1,"transport":"cli","fresh_tables_only":true,"transactional_table_set":true,"data_bytes":33554432,"archive_bytes":69206016,"tables":16,"columns_per_table":64,"rows":100000,"row_bytes":262144,"deadline_seconds":300},
@@ -318,6 +321,20 @@ pub(crate) fn handle(
     let project = binding.project_id;
     let mut held_ports = Vec::new();
     let (key, mutation) = match action {
+        Action::ManagedCapture { command } => {
+            if matches!(command, crate::capture::Command::Start { .. }) {
+                if cell.is_none() {
+                    return Err(invalid("capture requires a native cell"));
+                }
+                let (_, worker) = crate::installation::analytical_worker(store.root())?;
+                if !worker.with_file_name("capture_worker.py").is_file() {
+                    return Err(invalid(
+                        "install/configure the SY02 analytical runtime before capture",
+                    ));
+                }
+            }
+            return crate::capture::handle(store, binding, command);
+        }
         Action::ManagedSnapshots { command } => {
             return crate::sync::handle(store, binding, command);
         }

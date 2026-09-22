@@ -79,6 +79,11 @@ impl Store {
         {
             return self.publication(id);
         }
+        if self.capture_bootstrap_protected(id)? {
+            return Err(conflict(
+                "capture bootstrap is private and cannot be published directly",
+            ));
+        }
         self.sync_publication_live(id)?;
         let b = self.branch(e.source_id)?;
         if e.state != "complete"
@@ -137,6 +142,11 @@ impl Store {
     }
     pub fn discard_export(&mut self, project: ProjectId, id: OperationId) -> Result<Value> {
         let e = self.export_in_project(project, id)?;
+        if self.capture_bootstrap_protected(id)? {
+            return Err(conflict(
+                "bootstrap is owned by a capture generation; delete capture first",
+            ));
+        }
         if !matches!(e.state.as_str(), "complete" | "failed" | "cancelled") {
             return Err(conflict(
                 "cancel the active export and wait for cleanup first",
@@ -166,6 +176,11 @@ impl Store {
         let p = self.publication(p.export_id)?;
         if p.state == "published" {
             return Ok(());
+        }
+        if self.capture_bootstrap_protected(p.export_id)? {
+            return Err(conflict(
+                "capture bootstrap is private and cannot be published",
+            ));
         }
         self.sync_publication_live(p.export_id)?;
         if p.state != "files_complete" {
