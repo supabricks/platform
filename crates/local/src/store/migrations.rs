@@ -67,6 +67,57 @@ fn apply_inner(db: &mut Connection, migrations: &[&str]) -> Result<()> {
 mod tests {
     use super::*;
     #[test]
+    fn schema_twenty_five_preserves_populated_publications_capture_and_foreign_keys() {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        apply(&mut db, &MIGRATIONS[..24]).unwrap();
+        db.execute_batch("INSERT INTO projects VALUES ('p','project');
+            INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,revision,desired) VALUES ('b','p','main','tenant','timeline',1,'running'),('child','p','frozen','tenant','childline',1,'running');
+            INSERT INTO operations(rowid,id,project_id,request_key,request,branch_id,revision,steps) VALUES (37,'export','p','export','{}','child',1,'[]');
+            INSERT INTO exports(id,project_id,source_id,child_id,limits,deadline_ms,state,lease_id) VALUES ('export','p','b','child','{}',0,'complete','lease');
+            INSERT INTO publications(export_id,epoch_id,branch_id,source_revision,export_order,requested_at_ms,published_at_ms,state,descriptor) VALUES ('export','epoch','b',1,37,10,20,'published','{\"preserve\":true}');
+            INSERT INTO epochs VALUES ('epoch','b','0/100');
+            INSERT INTO snapshots VALUES ('epoch','export','available',NULL);
+            INSERT INTO snapshot_heads VALUES ('b','epoch');
+            INSERT INTO snapshot_leases VALUES ('reader','epoch',9000000);
+            INSERT INTO analytics_gc VALUES ('export','epoch','done');
+            INSERT INTO sync_policies VALUES ('policy','p','b','active','{\"preserve\":true}');
+            INSERT INTO sync_captures VALUES ('capture','policy','p','b','capturing','export','{\"cursor\":\"0/100\"}');").unwrap();
+        catalog_upgrade(&mut db, 24, "backup", "release").unwrap();
+        let value:(String,String,i64)=db.query_row("SELECT p.descriptor,c.record,a.ordinal FROM publications p JOIN analytical_artifacts a ON a.id=p.export_id JOIN sync_captures c ON c.bootstrap_id=p.export_id",[],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).unwrap();
+        assert_eq!(
+            value,
+            (
+                r#"{"preserve":true}"#.into(),
+                r#"{"cursor":"0/100"}"#.into(),
+                37
+            )
+        );
+        assert!(
+            !db.prepare("PRAGMA foreign_key_check")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+        assert!(
+            db.pragma_query_value(None, "foreign_keys", |r| r.get::<_, bool>(0))
+                .unwrap()
+        );
+        assert!(
+            db.execute("DELETE FROM analytical_artifacts WHERE id='export'", [])
+                .is_err()
+        );
+        assert_eq!(
+            db.query_row(
+                "SELECT epoch_id FROM snapshot_leases WHERE id='reader'",
+                [],
+                |r| r.get::<_, String>(0)
+            )
+            .unwrap(),
+            "epoch"
+        );
+    }
+    #[test]
     fn upgrades_pending_p04_suspension_without_reindexing_its_stop_checkpoint() {
         let mut db = Connection::open_in_memory().unwrap();
         db.pragma_update(None, "foreign_keys", true).unwrap();
