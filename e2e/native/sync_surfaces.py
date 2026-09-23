@@ -257,7 +257,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--catalog-runtime',type=Path)
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix='sb-sy06-')).resolve(); root.chmod(0o700)
+    args.report.parent.mkdir(parents=True,exist_ok=True)
+    root = Path(tempfile.mkdtemp(prefix='sb-sy06-',dir='/tmp')).resolve(); root.chmod(0o700)
     cell = Surfaces(args.binary.resolve(), args.bundle.resolve(), args.helpers.resolve(), root)
     cell.catalog_runtime=args.catalog_runtime.resolve() if args.catalog_runtime else None
     def sha(path):
