@@ -1,0 +1,116 @@
+{
+  "run": "https://github.com/supabricks/platform/actions/runs/35904364715",
+  "status": "failed",
+  "archive": {
+    "version": "v0.1.0-alpha.36",
+    "target": "macos-arm64",
+    "sha256": "5632ecf40063bf00c8751a237a0547acc200833630eff148388b79fe7088cb64"
+  },
+  "release_identity": "c6414cf32be9f68ab8160446c55654f8a36a692afec33f3afcfc7e2dcca1628f",
+  "source": {
+    "platform_commit": "4b6b0e5a895ca54af30304af3a6f5cb1e6887051",
+    "platform_dirty": false
+  },
+  "report_sha256": "ddadcbead1625fa00149839edad5a637a6d81f9606d4ae551f4e347e77a8dfb4",
+  "suites": {
+    "triggered": {
+      "status": "PASS",
+      "checks": [
+        "triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader",
+        "triggered_production_input_budget_preserves_complete_transactions",
+        "triggered_restart_reuses_checkpoint_and_delete_retires_source"
+      ],
+      "metrics": {},
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "descendants_observed": 100,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      }
+    },
+    "continuous": {
+      "status": "FAIL",
+      "checks": [],
+      "metrics": {
+        "source_table_bytes": 1277952,
+        "baseline_oltp_transaction_ms": {
+          "p50": 2.262,
+          "p95": 3.418,
+          "p99": 5.078
+        },
+        "storage": {
+          "input_bytes": 96164,
+          "new_parquet_bytes": 1032704,
+          "write_amplification_ratio": 10.739,
+          "peak_inventory_files": 92,
+          "peak_generation_bytes": 1216120,
+          "compaction_bytes": 0
+        },
+        "workload": {
+          "tables": 2,
+          "rows_per_table": 10000,
+          "transactions": 750,
+          "changed_rows": 1500,
+          "target_rows_per_second": 50,
+          "achieved_rows_per_second": 49.89,
+          "elapsed_seconds": 30.066,
+          "commit_to_publication_ms": {
+            "p50": 2904.573,
+            "p95": 4812.53,
+            "p99": 5467.003
+          },
+          "oltp_transaction_ms": {
+            "p50": 3.919,
+            "p95": 12.992,
+            "p99": 31.536
+          },
+          "burst_changed_rows": 200,
+          "burst_commit_to_publication_ms": 6140.972
+        },
+        "resources": {
+          "peak_owned_rss_bytes": 1391001600,
+          "peak_allocated_data_bytes": 139571200,
+          "spool_bytes": 131072,
+          "retained_wal_bytes": 283904,
+          "sampled_owned_cpu_seconds_lower_bound": 23.056
+        }
+      },
+      "diagnostics": {
+        "available": true,
+        "bytes": 1627,
+        "truncated": false,
+        "frames": [
+          {
+            "file": "installed_sync.py",
+            "line": 184,
+            "function": "main"
+          },
+          {
+            "file": "installed_sync.py",
+            "line": 135,
+            "function": "run"
+          },
+          {
+            "file": "continuous.py",
+            "line": 131,
+            "function": "workload"
+          }
+        ],
+        "console_errors": [],
+        "native_errors": [],
+        "readiness_poll_503_observed": 0,
+        "failure_types": [
+          "AssertionError"
+        ]
+      },
+      "cleanup": {
+        "exit_code": 1,
+        "timed_out": false,
+        "descendants_observed": 72,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      }
+    }
+  }
+}

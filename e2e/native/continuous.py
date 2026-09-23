@@ -108,6 +108,14 @@ class Continuous(Triggered):
         assert all(s['xid'] in ends for s in [*samples,burst]),'benchmark missed a transaction marker before reclamation'
         with sqlite3.connect(f'file:{self.root}/state.sqlite3?mode=ro',uri=True) as db:
             publications=[(json.loads(d),at) for d,at in db.execute("SELECT descriptor,published_at_ms FROM publications WHERE state='published' ORDER BY ordinal")]
+            runs={r['id']:r for (record,) in db.execute('SELECT record FROM incremental_runs') for r in [json.loads(record)]}
+        phases={name:[] for name in ('admission_to_worker_start','worker_start_to_prepared','prepared_to_publication')}
+        for descriptor,at in publications:
+            run=runs.get(descriptor['export_id'])
+            if not run or at<samples[0]['ack_ms']:continue
+            times=(run['created_at_ms'],run['started_at_ms'],descriptor['prepared_at_ms'],at)
+            for name,left,right in zip(phases,times,times[1:]):phases[name].append(max(0,right-left))
+        self.metrics['materialization_ms']={name:dict(percentiles(values),maximum=max(values),batches=len(values)) for name,values in phases.items() if values}
         cuts=[(lsn(d['manifest']['source']['lsn']),at) for d,at in publications]
         manifests=[d['manifest'] for d,at in publications if at>=samples[0]['ack_ms']]
         input_bytes=sum(m.get('input_bytes',0) for m in manifests)

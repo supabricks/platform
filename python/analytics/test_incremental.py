@@ -2,6 +2,7 @@
 from decimal import Decimal
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -67,6 +68,31 @@ class IncrementalTests(unittest.TestCase):
         # Fresh process, pinned delta-rs version; no in-process cached table state.
         code="import sys,json;from deltalake import DeltaTable;import pyarrow.fs as f;p=sys.argv[1];print(json.dumps(DeltaTable(p,version=int(sys.argv[2])).to_pyarrow_table(filesystem=f.SubTreeFileSystem(p,f.LocalFileSystem())).to_pylist(),default=str))"
         return json.loads(subprocess.check_output([sys.executable,'-c',code,str(path),str(table['version'])],text=True))
+    def assert_incremental_durability(self,replay):
+        root=Path(self.config['generation'])
+        old={root/e['path'] for e in self.first['manifest']['files']}
+        self.spool.append(280,300,tx(280,300,change(b'I',42,new=[2,None,'two'])))
+        config=self.config_next('0/12C')
+        if replay:
+            def crash(point):
+                if point=='after_table_commit':raise SystemExit(86)
+            with patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):run(config)
+        flushed=set();fsync=os.fsync
+        def record(fd):
+            stat=os.fstat(fd);flushed.add((stat.st_dev,stat.st_ino));fsync(fd)
+        with patch('incremental.storage.os.fsync',record):run(config)
+        def identity(path):
+            stat=path.stat();return stat.st_dev,stat.st_ino
+        result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        new={root/e['path'] for e in result['manifest']['files']}-old
+        self.assertTrue(new)
+        self.assertFalse({identity(p) for p in old}&flushed)
+        self.assertTrue({identity(p) for p in new}<=flushed)
+        self.assertTrue({identity(p.parent) for p in new}<=flushed)
+    def test_new_files_are_durable_without_reflushing_published_prefix(self):
+        self.assert_incremental_durability(False)
+    def test_unpublished_replayed_files_are_flushed_even_when_they_already_exist(self):
+        self.assert_incremental_durability(True)
     def test_key_move_unchanged_toast_decimal_delete_and_unchanged_table(self):
         raw=tx(280,300,change(b'U',42,new=[2,Decimal('12345678901234567890.12345678'),UNCHANGED],old=[1,None,None]),change(b'D',43,old=[1,None,None]),change(b'I',43,new=[3,None,'Unicode 🧱']))
         self.spool.append(280,300,raw);config=self.config_next('0/12C');run(config)

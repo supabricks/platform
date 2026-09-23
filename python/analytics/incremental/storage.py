@@ -64,8 +64,11 @@ def boundary(root,deadline,extra=0):
     return used
 
 
-def durable(root):
+def durable(root,sealed=frozenset()):
     for p in files(root):
+        # Published immutable files were already flushed before their epoch
+        # committed. New/replayed files and every directory still need fsync.
+        if p in sealed:continue
         with p.open('rb') as stream:os.fsync(stream.fileno())
     for p in [*root.rglob('*'),root,root.parent]:
         if p.is_dir():

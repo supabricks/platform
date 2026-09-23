@@ -51,9 +51,16 @@ rejects caches removed or changed by a later packaging stage.
 The daemon consumes accepted worker receipts in the same turn, and incremental
 publication commits immediately after bounded verification reaches its durable
 ready state. Previously these handoffs each waited for another timer turn. The
-4-MiB-per-turn checksum budget, ready record, fsyncs, source/policy/head fencing,
+4-MiB-per-turn checksum budget, ready record, durability, source/policy/head fencing,
 and atomic group/cursor transaction are unchanged. Crash recovery still resumes
 from the persisted ready state.
+
+Both the worker and publisher avoid repeatedly flushing immutable files already
+covered by a published inventory in the same storage generation. Every byte is
+still checksum-verified. New files, replayed unpublished files, directory entries,
+and compacted generations retain their flushes. Matching a path in a different
+generation is never proof of durability. Workload reports also include timings
+from admission to worker start, preparation, and publication for diagnosis.
 
 ## Checks and measurements
 
@@ -224,3 +231,23 @@ means the end-to-end timings are diagnostic, not a controlled benchmark. All
 38 sync state-machine tests and 12 publication integration tests passed, including
 SIGKILL at every publication boundary and a new check that same-turn publication
 still yields when checksum verification exceeds its existing per-turn budget.
+After local compilation/tests finished, a second development run passed all four
+continuous checks at 3,446 ms p95, 3,609 ms p99, 3,018 ms burst and 50.04 changed
+rows/second. Receipt-to-publication median was 274 ms (133–390 ms range). The
+complete local-runtime test command passed 327 tests; the workspace command
+stopped at the operator chart test because Helm was not installed locally.
+
+The [handoff candidate](https://github.com/supabricks/platform/actions/runs/35904364715)
+passed required CI, both complete native suites, and all 26 installed Linux sync
+checks (2,608 ms p95, 3,167 ms burst). macOS passed triggered checks and the p95
+limit at 4,813 ms, but its 6,141 ms burst remained a failure. The
+[macOS receipt](sy08-evidence/handoff-macos-failure.json) retains that result.
+This motivated avoiding repeated fsyncs of the growing published immutable
+prefix. The flush optimization passed 21 Python incremental/maintenance tests,
+39 sync state-machine tests, and 12 publication tests. Fresh installed archive
+qualification is still required; no performance gate has been changed.
+The optimized development copy passed all four continuous checks offline at
+3,413 ms p95, 3,947 ms p99, 3,048 ms burst and 50.06 changed rows/second. Across
+23 measured batches, worker-start-to-preparation p95 was 1,268 ms and
+preparation-to-publication p95 was 429 ms. These Linux diagnostics do not establish
+the macOS operating envelope.

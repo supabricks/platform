@@ -128,6 +128,41 @@ fn verified_incremental_publishes_in_one_turn_without_exceeding_hash_budget() {
     }
 }
 #[test]
+fn published_prefix_is_still_hashed_but_only_new_files_need_sync() {
+    let (_dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut first = apply(&mut s, &c, "first");
+    prepare(&mut s, &c, &mut first, 0);
+    finish(&mut s, &first);
+    let mut next = apply(&mut s, &c, "next");
+    prepare(&mut s, &c, &mut next, 1);
+    let mut publisher = Publisher::recover(&mut s).unwrap();
+    let mut verified = 0;
+    let mut synced = 0;
+    publisher
+        .tick_with_hook(&mut s, &mut |at| {
+            verified += usize::from(at.starts_with("verified_file:"));
+            synced += usize::from(at.starts_with("synced_file:"));
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!((verified, synced), (4, 2));
+    assert_eq!(s.publication(next.id).unwrap().state, "published");
+    let old = head(&s, &c);
+    let mut corrupt = apply(&mut s, &c, "corrupt");
+    let descriptor = prepare(&mut s, &c, &mut corrupt, 2);
+    let path = s
+        .root()
+        .join(descriptor["generation"].as_str().unwrap())
+        .join("tables/101/_delta_log/00000000000000000000.json");
+    let mut bytes = fs::read(&path).unwrap();
+    bytes[0] ^= 1;
+    fs::write(path, bytes).unwrap();
+    assert!(publisher.tick(&mut s).is_err());
+    assert_eq!(head(&s, &c), old);
+}
+
+#[test]
 fn admission_cancel_scope_and_restore_fence_writers() {
     let (_dir, mut s, p, d, b) = setup();
     let mut c = ready(&mut s, p, d, b);
@@ -393,7 +428,17 @@ fn compaction_admission_is_durable_and_old_roots_wait_for_explicit_unpinned_gc()
     wrong["manifest"]["storage_generation"] = json!(c.id);
     assert!(crate::analytics_v2::data_root(s.root(), &wrong).is_err());
     assert!(s.commit_incremental(&mut next, &wrong).is_err());
-    finish(&mut s, &next);
+    let mut publisher = Publisher::recover(&mut s).unwrap();
+    let mut synced = 0;
+    publisher
+        .tick_with_hook(&mut s, &mut |at| {
+            synced += usize::from(at.starts_with("synced_file:"));
+            Ok(())
+        })
+        .unwrap();
+    // Identical relative names in a compacted generation are new files.
+    assert_eq!(synced, 4);
+    assert_eq!(s.publication(next.id).unwrap().state, "published");
     s.collect_snapshots(p, b, 1).unwrap();
     assert_eq!(s.snapshot(p, first.epoch_id).unwrap().state, "available");
     assert!(s.incremental_root_referenced(c.id).unwrap());

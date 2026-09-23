@@ -37,6 +37,7 @@ struct FileCheck {
     path: String,
     bytes: u64,
     hash: String,
+    needs_sync: bool,
 }
 fn require(ok: bool, message: &str) -> Result<()> {
     if ok { Ok(()) } else { Err(invalid(message)) }
@@ -198,6 +199,7 @@ fn layout(root: &Path, manifest: &Value) -> Result<Vec<FileCheck>> {
             path: path.into(),
             bytes,
             hash: digest.into(),
+            needs_sync: true,
         });
     }
     let mut actual = BTreeSet::new();
@@ -289,7 +291,10 @@ impl Verifier {
                     *read == check.bytes && hex::encode(digest.clone().finalize()) == check.hash,
                     "generation checksum mismatch",
                 )?;
-                file.sync_all()?;
+                if check.needs_sync {
+                    file.sync_all()?;
+                    hook(&format!("synced_file:{}", self.index + 1))?;
+                }
                 self.current = None;
                 self.index += 1;
                 hook(&format!("verified_file:{}", self.index))?;
@@ -540,9 +545,33 @@ impl Publisher {
         }
         if p.state == "requested" {
             if self.verifier.is_none() {
+                // Published files in this storage generation are immutable and
+                // already durable. Still hash every byte; only avoid redundant
+                // fsync when path, size and checksum match the published prefix.
+                let mut durable = BTreeSet::new();
+                if let Some(epoch) = run.previous_epoch {
+                    let old = store.snapshot(project, epoch)?;
+                    if old.publication.state == "published"
+                        && let Some(previous) = old.publication.descriptor
+                        && previous["generation"] == d["generation"]
+                        && previous["manifest"]["capture_identity"]
+                            == d["manifest"]["capture_identity"]
+                    {
+                        durable.extend(crate::analytics_v2::layout(store.root(), &previous)?);
+                    }
+                }
                 let files = crate::analytics_v2::layout(store.root(), d)?
                     .into_iter()
-                    .map(|(path, bytes, hash)| FileCheck { path, bytes, hash })
+                    .map(|entry| {
+                        let needs_sync = !durable.contains(&entry);
+                        let (path, bytes, hash) = entry;
+                        FileCheck {
+                            path,
+                            bytes,
+                            hash,
+                            needs_sync,
+                        }
+                    })
                     .collect();
                 self.verifier = Some(Verifier {
                     id: p.export_id,
