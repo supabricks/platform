@@ -202,9 +202,11 @@ requirement="orders.v1"
             from client import Console,execute
             def cli(project,*parts):
                 return json.loads(subprocess.check_output([str(self.binary),*parts,'--project',str(project),'--data-dir',str(self.root)],text=True,timeout=180).strip().splitlines()[-1])
-            # Use the verified baseline's offline notebook environment closure.
-            # The new view deliberately retains its supported frozen-v1 reader contract.
-            notebook_worker=self.helpers.parent/'python/analytics/export.py'
+            # Keep the baseline's offline notebook dependencies, but use current
+            # readers and capture workers throughout notebook admission. The old
+            # baseline predates dataset bindings and managed capture; switching to
+            # its workers would prevent the daemon from advancing pending exports.
+            notebook_worker=self.notebook_worker
             self.api('configure_analytics',python=str(notebook_worker.parent/'python'),worker=str(notebook_worker))
             console=Console(consumer,cli,[])
             e=console.action('create',target=console.target,key='bound-notebook',catalog=True)
@@ -266,7 +268,22 @@ def main():
     report = dict(status='FAIL', checks=cell.checks, scope='Disposable source qualification; not an installed release.',
         binary_sha256=sha(args.binary), engine_manifest_sha256=sha(args.bundle/'manifest.json'),
         capture_source_sha256=sha(args.worker.parent/'capture/source.py'))
+    notebook_fixture = None
     try:
+        if cell.catalog_runtime:
+            notebook_fixture = Path(tempfile.mkdtemp(prefix='sb-sy06-runtime-',dir='/tmp')).resolve()
+            shutil.copytree(cell.helpers.parent/'python',notebook_fixture/'python')
+            (notebook_fixture/'helpers').mkdir()
+            shutil.copy2(cell.helpers/'uv',notebook_fixture/'helpers/uv')
+            workers=notebook_fixture/'python/analytics'
+            for source in args.worker.parent.glob('*.py'):
+                if not source.name.startswith('test_'): shutil.copy2(source,workers/source.name)
+            for name in ('capture','incremental'):
+                shutil.copytree(args.worker.parent/name,workers/name,dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
+            cell.notebook_worker=workers/'export.py'
+            report['notebook_contract_sha256']=sha(notebook_fixture/'python/notebooks/kernel-contract.json')
+            report['notebook_session_source_sha256']=sha(workers/'session.py')
         cell.run(args.python.absolute(), args.worker.resolve()); report['status'] = 'PASS'
     finally:
         if (root / 'control.sock').exists():
@@ -274,7 +291,9 @@ def main():
             except Exception: report.update(status='FAIL', cleanup='failed')
         if report['status'] != 'PASS': report['state_dir'] = str(root)
         args.report.write_text(json.dumps(report, indent=2) + '\n')
-        if report['status'] == 'PASS' and 'cleanup' not in report: shutil.rmtree(root)
+        if report['status'] == 'PASS' and 'cleanup' not in report:
+            shutil.rmtree(root)
+            if notebook_fixture: shutil.rmtree(notebook_fixture)
     print(json.dumps(report, indent=2)); assert report['status'] == 'PASS'
 
 if __name__ == '__main__': main()

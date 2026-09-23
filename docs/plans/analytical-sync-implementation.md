@@ -2,9 +2,9 @@
 
 [Plan index](README.md) · [Delivery status](status.md) · [Stack overview](../stack.md)
 
-Status: 2026-09-22. [SY00 capture probe](../architecture/sy00-capture-probe.md)
+Status: 2026-09-23. [SY00 capture probe](../architecture/sy00-capture-probe.md)
 is complete with Linux/macOS qualification. [SY01 managed snapshot policies](../architecture/sy01-managed-snapshots.md)
-are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is merged. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is merged ([#83](https://github.com/supabricks/platform/pull/83)). [SY06 shared controls and governed service authority](../architecture/sy06-sync-surfaces.md) are in progress; its shared controls, service-bound capture and immutable catalog views are implemented for review. Final cross-platform SY06 qualification, SY07 and SY08 remain open.
+are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is merged. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is merged ([#83](https://github.com/supabricks/platform/pull/83)). [SY06 shared controls and governed service authority](../architecture/sy06-sync-surfaces.md) are implemented in [platform #84](https://github.com/supabricks/platform/pull/84) and [console #14](https://github.com/supabricks/console/pull/14), with shared controls, service-bound capture and immutable catalog views. The platform PR records cross-platform merge qualification; SY07 and SY08 remain open.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
 storage → Sail first. Lakehouse → PostgreSQL serving follows separately.**
@@ -278,7 +278,7 @@ without logging row contents or secrets. Reuse UC09's isolation and audit model.
 ## Delivery slices and exit evidence
 
 Each row is a separately reviewable slice. SY00 has a qualified probe implementation;
-SY01–SY05 are implemented and merged; SY06 is **in progress**, with shared controls, governed incremental authority and immutable catalog views implemented for review. SY07–SY08 remain **planned**. Implementation
+SY01–SY05 are implemented and merged; SY06 source implementation is **complete**, with shared controls, governed incremental authority and immutable catalog views; [#84](https://github.com/supabricks/platform/pull/84) records its cross-platform merge checks. SY07–SY08 remain **planned**. Implementation
 must update the ledger and add an architecture/qualification record before a
 capability is reported as delivered.
 

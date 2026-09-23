@@ -2,11 +2,12 @@
 
 [Sync plan](../plans/analytical-sync-implementation.md) · [Operating guide](../handbook/managed-sync.md)
 
-Status: source implementation for review. Local console/CLI/MCP and governed
+Status: source implementation complete. Local console/CLI/MCP and governed
 ingress support snapshot, triggered and continuous policies. Governed policies
 bind a scoped service authority; shared incremental results use immutable
-per-epoch catalog views. Cross-platform integration is the remaining SY06 gate;
-SY07 maintenance and SY08 exact installed-release qualification remain separate.
+per-epoch catalog views. [Platform #84](https://github.com/supabricks/platform/pull/84)
+tracks the Linux/macOS merge gates; [console #14](https://github.com/supabricks/console/pull/14)
+is merged. SY07 maintenance and SY08 exact installed-release qualification remain separate.
 
 ## Shared control contract
 
@@ -166,7 +167,16 @@ Sail readers, cross-project bindings, notebook restart and relocated catalog vie
 The signed-in browser covers continuous disclosure, explicit service grants,
 incremental result sharing, reviewed resync, cleanup, resume and service revocation.
 
-Linux/macOS CI remains required before merge. The earlier SY06 macOS native run
+Linux/macOS CI is required before merge. The native catalog fixture combines the
+verified baseline notebook dependencies with current analytical workers. Using
+the baseline reader directly omits dataset bindings and capture support; this
+fixture is not an unchanged installed-release qualification.
+
+[Native CI on both platforms](https://github.com/supabricks/platform/actions/runs/35819986230)
+passed at `d153fca`, before the notebook fixture correction. The
+[Linux sample](sy06-evidence/linux-ci-continuous.json) measured sustained p95
+3431 ms and a 3107 ms burst; the [macOS sample](sy06-evidence/macos-ci-continuous.json)
+measured sustained p95 4156 ms and a 3157 ms burst. The earlier SY06 macOS native run
 failed the unchanged 5000 ms continuous burst target (6219 ms); its sustained p95
 was 3947 ms. That failed timing sample is not passing evidence. SY07 resource
 maintenance and SY08 exact archive qualification remain separate delivery slices.
