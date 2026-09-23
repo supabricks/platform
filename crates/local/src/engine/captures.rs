@@ -235,6 +235,28 @@ impl Cell {
                 self.stop_capture(store, &c)?;
             }
             if !self.launches.contains_key(&role) {
+                if c.identity.get("service_authority").is_some()
+                    && matches!(c.desired.as_str(), "running" | "paused")
+                    && crate::governed::postgres::inspect(crate::governed::postgres::Target {
+                        capture_identity: Some(c.identity.clone()),
+                        port: branch
+                            .ports
+                            .ok_or_else(|| conflict("source has no native ports"))?
+                            .sql,
+                        password: store.endpoint_password(branch.endpoint.id)?,
+                    })
+                    .is_err()
+                {
+                    // Refuse broad source credentials before the first worker can
+                    // create replication resources or invoke source DDL triggers.
+                    // Generation zero proves that no owned worker has run yet.
+                    c.cleanup_complete = c.worker_generation == 0;
+                    c.desired = "fenced".into();
+                    c.state = "resync_required".into();
+                    c.error = Some("unsupported_governed_source_profile".into());
+                    store.save_capture(&c)?;
+                    continue;
+                }
                 if status_path.exists() {
                     fs::remove_file(&status_path)?;
                 }

@@ -325,7 +325,9 @@ impl View {
 mod tests {
     use super::*;
     fn fixture() -> (tempfile::TempDir, Value) {
-        let dir = tempfile::tempdir().unwrap();
+        // macOS temp roots may be reached through /var -> /private/var.
+        // Production stores are canonical; fixtures must obey the same boundary.
+        let dir = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         let id = supabricks_core::resource::OperationId::new();
         let capture = supabricks_core::resource::OperationId::new();
         let generation = format!("analytics/incremental/{capture}");

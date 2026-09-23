@@ -95,6 +95,15 @@ class Surfaces(Policies):
         governed(dict(kind='delete', id=p['id'], expected_revision=governed(dict(kind='get',id=p['id']))['revision'], key='delete-rls'))
         self.check('native_rls_source_never_publishes_through_service_authority')
         self.sql(parent, 'ALTER TABLE orders DISABLE ROW LEVEL SECURITY')
+        self.sql(parent, 'CREATE FUNCTION public.unsupported_sync_function() RETURNS int LANGUAGE sql AS \'SELECT 1\'')
+        rejected = governed(dict(create, key='unsupported-capture', config=dict(mode='continuous', strategy='incremental', schedule=None)), principal=service)
+        blocked = wait(lambda:(v if (v:=self.api('managed_capture',command=dict(kind='status',id=rejected['capture_id'])))['desired']=='fenced' else False),timeout=60)
+        assert blocked['error']=='unsupported_governed_source_profile' and blocked['start_lsn'] is None and blocked['bootstrap_id'] is None,blocked
+        assert self.sql(parent,"SELECT count(*) FROM pg_publication WHERE pubname LIKE 'sbcap_%'")=='0'
+        governed(dict(kind='delete',id=rejected['id'],expected_revision=governed(dict(kind='get',id=rejected['id']))['revision'],key='delete-unsupported'))
+        wait(lambda:self.api('managed_capture',command=dict(kind='status',id=rejected['capture_id']))['state']=='deleted')
+        self.sql(parent,'DROP FUNCTION public.unsupported_sync_function()')
+        self.check('unsupported_governed_source_is_refused_before_capture_resources_or_bootstrap')
         p = governed(dict(create, key='incremental', config=dict(mode='continuous', strategy='incremental', schedule=None)), principal=service)
         def healthy():
             current = governed(dict(kind='get', id=p['id']))

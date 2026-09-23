@@ -75,8 +75,8 @@ No deployment role implicitly grants these branch capabilities. Choosing a
 service does not grant its authority to the caller: the saved policy fixes the
 deployment, branch, source lineage and service identity. No browser token or
 bearer credential is persisted in the policy. Logout/session expiry of the
-manager does not terminate the background service. Existing whole-branch source
-profile checks also run on the private frozen export before reading its rows;
+manager does not terminate the background service. The whole-branch source profile is checked before each governed capture worker
+starts, and again on the private frozen export before reading its rows;
 RLS and other unsupported profiles fail closed. The only capture-specific routine
 exception is the engine-owned DDL fence: its schema ownership and complete durable
 identity, exact function OID and shape, and both enabled owned event triggers must
@@ -146,7 +146,7 @@ this wait operation; observed freshness is available in the shipped controls.
 
 ## Qualification
 
-Evidence: [native UC/Sail, 13 checks](sy06-evidence/linux-incremental-native.json),
+Evidence: [native UC/Sail, 14 checks](sy06-evidence/linux-incremental-native.json),
 [real UC/gVisor isolation](sy06-evidence/linux-incremental-isolation.json),
 [signed-in browser, 9 checks](sy06-evidence/linux-governed-browser.json), and the
 [earlier local browser journey, 17 checks](sy06-evidence/linux-browser.json).
