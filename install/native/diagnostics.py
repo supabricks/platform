@@ -47,8 +47,12 @@ def summarize(path):
         except (ValueError,SyntaxError):continue
         if not isinstance(error,dict):continue
         value=dict(code=error.get('code') if error.get('code') in codes else 'unknown')
-        if isinstance(error.get('retryable'),bool):value['retryable']=error['retryable']
-        message=error.get('message','')
+        # Native RPC errors nest their public details; CLI errors are flat.
+        detail=error.get('detail',error)
+        if not isinstance(detail,dict):detail={}
+        retryable=detail.get('retryable',error.get('retryable'))
+        if isinstance(retryable,bool):value['retryable']=retryable
+        message=detail.get('message','')
         if isinstance(message,str):
             match=re.fullmatch(r'governed PostgreSQL rejected request \(([A-Z0-9]{5}|connection)\)',message)
             if match:value['postgres_state']=match[1] if match[1] in pg_states else 'other'
