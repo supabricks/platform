@@ -96,6 +96,8 @@ jobs:
         run: python e2e/native/continuous.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-continuous.json
       - name: Managed sync service authority, revocation and pinned readers
         run: python e2e/native/sync_surfaces.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-sync-surfaces.json
+      - name: Sync compaction, spool reclamation and pinned-reader recovery
+        run: python e2e/native/sync_maintenance.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-sync-maintenance.json
       - name: Analytical worker boundary tests
         run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py'
       - name: Coding-agent setup adapter contracts
@@ -105,6 +107,8 @@ jobs:
         with:
           name: native-cell-${{ matrix.target }}
           path: |
+            native-sync-maintenance.json
+            native-sync-maintenance.log
             native-sync-surfaces.json
             native-continuous.json
             native-continuous.log

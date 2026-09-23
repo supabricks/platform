@@ -35,7 +35,10 @@ pub(super) fn prepare(
     r: &mut Apply,
     version: u64,
 ) -> serde_json::Value {
-    let generation = format!("analytics/incremental/{}", c.id);
+    let generation = format!(
+        "analytics/incremental/{}",
+        r.storage_generation.unwrap_or(c.id)
+    );
     let root = s.root().join(&generation);
     let mut files = Vec::new();
     let mut tables = Vec::new();
@@ -49,7 +52,7 @@ pub(super) fn prepare(
         }
         tables.push(json!({"oid":oid,"schema":"public","name":format!("t{oid}"),"path":format!("tables/{oid}"),"version":version}));
     }
-    let manifest = json!({"format_version":2,"capture_identity":c.identity,"source":{"lsn":r.target_lsn},"tables":tables,"files":files});
+    let manifest = json!({"format_version":2,"capture_identity":c.identity,"storage_generation":r.storage_generation,"source":{"lsn":r.target_lsn},"tables":tables,"files":files});
     let bytes = serde_json::to_vec(&manifest).unwrap();
     let descriptor = json!({"format_version":2,"installation_id":s.installation_id().unwrap(),"epoch_id":r.epoch_id,"export_id":r.id,"ordinal":s.publication(r.id).unwrap().ordinal,"source_revision":r.source_revision,"generation":generation,"manifest_sha256":hex::encode(Sha256::digest(&bytes)),"manifest":manifest});
     let stage = s.root().join("analytics/staging").join(r.id.to_string());
@@ -310,4 +313,43 @@ fn v2_rejects_unselected_logs_symlinks_and_corrupt_content_without_advancing_hea
     assert_eq!(s.incremental_run(p, next.id).unwrap().state, "failed");
     assert_eq!(s.capture(p, c.id).unwrap().state, "resync_required");
     assert_eq!(s.snapshot(p, first.epoch_id).unwrap().state, "available");
+}
+
+#[test]
+fn compaction_admission_is_durable_and_old_roots_wait_for_explicit_unpinned_gc() {
+    let (_dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut first = apply(&mut s, &c, "first");
+    prepare(&mut s, &c, &mut first, 64);
+    finish(&mut s, &first);
+    let pin = s.pin_snapshot(p, first.epoch_id, 60000).unwrap();
+    let mut next = apply(&mut s, &c, "compact");
+    assert_eq!(next.storage_generation, Some(next.id));
+    assert_eq!(
+        apply(&mut s, &c, "compact").storage_generation,
+        Some(next.id)
+    );
+    assert!(s.incremental_root_referenced(c.id).unwrap());
+    assert!(s.incremental_root_referenced(next.id).unwrap());
+    assert_eq!(
+        s.incremental_root_identity(next.id).unwrap(),
+        Some(c.identity.clone())
+    );
+    let descriptor = prepare(&mut s, &c, &mut next, 1);
+    let mut wrong = descriptor.clone();
+    wrong["manifest"]["storage_generation"] = json!(c.id);
+    assert!(crate::analytics_v2::data_root(s.root(), &wrong).is_err());
+    assert!(s.commit_incremental(&mut next, &wrong).is_err());
+    finish(&mut s, &next);
+    s.collect_snapshots(p, b, 1).unwrap();
+    assert_eq!(s.snapshot(p, first.epoch_id).unwrap().state, "available");
+    assert!(s.incremental_root_referenced(c.id).unwrap());
+    s.release_snapshot_lease(p, pin.id).unwrap();
+    s.collect_snapshots(p, b, 1).unwrap();
+    assert!(s.incremental_root_referenced(c.id).unwrap()); // Deletion is not complete yet.
+    s.finish_analytics_gc(first.id).unwrap();
+    assert!(!s.incremental_root_referenced(c.id).unwrap());
+    assert!(s.incremental_root_referenced(next.id).unwrap());
+    let third = apply(&mut s, &c, "reuse");
+    assert_eq!(third.storage_generation, next.storage_generation);
 }

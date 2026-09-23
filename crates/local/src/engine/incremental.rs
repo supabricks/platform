@@ -39,11 +39,11 @@ impl Cell {
                 }
             }
         }
-        // Conservative reference accounting: no table vacuum. A whole closed
-        // root is collectable only when all epoch/session/catalog references drain.
+        // Compaction writes another root. Retained history, readers and catalog
+        // publications keep the old root until every reference has drained.
         let roots = self.root.join("analytics/incremental");
         if roots.is_dir() {
-            for entry in fs::read_dir(&roots)?.take(129) {
+            for entry in fs::read_dir(&roots)?.take(257) {
                 let e = entry?;
                 if let Some(id) = e.file_name().to_str().and_then(|n| {
                     n.strip_suffix(".initializing")
@@ -64,7 +64,12 @@ impl Cell {
                         continue;
                     }
                     let value: Value = serde_json::from_slice(&fs::read(marker)?)?;
-                    if value["identity"] != identity {
+                    if value["identity"] != identity
+                        || value["storage_generation"]
+                            .as_str()
+                            .unwrap_or_else(|| identity["generation"].as_str().unwrap_or(""))
+                            != id.to_string()
+                    {
                         return Err(invalid("incremental GC ownership mismatch"));
                     }
                     fs::remove_dir_all(e.path())?;
@@ -117,6 +122,8 @@ impl Cell {
                                 || d["epoch_id"] != json!(r.epoch_id)
                                 || d["source_revision"] != json!(r.source_revision)
                                 || d["manifest"]["capture_identity"] != c.identity
+                                || d["manifest"]["storage_generation"]
+                                    != json!(r.storage_generation)
                             {
                                 return Err(invalid("worker epoch identity mismatch"));
                             }
@@ -224,7 +231,7 @@ impl Cell {
             let bootstrap = c
                 .bootstrap_id
                 .ok_or_else(|| conflict("missing capture bootstrap"))?;
-            let config = json!({"id":r.id,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(c.id.to_string()),"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
+            let config = json!({"id":r.id,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;

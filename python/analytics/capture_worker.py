@@ -53,6 +53,7 @@ def run(path):
                 except StopIteration:raise CaptureError('bootstrap_verification')
             if time.monotonic()-last_source_check>=1:
                 observed=source.check();last_source_check=time.monotonic()
+                if verified:spool.prune(current.get('published_lsn'))
             if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
                 report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':

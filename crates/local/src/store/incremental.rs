@@ -208,8 +208,42 @@ impl Store {
                         }
                         requested
                     };
+                    let id = OperationId::new();
+                    let mut storage_generation = None;
+                    if let Some((epoch, _)) = &previous {
+                        let old = self
+                            .snapshot(project, parse(epoch)?)?
+                            .publication
+                            .descriptor
+                            .ok_or_else(|| conflict("missing previous epoch descriptor"))?;
+                        let compact = old["manifest"]["tables"].as_array().is_some_and(|ts| {
+                            ts.iter()
+                                .any(|t| t["version"].as_u64().is_some_and(|v| v >= 64))
+                        }) || old["manifest"]["files"]
+                            .as_array()
+                            .is_some_and(|fs| fs.len() >= 2048)
+                            || old["manifest"]["generation_bytes"]
+                                .as_u64()
+                                .is_some_and(|n| n >= 512 * 1024 * 1024);
+                        storage_generation = if compact {
+                            Some(id)
+                        } else {
+                            old["manifest"]["storage_generation"]
+                                .as_str()
+                                .map(parse)
+                                .transpose()?
+                        };
+                    }
+                    self.db.execute(
+                        "INSERT INTO sync_storage_roots VALUES (?1,?2) ON CONFLICT DO NOTHING",
+                        params![
+                            storage_generation.unwrap_or(c.id).to_string(),
+                            c.id.to_string()
+                        ],
+                    )?;
                     let r = Run {
-                        id: OperationId::new(),
+                        id,
+                        storage_generation,
                         capture_id: c.id,
                         sync_run_id: owner,
                         project_id: project,
@@ -320,6 +354,16 @@ impl Store {
             return Err(conflict("incremental run fenced"));
         }
         let c = self.incremental_live(r)?;
+        if descriptor["manifest"]["storage_generation"] != json!(live.storage_generation)
+            || descriptor["manifest"]["capture_identity"] != c.identity
+            || descriptor["generation"]
+                != format!(
+                    "analytics/incremental/{}",
+                    live.storage_generation.unwrap_or(c.id)
+                )
+        {
+            return Err(conflict("incremental storage identity changed"));
+        }
         if c.state != "capturing"
             || c.observed_at_ms
                 .is_none_or(|at| now_ms().unwrap_or(i64::MAX) - at > 5000)
@@ -399,20 +443,21 @@ impl Store {
             .exists([id.to_string()])?)
     }
     pub(crate) fn incremental_root_identity(&self, id: OperationId) -> Result<Option<Value>> {
-        let record: Option<String> = self
-            .db
-            .query_row(
-                "SELECT record FROM sync_captures WHERE id=?1",
-                [id.to_string()],
-                |r| r.get(0),
-            )
-            .optional()?;
+        let record: Option<String> = self.db.query_row(
+            "SELECT c.record FROM sync_storage_roots r JOIN sync_captures c ON c.id=r.capture_id WHERE r.id=?1",
+            [id.to_string()], |r|r.get(0)).optional()?;
         record
             .map(|s| Ok(serde_json::from_str::<Capture>(&s)?.identity))
             .transpose()
     }
-    pub(crate) fn incremental_root_referenced(&self, capture: OperationId) -> Result<bool> {
-        Ok(self.db.prepare("SELECT 1 FROM sync_captures WHERE id=?1 AND state!='deleted' UNION ALL SELECT 1 FROM incremental_runs r LEFT JOIN publications p ON p.export_id=r.id LEFT JOIN snapshots s ON s.epoch_id=p.epoch_id WHERE r.capture_id=?1 AND (r.state IN ('requested','running','ready') OR s.state IN ('available','unavailable','deleting'))")?.exists([capture.to_string()])?)
+    pub(crate) fn incremental_root_referenced(&self, root: OperationId) -> Result<bool> {
+        // Retained history, leases and catalog bindings keep snapshots non-deleted.
+        // The active writer also pins both its source and destination across crashes.
+        Ok(self.db.prepare("SELECT 1 FROM snapshots s JOIN publications p ON p.export_id=s.export_id
+            WHERE s.state IN ('available','unavailable','deleting') AND json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1
+            UNION ALL SELECT 1 FROM incremental_runs r LEFT JOIN publications p ON p.epoch_id=json_extract(r.record,'$.previous_epoch')
+            WHERE r.state IN ('requested','running','ready') AND
+            (coalesce(json_extract(r.record,'$.storage_generation'),r.capture_id)=?1 OR json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1)")?.exists([root.to_string()])?)
     }
 }
 pub(crate) fn restore(db: &rusqlite::Connection) -> Result<()> {

@@ -95,6 +95,7 @@ class Spool:
         if self.path.stat().st_size > limit:
             raise CaptureError('spool_budget')
         self.db = sqlite3.connect(self.path, isolation_level=None)
+        if not existed: self.db.execute('PRAGMA auto_vacuum=INCREMENTAL')
         self.db.execute('PRAGMA journal_mode=DELETE')
         self.db.execute('PRAGMA synchronous=FULL')
         self.db.execute('PRAGMA foreign_keys=ON')
@@ -134,7 +135,8 @@ class Spool:
             self.set('start',start);self.set('captured',start);self.set('schema',schema);self.set('bytes',0)
             self.db.execute('COMMIT')
         except BaseException:
-            self.db.execute('ROLLBACK');raise
+            if self.db.in_transaction:self.db.execute('ROLLBACK')
+            raise
 
     @property
     def captured(self):
@@ -142,9 +144,10 @@ class Spool:
 
     def verify(self):
         if self.db.execute('PRAGMA quick_check').fetchone() != ('ok',): raise CaptureError('spool_corrupt')
-        previous=self.get('start')
+        prefix=self.prefix()
+        previous=prefix['lsn']
         if self.db.execute('SELECT 1 FROM transactions WHERE length(payload)>? LIMIT 1',(MAX_TRANSACTION,)).fetchone():raise CaptureError('spool_corrupt')
-        total=0;barrier=None;self.last_data_lsn=0
+        total=0;barrier=prefix['barrier'];self.last_data_lsn=prefix['last_data_lsn']
         for end,prior,commit,payload,digest in self.db.execute('SELECT end_lsn,previous_lsn,commit_lsn,payload,sha256 FROM transactions ORDER BY seq'):
             end,prior,commit=int(end,16),int(prior,16),int(commit,16)
             if previous is None or prior!=previous or not previous<end or not commit<end or len(payload)>MAX_TRANSACTION or hashlib.sha256(payload).hexdigest()!=digest:
@@ -185,7 +188,7 @@ class Spool:
         barrier=self.get('barrier')
         receipt=self.db.execute('SELECT payload FROM transactions WHERE end_lsn=?',(f"{lsn(barrier['end_lsn']):016x}",)).fetchone() if barrier else None
         return dict(published_lsn=published,backlog_bytes=backlog,oldest_commit_at_ms=stamp(first),
-                    last_data_lsn=pg_lsn(self.last_data_lsn),barrier_commit_at_ms=stamp(receipt))
+                    last_data_lsn=pg_lsn(self.last_data_lsn),barrier_commit_at_ms=self.get('barrier_at_ms') if receipt is None else stamp(receipt))
 
     def append(self, commit, end, payload):
         if len(payload)>MAX_TRANSACTION: raise CaptureError('transaction_budget')
@@ -198,7 +201,7 @@ class Spool:
             return False
         if not previous<=commit<end: raise CaptureError('noncontiguous_commit_order')
         # Reserve database pages, rollback journal and next complete transaction BEFORE writing.
-        used=self.path.stat().st_size
+        used=self.path.stat().st_size-self.db.execute('PRAGMA freelist_count').fetchone()[0]*self.db.execute('PRAGMA page_size').fetchone()[0]
         space=os.statvfs(self.root)
         if used+2*len(payload)+65536>self.limit or space.f_bavail*space.f_frsize<RESERVE+2*len(payload)+65536:
             raise CaptureError('spool_budget')
@@ -208,20 +211,112 @@ class Spool:
                 (f'{end:016x}',f'{previous:016x}',f'{commit:016x}',payload,digest))
             self.set('captured',end);self.set('bytes',(self.get('bytes') or 0)+len(payload))
             barrier=self.barrier_for(payload,end,self.get('barrier'))
-            if barrier is not None:self.set('barrier',barrier)
+            if barrier is not None:
+                if barrier!=self.get('barrier'):self.set('barrier_at_ms',commit_time(payload))
+                self.set('barrier',barrier)
             fault('before_spool_commit')
             self.db.execute('COMMIT')
         except BaseException:
-            self.db.execute('ROLLBACK');raise
+            if self.db.in_transaction:self.db.execute('ROLLBACK')
+            raise
         if self.has_data(payload):self.last_data_lsn=end
         fault('after_spool_commit')
         return True
+
+    def prefix(self):
+        return checked_prefix(self.get('pruned_prefix'),self.identity,self.get('start'),self.captured)
+
+    def prune(self, published):
+        """Only the daemon's committed epoch cursor authorizes prefix deletion.
+
+        Keep the newest transaction at/below the cut for reconnect duplicate
+        verification. A bounded SQLite transaction moves the anchor and removes
+        rows together; readers retain their SQLite snapshot throughout.
+        """
+        if published is None or self.captured is None:return 0
+        cut=lsn(published)
+        # A frozen bootstrap may include WAL beyond the last captured commit
+        # (including an idle source). It is publication authority, not an ack.
+        if cut>self.captured and published!=(self.get('bootstrap') or {}).get('lsn'):
+            raise CaptureError('published_cursor_ahead')
+        if cut<self.prefix()['lsn']:raise CaptureError('published_cursor_regressed')
+        rows=[];reclaimed=0
+        # Exclude the reconnect anchor in SQL, and cap memory as well as rows.
+        cursor=self.db.execute('SELECT seq,end_lsn,previous_lsn,payload,sha256 FROM transactions WHERE end_lsn<(SELECT max(end_lsn) FROM transactions WHERE end_lsn<=?) ORDER BY seq LIMIT 256',(f'{cut:016x}',))
+        for row in cursor:
+            if reclaimed+len(row[3])>MAX_BATCH:break
+            rows.append(row);reclaimed+=len(row[3])
+        cursor.close()
+        if len(rows)<256 and reclaimed<1024*1024:return 0
+        prefix=self.prefix();barrier=prefix['barrier'];last_data=prefix['last_data_lsn'];previous=prefix['lsn']
+        for _,end,prior,payload,checksum in rows:
+            end=int(end,16)
+            if int(prior,16)!=previous or hashlib.sha256(payload).hexdigest()!=checksum:raise CaptureError('spool_corrupt')
+            barrier=self.barrier_for(payload,end,barrier)
+            if self.has_data(payload):last_data=end
+            previous=end
+        value=dict(lsn=previous,barrier=barrier,last_data_lsn=last_data,identity_sha256=hashlib.sha256(canonical(self.identity)).hexdigest())
+        value['sha256']=hashlib.sha256(canonical(value)).hexdigest()
+        timeout=self.db.execute('PRAGMA busy_timeout').fetchone()[0]
+        self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
+        try:
+            self.db.execute('BEGIN IMMEDIATE')
+            # Older spools did not save the barrier timestamp separately.
+            current=self.get('barrier')
+            if current and self.get('barrier_at_ms') is None:
+                row=self.db.execute('SELECT payload FROM transactions WHERE end_lsn=?',(f"{lsn(current['end_lsn']):016x}",)).fetchone()
+                if row:self.set('barrier_at_ms',commit_time(row[0]))
+            self.db.execute('DELETE FROM transactions WHERE seq<=?',(rows[-1][0],))
+            self.set('pruned_prefix',value);self.set('bytes',self.get('bytes')-reclaimed)
+            fault('before_spool_prune_commit')
+            self.db.execute('COMMIT')
+        except sqlite3.OperationalError as error:
+            if self.db.in_transaction:self.db.execute('ROLLBACK')
+            if getattr(error,'sqlite_errorcode',None) in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):return 0
+            raise
+        except BaseException:
+            if self.db.in_transaction:self.db.execute('ROLLBACK')
+            raise
+        finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')
+        fault('after_spool_prune_commit')
+        # Existing v1 spools reuse their free pages; new spools can also return
+        # free tail pages without a second full-size VACUUM copy.
+        self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
+        try:self.db.execute('PRAGMA incremental_vacuum(64)')
+        except sqlite3.OperationalError as error:
+            if getattr(error,'sqlite_errorcode',None) not in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):raise
+        finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')
+        fault('after_spool_prune_vacuum')
+        return reclaimed
 
     def transactions(self, after):
         # Streaming iterator for SY03; consumer is responsible for holding the generation lease.
         for end,payload,digest in self.db.execute('SELECT end_lsn,payload,sha256 FROM transactions WHERE end_lsn>? ORDER BY seq',(f'{after:016x}',)):
             if hashlib.sha256(payload).hexdigest()!=digest: raise CaptureError('spool_corrupt')
             yield int(end,16),payload
+
+
+def commit_time(payload):
+    tail=list(frames(payload))[-1]
+    if len(tail)!=26 or tail[:1]!=b'C':raise CaptureError('invalid_commit')
+    return 946684800000+struct.unpack('!q',tail[-8:])[0]//1000
+
+
+def checked_prefix(prefix,identity,start,captured):
+    if prefix is None:return dict(lsn=start,barrier=None,last_data_lsn=0)
+    try:
+        checksum=prefix.get('sha256')
+        value={k:v for k,v in prefix.items() if k!='sha256'}
+        if (set(value)!={'lsn','barrier','last_data_lsn','identity_sha256'}
+            or checksum!=hashlib.sha256(canonical(value)).hexdigest()
+            or value['identity_sha256']!=hashlib.sha256(canonical(identity)).hexdigest()
+            or type(value['lsn']) is not int or type(value['last_data_lsn']) is not int
+            or not start<=value['lsn']<=captured or not 0<=value['last_data_lsn']<=value['lsn']):raise ValueError()
+        barrier=value['barrier']
+        if barrier is not None and (set(barrier)!={'run_id','end_lsn'} or not isinstance(barrier['run_id'],str)
+            or not start<lsn(barrier['end_lsn'])<=value['lsn']):raise ValueError()
+        return value
+    except (AttributeError,TypeError,KeyError,ValueError):raise CaptureError('spool_corrupt') from None
 
 
 def frames(payload):

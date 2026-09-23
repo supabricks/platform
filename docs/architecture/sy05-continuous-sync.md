@@ -10,6 +10,10 @@ Current integration: [SY06](sy06-sync-surfaces.md) adds shared console/agent
 controls, governed service authority and immutable catalog epoch views. The
 phase boundary above records what this earlier slice delivered.
 
+Maintenance update: [SY07](sy07-sync-hardening.md) adds published-spool pruning,
+periodic storage generations and reference-aware reclamation. Limits and missing
+maintenance described below record the original slice boundary.
+
 ## Continuous execution
 
 Enrollment uses the same qualified source, owned capture and isolated frozen

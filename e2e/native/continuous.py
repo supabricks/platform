@@ -42,10 +42,16 @@ class Continuous(Triggered):
         return dict(xid=xid,ack_ms=time.time()*1000,latency_ms=(time.perf_counter()-start)*1000)
     def workload(self,cap):
         samples=[];errors=[];duration=30;count=750;stop=threading.Event();resources=dict(peak_owned_rss_bytes=0,peak_allocated_data_bytes=0,spool_bytes=0,retained_wal_bytes=0)
-        cpu_first={};cpu_last={}
+        cpu_first={};cpu_last={};ends={}
+        def commits():
+            # SY07 removes published prefixes. Record the benchmark's markers
+            # while they are present, without retaining a SQLite reader lease
+            # or disabling the production pruning path during measurement.
+            ends.update({struct.unpack('!I',payload[21:25])[0]:end for end,payload in self.journal(cap)})
         def observe():
             while not stop.is_set():
                 try:
+                    commits()
                     rows=[line.split() for line in subprocess.check_output(['ps','-axo','pid=,ppid=,rss=,time='],text=True).splitlines()]
                     owned={self.daemons[-1].pid}
                     while True:
@@ -85,14 +91,18 @@ class Continuous(Triggered):
                 db.execute('BEGIN');db.execute('UPDATE orders SET value=777 WHERE id BETWEEN 9001 AND 9100; UPDATE payments SET value=777 WHERE id BETWEEN 9001 AND 9100')
                 xid=int(db.execute('SELECT pg_current_xact_id()::text').fetchone()[0])%(1<<32);db.execute('COMMIT')
                 burst=dict(xid=xid,ack_ms=time.time()*1000)
-            end=wait(lambda:next((end for end,payload in self.journal(cap) if struct.unpack('!I',payload[21:25])[0]==burst['xid']),False))
+            def burst_end():
+                commits()
+                return ends.get(burst['xid'],False)
+            end=wait(burst_end)
             wait(lambda:lsn(self.current()['descriptor']['manifest']['source']['lsn'])>=end,timeout=120)
             self.healthy()
         finally:stop.set();monitor.join(timeout=10)
         assert not errors,errors
         # Match each source XID to the durable complete commit and first atomic
         # publication covering that end LSN. Polling latency is not the metric.
-        ends={struct.unpack('!I',payload[21:25])[0]:end for end,payload in self.journal(cap)}
+        commits()
+        assert all(s['xid'] in ends for s in [*samples,burst]),'benchmark missed a transaction marker before reclamation'
         with sqlite3.connect(f'file:{self.root}/state.sqlite3?mode=ro',uri=True) as db:
             cuts=[(lsn(json.loads(d)['manifest']['source']['lsn']),at) for d,at in db.execute("SELECT descriptor,published_at_ms FROM publications WHERE state='published' ORDER BY ordinal")]
         def latency(s):

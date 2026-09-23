@@ -13,7 +13,21 @@ pub(crate) fn data_root(installation: &Path, d: &Value) -> Result<PathBuf> {
         .ok_or_else(|| invalid("missing capture identity"))?
         .parse()
         .map_err(|_| invalid("invalid capture identity"))?;
-    let expected = format!("analytics/incremental/{id}");
+    let storage = d["manifest"]["storage_generation"]
+        .as_str()
+        .map(|value| {
+            value
+                .parse::<OperationId>()
+                .map_err(|_| invalid("invalid storage generation"))
+        })
+        .transpose()?
+        .unwrap_or(id);
+    if !d["manifest"]["storage_generation"].is_null()
+        && !d["manifest"]["storage_generation"].is_string()
+    {
+        return Err(invalid("invalid storage generation"));
+    }
+    let expected = format!("analytics/incremental/{storage}");
     if d["format_version"] != 2
         || d["manifest"]["format_version"] != 2
         || d["generation"] != expected

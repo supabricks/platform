@@ -415,6 +415,24 @@ mod tests {
         );
     }
     #[test]
+    fn compacted_storage_keeps_catalog_view_selected_and_immutable() {
+        let (dir, mut d) = fixture();
+        let source = crate::analytics_v2::data_root(dir.path(), &d).unwrap();
+        let storage = supabricks_core::resource::OperationId::new();
+        let generation = format!("analytics/incremental/{storage}");
+        fs::rename(&source, dir.path().join(&generation)).unwrap();
+        d["generation"] = json!(generation);
+        d["manifest"]["storage_generation"] = json!(storage);
+        d["manifest_sha256"] = json!(hash(&serde_json::to_vec(&d["manifest"]).unwrap()));
+        let view = View::plan(dir.path(), &d).unwrap();
+        view.materialize().unwrap();
+        view.verify().unwrap();
+        assert!(view.root.join("42/selected.parquet").exists());
+        assert!(!view.root.join("42/old.parquet").exists());
+        assert!(!view.root.join("42/future.parquet").exists());
+        assert!(!view.root.join("42/orphan.parquet").exists());
+    }
+    #[test]
     fn checksum_gap_symlink_and_unsupported_log_actions_are_closed() {
         let (dir, mut d) = fixture();
         let source = crate::analytics_v2::data_root(dir.path(), &d).unwrap();
