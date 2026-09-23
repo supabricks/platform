@@ -31,6 +31,15 @@ That does not replace the dedicated Linux governed job. macOS governed isolation
 remains unsupported. Dependency installation happens before network isolation;
 product workers and dependencies come from the archive during qualification.
 
+The builder precompiles the incremental worker's imported Python modules with
+checked source hashes and relative code filenames. This avoids repeated source
+compilation at every bounded apply, remains valid after relocation, and refuses
+to use stale bytecode when source changes. Runtime bytecode writes remain disabled;
+compiled files are covered by the ordinary release inventory. The import closure
+adds approximately 14 MB uncompressed in the local Linux experiment; other Python
+packages remain source-only. `provenance/analytical-build.json` records the count,
+size and invalidation mode.
+
 ## Checks and measurements
 
 | Suite | Installed checks |
@@ -104,7 +113,8 @@ qualification identity together when distributing engineering builds.
 
 Local Linux smoke checks against the unchanged SY07 archive from
 [run 35829067775](https://github.com/supabricks/platform/actions/runs/35829067775)
-passed triggered and governed surfaces. Archive SHA-256 is
+passed all 3 triggered, 14 governed-surface and 5 maintenance checks. Maintenance
+observed 432 descendants with zero leaks. Archive SHA-256 is
 `28b2a581f3caf4946c514dcf1a91a6f0cfe3f5872fa1c4d6e782218b0f3ca79e`;
 release identity is
 `1910a30331943685e81935084ba1f3e6411ca8bd89bc677fbee2e487d19ee8b9`. An initial continuous workload sustained
@@ -113,5 +123,9 @@ release identity is
 performance. A signed-installer smoke run passed triggered checks with zero leaked
 processes but failed continuous at 18,744 ms p95 under increased host load; it
 also cleaned up all descendants. Neither run establishes offline acceptance.
-The candidate's own offline Linux/macOS and governed matrix must
-complete before this status can change to qualified.
+A separate development copy with build-time checked-hash bytecode then passed
+all four continuous checks, including recovery and explicit resync: 50.05 changed
+rows/second, 4,377 ms p95, 5,046 ms p99, and 3,061 ms burst lag, with zero leaked
+descendants. This experiment deliberately marks its provenance dirty and cannot
+satisfy the archive collector. The candidate's own offline Linux/macOS and governed
+matrix must complete before this status can change to qualified.

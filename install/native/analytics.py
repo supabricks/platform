@@ -189,7 +189,9 @@ exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
     # Preserve upstream license texts, wheel provenance and the built client
     # digest. Wheel .dist-info licenses remain in the actual installed tree.
     loaders = check_loaders(runtime, destination, target)
-    report = dict(native_objects_checked=loaders, python=pin, target=target, uv_lock_sha256=digest(ROOT / 'python/analytics/uv.lock'),
+    sync_bytecode = json.loads(subprocess.check_output(
+        [str(wrapper), str(ROOT / 'install/native/compile_sync.py'), str(destination.resolve())], env=env, text=True))
+    report = dict(sync_bytecode=sync_bytecode, native_objects_checked=loaders, python=pin, target=target, uv_lock_sha256=digest(ROOT / 'python/analytics/uv.lock'),
                   wheels={p.name: digest(p) for p in selected}, spark_sdist=sdist,
                   package_versions=expected, sail=sail_report)
     (destination / 'provenance/analytical-build.json').write_text(json.dumps(report, indent=2) + '\n')
