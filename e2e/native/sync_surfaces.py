@@ -220,7 +220,7 @@ requirement="orders.v1"
             # A stopped checkpoint must relocate immutable views alongside original
             # descriptors, and every restored catalog location must use the new root.
             with tempfile.TemporaryDirectory(prefix='sb-sy06-backup-') as temporary:
-                backup=Path(temporary)/'backup'; restored=Path(temporary)/'restored'
+                backup=Path(temporary).resolve()/'backup'; restored=Path(temporary).resolve()/'restored'
                 def backup_cli(*parts,at=None):
                     subprocess.run([str(self.binary),*map(str,parts),'--data-dir',str(at or self.root)],check=True,stdout=subprocess.DEVNULL,timeout=180)
                 backup_cli('backup','create',backup)
@@ -257,7 +257,7 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--catalog-runtime',type=Path)
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix='sb-sy06-')); root.chmod(0o700)
+    root = Path(tempfile.mkdtemp(prefix='sb-sy06-')).resolve(); root.chmod(0o700)
     cell = Surfaces(args.binary.resolve(), args.bundle.resolve(), args.helpers.resolve(), root)
     cell.catalog_runtime=args.catalog_runtime.resolve() if args.catalog_runtime else None
     def sha(path):
