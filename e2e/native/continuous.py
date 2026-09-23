@@ -23,6 +23,29 @@ def percentiles(values):
     values=sorted(values)
     return {f'p{p}':round(values[min(len(values)-1,math.ceil(len(values)*p/100)-1)],3) for p in (50,95,99)}
 
+
+def host_counters():
+    """Linux host counters only: diagnostic evidence, never a workload exemption."""
+    result={}
+    try:
+        cpu=Path('/proc/stat').read_text().splitlines()[0].split()[1:9]
+        result['cpu']=dict(zip(('user','nice','system','idle','iowait','irq','softirq','steal'),map(int,cpu)))
+        for resource in ('cpu','io','memory'):
+            for line in Path('/proc/pressure',resource).read_text().splitlines():
+                kind,*fields=line.split();values=dict(field.split('=') for field in fields)
+                result[f'{resource}_{kind}_stall_us']=int(values['total'])
+    except (OSError,ValueError,IndexError):pass
+    return result
+
+
+def host_delta(before,after):
+    result={key:after[key]-value for key,value in before.items() if key!='cpu' and key in after}
+    if 'cpu' in before and 'cpu' in after:
+        cpu={key:after['cpu'][key]-value for key,value in before['cpu'].items()}
+        total=sum(cpu.values())
+        if total>0:result['cpu_percent']={key:round(100*value/total,3) for key,value in cpu.items()}
+    return dict(scope='host-wide counters during workload, not per-process or container utilization',**result)
+
 class Continuous(Triggered):
     def check(self,name):
         super().check(name);print(name,flush=True)
@@ -56,12 +79,14 @@ class Continuous(Triggered):
             yield pid,int(mem)*1024,seconds
     def workload(self,cap):
         samples=[];errors=[];duration=30;count=750;stop=threading.Event();resources=dict(peak_owned_rss_bytes=0,peak_allocated_data_bytes=0,spool_bytes=0,retained_wal_bytes=0)
-        cpu_first={};cpu_last={};ends={}
+        cpu_first={};cpu_last={};ends={};captured_at={}
         def commits():
             # SY07 removes published prefixes. Record the benchmark's markers
             # while they are present, without retaining a SQLite reader lease
             # or disabling the production pruning path during measurement.
-            ends.update({struct.unpack('!I',payload[21:25])[0]:end for end,payload in self.journal(cap)})
+            for end,payload in self.journal(cap):
+                xid=struct.unpack('!I',payload[21:25])[0]
+                ends[xid]=end;captured_at.setdefault(xid,time.time()*1000)
         def observe():
             while not stop.is_set():
                 try:
@@ -83,7 +108,7 @@ class Continuous(Triggered):
                 except Exception as e:errors.append(repr(e));return
                 stop.wait(.5)
         monitor=threading.Thread(target=observe);monitor.start()
-        started=time.perf_counter()
+        host_before=host_counters();started=time.perf_counter()
         try:
             with self.source() as db:
                 for i in range(count):
@@ -100,7 +125,9 @@ class Continuous(Triggered):
             end=wait(burst_end)
             wait(lambda:lsn(self.current()['descriptor']['manifest']['source']['lsn'])>=end,timeout=120)
             self.healthy()
-        finally:stop.set();monitor.join(timeout=10)
+        finally:
+            stop.set();monitor.join(timeout=10)
+            self.metrics['host_workload']=host_delta(host_before,host_counters())
         assert not errors,errors
         # Match each source XID to the durable complete commit and first atomic
         # publication covering that end LSN. Polling latency is not the metric.
@@ -129,6 +156,17 @@ class Continuous(Triggered):
             end=ends[s['xid']];at=next(at for boundary,at in cuts if boundary>=end)
             return max(0,at-s['ack_ms'])
         lags=[latency(s) for s in samples];bursts=latency(burst)
+        # Attribute each transaction to its first covering publication, rather
+        # than comparing unrelated batch percentiles. Capture observation is an
+        # upper bound (the observer polls every 500ms), not the durable-write time.
+        stages={name:[] for name in ('commit_to_admission','admission_to_worker_start','worker_start_to_prepared','prepared_to_publication','commit_to_capture_observed_upper_bound')}
+        for sample in samples:
+            descriptor,at=next((d,at) for d,at in publications if lsn(d['manifest']['source']['lsn'])>=ends[sample['xid']])
+            run=runs[descriptor['export_id']]
+            times=(sample['ack_ms'],run['created_at_ms'],run['started_at_ms'],descriptor['prepared_at_ms'],at)
+            for name,left,right in zip(stages,times,times[1:]):stages[name].append(max(0,right-left))
+            stages['commit_to_capture_observed_upper_bound'].append(max(0,captured_at[sample['xid']]-sample['ack_ms']))
+        self.metrics['transaction_stages_ms']={name:percentiles(values) for name,values in stages.items()}
         resources['sampled_owned_cpu_seconds_lower_bound']=round(sum(cpu_last[p]-cpu_first[p] for p in cpu_first),3)
         self.metrics.update(workload=dict(tables=2,rows_per_table=10000,transactions=count,changed_rows=count*2,
             target_rows_per_second=50,achieved_rows_per_second=round(count*2/elapsed,2),elapsed_seconds=round(elapsed,3),

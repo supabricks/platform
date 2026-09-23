@@ -1,0 +1,114 @@
+{
+  "status": "PASS",
+  "suite": "continuous",
+  "exact_installed": true,
+  "release_identity": "c4ee10638e91960fbdec70eb65859086e5f2a5170bf4be268b708efe6c07179d",
+  "binary_sha256": "32a49402923e70bebdc21ded3c7a1e7d04bf7fe33fee7ee58e7bace2bcde6919",
+  "checks": [
+    "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups",
+    "continuous_idle_and_old_epoch_remain_stable_during_workload",
+    "continuous_pause_sigkill_and_daemon_restart_keep_durable_checkpoint",
+    "continuous_schema_drift_preserves_epoch_and_explicit_resync_recovers"
+  ],
+  "metrics": {
+    "source_table_bytes": 1277952,
+    "baseline_oltp_transaction_ms": {
+      "p50": 3.943,
+      "p95": 8.063,
+      "p99": 8.412
+    },
+    "materialization_ms": {
+      "admission_to_worker_start": {
+        "p50": 102,
+        "p95": 118,
+        "p99": 120,
+        "maximum": 120,
+        "batches": 20
+      },
+      "worker_start_to_prepared": {
+        "p50": 812,
+        "p95": 1483,
+        "p99": 1502,
+        "maximum": 1502,
+        "batches": 20
+      },
+      "prepared_to_publication": {
+        "p50": 322,
+        "p95": 416,
+        "p99": 577,
+        "maximum": 577,
+        "batches": 20
+      }
+    },
+    "storage": {
+      "input_bytes": 95669,
+      "new_parquet_bytes": 1031412,
+      "write_amplification_ratio": 10.781,
+      "peak_inventory_files": 92,
+      "peak_generation_bytes": 1214809,
+      "compaction_bytes": 0
+    },
+    "transaction_stages_ms": {
+      "commit_to_admission": {
+        "p50": 1406.857,
+        "p95": 2361.368,
+        "p99": 2592.7
+      },
+      "admission_to_worker_start": {
+        "p50": 102,
+        "p95": 120,
+        "p99": 120
+      },
+      "worker_start_to_prepared": {
+        "p50": 852,
+        "p95": 1483,
+        "p99": 1502
+      },
+      "prepared_to_publication": {
+        "p50": 343,
+        "p95": 416,
+        "p99": 577
+      },
+      "commit_to_capture_observed_upper_bound": {
+        "p50": 317.69,
+        "p95": 634.689,
+        "p99": 831.706
+      }
+    },
+    "workload": {
+      "tables": 2,
+      "rows_per_table": 10000,
+      "transactions": 750,
+      "changed_rows": 1500,
+      "target_rows_per_second": 50,
+      "achieved_rows_per_second": 50.05,
+      "elapsed_seconds": 29.973,
+      "commit_to_publication_ms": {
+        "p50": 2788.666,
+        "p95": 4148.941,
+        "p99": 4409.7
+      },
+      "oltp_transaction_ms": {
+        "p50": 6.236,
+        "p95": 15.922,
+        "p99": 35.978
+      },
+      "burst_changed_rows": 200,
+      "burst_commit_to_publication_ms": 3314.926
+    },
+    "resources": {
+      "peak_owned_rss_bytes": 1854349312,
+      "peak_allocated_data_bytes": 127225856,
+      "spool_bytes": 131072,
+      "retained_wal_bytes": 330344,
+      "sampled_owned_cpu_seconds_lower_bound": 11.4
+    }
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505531392
+  },
+  "scope": "Diagnostic unchanged prior runtime under Docker with 4 CPUs and 16 GiB, new timing observer; not signed installer qualification or a new release acceptance."
+}

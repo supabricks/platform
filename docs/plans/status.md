@@ -4,7 +4,9 @@
 [Implementation plan index](README.md)
 
 Reconciled 2026-09-23 through merged platform #85 and console #14, plus qualified
-SY08 in [platform #86](https://github.com/supabricks/platform/pull/86) awaiting merge.
+SY08 archives in [platform #86](https://github.com/supabricks/platform/pull/86) awaiting merge.
+A subsequent fresh-build Linux latency/console failure is under follow-up;
+current PR sign-off is pending the fixes and new qualification in the SY08 ledger.
 UC00–UC09 and the planned SY00–SY08 scope are implemented. The exact alpha.36
 archives passed Linux/macOS local-owner and Linux governed qualification. The
 [SY08 evidence ledger](../architecture/sy08-installed-sync.md) retains archive

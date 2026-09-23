@@ -1,3 +1,4 @@
+mod health;
 mod notebooks;
 use super::{
     Config,
@@ -512,20 +513,17 @@ pub(super) async fn serve(config: Config) -> Result<()> {
     let health = async {
         let mut heartbeat = tokio::time::interval(Duration::from_secs(2));
         heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        let mut failures = 0;
+        let mut health = health::Health::new(Instant::now());
         loop {
             heartbeat.tick().await;
-            // Keep accepting HTTP while the single writer verifies an environment.
-            // Check ownership alongside overview so one cannot delay the other.
-            let (owner, overview) = tokio::join!(state.notebook_heartbeat(), state.overview());
-            if owner.is_err() || overview.is_err() {
-                failures += 1;
-            } else {
-                failures = 0;
-            }
-            // Daemon replacement, binding changes and lost ownership still fail
-            // closed. A slow but bounded package operation is not daemon death.
-            if failures >= 2 {
+            // This request checks binding, daemon generation and console instance.
+            // Overview is a product read, not an additional ownership proof.
+            // A busy single writer can time out while publishing an environment;
+            // retain the HTTP listener during the bounded grace period. Every
+            // data request still goes through the daemon's authorization checks.
+            let owner = state.notebook_heartbeat().await;
+            if !health.observe(&owner, Instant::now()) {
+                eprintln!("console ownership health ended: {}", health::reason(&owner));
                 return;
             }
         }

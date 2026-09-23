@@ -6,6 +6,12 @@ Status: **qualified** on 2026-09-23 for the exact `v0.1.0-alpha.36` archives bel
 (catalog 29). [PR #86](https://github.com/supabricks/platform/pull/86) contains the
 implementation and acceptance record; merge remains separate.
 
+**Follow-up gate failure:** a fresh build at documentation commit `7117b36` failed
+Linux continuous latency and Linux environment-console qualification in
+[run 35916809053, attempt 1](https://github.com/supabricks/platform/actions/runs/35916809053/attempts/1).
+The historical archive acceptance below remains exact; it does not sign off the
+current PR. See the [follow-up investigation](#follow-up-linux-investigation).
+
 [Run 35908989254](https://github.com/supabricks/platform/actions/runs/35908989254)
 passed all 33 jobs, including the combined R04/SY08 collector. Both local-owner
 targets passed all 26 installed sync checks. The dedicated Linux governed profile
@@ -281,3 +287,55 @@ The optimized development copy passed all four continuous checks offline at
 23 measured batches, worker-start-to-preparation p95 was 1,268 ms and
 preparation-to-publication p95 was 429 ms. These Linux diagnostics do not establish
 the macOS operating envelope.
+
+
+## Follow-up Linux investigation
+
+[Retained failures](sy08-evidence/followup-linux-failures.json) distinguish the
+fresh build at `7117b36` from the previously accepted archives. Required CI
+passed, but continuous p95 was **5,698.660 ms**, above the unchanged 5,000-ms gate.
+The 200-row burst passed at 2,736.113 ms. There were no leaked descendants.
+
+| Measurement (p95) | Accepted Linux archive run | Follow-up failing Linux run |
+| --- | ---: | ---: |
+| Source transaction before starting sync | 3.350 ms | 81.235 ms |
+| Source transaction during sync | 5.830 ms | 123.738 ms |
+| Apply admission → worker start | 20 ms | 228 ms |
+| Worker start → prepared receipt | 883 ms | 1,821 ms |
+| Prepared receipt → publication | 203 ms | 677 ms |
+
+The source was already slow before capture started. Multiple pipeline stages
+slowed down, and the serial fixed-cut batch pipeline makes a transaction arriving
+after a cut wait for the preceding batch as well as its own. This is evidence of
+host/runtime service-time variability, not evidence that every excess millisecond
+is caused by a particular disk or CPU condition: that run did not retain host
+pressure or per-transaction stage attribution. Do not relabel it a passing run
+or exclude it from the gate.
+
+A [local diagnostic](sy08-evidence/latency-investigation-local.json) with the
+unchanged preceding runtime, four allocated CPUs and 16 GiB passed at 4,148.941 ms
+p95. First-observed durable capture p95 was at most 634.689 ms after commit
+(includes the observer's 500-ms polling interval); apply admission p95 was
+2,361.368 ms after commit. Those measurements identify batch waiting, not only
+logical capture, as a material contributor. Percentiles across stages are not
+additive. The workload now retains per-transaction stage percentiles and Linux
+host CPU/IO/memory pressure counters so future failures can be localized without
+weakening the workload or threshold.
+
+The console exited after two six-second health request deadlines while an
+environment operation occupied the single writer. A deterministic source-mode
+regression pauses the real daemon for 16 seconds: the old binary refuses the
+original console connection; the fixed binary keeps its HTTP listener and the
+same authenticated session recovers after resume. Project identity replacement
+still terminates the listener. The health check uses the existing
+binding/generation/instance-validated heartbeat, with a 120-second grace only for
+transport timeouts. Explicit rejection, malformed replies and daemon loss still
+fail closed; the change does not extend notebook leases, sessions, or permissions,
+and does not replay user operations. The regression runs on Linux and macOS in
+portable CI. Seventeen console unit tests also pass locally. The full Linux browser environment
+suite passes all 16 checks, including offline export/import and two-project
+isolation, in the [local receipt](sy08-evidence/console-health-local.json).
+
+Fresh installed qualification of this runtime fix remains required. The private
+local package used for diagnosis has a rebuilt binary and explicitly dirty
+provenance; it is not represented as a qualified release archive.
