@@ -75,6 +75,59 @@ fn head(s: &Store, c: &crate::capture::Capture) -> (String, String, String) {
     s.db.query_row("SELECT h.epoch_id,i.epoch_id,i.published_lsn FROM snapshot_heads h JOIN incremental_heads i ON i.capture_id=?1 WHERE h.branch_id=?2",params![c.id.to_string(),c.branch_id.to_string()],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).unwrap()
 }
 #[test]
+fn verified_incremental_publishes_in_one_turn_without_exceeding_hash_budget() {
+    for extra_bytes in [0, 5 * 1024 * 1024] {
+        let (_dir, mut s, p, d, b) = setup();
+        let c = ready(&mut s, p, d, b);
+        let mut run = apply(&mut s, &c, "first");
+        let mut descriptor = prepare(&mut s, &c, &mut run, 0);
+        if extra_bytes > 0 {
+            let path = "tables/101/data.parquet";
+            let data = vec![7u8; extra_bytes];
+            fs::write(
+                s.root()
+                    .join(descriptor["generation"].as_str().unwrap())
+                    .join(path),
+                &data,
+            )
+            .unwrap();
+            descriptor["manifest"]["files"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({
+                    "path": path, "bytes": data.len(), "sha256": hex::encode(Sha256::digest(&data))
+                }));
+            let bytes = serde_json::to_vec(&descriptor["manifest"]).unwrap();
+            descriptor["manifest_sha256"] = json!(hex::encode(Sha256::digest(&bytes)));
+            fs::write(
+                s.root()
+                    .join("analytics/staging")
+                    .join(run.id.to_string())
+                    .join("manifest.json"),
+                bytes,
+            )
+            .unwrap();
+            s.incremental_ready(&mut run, &descriptor).unwrap();
+        }
+        let mut publisher = Publisher::recover(&mut s).unwrap();
+        publisher.tick(&mut s).unwrap();
+        if extra_bytes > 0 {
+            assert_eq!(s.publication(run.id).unwrap().state, "requested");
+            assert!(s.snapshot(p, run.epoch_id).is_err());
+            publisher.tick(&mut s).unwrap();
+        }
+        assert_eq!(s.publication(run.id).unwrap().state, "published");
+        assert_eq!(
+            head(&s, &c),
+            (
+                run.epoch_id.to_string(),
+                run.epoch_id.to_string(),
+                "0/C8".into()
+            )
+        );
+    }
+}
+#[test]
 fn admission_cancel_scope_and_restore_fence_writers() {
     let (_dir, mut s, p, d, b) = setup();
     let mut c = ready(&mut s, p, d, b);

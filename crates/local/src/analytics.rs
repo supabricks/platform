@@ -559,26 +559,30 @@ impl Publisher {
                 store.publication_ready(p, d)?;
                 self.verifier = None;
                 hook("files_complete")?;
+            } else {
+                return Ok(());
             }
-        } else {
-            let from = stage.join(p.export_id.to_string());
-            let to = generations.join(p.export_id.to_string());
-            require(
-                !(from.exists() && to.exists()),
-                "duplicate epoch directories",
-            )?;
-            check_ready(if to.exists() { &to } else { &from }, d)?;
-            hook("before_rename")?;
-            if !to.exists() {
-                fs::rename(&from, &to)?;
-            }
-            File::open(stage)?.sync_all()?;
-            File::open(generations)?.sync_all()?;
-            hook("after_rename")?;
-            hook("before_commit")?;
-            store.commit_incremental(&mut run, d)?;
-            hook("after_commit")?;
         }
+        // Once verification is complete, the persisted ready state can be
+        // committed immediately. Recovery still enters here for ready records;
+        // commit_incremental rechecks source, policy and head fencing.
+        let from = stage.join(p.export_id.to_string());
+        let to = generations.join(p.export_id.to_string());
+        require(
+            !(from.exists() && to.exists()),
+            "duplicate epoch directories",
+        )?;
+        check_ready(if to.exists() { &to } else { &from }, d)?;
+        hook("before_rename")?;
+        if !to.exists() {
+            fs::rename(&from, &to)?;
+        }
+        File::open(stage)?.sync_all()?;
+        File::open(generations)?.sync_all()?;
+        hook("after_rename")?;
+        hook("before_commit")?;
+        store.commit_incremental(&mut run, d)?;
+        hook("after_commit")?;
         Ok(())
     }
 }

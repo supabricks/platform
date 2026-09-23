@@ -48,6 +48,13 @@ packages remain source-only. `provenance/analytical-build.json` records the coun
 size, invalidation mode and individual cache hashes. A final-inventory check
 rejects caches removed or changed by a later packaging stage.
 
+The daemon consumes accepted worker receipts in the same turn, and incremental
+publication commits immediately after bounded verification reaches its durable
+ready state. Previously these handoffs each waited for another timer turn. The
+4-MiB-per-turn checksum budget, ready record, fsyncs, source/policy/head fencing,
+and atomic group/cursor transaction are unchanged. Crash recovery still resumes
+from the persisted ready state.
+
 ## Checks and measurements
 
 | Suite | Installed checks |
@@ -177,3 +184,43 @@ That first alpha.36 candidate passed the dedicated Linux governed CI job,
 including all five identity/data/sync/upgrade/TLS-browser suites. The predecessor's
 post-restore query failure did not recur. This is partial evidence only: the
 corrected bytecode payload must repeat this gate with the rest of the matrix.
+
+The corrected archives from
+[run 35895998663, attempt 1](https://github.com/supabricks/platform/actions/runs/35895998663/attempts/1)
+retain the compiled caches, but still failed the initial continuous workload
+qualification. Linux measured 5,496 ms p95 and 3,474 ms burst lag; its OLTP p95
+rose from a 3.652 ms baseline to 103.724 ms during sync. macOS measured 3,690 ms
+p95 but missed the burst gate at 5,059 ms. Both sustained approximately 50 changed
+rows/second and cleaned up without leaks. These results remain failures against
+the unchanged limits; same-archive repetitions investigate variation and do not
+turn the operating envelope into a latency guarantee.
+
+The [failed-attempt measurements](sy08-evidence/attempt-1-failures.json) retain
+archive identities, source/report hashes, checks, cleanup and timings independently
+of GitHub's artifact handling during retries. The unchanged corrected Linux
+archive also passed all four continuous checks in the local offline container:
+4,749 ms p95, 5,225 ms p99, 3,524 ms burst lag and 50.05 changed rows/second,
+with no leaks across 129 descendants. That comparison demonstrates host/run
+variation; it does not explain its cause or replace the required CI pass.
+
+On [attempt 2](https://github.com/supabricks/platform/actions/runs/35895998663/attempts/2),
+Linux passed all 26 installed checks (3,185 ms p95 and 3,329 ms burst), but macOS
+again failed (5,555 ms p95 and 5,438 ms burst). The
+[attempt-2 results](sy08-evidence/attempt-2-results.json) retain both outcomes.
+The candidate therefore remains unqualified; a successful retry on one target
+does not erase the earlier failures or qualify the other target.
+
+An unmodified Linux archive profile in the offline 4-CPU/16-GiB container showed
+601–852 ms between worker result creation and publication. Its workload measured
+4,851 ms p95 and 4,004 ms burst. This identified avoidable daemon handoff waits
+and motivated the same-turn publication change described above. These local
+diagnostic runs do not replace fresh archive qualification on both targets.
+
+The development binary with the handoff change passed all four continuous checks
+in the same isolated container. Median receipt-to-publication wait fell from
+730 ms to 305 ms (range 157–529 ms); sustained p95 was 4,729 ms, burst 3,927 ms,
+and throughput 50.03 changed rows/second. Concurrent local compilation/testing
+means the end-to-end timings are diagnostic, not a controlled benchmark. All
+38 sync state-machine tests and 12 publication integration tests passed, including
+SIGKILL at every publication boundary and a new check that same-turn publication
+still yields when checksum verification exceeds its existing per-turn budget.

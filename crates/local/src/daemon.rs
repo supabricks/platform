@@ -477,11 +477,6 @@ impl Daemon {
                         .tick(&mut self.store, &self.catalog)
                         .err()
                         .map(|e| e.to_string());
-                    self.publisher.last_error = self
-                        .publisher
-                        .tick(&mut self.store)
-                        .err()
-                        .map(|e| e.to_string());
                 }
                 let analytical_stopped = if stopping && notebooks_stopped {
                     match self.sessions.stop(&mut self.store) {
@@ -548,6 +543,16 @@ impl Daemon {
                     && self.project_migrations.idle()
                 {
                     return Ok(());
+                }
+                if !stopping {
+                    // Consume worker receipts accepted by cell.tick in this turn.
+                    // Publication still verifies the files and commits its own
+                    // durable state; an extra timer turn adds no ordering guarantee.
+                    self.publisher.last_error = self
+                        .publisher
+                        .tick(&mut self.store)
+                        .err()
+                        .map(|e| e.to_string());
                 }
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
             }
