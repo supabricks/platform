@@ -75,4 +75,4 @@ supabricks analytics gc --branch main --keep 1
 Finite spool, retained-root and installation-history limits still apply; durable
 run/retry journals are not silently expired. See [SY07 maintenance and recovery](../architecture/sy07-sync-hardening.md)
 for limits and failure behavior. SY06 supplies shared console/governed controls;
-SY08 still owns exact installed-release qualification.
+[SY08 archive gates](../architecture/sy08-installed-sync.md) track exact installed-release qualification and the measured workload envelope.

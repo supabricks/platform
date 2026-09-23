@@ -114,7 +114,7 @@ for run journals or a replication-lag SLO. Exact release archives, offline start
 and the full supported local/governed profile matrix remain the SY08 release gate.
 
 Local Linux evidence (2026-09-23): portable core/local Rust suite including all 30
-recovery tests; 42 analytical worker tests; 56 native packaging tests; all five
+recovery tests; 43 analytical worker tests; 56 native packaging tests; all five
 real PG/Sail maintenance checks, including stopped backup/restore. Source CI also
 runs the native maintenance gate on Linux x86_64 and macOS arm64. These results
 do not qualify a newly assembled release archive.

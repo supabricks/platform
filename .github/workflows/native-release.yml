@@ -12,6 +12,14 @@ on:
       - 'python/analytics/**'
       - 'python/ingest/**'
       - 'python/notebooks/**'
+      - 'e2e/native/cell.py'
+      - 'e2e/native/capture.py'
+      - 'e2e/native/incremental.py'
+      - 'e2e/native/triggered.py'
+      - 'e2e/native/installed_sync.py'
+      - 'e2e/native/continuous.py'
+      - 'e2e/native/sync_maintenance.py'
+      - 'e2e/native/sync_surfaces.py'
       - 'e2e/native/catalog/**'
       - 'e2e/native/governed/**'
       - 'e2e/native/governed-console/**'
@@ -193,6 +201,7 @@ jobs:
           python install/native/test_environment_evidence.py
           python install/native/test_release_evidence.py
           python install/native/test_governed_evidence.py
+          python install/native/test_sync_evidence.py
           python install/native/test_project_evidence.py
           python install/native/test_project_portability.py
           python install/native/test_demo.py
@@ -907,8 +916,58 @@ jobs:
           path: build/governed/governed.json
           if-no-files-found: error
 
+  release-sync:
+    needs: assemble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: build/releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare qualification clients before network isolation
+        run: python -m pip install -r e2e/native/requirements.txt -r e2e/native/catalog/requirements.txt
+      - name: Installed sync on offline Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              "$2" install/native/qualify_sync.py --directory build/releases --target linux-x86_64 \
+              --network-evidence "Linux loopback-only namespace; bundled sync workers; all descendants isolated" \
+              --report build/sync-reports/sync.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Installed sync on offline macOS
+        if: runner.os == 'macOS'
+        run: |
+          sandbox-exec -f install/native/offline-macos.sb \
+            env PATH=/usr/bin:/bin:/usr/sbin:/sbin "$(command -v python)" \
+            install/native/qualify_sync.py --directory build/releases --target macos-arm64 \
+            --network-evidence "macOS Seatbelt; external network and Homebrew denied for all sync descendants" \
+            --report build/sync-reports/sync.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-sync-${{ matrix.target }}
+          path: build/sync-reports/*.json
+          if-no-files-found: error
+
   environment-evidence:
-    needs: [release-governed, release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
+    needs: [release-sync, release-governed, release-catalog, release-projects, clean-linux, isolated-macos, release-recovery, release-console, release-ingest, release-environments, release-notebooks, release-packages, release-environment-console, release-environment-lifecycle]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -956,11 +1015,16 @@ jobs:
         with:
           pattern: release-governed-*
           path: build/evidence
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-sync-*
+          path: build/evidence
       - name: Require complete inherited and governed evidence for the exact releases
         run: |
           python3 install/native/environment_evidence.py --directory build/evidence --revision "${{ github.sha }}" --report build/ne06-evidence.json
           python3 install/native/release_evidence.py --directory build/evidence --revision "${{ github.sha }}" \
             --console "$(git rev-parse HEAD:console)" --worker python/ingest/worker.py --report build/r04-evidence.json
+          python3 install/native/sync_evidence.py --directory build/evidence --inherited build/r04-evidence.json --revision "${{ github.sha }}" --report build/sy08-evidence.json
           cat build/r04-evidence.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
@@ -971,4 +1035,9 @@ jobs:
         with:
           name: r04-evidence
           path: build/r04-evidence.*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sy08-evidence
+          path: build/sy08-evidence.json
           if-no-files-found: error

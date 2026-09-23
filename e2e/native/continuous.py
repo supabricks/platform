@@ -104,7 +104,16 @@ class Continuous(Triggered):
         commits()
         assert all(s['xid'] in ends for s in [*samples,burst]),'benchmark missed a transaction marker before reclamation'
         with sqlite3.connect(f'file:{self.root}/state.sqlite3?mode=ro',uri=True) as db:
-            cuts=[(lsn(json.loads(d)['manifest']['source']['lsn']),at) for d,at in db.execute("SELECT descriptor,published_at_ms FROM publications WHERE state='published' ORDER BY ordinal")]
+            publications=[(json.loads(d),at) for d,at in db.execute("SELECT descriptor,published_at_ms FROM publications WHERE state='published' ORDER BY ordinal")]
+        cuts=[(lsn(d['manifest']['source']['lsn']),at) for d,at in publications]
+        manifests=[d['manifest'] for d,at in publications if at>=samples[0]['ack_ms']]
+        input_bytes=sum(m.get('input_bytes',0) for m in manifests)
+        written=sum(t['metrics'].get('new_parquet_bytes',0) for m in manifests for t in m.get('apply_metrics',[]))
+        self.metrics['storage']=dict(input_bytes=input_bytes,new_parquet_bytes=written,
+            write_amplification_ratio=round(written/input_bytes,3) if input_bytes else None,
+            peak_inventory_files=max(len(m['files']) for m in manifests),
+            peak_generation_bytes=max(m.get('generation_bytes',0) for m in manifests),
+            compaction_bytes=sum((m.get('compaction') or {}).get('output_bytes',0) for m in manifests))
         def latency(s):
             end=ends[s['xid']];at=next(at for boundary,at in cuts if boundary>=end)
             return max(0,at-s['ack_ms'])

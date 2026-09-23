@@ -112,6 +112,7 @@ def inside(args):
         suites={
             'identity':[sys.executable,str(ROOT/'e2e/native/identity/qualify.py'),*common,'--exact-installed','--uc-runtime',str(release/'share/unity-catalog'),'--execution-config',str(runtime)],
             'data':[sys.executable,str(ROOT/'e2e/native/governed/qualify.py'),*common,'--release',str(release),'--exact-installed'],
+            'sync':[sys.executable,str(ROOT/'e2e/native/installed_sync.py'),'--release',str(release),'--suite','governed'],
             'upgrade':[sys.executable,str(ROOT/'install/native/governed_upgrade.py'),'--release',str(release),'--previous-release',source_config['release']],
             'browser':[sys.executable,str(ROOT/'e2e/native/governed-console/qualify.py'),*common,'--release',str(release),'--uc-runtime',str(release/'share/unity-catalog'),'--execution-config',str(runtime),'--console',str(args.console),'--exact-installed','--tls'],
         }
@@ -131,6 +132,7 @@ def inside(args):
                        release_identity=identity,binary_sha256=value.get('binary_sha256'),duration_seconds=time.monotonic()-started)
             if result.returncode:
                 suite['diagnostics']=summarize(root/(name+'.private.log'))
+            if name=='sync':suite['exact_installed']=value.get('exact_installed')
             if name=='identity':suite['measurements']=value.get('measurements',{})
             if name=='upgrade':suite['predecessor_identity']=value.get('predecessor_identity')
             if name=='browser':
@@ -138,7 +140,7 @@ def inside(args):
                     suite[field]=value.get(field)
             report['suites'][name]=suite
             assert result.returncode==0 and value.get('status') in ('PASS','passed'), name+' failed; inspect private diagnostics'
-            if name=='browser':assert value.get('release_identity')==identity
+            if name in ('browser','sync'):assert value.get('release_identity')==identity
             assert value.get('binary_sha256')==report['binary_sha256'], name+' used another binary'
             assert census.get('leaked_descendants')==0 and census.get('remaining_descendants')==0
             report['checks'].append('exact_installed_'+name)
@@ -205,6 +207,6 @@ if __name__=='__main__':
     parser.add_argument('--image',default='supabricks-uc098-qualifier')
     parser.add_argument('--workspace',type=Path)
     parser.add_argument('--inside',action='store_true')
-    parser.add_argument('--slice',choices=['identity','data','browser','upgrade'])
+    parser.add_argument('--slice',choices=['identity','data','sync','browser','upgrade'])
     args=parser.parse_args()
     (inside if args.inside else outer)(args)

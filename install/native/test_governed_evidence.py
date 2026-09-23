@@ -10,6 +10,7 @@ def fixture(env):
     suites={name:dict(status='passed',exit_code=0,checks=sorted(required),release_identity=env['release_sha256'],
         binary_sha256=HASH,report_sha256=HASH,cleanup=dict(exit_code=0,timed_out=False,leaked_descendants=0,
             remaining_descendants=0,descendants_observed=5)) for name,required in REQUIRED.items()}
+    suites['sync']['exact_installed']=True
     suites['upgrade']['predecessor_identity']=pins['platform']['inventory_sha256']
     suites['identity']['measurements']=dict(idp_disable=dict(acknowledged_deny_monotonic=10,observed_closed_monotonic=12))
     suites['browser'].update(tls=True,exact_installed=True,console_manifest_sha256=env['source']['console']['manifest_sha256'],
@@ -47,6 +48,8 @@ class GovernedEvidence(unittest.TestCase):
     def test_stale_archive_inherited_runtime_partial_or_failed_evidence_is_rejected(self):
         mutations=[
             lambda d:d.update(release_identity='b'*64),
+            lambda d:d['suites']['sync'].update(exact_installed=False),
+            lambda d:d['suites']['sync']['checks'].clear(),
             lambda d:d['components'].update(execution_release_identity='b'*64),
             lambda d:d['components'].update(gvisor_inventory_sha256='b'*64),
             lambda d:d['components'].update(workload_sha256='b'*64),

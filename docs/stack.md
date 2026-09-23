@@ -141,8 +141,10 @@ snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
 application ([merged #83](https://github.com/supabricks/platform/pull/83)). [SY06](architecture/sy06-sync-surfaces.md) implements shared
 console/agent controls, governed service-bound capture and immutable catalog epoch
-views. Final SY06 integration, storage maintenance,
-installed sync qualification and reverse sync remain open.
+views; platform #84 and console #14 are merged. [SY07](architecture/sy07-sync-hardening.md)
+implements bounded spool reclamation and storage compaction. [SY08](architecture/sy08-installed-sync.md)
+is adding exact installed-archive qualification; candidate acceptance remains pending.
+Reverse sync remains deferred.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list

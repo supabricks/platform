@@ -4,7 +4,7 @@
 
 Status: 2026-09-23. [SY00 capture probe](../architecture/sy00-capture-probe.md)
 is complete with Linux/macOS qualification. [SY01 managed snapshot policies](../architecture/sy01-managed-snapshots.md)
-are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is merged. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is merged ([#83](https://github.com/supabricks/platform/pull/83)). [SY06 shared controls and governed service authority](../architecture/sy06-sync-surfaces.md) are implemented in [platform #84](https://github.com/supabricks/platform/pull/84) and [console #14](https://github.com/supabricks/console/pull/14), with shared controls, service-bound capture and immutable catalog views. The platform PR records cross-platform merge qualification; SY07 and SY08 remain open.
+are implemented; [SY02 durable capture](../architecture/sy02-durable-capture.md) is implemented; [SY03 incremental epochs](../architecture/sy03-incremental-epochs.md) is implemented; [SY04 local triggered sync](../architecture/sy04-triggered-sync.md) is merged. [SY05 bounded local continuous sync](../architecture/sy05-continuous-sync.md) is merged ([#83](https://github.com/supabricks/platform/pull/83)). [SY06 shared controls and governed service authority](../architecture/sy06-sync-surfaces.md) are implemented in [platform #84](https://github.com/supabricks/platform/pull/84) and [console #14](https://github.com/supabricks/console/pull/14), with shared controls, service-bound capture and immutable catalog views. The platform PR records cross-platform merge qualification; [SY07 recovery and storage maintenance](../architecture/sy07-sync-hardening.md) is implemented; [SY08 installed qualification](../architecture/sy08-installed-sync.md) is in progress. Exact archive acceptance remains pending.
 The delivered baseline is A01–A03/C03 plus UC00–UC09, through alpha.35.
 Direction agreed for this workstream: **PostgreSQL → analytical Delta/Parquet
 storage → Sail first. Lakehouse → PostgreSQL serving follows separately.**
@@ -278,7 +278,7 @@ without logging row contents or secrets. Reuse UC09's isolation and audit model.
 ## Delivery slices and exit evidence
 
 Each row is a separately reviewable slice. SY00 has a qualified probe implementation;
-SY01–SY05 are implemented and merged; SY06 source implementation is **complete**, with shared controls, governed incremental authority and immutable catalog views; [#84](https://github.com/supabricks/platform/pull/84) records its cross-platform merge checks. SY07–SY08 remain **planned**. Implementation
+SY01–SY05 are implemented and merged; SY06 source implementation is **complete**, with shared controls, governed incremental authority and immutable catalog views; [#84](https://github.com/supabricks/platform/pull/84) records its cross-platform merge checks. SY07 recovery/storage hardening is implemented; SY08 installed qualification is **in progress**, with exact archive acceptance pending. Implementation
 must update the ledger and add an architecture/qualification record before a
 capability is reported as delivered.
 
@@ -292,7 +292,7 @@ capability is reported as delivered.
 | SY05 — Continuous mode | SY04; supervision, batching/backpressure, observed lag, pause/resume and compute lifecycle. | Sustained and burst loads meet SY00's declared envelope; source idle differs from outage; laptop sleep, worker death, long transaction and resync preserve correctness. |
 | SY06 — Console, agent and governed integration | SY04/SY05 capabilities plus existing UC09; implement shared controls, inspectable operations, freshness and scoped service authority. | Local and governed user journeys, denied/revoked source access, no cross-project leakage, pinned SQL/notebooks and catalog bindings; old client/runtime capability fallback. |
 | SY07 — [Recovery and resource hardening](../architecture/sy07-sync-hardening.md) (implemented; cross-platform CI pending) | SY02–SY06; retention/compaction, schema changes, backup/restore, packaging, upgrades and source retirement. | Deterministic failpoints, ENOSPC, WAL loss, corrupt spool, source restore/fork, worker fencing and credential rotation; no unauthorized reads or deletion of pinned data. |
-| SY08 — Installed release qualification | All previous slices; bundled/offline runtime, instructions, current component pins and regression matrix. | Exact archives on Linux x86_64/macOS arm64 local-owner and supported Linux governed profile; existing R04/UC09 gates plus incremental/continuous correctness and workload reports. |
+| SY08 — [Installed release qualification](../architecture/sy08-installed-sync.md) (in progress; acceptance pending) | All previous slices; bundled/offline runtime, instructions, current component pins and regression matrix. | Exact archives on Linux x86_64/macOS arm64 local-owner and supported Linux governed profile; existing R04/UC09 gates plus incremental/continuous correctness and workload reports. |
 
 SY01 is useful independently but does not satisfy SY04 or SY05. SY06 API/security
 contracts must be designed alongside SY01; it is not permission to ship unsecured
