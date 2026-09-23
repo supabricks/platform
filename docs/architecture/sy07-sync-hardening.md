@@ -2,7 +2,7 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Delivery ledger](../plans/status.md) · [SY06](sy06-sync-surfaces.md)
 
-Status: implemented; local Linux source qualification passes, cross-platform CI pending. Exact installed
+Status: merged in [platform #85](https://github.com/supabricks/platform/pull/85); required CI and both Linux/macOS native suites passed on `c8646bf`. Exact installed
 archive qualification remains SY08. PostgreSQL → analytics remains the supported
 direction; these changes do not introduce a second writable copy or live DDL
 migration.

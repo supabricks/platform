@@ -104,8 +104,14 @@ qualification identity together when distributing engineering builds.
 
 Local Linux smoke checks against the unchanged SY07 archive from
 [run 35829067775](https://github.com/supabricks/platform/actions/runs/35829067775)
-passed triggered and governed surfaces. An initial continuous workload sustained
+passed triggered and governed surfaces. Archive SHA-256 is
+`28b2a581f3caf4946c514dcf1a91a6f0cfe3f5872fa1c4d6e782218b0f3ca79e`;
+release identity is
+`1910a30331943685e81935084ba1f3e6411ca8bd89bc677fbee2e487d19ee8b9`. An initial continuous workload sustained
 50.06 changed rows/second but measured 5,198 ms p95 publication lag and failed the
 5,000 ms gate. Its burst lag was 3,255 ms. This result does not qualify continuous
-performance. The candidate's own offline Linux/macOS and governed matrix must
+performance. A signed-installer smoke run passed triggered checks with zero leaked
+processes but failed continuous at 18,744 ms p95 under increased host load; it
+also cleaned up all descendants. Neither run establishes offline acceptance.
+The candidate's own offline Linux/macOS and governed matrix must
 complete before this status can change to qualified.
