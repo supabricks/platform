@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "checks": [
+    "project_admin_does_not_imply_pg_read",
+    "restricted_pg_positive_control_and_actor_private_results",
+    "read_denies_control_files_owner_and_write",
+    "separate_pg_write_and_ddl",
+    "single_statement_transaction_and_role_cleanup",
+    "rls_source_is_not_whole_branch",
+    "revocation_rolls_back_write_and_timeouts_close_sessions",
+    "sbdata_copy_requires_source_and_destination_authority_and_is_atomic",
+    "destination_grant_race_rolls_back_import",
+    "clone_rotates_source_credentials_and_does_not_inherit_grants",
+    "frozen_export_publication_requires_fresh_copy_and_sharing_grants",
+    "grant_race_cleans_export_without_replacing_active_revision",
+    "writer_crash_rolls_back_and_never_replays_sql",
+    "governed_backup_restore_closes_historical_grants_and_rotates_pg_and_sessions",
+    "bounded_audit_export_contains_correlated_metadata_without_credentials_or_sql",
+    "audit_append_failure_rolls_back_identity_mutation",
+    "audit_capacity_closes_admission_across_restart_and_remains_exportable"
+  ],
+  "measurements": {
+    "platform_revoke": {
+      "last_success_monotonic": 135179.291661728,
+      "acknowledged_deny_monotonic": 135179.513191247,
+      "closed_monotonic": 135180.910578405,
+      "bound_seconds": 60
+    }
+  },
+  "binary_sha256": "4ab3ad8f8c5ca3a2de5d6b91a001ada588e12b5c6496a2bd3d94b924e7c72a8e",
+  "source_sha256": "ffb29de3285007995108575812268fad2093a947c56acef592f1e29bd4e99bcc",
+  "shared_ingress": false
+}

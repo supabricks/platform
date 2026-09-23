@@ -199,6 +199,11 @@ impl Store {
                 {
                     return Err(run::denied());
                 }
+                let (root, descriptor) = crate::catalog::publication::read_view(
+                    self,
+                    s.publication.export_id,
+                    &descriptor,
+                )?;
                 let m = descriptor["manifest"]["tables"]
                     .as_array()
                     .ok_or_else(run::denied)?
@@ -209,10 +214,6 @@ impl Store {
                 if m["path"] != oid.to_string() || m["version"] != 0 {
                     return Err(run::denied());
                 }
-                let root = self
-                    .root()
-                    .join("analytics/generations")
-                    .join(s.publication.export_id.to_string());
                 let prefix = format!("{oid}/");
                 let files = descriptor["manifest"]["files"]
                     .as_array()

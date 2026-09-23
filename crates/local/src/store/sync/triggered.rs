@@ -151,6 +151,7 @@ impl Store {
                 if a.state == "succeeded" {
                     r.source_lsn = a.applied_lsn;
                     r.epoch_id = Some(a.epoch_id.to_string());
+                    r.published_artifact_id = Some(a.id);
                     r.apply_id = None;
                     if r.source_lsn == r.target_lsn {
                         self.complete_triggered(&mut r, now)?;
@@ -286,6 +287,7 @@ pub(super) fn restore_success(db: &rusqlite::Connection) -> Result<()> {
             r.state = "succeeded".into();
             r.finished_at_ms = Some(at);
             r.epoch_id = Some(epoch.clone());
+            r.published_artifact_id = Some(id);
             r.apply_id = None;
             r.error = None;
             db.execute(

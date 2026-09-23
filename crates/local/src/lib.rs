@@ -12,6 +12,7 @@ pub mod console;
 pub mod daemon;
 pub mod engine;
 pub mod environments;
+pub(crate) mod epoch_view;
 pub mod execution;
 pub mod governed;
 pub mod identity;

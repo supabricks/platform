@@ -41,17 +41,33 @@ impl Store {
     pub(crate) fn workspace_command(&mut self, ctx: &Context, command: Command) -> Result<Value> {
         a::validate_context(&self.db, ctx)?;
         match command {
+            Command::Sync {
+                deployment,
+                request,
+            } => self.governed_sync(ctx, &deployment, request),
             Command::Snapshot { deployment, export } => {
                 a::require(&self.db, ctx, &deployment, 1)?;
-                if !self.db.prepare("SELECT 1 FROM data_operations WHERE actor=?1 AND deployment=?2 AND result_json->>'$.export_id'=?3")?.exists(params![ctx.actor_id,deployment,export])? {return Err(authorization::denied());}
                 let id = export.parse().map_err(|_| authorization::denied())?;
+                if !self.governed_sync_export(ctx, &deployment, id)? && !self.db.prepare("SELECT 1 FROM data_operations WHERE actor=?1 AND deployment=?2 AND result_json->>'$.export_id'=?3")?.exists(params![ctx.actor_id,deployment,export])? {return Err(authorization::denied());}
                 self.data_export_live(id, false)?;
-                let e = self.export(id)?;
+                let state = match self.export(id) {
+                    Ok(e) => e.state,
+                    Err(_) => {
+                        self.incremental_run(
+                            self.deployment(
+                                deployment.parse().map_err(|_| authorization::denied())?,
+                            )?
+                            .runtime_project_id,
+                            id,
+                        )?
+                        .state
+                    }
+                };
                 let publication = self
                     .publication(id)
                     .ok()
                     .map(|p| json!({"epoch_id":p.epoch_id,"state":p.state}));
-                Ok(json!({"export_id":export,"state":e.state,"publication":publication}))
+                Ok(json!({"export_id":export,"state":state,"publication":publication}))
             }
             Command::Context {} => {
                 let label: String = self.db.query_row(
@@ -66,7 +82,9 @@ impl Store {
             Command::Branches { deployment } => {
                 a::require(&self.db, ctx, &deployment, 1)?;
                 let branches = self.db.prepare("SELECT b.id,b.name,CASE WHEN b.revision=b.observed_revision THEN b.desired ELSE 'starting' END,b.revision,b.observed_revision FROM branches b JOIN deployments d ON d.runtime_project_id=b.project_id WHERE d.id=?1 AND b.expired=0 AND b.desired!='deleted' ORDER BY b.name")?.query_map([&deployment],|r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"state":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"observed_revision":r.get::<_,i64>(4)?})))?.collect::<rusqlite::Result<Vec<_>>>()?;
-                Ok(json!({"branches":branches}))
+                Ok(
+                    json!({"branches":branches,"capabilities":{"sync_controls":1,"managed_snapshot_scheduling":true,"incremental_triggered":crate::sync::governed_incremental_available(self),"continuous_sync":crate::sync::governed_incremental_available(self),"sync_event_triggers":false}}),
+                )
             }
             Command::CreateProject { name, key } => {
                 realm_admin(&self.db, ctx)?;
@@ -282,11 +300,10 @@ impl Store {
                     _ => None,
                 };
                 if let Some(epoch) = epoch {
-                    let export:String = self.db.query_row("SELECT result_json->>'$.export_id' FROM data_operations WHERE actor=?1 AND deployment=?2 AND result_json->>'$.export_id' IN (SELECT export_id FROM publications WHERE epoch_id=?3)",params![ctx.actor_id,deployment,epoch.to_string()],|r|r.get(0))?;
-                    self.data_export_live(
-                        export.parse().map_err(|_| authorization::denied())?,
-                        true,
-                    )?;
+                    let snapshot = self.snapshot(context.runtime_project_id, epoch)?;
+                    let export = snapshot.publication.export_id;
+                    if !self.governed_sync_export(&ctx, &deployment, export)? && !self.db.prepare("SELECT 1 FROM data_operations WHERE actor=?1 AND deployment=?2 AND result_json->>'$.export_id'=?3")?.exists(params![ctx.actor_id,deployment,export.to_string()])? { return Err(authorization::denied()); }
+                    self.data_export_live(export, true)?;
                 }
                 let branch = match &command {
                     crate::catalog::publication::Command::Preview { epoch_id }

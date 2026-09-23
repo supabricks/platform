@@ -75,6 +75,29 @@ impl Store {
     }
     pub(super) fn sync_policy_view(&self, p: &Policy, now: i64) -> Result<Value> {
         let mut value = json!(p);
+        if p.service_authority.is_some() && self.sync_authority_live(p).is_err() {
+            value["authority_status"] = json!("revoked_or_unavailable");
+            if p.state != "deleted" {
+                value["state"] = json!("blocked");
+                value["error"] =
+                    json!("service_authority_changed; review grants and recreate the policy");
+            }
+        }
+        let capture = p
+            .capture_id
+            .and_then(|id| self.capture(p.project_id, id).ok());
+        value["capture_status"] = capture
+            .as_ref()
+            .map(|c| {
+                json!({
+                    "id":c.id,"state":c.state,"desired":c.desired,"error":c.error,
+                    "observed_at_ms":c.observed_at_ms,"captured_lsn":c.captured_lsn,
+                    "published_lsn":self.capture_published_lsn(c.id).ok().flatten(),
+                    "source_lsn":c.source_lsn,"spool_bytes":c.spool_bytes,
+                    "retained_wal_bytes":c.retained_wal_bytes,"cleanup_complete":c.cleanup_complete
+                })
+            })
+            .unwrap_or(Value::Null);
         if !p.config.continuous() {
             return Ok(value);
         }

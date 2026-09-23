@@ -1008,6 +1008,14 @@ fn execution_fixture(store: &mut Store, who: &Context, deployment: &str) {
 #[test]
 #[ignore = "requires Linux Docker/gVisor, verified UC09.4 inputs and the pinned real UC runtime"]
 fn isolated_execution_real_uc_two_users_and_independent_expiry() {
+    isolated_execution_case(false);
+}
+#[test]
+#[ignore = "requires Linux Docker/gVisor, verified UC09.4 inputs and the pinned real UC runtime"]
+fn isolated_execution_real_uc_incremental_epoch_views() {
+    isolated_execution_case(true);
+}
+fn isolated_execution_case(incremental: bool) {
     use crate::execution::{self as exec, Command as C};
     use sha2::{Digest, Sha256};
     let (_root, mut store, _owner, mut publication) = crate::catalog::publication::tests::setup();
@@ -1051,6 +1059,64 @@ fn isolated_execution_real_uc_two_users_and_independent_expiry() {
     descriptor["manifest_sha256"] = json!(hex::encode(Sha256::digest(
         descriptor["manifest"].to_string().as_bytes()
     )));
+    if incremental {
+        let capture = OperationId::new();
+        let data = store
+            .root()
+            .join("analytics/incremental")
+            .join(capture.to_string());
+        fs::create_dir_all(data.join("tables")).unwrap();
+        let python =
+            PathBuf::from(settings["release"].as_str().unwrap()).join("python/analytics/python");
+        assert!(Command::new(python).args(["-c", "import sys;from pathlib import Path;import pyarrow as pa;from deltalake import write_deltalake;p=Path(sys.argv[1]);t=lambda v:pa.table({'id':pa.array(v,type=pa.int32())});write_deltalake(p/'101',t([9]));write_deltalake(p/'101',t([1,2,3]),mode='overwrite');write_deltalake(p/'101',t([666]),mode='overwrite');write_deltalake(p/'102',t([4]))"]).arg(data.join("tables")).status().unwrap().success());
+        let mut files = Vec::new();
+        for oid in [101, 102] {
+            for directory in [
+                data.join(format!("tables/{oid}")),
+                data.join(format!("tables/{oid}/_delta_log")),
+            ] {
+                for entry in fs::read_dir(directory).unwrap() {
+                    let path = entry.unwrap().path();
+                    if path.is_file() && path.file_name().unwrap() != "00000000000000000002.json" {
+                        let bytes = fs::read(&path).unwrap();
+                        files.push(json!({"path":path.strip_prefix(&data).unwrap().to_str().unwrap(),"bytes":bytes.len(),"sha256":hex::encode(Sha256::digest(&bytes))}));
+                    }
+                }
+            }
+        }
+        descriptor["format_version"] = json!(2);
+        descriptor["generation"] = json!(format!("analytics/incremental/{capture}"));
+        descriptor["manifest"]["format_version"] = json!(2);
+        descriptor["manifest"]["capture_identity"] = json!({"generation":capture});
+        descriptor["manifest"]["files"] = json!(files);
+        for table in descriptor["manifest"]["tables"].as_array_mut().unwrap() {
+            let oid = table["oid"].as_u64().unwrap();
+            table["path"] = json!(format!("tables/{oid}"));
+            table["version"] = json!(if oid == 101 { 1 } else { 0 });
+            table["rows"] = json!(if oid == 101 { 3 } else { 1 });
+        }
+        descriptor["manifest_sha256"] = json!(hex::encode(Sha256::digest(
+            serde_json::to_vec(&descriptor["manifest"]).unwrap()
+        )));
+        fs::write(
+            generation.join("manifest.json"),
+            serde_json::to_vec(&descriptor["manifest"]).unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            generation.join("snapshot.json"),
+            serde_json::to_vec(&descriptor).unwrap(),
+        )
+        .unwrap();
+        let view = crate::epoch_view::View::plan(store.root(), &descriptor).unwrap();
+        view.materialize().unwrap();
+        for (table, oid) in publication.tables.iter_mut().zip([101, 102]) {
+            table.body["storage_location"] = json!(
+                crate::catalog::publication::location_uri(&view.root.join(oid.to_string()))
+                    .unwrap()
+            );
+        }
+    }
     publication.manifest_hash = descriptor["manifest_sha256"].as_str().unwrap().into();
     store
         .db

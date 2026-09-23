@@ -1,5 +1,5 @@
 //! Private, opt-in Linux execution. Never delegates to local-owner host workers.
-mod files;
+pub(crate) mod files;
 pub(crate) mod runtime;
 use crate::store::{Result, error::invalid};
 pub(crate) use files::{Input, Prepared};

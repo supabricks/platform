@@ -415,7 +415,11 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP INDEX sync_policy_runs;").unwrap();
+    db.execute_batch("DROP TRIGGER sync_service_revoke; DROP TRIGGER sync_source_policy_revoke; DROP TRIGGER sync_run_admission_audit; DROP TRIGGER sync_run_transition_audit; ALTER TABLE identity_principals DROP COLUMN sync_generation;").unwrap();
+    db.execute_batch("ALTER TABLE data_grants RENAME TO data_grants_current; CREATE TABLE data_grants (deployment TEXT NOT NULL REFERENCES deployments(id),branch TEXT NOT NULL REFERENCES branches(id),subject TEXT NOT NULL,capability TEXT NOT NULL CHECK(capability IN ('read','write','ddl','copy_source','receive','share')),PRIMARY KEY(deployment,branch,subject,capability)); INSERT INTO data_grants SELECT * FROM data_grants_current; DROP TABLE data_grants_current;").unwrap();
+    if source_schema < 27 {
+        db.execute_batch("DROP INDEX sync_policy_runs;").unwrap();
+    }
     if source_schema < 26 {
         db.execute_batch("DROP INDEX incremental_sync_owner;")
             .unwrap();
@@ -621,7 +625,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=27",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=28",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -958,4 +962,9 @@ fn installed_upgrade_accepts_incremental_v2_declaration_and_rejects_unknown_form
 #[test]
 fn schema_twenty_six_upgrade_adds_continuous_supervision_without_starting_work() {
     catalog_migration(26);
+}
+
+#[test]
+fn schema_twenty_seven_upgrade_adds_scoped_sync_authority_without_grants() {
+    catalog_migration(27);
 }

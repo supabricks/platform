@@ -390,7 +390,7 @@ impl Publisher {
         // before initial publication. External post-publication bit rot needs a
         // recovery bundle (reader checksums can diagnose it independently).
         for (project, id) in store.recoverable_snapshot_ids()? {
-            let s = store.snapshot(project, id)?;
+            let s = store.snapshot_record(project, id, true)?;
             let result = check_ready(
                 &generations.join(s.publication.export_id.to_string()),
                 s.publication

@@ -14,6 +14,9 @@ def main():
     for arg in ('binary','release','uc-runtime','execution-config','console','report'):p.add_argument('--'+arg,type=Path,required=True)
     p.add_argument('--exact-installed',action='store_true')
     p.add_argument('--tls',action='store_true')
+    p.add_argument('--sync',action='store_true')
+    p.add_argument('--python',type=Path)
+    p.add_argument('--worker',type=Path)
     args=p.parse_args();os.umask(0o077)
     root=Path(tempfile.mkdtemp(prefix='s7-' if args.exact_installed else 'sb-uc097-'));print('Private diagnostics: '+str(root),flush=True)
     cellroot=root/'cell';cellroot.mkdir();cell=CatalogCell(args.binary.resolve(),args.release.resolve()/'engine',args.release.resolve()/'helpers',cellroot)
@@ -43,7 +46,7 @@ def main():
         alice_subject=http(base+'/admin/realms/uc097/users?username=alice',token=token)[0]['id']
         shutil.copyfile(args.execution_config,cellroot/'execution-runtime.json')
         if not args.exact_installed:
-            (cellroot/"analytics.json").write_text(json.dumps(dict(python=str(args.release.resolve()/"python/analytics/python"),worker=str(args.release.resolve()/"python/analytics/export.py"))))
+            (cellroot/"analytics.json").write_text(json.dumps(dict(python=str(args.python.absolute() if args.python else args.release.resolve()/"python/analytics/python"),worker=str(args.worker.resolve() if args.worker else args.release.resolve()/"python/analytics/export.py"))))
         cell.start()
         cell.request(method='identity_admin',command=dict(action='configure',provider='keycloak',config=dict(issuer=issuer,client_id='platform',client_secret=secret,introspection_url=issuer+'/protocol/openid-connect/token/introspect',redirects=[callback],ca_pem=(root/'cert.pem').read_text())))
         cell.request(method='identity_admin',command=dict(action='bootstrap',issuer=issuer,subject=alice_subject,label='alice'))
@@ -62,7 +65,7 @@ def main():
         wait(lambda:urllib.request.urlopen(origin+'/auth/v1/console',timeout=2,context=context).status==200,timeout=15)
         config=dict(origin=origin,password=password,root=str(root),report=str(args.report.resolve()),installedQualification=args.exact_installed)
         (root/'browser.json').write_text(json.dumps(config))
-        result=subprocess.run(['node',str(args.console.resolve()/'scripts/governed-qualify.mjs'),'--config',str(root/'browser.json')],cwd=args.console.resolve(),timeout=600)
+        result=subprocess.run(['node',str(args.console.resolve()/('scripts/governed-sync.mjs' if args.sync else 'scripts/governed-qualify.mjs')),'--config',str(root/'browser.json')],cwd=args.console.resolve(),timeout=600)
         assert result.returncode==0,'browser qualification failed; inspect private diagnostics'
     finally:
         cleanup=[]

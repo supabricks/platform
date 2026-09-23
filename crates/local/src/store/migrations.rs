@@ -28,6 +28,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0025_incremental.sql"),
     include_str!("migrations/0026_triggered.sql"),
     include_str!("migrations/0027_continuous.sql"),
+    include_str!("migrations/0028_sync_authority.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -211,6 +212,7 @@ fn catalog_upgrade_inner(
                 | 24
                 | 25
                 | 26
+                | 27
         )
     {
         return Err(conflict(

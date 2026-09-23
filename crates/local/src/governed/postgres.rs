@@ -18,6 +18,7 @@ fn pg(e: tokio_postgres::Error) -> crate::store::Error {
 pub(crate) struct Target {
     pub port: u16,
     pub password: String,
+    pub capture_identity: Option<Value>,
 }
 pub(crate) struct Pending {
     decision: mpsc::Sender<bool>,
@@ -91,7 +92,29 @@ fn statement(cap: Capability, sql: &str) -> Result<()> {
 }
 /// Conservative whole-branch profile: ordinary public tables, no RLS, foreign
 /// tables, views, user routines or triggers that can elevate an ordinary role.
-async fn profile(c: &tokio_postgres::Client) -> Result<()> {
+async fn profile(c: &tokio_postgres::Client, capture: Option<&Value>) -> Result<()> {
+    // Only the durable, owned capture identity can exempt the engine DDL fence.
+    // Names alone and user-defined routines never confer this exemption.
+    let mut capture_function = 0i64;
+    if let Some(identity) = capture {
+        let generation: uuid::Uuid = identity["generation"]
+            .as_str()
+            .ok_or_else(denied)?
+            .parse()
+            .map_err(|_| denied())?;
+        let name = format!("sbcap_{}", generation.simple());
+        let owner = identity.to_string();
+        let verified = c.query_opt(r#"SELECT p.oid::bigint FROM pg_namespace n JOIN pg_proc p ON p.pronamespace=n.oid
+          WHERE n.nspname=$1 AND n.nspowner='cloud_admin'::regrole AND obj_description(n.oid,'pg_namespace')::jsonb=$2::text::jsonb
+          AND p.proname='fence' AND p.pronargs=0 AND p.proowner='cloud_admin'::regrole AND p.prosecdef
+          AND p.prorettype='event_trigger'::regtype AND p.prolang=(SELECT oid FROM pg_language WHERE lanname='plpgsql')
+          AND p.proconfig=ARRAY['search_path=pg_catalog']
+          AND (SELECT count(*) FROM pg_event_trigger e WHERE e.evtfoid=p.oid AND e.evtenabled='O' AND e.evtowner='cloud_admin'::regrole
+               AND ((e.evtname=$1 || '_end' AND e.evtevent='ddl_command_end') OR (e.evtname=$1 || '_drop' AND e.evtevent='sql_drop')))=2"#, &[&name,&owner]).await.map_err(pg)?;
+        if let Some(row) = verified {
+            capture_function = row.get(0);
+        }
+    }
     let ok:bool=c.query_one(r#"SELECT
       NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname !~ '^pg_' AND n.nspname NOT IN ('information_schema','_supabricks')
@@ -99,8 +122,9 @@ async fn profile(c: &tokio_postgres::Client) -> Result<()> {
           AND (n.nspname!='public' OR c.relrowsecurity OR c.relforcerowsecurity OR c.relkind NOT IN ('r','p','i','I','S','t')))
       AND NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
         WHERE n.nspname !~ '^pg_' AND n.nspname NOT IN ('information_schema')
+          AND p.oid::bigint!=$1
           AND NOT (n.nspname='neon' AND p.proowner='cloud_admin'::regrole AND p.probin='$libdir/neon' AND p.prolang=(SELECT oid FROM pg_language WHERE lanname='c') AND NOT p.prosecdef))
-      AND NOT EXISTS(SELECT 1 FROM pg_trigger WHERE NOT tgisinternal)"#, &[]).await.map_err(pg)?.get(0);
+      AND NOT EXISTS(SELECT 1 FROM pg_trigger WHERE NOT tgisinternal)"#, &[&capture_function]).await.map_err(pg)?.get(0);
     if !ok {
         return Err(crate::store::error::invalid(
             "unsupported whole-branch PostgreSQL profile",
@@ -147,10 +171,14 @@ async fn reconcile(c: &tokio_postgres::Client) -> Result<()> {
         EXECUTE format('REVOKE ALL PRIVILEGES (%s) ON TABLE public.%I FROM PUBLIC',r.cols,r.relname);
       END LOOP;
     END $$;
-    ALTER SCHEMA public OWNER TO sb_governed_owner;
+    DO $$ BEGIN
+      IF EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='public' AND nspowner!='sb_governed_owner'::regrole) THEN
+        ALTER SCHEMA public OWNER TO sb_governed_owner;
+      END IF;
+    END $$;
     DO $$ DECLARE r record; BEGIN
       FOR r IN SELECT c.relname,c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-        WHERE n.nspname='public' AND c.relname NOT IN ('health_check','health_check_id_seq') AND c.relkind IN ('r','p','S') ORDER BY c.relkind LOOP
+        WHERE n.nspname='public' AND c.relowner!='sb_governed_owner'::regrole AND c.relname NOT IN ('health_check','health_check_id_seq') AND c.relkind IN ('r','p','S') ORDER BY c.relkind LOOP
         IF r.relkind='S' THEN
           -- Owned sequences follow their table's owner; independent ones can be changed.
           IF NOT EXISTS(SELECT 1 FROM pg_depend d JOIN pg_class c ON c.oid=d.objid
@@ -177,7 +205,7 @@ fn check(target: Target, sanitize: bool) -> Result<()> {
         .block_on(async {
             tokio::time::timeout(Duration::from_secs(4), async {
                 let (c, _connection) = connect(&target, "cloud_admin", &target.password).await?;
-                profile(&c).await?;
+                profile(&c, target.capture_identity.as_ref()).await?;
                 if sanitize {
                     reconcile(&c).await?;
                 }
@@ -275,7 +303,7 @@ fn prepare_work(
                 let deadline=Instant::now()+Duration::from_secs(10);
                 let(c,_control)=tokio::time::timeout(Duration::from_secs(3),connect(&target,"cloud_admin",&target.password)).await.map_err(|_|denied())??;
                 let result=tokio::time::timeout(Duration::from_secs(10),async {
-                    profile(&c).await?;
+                    profile(&c, target.capture_identity.as_ref()).await?;
                     reconcile(&c).await?;
                     let expiry=chrono::DateTime::from_timestamp_millis(expires_ms.min(crate::identity::now()+10000)).ok_or_else(denied)?.to_rfc3339();
                     let hash=supabricks_core::keys::pg_md5(&password,&user);

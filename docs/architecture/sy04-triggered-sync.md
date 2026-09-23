@@ -9,6 +9,10 @@ application is added by [SY05](sy05-continuous-sync.md); event producers, consol
 controls and governed capture remain gated for later slices. The console capability stays false until its SY06 integration;
 the local IPC capability advertises triggered support.
 
+Current integration: [SY06](sy06-sync-surfaces.md) adds shared console/agent
+controls, governed service authority and immutable catalog epoch views. The
+phase boundary above records what this earlier slice delivered.
+
 ## Enrollment and run boundary
 
 Creating a triggered policy explicitly enrolls an owned SY02 capture generation

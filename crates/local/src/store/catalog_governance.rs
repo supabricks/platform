@@ -88,6 +88,21 @@ pub(super) fn snapshot(db: &Connection, broker: &Broker, changes: &[Change]) -> 
     objects.insert(metastore.key(), metastore);
     let mut tables = Vec::new();
     for p in publications {
+        if p.state == "published" {
+            let artifact: String = db.query_row(
+                "SELECT export_id FROM publications WHERE epoch_id=?1",
+                [p.epoch_id.to_string()],
+                |r| r.get(0),
+            )?;
+            if let Some(policy) = super::sync::governed::policy_for_artifact(
+                db,
+                artifact.parse().map_err(|_| gov::denied())?,
+            )? {
+                if let Some(authority) = &policy.service_authority {
+                    super::sync::governed::service_live(db, &policy, authority)?;
+                }
+            }
+        }
         if p.namespace.provider_id != broker.provider
             || p.namespace.metastore_id != broker.metastore
         {

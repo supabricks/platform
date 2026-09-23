@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "scope": "Source qualification with real UC and pinned gVisor; not installed release qualification.",
+  "command": "SUPABRICKS_UC093_RUNTIME=UC_RUNTIME SUPABRICKS_UC094_CONFIG=EXECUTION_CONFIG cargo test --release --locked -p supabricks-local --lib isolated_execution_real_uc_incremental_epoch_views -- --ignored --test-threads=1",
+  "tests": 1,
+  "failed": 0,
+  "duration_seconds": 90.63,
+  "source_files": {
+    "crates/local/src/epoch_view.rs": "c3a0e3df18a2965ccb48f82485af024dfdbbb11c9d8cd597bf36ca78cd06a248",
+    "crates/local/src/store/catalog_governance_tests.rs": "f7bcb747712e0f25d48ee858a351bae93beb304be8842fb7f774fd6db857166d",
+    "crates/local/src/store/execution.rs": "caf12a60ce179df0133f1303f76e1f69d65192f2521159f9acf563fcd629d8d6",
+    "crates/local/src/execution/files.rs": "4c4c50e4a1ca6eb03dc7aa055c632bfedc17b40097ff37648fdff10d043c43d3"
+  }
+}

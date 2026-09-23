@@ -34,7 +34,7 @@ fn relative(value: &str) -> Result<()> {
 }
 // Walk each component with O_NOFOLLOW. A directory symlink cannot redirect an
 // otherwise checksum-valid copy into the cell's credentials or another tenant.
-fn open(root: &Path, path: &str) -> Result<fs::File> {
+pub(crate) fn open(root: &Path, path: &str) -> Result<fs::File> {
     use std::os::fd::{AsRawFd, FromRawFd};
     relative(path)?;
     if root.canonicalize()? != root {
@@ -193,7 +193,7 @@ impl Prepared {
         Ok(Self { dir })
     }
 }
-fn validate_delta(root: &Path, names: &BTreeSet<String>) -> Result<()> {
+pub(crate) fn validate_delta(root: &Path, names: &BTreeSet<String>) -> Result<()> {
     let log = "_delta_log/00000000000000000000.json";
     let bytes = fs::read(root.join(log))?;
     if bytes.len() > 2 * 1024 * 1024 {

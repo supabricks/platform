@@ -144,7 +144,12 @@ impl Workspace {
     ) -> Result<Value> {
         let project = binding.project_id;
         match command {
-            Command::ManagedSnapshots { command } => crate::sync::handle(store, binding, command),
+            Command::ManagedSnapshots { command } => crate::api::handle(
+                store,
+                cell,
+                binding,
+                crate::api::Action::ManagedSnapshots { command },
+            ),
             Command::Snapshot { target } => {
                 store.branch_in_project(project, target.branch)?;
                 match store.current_snapshot(project, target.branch) {

@@ -22,6 +22,7 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [SY06: shared controls and governed service authority](sy06-sync-surfaces.md)
 - [SY01: managed snapshot policies and scheduling](sy01-managed-snapshots.md)
 - [SY05: supervised continuous policies and observed freshness](sy05-continuous-sync.md)
 - [SY04: triggered incremental policies and fixed source barriers](sy04-triggered-sync.md)

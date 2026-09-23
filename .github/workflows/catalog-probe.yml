@@ -17,6 +17,8 @@ on:
       - 'install/native/unity_catalog.py'
       - 'install/native/test_unity_catalog.py'
       - 'e2e/native/catalog/**'
+      - 'e2e/native/sync_surfaces.py'
+      - 'e2e/native/governed-console/**'
       - 'e2e/native/identity/**'
       - 'e2e/native/iam/pins.lock.json'
       - '.github/workflows/catalog-probe.yml'
@@ -117,6 +119,26 @@ jobs:
           python e2e/native/catalog/prepare.py --target ${{ matrix.target }} --artifact build/baseline.zip --output build/baseline
           rm build/baseline.zip
           python -m pip install -r e2e/native/catalog/requirements.txt
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+          enable-cache: false
+      - name: Install locked analytical workers for managed sync
+        run: uv sync --project python/analytics --locked --managed-python
+      - name: Governed incremental sync, immutable catalog views and revocation
+        run: |
+          python e2e/native/sync_surfaces.py --binary target/release/supabricks \
+            --bundle build/baseline/supabricks/engine --helpers build/baseline/supabricks/helpers \
+            --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py \
+            --catalog-runtime build/uc-runtime --report build/reports/sync-surfaces.json
+      - name: Signed-in managed sync browser journey
+        if: runner.os == 'Linux'
+        run: |
+          python e2e/native/governed-console/qualify.py --binary target/release/supabricks \
+            --release build/baseline/supabricks --uc-runtime build/uc-runtime \
+            --execution-config "$RUNNER_TEMP/uc094-runtime.json" --console console \
+            --sync --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py \
+            --report build/reports/sync-browser.json
       - name: Probe offline on Linux
         if: runner.os == 'Linux'
         run: |

@@ -127,16 +127,19 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
     let d = p
         .descriptor
         .ok_or_else(|| invalid("snapshot descriptor missing"))?;
-    if d["format_version"] != 1 {
-        return Err(conflict(
-            "catalog publication requires an immutable full snapshot; versioned incremental roots are local-reader only",
-        ));
-    }
-    let root = store
+    let generation = store
         .root()
         .join("analytics/generations")
         .join(p.export_id.to_string());
-    crate::analytics::check_ready(&root, &d)?;
+    crate::analytics::check_ready(&generation, &d)?;
+    let view = if d["format_version"] == 2 {
+        Some(crate::epoch_view::View::plan(store.root(), &d)?)
+    } else {
+        None
+    };
+    let root = view.as_ref().map(|v| v.root.clone()).unwrap_or(generation);
+    let original_hash = d["manifest_sha256"].clone();
+    let d = view.as_ref().map(|v| &v.descriptor).unwrap_or(&d);
     let tables = d["manifest"]["tables"]
         .as_array()
         .ok_or_else(|| invalid("snapshot tables missing"))?;
@@ -164,12 +167,20 @@ fn preview(store: &Store, owner: &Context, n: Namespace, epoch: EpochId) -> Resu
             ));
         }
         let path = root.join(oid.to_string());
-        let columns = columns(&root, &path, &d, t)?;
-        let location = local_location(&path)?;
+        let columns = if let Some(view) = &view {
+            columns_from_log(view.log(oid)?, t)?
+        } else {
+            columns(&root, &path, d, t)?
+        };
+        let location = if view.is_some() {
+            location_uri(&path)?
+        } else {
+            local_location(&path)?
+        };
         let alias = format!("e_{}_{}", epoch.to_string().replace('-', ""), oid);
         objects.push(json!({"source_schema":schema,"source_name":name,"body":{"catalog_name":n.catalog,"schema_name":n.schema,"name":alias,"table_type":"EXTERNAL","data_source_format":"DELTA","storage_location":location,"columns":columns}}));
     }
-    let mut v = json!({"api_version":1,"deployment_id":owner.deployment_id,"project_id":owner.runtime_project_id,"branch_id":p.branch_id,"epoch_id":epoch,"source_revision":p.source_revision,"binding_revision":store.catalog_head(owner.deployment_id,p.branch_id)?.0,"namespace":n,"tables":objects,"snapshot_at_ms":p.published_at_ms,"manifest_hash":d["manifest_sha256"],"retention":{"durable":true,"until":"unpublished and references drained","copies":false}});
+    let mut v = json!({"api_version":1,"deployment_id":owner.deployment_id,"project_id":owner.runtime_project_id,"branch_id":p.branch_id,"epoch_id":epoch,"source_revision":p.source_revision,"binding_revision":store.catalog_head(owner.deployment_id,p.branch_id)?.0,"namespace":n,"tables":objects,"snapshot_at_ms":p.published_at_ms,"manifest_hash":original_hash,"retention":{"durable":true,"until":"unpublished and references drained","copies":view.is_some(),"view_bytes":if view.is_some(){d["manifest"]["generation_bytes"].clone()}else{json!(0)}}});
     if serde_json::to_vec(&v)?.len() > 2 * 1024 * 1024 - 65536 {
         return Err(invalid("publication metadata exceeds 2 MiB response bound"));
     }
@@ -185,7 +196,7 @@ pub(super) fn local_location(path: &Path) -> Result<String> {
     }
     location_uri(&canonical)
 }
-pub(super) fn location_uri(path: &Path) -> Result<String> {
+pub(crate) fn location_uri(path: &Path) -> Result<String> {
     Ok(format!(
         "file://{}",
         path.to_str()
@@ -208,10 +219,7 @@ pub(crate) fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
     if snapshot.state != "available" || d["manifest_sha256"] != p.manifest_hash {
         return Err(conflict("snapshot identity changed"));
     }
-    let root = store
-        .root()
-        .join("analytics/generations")
-        .join(snapshot.publication.export_id.to_string());
+    let (root, d) = read_view(store, snapshot.publication.export_id, &d)?;
     let tables = d["manifest"]["tables"]
         .as_array()
         .ok_or_else(|| invalid("snapshot tables missing"))?;
@@ -236,6 +244,36 @@ pub(crate) fn verify_locations(store: &Store, p: &Publication) -> Result<()> {
     }
     Ok(())
 }
+pub(crate) fn read_view(
+    store: &Store,
+    artifact: OperationId,
+    d: &Value,
+) -> Result<(std::path::PathBuf, Value)> {
+    if d["format_version"] == 2 {
+        let view = crate::epoch_view::View::plan(store.root(), d)?;
+        view.verify()?;
+        Ok((view.root, view.descriptor))
+    } else {
+        Ok((
+            store
+                .root()
+                .join("analytics/generations")
+                .join(artifact.to_string()),
+            d.clone(),
+        ))
+    }
+}
+pub(crate) fn prepare_view(store: &Store, p: &Publication) -> Result<()> {
+    let snapshot = store.snapshot(p.project_id, p.epoch_id)?;
+    let d = snapshot
+        .publication
+        .descriptor
+        .ok_or_else(|| invalid("snapshot descriptor missing"))?;
+    if d["format_version"] == 2 {
+        crate::epoch_view::View::plan(store.root(), &d)?.materialize()?;
+    }
+    Ok(())
+}
 pub(super) fn columns(root: &Path, path: &Path, d: &Value, table: &Value) -> Result<Vec<Value>> {
     use sha2::{Digest, Sha256};
     let log = path.join("_delta_log/00000000000000000000.json");
@@ -256,6 +294,9 @@ pub(super) fn columns(root: &Path, path: &Path, d: &Value, table: &Value) -> Res
     if expected["sha256"] != hex::encode(Sha256::digest(&bytes)) {
         return Err(conflict("Delta schema checksum changed"));
     }
+    columns_from_log(&bytes, table)
+}
+fn columns_from_log(bytes: &[u8], table: &Value) -> Result<Vec<Value>> {
     let mut delta = None;
     for line in bytes.split(|b| *b == b'\n').filter(|l| !l.is_empty()) {
         let v: Value = serde_json::from_slice(line)?;

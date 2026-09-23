@@ -5,6 +5,566 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
+    "description": "Manage project-bound analytical sync. Inspect prerequisites without enrolling capture; create/update snapshot, triggered or continuous policies explicitly. Use expected policy revisions and stable retry keys. List/get show observed lag (null means unknown), capture pressure and retained epochs. Poll runs; pause drains continuous batches; cancel fences a run. Review resync before submitting its hash, then explicitly resume after cleanup. Delete keeps pinned publications. Existing readers never retarget. Continuous keeps compute awake. Governed authority is a separate signed-in workspace route.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "list"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "branch": {
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "inspect"
+                }
+              },
+              "required": [
+                "kind",
+                "branch"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "branch": {
+                  "type": "string"
+                },
+                "config": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "continuous": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "batch_interval_ms": {
+                          "maximum": 60000,
+                          "minimum": 200,
+                          "type": "integer"
+                        },
+                        "freshness_ms": {
+                          "maximum": 300000,
+                          "minimum": 1000,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "freshness_ms",
+                        "batch_interval_ms"
+                      ],
+                      "type": "object"
+                    },
+                    "limits": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "max_bytes": {
+                          "maximum": 17179869184,
+                          "minimum": 16777216,
+                          "type": "integer"
+                        },
+                        "timeout_ms": {
+                          "maximum": 1800000,
+                          "minimum": 10000,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "max_bytes",
+                        "timeout_ms"
+                      ],
+                      "type": "object"
+                    },
+                    "mode": {
+                      "enum": [
+                        "snapshot",
+                        "triggered",
+                        "continuous"
+                      ]
+                    },
+                    "schedule": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "interval_seconds": {
+                              "maximum": 2592000,
+                              "minimum": 60,
+                              "type": "integer"
+                            },
+                            "missed_run": {
+                              "const": "coalesce"
+                            },
+                            "timezone": {
+                              "const": "UTC"
+                            }
+                          },
+                          "required": [
+                            "interval_seconds",
+                            "timezone",
+                            "missed_run"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "strategy": {
+                      "enum": [
+                        "full",
+                        "incremental"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "strategy",
+                    "schedule"
+                  ],
+                  "type": "object"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "create"
+                }
+              },
+              "required": [
+                "kind",
+                "branch",
+                "config",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "config": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "continuous": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "batch_interval_ms": {
+                          "maximum": 60000,
+                          "minimum": 200,
+                          "type": "integer"
+                        },
+                        "freshness_ms": {
+                          "maximum": 300000,
+                          "minimum": 1000,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "freshness_ms",
+                        "batch_interval_ms"
+                      ],
+                      "type": "object"
+                    },
+                    "limits": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "max_bytes": {
+                          "maximum": 17179869184,
+                          "minimum": 16777216,
+                          "type": "integer"
+                        },
+                        "timeout_ms": {
+                          "maximum": 1800000,
+                          "minimum": 10000,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "max_bytes",
+                        "timeout_ms"
+                      ],
+                      "type": "object"
+                    },
+                    "mode": {
+                      "enum": [
+                        "snapshot",
+                        "triggered",
+                        "continuous"
+                      ]
+                    },
+                    "schedule": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "interval_seconds": {
+                              "maximum": 2592000,
+                              "minimum": 60,
+                              "type": "integer"
+                            },
+                            "missed_run": {
+                              "const": "coalesce"
+                            },
+                            "timezone": {
+                              "const": "UTC"
+                            }
+                          },
+                          "required": [
+                            "interval_seconds",
+                            "timezone",
+                            "missed_run"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "strategy": {
+                      "enum": [
+                        "full",
+                        "incremental"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "strategy",
+                    "schedule"
+                  ],
+                  "type": "object"
+                },
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "update"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "config",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "resync"
+                },
+                "review_hash": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "review_hash",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "runs"
+                },
+                "limit": {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "limit"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "get"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "run"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "review_resync"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "pause"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "resume"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "delete"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "expected_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "run_now"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "expected_revision",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "key": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "cancel"
+                }
+              },
+              "required": [
+                "kind",
+                "id",
+                "key"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "Managed analytical sync command"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "name": "managed_snapshots",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
     "description": "Edit a root-manifest dataset requirement with an expected manifest SHA-256. Null requirement removes it. This changes source only; review project_plan then project_apply separately.",
     "inputSchema": {
       "additionalProperties": false,
@@ -6959,13 +7519,18 @@
                   "additionalProperties": false,
                   "properties": {
                     "copies": {
-                      "const": false
+                      "type": "boolean"
                     },
                     "durable": {
                       "const": true
                     },
                     "until": {
                       "type": "string"
+                    },
+                    "view_bytes": {
+                      "maximum": 268435456,
+                      "minimum": 0,
+                      "type": "integer"
                     }
                   },
                   "required": [
