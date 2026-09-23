@@ -90,7 +90,7 @@ def qualify(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('directory','report'):parser.add_argument('--'+name,type=Path,required=True)
-    parser.add_argument('--version',default='v0.1.0-alpha.35')
+    parser.add_argument('--version',default='v0.1.0-alpha.36')
     parser.add_argument('--target',choices=('linux-x86_64','macos-arm64'),required=True)
     parser.add_argument('--network-evidence',required=True)
     qualify(parser.parse_args())

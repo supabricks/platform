@@ -3,7 +3,9 @@
 [Documentation home](../../docs/README.md) · [Stack overview](../../docs/stack.md) ·
 [Current release evidence](../../docs/architecture/uc098-governed-release.md)
 
-The current release line is alpha.35. This guide covers full native assembly and
+The SY08 candidate is alpha.36; exact-archive qualification is pending in the
+[SY08 ledger](../../docs/architecture/sy08-installed-sync.md). Alpha.35 remains the
+last qualified release. This guide covers full native assembly and
 the local-owner installer; [governed server setup](../../docs/handbook/governed-server.md)
 adds its explicit operator prerequisites and exact-archive qualification receipt.
 Native assembly consumes the pinned console, engine/helpers, source-built Sail
@@ -65,7 +67,7 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current candidate uses version `v0.1.0-alpha.35` and catalog 22. Product notebook kernels
+The current candidate uses version `v0.1.0-alpha.36` and catalog 29. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).

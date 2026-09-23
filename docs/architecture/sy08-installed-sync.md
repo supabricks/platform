@@ -3,8 +3,11 @@
 [Plan](../plans/analytical-sync-implementation.md) · [Delivery ledger](../plans/status.md) · [SY07](sy07-sync-hardening.md)
 
 Status: qualification harness implemented; exact candidate acceptance is pending.
-A passing source test or a reused alpha.35 version label does not qualify a new
-archive. Acceptance requires the combined `sy08-evidence` artifact for that
+The candidate uses `v0.1.0-alpha.36` with catalog 29. Alpha.35 remains the last
+qualified release. The new version avoids the installer’s intentional rejection
+of different archive bytes under an already installed version. Historical
+predecessor pins and upgrade gates remain unchanged.
+A passing source test does not qualify a new archive. Acceptance requires the combined `sy08-evidence` artifact for that
 candidate's Linux x86_64 and macOS arm64 archives and the Linux governed profile.
 
 ## Installed boundaries
@@ -16,7 +19,10 @@ records the archive, release inventory, binary and bundled worker hashes.
 `e2e/native/installed_sync.py` uses the bundled Python, capture/apply workers,
 Sail and Unity Catalog defaults. It refuses source-runtime substitutions. Every
 fixture has a private data directory; the process gate accounts for descendants
-and rejects leaks, failed exit codes and timeouts.
+and rejects leaks, failed exit codes and timeouts. Installed resource sampling
+and shutdown inspect owned processes directly, avoiding the macOS system `ps`
+executable under Seatbelt. A producer/collector contract test verifies all four
+suites emit the required check-name format.
 
 The `release-sync` jobs in `native-release.yml` run after native assembly:
 
@@ -129,3 +135,22 @@ rows/second, 4,377 ms p95, 5,046 ms p99, and 3,061 ms burst lag, with zero leake
 descendants. This experiment deliberately marks its provenance dirty and cannot
 satisfy the archive collector. The candidate's own offline Linux/macOS and governed
 matrix must complete before this status can change to qualified.
+
+Follow-up Linux smoke checks passed all 17 inherited governed data cases and all
+14 sync governance cases inside a network-disabled, four-CPU/16-GiB container.
+This checks the container path on the development host, not the dedicated CI host
+profile. The qualifier now installs the locked WebSocket/catalog clients needed
+by notebook sync checks. The updated process sampler passed continuous recovery
+with 3,898 ms p95, 4,208 ms p99 and 3,359 ms burst lag, with no descendant leaks.
+The predecessor's governed restore failure occurred twice in CI but did not
+reproduce in these runs; retained diagnostics now include allowlisted native
+error codes and PostgreSQL states without exporting messages or credentials.
+
+A complete signed-installer smoke run of that development copy then passed all
+26 installed sync checks inside the network-disabled four-CPU/16-GiB container.
+The four suites observed 838 descendants with zero leaks, and both installation
+inventory verifications passed. Continuous sync measured 50.06 changed
+rows/second, 4,376 ms p95, 4,797 ms p99 and 3,287 ms burst lag. This also exercised
+the actual string check names consumed by the evidence collector. The archive
+still has deliberately dirty development provenance; these results validate the
+harness and do not substitute for the alpha.36 CI archives.

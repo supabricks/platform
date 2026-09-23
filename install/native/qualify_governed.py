@@ -203,7 +203,7 @@ def outer(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     for field in ['directory','console','execution-config','report']:parser.add_argument('--'+field,type=Path,required=True)
-    parser.add_argument('--version',default='v0.1.0-alpha.35')
+    parser.add_argument('--version',default='v0.1.0-alpha.36')
     parser.add_argument('--image',default='supabricks-uc098-qualifier')
     parser.add_argument('--workspace',type=Path)
     parser.add_argument('--inside',action='store_true')

@@ -17,6 +17,7 @@ on:
       - 'e2e/native/incremental.py'
       - 'e2e/native/triggered.py'
       - 'e2e/native/installed_sync.py'
+      - 'e2e/native/test_installed_sync.py'
       - 'e2e/native/continuous.py'
       - 'e2e/native/sync_maintenance.py'
       - 'e2e/native/sync_surfaces.py'
@@ -240,7 +241,7 @@ jobs:
           python install/native/assemble.py --target ${{ matrix.target }} --binary target/release/supabricks --engine build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --output build/releases
       - name: Reject unqualified notebook package changes
         run: |
-          release="build/releases/supabricks-v0.1.0-alpha.35-${{ matrix.target }}"
+          release="build/releases/supabricks-v0.1.0-alpha.36-${{ matrix.target }}"
           "$release/python/analytics/python" python/notebooks/test_environment.py "$release"
           "$release/python/analytics/python" python/ingest/test_worker.py
           "$release/python/analytics/python" python/ingest/test_formats.py
@@ -939,7 +940,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Prepare qualification clients before network isolation
-        run: python -m pip install -r e2e/native/requirements.txt -r e2e/native/catalog/requirements.txt
+        run: |
+          python -m pip install -r e2e/native/requirements.txt -r e2e/native/catalog/requirements.txt
+          python e2e/native/test_installed_sync.py
       - name: Installed sync on offline Linux
         if: runner.os == 'Linux'
         run: |

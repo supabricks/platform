@@ -50,8 +50,35 @@ class Installed:
             provider.pop('runtime');command['provider']=provider;request['command']=command
         return super().request(**request)
     def check(self,name):
-        super().check(name)
+        # Installed evidence uses the release collectors' list-of-names contract.
+        self.checks.append(name)
         print('PASS',name,flush=True)
+    def process_samples(self):
+        # macOS Seatbelt cannot execute the system ps binary. Inspect only this
+        # daemon's descendants and retain creation time to distinguish PID reuse.
+        daemon=psutil.Process(self.daemons[-1].pid)
+        for process in [daemon,*daemon.children(recursive=True)]:
+            try:
+                with process.oneshot():
+                    identity=(process.pid,process.create_time());cpu=process.cpu_times()
+                    yield identity,process.memory_info().rss,cpu.user+cpu.system
+            except psutil.NoSuchProcess:pass
+    def stop(self):
+        descendants=set()
+        for record in self.records():
+            try:
+                process=psutil.Process(record['pid'])
+                descendants.add(process);descendants.update(process.children(recursive=True))
+            except psutil.NoSuchProcess:pass
+        self.request(method='shutdown')
+        wait(lambda:not (self.root/'control.sock').exists(),timeout=60)
+        for process in self.daemons:
+            if process.poll() is None:process.wait(timeout=10)
+            assert process.returncode in (0,-signal.SIGKILL),'daemon failed during shutdown'
+        assert not self.records(),'owned processes remain after shutdown'
+        for process in descendants:
+            try:assert not process.is_running() or process.status()==psutil.STATUS_ZOMBIE,'owned descendant survived cleanup'
+            except psutil.NoSuchProcess:pass
     def setup_source(self,python,worker,ddl):
         self.python=python;self.work=self.root/'work';self.work.mkdir()
         (self.work/'supabricks.toml').write_text(f'format_version=1\nid="{self.project}"\nname="installed-sync"\n')

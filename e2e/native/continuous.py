@@ -40,6 +40,20 @@ class Continuous(Triggered):
         xid=int(db.execute('SELECT pg_current_xact_id()::text').fetchone()[0]) % (1<<32)
         db.execute('COMMIT')
         return dict(xid=xid,ack_ms=time.time()*1000,latency_ms=(time.perf_counter()-start)*1000)
+    def process_samples(self):
+        rows=[line.split() for line in subprocess.check_output(['ps','-axo','pid=,ppid=,rss=,time='],text=True).splitlines()]
+        owned={self.daemons[-1].pid}
+        while True:
+            children={int(pid) for pid,parent,_,_ in rows if int(parent) in owned}
+            if children<=owned:break
+            owned|=children
+        for pid,_,mem,cpu in rows:
+            if int(pid) not in owned:continue
+            days,sep,clock=cpu.partition('-');clock=clock if sep else days
+            seconds=0
+            for part in clock.split(':'):seconds=seconds*60+float(part)
+            if sep:seconds+=int(days)*86400
+            yield pid,int(mem)*1024,seconds
     def workload(self,cap):
         samples=[];errors=[];duration=30;count=750;stop=threading.Event();resources=dict(peak_owned_rss_bytes=0,peak_allocated_data_bytes=0,spool_bytes=0,retained_wal_bytes=0)
         cpu_first={};cpu_last={};ends={}
@@ -52,20 +66,9 @@ class Continuous(Triggered):
             while not stop.is_set():
                 try:
                     commits()
-                    rows=[line.split() for line in subprocess.check_output(['ps','-axo','pid=,ppid=,rss=,time='],text=True).splitlines()]
-                    owned={self.daemons[-1].pid}
-                    while True:
-                        children={int(pid) for pid,parent,_,_ in rows if int(parent) in owned}
-                        if children<=owned:break
-                        owned|=children
                     rss=0
-                    for pid,_,mem,cpu in rows:
-                        if int(pid) not in owned:continue
-                        rss+=int(mem)*1024
-                        days,sep,clock=cpu.partition('-');clock=clock if sep else days
-                        seconds=0
-                        for part in clock.split(':'):seconds=seconds*60+float(part)
-                        if sep:seconds+=int(days)*86400
+                    for pid,memory,seconds in self.process_samples():
+                        rss+=memory
                         cpu_first.setdefault(pid,seconds);cpu_last[pid]=seconds
                     resources['peak_owned_rss_bytes']=max(resources['peak_owned_rss_bytes'],rss)
                     seen=set();disk=0
