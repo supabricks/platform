@@ -12,6 +12,13 @@ from cell import wait,lsn
 
 
 class Maintenance(Incremental):
+    def caught(self,cap,previous):
+        def observed():
+            current=self.status(cap)
+            assert current['state']!='resync_required',current
+            return current if current['captured_lsn'] and lsn(current['captured_lsn'])>lsn(previous) else False
+        return wait(observed)
+
     def run(self,python,worker):
         self.python=python;self.work=self.root/'work';self.work.mkdir()
         (self.work/'supabricks.toml').write_text(f'format_version = 1\nid = "{self.project}"\nname = "sync-maintenance"\n')

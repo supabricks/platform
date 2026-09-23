@@ -235,7 +235,10 @@ class Spool:
         """
         if published is None or self.captured is None:return 0
         cut=lsn(published)
-        if cut>self.captured:raise CaptureError('published_cursor_ahead')
+        # A frozen bootstrap may include WAL beyond the last captured commit
+        # (including an idle source). It is publication authority, not an ack.
+        if cut>self.captured and published!=(self.get('bootstrap') or {}).get('lsn'):
+            raise CaptureError('published_cursor_ahead')
         if cut<self.prefix()['lsn']:raise CaptureError('published_cursor_regressed')
         rows=[];reclaimed=0
         # Exclude the reconnect anchor in SQL, and cap memory as well as rows.

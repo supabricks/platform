@@ -67,6 +67,14 @@ class PruningTests(unittest.TestCase):
         with self.assertRaises(sqlite3.OperationalError) as error:self.spool.append(701,702,b'x'*262144)
         self.assertEqual(error.exception.sqlite_errorcode,sqlite3.SQLITE_FULL)
         self.assertEqual(self.spool.captured,700);self.spool.verify()
+    def test_bootstrap_publication_can_precede_first_captured_transaction(self):
+        spool=Spool(Path(self.tmp.name)/'idle',{'decoder_version':1})
+        try:
+            spool.establish(100,{});spool.set('bootstrap',dict(lsn='0/C8'))
+            self.assertEqual(spool.prune('0/C8'),0)
+            self.assertEqual(spool.captured,100)
+            with self.assertRaisesRegex(CaptureError,'published_cursor_ahead'):spool.prune('0/12C')
+        finally:spool.close()
     def test_corrupt_prefix_fails_closed_and_reclaimed_pages_are_reusable(self):
         for round in range(4):
             self.spool.prune(pg_lsn(self.spool.captured))
