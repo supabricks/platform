@@ -189,11 +189,22 @@ exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
     # Preserve upstream license texts, wheel provenance and the built client
     # digest. Wheel .dist-info licenses remain in the actual installed tree.
     loaders = check_loaders(runtime, destination, target)
-    sync_bytecode = json.loads(subprocess.check_output(
-        [str(wrapper), str(ROOT / 'install/native/compile_sync.py'), str(destination.resolve())], env=env, text=True))
-    report = dict(sync_bytecode=sync_bytecode, native_objects_checked=loaders, python=pin, target=target, uv_lock_sha256=digest(ROOT / 'python/analytics/uv.lock'),
+    report = dict(native_objects_checked=loaders, python=pin, target=target, uv_lock_sha256=digest(ROOT / 'python/analytics/uv.lock'),
                   wheels={p.name: digest(p) for p in selected}, spark_sdist=sdist,
                   package_versions=expected, sail=sail_report)
     (destination / 'provenance/analytical-build.json').write_text(json.dumps(report, indent=2) + '\n')
     shutil.copy2(ROOT / 'components/analytical-runtime.lock.json', destination / 'provenance/analytical-runtime.lock.json')
     return report
+
+
+def finalize_sync_bytecode(destination):
+    # Notebook assembly clears the shared runtime's caches. Compile only after
+    # all dependency installation/cleanup, before inventorying the final payload.
+    env = {k: v for k, v in os.environ.items() if not k.startswith(('PYTHON', 'PIP_', 'UV_'))}
+    result = json.loads(subprocess.check_output(
+        [str(destination / 'python/analytics/python'), str(ROOT / 'install/native/compile_sync.py'),
+         str(destination.resolve())], env=env, text=True))
+    path = destination / 'provenance/analytical-build.json'
+    report = json.loads(path.read_text()); report['sync_bytecode'] = result
+    path.write_text(json.dumps(report, indent=2) + '\n')
+    return result

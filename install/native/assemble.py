@@ -206,7 +206,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     if not args.postgres_only:
         from unity_catalog import install as install_catalog
         catalog_provenance = install_catalog(destination, args.target)
-        from analytics import assemble_analytics
+        from analytics import assemble_analytics, finalize_sync_bytecode
         analytical_provenance = assemble_analytics(destination, args.target)
         from notebooks import assemble_notebooks
         notebook_provenance = assemble_notebooks(destination, args.target)
@@ -218,6 +218,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     if not args.postgres_only:
         (destination / 'python/ingest').mkdir()
         shutil.copy2(ROOT / 'python/ingest/worker.py', destination / 'python/ingest/worker.py')
+        sync_bytecode = finalize_sync_bytecode(destination)
     provenance = dict(
         console=dict(api_version=1, source=frontend_source, manifest_sha256=digest(console / 'console.json'),
                      package_lock_sha256=digest(ROOT / 'console/package-lock.json')),
@@ -247,6 +248,9 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
             executable = bool(path.stat().st_mode & 0o111)
             path.chmod(0o755 if executable else 0o644)
             files[str(path.relative_to(destination))] = dict(sha256=digest(path), executable=executable)
+    if not args.postgres_only:
+        from compile_sync import verify_inventory
+        verify_inventory(destination, sync_bytecode, files)
     manifest = dict(format_version=1, version=args.version, target=args.target,
                     profile='local-postgres-alpha' if args.postgres_only else 'local-analytical-preview', provenance=provenance, files=files)
     (destination / 'release.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')

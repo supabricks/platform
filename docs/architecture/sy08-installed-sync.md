@@ -37,14 +37,16 @@ That does not replace the dedicated Linux governed job. macOS governed isolation
 remains unsupported. Dependency installation happens before network isolation;
 product workers and dependencies come from the archive during qualification.
 
-The builder precompiles the incremental worker's imported Python modules with
+After notebook/dependency assembly and cleanup, the builder precompiles the
+incremental worker's imported Python modules with
 checked source hashes and relative code filenames. This avoids repeated source
 compilation at every bounded apply, remains valid after relocation, and refuses
 to use stale bytecode when source changes. Runtime bytecode writes remain disabled;
 compiled files are covered by the ordinary release inventory. The import closure
 adds approximately 14 MB uncompressed in the local Linux experiment; other Python
 packages remain source-only. `provenance/analytical-build.json` records the count,
-size and invalidation mode.
+size, invalidation mode and individual cache hashes. A final-inventory check
+rejects caches removed or changed by a later packaging stage.
 
 ## Checks and measurements
 
@@ -154,3 +156,24 @@ rows/second, 4,376 ms p95, 4,797 ms p99 and 3,287 ms burst lag. This also exerci
 the actual string check names consumed by the evidence collector. The archive
 still has deliberately dirty development provenance; these results validate the
 harness and do not substitute for the alpha.36 CI archives.
+
+The first alpha.36 CI archives in
+[run 35890370041](https://github.com/supabricks/platform/actions/runs/35890370041)
+passed triggered sync on both targets but failed continuous p95 at 5,961 ms
+(Linux) and 5,943 ms (macOS); cleanup passed. Inspection found a packaging-order
+bug: the build report claimed 514 compiled modules, but later notebook cleanup
+removed every shared-runtime cache, leaving only eight worker caches. Compilation
+now runs after all dependency assembly, and the final inventory must contain
+every reported cache with its recorded hash and total size. Those first archives
+remain unqualified; a fresh matrix is required for the corrected payload.
+
+A development copy of that exact alpha.36 Linux payload, finalized after notebook
+cleanup and marked dirty, passed all four continuous checks offline with 514
+retained caches: 50.06 changed rows/second, 4,544 ms p95, 4,835 ms p99 and
+2,585 ms burst lag. Its 131 observed descendants exited without leaks. This
+confirms the packaging fix locally; it is not a replacement archive qualification.
+
+That first alpha.36 candidate passed the dedicated Linux governed CI job,
+including all five identity/data/sync/upgrade/TLS-browser suites. The predecessor's
+post-restore query failure did not recur. This is partial evidence only: the
+corrected bytecode payload must repeat this gate with the rest of the matrix.

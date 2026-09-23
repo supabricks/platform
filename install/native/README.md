@@ -3,9 +3,10 @@
 [Documentation home](../../docs/README.md) · [Stack overview](../../docs/stack.md) ·
 [Current release evidence](../../docs/architecture/uc098-governed-release.md)
 
-The SY08 candidate is alpha.36; exact-archive qualification is pending in the
-[SY08 ledger](../../docs/architecture/sy08-installed-sync.md). Alpha.35 remains the
-last qualified release. This guide covers full native assembly and
+The SY08 engineering release line is alpha.36. Consult the
+[SY08 ledger](../../docs/architecture/sy08-installed-sync.md) for qualification of
+an exact archive; a version label alone does not qualify a build. Historical
+alpha.35 evidence is retained separately. This guide covers full native assembly and
 the local-owner installer; [governed server setup](../../docs/handbook/governed-server.md)
 adds its explicit operator prerequisites and exact-archive qualification receipt.
 Native assembly consumes the pinned console, engine/helpers, source-built Sail
