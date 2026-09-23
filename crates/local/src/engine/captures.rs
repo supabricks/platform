@@ -70,6 +70,7 @@ impl Cell {
                         }
                         c.bootstrap_lsn = v["bootstrap_lsn"].as_str().map(str::to_owned);
                         c.barrier = v.get("barrier").filter(|v| !v.is_null()).cloned();
+                        c.progress = v.get("progress").filter(|v| !v.is_null()).cloned();
                         match v["state"].as_str() {
                             Some("deleted") => {
                                 c.cleanup_complete = true;
@@ -207,7 +208,7 @@ impl Cell {
             let input = root.join("control.json");
             let config = json!({"identity":c.identity,"worker_generation":store.generation(),"desired":if c.desired=="fenced"{"deleted"}else{c.desired.as_str()},
                 "socket_dir":self.root.join("tmp").join(branch.endpoint.id.to_string()),"port":branch.ports.ok_or_else(||conflict("source has no native ports"))?.sql,
-                "barrier_request":store.triggered_barrier_request(c.id)?,"spool_bytes":c.limits.spool_bytes,"wal_bytes":c.limits.wal_bytes,"bootstrap":bootstrap});
+                "report_interval_ms":if store.sync_policy(c.project_id,c.policy_id)?.config.continuous(){250}else{1000},"barrier_request":store.triggered_barrier_request(c.id)?,"published_lsn":store.capture_published_lsn(c.id)?,"spool_bytes":c.limits.spool_bytes,"wal_bytes":c.limits.wal_bytes,"bootstrap":bootstrap});
             if !input.is_file()
                 || serde_json::from_slice::<Value>(&fs::read(&input)?)
                     .ok()
@@ -238,6 +239,7 @@ impl Cell {
                     fs::remove_file(&status_path)?;
                 }
                 c.worker_generation = store.generation();
+                c.progress = None;
                 c.observed_at_ms = Some(now);
                 store.save_capture(&c)?;
                 self.add(self.launch(

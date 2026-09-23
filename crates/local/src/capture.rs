@@ -52,6 +52,8 @@ pub struct Capture {
     pub bootstrap_lsn: Option<String>,
     #[serde(default)]
     pub barrier: Option<Value>,
+    #[serde(default)]
+    pub progress: Option<Value>,
     pub observed_at_ms: Option<i64>,
     pub start_lsn: Option<String>,
     pub captured_lsn: Option<String>,

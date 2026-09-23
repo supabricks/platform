@@ -63,7 +63,7 @@ impl Store {
         if let Some(id) = a.sync_run_id {
             let r = self.sync_run(a.project_id, id)?;
             let p = self.sync_policy(r.project_id, r.policy_id)?;
-            if !r.config.triggered()
+            if !r.config.incremental()
                 || p.state != "active"
                 || p.revision != r.policy_revision
                 || r.state != "running"
@@ -88,14 +88,30 @@ impl Store {
         &self,
         capture: OperationId,
     ) -> Result<Option<OperationId>> {
-        Ok(self
+        if let Some(id) = self
             .active_sync_runs()?
             .into_iter()
             .find(|r| {
-                r.config.triggered() && r.capture_id == Some(capture) && r.target_lsn.is_none()
+                r.config.mode == "triggered"
+                    && r.capture_id == Some(capture)
+                    && r.target_lsn.is_none()
             })
-            .map(|r| r.id))
+            .map(|r| r.id)
+        {
+            return Ok(Some(id));
+        }
+        let c = self.captures()?.into_iter().find(|c| c.id == capture);
+        if let Some(c) = c {
+            let p = self.sync_policy(c.project_id, c.policy_id)?;
+            if p.config.continuous() && p.state == "active" && !p.pause_requested {
+                return Ok(p
+                    .observation
+                    .and_then(|v| v["id"].as_str().and_then(|s| s.parse().ok())));
+            }
+        }
+        Ok(None)
     }
+
     fn complete_triggered(&self, r: &mut Run, now: i64) -> Result<()> {
         r.state = "succeeded".into();
         r.finished_at_ms = Some(now);
@@ -104,6 +120,10 @@ impl Store {
         p.last_success_at_ms = Some(now);
         p.last_epoch_id = r.epoch_id.clone();
         p.error = None;
+        if p.pause_requested {
+            p.state = "paused".into();
+            p.pause_requested = false;
+        }
         self.db.execute_batch("SAVEPOINT triggered_success")?;
         let result = (|| {
             self.save_sync_run(r)?;
@@ -123,7 +143,7 @@ impl Store {
         for mut r in self
             .active_sync_runs()?
             .into_iter()
-            .filter(|r| r.config.triggered())
+            .filter(|r| r.config.incremental())
         {
             // The publication transaction wins over a late cancellation/deadline.
             if let Some(id) = r.apply_id {
@@ -142,7 +162,14 @@ impl Store {
                     continue;
                 }
             }
-            let p = self.sync_policy(r.project_id, r.policy_id)?;
+            let mut p = self.sync_policy(r.project_id, r.policy_id)?;
+            if p.pause_requested && r.apply_id.is_none() {
+                self.cancel_sync_run(r, "continuous_paused_at_boundary", now)?;
+                p.state = "paused".into();
+                p.pause_requested = false;
+                self.save_sync_policy(&p)?;
+                continue;
+            }
             if p.state != "active"
                 || p.revision != r.policy_revision
                 || self.triggered_run_capture(&p, &r).is_err()
@@ -158,7 +185,7 @@ impl Store {
         for mut r in self
             .active_sync_runs()?
             .into_iter()
-            .filter(|r| r.config.triggered())
+            .filter(|r| r.config.incremental())
         {
             if r.apply_id.is_some() {
                 continue;
@@ -170,6 +197,10 @@ impl Store {
                 || c.observed_at_ms.is_none_or(|at| now - at > 5000)
             {
                 continue;
+            }
+            if r.target_lsn.is_none() && r.config.continuous() {
+                r.target_lsn = c.captured_lsn.clone();
+                self.save_sync_run(&r)?;
             }
             if r.target_lsn.is_none() {
                 let Some(ref barrier) = c.barrier else {
@@ -241,7 +272,7 @@ pub(super) fn restore_success(db: &rusqlite::Connection) -> Result<()> {
         .collect::<rusqlite::Result<Vec<_>>>()?;
     for text in rows {
         let mut r: Run = serde_json::from_str(&text)?;
-        if !r.config.triggered() {
+        if !r.config.incremental() {
             continue;
         }
         let Some(id) = r.apply_id else { continue };

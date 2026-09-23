@@ -17,6 +17,7 @@ build or operate the stack.
 | See what shipped and what remains | [Delivery status and release history](plans/status.md) |
 | Find implementation plans, including IAM00 and UC09 | [Implementation plan index](plans/README.md) |
 | Run local triggered incremental analytics | [Triggered sync workflow](handbook/triggered-sync.md) |
+| Run local continuous incremental analytics | [Continuous sync workflow](handbook/continuous-sync.md) |
 | Understand the synchronization roadmap | [Managed synchronization plan](plans/analytical-sync-implementation.md) |
 | Understand a subsystem or its acceptance evidence | [Architecture and evidence index](architecture/README.md) |
 | Build the stack from source | [Native build and installation](../install/native/README.md), [component inputs](../components/README.md) |

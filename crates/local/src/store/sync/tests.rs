@@ -743,3 +743,5 @@ fn capture_lineage_installation_and_governance_changes_fence_the_generation() {
 mod incremental;
 
 mod triggered;
+
+mod continuous;

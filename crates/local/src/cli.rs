@@ -60,7 +60,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sync apply CAPTURE [--key KEY] | applied RUN | cancel-apply RUN [--key KEY]
   sync capture start POLICY --revision N [--key KEY] [--spool-bytes N] [--wal-bytes N]
   sync capture status|pause|resume|delete CAPTURE [--key KEY]
-  sync create --branch NAME [--mode snapshot|triggered] [--strategy full|incremental] [--every-seconds N] [--key KEY]
+  sync create --branch NAME [--mode snapshot|triggered|continuous] [--strategy full|incremental] [--every-seconds N] [--key KEY]
   sync update POLICY_ID --revision N [--every-seconds N] [--key KEY]
   sync list | show POLICY_ID | runs POLICY_ID [--limit 50] | status RUN_ID
   sync run POLICY_ID --revision N [--key KEY]
@@ -2179,13 +2179,22 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
                 });
             let mode = a.take("--mode").unwrap_or_else(|| "snapshot".into());
             let strategy = a.take("--strategy").unwrap_or_else(|| {
-                if mode == "triggered" {
+                if matches!(mode.as_str(), "triggered" | "continuous") {
                     "incremental".into()
                 } else {
                     "full".into()
                 }
             });
+            let continuous = if mode == "continuous" {
+                Some(crate::sync::Continuous {
+                    freshness_ms: a.number("--freshness-ms", 5000)?,
+                    batch_interval_ms: a.number("--batch-interval-ms", 500)?,
+                })
+            } else {
+                None
+            };
             let config = Config {
+                continuous,
                 mode,
                 strategy,
                 schedule,

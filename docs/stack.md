@@ -22,6 +22,7 @@ not automatically transfer to a new build from the same branch or version label.
 | Projects and databases | Create a project and main database; branch PostgreSQL; query, cancel and save SQL | [Projects](handbook/project-creation.md), [database workspace](handbook/database-workspace.md) |
 | File ingestion | Preview and import CSV/TSV, JSON/JSONL/document and Parquet into new PostgreSQL tables | [File ingestion](handbook/file-ingestion.md) |
 | Analytics | Explicitly publish immutable Delta/Parquet snapshots and query pinned versions with Sail/Spark SQL | [Analytical workspace](handbook/analytical-workspace.md) |
+| Managed sync | Local-owner scheduled snapshots, triggered incremental runs and bounded continuous catch-up | [Triggered](handbook/triggered-sync.md), [continuous](handbook/continuous-sync.md) |
 | Notebooks | Edit project notebooks in the browser, execute Sail-backed kernels and manage locked Python environments | [Notebooks](handbook/notebooks.md), [environments](handbook/notebook-environments.md) |
 | Catalog and sharing | Discover published datasets, inspect schema/freshness and explicitly bind datasets into another project | [Catalog demo](handbook/catalog-demo.md), [dataset bindings](handbook/catalog-datasets.md) |
 | Portable projects | Inspect, package, bind and apply source; carry offline dependencies and bounded logical table data | [Portability](handbook/project-portability.md), [logical data](handbook/project-data.md) |
@@ -127,7 +128,7 @@ qualification suite.
 
 Public `supabricks.io` delivery, publisher signing/notarization, the transitive
 redistribution audit, and physical-machine/reboot/power-loss qualification remain
-open. Hosted console transport, HA/distributed execution, managed incremental sync,
+open. Hosted console transport, HA/distributed execution, governed incremental sync,
 writable analytical tables, row filters, column masks and additional governed
 deployment profiles need separate work. Local-owner project boundaries are not
 tenant security boundaries.
@@ -137,8 +138,9 @@ adds PostgreSQL → analytics incrementality after the delivered snapshot baseli
 “No user-managed CDC” allows platform-owned change capture. SY01 delivers managed
 snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 [SY04](architecture/sy04-triggered-sync.md) adds local triggered CLI/API policies
-for review. Continuous mode, console/governed integration and reverse sync remain
-later scope.
+and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
+application for review. Console/governed integration, storage maintenance,
+installed sync qualification and reverse sync remain later scope.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list

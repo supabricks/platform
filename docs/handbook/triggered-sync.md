@@ -61,5 +61,6 @@ supabricks sync run POLICY_ID --revision REVISION --key after-resync
 
 Finite spool/root budgets apply; pruning and compaction are not implemented yet.
 Restored policies require explicit resume and capture re-enrollment. Console and
-governed controls, continuous mode and incremental catalog publication remain
-later slices.
+governed controls and incremental catalog publication remain later slices.
+[SY05 continuous mode](continuous-sync.md) can reuse a drained triggered capture
+when the policy switches between the two incremental modes.

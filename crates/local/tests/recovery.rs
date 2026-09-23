@@ -415,8 +415,11 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP INDEX incremental_sync_owner;")
-        .unwrap();
+    db.execute_batch("DROP INDEX sync_policy_runs;").unwrap();
+    if source_schema < 26 {
+        db.execute_batch("DROP INDEX incremental_sync_owner;")
+            .unwrap();
+    }
     if source_schema < 25 {
         // Rebuild the legacy parent FKs before removing schema 25's artifact registry.
         for table in ["publications", "analytics_gc"] {
@@ -618,7 +621,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=26",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=27",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -950,4 +953,9 @@ fn installed_upgrade_accepts_incremental_v2_declaration_and_rejects_unknown_form
         f.upgrade(version == 2);
         assert_eq!(f.backup.exists(), version == 2);
     }
+}
+
+#[test]
+fn schema_twenty_six_upgrade_adds_continuous_supervision_without_starting_work() {
+    catalog_migration(26);
 }

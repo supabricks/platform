@@ -96,7 +96,7 @@ class Policies(Sessions):
         assert self.api('current_snapshot', branch='main')['publication']['epoch_id'] == scheduled['epoch_id']
         self.check('paused_policy_and_published_epoch_survive_restart')
         self.failed_api('managed_snapshots', command=dict(kind='update', id=policy['id'], expected_revision=3,
-                        key='unsupported', config=dict(mode='continuous', strategy='incremental', schedule=None)))
+                        key='unsupported', config=dict(mode='unsupported', strategy='incremental', schedule=None)))
         assert self.sync('get', id=policy['id'])['revision'] == 3
         self.check('unsupported_incremental_mode_rejected_without_mutation')
         self.stop()
