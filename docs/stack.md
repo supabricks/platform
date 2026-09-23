@@ -139,7 +139,7 @@ adds PostgreSQL → analytics incrementality after the delivered snapshot baseli
 snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 [SY04](architecture/sy04-triggered-sync.md) adds local triggered CLI/API policies
 and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
-application for review. [SY06](architecture/sy06-sync-surfaces.md) starts shared
+application ([merged #83](https://github.com/supabricks/platform/pull/83)). [SY06](architecture/sy06-sync-surfaces.md) starts shared
 console/agent controls and governed snapshot service authority. Governed
 incremental storage/readers, remaining SY06 qualification, storage maintenance,
 installed sync qualification and reverse sync remain open.

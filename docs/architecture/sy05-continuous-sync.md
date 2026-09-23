@@ -2,7 +2,7 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Workflow](../handbook/continuous-sync.md) · [SY04](sy04-triggered-sync.md)
 
-Status: implemented for review, 2026-09-22. Local-owner CLI/IPC policies admit
+Status: [merged in #83](https://github.com/supabricks/platform/pull/83), 2026-09-23 UTC. Local-owner CLI/IPC policies admit
 `mode=continuous, strategy=incremental`. Console/governed integration remains
 SY06, storage maintenance SY07, and installed-release qualification SY08.
 
@@ -131,7 +131,7 @@ The final run sustained 50.05 changed rows/s:
 
 The OLTP phases report actual timings, not a causal overhead estimate: the baseline
 uses a hot key before enrollment while the paced workload touches many keys.
-GitHub Linux/macOS results for SY05 are pending.
+GitHub [Linux/macOS native qualification](https://github.com/supabricks/platform/actions/runs/35797864550) and all required checks passed for SY05 commit `fdf57d3`; squash merge `124ce6a` contains that implementation.
 
 Lifecycle cases include long transactions, pinned Sail readers, pause/resume,
 a held materializer reporting lag, a stale/stopped capture worker, SIGKILL
