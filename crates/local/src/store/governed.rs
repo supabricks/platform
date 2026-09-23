@@ -392,6 +392,7 @@ impl Store {
         }
         self.governed_clone_ready(branch.branch.id)?;
         let target = postgres::Target {
+            capture_identity: self.capture_profile(branch.branch.id)?,
             port: branch.ports.ok_or_else(denied)?.sql,
             password: self.endpoint_password(branch.endpoint.id)?,
         };

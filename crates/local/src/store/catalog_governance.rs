@@ -89,9 +89,15 @@ pub(super) fn snapshot(db: &Connection, broker: &Broker, changes: &[Change]) -> 
     let mut tables = Vec::new();
     for p in publications {
         if p.state == "published" {
-            let record: Option<String> = db.query_row("SELECT sp.record FROM sync_policies sp JOIN sync_runs sr ON sr.policy_id=sp.id JOIN publications p ON p.export_id=sr.refresh_id WHERE p.epoch_id=?1", [p.epoch_id.to_string()], |r|r.get(0)).optional()?;
-            if let Some(record) = record {
-                let policy: crate::sync::Policy = serde_json::from_str(&record)?;
+            let artifact: String = db.query_row(
+                "SELECT export_id FROM publications WHERE epoch_id=?1",
+                [p.epoch_id.to_string()],
+                |r| r.get(0),
+            )?;
+            if let Some(policy) = super::sync::governed::policy_for_artifact(
+                db,
+                artifact.parse().map_err(|_| gov::denied())?,
+            )? {
                 if let Some(authority) = &policy.service_authority {
                     super::sync::governed::service_live(db, &policy, authority)?;
                 }

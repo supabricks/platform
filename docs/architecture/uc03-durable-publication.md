@@ -98,7 +98,9 @@ unused revisions to free capacity. Recorded failures require explicit resume.
 Shutdown waits for the worker and preserves the next durable journal step.
 
 Only the pinned managed-local provider and existing immutable local Delta
-version-zero generations qualify. External providers, copied cloud objects,
+version-zero generations qualify. SY06 also materializes bounded immutable
+[epoch views](sy06-sync-surfaces.md#immutable-catalog-views-of-incremental-epochs)
+for explicitly shared incremental results; mutable roots are never granted. External providers, copied cloud objects,
 credential vending and governed multiuser isolation are unsupported. No live PG
 object is altered. Release candidate alpha.29 uses local control schema 15;
 existing roots require the established explicit backed-up upgrade.

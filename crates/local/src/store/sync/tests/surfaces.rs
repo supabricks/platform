@@ -315,3 +315,95 @@ fn inspect_is_read_only_and_resync_requires_current_review_then_explicit_resume(
     assert_ne!(new["capture_id"], json!(old));
     assert_eq!(new["revision"], 3);
 }
+
+#[test]
+fn incremental_capture_binds_service_identity_and_is_fenced_on_revocation() {
+    let (_dir, mut s, project, deployment, branch) = setup();
+    let manager = principal(&s, "user");
+    let service = principal(&s, "service");
+    grant(
+        &s,
+        deployment,
+        branch,
+        &manager,
+        &[
+            Capability::Read,
+            Capability::ReadSync,
+            Capability::ManageSync,
+        ],
+    );
+    grant(
+        &s,
+        deployment,
+        branch,
+        &service,
+        &[Capability::Read, Capability::ExecuteSync],
+    );
+    let policy: Policy = serde_json::from_value(
+        s.governed_sync(
+            &manager,
+            &deployment.to_string(),
+            request(
+                Command::Create {
+                    branch: branch.to_string(),
+                    config: Config::default(),
+                    key: "service".into(),
+                },
+                Some(&service),
+            ),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    // Exercise the durable core without pretending this unit fixture has native workers.
+    let updated: Policy = serde_json::from_value(
+        s.sync_command(
+            project,
+            deployment,
+            Command::Update {
+                id: policy.id,
+                expected_revision: 1,
+                key: "incremental".into(),
+                config: Config {
+                    mode: "triggered".into(),
+                    strategy: "incremental".into(),
+                    ..Default::default()
+                },
+            },
+            1,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let mut capture = s.capture(project, updated.capture_id.unwrap()).unwrap();
+    s.capture_live(&capture).unwrap();
+    assert_eq!(
+        capture.identity["service_authority"],
+        serde_json::to_value(policy.service_authority).unwrap()
+    );
+    capture.identity["service_authority"]["principal_id"] = json!(manager.actor_id);
+    assert!(s.capture_live(&capture).is_err());
+    s.identity_admin(crate::identity::AdminCommand::Revoke {
+        principal: service.actor_id,
+    })
+    .unwrap();
+    assert!(
+        s.capture_live(&s.capture(project, updated.capture_id.unwrap()).unwrap())
+            .is_err()
+    );
+    assert!(
+        s.governed_sync(
+            &manager,
+            &deployment.to_string(),
+            request(
+                Command::RunNow {
+                    id: updated.id,
+                    expected_revision: updated.revision,
+                    key: "revoked".into()
+                },
+                None
+            )
+        )
+        .is_err()
+    );
+}

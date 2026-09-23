@@ -152,6 +152,11 @@ impl Store {
                 sum.checked_add(f["bytes"].as_u64().unwrap_or(u64::MAX))
             })
             .ok_or_else(|| invalid("snapshot size exceeds catalog budget"))?;
+        let bytes = if descriptor["format_version"] == 2 {
+            bytes.saturating_mul(2)
+        } else {
+            bytes
+        };
         use crate::catalog::recovery::{MAX_METADATA_BYTES, MAX_PUBLICATIONS, MAX_RETAINED_BYTES};
         if usage["metadata_bytes"].as_u64().unwrap_or(u64::MAX) >= MAX_METADATA_BYTES
             || usage["publication_records"].as_u64().unwrap_or(u64::MAX) >= MAX_PUBLICATIONS

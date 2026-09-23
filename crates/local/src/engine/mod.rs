@@ -792,6 +792,7 @@ impl Cell {
             if !self.configured.contains(&(role.clone(), record.pid)) {
                 if store.governed_branch(branch.branch.id)? {
                     crate::governed::postgres::sanitize(crate::governed::postgres::Target {
+                        capture_identity: store.capture_profile(branch.branch.id)?,
                         port: ports.sql,
                         password: store.endpoint_password(branch.endpoint.id)?,
                     })?;
@@ -799,6 +800,7 @@ impl Cell {
                 if export {
                     if store.governed_export(branch.branch.id)? {
                         crate::governed::postgres::inspect(crate::governed::postgres::Target {
+                            capture_identity: store.capture_profile(branch.branch.id)?,
                             port: ports.sql,
                             password: store.endpoint_password(branch.endpoint.id)?,
                         })?;

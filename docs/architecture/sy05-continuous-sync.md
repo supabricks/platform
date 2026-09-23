@@ -6,6 +6,10 @@ Status: [merged in #83](https://github.com/supabricks/platform/pull/83), 2026-09
 `mode=continuous, strategy=incremental`. Console/governed integration remains
 SY06, storage maintenance SY07, and installed-release qualification SY08.
 
+Current integration: [SY06](sy06-sync-surfaces.md) adds shared console/agent
+controls, governed service authority and immutable catalog epoch views. The
+phase boundary above records what this earlier slice delivered.
+
 ## Continuous execution
 
 Enrollment uses the same qualified source, owned capture and isolated frozen

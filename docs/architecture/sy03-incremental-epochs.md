@@ -8,6 +8,10 @@ or continuous policies itself; managed triggered runs are added by
 [SY04](sy04-triggered-sync.md), and continuous mode remains SY05. Governed source admission and
 versioned-root Unity Catalog publication remain closed pending SY06 qualification.
 
+Current integration: [SY06](sy06-sync-surfaces.md) adds shared console/agent
+controls, governed service authority and immutable catalog epoch views. The
+phase boundary above records what this earlier slice delivered.
+
 ## Boundary and row application
 
 `sync apply CAPTURE_ID --key KEY` admits one bounded run. Its first publication

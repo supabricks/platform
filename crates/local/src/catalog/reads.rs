@@ -209,11 +209,13 @@ pub(crate) fn frozen_datasets(store: &Store, s: &AnalyticalSession) -> Result<Ve
             v["provenance"]["epoch_id"] = json!(d.epoch_id);
             v["provenance"]["schema_sha256"] = json!(d.schema_sha256);
             v["provenance"]["content_sha256"] = json!(d.content_sha256);
-            v["descriptor"] = store
-                .snapshot(p.project_id, p.epoch_id)?
+            let snapshot = store.snapshot(p.project_id, p.epoch_id)?;
+            let descriptor = snapshot
                 .publication
                 .descriptor
                 .ok_or_else(|| conflict("dataset descriptor missing"))?;
+            v["descriptor"] =
+                publication::read_view(store, snapshot.publication.export_id, &descriptor)?.1;
             Ok(v)
         })
         .collect()

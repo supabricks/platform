@@ -443,6 +443,16 @@ impl Sessions {
                 .publication
                 .descriptor
                 .ok_or_else(|| invalid("missing snapshot descriptor"))?;
+            let descriptor = if s.catalog.is_some() {
+                crate::catalog::publication::read_view(
+                    store,
+                    snapshot.publication.export_id,
+                    &descriptor,
+                )?
+                .1
+            } else {
+                descriptor
+            };
             let mut metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
             let catalog = crate::catalog::reads::frozen(store, s)?;
             let datasets = crate::catalog::reads::frozen_datasets(store, s)?;

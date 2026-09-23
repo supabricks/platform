@@ -255,7 +255,7 @@ impl Store {
         }
         Ok(s)
     }
-    fn snapshot_record(
+    pub(crate) fn snapshot_record(
         &self,
         project: ProjectId,
         id: EpochId,

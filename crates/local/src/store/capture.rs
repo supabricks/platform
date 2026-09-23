@@ -40,10 +40,35 @@ impl Store {
         )?;
         Ok(())
     }
+    pub(crate) fn capture_profile(
+        &self,
+        branch: supabricks_core::resource::BranchId,
+    ) -> Result<Option<Value>> {
+        let source: Option<String> = self
+            .db
+            .query_row(
+                "SELECT source_id FROM exports WHERE child_id=?1",
+                [branch.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let source = source
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|_| invalid("invalid capture source"))?
+            .unwrap_or(branch);
+        Ok(self
+            .captures()?
+            .into_iter()
+            .find(|c| c.branch_id == source)
+            .map(|c| c.identity))
+    }
     pub(crate) fn capture_live(&self, c: &Capture) -> Result<()> {
         let p = self.sync_policy(c.project_id, c.policy_id)?;
-        if p.service_authority.is_some() {
-            return Err(conflict("governed capture is not qualified"));
+        if let Some(authority) = &p.service_authority {
+            if c.identity["service_authority"] != serde_json::to_value(authority)? {
+                return Err(conflict("capture service authority changed"));
+            }
         }
         if if c.identity["decoder_version"] == 2 {
             !p.config.incremental() || !matches!(p.state.as_str(), "active" | "paused")
@@ -90,9 +115,6 @@ impl Store {
                 } => {
                     limits.validate()?;
                     let p = self.sync_policy(project, *policy_id)?;
-                    if p.service_authority.is_some() {
-                        return Err(conflict("governed capture is not qualified"));
-                    }
                     if p.revision != *expected_revision
                         || p.state != "active"
                         || (p.config.schedule.is_some() && !p.config.incremental())
@@ -119,7 +141,7 @@ impl Store {
                         return Err(conflict("capture generation journal full"));
                     }
                     let id = OperationId::new();
-                    let c = Capture {
+                    let mut c = Capture {
                         id,
                         policy_id: p.id,
                         policy_revision: p.revision,
@@ -144,6 +166,9 @@ impl Store {
                         spool_bytes: None,
                         cleanup_complete: false,
                     };
+                    if let Some(authority) = &p.service_authority {
+                        c.identity["service_authority"] = serde_json::to_value(authority)?;
+                    }
                     self.db.execute(
                         "INSERT INTO sync_captures VALUES (?1,?2,?3,?4,?5,NULL,?6)",
                         params![

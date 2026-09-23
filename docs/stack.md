@@ -128,7 +128,7 @@ qualification suite.
 
 Public `supabricks.io` delivery, publisher signing/notarization, the transitive
 redistribution audit, and physical-machine/reboot/power-loss qualification remain
-open. Hosted console transport, HA/distributed execution, governed incremental sync,
+open. Hosted console transport, HA/distributed execution,
 writable analytical tables, row filters, column masks and additional governed
 deployment profiles need separate work. Local-owner project boundaries are not
 tenant security boundaries.
@@ -139,9 +139,9 @@ adds PostgreSQL → analytics incrementality after the delivered snapshot baseli
 snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 [SY04](architecture/sy04-triggered-sync.md) adds local triggered CLI/API policies
 and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
-application ([merged #83](https://github.com/supabricks/platform/pull/83)). [SY06](architecture/sy06-sync-surfaces.md) starts shared
-console/agent controls and governed snapshot service authority. Governed
-incremental storage/readers, remaining SY06 qualification, storage maintenance,
+application ([merged #83](https://github.com/supabricks/platform/pull/83)). [SY06](architecture/sy06-sync-surfaces.md) implements shared
+console/agent controls, governed service-bound capture and immutable catalog epoch
+views. Final SY06 integration, storage maintenance,
 installed sync qualification and reverse sync remain open.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release

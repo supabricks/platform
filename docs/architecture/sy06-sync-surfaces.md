@@ -1,13 +1,12 @@
-# SY06: shared sync controls and governed snapshot service authority
+# SY06: shared sync controls and governed service authority
 
 [Sync plan](../plans/analytical-sync-implementation.md) · [Operating guide](../handbook/managed-sync.md)
 
-Status: source implementation for review. This is the first SY06 slice, not the
-full SY06 exit. Local console/CLI/MCP support all three modes. Governed ingress
-supports managed **snapshot/full** policies with service authority. Governed
-triggered/continuous remain explicitly unavailable: UC storage grants currently
-expose an unversioned Delta location, which is insufficient to authorize one
-epoch of a mutable incremental root. No capability flag claims that path works.
+Status: source implementation for review. Local console/CLI/MCP and governed
+ingress support snapshot, triggered and continuous policies. Governed policies
+bind a scoped service authority; shared incremental results use immutable
+per-epoch catalog views. Cross-platform integration is the remaining SY06 gate;
+SY07 maintenance and SY08 exact installed-release qualification remain separate.
 
 ## Shared control contract
 
@@ -37,7 +36,7 @@ their selected epoch; a newer publication never changes their inputs.
 `sync_controls=1` negotiates this surface independently of
 `managed_snapshot_scheduling`, `incremental_triggered`, `continuous_sync` and
 `sync_event_triggers`. The local console checks native/runtime availability for
-incremental flags. Governed flags advertise only snapshot scheduling. An older
+incremental flags. Governed flags require the same matching native runtime. An older
 runtime without `sync_controls` renders an unavailable state and keeps existing
 snapshot functions usable. Event triggers and reverse sync remain unavailable.
 
@@ -52,10 +51,10 @@ references. Resume is refused until old capture cleanup has completed. Explicit
 resume then enrolls a new generation and performs the isolated bootstrap.
 
 This is intentionally a two-step operation: approval does not silently create a
-new source feed while slot cleanup is pending. Triggered/continuous resync remains
-local only until governed incremental storage is qualified.
+new source feed while slot cleanup is pending. The governed flow uses the same
+review, cleanup and explicit-resume contract.
 
-## Governed snapshot authority
+## Governed service authority
 
 The signed-in `workspace.sync` command carries a deployment, the same typed sync
 command, expected authorization-policy revision and (on create) service principal.
@@ -78,7 +77,13 @@ deployment, branch, source lineage and service identity. No browser token or
 bearer credential is persisted in the policy. Logout/session expiry of the
 manager does not terminate the background service. Existing whole-branch source
 profile checks also run on the private frozen export before reading its rows;
-RLS and other unsupported profiles fail closed.
+RLS and other unsupported profiles fail closed. The only capture-specific routine
+exception is the engine-owned DDL fence: its schema ownership and complete durable
+identity, exact function OID and shape, and both enabled owned event triggers must
+match. A matching name alone grants no exception. Permission reconciliation skips
+no-op ownership DDL; capture ignores GRANT/REVOKE because these do not change row
+encoding. Structural DDL remains fenced. Capture identities include the
+saved service generation and authorization revision.
 
 Schema 28 adds a service sync-generation fence and the three data capabilities.
 The policy records the admitted service generation and authorization revision.
@@ -90,6 +95,8 @@ authority; no background renewal recovers access automatically.
 
 Export ticks, publication commits and new snapshot reads recheck authority. The
 durable export request key covers the crash window before its run link commits.
+Bootstrap and incremental artifacts are also resolved through their durable capture
+identity, including the window before the parent sync run records its result.
 Revocation also dirties the UC authorization cache and increments its revision,
 fencing existing isolated executions. Catalog grant planning refuses a published
 managed snapshot with invalid producer authority; retire that publication before
@@ -101,34 +108,65 @@ epoch/source boundaries, grant changes and revocation. Records contain identifie
 not row contents, bearer tokens or storage credentials. Existing audit-capacity
 and restored-state admission gates also apply to service workers.
 
-## Qualification and remaining SY06 work
+## Immutable catalog views of incremental epochs
 
-Recorded evidence: [Linux native, 7 checks](sy06-evidence/linux-native.json) and
-[Chromium/native console, 17 checks](sy06-evidence/linux-browser.json). Rust
-validation passed 332 core/local tests across the suite and targeted recovery/state
-reruns (3 intentional ignores), with a final 35-test sync rerun and 8 release
-evidence tests. These are source checks, not installed-release qualification.
+UC grants identify an unversioned storage location. Granting the internal mutable
+Delta root would expose later commits and historical files. An explicit sharing
+review instead plans a frozen version-zero view of the selected table versions.
+Planning verifies the recorded log prefix and selects only active parquet files.
+It excludes removed, future and orphan files and discards commit metadata and
+row statistics. Unsupported Delta actions, features, paths or mismatched hashes
+fail closed.
 
-Source qualification includes command/retry/revision tests, schema-27 migration
-and stopped recovery, real native background export after manager revocation,
-service revocation, denied/cross-project access, RLS refusal and pinned Sail
-readers. The browser journey covers no implicit enrollment, continuous disclosure,
-lost create response, live progress, reviewed resync, cleanup and old-runtime
-fallback. Evidence and exact commands are recorded in the PR and operating guide.
+Review is read-only and reports `retention.copies=true` and `view_bytes`. After
+admission durably pins the epoch, publication copies and verifies selected files,
+writes minimal Delta logs, fsyncs and atomically renames the complete view under
+`analytics/generations/<artifact>/shared`. Original epoch/hash identity remains
+in the catalog publication; the internal view descriptor binds that source hash.
+SQL, bound datasets, notebooks and isolated workloads read the frozen view.
+Later producer commits cannot change its contents or retarget existing readers.
 
-Full SY06 remains open for:
+This is a bounded copy when explicitly sharing an epoch, not on each continuous
+batch: at most 256 MiB, 4096 files and 128 tables per view; input logs are bounded
+to 2 MiB each and 32 MiB in total. Catalog capacity conservatively counts twice
+the retained incremental descriptor inventory for original plus view storage.
+The original generation and its view remain retained until publication, binding
+and reader references drain. Stopped catalog recovery validates and relocates
+both identities. Long-term compaction and crash-residue maintenance belong to SY07.
 
-- Version-aware governed storage grants and isolated readers for incremental
-  roots, including positive UC dataset-binding and notebook journeys on v2.
-- Governed triggered/continuous capture identities and worker qualification;
-  the present service implementation is qualified for frozen snapshot workers.
-- Optional constrained new-reader admission. Proposed input: full source/capture
-  identity plus minimum published LSN and/or maximum observed lag, with a bounded
-  deadline. Admission must resolve one immutable epoch satisfying the request.
-  Unknown/stale progress returns `freshness_unavailable`; a deadline must never
-  weaken the constraint or retarget a previously pinned session. No API currently
-  promises this wait operation.
-- Final Linux/macOS integration evidence and SY08's exact installed-release gate.
+## Optional constrained reader admission: design contract
 
-SY07 resource maintenance and SY08 release qualification remain separate. These
-source changes do not imply a newly qualified installed archive.
+A future request may supply the complete source/capture identity, minimum
+published LSN and/or maximum observed lag, plus a bounded wait deadline. Admission
+must resolve one immutable epoch satisfying every supplied constraint against
+that identity and a current observation. Unknown, disconnected or stale progress
+returns `freshness_unavailable`. Expiry must never weaken constraints, substitute
+another source generation or retarget an existing reader. No current API promises
+this wait operation; observed freshness is available in the shipped controls.
+
+## Qualification
+
+Evidence: [native UC/Sail, 13 checks](sy06-evidence/linux-incremental-native.json),
+[real UC/gVisor isolation](sy06-evidence/linux-incremental-isolation.json),
+[signed-in browser, 9 checks](sy06-evidence/linux-governed-browser.json), and the
+[earlier local browser journey, 17 checks](sy06-evidence/linux-browser.json).
+The full core/local Rust suite passed 335 tests (four external-runtime ignores),
+with a final 196-test local-library rerun and 12 capture unit tests passing.
+The [continuous regression](sy06-evidence/linux-continuous-regression.json) passed
+all eight checks with the unchanged 5000 ms target: sustained p95 4580 ms and the
+200-row burst 2970 ms. This is a measured source workload, not a production SLA.
+See [operating commands](../handbook/managed-sync.md).
+These are source checks, not installed-release qualification.
+
+The isolation test grants two users different tables and proves that the selected
+epoch excludes old/deleted/future data, admits read-only files, denies host/network
+access and fences existing workloads after authorization/session revocation.
+The native suite covers manager logout, service revocation, RLS refusal, pinned
+Sail readers, cross-project bindings, notebook restart and relocated catalog views.
+The signed-in browser covers continuous disclosure, explicit service grants,
+incremental result sharing, reviewed resync, cleanup, resume and service revocation.
+
+Linux/macOS CI remains required before merge. The earlier SY06 macOS native run
+failed the unchanged 5000 ms continuous burst target (6219 ms); its sustained p95
+was 3947 ms. That failed timing sample is not passing evidence. SY07 resource
+maintenance and SY08 exact archive qualification remain separate delivery slices.

@@ -16,9 +16,6 @@ impl Store {
                 Ok(())
             };
         };
-        if p.config.incremental() {
-            return Err(conflict("governed incremental storage is not qualified"));
-        }
         service_live(&self.db, p, authority)
     }
     pub(crate) fn governed_sync(
@@ -116,21 +113,22 @@ impl Store {
                 self.sync_source(&self.sync_policy(project, id)?)?;
             }
         }
-        // Versioned roots cannot yet be safely exposed through UC's unversioned
-        // storage grants. Keep the governed incremental route explicitly closed.
-        if matches!(&request.command, Command::Create{config,..}|Command::Update{config,..} if config.incremental())
-            || matches!(
-                &request.command,
-                Command::Resync { .. } | Command::ReviewResync { .. }
-            )
+        let incremental = match &request.command {
+            Command::Create { config, .. } | Command::Update { config, .. } => config.incremental(),
+            Command::Resume { id, .. } => self.sync_policy(project, *id)?.config.incremental(),
+            _ => false,
+        };
+        if incremental
+            && (!crate::sync::governed_incremental_available(self)
+                || self.branch(b)?.ports.is_none())
         {
             return Err(conflict(
-                "governed incremental sync requires qualified version-pinned storage grants; snapshot scheduling is available",
+                "governed incremental sync requires a matching native analytical runtime",
             ));
         }
         if let Command::Inspect { branch } = &request.command {
             let mut v = self.inspect_sync(project, d.deployment_id, branch)?;
-            v["capabilities"] = json!({"sync_controls":1,"managed_snapshot_scheduling":true,"incremental_triggered":false,"continuous_sync":false,"sync_event_triggers":false});
+            v["capabilities"] = json!({"sync_controls":1,"managed_snapshot_scheduling":true,"incremental_triggered":crate::sync::governed_incremental_available(self),"continuous_sync":crate::sync::governed_incremental_available(self),"sync_event_triggers":false});
             return Ok(v);
         }
         let authority = if let Command::Create { .. } = &request.command {
@@ -225,8 +223,7 @@ impl Store {
     }
     /// Recover the durable run mapping even before its export link is committed.
     pub(crate) fn sync_export_policy(&self, id: OperationId) -> Result<Option<Policy>> {
-        let record: Option<String> = self.db.query_row("SELECT p.record FROM sync_policies p JOIN sync_runs r ON r.policy_id=p.id JOIN operations o ON o.id=?1 WHERE r.refresh_id=o.id OR o.request_key='internal:sync:' || r.id",[id.to_string()],|r|r.get(0)).optional()?;
-        record.map(|v| Ok(serde_json::from_str(&v)?)).transpose()
+        policy_for_artifact(&self.db, id)
     }
     pub(crate) fn governed_sync_export(
         &self,
@@ -289,4 +286,12 @@ pub(crate) fn service_live(
         )?;
     }
     Ok(())
+}
+
+pub(crate) fn policy_for_artifact(
+    db: &rusqlite::Connection,
+    id: OperationId,
+) -> Result<Option<Policy>> {
+    let record: Option<String> = db.query_row("SELECT p.record FROM sync_policies p JOIN sync_runs r ON r.policy_id=p.id JOIN operations o ON o.id=?1 WHERE r.refresh_id=o.id OR o.request_key='internal:sync:' || r.id UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN incremental_runs r ON r.capture_id=c.id WHERE r.id=?1 UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN operations o ON o.id=?1 WHERE c.bootstrap_id=o.id OR o.request_key='internal:capture-bootstrap:' || c.id LIMIT 1", [id.to_string()], |r|r.get(0)).optional()?;
+    record.map(|v| Ok(serde_json::from_str(&v)?)).transpose()
 }

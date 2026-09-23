@@ -89,7 +89,11 @@ impl Service {
                 store.save_catalog_publication(&p)?;
                 continue;
             }
-            if p.state == "registering" && verify_locations(store, &p).is_err() {
+            if p.state == "registering"
+                && prepare_view(store, &p)
+                    .and_then(|_| verify_locations(store, &p))
+                    .is_err()
+            {
                 p.error=Some("snapshot unavailable or publication paths relocated; explicit reconciliation required".into());
                 store.save_catalog_publication(&p)?;
                 continue;

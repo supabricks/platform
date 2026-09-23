@@ -45,10 +45,10 @@ Agents use MCP `managed_snapshots` with a `command` from the
 are read-only. Creation, settings and lifecycle changes require explicit intent,
 stable keys and the current policy revision. Results are returned under `value`.
 
-## Governed snapshot schedules
+## Governed sync policies
 
 On the signed-in Data page, select a branch and enter an enabled service principal
-when creating a snapshot policy. A realm administrator must grant:
+when creating a policy. A realm administrator must grant:
 
 - Manager: project membership and branch Read, Manage sync and Read sync.
 - Service: project membership and branch Read and Execute sync.
@@ -63,18 +63,33 @@ publication, and delete/recreate the policy explicitly. Existing snapshots are
 retained for recovery but cannot be reopened using revoked authority.
 
 Select a successful run's epoch for sharing review; creating a sync policy never
-grants or publishes UC access automatically. Governed triggered/continuous modes
-are disabled until version-pinned catalog storage and isolated readers are
-qualified. Older runtimes show an explicit unavailable message.
+grants or publishes UC access automatically. An incremental sharing review reports
+the extra immutable copy and its byte count. Only the selected epoch's active
+files are shared; later sync results require another explicit publication.
+Views are bounded to 256 MiB, 4096 files and 128 tables. Triggered/continuous
+controls require matching native workers. Older runtimes show an unavailable message.
 
 Source checks (disposable native roots only):
 
 ```bash
-python e2e/native/sync_surfaces.py --binary target/debug/supabricks \
+python e2e/native/sync_surfaces.py --binary target/release/supabricks \
   --bundle ENGINE --helpers HELPERS --python PYTHON --worker python/analytics/export.py \
-  --report /tmp/sy06-native.json
+  --catalog-runtime UC_RUNTIME --report /tmp/sy06-native.json
 # From console/, with paths resolved relative to that directory:
-node scripts/qualify.mjs --binary ../target/debug/supabricks \
+node scripts/qualify.mjs --binary ../target/release/supabricks \
   --bundle ENGINE --helpers HELPERS --python PYTHON --worker ../python/analytics/export.py \
   --slice sync --sync true --report /tmp/sy06-browser.json
+```
+
+The governed browser suite uses disposable Keycloak, PostgreSQL, UC and the pinned
+execution configuration prepared by `e2e/native/execution/prepare.py`:
+
+```bash
+python e2e/native/governed-console/qualify.py --binary target/release/supabricks \
+  --release BASELINE_RELEASE --uc-runtime UC_RUNTIME --execution-config EXECUTION_CONFIG \
+  --console console --sync --python PYTHON --worker python/analytics/export.py \
+  --report /tmp/sy06-governed-browser.json
+SUPABRICKS_UC093_RUNTIME=UC_RUNTIME SUPABRICKS_UC094_CONFIG=EXECUTION_CONFIG \
+  cargo test --release --locked -p supabricks-local --lib \
+  isolated_execution_real_uc -- --ignored --test-threads=1
 ```

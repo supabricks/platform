@@ -116,7 +116,7 @@ pub fn usage(root: &Path, db: &Connection) -> Result<Value> {
     let namespaces: i64 =
         db.query_row("SELECT count(*) FROM catalog_namespaces", [], |r| r.get(0))?;
     let assets: i64 = db.query_row("SELECT count(*) FROM catalog_assets", [], |r| r.get(0))?;
-    let retained: i64 = db.query_row("SELECT COALESCE(sum(CAST(json_extract(f.value,'$.bytes') AS INTEGER)),0) FROM publications p, json_each(p.descriptor,'$.manifest.files') f WHERE p.epoch_id IN (SELECT epoch_id FROM catalog_retention)",[],|r|r.get(0))?;
+    let retained: i64 = db.query_row("SELECT COALESCE(sum(CAST(json_extract(f.value,'$.bytes') AS INTEGER)*CASE WHEN json_extract(p.descriptor,'$.format_version')=2 THEN 2 ELSE 1 END),0) FROM publications p, json_each(p.descriptor,'$.manifest.files') f WHERE p.epoch_id IN (SELECT epoch_id FROM catalog_retention)",[],|r|r.get(0))?;
     Ok(
         json!({"namespaces":namespaces,"observed_assets":assets,"metadata_bytes":metadata,"publication_records":count,"retained_snapshot_bytes":retained,
         "limits":{"metadata_bytes":MAX_METADATA_BYTES,"publication_records":MAX_PUBLICATIONS,"active_publications":128,"tables_per_publication":128,"retained_snapshot_bytes":MAX_RETAINED_BYTES,"namespaces":128,"observed_assets":8192,"offline_script_bytes":MAX_SCRIPT,"offline_timeout_seconds":60,"jvm_heap_mib":256}}),
@@ -322,6 +322,14 @@ fn reconcile(
                 return Err(conflict("catalog snapshot identity changed"));
             }
             crate::analytics::check_ready(&generation, &d)?;
+            let is_view = d["format_version"] == 2;
+            let (generation, d) = if is_view {
+                let view = crate::epoch_view::View::plan(root, &d)?;
+                view.verify()?;
+                (view.root, view.descriptor)
+            } else {
+                (generation, d)
+            };
             // Verify every immutable file, not just its length, before changing a location.
             for f in d["manifest"]["files"]
                 .as_array()
@@ -372,7 +380,11 @@ fn reconcile(
                     .as_u64()
                     .ok_or_else(|| invalid("snapshot table OID missing"))?
                     .to_string();
-                let relative = Path::new("analytics/generations").join(&export).join(&oid);
+                let mut relative = Path::new("analytics/generations").join(&export);
+                if is_view {
+                    relative = relative.join("shared");
+                }
+                let relative = relative.join(&oid);
                 let old = super::publication::location_uri(&source.join(&relative))?;
                 let new = super::publication::local_location(&root.join(&relative))?;
                 if t.body["storage_location"] != old

@@ -7519,13 +7519,18 @@
                   "additionalProperties": false,
                   "properties": {
                     "copies": {
-                      "const": false
+                      "type": "boolean"
                     },
                     "durable": {
                       "const": true
                     },
                     "until": {
                       "type": "string"
+                    },
+                    "view_bytes": {
+                      "maximum": 268435456,
+                      "minimum": 0,
+                      "type": "integer"
                     }
                   },
                   "required": [

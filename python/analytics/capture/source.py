@@ -83,6 +83,9 @@ class Source:
                 controls=profile['engine_objects'] or [0]
                 body=sql.SQL("""CREATE FUNCTION {}.fence() RETURNS event_trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $f$
                 DECLARE relevant boolean; BEGIN
+                  -- ACL changes do not alter the captured schema or row encoding.
+                  -- Governed admission checks source authority independently.
+                  IF TG_TAG IN ('GRANT','REVOKE') THEN RETURN; END IF;
                   IF TG_EVENT='sql_drop' THEN
                     SELECT EXISTS(SELECT 1 FROM pg_event_trigger_dropped_objects() WHERE schema_name !~ '^pg_'
                         AND schema_name NOT IN ('information_schema','_supabricks',{}) AND objid<>ALL({}::oid[])

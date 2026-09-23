@@ -119,6 +119,7 @@ impl Store {
             },
             target_lsn: None,
             apply_id: None,
+            published_artifact_id: None,
             batches: 0,
             deadline_ms: if p.config.incremental() {
                 Some(now.saturating_add(p.config.limits.timeout_ms as i64))

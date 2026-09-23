@@ -161,6 +161,8 @@ pub struct Run {
     pub target_lsn: Option<String>,
     #[serde(default)]
     pub apply_id: Option<OperationId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub published_artifact_id: Option<OperationId>,
     #[serde(default)]
     pub batches: u32,
     #[serde(default)]
@@ -271,6 +273,10 @@ pub(crate) fn runtime_available(store: &Store) -> bool {
         worker.with_file_name("capture_worker.py").is_file()
             && worker.with_file_name("incremental_worker.py").is_file()
     })
+}
+
+pub(crate) fn governed_incremental_available(store: &Store) -> bool {
+    store.root().join("runtime.json").is_file() && runtime_available(store)
 }
 
 /// One daemon writer, one native export at a time. No browser/worktree lifetime dependency.
