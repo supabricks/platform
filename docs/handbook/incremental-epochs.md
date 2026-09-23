@@ -40,6 +40,9 @@ resume copied capture/apply intent.
 Capture deletion removes source resources and the spool; retained epochs still
 keep their shared analytical root. Close sessions/unpin snapshots and use the
 existing snapshot retention workflow before the final root can be collected.
-Finite spool and Delta budgets still apply: SY03 has no background compaction or
-spool pruning. [SY04](triggered-sync.md) adds local triggered policies. Continuous scheduling
-and Unity Catalog publication of these roots remain later work.
+Matching [SY07 binaries/workers](../architecture/sy07-sync-hardening.md) add
+published-spool pruning and periodic compaction into a new generation. Explicit
+history collection can reclaim old generations while the capture remains live;
+pins and catalog references still prevent deletion. Finite storage and durable
+run-journal limits remain. [SY04](triggered-sync.md) adds triggered policies,
+[SY05](continuous-sync.md) continuous scheduling, and SY06 governed/catalog integration.

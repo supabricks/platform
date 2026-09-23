@@ -59,7 +59,9 @@ supabricks sync capture start POLICY_ID --revision REVISION --key new-baseline
 supabricks sync run POLICY_ID --revision REVISION --key after-resync
 ```
 
-Finite spool/root budgets apply; pruning and compaction are not implemented yet.
+Finite spool/root budgets apply. Matching [SY07 binaries/workers](../architecture/sy07-sync-hardening.md)
+reclaim published spool prefixes and compact into new generations; explicit history
+collection releases old roots only after reader and catalog pins drain.
 Restored policies require explicit resume and capture re-enrollment. Console and
 governed controls and incremental catalog publication remain later slices.
 [SY05 continuous mode](continuous-sync.md) can reuse a drained triggered capture

@@ -240,6 +240,8 @@ def run(config):
     if descriptor['format_version']==2:
         import uuid
         capture=str(uuid.UUID(descriptor['manifest']['capture_identity']['generation']))
+        if descriptor['manifest'].get('storage_generation') is not None:
+            capture=str(uuid.UUID(descriptor['manifest']['storage_generation']))
         if generation != root/'analytics/incremental'/capture:
             raise ValueError('incremental generation identity changed')
     elif descriptor['format_version']!=1 or not generation.is_relative_to(root/'analytics/generations'):

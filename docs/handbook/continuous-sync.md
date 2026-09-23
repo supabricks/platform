@@ -64,6 +64,15 @@ supabricks sync capture status CAPTURE_ID
 supabricks sync delete POLICY_ID --revision REVISION --key delete
 ```
 
-Finite spool, root and installation-history limits still apply. There is no pruning
-or compaction yet, so this slice supports bounded continuous operation. Console,
-governed controls and installed-release qualification follow in SY06–SY08.
+With matching SY07 binaries/workers, published spool prefixes are reclaimed and
+Delta data periodically moves to a compacted generation. Old epochs remain pinned
+until their readers/catalog references close and you explicitly collect history:
+
+```bash
+supabricks analytics gc --branch main --keep 1
+```
+
+Finite spool, retained-root and installation-history limits still apply; durable
+run/retry journals are not silently expired. See [SY07 maintenance and recovery](../architecture/sy07-sync-hardening.md)
+for limits and failure behavior. SY06 supplies shared console/governed controls;
+SY08 still owns exact installed-release qualification.

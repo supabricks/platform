@@ -7,6 +7,10 @@ foundation. It does not apply rows to Delta, publish incremental epochs, or enab
 triggered/continuous product modes. SY03 owns application/publication; SY04 and
 SY05 own the corresponding product policies.
 
+Maintenance update: [SY07](sy07-sync-hardening.md) adds published-spool pruning,
+periodic storage generations and reference-aware reclamation. Limits and missing
+maintenance described below record the original slice boundary.
+
 ## Contract and identity
 
 A generation attaches to one active, manual-only SY01 snapshot policy at an exact

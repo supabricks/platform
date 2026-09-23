@@ -415,8 +415,11 @@ fn catalog_migration(source_schema: u32) {
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TRIGGER sync_service_revoke; DROP TRIGGER sync_source_policy_revoke; DROP TRIGGER sync_run_admission_audit; DROP TRIGGER sync_run_transition_audit; ALTER TABLE identity_principals DROP COLUMN sync_generation;").unwrap();
-    db.execute_batch("ALTER TABLE data_grants RENAME TO data_grants_current; CREATE TABLE data_grants (deployment TEXT NOT NULL REFERENCES deployments(id),branch TEXT NOT NULL REFERENCES branches(id),subject TEXT NOT NULL,capability TEXT NOT NULL CHECK(capability IN ('read','write','ddl','copy_source','receive','share')),PRIMARY KEY(deployment,branch,subject,capability)); INSERT INTO data_grants SELECT * FROM data_grants_current; DROP TABLE data_grants_current;").unwrap();
+    db.execute_batch("DROP TABLE sync_storage_roots;").unwrap();
+    if source_schema < 28 {
+        db.execute_batch("DROP TRIGGER sync_service_revoke; DROP TRIGGER sync_source_policy_revoke; DROP TRIGGER sync_run_admission_audit; DROP TRIGGER sync_run_transition_audit; ALTER TABLE identity_principals DROP COLUMN sync_generation;").unwrap();
+        db.execute_batch("ALTER TABLE data_grants RENAME TO data_grants_current; CREATE TABLE data_grants (deployment TEXT NOT NULL REFERENCES deployments(id),branch TEXT NOT NULL REFERENCES branches(id),subject TEXT NOT NULL,capability TEXT NOT NULL CHECK(capability IN ('read','write','ddl','copy_source','receive','share')),PRIMARY KEY(deployment,branch,subject,capability)); INSERT INTO data_grants SELECT * FROM data_grants_current; DROP TABLE data_grants_current;").unwrap();
+    }
     if source_schema < 27 {
         db.execute_batch("DROP INDEX sync_policy_runs;").unwrap();
     }
@@ -476,7 +479,7 @@ fn catalog_migration(source_schema: u32) {
     }
     if source_schema >= 16 {
         db.execute_batch(r#"
-            INSERT INTO identity_principals VALUES ('migration-service','service','Migration service',0);
+            INSERT INTO identity_principals(id,kind,label,disabled) VALUES ('migration-service','service','Migration service',0);
             INSERT INTO identity_groups VALUES ('migration-group','Migration group');
             INSERT INTO identity_memberships VALUES ('migration-group','migration-service');
             INSERT INTO identity_sessions(token_hash,principal,csrf_hash,channel,scopes,expires_ms,epoch)
@@ -625,7 +628,7 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=28",
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=29",
                 [],
                 |r| r.get::<_, String>(0)
             )
@@ -967,4 +970,9 @@ fn schema_twenty_six_upgrade_adds_continuous_supervision_without_starting_work()
 #[test]
 fn schema_twenty_seven_upgrade_adds_scoped_sync_authority_without_grants() {
     catalog_migration(27);
+}
+
+#[test]
+fn catalog_twenty_eight_migration_gates_sync_maintenance_and_recovers_boundaries() {
+    catalog_migration(28);
 }

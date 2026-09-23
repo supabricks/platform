@@ -14,7 +14,8 @@ import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
 from incremental.rows import changes, overlay, MAX_ROWS, MAX_VALUES
-from incremental.storage import read_json, initialize, journal, boundary, durable, verify_previous, inventory
+from incremental.storage import read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
+from incremental.maintenance import base
 
 
 def quote(name):return '"'+name.replace('"','""')+'"'
@@ -103,7 +104,9 @@ def apply_table(config,root,table,planned,checksum):
     source=pa.Table.from_pylist(records,schema=input_schema)
     if source.nbytes>MAX_VALUES:raise CaptureError('apply_value_budget')
     table_bytes=sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
-    boundary(root,config['deadline_ms'],extra=table_bytes+4*source.nbytes+4*1024*1024)
+    reservation=table_bytes+4*source.nbytes+4*1024*1024
+    retained_boundary(root.parent,extra=reservation)
+    boundary(root,config['deadline_ms'],extra=reservation)
     expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
     d='source.'+quote(delete)
     metrics=delta.merge(source,'target.'+quote(pk)+' = source.'+quote(pk),source_alias='source',target_alias='target',
@@ -121,6 +124,7 @@ def apply_table(config,root,table,planned,checksum):
 def run(config):
     os.umask(0o077)
     root=initialize(config);work=Path(config['workspace'])
+    previous,compaction=base(config,root)
     if config['previous'] is None:
         baseline=read_json(config['bootstrap_manifest'])
         tables=copy.deepcopy(baseline['tables'])
@@ -128,7 +132,7 @@ def run(config):
         manifest=copy.deepcopy(baseline);manifest.update(format_version=2,id=config['id'],tables=tables,files=inventory(root,tables))
         end=config['bootstrap_lsn'];metrics=[];input_bytes=0
     else:
-        previous=config['previous'];verify_previous(root,previous)
+        verify_previous(root,previous)
         plan_path=work/'plan.json'
         if plan_path.exists():
             prepared=read_json(plan_path,64*1024*1024)
@@ -150,10 +154,13 @@ def run(config):
         manifest=copy.deepcopy(previous['manifest']);manifest.update(id=config['id'],tables=tables,files=inventory(root,tables))
     manifest['source']['lsn']=end;manifest['observed_at_ms']=int(time.time()*1000)
     manifest['capture_identity']=config['identity'];manifest['input_bytes']=input_bytes;manifest['apply_metrics']=metrics
+    manifest['storage_generation']=config.get('storage_generation')
+    manifest['compaction']=compaction
+    manifest['retained_bytes']=retained_boundary(root.parent)
     used=boundary(root,config['deadline_ms']);manifest['generation_bytes']=used
     descriptor=dict(format_version=2,installation_id=config['identity']['installation_id'],epoch_id=config['epoch_id'],
         ordinal=config['ordinal'],export_id=config['id'],source_revision=config['source_revision'],
-        generation='analytics/incremental/'+config['identity']['generation'],manifest=manifest,
+        generation='analytics/incremental/'+(config.get('storage_generation') or config['identity']['generation']),manifest=manifest,
         manifest_sha256=hashlib.sha256(canonical(manifest)).hexdigest(),prepared_at_ms=int(time.time()*1000))
     if len(canonical(descriptor))>2*1024*1024:raise CaptureError('epoch_metadata_budget')
     durable(root)
