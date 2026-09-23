@@ -150,7 +150,9 @@ def main():
             try:ingest(encode(race))
             except RuntimeError:rejected.append(True)
         with psycopg.connect(host='127.0.0.1',port=destination['ports']['sql'],dbname='postgres',user='cloud_admin',password=cell.credentials(destination)) as held:
-            held.execute('LOCK TABLE public.example IN ACCESS SHARE MODE')
+            # Block destination catalog mutations. Permission reconciliation need
+            # not alter an unrelated table that already has the correct owner.
+            held.execute('LOCK TABLE pg_catalog.pg_class IN SHARE MODE')
             worker=threading.Thread(target=racing_import);worker.start()
             wait(lambda:cell.sql(destination,"SELECT count(*) FROM pg_stat_activity WHERE application_name='supabricks-governed' AND wait_event_type='Lock'")=='1',10)
             grant('receive',False,target=did)

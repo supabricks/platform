@@ -149,7 +149,8 @@ this wait operation; observed freshness is available in the shipped controls.
 
 Evidence: [native UC/Sail, 14 checks](sy06-evidence/linux-incremental-native.json),
 [real UC/gVisor isolation](sy06-evidence/linux-incremental-isolation.json),
-[signed-in browser, 9 checks](sy06-evidence/linux-governed-browser.json), and the
+[signed-in browser, 9 checks](sy06-evidence/linux-governed-browser.json),
+[governed data regression, 17 checks](sy06-evidence/linux-governed-data.json), and the
 [earlier local browser journey, 17 checks](sy06-evidence/linux-browser.json).
 The full core/local Rust suite passed 335 tests (four external-runtime ignores),
 with a final 196-test local-library rerun and 12 capture unit tests passing.
@@ -166,6 +167,8 @@ The native suite covers manager logout, service revocation, RLS refusal, pinned
 Sail readers, cross-project bindings, notebook restart and relocated catalog views.
 The signed-in browser covers continuous disclosure, explicit service grants,
 incremental result sharing, reviewed resync, cleanup, resume and service revocation.
+The governed import race blocks destination catalog mutations before revoking
+Receive; it does not depend on redundant ownership DDL to pause admission.
 
 Linux/macOS CI is required before merge. The native catalog fixture combines the
 verified baseline notebook dependencies with current analytical workers. Using
