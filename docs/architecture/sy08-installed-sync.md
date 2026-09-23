@@ -2,13 +2,42 @@
 
 [Plan](../plans/analytical-sync-implementation.md) · [Delivery ledger](../plans/status.md) · [SY07](sy07-sync-hardening.md)
 
-Status: qualification harness implemented; exact candidate acceptance is pending.
-The candidate uses `v0.1.0-alpha.36` with catalog 29. Alpha.35 remains the last
-qualified release. The new version avoids the installer’s intentional rejection
-of different archive bytes under an already installed version. Historical
-predecessor pins and upgrade gates remain unchanged.
-A passing source test does not qualify a new archive. Acceptance requires the combined `sy08-evidence` artifact for that
-candidate's Linux x86_64 and macOS arm64 archives and the Linux governed profile.
+Status: **qualified** on 2026-09-23 for the exact `v0.1.0-alpha.36` archives below
+(catalog 29). [PR #86](https://github.com/supabricks/platform/pull/86) contains the
+implementation and acceptance record; merge remains separate.
+
+[Run 35908989254](https://github.com/supabricks/platform/actions/runs/35908989254)
+passed all 33 jobs, including the combined R04/SY08 collector. Both local-owner
+targets passed all 26 installed sync checks. The dedicated Linux governed profile
+passed identity (11), data (17), sync (14), upgrade (4), and TLS browser (14) checks.
+All observed descendants were cleaned up. Required CI and both native source
+suites also passed on implementation commit `57b111de5b5d2845b54231c91c2443684afc2bd8`.
+The archives contain tested merge `8ea59d8c5c70f798165c1f1c3b981a2f51d666d0`.
+
+| Target | Archive SHA-256 | Release inventory identity |
+| --- | --- | --- |
+| linux-x86_64 | `a3976187f4892a78404bfda4ad7370ab3f6001d57c1dd979a65fe0a6920d7c72` | `a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b` |
+| macos-arm64 | `fb1240fa589088afeaee579ad1783db854d65e74c9e61a8f2d36fc79507aa6c8` | `473eb0868599fc7552076ad003419e18deaec7b9dbc0858632dc70344993077a` |
+
+Retained evidence: [SY08 acceptance](sy08-evidence/sy08-evidence.json),
+[inherited R04 acceptance](sy08-evidence/r04-evidence.json),
+[R04 summary](sy08-evidence/r04-evidence.md),
+[Linux governed ingress receipt](sy08-evidence/r04-evidence.governed.json), and
+[stage timings and cleanup](sy08-evidence/workload-stages.json).
+The SY08 report and ingress receipt both hash the retained R04 report. These
+identities qualify the recorded archives; a new build needs its own acceptance.
+This documentation-only follow-up records the tested candidate without changing
+its packaged inputs. Alpha.35 remains the qualified historical predecessor.
+
+| Target | Logical CPUs / RAM | Lag p50 / p95 / p99 (ms) | Burst (ms) | Changed rows/s | OLTP p95 baseline → during (ms) | Parquet/input bytes |
+| --- | --- | --- | --- | --- | --- | --- |
+| linux-x86_64 | 4 / 15.61 GiB | 1,790 / 2,394 / 2,527 | 3,515 | 50.06 | 3.350 → 5.830 | 15.556× |
+| macos-arm64 | 3 / 7.00 GiB | 2,240 / 3,461 / 4,206 | 3,055 | 49.97 | 3.123 → 9.524 | 12.880× |
+
+The unchanged 50-changed-rows/second workload and 200-row burst both meet the
+5,000-ms gates. These are commit-to-publication measurements; opening a new Sail
+session and query execution are separate. The full reports retain resource usage,
+write amplification, and the limits described below.
 
 ## Installed boundaries
 
@@ -131,7 +160,7 @@ Install and operate a qualified candidate using [managed sync](../handbook/manag
 [continuous sync](../handbook/continuous-sync.md). Keep the archive and its exact
 qualification identity together when distributing engineering builds.
 
-## Evidence still pending
+## Earlier candidates and diagnostic runs
 
 Local Linux smoke checks against the unchanged SY07 archive from
 [run 35829067775](https://github.com/supabricks/platform/actions/runs/35829067775)
@@ -149,8 +178,8 @@ A separate development copy with build-time checked-hash bytecode then passed
 all four continuous checks, including recovery and explicit resync: 50.05 changed
 rows/second, 4,377 ms p95, 5,046 ms p99, and 3,061 ms burst lag, with zero leaked
 descendants. This experiment deliberately marks its provenance dirty and cannot
-satisfy the archive collector. The candidate's own offline Linux/macOS and governed
-matrix must complete before this status can change to qualified.
+satisfy the archive collector. These development measurements did not qualify
+the candidate.
 
 Follow-up Linux smoke checks passed all 17 inherited governed data cases and all
 14 sync governance cases inside a network-disabled, four-CPU/16-GiB container.
@@ -179,7 +208,7 @@ bug: the build report claimed 514 compiled modules, but later notebook cleanup
 removed every shared-runtime cache, leaving only eight worker caches. Compilation
 now runs after all dependency assembly, and the final inventory must contain
 every reported cache with its recorded hash and total size. Those first archives
-remain unqualified; a fresh matrix is required for the corrected payload.
+remain unqualified. The corrected payload was subsequently tested in a fresh matrix.
 
 A development copy of that exact alpha.36 Linux payload, finalized after notebook
 cleanup and marked dirty, passed all four continuous checks offline with 514
@@ -214,7 +243,7 @@ On [attempt 2](https://github.com/supabricks/platform/actions/runs/35895998663/a
 Linux passed all 26 installed checks (3,185 ms p95 and 3,329 ms burst), but macOS
 again failed (5,555 ms p95 and 5,438 ms burst). The
 [attempt-2 results](sy08-evidence/attempt-2-results.json) retain both outcomes.
-The candidate therefore remains unqualified; a successful retry on one target
+That candidate remains unqualified; a successful retry on one target
 does not erase the earlier failures or qualify the other target.
 
 An unmodified Linux archive profile in the offline 4-CPU/16-GiB container showed
@@ -244,8 +273,9 @@ limit at 4,813 ms, but its 6,141 ms burst remained a failure. The
 [macOS receipt](sy08-evidence/handoff-macos-failure.json) retains that result.
 This motivated avoiding repeated fsyncs of the growing published immutable
 prefix. The flush optimization passed 21 Python incremental/maintenance tests,
-39 sync state-machine tests, and 12 publication tests. Fresh installed archive
-qualification is still required; no performance gate has been changed.
+39 sync state-machine tests, and 12 publication tests. These diagnostic runs
+preceded the successful exact-archive qualification recorded above; no
+performance gate was changed.
 The optimized development copy passed all four continuous checks offline at
 3,413 ms p95, 3,947 ms p99, 3,048 ms burst and 50.06 changed rows/second. Across
 23 measured batches, worker-start-to-preparation p95 was 1,268 ms and

@@ -1,0 +1,1356 @@
+{
+  "status": "passed",
+  "version": "v0.1.0-alpha.36",
+  "revision": "8ea59d8c5c70f798165c1f1c3b981a2f51d666d0",
+  "console_commit": "ec6c1b99d50288b14a70255dfb05b2af9287a827",
+  "targets": {
+    "linux-x86_64": {
+      "catalog": {
+        "commit": "17280eababcc4ae31c53522d930ef2fe92d1c331",
+        "java": {
+          "vendor": "Eclipse Temurin",
+          "version": "17.0.20.1+1",
+          "license": "GPL-2.0-with-classpath-exception",
+          "targets": {
+            "linux-x86_64": {
+              "jdk": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e",
+                "bytes": 193252603
+              },
+              "jre": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "0b2b640e3046b64c8ec504de0ab9d91bb5610182bda21fad454681ce54d45a62",
+                "bytes": 46640574
+              }
+            },
+            "macos-arm64": {
+              "jdk": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "196d13ba5f10414bef7f6a05a9b3f00edacb18ebacef2b99485db9e2ee18f0e8",
+                "bytes": 185851019
+              },
+              "jre": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "190480874ccceb358cbc840393207f77ac3e63a4c5f8129d0e23e9518b96ad05",
+                "bytes": 42722113
+              }
+            }
+          }
+        },
+        "contract": {
+          "backend": "h2-2.2.224",
+          "backend_schema": 1,
+          "capability_profile": "local-owner-files-v1",
+          "format_version": 1,
+          "migration": "exact-backend-only; incompatible changes require a separately qualified migration",
+          "publication_manifest": 1,
+          "server_commit": "17280eababcc4ae31c53522d930ef2fe92d1c331"
+        },
+        "build_sha256": "daff38fa247ee931af5fcf5f46f6ce180e6c15d8ddc302644b63b76043072c3c",
+        "measurements": {
+          "peak_rss_bytes": 2604613632,
+          "logical_cpus": 4,
+          "host_memory_bytes": 16766414848,
+          "cgroup_memory_limit_bytes": null,
+          "duration_seconds": 526.0222097070001,
+          "cpu_seconds": 389.26999999998606,
+          "mean_cpu_percent_one_core": 74.00257875362591,
+          "catalog_peak_rss_bytes": 359219200,
+          "catalog_processes_observed": 22
+        },
+        "suites": {
+          "service": {
+            "status": "PASS",
+            "checks": [
+              "installed_private_jre_authenticated_loopback_bootstrap",
+              "private_keys_and_credentials_absent_from_status_and_argv",
+              "uc02_owned_namespace_creation_and_stable_uuid_resolution",
+              "uc02_same_definition_deployments_have_distinct_owned_namespaces",
+              "uc02_live_metadata_quotes_identifiers_and_fences_project_ownership",
+              "uc02_schema_drift_rename_recreation_and_stale_pagination_fail_closed",
+              "uc02_case_collisions_rejected_before_publication",
+              "uc02_unified_live_and_published_metadata_preserves_provenance",
+              "uc02_recreated_uc_schema_cannot_replace_recorded_ownership",
+              "uc02_cli_contract_and_projectless_operations_rejected",
+              "uc02_unavailable_catalog_is_distinct_from_empty_and_pg_metadata_remains_usable",
+              "uc03_preview_idempotent_publish_crash_recovery_and_complete_alias",
+              "uc03_catalog_outage_preserves_old_head_and_explicit_resume_reconciles",
+              "uc03_refresh_retains_old_revision_across_gc_and_stopped_daemon",
+              "uc03_unpublish_waits_for_readers_deletes_only_metadata_then_releases_gc",
+              "uc03_recreated_alias_blocks_cleanup_and_preserves_retention",
+              "uc04_console_sql_spark_connect_notebook_share_frozen_revision_and_aliases",
+              "uc04_refresh_changes_new_sessions_only_and_notebook_restart_retains_revision",
+              "uc04_outage_fails_new_resolution_without_fallback_and_preserves_leased_reads",
+              "uc04_retirement_waits_for_session_worker_death",
+              "uc04_expiry_closes_lease_and_recreated_uc_uuid_is_rejected",
+              "uc05_two_projects_share_one_publication_without_copies_or_ownership_transfer",
+              "uc05_reviewed_schema_diff_updates_new_readers_and_notebook_joins_record_each_revision",
+              "uc05_offline_pack_verify_import_preserve_requirements_without_destination_authority",
+              "uc05_consumer_decommission_releases_bindings_after_review_without_deleting_producer_data",
+              "uc05_remote_uuid_replacement_after_plan_fails_activation_and_releases_pending_pins",
+              "key_rotation_revokes_old_token_preserves_metadata_and_identity",
+              "port_collision_retries_without_adopting_or_stopping_unrelated_listener",
+              "catalog_crash_leaves_postgres_usable",
+              "bounded_restart_budget_and_explicit_recovery",
+              "bounded_private_process_log_rotation",
+              "daemon_restart_preserves_catalog_metadata",
+              "missing_metastore_fails_closed_and_restore_preserves_identity",
+              "external_tls_ca_authentication_identity_and_disabled_storage",
+              "external_credential_reference_rotation_without_restart",
+              "down_never_stops_operator_managed_service",
+              "down_recovers_owned_catalog_after_daemon_crash"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 327.392823079,
+            "report_sha256": "26d4f58853d7d99385439c0b3742b7d54f1fceeabe6b4435ef7486dd4fbb9699",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 492,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          },
+          "browser": {
+            "status": "PASS",
+            "checks": [
+              "producer_created_ingested_and_published_in_browser",
+              "explicit_binding_recovers_lost_response_and_reload_without_duplicate_apply",
+              "csrf_and_foreign_project_publication_status_are_rejected",
+              "bound_dataset_queried_in_spark_workspace",
+              "live_schema_drift_requires_explicit_reinspection",
+              "owned_publication_handoff_pins_selected_historical_epoch",
+              "producer_refresh_and_reviewed_schema_update_preserve_existing_reader_revision",
+              "notebook_handoff_uses_current_fixed_binding_without_automatic_execution",
+              "reviewed_unbind_preserves_producer_data",
+              "absent_provider_blocks_publication_without_breaking_postgres",
+              "confirmed_withdrawal_retires_unreferenced_publication"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 93.46435281599997,
+            "report_sha256": "91b9382e552fdc5bfe5194b4f6bc4d7c545dc347c59019e2638bd3dbf9d9b24e",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 122,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          },
+          "recovery": {
+            "status": "PASS",
+            "checks": [
+              "two_project_bound_read_before_checkpoint",
+              "stopped_checkpoint_includes_backend_journal_bindings_and_retention",
+              "interrupted_restore_remains_guarded_and_original_backup_verifies",
+              "moved_root_preserves_ids_and_bindings_relocates_files_and_rotates_credentials",
+              "restored_binding_keeps_snapshot_retained",
+              "corrupt_h2_refuses_checkpoint_without_publishing_backup",
+              "unsupported_backend_contract_refuses_implicit_migration",
+              "missing_external_provider_requires_explicit_rebind_and_preserves_postgres",
+              "exact_archive_unchanged_after_catalog_restore_and_rebind",
+              "bounded_filesystem_enospc_publishes_no_backup_and_preserves_source"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 105.17258133200016,
+            "report_sha256": "8d8af87fc05b0cc6c33cee696c9c466b5aaabefc7fa0e67f38dae6d6b2073158",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 287,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          }
+        },
+        "network": "Linux loopback-only namespace; private JRE; all descendants isolated"
+      },
+      "projects": {
+        "package_sha256": "6d170633774f0e5759fff65880ccb711081a5b704df1bb59036f0d36de94f5c7",
+        "source_sha256": "57828c247b9a90b6ec22da4b12e30d9b0b68f35dae54f123cbb91fa13e13ab96",
+        "content_sha256": "9bc54e9c2fdd55ccf0aab242834db7f20ae6d902c79bae9f4f9b83cb268e5b6c",
+        "environment": {
+          "bundles": {
+            "linux-x86_64": {
+              "kernel_contract": "886fc2e82209b23f6bea110c189c1170cb5088a617a2e8a3448765630018dc06",
+              "path": "dependencies/linux-x86_64.zip",
+              "sha256": "c65c1846119da6aa758d974c9af98fb73b03ca3916a7a752761c61dd6fb61ea2",
+              "status": "inventory_verified_runtime_preparation_required",
+              "wheels": 41
+            },
+            "macos-arm64": {
+              "kernel_contract": "6d32e0407b0a9f942e9e3e26a799309cc9b5594c4f42d769a88b4864cfd17211",
+              "path": "dependencies/macos-arm64.zip",
+              "sha256": "5b92f3073850bbf3f27886b8f2262d30fddb83a2c508c8485e6e59c668a37b28",
+              "status": "inventory_verified_runtime_preparation_required",
+              "wheels": 42
+            }
+          },
+          "lock": "notebooks/environment/uv.lock",
+          "lock_sha256": "c63e85a456e09ae768b86b07a2212389d9c8ca4a19669e4808541f66268bb27b",
+          "pyproject": "notebooks/environment/pyproject.toml",
+          "pyproject_sha256": "2b1f4783b3aba2a91aacaaadc8f6af6adc9813dfe2684da50409c1052d6cdcb2"
+        },
+        "fixtures": {
+          "fixtures/sales.csv": "31e26370225c0855b0966f4eb7b0820feaa07d086f131723c6362801ec880413",
+          "migrations/001-marker.sql": "bf5a914fba4b3d671aad47b365d4fdc85e7297ea74d2313861b4f0ecf4e445ca",
+          "migrations/002-marker.sql": "17058a6938c879fcb21b1a13de5678bc9f91f1a584205daf8bb6a0ee62b2b79c",
+          "notebooks/sales.ipynb": "d3aea6de9bc14ec5d02f566aa8cfff7d7ef44084453e92b234a04cd3aae56a78",
+          "queries/sales_total.sql": "bed8c4b0a31b5ebcea48ff0e5bbfc58b0924f38dcde5ba4e2ca2a6a450cc475a"
+        },
+        "measurements": {
+          "archive_bytes": 198371866,
+          "unpacked_bytes": 198329453,
+          "rows": 2,
+          "prepare_seconds": 47.65004709399997,
+          "start_seconds": 12.594467089000005,
+          "peak_rss_bytes": 2664787968,
+          "disk_peak_bytes": 5955653632
+        },
+        "logical_data": {
+          "archive_sha256": "b1bf45bb9b5ded63090b34069011722d2d4161f9c49d06f1300d29b3b7d10133",
+          "content_sha256": "db9f45d8d5627034340580f417ccd280cb7d40f9331662d846a3b9eb0d2ab94a",
+          "rows": 2
+        },
+        "network": "Ubuntu 24.04; unprivileged loopback-only namespace; private HOME and caches",
+        "previous_archive": {
+          "version": "v0.1.0-alpha.22",
+          "target": "linux-x86_64",
+          "sha256": "0a40c81bd63ede2e2461389937a2f996379184613bf26013439be2d62a4a9179"
+        },
+        "reports": {
+          "release-projects-linux-x86_64/projects.json": {
+            "sha256": "9e0e0b92ff1ba7a33909c5ae89a6888f05f1401ae2b089cca2c68ee8cc24ee42",
+            "checks": 15
+          },
+          "project-source/producer.json": {
+            "sha256": "f0f40a78c4ab646250a4eb90ec6369509858470ab79666f1237bdfbf1aa74e24",
+            "checks": 1
+          }
+        }
+      },
+      "sail": {
+        "schema_version": 1,
+        "repository": "https://github.com/supabricks/sail",
+        "commit": "9544c9253e981a82c5f9e493c43ce98a4d9d41b7",
+        "source_dirty": false,
+        "version": "0.7.1",
+        "target": "linux-x86_64",
+        "inputs": {
+          "Cargo.lock": "3a19a605f46aa32002e7cdfcda6816b06d0fd09ff9db37b4dd0c0b6d558e76b1",
+          "Cargo.toml": "e008ee0294c7f8401c97518f301711fbcd26c0ae9333d4a1dca20f40d4b3f7d2",
+          "pyproject.toml": "2bbc410c581efe06bf614ee1f1074eaf349dceea8e614295c389cd128a424396",
+          "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        "maturin": "1.15.0",
+        "protoc": {
+          "url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-linux-x86_64.zip",
+          "sha256": "c4bc672d9d49214dc8cafdceadf4df92182d6ca8e3ec65a56b2d7de5602669b4"
+        },
+        "profile": {
+          "CARGO_PROFILE_RELEASE_LTO": "false",
+          "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+          "CARGO_PROFILE_RELEASE_DEBUG": "0",
+          "CARGO_BUILD_JOBS": "2",
+          "CARGO_INCREMENTAL": "0"
+        },
+        "source_lock_sha256": "a6c89a02741398bd6fbd3ad7118b3aa0a76ffc466020959410791ecd6c78bfca",
+        "builder_script_sha256": "672de658f13af6db6f468702b3b8aea485bf14eebb6b13d6c94aca421aaa4d80",
+        "wheel": {
+          "file": "pysail-0.7.1-cp38-abi3-linux_x86_64.whl",
+          "sha256": "d87971373870688984a20a6637a436174d7f1ee09a54de03818f903586253010"
+        },
+        "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+      },
+      "release_sha256": "a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b",
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "linux-x86_64",
+        "sha256": "a3976187f4892a78404bfda4ad7370ab3f6001d57c1dd979a65fe0a6920d7c72"
+      },
+      "reports": {
+        "release-environments-linux-x86_64/qualification.json": {
+          "sha256": "52c9cca161fa995107b4dc03ea847a82bb7a80c75f9776505b4cb7471ab06a03",
+          "checks": 10
+        },
+        "release-environments-linux-x86_64/qualification-kernels.json": {
+          "sha256": "a54c08ac0e01e00cc8d592e83a4c8bf48aeb3f77ef0f6af63d57d796b2313297",
+          "checks": 10
+        },
+        "release-packages-linux-x86_64/qualification.json": {
+          "sha256": "2c17812d96976b2bda81ca086dfa97f4e638fe3e899eb56e0f6378ff6fb97fce",
+          "checks": 12
+        },
+        "release-environment-lifecycle-linux-x86_64/qualification.json": {
+          "sha256": "03a4f054af54873a5e3f50c271cc3e84b2be401b527d65ce724860758fcf06b2",
+          "checks": 8
+        },
+        "release-environment-lifecycle-linux-x86_64/qualification-index.json": {
+          "sha256": "b60b76533ea5e62e730d283f86fefeb4817af00a133d8b8468661befddb80482",
+          "checks": 6
+        },
+        "release-environment-console-linux-x86_64/environments.json": {
+          "sha256": "d992ddc6506f1fed9dd1dc4bea813f2ce2586831f663a023032a0fcd2a935842",
+          "checks": 16
+        },
+        "release-notebooks-linux-x86_64/notebooks.json": {
+          "sha256": "655b890eadd91b909baf88a856f598db5b5e9672f4844524178e14b1f20436de",
+          "checks": 39
+        },
+        "release-console-linux-x86_64/console.json": {
+          "sha256": "9b88117dd5725349c4dcf8a7bd7999f63c3c79ddf912585be6e8ba0fe39decaf",
+          "checks": 54
+        },
+        "release-projects-linux-x86_64/projects.json": {
+          "sha256": "9e0e0b92ff1ba7a33909c5ae89a6888f05f1401ae2b089cca2c68ee8cc24ee42",
+          "checks": 15
+        },
+        "project-source/producer.json": {
+          "sha256": "f0f40a78c4ab646250a4eb90ec6369509858470ab79666f1237bdfbf1aa74e24",
+          "checks": 1
+        },
+        "release-catalog-linux-x86_64/catalog.json": {
+          "sha256": "3bb8381d80113f180f44bedd7bdd774327b6e6f7402bed9ada3e4d40b97aa331",
+          "checks": 5
+        },
+        "release-ingest-linux-x86_64/ingest.json": {
+          "sha256": "93c89eddf55484f77e62077368c068cc945b8f3bb8403e7ba381ffc27b0315cd",
+          "checks": 39
+        },
+        "release-recovery-linux-x86_64/recovery.json": {
+          "sha256": "58baf256d8b2d49049973cf1acc69810607439828ce93647cf609c9b682629a9",
+          "checks": 18
+        },
+        "release-qualification-linux-x86_64/qualification.json": {
+          "sha256": "3c256645e37eab22ea05db5897eca1d14991a3622f2c26c0713e44d0c5008d0e",
+          "checks": 12
+        },
+        "release-qualification-linux-x86_64/benchmarks.json": {
+          "sha256": "b4863516735ef5b28a9c3770943c9a28e35fe61a95fbd643b5253dbb70bca2d2",
+          "checks": 12
+        },
+        "release-qualification-linux-x86_64/network.json": {
+          "sha256": "85a678a216ac6484d8bdf8fa33e8cc9c5832234276bb8262feca3097511dd61c",
+          "checks": 1
+        },
+        "release-governed-linux-x86_64/governed.json": {
+          "sha256": "c509d74d65e2251728ccbb45a132dbfb543d3e3ff8e630ce3ed53df3219efe6e",
+          "checks": 60
+        }
+      },
+      "environment_lifecycle_network": {
+        "scope": "Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches",
+        "transition": null
+      },
+      "source": {
+        "platform_commit": "8ea59d8c5c70f798165c1f1c3b981a2f51d666d0",
+        "console_commit": "ec6c1b99d50288b14a70255dfb05b2af9287a827",
+        "console_manifest_sha256": "8c0c2a51dff2d838d7f0edb98658da73e825b350229825de3834e609d85e53d8",
+        "console_lock_sha256": "53a371ca65e38e1978ca5c4174bc4d9faf4bf4e71dce63b7308e8a429799125a",
+        "ingestion_worker_sha256": "4d2cb19e760d080c44120e357caca8491ab95495b9934bcbce6515f5d4e689bb"
+      },
+      "browser": {
+        "engine": "Chromium",
+        "version": "153.0.8010.12",
+        "network": "Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only"
+      },
+      "demo": {
+        "DEMO.md": "97c61ad57c3fcd5ea70748a5d9168741a1185944643e1812925133a577ca26d6",
+        "examples/console/sales.csv": "31e26370225c0855b0966f4eb7b0820feaa07d086f131723c6362801ec880413",
+        "examples/console/sales.ipynb": "9f0dcbc4d341a919f844d029dbc683875013ca7fafb26cd067d96288bfd7f614",
+        "PROJECT-PORTABILITY.md": "32a3a8c6798da0708a0fff3afbaf9fa73a59ac869507d95ab52a2775f4e35567",
+        "PROJECT-DATA.md": "05d4494221e8dc467b8d09bf9bd43c228685ba5a8b31f23e6266c27a4c4e1039",
+        "PROJECT-CREATION.md": "ae5ea706b97fce0bdff64a64e2fecec2b8093824f7ba8939dec21d54720ea201",
+        "CATALOG-DEMO.md": "ac7ca2d2788155cc0b81fc0537f5a6f1869168c55bfe3394c36d88430a25d968",
+        "GOVERNED-SERVER.md": "60bccd8d6f1162da23954958183665128b33ed0c944fe2d820111f08ea081d8d"
+      },
+      "notices": {
+        "files": 2811,
+        "inventory_sha256": "f5de0231c03fdf8e5961f75df5d90e042d22fa154e5e724735638b246ce43efa"
+      },
+      "ingestion": {
+        "csv_source_sha256": "827c4417085028ff6d8c8f5cbb35c202dd0e84757687db9d54bd30c8067367ea",
+        "csv": {
+          "source_bytes": 104857600,
+          "rows": 102400,
+          "decoded_bytes": 104652798,
+          "duration_ms": 1037,
+          "peak_rss_bytes": 148664320
+        },
+        "formats": {
+          "jsonl": {
+            "source_sha256": "b5a9d5e15ab0dba4a117260a29017de5cc561e85b14aa34a288335042af88df0",
+            "budget_source_sha256": "2b1712397aa50f852c7184b612da1349407b1cc70ae1c1f0d0480c657d6947dd",
+            "measurements": {
+              "source_bytes": 4317184,
+              "rows": 8192,
+              "decoded_bytes": 4251648,
+              "duration_ms": 993,
+              "peak_rss_bytes": 97333248,
+              "elapsed_seconds": 2.539,
+              "worker_source_mib_per_second": 4.146
+            }
+          },
+          "json": {
+            "source_sha256": "15c70b4c7c017349bae691ffde9ad8c9e64cd21ed41a90b1166cf566d60002de",
+            "budget_source_sha256": "6884834d85347d53fb6fcd7c9d96c677a7da44b8df1dc165415c43bbf152f8fd",
+            "measurements": {
+              "source_bytes": 10485760,
+              "rows": 8192,
+              "decoded_bytes": 4251648,
+              "duration_ms": 889,
+              "peak_rss_bytes": 121729024,
+              "elapsed_seconds": 2.543,
+              "worker_source_mib_per_second": 11.249
+            }
+          },
+          "parquet": {
+            "source_sha256": "dcbf47843f486eba273f94e12bc1453434a9c0a34be57676363e4db18d6522cc",
+            "budget_source_sha256": "1372886076c76128f789cf40dbfa80322910d956791eeb8aa817e392d64dc49e",
+            "measurements": {
+              "source_bytes": 71801,
+              "rows": 32768,
+              "decoded_bytes": 16809984,
+              "duration_ms": 2370,
+              "peak_rss_bytes": 110358528,
+              "elapsed_seconds": 3.817,
+              "worker_source_mib_per_second": 0.029
+            }
+          }
+        },
+        "network": "Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only"
+      },
+      "baseline": {
+        "network": "Ubuntu 24.04 minimal unprivileged container; network=none; all descendants traced",
+        "scope": "Daemon and sampled live descendants; excludes harness and CLI. RSS can double-count shared pages and miss short peaks.",
+        "measurements": {
+          "distribution": {
+            "archive_bytes": 1045014373,
+            "unpacked_bytes": 2587679581
+          },
+          "cold_runtime_start": {
+            "peak_rss_bytes": 854618112,
+            "elapsed_seconds": 10.683327761999863,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 10.671144038999955,
+            "cpu_seconds": 11.929999999999994,
+            "mean_cpu_percent_one_core": 111.79682287484158,
+            "catalog_peak_rss_bytes": 307277824,
+            "catalog_processes_observed": 1
+          },
+          "first_analytical_query": {
+            "peak_rss_bytes": 1627922432,
+            "elapsed_seconds": 5.891984804999993,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 5.903800556000078,
+            "cpu_seconds": 2.630000000000001,
+            "mean_cpu_percent_one_core": 44.54757532971047,
+            "catalog_peak_rss_bytes": 300036096,
+            "catalog_processes_observed": 1
+          },
+          "warm_analytical_query": {
+            "peak_rss_bytes": 1511727104,
+            "elapsed_seconds": 0.2070568720000665,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 0.20388159399999495,
+            "cpu_seconds": 0,
+            "mean_cpu_percent_one_core": 0.0,
+            "catalog_peak_rss_bytes": 300036096,
+            "catalog_processes_observed": 1
+          },
+          "analytical_refresh": {
+            "peak_rss_bytes": 1884786688,
+            "elapsed_seconds": 4.223187605000021,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 4.275986038999918,
+            "cpu_seconds": 1.5100000000000011,
+            "mean_cpu_percent_one_core": 35.313492285235924,
+            "catalog_peak_rss_bytes": 300335104,
+            "catalog_processes_observed": 1
+          },
+          "connection_wake": {
+            "peak_rss_bytes": 1336631296,
+            "elapsed_seconds": 0.6815140890000748,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 0.611509807999937,
+            "cpu_seconds": 0.020000000000000462,
+            "mean_cpu_percent_one_core": 3.27059349471669,
+            "catalog_peak_rss_bytes": 300802048,
+            "catalog_processes_observed": 1
+          },
+          "idle_runtime": {
+            "peak_rss_bytes": 1486766080,
+            "elapsed_seconds": 5.000082141999883,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 5.10131761699995,
+            "cpu_seconds": 0.4699999999999983,
+            "mean_cpu_percent_one_core": 9.213305959106348,
+            "catalog_peak_rss_bytes": 300904448,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_10000000_bytes": {
+            "rows": 9765,
+            "peak_rss_bytes": 2227851264,
+            "elapsed_seconds": 4.711167735999879,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 4.744529199999988,
+            "cpu_seconds": 2.759999999999999,
+            "mean_cpu_percent_one_core": 58.172262908614954,
+            "source_payload_bytes": 9999360,
+            "load_seconds": 0.6170008010001311,
+            "export_payload_mb_per_second": 2.122480149367421,
+            "catalog_peak_rss_bytes": 339210240,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 5286954059,
+              "allocated_bytes": 5497815040
+            },
+            "disk_after": {
+              "logical_bytes": 5355531894,
+              "allocated_bytes": 5577281536
+            }
+          },
+          "snapshot_10000000_bytes_query": {
+            "peak_rss_bytes": 2075504640,
+            "elapsed_seconds": 1.8309786820000227,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 1.847618212000043,
+            "cpu_seconds": 1.3699999999999992,
+            "mean_cpu_percent_one_core": 74.149518071538,
+            "catalog_peak_rss_bytes": 339419136,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_100000000_bytes": {
+            "rows": 97656,
+            "peak_rss_bytes": 2666835968,
+            "elapsed_seconds": 14.16992899800016,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 14.10530275899987,
+            "cpu_seconds": 9.599999999999987,
+            "mean_cpu_percent_one_core": 68.05951041266889,
+            "source_payload_bytes": 99999744,
+            "load_seconds": 4.343310394000127,
+            "export_payload_mb_per_second": 7.057180315731522,
+            "catalog_peak_rss_bytes": 341659648,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 5355605679,
+              "allocated_bytes": 5577347072
+            },
+            "disk_after": {
+              "logical_bytes": 6005610857,
+              "allocated_bytes": 6218248192
+            }
+          },
+          "snapshot_100000000_bytes_query": {
+            "peak_rss_bytes": 2267312128,
+            "elapsed_seconds": 1.889149555999893,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 1.8503258779999214,
+            "cpu_seconds": 1.3399999999999992,
+            "mean_cpu_percent_one_core": 72.41967568699032,
+            "catalog_peak_rss_bytes": 341659648,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_1000000000_bytes": {
+            "rows": 976562,
+            "peak_rss_bytes": 3680219136,
+            "elapsed_seconds": 185.76945179199993,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 185.56782676099988,
+            "cpu_seconds": 220.6499999999961,
+            "mean_cpu_percent_one_core": 118.9053101775988,
+            "source_payload_bytes": 999999488,
+            "load_seconds": 55.09139737700002,
+            "export_payload_mb_per_second": 5.383013613668125,
+            "catalog_peak_rss_bytes": 349405184,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 5995495787,
+              "allocated_bytes": 6208118784
+            },
+            "disk_after": {
+              "logical_bytes": 17210805536,
+              "allocated_bytes": 17427480576
+            }
+          },
+          "snapshot_1000000000_bytes_query": {
+            "peak_rss_bytes": 2750443520,
+            "elapsed_seconds": 2.113717682999777,
+            "logical_cpus": 4,
+            "host_memory_bytes": 16765378560,
+            "cgroup_memory_limit_bytes": 17179869184,
+            "duration_seconds": 2.078811986999881,
+            "cpu_seconds": 2.12,
+            "mean_cpu_percent_one_core": 101.98132458623934,
+            "catalog_peak_rss_bytes": 349552640,
+            "catalog_processes_observed": 1
+          },
+          "benchmark_cleanup": {
+            "elapsed_seconds": 1.9535380130000704
+          }
+        }
+      },
+      "network_destinations": 5293,
+      "governed": {
+        "status": "passed",
+        "profile": "linux-governed-shared-v1",
+        "release_identity": "a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b",
+        "reports": {
+          "sync": {
+            "sha256": "f3939a32c43ecd30d7bf51d5868eb3b48b07972cb9f1e885149b411e8879463d",
+            "checks": [
+              "admission_and_run_transition_audit_contains_identifiers_without_rows_or_tokens",
+              "cross_project_dataset_binding_and_restarted_notebook_keep_selected_incremental_epoch",
+              "governed_continuous_service_identity_survives_manager_logout_and_keeps_old_readers_pinned",
+              "incremental_result_review_uses_the_scoped_service_artifact",
+              "native_background_snapshot_finishes_after_manager_session_revocation",
+              "native_rls_source_never_publishes_through_service_authority",
+              "new_epochs_do_not_retarget_existing_sail_readers",
+              "read_only_inspection_separate_source_manage_executor_and_result_grants_no_leakage",
+              "real_uc_incremental_publications_are_immutable_version_zero_views_with_pinned_sail_readers",
+              "restart_with_revoked_service_epochs_keeps_access_closed",
+              "service_revocation_denies_replayed_admission_and_retained_epoch_new_readers",
+              "service_revocation_fences_incremental_capture_and_retained_epoch_new_readers",
+              "stopped_backup_restore_reconciles_incremental_catalog_view_locations",
+              "unsupported_governed_source_is_refused_before_capture_resources_or_bootstrap"
+            ]
+          },
+          "identity": {
+            "sha256": "2c3013a30f23c0b6987094fac015c76c0bf9369b34c6739ab997c39c16dfe94e",
+            "checks": [
+              "IdP disable blocks execution renewal and the independent watchdog removes the sandbox within 35 seconds",
+              "IdP disable refuses an unexpired platform session",
+              "audited identity transitions without provider credentials",
+              "disposable provider, login clients and daemon cleaned up",
+              "provider outage fails closed while local logout remains available",
+              "real Keycloak users use distinct private UC mappings through the authenticated CLI and daemon; UC returns no ungranted metadata",
+              "real OIDC, CLI, daemon, project admission and UC broker launch isolated Jupyter/Sail SQL; another actor cannot read results",
+              "real TLS Keycloak PKCE logins and equal-email principal separation",
+              "scoped service credential and session rotation",
+              "service execution approval binds the exact immutable source and rejects edited code",
+              "two real users enforce conflicting roles, explicit execution, idempotency and stop ownership"
+            ]
+          },
+          "data": {
+            "sha256": "b0cf79d74677b4eef689f762e08af764b99d118ba2fc15f2b09df2d6a2b1f30b",
+            "checks": [
+              "audit_append_failure_rolls_back_identity_mutation",
+              "audit_capacity_closes_admission_across_restart_and_remains_exportable",
+              "bounded_audit_export_contains_correlated_metadata_without_credentials_or_sql",
+              "clone_rotates_source_credentials_and_does_not_inherit_grants",
+              "destination_grant_race_rolls_back_import",
+              "frozen_export_publication_requires_fresh_copy_and_sharing_grants",
+              "governed_backup_restore_closes_historical_grants_and_rotates_pg_and_sessions",
+              "grant_race_cleans_export_without_replacing_active_revision",
+              "project_admin_does_not_imply_pg_read",
+              "read_denies_control_files_owner_and_write",
+              "restricted_pg_positive_control_and_actor_private_results",
+              "revocation_rolls_back_write_and_timeouts_close_sessions",
+              "rls_source_is_not_whole_branch",
+              "sbdata_copy_requires_source_and_destination_authority_and_is_atomic",
+              "separate_pg_write_and_ddl",
+              "single_statement_transaction_and_role_cleanup",
+              "writer_crash_rolls_back_and_never_replays_sql"
+            ]
+          },
+          "upgrade": {
+            "sha256": "a88b85078b19aab7ae0a063c76083195b51bb58559d0f087bd929286e93fdb54",
+            "checks": [
+              "named_uc_transition_uses_source_binary_checkpoint_and_preserves_backup",
+              "pre_upgrade_backup_restores_with_its_original_catalog_binary",
+              "qualified_predecessor_native_pg_and_published_uc_snapshot",
+              "upgraded_pg_publication_and_metastore_ids_survive_with_rotated_uc_credentials"
+            ]
+          },
+          "browser": {
+            "sha256": "0f288b1792c664d16f532ddb2006c098729a45f034e67cd2f8113c90ada6da96",
+            "checks": [
+              "browser_bound_spark_query",
+              "browser_governed_package_ingestion",
+              "browser_project_creation_and_denied_discovery",
+              "browser_reviewed_snapshot_publication",
+              "concurrent_execution_limit_and_measured_cgroups",
+              "correlated_secret_free_audit",
+              "crafted_administration_denied",
+              "independent_oidc_browser_sessions",
+              "reviewed_uc_sharing_and_filtered_discovery",
+              "revocation_during_bound_notebook_execution",
+              "revocation_preserves_independent_peer_execution",
+              "revoked_session_clears_browser_data",
+              "sandbox_bypass_and_scratch_quota_denied",
+              "source_pinned_service_use_from_browser"
+            ]
+          }
+        },
+        "components": {
+          "keycloak": "quay.io/keycloak/keycloak@sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c",
+          "rootfs_image": "ubuntu@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3",
+          "rootfs_sha256": "ba4cefbef70c0a163c582a07ea9d22c10d3649b0e11aee50f50f8eb4ba89517f",
+          "gvisor_inventory_sha256": "2b73e2df01feb3209ed33b428f0cdfea9e057d618417c713b1d5e518ce1a39a3",
+          "execution_config_sha256": "1592b910821c94cedb325323f755716502b45a340775cea85a899d4bd6ec99ae",
+          "execution_release_identity": "a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b",
+          "execution_pin_sha256": "b86c1be7d4414db6dc3698e6d824944525d08933afd7feb284c98b6cef6f6323",
+          "installer_template_sha256": "3266b99dea20475820224ddf3689878cfc3b7ca1321f8de1e7d4459cf69adde8",
+          "supervisor_sha256": "b751236686bb51da9918503fe52c2c14e73691d44ee0fb97cf1e82bbe3687740",
+          "workload_sha256": "2f55394270160735e0ceecf87b8b6411a91520fb510f4b925635c61be067939d"
+        },
+        "revocation_observed_ms": 849,
+        "idp_disable_seconds": 0.7839431800000511,
+        "resource_envelope": {
+          "concurrent_executions": 2,
+          "memory_bytes": 2147483648,
+          "cpu_count": 2,
+          "pids": 512,
+          "scratch_bytes": 536870912
+        },
+        "host_capacity": {
+          "cpu_count": 4,
+          "memory_bytes": 16766414848
+        },
+        "execution_memory": [
+          {
+            "current_bytes": 465993728,
+            "peak_bytes": 1001295872
+          },
+          {
+            "current_bytes": 469094400,
+            "peak_bytes": 1006428160
+          }
+        ]
+      }
+    },
+    "macos-arm64": {
+      "catalog": {
+        "commit": "17280eababcc4ae31c53522d930ef2fe92d1c331",
+        "java": {
+          "vendor": "Eclipse Temurin",
+          "version": "17.0.20.1+1",
+          "license": "GPL-2.0-with-classpath-exception",
+          "targets": {
+            "linux-x86_64": {
+              "jdk": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e",
+                "bytes": 193252603
+              },
+              "jre": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_x64_linux_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "0b2b640e3046b64c8ec504de0ab9d91bb5610182bda21fad454681ce54d45a62",
+                "bytes": 46640574
+              }
+            },
+            "macos-arm64": {
+              "jdk": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "196d13ba5f10414bef7f6a05a9b3f00edacb18ebacef2b99485db9e2ee18f0e8",
+                "bytes": 185851019
+              },
+              "jre": {
+                "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.20.1_1.tar.gz",
+                "sha256": "190480874ccceb358cbc840393207f77ac3e63a4c5f8129d0e23e9518b96ad05",
+                "bytes": 42722113
+              }
+            }
+          }
+        },
+        "contract": {
+          "backend": "h2-2.2.224",
+          "backend_schema": 1,
+          "capability_profile": "local-owner-files-v1",
+          "format_version": 1,
+          "migration": "exact-backend-only; incompatible changes require a separately qualified migration",
+          "publication_manifest": 1,
+          "server_commit": "17280eababcc4ae31c53522d930ef2fe92d1c331"
+        },
+        "build_sha256": "84c96c35fdf9c9beadffa361a10bd27997e77d062054627349a1b2dbc7d48441",
+        "measurements": {
+          "peak_rss_bytes": 1682636800,
+          "logical_cpus": 3,
+          "host_memory_bytes": 7516192768,
+          "cgroup_memory_limit_bytes": null,
+          "duration_seconds": 523.548504166,
+          "cpu_seconds": 288.6907517529998,
+          "mean_cpu_percent_one_core": 55.14116637824743,
+          "catalog_peak_rss_bytes": 332627968,
+          "catalog_processes_observed": 21
+        },
+        "suites": {
+          "service": {
+            "status": "PASS",
+            "checks": [
+              "installed_private_jre_authenticated_loopback_bootstrap",
+              "private_keys_and_credentials_absent_from_status_and_argv",
+              "uc02_owned_namespace_creation_and_stable_uuid_resolution",
+              "uc02_same_definition_deployments_have_distinct_owned_namespaces",
+              "uc02_live_metadata_quotes_identifiers_and_fences_project_ownership",
+              "uc02_schema_drift_rename_recreation_and_stale_pagination_fail_closed",
+              "uc02_case_collisions_rejected_before_publication",
+              "uc02_unified_live_and_published_metadata_preserves_provenance",
+              "uc02_recreated_uc_schema_cannot_replace_recorded_ownership",
+              "uc02_cli_contract_and_projectless_operations_rejected",
+              "uc02_unavailable_catalog_is_distinct_from_empty_and_pg_metadata_remains_usable",
+              "uc03_preview_idempotent_publish_crash_recovery_and_complete_alias",
+              "uc03_catalog_outage_preserves_old_head_and_explicit_resume_reconciles",
+              "uc03_refresh_retains_old_revision_across_gc_and_stopped_daemon",
+              "uc03_unpublish_waits_for_readers_deletes_only_metadata_then_releases_gc",
+              "uc03_recreated_alias_blocks_cleanup_and_preserves_retention",
+              "uc04_console_sql_spark_connect_notebook_share_frozen_revision_and_aliases",
+              "uc04_refresh_changes_new_sessions_only_and_notebook_restart_retains_revision",
+              "uc04_outage_fails_new_resolution_without_fallback_and_preserves_leased_reads",
+              "uc04_retirement_waits_for_session_worker_death",
+              "uc04_expiry_closes_lease_and_recreated_uc_uuid_is_rejected",
+              "uc05_two_projects_share_one_publication_without_copies_or_ownership_transfer",
+              "uc05_reviewed_schema_diff_updates_new_readers_and_notebook_joins_record_each_revision",
+              "uc05_offline_pack_verify_import_preserve_requirements_without_destination_authority",
+              "uc05_consumer_decommission_releases_bindings_after_review_without_deleting_producer_data",
+              "uc05_remote_uuid_replacement_after_plan_fails_activation_and_releases_pending_pins",
+              "key_rotation_revokes_old_token_preserves_metadata_and_identity",
+              "port_collision_retries_without_adopting_or_stopping_unrelated_listener",
+              "catalog_crash_leaves_postgres_usable",
+              "bounded_restart_budget_and_explicit_recovery",
+              "bounded_private_process_log_rotation",
+              "daemon_restart_preserves_catalog_metadata",
+              "missing_metastore_fails_closed_and_restore_preserves_identity",
+              "external_tls_ca_authentication_identity_and_disabled_storage",
+              "external_credential_reference_rotation_without_restart",
+              "down_never_stops_operator_managed_service",
+              "down_recovers_owned_catalog_after_daemon_crash"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 332.751570958,
+            "report_sha256": "137c64ecd477cc21e0773ba28b15c5a8a173bbb991a2c14c8e069c1c93628eb4",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 458,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          },
+          "browser": {
+            "status": "PASS",
+            "checks": [
+              "producer_created_ingested_and_published_in_browser",
+              "explicit_binding_recovers_lost_response_and_reload_without_duplicate_apply",
+              "csrf_and_foreign_project_publication_status_are_rejected",
+              "bound_dataset_queried_in_spark_workspace",
+              "live_schema_drift_requires_explicit_reinspection",
+              "owned_publication_handoff_pins_selected_historical_epoch",
+              "producer_refresh_and_reviewed_schema_update_preserve_existing_reader_revision",
+              "notebook_handoff_uses_current_fixed_binding_without_automatic_execution",
+              "reviewed_unbind_preserves_producer_data",
+              "absent_provider_blocks_publication_without_breaking_postgres",
+              "confirmed_withdrawal_retires_unreferenced_publication"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 101.285720417,
+            "report_sha256": "5474ff77f82058862cb7b439c3b3c4ca88b4bfa96ee0a146972a137eacc6e177",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 111,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          },
+          "recovery": {
+            "status": "PASS",
+            "checks": [
+              "two_project_bound_read_before_checkpoint",
+              "stopped_checkpoint_includes_backend_journal_bindings_and_retention",
+              "interrupted_restore_remains_guarded_and_original_backup_verifies",
+              "moved_root_preserves_ids_and_bindings_relocates_files_and_rotates_credentials",
+              "restored_binding_keeps_snapshot_retained",
+              "corrupt_h2_refuses_checkpoint_without_publishing_backup",
+              "unsupported_backend_contract_refuses_implicit_migration",
+              "missing_external_provider_requires_explicit_rebind_and_preserves_postgres",
+              "exact_archive_unchanged_after_catalog_restore_and_rebind"
+            ],
+            "exit_code": 0,
+            "duration_seconds": 89.56644829200002,
+            "report_sha256": "31793a80998a0bdf1cbd0355f9e867b45ba609de21adaf00ee7f92d1f9de4db0",
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 236,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          }
+        },
+        "network": "macOS Seatbelt; external network, system Java and Homebrew denied for all descendants"
+      },
+      "projects": {
+        "package_sha256": "6d170633774f0e5759fff65880ccb711081a5b704df1bb59036f0d36de94f5c7",
+        "source_sha256": "57828c247b9a90b6ec22da4b12e30d9b0b68f35dae54f123cbb91fa13e13ab96",
+        "content_sha256": "9bc54e9c2fdd55ccf0aab242834db7f20ae6d902c79bae9f4f9b83cb268e5b6c",
+        "environment": {
+          "bundles": {
+            "linux-x86_64": {
+              "kernel_contract": "886fc2e82209b23f6bea110c189c1170cb5088a617a2e8a3448765630018dc06",
+              "path": "dependencies/linux-x86_64.zip",
+              "sha256": "c65c1846119da6aa758d974c9af98fb73b03ca3916a7a752761c61dd6fb61ea2",
+              "status": "inventory_verified_runtime_preparation_required",
+              "wheels": 41
+            },
+            "macos-arm64": {
+              "kernel_contract": "6d32e0407b0a9f942e9e3e26a799309cc9b5594c4f42d769a88b4864cfd17211",
+              "path": "dependencies/macos-arm64.zip",
+              "sha256": "5b92f3073850bbf3f27886b8f2262d30fddb83a2c508c8485e6e59c668a37b28",
+              "status": "inventory_verified_runtime_preparation_required",
+              "wheels": 42
+            }
+          },
+          "lock": "notebooks/environment/uv.lock",
+          "lock_sha256": "c63e85a456e09ae768b86b07a2212389d9c8ca4a19669e4808541f66268bb27b",
+          "pyproject": "notebooks/environment/pyproject.toml",
+          "pyproject_sha256": "2b1f4783b3aba2a91aacaaadc8f6af6adc9813dfe2684da50409c1052d6cdcb2"
+        },
+        "fixtures": {
+          "fixtures/sales.csv": "31e26370225c0855b0966f4eb7b0820feaa07d086f131723c6362801ec880413",
+          "migrations/001-marker.sql": "bf5a914fba4b3d671aad47b365d4fdc85e7297ea74d2313861b4f0ecf4e445ca",
+          "migrations/002-marker.sql": "17058a6938c879fcb21b1a13de5678bc9f91f1a584205daf8bb6a0ee62b2b79c",
+          "notebooks/sales.ipynb": "d3aea6de9bc14ec5d02f566aa8cfff7d7ef44084453e92b234a04cd3aae56a78",
+          "queries/sales_total.sql": "bed8c4b0a31b5ebcea48ff0e5bbfc58b0924f38dcde5ba4e2ca2a6a450cc475a"
+        },
+        "measurements": {
+          "archive_bytes": 198371866,
+          "unpacked_bytes": 198329453,
+          "rows": 2,
+          "prepare_seconds": 43.31848995799999,
+          "start_seconds": 10.814598749999988,
+          "peak_rss_bytes": 2262843392,
+          "disk_peak_bytes": 5086552064
+        },
+        "logical_data": {
+          "archive_sha256": "b1bf45bb9b5ded63090b34069011722d2d4161f9c49d06f1300d29b3b7d10133",
+          "content_sha256": "db9f45d8d5627034340580f417ccd280cb7d40f9331662d846a3b9eb0d2ab94a",
+          "rows": 2
+        },
+        "network": "macOS 15 arm64; external networking and Homebrew denied; private HOME and caches",
+        "previous_archive": {
+          "version": "v0.1.0-alpha.22",
+          "target": "macos-arm64",
+          "sha256": "5fa825987efb58c4ce9242956c5d00e797773d0b01633f7a1c6a2c3db61fdebf"
+        },
+        "reports": {
+          "release-projects-macos-arm64/projects.json": {
+            "sha256": "33f6e141d7567e052d131c92a50ca408df20661ea8bf40ee687a4423419e2e71",
+            "checks": 15
+          },
+          "project-source/producer.json": {
+            "sha256": "f0f40a78c4ab646250a4eb90ec6369509858470ab79666f1237bdfbf1aa74e24",
+            "checks": 1
+          }
+        }
+      },
+      "sail": {
+        "schema_version": 1,
+        "repository": "https://github.com/supabricks/sail",
+        "commit": "9544c9253e981a82c5f9e493c43ce98a4d9d41b7",
+        "source_dirty": false,
+        "version": "0.7.1",
+        "target": "macos-arm64",
+        "inputs": {
+          "Cargo.lock": "3a19a605f46aa32002e7cdfcda6816b06d0fd09ff9db37b4dd0c0b6d558e76b1",
+          "Cargo.toml": "e008ee0294c7f8401c97518f301711fbcd26c0ae9333d4a1dca20f40d4b3f7d2",
+          "pyproject.toml": "2bbc410c581efe06bf614ee1f1074eaf349dceea8e614295c389cd128a424396",
+          "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        "maturin": "1.15.0",
+        "protoc": {
+          "url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-osx-aarch_64.zip",
+          "sha256": "de56d57afe30c5d191b11d24ff93dd4025728d7fb43b773886b2d3613e0bdbb2"
+        },
+        "profile": {
+          "CARGO_PROFILE_RELEASE_LTO": "false",
+          "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+          "CARGO_PROFILE_RELEASE_DEBUG": "0",
+          "CARGO_BUILD_JOBS": "2",
+          "CARGO_INCREMENTAL": "0"
+        },
+        "source_lock_sha256": "a6c89a02741398bd6fbd3ad7118b3aa0a76ffc466020959410791ecd6c78bfca",
+        "builder_script_sha256": "672de658f13af6db6f468702b3b8aea485bf14eebb6b13d6c94aca421aaa4d80",
+        "wheel": {
+          "file": "pysail-0.7.1-cp38-abi3-macosx_15_0_arm64.whl",
+          "sha256": "019ee3f38999d8a564e389ac9ea159cca8d8a64fa29b5c8ff3c049df21e1530c"
+        },
+        "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+      },
+      "release_sha256": "473eb0868599fc7552076ad003419e18deaec7b9dbc0858632dc70344993077a",
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "macos-arm64",
+        "sha256": "fb1240fa589088afeaee579ad1783db854d65e74c9e61a8f2d36fc79507aa6c8"
+      },
+      "reports": {
+        "release-environments-macos-arm64/qualification.json": {
+          "sha256": "ae395116f5081411bc3588cbf61633502e10574b08a378b5f5e7b6bd44b9a14c",
+          "checks": 10
+        },
+        "release-environments-macos-arm64/qualification-kernels.json": {
+          "sha256": "1d68ed00e82a5da34649ffbb4478a2b7f7faa7df16f191d8b8df1f12ed58f7c7",
+          "checks": 10
+        },
+        "release-packages-macos-arm64/qualification.json": {
+          "sha256": "3ae6ffc212c3e7f46a4df7b94e1d438df9b0b630e8059100c8a9d9cf870b5a28",
+          "checks": 12
+        },
+        "release-environment-lifecycle-macos-arm64/qualification.json": {
+          "sha256": "2b1c3d05dad4eb912f614c90d361fea8c8da080d8829b79aaca76baa82bc4bc0",
+          "checks": 8
+        },
+        "release-environment-lifecycle-macos-arm64/qualification-index.json": {
+          "sha256": "d487ffabb9b189c7ea6a7a55fa3fcc37544d2aad8dd4d18e3a28ae71f7075533",
+          "checks": 6
+        },
+        "release-environment-console-macos-arm64/environments.json": {
+          "sha256": "65fe6b1f1a5b398c99850d88ff0e0c5b5d5516c1e8cc5d8d1d5c5b3b2cc0c63b",
+          "checks": 16
+        },
+        "release-notebooks-macos-arm64/notebooks.json": {
+          "sha256": "b30dd23d2703abd3608fb95b9cf6ac4ef499dbf946755c682c97c1e7e886d11a",
+          "checks": 39
+        },
+        "release-console-macos-arm64/console.json": {
+          "sha256": "07961d75d0ef19ae5dd08b383bbd7cd7735d7d7c1b5bf1f8eaf58b5006620a39",
+          "checks": 54
+        },
+        "release-projects-macos-arm64/projects.json": {
+          "sha256": "33f6e141d7567e052d131c92a50ca408df20661ea8bf40ee687a4423419e2e71",
+          "checks": 15
+        },
+        "project-source/producer.json": {
+          "sha256": "f0f40a78c4ab646250a4eb90ec6369509858470ab79666f1237bdfbf1aa74e24",
+          "checks": 1
+        },
+        "release-catalog-macos-arm64/catalog.json": {
+          "sha256": "df3376750fdd64e797dcd2dae84f2c132af9216d114c39f707fa60ede0a03e6f",
+          "checks": 5
+        },
+        "release-ingest-macos-arm64/ingest.json": {
+          "sha256": "489ac74e16d1c54bf3688653d1f8c86bd9c9d95e68ceb99443124f8f09c47b5f",
+          "checks": 39
+        },
+        "release-recovery-macos-arm64/recovery.json": {
+          "sha256": "1d3d546a464d8043d93dc13d9f891c2ff382fef0490c7268adecdeb71d385126",
+          "checks": 18
+        },
+        "release-qualification-macos-arm64/qualification.json": {
+          "sha256": "5f5464550f8e1f095720d41896542f0c332eab3c86a8ed31f81307376fce2bd8",
+          "checks": 12
+        }
+      },
+      "environment_lifecycle_network": {
+        "scope": "macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches",
+        "transition": {
+          "predecessor_preparation": "outside_network_qualification",
+          "candidate_policy_entered": true,
+          "child_external_tcp_errno": 1,
+          "inherited_external_connections": 0,
+          "predecessor_processes_stopped": true
+        }
+      },
+      "source": {
+        "platform_commit": "8ea59d8c5c70f798165c1f1c3b981a2f51d666d0",
+        "console_commit": "ec6c1b99d50288b14a70255dfb05b2af9287a827",
+        "console_manifest_sha256": "8c0c2a51dff2d838d7f0edb98658da73e825b350229825de3834e609d85e53d8",
+        "console_lock_sha256": "53a371ca65e38e1978ca5c4174bc4d9faf4bf4e71dce63b7308e8a429799125a",
+        "ingestion_worker_sha256": "4d2cb19e760d080c44120e357caca8491ab95495b9934bcbce6515f5d4e689bb"
+      },
+      "browser": {
+        "engine": "Chromium",
+        "version": "153.0.8010.12",
+        "network": "macOS 15 arm64; Seatbelt denies external networking and Homebrew"
+      },
+      "demo": {
+        "DEMO.md": "97c61ad57c3fcd5ea70748a5d9168741a1185944643e1812925133a577ca26d6",
+        "examples/console/sales.csv": "31e26370225c0855b0966f4eb7b0820feaa07d086f131723c6362801ec880413",
+        "examples/console/sales.ipynb": "9f0dcbc4d341a919f844d029dbc683875013ca7fafb26cd067d96288bfd7f614",
+        "PROJECT-PORTABILITY.md": "32a3a8c6798da0708a0fff3afbaf9fa73a59ac869507d95ab52a2775f4e35567",
+        "PROJECT-DATA.md": "05d4494221e8dc467b8d09bf9bd43c228685ba5a8b31f23e6266c27a4c4e1039",
+        "PROJECT-CREATION.md": "ae5ea706b97fce0bdff64a64e2fecec2b8093824f7ba8939dec21d54720ea201",
+        "CATALOG-DEMO.md": "ac7ca2d2788155cc0b81fc0537f5a6f1869168c55bfe3394c36d88430a25d968",
+        "GOVERNED-SERVER.md": "60bccd8d6f1162da23954958183665128b33ed0c944fe2d820111f08ea081d8d"
+      },
+      "notices": {
+        "files": 2809,
+        "inventory_sha256": "f3d869fd0502b8a900fe2166d41b9ce374bd060bbde675ddf11825383e35e1fa"
+      },
+      "ingestion": {
+        "csv_source_sha256": "827c4417085028ff6d8c8f5cbb35c202dd0e84757687db9d54bd30c8067367ea",
+        "csv": {
+          "source_bytes": 104857600,
+          "rows": 102400,
+          "decoded_bytes": 104652798,
+          "duration_ms": 2153,
+          "peak_rss_bytes": 143245312
+        },
+        "formats": {
+          "jsonl": {
+            "source_sha256": "b5a9d5e15ab0dba4a117260a29017de5cc561e85b14aa34a288335042af88df0",
+            "budget_source_sha256": "2b1712397aa50f852c7184b612da1349407b1cc70ae1c1f0d0480c657d6947dd",
+            "measurements": {
+              "source_bytes": 4317184,
+              "rows": 8192,
+              "decoded_bytes": 4251648,
+              "duration_ms": 458,
+              "peak_rss_bytes": 73596928,
+              "elapsed_seconds": 2.274,
+              "worker_source_mib_per_second": 8.989
+            }
+          },
+          "json": {
+            "source_sha256": "15c70b4c7c017349bae691ffde9ad8c9e64cd21ed41a90b1166cf566d60002de",
+            "budget_source_sha256": "6884834d85347d53fb6fcd7c9d96c677a7da44b8df1dc165415c43bbf152f8fd",
+            "measurements": {
+              "source_bytes": 10485760,
+              "rows": 8192,
+              "decoded_bytes": 4251648,
+              "duration_ms": 426,
+              "peak_rss_bytes": 111263744,
+              "elapsed_seconds": 2.234,
+              "worker_source_mib_per_second": 23.474
+            }
+          },
+          "parquet": {
+            "source_sha256": "dcbf47843f486eba273f94e12bc1453434a9c0a34be57676363e4db18d6522cc",
+            "budget_source_sha256": "1372886076c76128f789cf40dbfa80322910d956791eeb8aa817e392d64dc49e",
+            "measurements": {
+              "source_bytes": 71801,
+              "rows": 32768,
+              "decoded_bytes": 16809984,
+              "duration_ms": 1609,
+              "peak_rss_bytes": 84377600,
+              "elapsed_seconds": 3.432,
+              "worker_source_mib_per_second": 0.043
+            }
+          }
+        },
+        "network": "macOS 15 arm64; Seatbelt denies external networking and Homebrew"
+      },
+      "baseline": {
+        "network": "Separate macOS 15 arm64 runner; Seatbelt denies external networking and Homebrew; not a factory-clean Mac",
+        "scope": "Daemon and sampled live descendants; excludes harness and CLI. RSS can double-count shared pages and miss short peaks.",
+        "measurements": {
+          "distribution": {
+            "archive_bytes": 715368120,
+            "unpacked_bytes": 1625283463
+          },
+          "cold_runtime_start": {
+            "peak_rss_bytes": 541786112,
+            "elapsed_seconds": 13.90524216700004,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 13.899207834000038,
+            "cpu_seconds": 16.183191108999996,
+            "mean_cpu_percent_one_core": 116.43247084494205,
+            "catalog_peak_rss_bytes": 283852800,
+            "catalog_processes_observed": 1
+          },
+          "first_analytical_query": {
+            "peak_rss_bytes": 1199390720,
+            "elapsed_seconds": 7.232011292000038,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 7.4588567910000165,
+            "cpu_seconds": 3.1907920520000013,
+            "mean_cpu_percent_one_core": 42.77856702987065,
+            "catalog_peak_rss_bytes": 319602688,
+            "catalog_processes_observed": 1
+          },
+          "warm_analytical_query": {
+            "peak_rss_bytes": 1157775360,
+            "elapsed_seconds": 0.40492395800004033,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 0.387233624999908,
+            "cpu_seconds": 0,
+            "mean_cpu_percent_one_core": 0.0,
+            "catalog_peak_rss_bytes": 319635456,
+            "catalog_processes_observed": 1
+          },
+          "analytical_refresh": {
+            "peak_rss_bytes": 1412235264,
+            "elapsed_seconds": 5.591093125000043,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 5.5471581670000205,
+            "cpu_seconds": 2.4820614560000003,
+            "mean_cpu_percent_one_core": 44.74473922098986,
+            "catalog_peak_rss_bytes": 319799296,
+            "catalog_processes_observed": 1
+          },
+          "connection_wake": {
+            "peak_rss_bytes": 1042464768,
+            "elapsed_seconds": 0.6851627920000283,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 0.7191677499999969,
+            "cpu_seconds": 0.06461163699999836,
+            "mean_cpu_percent_one_core": 8.984223360961144,
+            "catalog_peak_rss_bytes": 324026368,
+            "catalog_processes_observed": 1
+          },
+          "idle_runtime": {
+            "peak_rss_bytes": 1143291904,
+            "elapsed_seconds": 5.144643041999984,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 5.1476162500000555,
+            "cpu_seconds": 0.5956494809999998,
+            "mean_cpu_percent_one_core": 11.571365309136892,
+            "catalog_peak_rss_bytes": 324157440,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_10000000_bytes": {
+            "rows": 9765,
+            "peak_rss_bytes": 1684815872,
+            "elapsed_seconds": 7.039263208000079,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 6.943228415999897,
+            "cpu_seconds": 3.032381585000004,
+            "mean_cpu_percent_one_core": 43.67394248491405,
+            "source_payload_bytes": 9999360,
+            "load_seconds": 1.1556592499999851,
+            "export_payload_mb_per_second": 1.4205123042757923,
+            "catalog_peak_rss_bytes": 299958272,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 4430562669,
+              "allocated_bytes": 4734009344
+            },
+            "disk_after": {
+              "logical_bytes": 4474690940,
+              "allocated_bytes": 4777394176
+            }
+          },
+          "snapshot_10000000_bytes_query": {
+            "peak_rss_bytes": 1594818560,
+            "elapsed_seconds": 3.622435874999951,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 3.834903666999935,
+            "cpu_seconds": 1.8989107450000005,
+            "mean_cpu_percent_one_core": 49.516517490138895,
+            "catalog_peak_rss_bytes": 300482560,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_100000000_bytes": {
+            "rows": 97656,
+            "peak_rss_bytes": 2055340032,
+            "elapsed_seconds": 21.526930459000027,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 21.605611374999967,
+            "cpu_seconds": 19.881501690000018,
+            "mean_cpu_percent_one_core": 92.02008378714555,
+            "source_payload_bytes": 99999744,
+            "load_seconds": 4.890627125000037,
+            "export_payload_mb_per_second": 4.645332235845631,
+            "catalog_peak_rss_bytes": 302006272,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 4390061127,
+              "allocated_bytes": 4692647936
+            },
+            "disk_after": {
+              "logical_bytes": 5202606192,
+              "allocated_bytes": 5504630784
+            }
+          },
+          "snapshot_100000000_bytes_query": {
+            "peak_rss_bytes": 1782956032,
+            "elapsed_seconds": 3.662738417000014,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 3.506800875000067,
+            "cpu_seconds": 2.3221450739999985,
+            "mean_cpu_percent_one_core": 66.2183327988349,
+            "catalog_peak_rss_bytes": 297467904,
+            "catalog_processes_observed": 1
+          },
+          "snapshot_1000000000_bytes": {
+            "rows": 976562,
+            "peak_rss_bytes": 3137847296,
+            "elapsed_seconds": 389.773457,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 389.8372431250001,
+            "cpu_seconds": 553.8625483539944,
+            "mean_cpu_percent_one_core": 142.075329671978,
+            "source_payload_bytes": 999999488,
+            "load_seconds": 58.345539957999904,
+            "export_payload_mb_per_second": 2.565591550786384,
+            "catalog_peak_rss_bytes": 248659968,
+            "catalog_processes_observed": 1,
+            "disk_before": {
+              "logical_bytes": 5218070778,
+              "allocated_bytes": 5519900672
+            },
+            "disk_after": {
+              "logical_bytes": 16157137150,
+              "allocated_bytes": 16605904896
+            }
+          },
+          "snapshot_1000000000_bytes_query": {
+            "peak_rss_bytes": 2203910144,
+            "elapsed_seconds": 5.894756959000006,
+            "logical_cpus": 3,
+            "host_memory_bytes": 7516192768,
+            "cgroup_memory_limit_bytes": null,
+            "duration_seconds": 5.88554620900004,
+            "cpu_seconds": 5.048552796999993,
+            "mean_cpu_percent_one_core": 85.7788320356718,
+            "catalog_peak_rss_bytes": 212451328,
+            "catalog_processes_observed": 1
+          },
+          "benchmark_cleanup": {
+            "elapsed_seconds": 2.020416415999989
+          }
+        }
+      },
+      "network_destinations": null,
+      "governed": {
+        "status": "unsupported",
+        "reason": "Linux-only qualified isolation profile"
+      }
+    }
+  }
+}
