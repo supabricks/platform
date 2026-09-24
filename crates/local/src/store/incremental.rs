@@ -345,6 +345,7 @@ impl Store {
         }
     }
     pub(crate) fn commit_incremental(&mut self, r: &mut Run, descriptor: &Value) -> Result<()> {
+        let _profile = crate::sync_profile::span("publication.commit");
         let live = self.incremental_run(r.project_id, r.id)?;
         if live.state == "succeeded" {
             *r = live;
@@ -423,7 +424,10 @@ impl Store {
             "UPDATE incremental_runs SET state='succeeded',record=?2 WHERE id=?1",
             params![r.id.to_string(), serde_json::to_string(r)?],
         )?;
-        tx.commit()?;
+        {
+            let _commit = crate::sync_profile::span("publication.sqlite_commit");
+            tx.commit()?;
+        }
         Ok(())
     }
     pub(crate) fn artifact_in_project(&self, project: ProjectId, id: OperationId) -> Result<()> {

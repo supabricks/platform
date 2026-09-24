@@ -91,3 +91,74 @@ Add `--plot` in an environment with Matplotlib to produce standalone PNG/SVG
 charts. Failure counts remain visible, and the summary reports the number of
 available observations for each statistic. A source input-rate result is recorded
 independently of replication success.
+
+## Whole-workflow profiling (Linux diagnostic packages only)
+
+Build a separate opt-in binary and native sync-call probe, then create a new
+package. The original package must remain available and unchanged:
+
+```sh
+cargo build --release -p supabricks-local --bin supabricks --features sync-profile
+cc -O2 -shared -fPIC -Wall -Wextra -Werror \
+  e2e/native/performance/profile_io.c -ldl -pthread -o /tmp/profile_io.so
+python3 e2e/native/performance/profile_package.py \
+  --base /absolute/path/to/baseline-package \
+  --output /absolute/path/to/new-diagnostic-package \
+  --binary target/release/supabricks --io-library /tmp/profile_io.so
+python3 e2e/native/performance/matrix.py \
+  --release /absolute/path/to/new-diagnostic-package \
+  --runtime-revision FULL_INSTRUMENTATION_SOURCE_COMMIT \
+  --output /absolute/path/to/new-profile-results --profile
+```
+
+`profile_package.py` breaks hardlinks before changing the binary, three worker
+entry points, or the Python launcher; it adds the Python and native probes and
+updates the private inventory. It verifies the baseline files are unchanged and
+records before/after hashes. This is a diagnostic installation, not a signed or
+qualified release. Without the Cargo feature, daemon spans compile to no-ops.
+Even in a diagnostic package, profiling requires the disposable fixture's
+`sync-profile/enabled` marker, created only by `--profile`.
+
+Coverage:
+
+- Exact client timings for BEGIN, the existing two-table UPDATE, transaction-ID
+  lookup, and COMMIT, without changing the source SQL or client count.
+- PostgreSQL wait-event samples every 200 ms; WAL statistics and owned-process
+  CPU, RSS, I/O, and context-switch samples approximately once per second.
+- Capture socket wait/receive, decode, source checks, durable spool append,
+  SQLite statement classes, progress/status writes, feedback, and pruning.
+- Native `fsync`/`fdatasync` counters and elapsed time in Python workers, including
+  SQLite C calls. Per-COMMIT counters distinguish native sync time from other
+  commit time. The preload forwards each call and preserves its return/errno;
+  it does not relax synchronous settings, skip syncs, or record file paths.
+- Worker imports, journal reading, planning, filesystem budget scans, checksums,
+  Delta merge, durability, inventories, and maintenance. Fixed work counters
+  include captured transactions/bytes, batch input, and Delta operation metrics.
+- Daemon scheduling, capture/apply dispatch, publication verification, file sync,
+  descriptor writes, and atomic SQLite publication commit. Existing durable
+  records retain batch admission/start and preparation/publication timestamps.
+- Safe exception types, SQLite codes, and stack function/file/line information.
+  Full apply exception text stays in the private worker log and is not archived.
+
+`profile.json.gz` retains snapshots and counters even when replication fails.
+Profiles use fixed labels and omit SQL text, source rows, credentials and
+exception messages. Diagnostic output is not fsynced and is limited to 8 MiB per
+worker. Missing required streams, native hooks, monitor errors, malformed output,
+write failures or budget exhaustion invalidate measurement rather than silently
+supplying a partial profile. The daemon emits a final snapshot; workers terminated
+by the supervisor can have an incomplete tail, explicitly visible through their
+last timestamp and `final` flag. A snapshot is attempted before worker receipts.
+Per-process counters start at process launch and include setup and shutdown;
+analysis must select the stated phase/window rather than label lifetime totals
+as load-only work. Short processes can fall between OS samples.
+
+Python histograms use power-of-two microsecond buckets; report their bounds,
+not exact percentile estimates. Span totals are inclusive and overlap; `self_ns`
+subtracts instrumented child spans on the same thread. Never add parent/child
+wall times or interpret overlapping processes as a single elapsed duration.
+Native sync time is contained in SQLite/durability spans, not an additional stage.
+Measured profiler write/monitor time is retained, but does not include every
+probe overhead. Use paired profiling-on/off controls with the same diagnostic
+package and host monitoring; controls estimate activation overhead, not the cost
+of diagnostic code imported in both modes. Keep controls separate from the
+requested 12-trial matrix and preserve failures and all contended attempts.

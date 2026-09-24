@@ -971,6 +971,7 @@ impl Cell {
         Ok(true)
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("engine.tick");
         // Cancellation and deadlines fence workers even while shared storage is down.
         self.control_incremental(store)?;
         self.control_captures(store)?;

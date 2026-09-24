@@ -73,7 +73,7 @@ def main(args):
         cpu_quota='none; affinity restriction only',network='none; loopback within each container',
         filesystem=output('findmnt','--json','-T',str(scratch),'-o','SOURCE,FSTYPE,OPTIONS'),
         host_memory_before=Path('/proc/meminfo').read_text(),seed=args.seed,
-        workload=dict(rates=args.rates,seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=5,warmup_seconds=5),
+        workload=dict(profile=args.profile,rates=args.rates,seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=5,warmup_seconds=5),
         order=[dict(repeat=r,rate=rate,cpus=cpus) for r,rate,cpus in matrix],started_at=time.time(),trials=[])
     # The full inventory is unchanged; keep source metadata but not thousands of
     # dependency hashes in each summary. release_identity binds that inventory.
@@ -108,6 +108,7 @@ def main(args):
             'python3','install/native/catalog_gate.py','--timeout','600','--report','/reports/cleanup.json','--',
             'python3','e2e/native/performance/trial.py','--release','/release','--report','/reports/trial.json',
             '--scratch','/scratch','--rate',str(rate),'--seconds',str(args.seconds),'--clients',str(args.clients),'--rows',str(args.rows)]
+        if args.profile:command.append('--profile')
         print(f'[{index}/{len(matrix)}] {trial} start',flush=True)
         start=time.time()
         with (report/'private.log').open('w') as stream:
@@ -138,6 +139,7 @@ def main(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--profile',action='store_true',help='enable bounded diagnostic instrumentation')
     p.add_argument('--release',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--runtime-revision',required=True)
     p.add_argument('--resume',action='store_true',help='continue a stopped matrix only if completed trials and identities validate')

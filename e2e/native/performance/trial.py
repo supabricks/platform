@@ -70,7 +70,10 @@ def load(cell,rate,seconds,clients,rows,offset=0):
     for t in threads:t.join()
     elapsed=time.perf_counter()-start
     if errors:raise RuntimeError('source writer failures: '+','.join(errors))
-    return sorted(samples,key=lambda x:x['ack_ms']),dict(target_rows_per_second=rate,
+    sql_stats={}
+    if samples and 'sql_ms' in samples[0]:
+        sql_stats={k:dict(percentiles([x['sql_ms'][k] for x in samples]),total_ms=round(sum(x['sql_ms'][k] for x in samples),3)) for k in samples[0]['sql_ms']}
+    return sorted(samples,key=lambda x:x['ack_ms']),dict(source_sql_ms=sql_stats,target_rows_per_second=rate,
         target_transactions=total,completed_transactions=len(samples),unsent_transactions=total-len(samples),
         achieved_rows_per_second=round(2*len(samples)/elapsed,3),elapsed_seconds=round(elapsed,3),
         transaction_ms=percentiles([s['latency_ms'] for s in samples]),
@@ -177,18 +180,24 @@ def trial(args):
         parameters={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},
         release_identity=sha(release/'release.json'),binary_sha256=sha(release/'bin/supabricks'),
         affinity=sorted(os.sched_getaffinity(0)),cgroup_limits=counters(),checks=[])
-    observer=None
+    observer=None;profile=None
+    if args.profile:
+        from profile_trial import Profile
+        profile=Profile(cell,report)
     try:
         assert json.loads(subprocess.check_output([str(cell.binary),'installation','verify']))['identity']==report['release_identity']
         n=args.rows
         cell.setup_source(release/'python/analytics/python',release/'python/analytics/export.py',
             f'CREATE TABLE orders(id int PRIMARY KEY,value int); CREATE TABLE payments(id int PRIMARY KEY,value int); INSERT INTO orders SELECT i,0 FROM generate_series(1,{n}) i; INSERT INTO payments SELECT i,0 FROM generate_series(1,{n}) i')
+        if profile:profile.start()
         report['phase']='baseline';print('baseline',flush=True)
         _,report['baseline']=load(cell,args.rate,args.baseline,args.clients,n)
         cell.sql(cell.parent,'UPDATE orders SET value=0; UPDATE payments SET value=0')
         p=cell.cli('sync','create','--branch','main','--mode','continuous','--key','policy');cell.policy_id=p['id']
         report['phase']='bootstrap'
-        healthy(cell);observer=Observer(cell,p['capture_id']);observer.thread.start()
+        healthy(cell);observer=Observer(cell,p['capture_id'])
+        if profile:profile.watch_observer(observer)
+        observer.thread.start()
         report['phase']='warmup';print('warmup',flush=True)
         _,report['warmup']=load(cell,args.rate,args.warmup,args.clients,n)
         healthy(cell)
@@ -248,6 +257,9 @@ def trial(args):
                 report['peak_memory_bytes']=max(x['memory_bytes'] for x in during)
                 report['peak_backlog_bytes']=max(x['backlog_bytes'] or 0 for x in during)
                 report['last_observed_backlog_bytes']=during[-1]['backlog_bytes']
+        if profile:
+            try:profile.finish()
+            except Exception as error:report['status']='error';report['profile_error']=type(error).__name__
         try:
             if (root/'control.sock').exists():cell.stop()
             report['checks'].append('owned_runtime_stopped')
@@ -262,6 +274,11 @@ def trial(args):
             except Exception as error:
                 report['status']='error';report['error_type']=type(error).__name__
                 import traceback;traceback.print_exc()
+        if profile:
+            try:report['profile']=profile.collect(args.report.with_name('profile.json.gz'))
+            except Exception as error:
+                report['status']='error';report['profile_error']=type(error).__name__
+                import traceback;traceback.print_exc()
         assert sha(release/'release.json')==report['release_identity']
         args.report.write_text(json.dumps(report,indent=2)+'\n')
         if report['status']=='measured':shutil.rmtree(root)
@@ -272,6 +289,7 @@ def trial(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--profile',action='store_true',help='opt-in diagnostic-package spans and whole-stack observations')
     p.add_argument('--release',type=Path,required=True);p.add_argument('--report',type=Path,required=True)
     p.add_argument('--scratch',type=Path,default=Path('/tmp'))
     p.add_argument('--rate',type=int,required=True);p.add_argument('--seconds',type=int,default=45)
