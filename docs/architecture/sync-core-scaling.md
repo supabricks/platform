@@ -151,6 +151,44 @@ the affected-profile rerun, not maximum capacity or cloud sizing. Capture
 throughput/source-client capacity ([#87](https://github.com/supabricks/platform/issues/87))
 and the worker failure remain the next work.
 
+### Second matched run — 14:58–15:20 UTC
+
+A [second 12-trial run](sync-performance-evidence/2026-09-24-repeat-02/README.md)
+repeated the same configurations and within-load order with the same runtime and
+trial code. Every trial followed five minutes without active build observations;
+none overlapped observed build activity or needed replacement. The two follow-ups
+remain separate from each other and from the original matrix.
+
+| Logical CPUs | Offered rows/s | Complete / trials | Second-run p95, median (range) | Failure outcome |
+| --- | --- | --- | --- | --- |
+| 4 | 50 | 3 / 3 | 3.915 s (3.560–4.061) | None |
+| 16 | 50 | 3 / 3 | 3.773 s (3.636–4.688) | None |
+| 8 | 1,000 | 0 / 3 | No complete latency sample | Two resync failures; one drain timeout |
+| 16 | 1,000 | 0 / 3 | No complete latency sample | Three resync failures |
+
+All six low-load trials again met offered rate and five-second p95, passed
+full-table equality, and had clean teardown. The small difference between CPU
+allocations changed direction between runs; these short samples do not establish
+a consistent latency improvement from adding cores.
+
+The overload failures recurred, with different timing: one resync failure was
+detected during warmup, four during drain, and one trial reached the 120-second
+drain timeout. Its stopped capture spool confirmed at least **8,424 uncaptured
+source transactions**, ruling out missing observer history as the sole cause.
+The five trials that reached measurement accepted 652.824–815.576 changed rows/s;
+the six source-only baselines achieved 858.852–885.843 rows/s. Source rates and
+CPU usage in failed trials are not successful replication throughput or scaling
+measurements; worker failure can reduce the active replication work during load.
+All 12 trials passed owned-process cleanup. The five resync failures each retained
+`incremental_worker_failed`, still without a confirmed underlying cause.
+
+Exact identities, all raw reports, host observations, failure codes and timeout
+proof are in the new archive. Harness revision was
+`e049ec29ff5ec61af43bfb3d18e966625dcb8962`; every harness Python file had the same
+hash as the first matched follow-up. The same shared-desktop and short-window
+limits apply. Issues [#87](https://github.com/supabricks/platform/issues/87) and
+[#88](https://github.com/supabricks/platform/issues/88) remain unresolved.
+
 ## Method
 
 The [reproducible harness](../../e2e/native/performance/README.md) runs sequential,
