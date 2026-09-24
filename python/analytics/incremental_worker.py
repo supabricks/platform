@@ -80,14 +80,14 @@ def commit_metrics(path,version,metrics):
         retained_parquet_bytes=sum(p.stat().st_size for p in path.glob('*.parquet')))
 
 
-def apply_table(config,root,table,planned,checksum):
+def apply_table(config,root,table,planned,checksum,sealed):
     path=root/table['path'];delta=DeltaTable(str(path));before=planned['before']
     marker=dict(sb_run=config['id'],sb_plan=checksum)
     if delta.version()==before+1:
         record=delta.history(1)[0]
         if any(record.get(k)!=v for k,v in marker.items()):raise CaptureError('foreign_delta_commit')
         # A committed Delta log after SIGKILL may precede the worker receipt.
-        durable(path)
+        durable(path,sealed)
         return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True))
     if delta.version()!=before:raise CaptureError('foreign_delta_version')
     if before>=1023:raise CaptureError('delta_version_budget')
@@ -117,7 +117,7 @@ def apply_table(config,root,table,planned,checksum):
         .when_matched_delete(predicate=d).when_matched_update(expressions,predicate='NOT '+d)\
         .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
     fault('after_table_commit')
-    durable(path);boundary(root,config['deadline_ms'])
+    durable(path,sealed);boundary(root,config['deadline_ms'])
     return delta.version(),commit_metrics(path,delta.version(),metrics)
 
 
@@ -125,6 +125,7 @@ def run(config):
     os.umask(0o077)
     root=initialize(config);work=Path(config['workspace'])
     previous,compaction=base(config,root)
+    sealed=frozenset()
     if config['previous'] is None:
         baseline=read_json(config['bootstrap_manifest'])
         tables=copy.deepcopy(baseline['tables'])
@@ -133,6 +134,10 @@ def run(config):
         end=config['bootstrap_lsn'];metrics=[];input_bytes=0
     else:
         verify_previous(root,previous)
+        # Only a published prefix of this exact storage generation is proof of
+        # durability. A compacted root must flush its independently created files.
+        if compaction is None:
+            sealed=frozenset(root/entry['path'] for entry in previous['manifest']['files'])
         plan_path=work/'plan.json'
         if plan_path.exists():
             prepared=read_json(plan_path,64*1024*1024)
@@ -145,7 +150,7 @@ def run(config):
         for table in tables:
             selected=next((t for t in prepared['tables'] if t['oid']==str(table['oid'])),None)
             if selected:
-                table['version'],metric=apply_table(config,root,table,selected,checksum)
+                table['version'],metric=apply_table(config,root,table,selected,checksum,sealed)
                 metrics.append(dict(oid=table['oid'],metrics=metric))
                 table['rows']+=selected['row_delta']
                 if table['version']>=1024:raise CaptureError('delta_version_budget')
@@ -163,7 +168,7 @@ def run(config):
         generation='analytics/incremental/'+(config.get('storage_generation') or config['identity']['generation']),manifest=manifest,
         manifest_sha256=hashlib.sha256(canonical(manifest)).hexdigest(),prepared_at_ms=int(time.time()*1000))
     if len(canonical(descriptor))>2*1024*1024:raise CaptureError('epoch_metadata_budget')
-    durable(root)
+    durable(root,sealed)
     fault('before_epoch_receipt')
     atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],descriptor=descriptor))
     fault('after_epoch_receipt')

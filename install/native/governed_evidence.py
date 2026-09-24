@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import re
+from sync_evidence import REQUIRED as SYNC_REQUIRED
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'linux-governed-shared-v1'
@@ -11,8 +12,9 @@ TOP_CHECKS = {'signed_curl_install_and_verified_unchanged_candidate',
               'installed_payload_readable_by_distinct_guest_uid',
               'installed_private_runtime_preparation_without_downloads',
               'archive_and_installed_inventory_unchanged_after_all_suites',
-              *('exact_installed_'+name for name in ('identity','data','upgrade','browser'))}
+              *('exact_installed_'+name for name in ('identity','data','sync','upgrade','browser'))}
 REQUIRED = {
+    'sync': SYNC_REQUIRED['governed'],
     'identity': {
         'real TLS Keycloak PKCE logins and equal-email principal separation',
         'two real users enforce conflicting roles, explicit execution, idempotency and stop ownership',
@@ -119,6 +121,7 @@ def collect(data, env):
         require(sha(suite.get('report_sha256')),'missing '+name+' report hash')
         reports[name]=dict(sha256=suite['report_sha256'],checks=sorted(required))
     require(suites['upgrade'].get('predecessor_identity')==pins['platform']['inventory_sha256'],'unqualified predecessor')
+    require(suites['sync'].get('exact_installed') is True,'sync did not use installed workers')
     browser=suites['browser']
     require(browser.get('tls') is True and browser.get('exact_installed') is True,'browser did not use installed TLS ingress')
     require(browser.get('console_manifest_sha256')==data['console_manifest_sha256'],'browser asset mismatch')

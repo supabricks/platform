@@ -1,0 +1,235 @@
+{
+  "status": "passed",
+  "revision": "8ea59d8c5c70f798165c1f1c3b981a2f51d666d0",
+  "inherited_sha256": "7bfead85cabf1d3b3315fee83852e7669c89fa73c5e3d00862129fa3ce3f43c4",
+  "targets": {
+    "linux-x86_64": {
+      "status": "passed",
+      "release_identity": "a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b",
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "linux-x86_64",
+        "sha256": "a3976187f4892a78404bfda4ad7370ab3f6001d57c1dd979a65fe0a6920d7c72"
+      },
+      "reports": {
+        "triggered": {
+          "sha256": "396c387c6ef4483effa535e989b125222f603d31a4da3a4a933b4099c7bda6a4",
+          "checks": [
+            "triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader",
+            "triggered_production_input_budget_preserves_complete_transactions",
+            "triggered_restart_reuses_checkpoint_and_delete_retires_source"
+          ]
+        },
+        "continuous": {
+          "sha256": "9d8929b387165f299367c28a93966b5d98ae9a718bf238f3b1ac348351149728",
+          "checks": [
+            "continuous_idle_and_old_epoch_remain_stable_during_workload",
+            "continuous_pause_sigkill_and_daemon_restart_keep_durable_checkpoint",
+            "continuous_schema_drift_preserves_epoch_and_explicit_resync_recovers",
+            "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups"
+          ]
+        },
+        "maintenance": {
+          "sha256": "1bc6055cefcafde121430dca66d5243190f06a570e02bc842721e03ef1b16dae",
+          "checks": [
+            "automatic_64_version_rollover_keeps_pinned_sail_epoch",
+            "published_spool_prefix_reclaimed_and_capture_restarts_without_gap_or_duplicate",
+            "source_retirement_removes_slot_and_spool_without_deleting_retained_compacted_epoch",
+            "stopped_backup_restores_compacted_epoch_and_pruned_spool_with_capture_fenced",
+            "unpinned_old_generation_collected_while_capture_and_current_generation_remain_live"
+          ]
+        },
+        "governed": {
+          "sha256": "f3939a32c43ecd30d7bf51d5868eb3b48b07972cb9f1e885149b411e8879463d",
+          "checks": [
+            "admission_and_run_transition_audit_contains_identifiers_without_rows_or_tokens",
+            "cross_project_dataset_binding_and_restarted_notebook_keep_selected_incremental_epoch",
+            "governed_continuous_service_identity_survives_manager_logout_and_keeps_old_readers_pinned",
+            "incremental_result_review_uses_the_scoped_service_artifact",
+            "native_background_snapshot_finishes_after_manager_session_revocation",
+            "native_rls_source_never_publishes_through_service_authority",
+            "new_epochs_do_not_retarget_existing_sail_readers",
+            "read_only_inspection_separate_source_manage_executor_and_result_grants_no_leakage",
+            "real_uc_incremental_publications_are_immutable_version_zero_views_with_pinned_sail_readers",
+            "restart_with_revoked_service_epochs_keeps_access_closed",
+            "service_revocation_denies_replayed_admission_and_retained_epoch_new_readers",
+            "service_revocation_fences_incremental_capture_and_retained_epoch_new_readers",
+            "stopped_backup_restore_reconciles_incremental_catalog_view_locations",
+            "unsupported_governed_source_is_refused_before_capture_resources_or_bootstrap"
+          ]
+        }
+      },
+      "worker_inventory": {
+        "capture_worker.py": "55d2f9526517805d827eb780299cb8c3564564e73e3ffa29b553def3cdb373e7",
+        "incremental_worker.py": "e9d93602dc849f75820c1ea978539b15ffff212bb496132d25fb193beb6a0397",
+        "session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b",
+        "capture/spool.py": "bc1b92cd7dc2dcf58fd251df464d990e651054cec3d25f7a2f4074c3e2812897",
+        "incremental/storage.py": "77c22ac5526007689584d9c9994d5ca8f6306422f850974eda6d55b41f5b0659",
+        "incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6"
+      },
+      "network": "Linux loopback-only namespace; bundled sync workers; all descendants isolated",
+      "host": {
+        "system": "Linux",
+        "machine": "x86_64",
+        "cpu_count": 4,
+        "memory_bytes": 16766414848
+      },
+      "workload": {
+        "tables": 2,
+        "rows_per_table": 10000,
+        "transactions": 750,
+        "changed_rows": 1500,
+        "target_rows_per_second": 50,
+        "achieved_rows_per_second": 50.06,
+        "elapsed_seconds": 29.962,
+        "burst_changed_rows": 200,
+        "burst_commit_to_publication_ms": 3515.066,
+        "commit_to_publication_ms": {
+          "p50": 1789.739,
+          "p95": 2394.073,
+          "p99": 2526.607
+        },
+        "oltp_transaction_ms": {
+          "p50": 1.875,
+          "p95": 5.83,
+          "p99": 9.466
+        }
+      },
+      "baseline_oltp_transaction_ms": {
+        "p50": 1.112,
+        "p95": 3.35,
+        "p99": 6.699
+      },
+      "oltp_p95_ratio": 1.74,
+      "resources": {
+        "peak_owned_rss_bytes": 2071056384,
+        "peak_allocated_data_bytes": 127987712,
+        "spool_bytes": 118784,
+        "retained_wal_bytes": 304832,
+        "sampled_owned_cpu_seconds_lower_bound": 20.95
+      },
+      "storage": {
+        "input_bytes": 95669,
+        "new_parquet_bytes": 1488216,
+        "write_amplification_ratio": 15.556,
+        "peak_inventory_files": 132,
+        "peak_generation_bytes": 1703023,
+        "compaction_bytes": 0
+      }
+    },
+    "macos-arm64": {
+      "status": "passed",
+      "release_identity": "473eb0868599fc7552076ad003419e18deaec7b9dbc0858632dc70344993077a",
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "macos-arm64",
+        "sha256": "fb1240fa589088afeaee579ad1783db854d65e74c9e61a8f2d36fc79507aa6c8"
+      },
+      "reports": {
+        "triggered": {
+          "sha256": "bbe70222e62e423702b4a605ad96759b21cde5245afbc033f9449bd6de454991",
+          "checks": [
+            "triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader",
+            "triggered_production_input_budget_preserves_complete_transactions",
+            "triggered_restart_reuses_checkpoint_and_delete_retires_source"
+          ]
+        },
+        "continuous": {
+          "sha256": "13ea0251ded127752025f2330ab60fc6fc497a8cdda799a59d36198afc2d03f0",
+          "checks": [
+            "continuous_idle_and_old_epoch_remain_stable_during_workload",
+            "continuous_pause_sigkill_and_daemon_restart_keep_durable_checkpoint",
+            "continuous_schema_drift_preserves_epoch_and_explicit_resync_recovers",
+            "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups"
+          ]
+        },
+        "maintenance": {
+          "sha256": "1c3932f9ab85f01d2caf46054f57b98158eb4a32894ffebc7e95cee808316837",
+          "checks": [
+            "automatic_64_version_rollover_keeps_pinned_sail_epoch",
+            "published_spool_prefix_reclaimed_and_capture_restarts_without_gap_or_duplicate",
+            "source_retirement_removes_slot_and_spool_without_deleting_retained_compacted_epoch",
+            "stopped_backup_restores_compacted_epoch_and_pruned_spool_with_capture_fenced",
+            "unpinned_old_generation_collected_while_capture_and_current_generation_remain_live"
+          ]
+        },
+        "governed": {
+          "sha256": "de935bdd9b6110efc3f45cffcd6c5b311226519855e31357dd3ff75569c0ddf2",
+          "checks": [
+            "admission_and_run_transition_audit_contains_identifiers_without_rows_or_tokens",
+            "cross_project_dataset_binding_and_restarted_notebook_keep_selected_incremental_epoch",
+            "governed_continuous_service_identity_survives_manager_logout_and_keeps_old_readers_pinned",
+            "incremental_result_review_uses_the_scoped_service_artifact",
+            "native_background_snapshot_finishes_after_manager_session_revocation",
+            "native_rls_source_never_publishes_through_service_authority",
+            "new_epochs_do_not_retarget_existing_sail_readers",
+            "read_only_inspection_separate_source_manage_executor_and_result_grants_no_leakage",
+            "real_uc_incremental_publications_are_immutable_version_zero_views_with_pinned_sail_readers",
+            "restart_with_revoked_service_epochs_keeps_access_closed",
+            "service_revocation_denies_replayed_admission_and_retained_epoch_new_readers",
+            "service_revocation_fences_incremental_capture_and_retained_epoch_new_readers",
+            "stopped_backup_restore_reconciles_incremental_catalog_view_locations",
+            "unsupported_governed_source_is_refused_before_capture_resources_or_bootstrap"
+          ]
+        }
+      },
+      "worker_inventory": {
+        "capture_worker.py": "55d2f9526517805d827eb780299cb8c3564564e73e3ffa29b553def3cdb373e7",
+        "incremental_worker.py": "e9d93602dc849f75820c1ea978539b15ffff212bb496132d25fb193beb6a0397",
+        "session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b",
+        "capture/spool.py": "bc1b92cd7dc2dcf58fd251df464d990e651054cec3d25f7a2f4074c3e2812897",
+        "incremental/storage.py": "77c22ac5526007689584d9c9994d5ca8f6306422f850974eda6d55b41f5b0659",
+        "incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6"
+      },
+      "network": "macOS Seatbelt; external network and Homebrew denied for all sync descendants",
+      "host": {
+        "system": "Darwin",
+        "machine": "arm64",
+        "cpu_count": 3,
+        "memory_bytes": 7516192768
+      },
+      "workload": {
+        "tables": 2,
+        "rows_per_table": 10000,
+        "transactions": 750,
+        "changed_rows": 1500,
+        "target_rows_per_second": 50,
+        "achieved_rows_per_second": 49.97,
+        "elapsed_seconds": 30.016,
+        "burst_changed_rows": 200,
+        "burst_commit_to_publication_ms": 3055.106,
+        "commit_to_publication_ms": {
+          "p50": 2240.066,
+          "p95": 3461.398,
+          "p99": 4205.692
+        },
+        "oltp_transaction_ms": {
+          "p50": 3.03,
+          "p95": 9.524,
+          "p99": 22.204
+        }
+      },
+      "baseline_oltp_transaction_ms": {
+        "p50": 1.707,
+        "p95": 3.123,
+        "p99": 5.173
+      },
+      "oltp_p95_ratio": 3.05,
+      "resources": {
+        "peak_owned_rss_bytes": 1532084224,
+        "peak_allocated_data_bytes": 142467072,
+        "spool_bytes": 118784,
+        "retained_wal_bytes": 291448,
+        "sampled_owned_cpu_seconds_lower_bound": 16.0
+      },
+      "storage": {
+        "input_bytes": 95834,
+        "new_parquet_bytes": 1234336,
+        "write_amplification_ratio": 12.88,
+        "peak_inventory_files": 108,
+        "peak_generation_bytes": 1430464,
+        "compaction_bytes": 0
+      }
+    }
+  }
+}

@@ -3,16 +3,16 @@
 [Documentation home](README.md) · [Delivery ledger](plans/status.md) ·
 [Implementation plans](plans/README.md) · [Architecture details](architecture/README.md)
 
-As of 2026-09-22, Supabricks combines branchable PostgreSQL, snapshot analytics,
+As of 2026-09-23, Supabricks combines branchable PostgreSQL, snapshot/triggered/continuous analytics,
 project packaging, file ingestion, browser notebooks and open-source Unity Catalog
 in one native application. A Rust control plane exposes the same underlying
 operations to the console, CLI and MCP clients. The frontend is maintained in a
 separate repository and shipped inside the native release.
 
 UC00–UC09, including IAM00 and UC09.1–UC09.8, is complete for its planned profiles.
-The latest retained qualification is alpha.35: local-owner Linux x86_64 and macOS
+The latest retained qualification is alpha.36: local-owner Linux x86_64 and macOS
 arm64, plus the explicitly qualified Linux governed server. See the
-[exact-archive evidence](architecture/uc098-governed-release.md); these claims do
+[exact-archive evidence](architecture/sy08-installed-sync.md); these claims do
 not automatically transfer to a new build from the same branch or version label.
 
 ## What a user can do
@@ -22,7 +22,7 @@ not automatically transfer to a new build from the same branch or version label.
 | Projects and databases | Create a project and main database; branch PostgreSQL; query, cancel and save SQL | [Projects](handbook/project-creation.md), [database workspace](handbook/database-workspace.md) |
 | File ingestion | Preview and import CSV/TSV, JSON/JSONL/document and Parquet into new PostgreSQL tables | [File ingestion](handbook/file-ingestion.md) |
 | Analytics | Explicitly publish immutable Delta/Parquet snapshots and query pinned versions with Sail/Spark SQL | [Analytical workspace](handbook/analytical-workspace.md) |
-| Managed sync | Local-owner scheduled snapshots, triggered incremental runs and bounded continuous catch-up | [Triggered](handbook/triggered-sync.md), [continuous](handbook/continuous-sync.md) |
+| Managed sync | Scheduled snapshots, triggered incremental runs and bounded continuous catch-up; governed service authority on Linux | [Triggered](handbook/triggered-sync.md), [continuous](handbook/continuous-sync.md) |
 | Notebooks | Edit project notebooks in the browser, execute Sail-backed kernels and manage locked Python environments | [Notebooks](handbook/notebooks.md), [environments](handbook/notebook-environments.md) |
 | Catalog and sharing | Discover published datasets, inspect schema/freshness and explicitly bind datasets into another project | [Catalog demo](handbook/catalog-demo.md), [dataset bindings](handbook/catalog-datasets.md) |
 | Portable projects | Inspect, package, bind and apply source; carry offline dependencies and bounded logical table data | [Portability](handbook/project-portability.md), [logical data](handbook/project-data.md) |
@@ -115,7 +115,7 @@ machine uses the assembled release rather than building these components itself.
 
 Release qualification runs against exact installed archives. The
 [R04 contract](architecture/r04-local-release.md) defines combined acceptance;
-[UC09.8](architecture/uc098-governed-release.md) records the latest full matrix,
+[SY08](architecture/sy08-installed-sync.md) records the latest full matrix,
 archive identities, retries and shared-ingress receipt. Subsystem probes, merged
 PR checks and workstation smoke tests have narrower scopes.
 
@@ -141,8 +141,11 @@ snapshot scheduling, SY02 durable capture, and SY03 explicit incremental epochs.
 and [SY05](architecture/sy05-continuous-sync.md) adds bounded local continuous
 application ([merged #83](https://github.com/supabricks/platform/pull/83)). [SY06](architecture/sy06-sync-surfaces.md) implements shared
 console/agent controls, governed service-bound capture and immutable catalog epoch
-views. Final SY06 integration, storage maintenance,
-installed sync qualification and reverse sync remain open.
+views; platform #84 and console #14 are merged. [SY07](architecture/sy07-sync-hardening.md)
+implements bounded spool reclamation and storage compaction. [SY08](architecture/sy08-installed-sync.md)
+qualifies the exact alpha.36 archives on both local-owner targets and the Linux
+governed profile; implementation and evidence are in #86, awaiting merge.
+Reverse sync remains deferred.
 
 See the [delivery ledger](plans/status.md) for the maintained backlog and release
 history. Historical plans and the Kubernetes backlog must not be read as a list

@@ -80,6 +80,7 @@ impl Cell {
         Ok(())
     }
     pub(super) fn tick_incremental(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("apply.dispatch");
         for mut r in store.active_incremental()? {
             if r.state == "ready" {
                 continue;

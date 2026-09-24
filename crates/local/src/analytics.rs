@@ -37,6 +37,7 @@ struct FileCheck {
     path: String,
     bytes: u64,
     hash: String,
+    needs_sync: bool,
 }
 fn require(ok: bool, message: &str) -> Result<()> {
     if ok { Ok(()) } else { Err(invalid(message)) }
@@ -198,6 +199,7 @@ fn layout(root: &Path, manifest: &Value) -> Result<Vec<FileCheck>> {
             path: path.into(),
             bytes,
             hash: digest.into(),
+            needs_sync: true,
         });
     }
     let mut actual = BTreeSet::new();
@@ -271,6 +273,7 @@ impl Verifier {
         })
     }
     fn advance(&mut self, hook: &mut impl FnMut(&str) -> Result<()>) -> Result<bool> {
+        let _profile = crate::sync_profile::span("publication.verify");
         let mut budget = PER_TICK;
         let mut buffer = vec![0; CHUNK];
         while self.index < self.files.len() && budget > 0 {
@@ -289,7 +292,13 @@ impl Verifier {
                     *read == check.bytes && hex::encode(digest.clone().finalize()) == check.hash,
                     "generation checksum mismatch",
                 )?;
-                file.sync_all()?;
+                if check.needs_sync {
+                    {
+                        let _profile = crate::sync_profile::span("publication.file_fsync");
+                        file.sync_all()?;
+                    }
+                    hook(&format!("synced_file:{}", self.index + 1))?;
+                }
                 self.current = None;
                 self.index += 1;
                 hook(&format!("verified_file:{}", self.index))?;
@@ -310,6 +319,7 @@ fn atomic_descriptor(
     value: &Value,
     hook: &mut impl FnMut(&str) -> Result<()>,
 ) -> Result<()> {
+    let _profile = crate::sync_profile::span("publication.descriptor");
     File::open(root.join("manifest.json"))?.sync_all()?;
     let bytes = serde_json::to_vec_pretty(value)?;
     require(
@@ -411,6 +421,7 @@ impl Publisher {
         })
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("publication.tick");
         self.tick_with_hook(store, &mut |_| Ok(()))
     }
     /// Hook is used by subprocess crash tests, never selected through public IPC.
@@ -540,9 +551,33 @@ impl Publisher {
         }
         if p.state == "requested" {
             if self.verifier.is_none() {
+                // Published files in this storage generation are immutable and
+                // already durable. Still hash every byte; only avoid redundant
+                // fsync when path, size and checksum match the published prefix.
+                let mut durable = BTreeSet::new();
+                if let Some(epoch) = run.previous_epoch {
+                    let old = store.snapshot(project, epoch)?;
+                    if old.publication.state == "published"
+                        && let Some(previous) = old.publication.descriptor
+                        && previous["generation"] == d["generation"]
+                        && previous["manifest"]["capture_identity"]
+                            == d["manifest"]["capture_identity"]
+                    {
+                        durable.extend(crate::analytics_v2::layout(store.root(), &previous)?);
+                    }
+                }
                 let files = crate::analytics_v2::layout(store.root(), d)?
                     .into_iter()
-                    .map(|(path, bytes, hash)| FileCheck { path, bytes, hash })
+                    .map(|entry| {
+                        let needs_sync = !durable.contains(&entry);
+                        let (path, bytes, hash) = entry;
+                        FileCheck {
+                            path,
+                            bytes,
+                            hash,
+                            needs_sync,
+                        }
+                    })
                     .collect();
                 self.verifier = Some(Verifier {
                     id: p.export_id,
@@ -559,26 +594,30 @@ impl Publisher {
                 store.publication_ready(p, d)?;
                 self.verifier = None;
                 hook("files_complete")?;
+            } else {
+                return Ok(());
             }
-        } else {
-            let from = stage.join(p.export_id.to_string());
-            let to = generations.join(p.export_id.to_string());
-            require(
-                !(from.exists() && to.exists()),
-                "duplicate epoch directories",
-            )?;
-            check_ready(if to.exists() { &to } else { &from }, d)?;
-            hook("before_rename")?;
-            if !to.exists() {
-                fs::rename(&from, &to)?;
-            }
-            File::open(stage)?.sync_all()?;
-            File::open(generations)?.sync_all()?;
-            hook("after_rename")?;
-            hook("before_commit")?;
-            store.commit_incremental(&mut run, d)?;
-            hook("after_commit")?;
         }
+        // Once verification is complete, the persisted ready state can be
+        // committed immediately. Recovery still enters here for ready records;
+        // commit_incremental rechecks source, policy and head fencing.
+        let from = stage.join(p.export_id.to_string());
+        let to = generations.join(p.export_id.to_string());
+        require(
+            !(from.exists() && to.exists()),
+            "duplicate epoch directories",
+        )?;
+        check_ready(if to.exists() { &to } else { &from }, d)?;
+        hook("before_rename")?;
+        if !to.exists() {
+            fs::rename(&from, &to)?;
+        }
+        File::open(stage)?.sync_all()?;
+        File::open(generations)?.sync_all()?;
+        hook("after_rename")?;
+        hook("before_commit")?;
+        store.commit_incremental(&mut run, d)?;
+        hook("after_commit")?;
         Ok(())
     }
 }

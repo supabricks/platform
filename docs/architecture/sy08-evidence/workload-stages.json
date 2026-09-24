@@ -1,0 +1,255 @@
+{
+  "run": "https://github.com/supabricks/platform/actions/runs/35908989254",
+  "revision": "8ea59d8c5c70f798165c1f1c3b981a2f51d666d0",
+  "targets": {
+    "linux-x86_64": {
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "linux-x86_64",
+        "sha256": "a3976187f4892a78404bfda4ad7370ab3f6001d57c1dd979a65fe0a6920d7c72"
+      },
+      "release_identity": "a81619398391c900be51a7441d61e78c5854d3258e66c46d5d5a62cbd534398b",
+      "source_report_sha256": "23223f06fbbf7820ba4faa1b066b21e8a11392f8665dab183c103dd5841d57c3",
+      "materialization_ms": {
+        "admission_to_worker_start": {
+          "p50": 17,
+          "p95": 20,
+          "p99": 22,
+          "maximum": 22,
+          "batches": 30
+        },
+        "worker_start_to_prepared": {
+          "p50": 727,
+          "p95": 883,
+          "p99": 1847,
+          "maximum": 1847,
+          "batches": 30
+        },
+        "prepared_to_publication": {
+          "p50": 99,
+          "p95": 203,
+          "p99": 231,
+          "maximum": 231,
+          "batches": 30
+        }
+      },
+      "cleanup": {
+        "triggered": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 86,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "continuous": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 145,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "maintenance": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 239,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "governed": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 190,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      }
+    },
+    "macos-arm64": {
+      "archive": {
+        "version": "v0.1.0-alpha.36",
+        "target": "macos-arm64",
+        "sha256": "fb1240fa589088afeaee579ad1783db854d65e74c9e61a8f2d36fc79507aa6c8"
+      },
+      "release_identity": "473eb0868599fc7552076ad003419e18deaec7b9dbc0858632dc70344993077a",
+      "source_report_sha256": "806e394609c755d1c9bde591e7f5784c27e3ffe41eb34dbe0f906682287e76ef",
+      "materialization_ms": {
+        "admission_to_worker_start": {
+          "p50": 19,
+          "p95": 25,
+          "p99": 77,
+          "maximum": 77,
+          "batches": 24
+        },
+        "worker_start_to_prepared": {
+          "p50": 946,
+          "p95": 1253,
+          "p99": 2070,
+          "maximum": 2070,
+          "batches": 24
+        },
+        "prepared_to_publication": {
+          "p50": 168,
+          "p95": 237,
+          "p99": 238,
+          "maximum": 238,
+          "batches": 24
+        }
+      },
+      "cleanup": {
+        "triggered": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 93,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "continuous": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 138,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "maintenance": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 192,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        },
+        "governed": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 194,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      }
+    }
+  },
+  "dedicated_governed": {
+    "source_report_sha256": "c509d74d65e2251728ccbb45a132dbfb543d3e3ff8e630ce3ed53df3219efe6e",
+    "suites": {
+      "identity": {
+        "status": "passed",
+        "checks": [
+          "real TLS Keycloak PKCE logins and equal-email principal separation",
+          "two real users enforce conflicting roles, explicit execution, idempotency and stop ownership",
+          "service execution approval binds the exact immutable source and rejects edited code",
+          "real Keycloak users use distinct private UC mappings through the authenticated CLI and daemon; UC returns no ungranted metadata",
+          "real OIDC, CLI, daemon, project admission and UC broker launch isolated Jupyter/Sail SQL; another actor cannot read results",
+          "IdP disable blocks execution renewal and the independent watchdog removes the sandbox within 35 seconds",
+          "IdP disable refuses an unexpired platform session",
+          "provider outage fails closed while local logout remains available",
+          "scoped service credential and session rotation",
+          "audited identity transitions without provider credentials",
+          "disposable provider, login clients and daemon cleaned up"
+        ],
+        "cleanup": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 41,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      },
+      "data": {
+        "status": "PASS",
+        "checks": [
+          "project_admin_does_not_imply_pg_read",
+          "restricted_pg_positive_control_and_actor_private_results",
+          "read_denies_control_files_owner_and_write",
+          "separate_pg_write_and_ddl",
+          "single_statement_transaction_and_role_cleanup",
+          "rls_source_is_not_whole_branch",
+          "revocation_rolls_back_write_and_timeouts_close_sessions",
+          "sbdata_copy_requires_source_and_destination_authority_and_is_atomic",
+          "destination_grant_race_rolls_back_import",
+          "clone_rotates_source_credentials_and_does_not_inherit_grants",
+          "frozen_export_publication_requires_fresh_copy_and_sharing_grants",
+          "grant_race_cleans_export_without_replacing_active_revision",
+          "writer_crash_rolls_back_and_never_replays_sql",
+          "governed_backup_restore_closes_historical_grants_and_rotates_pg_and_sessions",
+          "bounded_audit_export_contains_correlated_metadata_without_credentials_or_sql",
+          "audit_append_failure_rolls_back_identity_mutation",
+          "audit_capacity_closes_admission_across_restart_and_remains_exportable"
+        ],
+        "cleanup": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 317,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      },
+      "sync": {
+        "status": "PASS",
+        "checks": [
+          "read_only_inspection_separate_source_manage_executor_and_result_grants_no_leakage",
+          "native_background_snapshot_finishes_after_manager_session_revocation",
+          "new_epochs_do_not_retarget_existing_sail_readers",
+          "service_revocation_denies_replayed_admission_and_retained_epoch_new_readers",
+          "native_rls_source_never_publishes_through_service_authority",
+          "unsupported_governed_source_is_refused_before_capture_resources_or_bootstrap",
+          "governed_continuous_service_identity_survives_manager_logout_and_keeps_old_readers_pinned",
+          "incremental_result_review_uses_the_scoped_service_artifact",
+          "real_uc_incremental_publications_are_immutable_version_zero_views_with_pinned_sail_readers",
+          "cross_project_dataset_binding_and_restarted_notebook_keep_selected_incremental_epoch",
+          "stopped_backup_restore_reconciles_incremental_catalog_view_locations",
+          "service_revocation_fences_incremental_capture_and_retained_epoch_new_readers",
+          "restart_with_revoked_service_epochs_keeps_access_closed",
+          "admission_and_run_transition_audit_contains_identifiers_without_rows_or_tokens"
+        ],
+        "cleanup": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 216,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      },
+      "upgrade": {
+        "status": "PASS",
+        "checks": [
+          "qualified_predecessor_native_pg_and_published_uc_snapshot",
+          "named_uc_transition_uses_source_binary_checkpoint_and_preserves_backup",
+          "upgraded_pg_publication_and_metastore_ids_survive_with_rotated_uc_credentials",
+          "pre_upgrade_backup_restores_with_its_original_catalog_binary"
+        ],
+        "cleanup": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 101,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      },
+      "browser": {
+        "status": "PASS",
+        "checks": [
+          "independent_oidc_browser_sessions",
+          "browser_project_creation_and_denied_discovery",
+          "browser_governed_package_ingestion",
+          "browser_reviewed_snapshot_publication",
+          "reviewed_uc_sharing_and_filtered_discovery",
+          "browser_bound_spark_query",
+          "concurrent_execution_limit_and_measured_cgroups",
+          "sandbox_bypass_and_scratch_quota_denied",
+          "source_pinned_service_use_from_browser",
+          "revocation_during_bound_notebook_execution",
+          "revocation_preserves_independent_peer_execution",
+          "crafted_administration_denied",
+          "correlated_secret_free_audit",
+          "revoked_session_clears_browser_data"
+        ],
+        "cleanup": {
+          "exit_code": 0,
+          "timed_out": false,
+          "descendants_observed": 95,
+          "leaked_descendants": 0,
+          "remaining_descendants": 0
+        }
+      }
+    }
+  }
+}

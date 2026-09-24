@@ -281,6 +281,7 @@ pub(crate) fn governed_incremental_available(store: &Store) -> bool {
 
 /// One daemon writer, one native export at a time. No browser/worktree lifetime dependency.
 pub(crate) fn tick(store: &mut Store, cell: Option<&crate::engine::Cell>) -> Result<()> {
+    let _profile = crate::sync_profile::span("sync.tick");
     let now = chrono::Utc::now().timestamp_millis();
     store.reconcile_sync(now)?;
     store.schedule_sync(now)?;

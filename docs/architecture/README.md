@@ -8,7 +8,7 @@ preserve individual contracts, decisions and acceptance evidence. Dated probes
 and intermediate slice limitations describe their original boundary; use the
 [delivery ledger](../plans/status.md) for current completion status.
 
-The latest complete release record is [UC09.8 / alpha.35](uc098-governed-release.md).
+The latest complete release record is [SY08 / alpha.36](sy08-installed-sync.md).
 Its retained reports identify exact archives; source tests or a matching version
 string do not establish equivalent qualification. Machine-readable evidence
 remains beside its owning record in the existing evidence directories.
@@ -22,6 +22,9 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [SY08: exact installed sync qualification and operating envelope](sy08-installed-sync.md)
+- [Local synchronization CPU scaling: methodology and measured limits](sync-core-scaling.md)
+- [Synchronization workflow profile: capture I/O, reader contention and apply planning](sync-workflow-profile.md)
 - [SY07: recovery, compaction and published-spool retention](sy07-sync-hardening.md)
 - [SY06: shared controls and governed service authority](sy06-sync-surfaces.md)
 - [SY01: managed snapshot policies and scheduling](sy01-managed-snapshots.md)

@@ -278,6 +278,7 @@ impl Daemon {
         Ok(self)
     }
     pub fn serve(mut self) -> Result<()> {
+        let _profile_session = crate::sync_profile::init(self.store.root());
         self.listener.set_nonblocking(true)?;
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
@@ -378,6 +379,7 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                let _profile = crate::sync_profile::span("daemon.tick");
                 self.isolated.tick(&mut self.store, stopping)?;
                 let metadata_stopped =
                     match self
@@ -477,11 +479,6 @@ impl Daemon {
                         .tick(&mut self.store, &self.catalog)
                         .err()
                         .map(|e| e.to_string());
-                    self.publisher.last_error = self
-                        .publisher
-                        .tick(&mut self.store)
-                        .err()
-                        .map(|e| e.to_string());
                 }
                 let analytical_stopped = if stopping && notebooks_stopped {
                     match self.sessions.stop(&mut self.store) {
@@ -548,6 +545,16 @@ impl Daemon {
                     && self.project_migrations.idle()
                 {
                     return Ok(());
+                }
+                if !stopping {
+                    // Consume worker receipts accepted by cell.tick in this turn.
+                    // Publication still verifies the files and commits its own
+                    // durable state; an extra timer turn adds no ordering guarantee.
+                    self.publisher.last_error = self
+                        .publisher
+                        .tick(&mut self.store)
+                        .err()
+                        .map(|e| e.to_string());
                 }
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
             }

@@ -21,9 +21,10 @@ implementation plans, operating guides and release evidence in one place.
 | [Architecture and evidence](docs/architecture/README.md) | Subsystem contracts and acceptance records |
 | [Build and install](install/native/README.md) | Assemble and run the native stack |
 
-UC00–UC09 is complete for its planned profiles. Alpha.35 passed the full
-Linux/macOS local-owner matrix and Linux governed acceptance; the
-[qualification ledger](docs/architecture/uc098-governed-release.md) identifies
+UC00–UC09 is complete for its planned profiles. SY08 qualifies snapshot, triggered
+and continuous synchronization in the exact alpha.36 archives, with the full
+Linux/macOS local-owner matrix and Linux governed acceptance. The
+[qualification ledger](docs/architecture/sy08-installed-sync.md) identifies
 exact tested archives and limitations. A new local build needs its own release
 qualification before it can enable shared ingress.
 

@@ -75,6 +75,94 @@ fn head(s: &Store, c: &crate::capture::Capture) -> (String, String, String) {
     s.db.query_row("SELECT h.epoch_id,i.epoch_id,i.published_lsn FROM snapshot_heads h JOIN incremental_heads i ON i.capture_id=?1 WHERE h.branch_id=?2",params![c.id.to_string(),c.branch_id.to_string()],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).unwrap()
 }
 #[test]
+fn verified_incremental_publishes_in_one_turn_without_exceeding_hash_budget() {
+    for extra_bytes in [0, 5 * 1024 * 1024] {
+        let (_dir, mut s, p, d, b) = setup();
+        let c = ready(&mut s, p, d, b);
+        let mut run = apply(&mut s, &c, "first");
+        let mut descriptor = prepare(&mut s, &c, &mut run, 0);
+        if extra_bytes > 0 {
+            let path = "tables/101/data.parquet";
+            let data = vec![7u8; extra_bytes];
+            fs::write(
+                s.root()
+                    .join(descriptor["generation"].as_str().unwrap())
+                    .join(path),
+                &data,
+            )
+            .unwrap();
+            descriptor["manifest"]["files"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({
+                    "path": path, "bytes": data.len(), "sha256": hex::encode(Sha256::digest(&data))
+                }));
+            let bytes = serde_json::to_vec(&descriptor["manifest"]).unwrap();
+            descriptor["manifest_sha256"] = json!(hex::encode(Sha256::digest(&bytes)));
+            fs::write(
+                s.root()
+                    .join("analytics/staging")
+                    .join(run.id.to_string())
+                    .join("manifest.json"),
+                bytes,
+            )
+            .unwrap();
+            s.incremental_ready(&mut run, &descriptor).unwrap();
+        }
+        let mut publisher = Publisher::recover(&mut s).unwrap();
+        publisher.tick(&mut s).unwrap();
+        if extra_bytes > 0 {
+            assert_eq!(s.publication(run.id).unwrap().state, "requested");
+            assert!(s.snapshot(p, run.epoch_id).is_err());
+            publisher.tick(&mut s).unwrap();
+        }
+        assert_eq!(s.publication(run.id).unwrap().state, "published");
+        assert_eq!(
+            head(&s, &c),
+            (
+                run.epoch_id.to_string(),
+                run.epoch_id.to_string(),
+                "0/C8".into()
+            )
+        );
+    }
+}
+#[test]
+fn published_prefix_is_still_hashed_but_only_new_files_need_sync() {
+    let (_dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut first = apply(&mut s, &c, "first");
+    prepare(&mut s, &c, &mut first, 0);
+    finish(&mut s, &first);
+    let mut next = apply(&mut s, &c, "next");
+    prepare(&mut s, &c, &mut next, 1);
+    let mut publisher = Publisher::recover(&mut s).unwrap();
+    let mut verified = 0;
+    let mut synced = 0;
+    publisher
+        .tick_with_hook(&mut s, &mut |at| {
+            verified += usize::from(at.starts_with("verified_file:"));
+            synced += usize::from(at.starts_with("synced_file:"));
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!((verified, synced), (4, 2));
+    assert_eq!(s.publication(next.id).unwrap().state, "published");
+    let old = head(&s, &c);
+    let mut corrupt = apply(&mut s, &c, "corrupt");
+    let descriptor = prepare(&mut s, &c, &mut corrupt, 2);
+    let path = s
+        .root()
+        .join(descriptor["generation"].as_str().unwrap())
+        .join("tables/101/_delta_log/00000000000000000000.json");
+    let mut bytes = fs::read(&path).unwrap();
+    bytes[0] ^= 1;
+    fs::write(path, bytes).unwrap();
+    assert!(publisher.tick(&mut s).is_err());
+    assert_eq!(head(&s, &c), old);
+}
+
+#[test]
 fn admission_cancel_scope_and_restore_fence_writers() {
     let (_dir, mut s, p, d, b) = setup();
     let mut c = ready(&mut s, p, d, b);
@@ -340,7 +428,17 @@ fn compaction_admission_is_durable_and_old_roots_wait_for_explicit_unpinned_gc()
     wrong["manifest"]["storage_generation"] = json!(c.id);
     assert!(crate::analytics_v2::data_root(s.root(), &wrong).is_err());
     assert!(s.commit_incremental(&mut next, &wrong).is_err());
-    finish(&mut s, &next);
+    let mut publisher = Publisher::recover(&mut s).unwrap();
+    let mut synced = 0;
+    publisher
+        .tick_with_hook(&mut s, &mut |at| {
+            synced += usize::from(at.starts_with("synced_file:"));
+            Ok(())
+        })
+        .unwrap();
+    // Identical relative names in a compacted generation are new files.
+    assert_eq!(synced, 4);
+    assert_eq!(s.publication(next.id).unwrap().state, "published");
     s.collect_snapshots(p, b, 1).unwrap();
     assert_eq!(s.snapshot(p, first.epoch_id).unwrap().state, "available");
     assert!(s.incremental_root_referenced(c.id).unwrap());

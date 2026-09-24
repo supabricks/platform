@@ -1,0 +1,281 @@
+{
+  "aggregation": "Median and range of available quiet trial statistics, not pooled transaction percentiles. Failed trials never supply latency samples.",
+  "groups": [
+    {
+      "cpus": 4,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3915.407,
+        "minimum": 3560.076,
+        "maximum": 4061.208
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 4571.986,
+        "minimum": 3762.373,
+        "maximum": 4665.948
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.038,
+        "minimum": 50.035,
+        "maximum": 50.038
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.36,
+        "minimum": 50.351,
+        "maximum": 50.36
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.756,
+        "minimum": 0.75,
+        "maximum": 0.764
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 12.417,
+        "minimum": 12.191,
+        "maximum": 12.857
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.829,
+        "minimum": 5.804,
+        "maximum": 5.844
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 273.721,
+        "minimum": 273.667,
+        "maximum": 274.628
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2281.155,
+        "minimum": 2110.617,
+        "maximum": 2294.512
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1599,
+        "minimum": 1187,
+        "maximum": 1614
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 424,
+        "minimum": 415,
+        "maximum": 427
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 2.709,
+        "minimum": 2.208,
+        "maximum": 2.908
+      }
+    },
+    {
+      "cpus": 8,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "within_5s": 0,
+      "offered_load_met": 0,
+      "phases": {
+        "drain": 2,
+        "warmup": 1
+      },
+      "errors": {
+        "publication_drain_timeout": 1,
+        "incremental_batch_failed_requires_resync": 2
+      },
+      "lag_p95_ms": null,
+      "lag_p99_ms": null,
+      "achieved": {
+        "n": 2,
+        "median": 717.235,
+        "minimum": 653.265,
+        "maximum": 781.205
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 868.316,
+        "minimum": 859.313,
+        "maximum": 884.691
+      },
+      "average_cpu_cores": {
+        "n": 2,
+        "median": 0.82,
+        "minimum": 0.585,
+        "maximum": 1.055
+      },
+      "oltp_p95_ms": {
+        "n": 2,
+        "median": 17.2945,
+        "minimum": 15.921,
+        "maximum": 18.668
+      },
+      "host_iowait_percent": {
+        "n": 2,
+        "median": 12.079,
+        "minimum": 11.521,
+        "maximum": 12.637
+      },
+      "capture_p95_ms": null,
+      "admission_p95_ms": null,
+      "apply_p95_ms": null,
+      "publication_p95_ms": null,
+      "drain_seconds": null
+    },
+    {
+      "cpus": 16,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3772.964,
+        "minimum": 3636.206,
+        "maximum": 4688.484
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 4102.885,
+        "minimum": 3870.92,
+        "maximum": 5256.118
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.04,
+        "minimum": 50.028,
+        "maximum": 50.04
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.361,
+        "minimum": 50.359,
+        "maximum": 50.362
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 1.212,
+        "minimum": 1.17,
+        "maximum": 1.23
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 13.303,
+        "minimum": 13.04,
+        "maximum": 13.79
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.664,
+        "minimum": 5.642,
+        "maximum": 5.698
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 275.322,
+        "minimum": 273.602,
+        "maximum": 311.56
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2199.964,
+        "minimum": 2129.029,
+        "maximum": 2656.635
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1207,
+        "minimum": 1156,
+        "maximum": 1590
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 432,
+        "minimum": 411,
+        "maximum": 433
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 3.509,
+        "minimum": 2.206,
+        "maximum": 3.51
+      }
+    },
+    {
+      "cpus": 16,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "within_5s": 0,
+      "offered_load_met": 0,
+      "phases": {
+        "drain": 3
+      },
+      "errors": {
+        "incremental_batch_failed_requires_resync": 3
+      },
+      "lag_p95_ms": null,
+      "lag_p99_ms": null,
+      "achieved": {
+        "n": 3,
+        "median": 652.864,
+        "minimum": 652.824,
+        "maximum": 815.576
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 882.753,
+        "minimum": 858.852,
+        "maximum": 885.843
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 1.155,
+        "minimum": 0.487,
+        "maximum": 1.21
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 18.821,
+        "minimum": 15.019,
+        "maximum": 18.854
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 12.468,
+        "minimum": 11.661,
+        "maximum": 12.483
+      },
+      "capture_p95_ms": null,
+      "admission_p95_ms": null,
+      "apply_p95_ms": null,
+      "publication_p95_ms": null,
+      "drain_seconds": null
+    }
+  ]
+}

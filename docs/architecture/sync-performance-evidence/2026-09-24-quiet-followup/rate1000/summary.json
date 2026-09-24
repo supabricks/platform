@@ -1,0 +1,68 @@
+{
+  "aggregation": "Median and range of available quiet trial statistics; not pooled transaction percentiles. Failures do not supply latency samples.",
+  "groups": [
+    {
+      "cpus": 8,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "phases": {
+        "drain": 2,
+        "warmup": 1
+      },
+      "lag_p95_ms": null,
+      "achieved": {
+        "n": 2,
+        "median": 668.7570000000001,
+        "minimum": 654.211,
+        "maximum": 683.303
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 883.719,
+        "minimum": 879.665,
+        "maximum": 888.173
+      },
+      "average_cpu_cores": {
+        "n": 2,
+        "median": 1.038,
+        "minimum": 0.922,
+        "maximum": 1.154
+      },
+      "oltp_p95_ms": {
+        "n": 2,
+        "median": 18.488500000000002,
+        "minimum": 18.174,
+        "maximum": 18.803
+      },
+      "host_iowait_percent": {
+        "n": 2,
+        "median": 12.495000000000001,
+        "minimum": 12.389,
+        "maximum": 12.601
+      }
+    },
+    {
+      "cpus": 16,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "phases": {
+        "warmup": 3
+      },
+      "lag_p95_ms": null,
+      "achieved": null,
+      "baseline_rate": {
+        "n": 3,
+        "median": 873.717,
+        "minimum": 863.707,
+        "maximum": 881.943
+      },
+      "average_cpu_cores": null,
+      "oltp_p95_ms": null,
+      "host_iowait_percent": null
+    }
+  ]
+}

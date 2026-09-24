@@ -18,6 +18,9 @@ build or operate the stack.
 | Find implementation plans, including IAM00 and UC09 | [Implementation plan index](plans/README.md) |
 | Run local triggered incremental analytics | [Triggered sync workflow](handbook/triggered-sync.md) |
 | Run local continuous incremental analytics | [Continuous sync workflow](handbook/continuous-sync.md) |
+| Check installed synchronization qualification | [SY08 archive gates and evidence](architecture/sy08-installed-sync.md) |
+| Understand synchronization CPU scaling | [Local benchmark methodology and results](architecture/sync-core-scaling.md) |
+| Find the plan to improve synchronization performance | [Measured performance plan (SP00–SP12)](plans/sync-performance-implementation.md) |
 | Understand the synchronization roadmap | [Managed synchronization plan](plans/analytical-sync-implementation.md) |
 | Understand a subsystem or its acceptance evidence | [Architecture and evidence index](architecture/README.md) |
 | Build the stack from source | [Native build and installation](../install/native/README.md), [component inputs](../components/README.md) |

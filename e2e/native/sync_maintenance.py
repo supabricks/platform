@@ -12,6 +12,7 @@ from cell import wait,lsn
 
 
 class Maintenance(Incremental):
+    inject_compaction_fault=True
     def caught(self,cap,previous):
         def observed():
             current=self.status(cap)
@@ -32,26 +33,35 @@ class Maintenance(Incremental):
         assert self.query(reader,'SELECT value FROM public.orders')['rows']==[['0']]
         # A qualification-only wrapper crashes once after the real compaction
         # rename. Admission, threshold, root ownership and all SQL stay unmodified.
-        faults=self.root/'fault-runtime';faults.mkdir()
-        for name in ('export.py','capture_worker.py'):shutil.copy2(worker.parent/name,faults/name)
-        for package in ('capture','incremental'):(faults/package).symlink_to(worker.parent/package,target_is_directory=True)
-        (faults/'incremental_worker.py').write_text(f"import json,os,runpy,sys\nfrom pathlib import Path\nsys.path.insert(0,{str(worker.parent)!r})\nc=json.loads(Path(sys.argv[1]).read_text());once=Path({str(faults/'once')!r})\nif c.get('storage_generation') and not once.exists():\n once.touch();os.environ['SUPABRICKS_CAPTURE_FAILPOINT']='after_compaction_rename'\nrunpy.run_path({str(worker.with_name('incremental_worker.py'))!r},run_name='__main__')\n")
-        self.configure(faults/'export.py')
+        faults=None
+        if self.inject_compaction_fault:
+            faults=self.root/'fault-runtime';faults.mkdir()
+            for name in ('export.py','capture_worker.py'):shutil.copy2(worker.parent/name,faults/name)
+            for package in ('capture','incremental'):(faults/package).symlink_to(worker.parent/package,target_is_directory=True)
+            (faults/'incremental_worker.py').write_text(f"import json,os,runpy,sys\nfrom pathlib import Path\nsys.path.insert(0,{str(worker.parent)!r})\nc=json.loads(Path(sys.argv[1]).read_text());once=Path({str(faults/'once')!r})\nif c.get('storage_generation') and not once.exists():\n once.touch();os.environ['SUPABRICKS_CAPTURE_FAILPOINT']='after_compaction_rename'\nrunpy.run_path({str(worker.with_name('incremental_worker.py'))!r},run_name='__main__')\n")
+            self.configure(faults/'export.py')
         for value in range(1,66):
             before=self.status(cap)['captured_lsn']
             self.sql(self.parent,f'UPDATE orders SET value={value}')
             self.caught(cap,before);latest_run,latest=self.applied(cap,f'update-{value}')
         new_root=self.root/latest['descriptor']['generation']
-        assert new_root!=old_root and latest_run['attempts']==2,latest_run
+        assert new_root!=old_root and latest_run['attempts']==(2 if faults else 1),latest_run
         assert latest['descriptor']['manifest']['compaction']['rows']==1
         assert self.version_rows(latest,'orders')==[dict(id=1,value=65)]
         assert self.query(reader,'SELECT value FROM public.orders')['rows']==[['0']]
-        self.check('automatic_64_version_rollover_recovers_renamed_root_and_keeps_pinned_sail_epoch')
+        self.check('automatic_64_version_rollover_recovers_renamed_root_and_keeps_pinned_sail_epoch' if faults else 'automatic_64_version_rollover_keeps_pinned_sail_epoch')
         self.configure(worker)
         with self.source() as db:
             for value in range(66,366):db.execute('UPDATE orders SET value=%s',(value,))
-        wait(lambda:len(self.journal(cap))>=365,timeout=60)
-        target=self.journal(cap)[-1][0]
+        def captured_burst():
+            # Capture commits can briefly exclude a diagnostic SQLite reader.
+            # Retry only lock contention within the existing bounded wait.
+            try:rows=self.journal(cap)
+            except sqlite3.OperationalError as error:
+                if error.sqlite_errorcode in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):return False
+                raise
+            return rows[-1][0] if len(rows)>=365 else False
+        target=wait(captured_burst,timeout=60)
         wait(lambda:lsn(self.status(cap)['captured_lsn'])>=target,timeout=30)
         last_run,last=self.applied(cap,'burst')
         assert self.version_rows(last,'orders')==[dict(id=1,value=365)]
@@ -75,7 +85,8 @@ class Maintenance(Incremental):
         wait(lambda:not old_root.exists(),timeout=60)
         assert new_root.exists() and self.status(cap)['state']=='capturing'
         self.check('unpinned_old_generation_collected_while_capture_and_current_generation_remain_live')
-        self.stop();shutil.rmtree(faults)
+        self.stop()
+        if faults:shutil.rmtree(faults)
         with tempfile.TemporaryDirectory(prefix='sb-sy07-recovery-',dir='/tmp') as recovery:
             backup=Path(recovery)/'backup';restored=Path(recovery)/'restored'
             subprocess.check_output([str(self.binary),'backup','create',str(backup),'--data-dir',str(self.root)],timeout=180)

@@ -25,6 +25,10 @@ jobs:
         run: python3 scripts/check-portable-deps.py
       - name: portable contracts and local crash recovery without UI or cluster setup
         run: cargo test --locked -p supabricks-core -p supabricks-local
+      - name: console survives a busy daemon and fences changed ownership
+        run: |
+          cargo build --locked -p supabricks-local
+          python3 e2e/native/console_health.py --binary target/debug/supabricks
 
   unit:
     runs-on: ubuntu-latest

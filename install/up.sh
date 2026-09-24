@@ -12,17 +12,17 @@ PINS=()
 while IFS= read -r line; do
   name=$(printf '%s' "$line" | sed -E 's/.*name: "([^"]+)".*/\1/')
   digest=$(printf '%s' "$line" | sed -E 's/.*digest: "([^"]+)".*/\1/')
-  [ "$digest" = "local-build" ] && continue
+  [[ "$digest" = "local-build" || "$digest" = source-sha256:* ]] && continue
   PINS+=("$digest|$name")
 done < <(grep -E '^\s+\w+: \{name: "' ../chart/values.yaml)
-[ "${#PINS[@]}" -ge 6 ] || { echo "FATAL: could not parse image pins from chart/values.yaml" >&2; exit 1; }
+[ "${#PINS[@]}" -ge 4 ] || { echo "FATAL: could not parse image pins from chart/values.yaml" >&2; exit 1; }
 OPERATOR_TAG=$(grep -E 'operator: \{name: "' ../chart/values.yaml | sed -E 's/.*name: "([^"]+)".*/\1/')
 
 say() { printf '\033[1;36m== %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mFATAL: %s\033[0m\n' "$*" >&2; exit 1; }
 
 say "checking prerequisites"
-for bin in docker kind kubectl helm jq; do
+for bin in docker kind kubectl helm jq python3; do
   command -v "$bin" >/dev/null || die "$bin not found — install it first"
 done
 docker info >/dev/null 2>&1 || die "docker daemon not running"
@@ -44,19 +44,28 @@ for pin in "${PINS[@]}"; do
   }
   tags+=("$tag")
 done
+say "building pinned demo object-store images"
+python3 minio/build.py
+while IFS= read -r line; do
+  tags+=("$(printf '%s' "$line" | sed -E 's/.*name: "([^\"]+)".*/\1/')")
+done < <(grep -E '^  (minio|mc): \{name: "' ../chart/values.yaml)
 docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
   say "building operator image (not found locally)"
   docker build -t "$OPERATOR_TAG" ..
 }
 # The load-skip must compare IMAGE IDS, not just names: a same-tag operator
-# rebuild would otherwise silently exercise the stale node image. (The
-# compute-image presence check guards against node-side prunes while every
-# database is suspended — the "unused" compute image gets reaped.)
+# rebuild would otherwise silently exercise a stale node image. Check every
+# loaded image so source-built demo images and node-side prunes are covered.
 local_op_id=$(docker image inspect "$OPERATOR_TAG" --format '{{.Id}}' 2>/dev/null || true)
 node_op_id=$(docker exec sspc-control-plane crictl inspecti -o go-template --template '{{.status.id}}' "docker.io/library/$OPERATOR_TAG" 2>/dev/null || true)
-if [ -n "$local_op_id" ] && [ "$local_op_id" = "$node_op_id" ] \
-   && docker exec sspc-control-plane crictl images 2>/dev/null | grep -q compute-node-v16; then
-  say "images already on the node (operator image ID matches); skipping load"
+images_match=true
+for tag in "${tags[@]}"; do
+  local_id=$(docker image inspect "$tag" --format '{{.Id}}')
+  node_id=$(docker exec sspc-control-plane crictl inspecti -o go-template --template '{{.status.id}}' "$tag" 2>/dev/null || true)
+  [ "$local_id" = "$node_id" ] || images_match=false
+done
+if [ -n "$local_op_id" ] && [ "$local_op_id" = "$node_op_id" ] && [ "$images_match" = true ]; then
+  say "images already on the node (all image IDs match); skipping load"
 else
   tar=$(mktemp -d)/images.tar
   docker save --platform linux/arm64 -o "$tar" "${tags[@]}" "$OPERATOR_TAG" \

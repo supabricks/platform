@@ -1,0 +1,41 @@
+{
+  "scope": "post-stop read-only corroboration: spool sequence never resets because pruning retains its newest anchor; source warmup and measured commits require at least this many captured transactions",
+  "trials": [
+    {
+      "trial": "10-cpu16-rate1000-r2",
+      "required_source_commits": 16434,
+      "captured_sequence_after_stop": 7807,
+      "uncaptured_commits_lower_bound": 8627
+    },
+    {
+      "trial": "17-cpu8-rate1000-r2",
+      "required_source_commits": 16340,
+      "captured_sequence_after_stop": 7859,
+      "uncaptured_commits_lower_bound": 8481
+    },
+    {
+      "trial": "21-cpu4-rate1000-r2",
+      "required_source_commits": 15481,
+      "captured_sequence_after_stop": 7830,
+      "uncaptured_commits_lower_bound": 7651
+    },
+    {
+      "trial": "23-cpu8-rate1000-r3",
+      "required_source_commits": 15326,
+      "captured_sequence_after_stop": 6534,
+      "uncaptured_commits_lower_bound": 8792
+    },
+    {
+      "trial": "24-cpu16-rate1000-r3",
+      "required_source_commits": 8780,
+      "captured_sequence_after_stop": 3155,
+      "uncaptured_commits_lower_bound": 5625
+    },
+    {
+      "trial": "26-cpu8-rate1000-r1",
+      "required_source_commits": 6536,
+      "captured_sequence_after_stop": 3076,
+      "uncaptured_commits_lower_bound": 3460
+    }
+  ]
+}

@@ -35,6 +35,7 @@ impl Cell {
         Ok(())
     }
     pub(super) fn tick_captures(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("capture.dispatch");
         for mut c in store.captures()? {
             let root = self.root.join("capture").join(c.id.to_string());
             let status_path = root.join("status.json");

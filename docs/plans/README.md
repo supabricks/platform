@@ -20,21 +20,32 @@ Historical baseline statements and failed release candidates stay historical.
 | [Unity Catalog](unity-catalog-implementation.md) | UC00–UC09 | Managed OSS catalog, durable publication, pinned reads, cross-project bindings, recovery and governed access |
 | [Governed server](uc09-governed-implementation.md) | UC09.0 / IAM00, UC09.1–UC09.8 | Identity, authorization, catalog grants, isolated execution, governed data, revocation/audit and signed-in console |
 
-All listed workstreams are merged within their stated profiles. Alpha.35's
-[complete qualification](../architecture/uc098-governed-release.md) is the current
+All workstreams above are merged within their stated profiles. Alpha.36's
+[complete qualification](../architecture/sy08-installed-sync.md) is the current
 retained evidence for the combined local product and the Linux governed profile.
 This does not retroactively qualify failed predecessor archives.
 
-## Planned workstreams
+## Analytical synchronization
 
-| Plan | Slice IDs | Proposed scope |
+| Plan | Slice IDs | Implemented scope |
 | --- | --- | --- |
 | [Managed analytical synchronization](analytical-sync-implementation.md) | SY00–SY08 | PostgreSQL → analytics: managed snapshot scheduling, incremental triggered and continuous modes; recovery, governance and installed qualification. Reverse sync is later scope. |
 
-[SY00](../architecture/sy00-capture-probe.md) supplies the capture/boundary probe.
-[SY01](../architecture/sy01-managed-snapshots.md) adds managed full-snapshot policies
-and scheduling for review; SY02–SY08 remain planned. Snapshot analytics remains the baseline;
-managed internal change capture is compatible with **no user-managed CDC/ETL**.
+SY00–SY07 are merged. [SY08](../architecture/sy08-installed-sync.md) qualifies
+exact alpha.36 archives in [#86](https://github.com/supabricks/platform/pull/86),
+which tracks integration. Snapshot, triggered and continuous modes use platform-managed
+capture, consistent with **no user-managed CDC/ETL**. Reverse sync is deferred.
+
+## Synchronization performance follow-up
+
+[SP00–SP12: measured performance improvements](sync-performance-implementation.md)
+is planned from the completed [workflow profile](../architecture/sync-workflow-profile.md).
+It targets sustained 1,000 changed rows/s and at most five-second p95 publication
+lag in a declared local profile. Every logical slice requires the same twelve
+candidate trials, fresh predecessor comparisons, and a recorded contribution or
+regression. Batching, reader retries, WAL, planning, source capacity and optional
+RocksDB/parallelism experiments are measured separately. These targets are not
+current release guarantees.
 
 ## IAM00 and UC09 navigation
 

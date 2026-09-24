@@ -69,9 +69,9 @@ def assert_stopped(pids):
 
 
 class Cell:
-    def __init__(self, binary, bundle, helpers, root, disk_full=False):
-        self.binary = root / 'supabricks'
-        shutil.copy2(binary, self.binary)
+    def __init__(self, binary, bundle, helpers, root, disk_full=False, exact_installed=False):
+        self.binary = binary if exact_installed else root / 'supabricks'
+        if not exact_installed:shutil.copy2(binary, self.binary)
         self.bundle, self.helpers, self.root = bundle, helpers, root
         self.daemons = []
         self.checks = []

@@ -34,4 +34,22 @@ class Diagnostics(unittest.TestCase):
             self.assertEqual(result['console_errors'],[dict(status=409,code='unknown')])
             self.assertNotIn('secret',str(result))
 
+    def test_native_codes_and_postgres_states_exclude_payloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'private.log'
+            path.write_text("RuntimeError: {'code': 'conflict', 'retryable': False, 'message': 'governed PostgreSQL rejected request (55P03)', 'private': 'secret'}\n")
+            result=summarize(path)
+            self.assertEqual(result['native_errors'],[dict(code='conflict',retryable=False,postgres_state='55P03')])
+            self.assertNotIn('secret',str(result))
+            path.write_text("RuntimeError: {'code': 'conflict', 'detail': {'hint': 'secret', 'message': 'governed PostgreSQL rejected request (57P01)', 'retryable': False}}\n")
+            result=summarize(path)
+            self.assertEqual(result['native_errors'],[dict(code='conflict',retryable=False,postgres_state='57P01')])
+            self.assertNotIn('secret',str(result))
+            path.write_text("RuntimeError: {'code': 'conflict', 'detail': 'secret'}\n")
+            self.assertEqual(summarize(path)['native_errors'],[dict(code='conflict')])
+            path.write_text("RuntimeError: {'code': 'secret', 'message': 'secret SQL and credentials'}\n")
+            self.assertEqual(summarize(path)['native_errors'],[dict(code='unknown')])
+            path.write_text("RuntimeError: {'code': 'conflict', 'message': 'governed PostgreSQL rejected request (HELLO)'}\n")
+            self.assertEqual(summarize(path)['native_errors'],[dict(code='conflict',postgres_state='other')])
+
 if __name__=='__main__':unittest.main()
