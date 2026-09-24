@@ -338,6 +338,12 @@ required to implement it.
 
 ## Deferred reverse direction and decisions still open
 
+Post-SY08 performance work starts with the [local CPU scaling
+baseline](../architecture/sync-core-scaling.md). Its follow-up sequence measures
+the current pipeline before choosing batching, worker reuse, or bounded
+parallelism changes, then repeats the same workload and correctness checks.
+These screening measurements do not expand the qualified release envelope.
+
 Lakehouse → PostgreSQL serving is a later separately scoped workstream, not a
 checkbox on this materializer. It needs source Delta/Iceberg version/change-feed
 support, key/type mapping, read-only managed serving destinations, atomic refresh,
