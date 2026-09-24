@@ -1,0 +1,464 @@
+{
+  "aggregation": "Median and range of quiet trial statistics, not pooled transaction percentiles. Failed trials never supply latency. Controls and formal matrix remain separate.",
+  "groups": [
+    {
+      "kind": "calibration",
+      "profile": false,
+      "cpus": 4,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3850.888,
+        "minimum": 3696.675,
+        "maximum": 4498.955
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 4368.94,
+        "minimum": 3895.989,
+        "maximum": 5269.95
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.038,
+        "minimum": 50.036,
+        "maximum": 50.038
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.349,
+        "minimum": 50.349,
+        "maximum": 50.357
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.757,
+        "minimum": 0.757,
+        "maximum": 0.768
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 12.233,
+        "minimum": 11.707,
+        "maximum": 14.279
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.818,
+        "minimum": 5.813,
+        "maximum": 5.864
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 275.409,
+        "minimum": 273.354,
+        "maximum": 312.714
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2236.282,
+        "minimum": 2193.892,
+        "maximum": 2395.567
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1609,
+        "minimum": 1197,
+        "maximum": 2176
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 415,
+        "minimum": 411,
+        "maximum": 435
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 3.311,
+        "minimum": 2.809,
+        "maximum": 3.61
+      }
+    },
+    {
+      "kind": "calibration",
+      "profile": true,
+      "cpus": 4,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3664.372,
+        "minimum": 3663.729,
+        "maximum": 3774.739
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 3950.104,
+        "minimum": 3857.968,
+        "maximum": 3992.34
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.034,
+        "minimum": 50.025,
+        "maximum": 50.038
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.346,
+        "minimum": 50.344,
+        "maximum": 50.346
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.778,
+        "minimum": 0.772,
+        "maximum": 0.784
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 12.733,
+        "minimum": 12.539,
+        "maximum": 12.999
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.848,
+        "minimum": 5.842,
+        "maximum": 5.927
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 270.244,
+        "minimum": 265.116,
+        "maximum": 273.428
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2183.769,
+        "minimum": 2157.979,
+        "maximum": 2231.215
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1245,
+        "minimum": 1212,
+        "maximum": 1263
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 437,
+        "minimum": 423,
+        "maximum": 448
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 3.413,
+        "minimum": 3.013,
+        "maximum": 3.414
+      }
+    },
+    {
+      "kind": "matrix",
+      "profile": true,
+      "cpus": 4,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 4031.367,
+        "minimum": 3867.313,
+        "maximum": 4360.628
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 4511.877,
+        "minimum": 4297.83,
+        "maximum": 4792.242
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.037,
+        "minimum": 50.037,
+        "maximum": 50.039
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.359,
+        "minimum": 50.355,
+        "maximum": 50.36
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.791,
+        "minimum": 0.773,
+        "maximum": 0.793
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 12.864,
+        "minimum": 12.222,
+        "maximum": 13.046
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.837,
+        "minimum": 5.824,
+        "maximum": 5.853
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 276.363,
+        "minimum": 274.171,
+        "maximum": 276.65
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2298.519,
+        "minimum": 2250.371,
+        "maximum": 2428.377
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1686,
+        "minimum": 1354,
+        "maximum": 1698
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 420,
+        "minimum": 414,
+        "maximum": 439
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 3.414,
+        "minimum": 2.31,
+        "maximum": 3.715
+      }
+    },
+    {
+      "kind": "matrix",
+      "profile": true,
+      "cpus": 8,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "within_5s": 0,
+      "offered_load_met": 0,
+      "phases": {
+        "drain": 3
+      },
+      "errors": {
+        "incremental_batch_failed_requires_resync": 2,
+        "publication_drain_timeout": 1
+      },
+      "lag_p95_ms": null,
+      "lag_p99_ms": null,
+      "achieved": {
+        "n": 3,
+        "median": 654.243,
+        "minimum": 651.154,
+        "maximum": 654.401
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 872.739,
+        "minimum": 863.777,
+        "maximum": 885.995
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 1.151,
+        "minimum": 1.083,
+        "maximum": 1.176
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 18.825,
+        "minimum": 18.701,
+        "maximum": 18.83
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 12.608,
+        "minimum": 12.568,
+        "maximum": 12.632
+      },
+      "capture_p95_ms": null,
+      "admission_p95_ms": null,
+      "apply_p95_ms": null,
+      "publication_p95_ms": null,
+      "drain_seconds": null
+    },
+    {
+      "kind": "matrix",
+      "profile": true,
+      "cpus": 16,
+      "rate": 50,
+      "trials": 3,
+      "measured": 3,
+      "runtime_failed": 0,
+      "within_5s": 3,
+      "offered_load_met": 3,
+      "phases": {
+        "complete": 3
+      },
+      "errors": {},
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3765.403,
+        "minimum": 3676.418,
+        "maximum": 4944.655
+      },
+      "lag_p99_ms": {
+        "n": 3,
+        "median": 3988.892,
+        "minimum": 3876.004,
+        "maximum": 5490.43
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.035,
+        "minimum": 50.034,
+        "maximum": 50.039
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 50.359,
+        "minimum": 50.312,
+        "maximum": 50.361
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 1.234,
+        "minimum": 1.16,
+        "maximum": 1.238
+      },
+      "oltp_p95_ms": {
+        "n": 3,
+        "median": 12.906,
+        "minimum": 12.408,
+        "maximum": 13.734
+      },
+      "host_iowait_percent": {
+        "n": 3,
+        "median": 5.7,
+        "minimum": 5.697,
+        "maximum": 5.733
+      },
+      "capture_p95_ms": {
+        "n": 3,
+        "median": 298.766,
+        "minimum": 272.872,
+        "maximum": 301.093
+      },
+      "admission_p95_ms": {
+        "n": 3,
+        "median": 2235.403,
+        "minimum": 2182.731,
+        "maximum": 2865.682
+      },
+      "apply_p95_ms": {
+        "n": 3,
+        "median": 1230,
+        "minimum": 1186,
+        "maximum": 2523
+      },
+      "publication_p95_ms": {
+        "n": 3,
+        "median": 428,
+        "minimum": 414,
+        "maximum": 432
+      },
+      "drain_seconds": {
+        "n": 3,
+        "median": 2.912,
+        "minimum": 2.811,
+        "maximum": 3.312
+      }
+    },
+    {
+      "kind": "matrix",
+      "profile": true,
+      "cpus": 16,
+      "rate": 1000,
+      "trials": 3,
+      "measured": 0,
+      "runtime_failed": 3,
+      "within_5s": 0,
+      "offered_load_met": 0,
+      "phases": {
+        "drain": 2,
+        "warmup": 1
+      },
+      "errors": {
+        "incremental_batch_failed_requires_resync": 2,
+        "publication_drain_timeout": 1
+      },
+      "lag_p95_ms": null,
+      "lag_p99_ms": null,
+      "achieved": {
+        "n": 2,
+        "median": 652.1959999999999,
+        "minimum": 651.275,
+        "maximum": 653.117
+      },
+      "baseline_rate": {
+        "n": 3,
+        "median": 864.178,
+        "minimum": 857.704,
+        "maximum": 866.715
+      },
+      "average_cpu_cores": {
+        "n": 2,
+        "median": 1.2635,
+        "minimum": 1.239,
+        "maximum": 1.288
+      },
+      "oltp_p95_ms": {
+        "n": 2,
+        "median": 18.811999999999998,
+        "minimum": 18.718,
+        "maximum": 18.906
+      },
+      "host_iowait_percent": {
+        "n": 2,
+        "median": 12.43,
+        "minimum": 12.41,
+        "maximum": 12.45
+      },
+      "capture_p95_ms": null,
+      "admission_p95_ms": null,
+      "apply_p95_ms": null,
+      "publication_p95_ms": null,
+      "drain_seconds": null
+    }
+  ]
+}

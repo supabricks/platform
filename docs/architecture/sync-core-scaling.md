@@ -14,6 +14,15 @@ This is a local screening experiment on a shared development machine. It does no
 establish an EC2 instance recommendation, a product SLA, or installed release
 qualification. The runtime is held constant throughout the matrix.
 
+The subsequent [workflow profile](sync-workflow-profile.md) repeats the same
+twelve matched profiles with opt-in instrumentation and six activation controls.
+It confirms roughly 30 ms durable capture commits with four native sync calls,
+identifies `SQLITE_BUSY` in four failed spool metadata reads, and measures repeated
+directory scans dominating apply planning. All six 50-row/s profiles pass; all six
+overload profiles fail (four resync, two drain timeouts). The separate
+[profile archive](sync-performance-evidence/2026-09-24-workflow-profile/README.md)
+preserves every final-series trial and earlier collector-development attempts.
+
 ## Original matrix — 2026-09-24 UTC
 
 The 27-trial screening matrix found no useful scaling of this small-table sync

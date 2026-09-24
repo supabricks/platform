@@ -1,0 +1,897 @@
+{
+  "low": {
+    "trials": 6,
+    "statuses": {
+      "measured": 6
+    },
+    "phases": {
+      "complete": 6
+    },
+    "errors": {},
+    "capture": {
+      "seconds": {
+        "n": 6,
+        "median": 45.50961218261719,
+        "minimum": 45.00786181640625,
+        "maximum": 46.01032055664062
+      },
+      "transactions_per_second": {
+        "n": 6,
+        "median": 25.26986013687972,
+        "minimum": 25.21262794074385,
+        "maximum": 25.482923794324922
+      },
+      "commit_mean_ms": {
+        "n": 6,
+        "median": 27.538146477879664,
+        "minimum": 27.304591462946817,
+        "maximum": 27.8030771216098
+      },
+      "syncs_per_commit": {
+        "n": 6,
+        "median": 4.0,
+        "minimum": 4.0,
+        "maximum": 4.0
+      },
+      "sync_share_of_commit": {
+        "n": 6,
+        "median": 0.9967433820835838,
+        "minimum": 0.9967219599238635,
+        "maximum": 0.9968074308763644
+      },
+      "decode_ms": {
+        "n": 6,
+        "median": 26.382346,
+        "minimum": 25.636119,
+        "maximum": 26.967454
+      },
+      "source_checks_ms": {
+        "n": 6,
+        "median": 103.1041645,
+        "minimum": 94.646804,
+        "maximum": 135.299459
+      },
+      "status_atomic_ms": {
+        "n": 6,
+        "median": 2719.1875165,
+        "minimum": 2683.052879,
+        "maximum": 2797.684149
+      },
+      "socket_wait_ms": {
+        "n": 6,
+        "median": 9894.676201,
+        "minimum": 9278.667177,
+        "maximum": 10161.800666
+      }
+    },
+    "capture_commit_wall_share": {
+      "n": 6,
+      "median": 0.696990144865554,
+      "minimum": 0.695842129442902,
+      "maximum": 0.7060497206688063
+    },
+    "failed_reader_select_ms": null,
+    "achieved": {
+      "n": 6,
+      "median": 50.037,
+      "minimum": 50.034,
+      "maximum": 50.039
+    },
+    "baseline_rate": {
+      "n": 6,
+      "median": 50.359,
+      "minimum": 50.312,
+      "maximum": 50.361
+    },
+    "average_cpu_cores": {
+      "n": 6,
+      "median": 0.9764999999999999,
+      "minimum": 0.773,
+      "maximum": 1.238
+    },
+    "lag_p95_ms": {
+      "n": 6,
+      "median": 3949.34,
+      "minimum": 3676.418,
+      "maximum": 4944.655
+    },
+    "measure_sql": {
+      "begin": {
+        "n": 6,
+        "median": 0.12,
+        "minimum": 0.11,
+        "maximum": 0.137
+      },
+      "updates": {
+        "n": 6,
+        "median": 0.216,
+        "minimum": 0.21,
+        "maximum": 0.229
+      },
+      "xid": {
+        "n": 6,
+        "median": 0.08,
+        "minimum": 0.076,
+        "maximum": 0.084
+      },
+      "commit": {
+        "n": 6,
+        "median": 12.094000000000001,
+        "minimum": 11.716,
+        "maximum": 12.727
+      }
+    },
+    "measure_commit_share": {
+      "n": 6,
+      "median": 0.9457198075498603,
+      "minimum": 0.9393933463954941,
+      "maximum": 0.9502244861717799
+    },
+    "measure_waits": {
+      "IPC:SyncRep": 119,
+      "none:none": 3,
+      "IO:WalSync": 79
+    },
+    "measure_storage_flush_mean_ms": {
+      "n": 6,
+      "median": 3.1379863386289926,
+      "minimum": 3.1144223002611,
+      "maximum": 3.1967024326672395
+    },
+    "baseline_sql": {
+      "begin": {
+        "n": 6,
+        "median": 0.11499999999999999,
+        "minimum": 0.107,
+        "maximum": 0.134
+      },
+      "updates": {
+        "n": 6,
+        "median": 0.232,
+        "minimum": 0.193,
+        "maximum": 0.368
+      },
+      "xid": {
+        "n": 6,
+        "median": 0.0905,
+        "minimum": 0.083,
+        "maximum": 0.114
+      },
+      "commit": {
+        "n": 6,
+        "median": 8.221499999999999,
+        "minimum": 8.184,
+        "maximum": 8.923
+      }
+    },
+    "baseline_commit_share": {
+      "n": 6,
+      "median": 0.9354877761576743,
+      "minimum": 0.9320359641561253,
+      "maximum": 0.9449105762861559
+    },
+    "baseline_waits": {
+      "IO:WalSync": 30,
+      "IPC:SyncRep": 8,
+      "none:none": 2
+    },
+    "baseline_storage_flush_mean_ms": {
+      "n": 6,
+      "median": 2.331980573770494,
+      "minimum": 2.2977324999999986,
+      "maximum": 2.3726427213114736
+    },
+    "apply_median_batch_ms": {
+      "startup.imports": {
+        "n": 6,
+        "median": 201.49996700000003,
+        "minimum": 199.113588,
+        "maximum": 207.15578299999999
+      },
+      "apply.run": {
+        "n": 6,
+        "median": 699.085754,
+        "minimum": 628.7900215,
+        "maximum": 750.74018
+      },
+      "apply.plan": {
+        "n": 6,
+        "median": 497.05220199999997,
+        "minimum": 437.001767,
+        "maximum": 555.117388
+      },
+      "apply.boundary": {
+        "n": 6,
+        "median": 457.83579125,
+        "minimum": 401.656288,
+        "maximum": 485.251992
+      },
+      "apply.delta_merge": {
+        "n": 6,
+        "median": 17.925913,
+        "minimum": 16.5618765,
+        "maximum": 19.440054
+      },
+      "apply.journal": {
+        "n": 6,
+        "median": 18.654655499999997,
+        "minimum": 13.556594999999998,
+        "maximum": 33.639605
+      },
+      "apply.inventory": {
+        "n": 6,
+        "median": 5.5882835,
+        "minimum": 5.15169,
+        "maximum": 6.1894665
+      },
+      "apply.verify_previous": {
+        "n": 6,
+        "median": 3.21856875,
+        "minimum": 2.9308915,
+        "maximum": 3.2937535000000002
+      },
+      "apply.durable": {
+        "n": 6,
+        "median": 117.4252355,
+        "minimum": 107.05089000000001,
+        "maximum": 127.62683
+      }
+    },
+    "capture_persistent_cpu_cores": {
+      "n": 6,
+      "median": 0.023892338919618984,
+      "minimum": 0.023855950925699698,
+      "maximum": 0.02432774950371245
+    },
+    "apply_boundary_calls": {
+      "n": 6,
+      "median": 353.0,
+      "minimum": 320,
+      "maximum": 377.0
+    },
+    "exceptions": [],
+    "daemon_stage_mean_ms": {
+      "publication.verify": {
+        "n": 6,
+        "median": 13.025843860742706,
+        "minimum": 12.297392142857143,
+        "maximum": 13.7398748
+      },
+      "publication.descriptor": {
+        "n": 6,
+        "median": 19.86870111675824,
+        "minimum": 18.99271917857143,
+        "maximum": 21.49597884
+      },
+      "publication.sqlite_commit": {
+        "n": 6,
+        "median": 10.70084088275862,
+        "minimum": 10.464282107142857,
+        "maximum": 11.187164357142857
+      },
+      "capture.dispatch": {
+        "n": 6,
+        "median": 40.52997466791857,
+        "minimum": 38.04376816216216,
+        "maximum": 41.07309106711409
+      },
+      "apply.dispatch": {
+        "n": 6,
+        "median": 29.817235305680253,
+        "minimum": 27.284649,
+        "maximum": 30.285391
+      }
+    },
+    "apply_growth": {
+      "first_third": {
+        "apply.boundary": {
+          "n": 6,
+          "median": 202.3988045,
+          "minimum": 168.4017425,
+          "maximum": 227.917003
+        },
+        "apply.delta_merge": {
+          "n": 6,
+          "median": 17.4233875,
+          "minimum": 15.879699500000001,
+          "maximum": 18.770059
+        },
+        "apply.run": {
+          "n": 6,
+          "median": 430.283849,
+          "minimum": 420.99927,
+          "maximum": 488.377105
+        }
+      },
+      "last_third": {
+        "apply.boundary": {
+          "n": 6,
+          "median": 634.8185865,
+          "minimum": 590.239183,
+          "maximum": 647.596684
+        },
+        "apply.delta_merge": {
+          "n": 6,
+          "median": 18.5859295,
+          "minimum": 16.845102,
+          "maximum": 20.177682
+        },
+        "apply.run": {
+          "n": 6,
+          "median": 941.519292,
+          "minimum": 867.414955,
+          "maximum": 1056.8893245
+        }
+      }
+    }
+  },
+  "overload": {
+    "trials": 6,
+    "statuses": {
+      "runtime_failed": 6
+    },
+    "phases": {
+      "drain": 5,
+      "warmup": 1
+    },
+    "errors": {
+      "incremental_batch_failed_requires_resync": 4,
+      "publication_drain_timeout": 2
+    },
+    "capture": {
+      "seconds": {
+        "n": 5,
+        "median": 45.00864306640625,
+        "minimum": 45.00842260742188,
+        "maximum": 45.0115244140625
+      },
+      "transactions_per_second": {
+        "n": 5,
+        "median": 29.727656015519734,
+        "minimum": 28.971367674064215,
+        "maximum": 30.01645701708269
+      },
+      "commit_mean_ms": {
+        "n": 5,
+        "median": 29.90141864456036,
+        "minimum": 29.656104263040238,
+        "maximum": 30.33502627293578
+      },
+      "syncs_per_commit": {
+        "n": 5,
+        "median": 4.0,
+        "minimum": 4.0,
+        "maximum": 4.0
+      },
+      "sync_share_of_commit": {
+        "n": 5,
+        "median": 0.9966111638162023,
+        "minimum": 0.9966042069437153,
+        "maximum": 0.9967877594393836
+      },
+      "decode_ms": {
+        "n": 5,
+        "median": 30.267772,
+        "minimum": 28.47099,
+        "maximum": 30.434459
+      },
+      "source_checks_ms": {
+        "n": 5,
+        "median": 94.601127,
+        "minimum": 92.406595,
+        "maximum": 100.169164
+      },
+      "status_atomic_ms": {
+        "n": 5,
+        "median": 2914.437772,
+        "minimum": 2880.401943,
+        "maximum": 3000.982596
+      },
+      "socket_wait_ms": {
+        "n": 5,
+        "median": 957.05958,
+        "minimum": 564.319095,
+        "maximum": 1080.134359
+      }
+    },
+    "capture_commit_wall_share": {
+      "n": 5,
+      "median": 0.8842454281976379,
+      "minimum": 0.8815430498610057,
+      "maximum": 0.894878441715616
+    },
+    "failed_reader_select_ms": {
+      "n": 4,
+      "median": 3002.3324105,
+      "minimum": 3002.304209,
+      "maximum": 3002.341078
+    },
+    "achieved": {
+      "n": 5,
+      "median": 653.117,
+      "minimum": 651.154,
+      "maximum": 654.401
+    },
+    "baseline_rate": {
+      "n": 6,
+      "median": 865.4465,
+      "minimum": 857.704,
+      "maximum": 885.995
+    },
+    "average_cpu_cores": {
+      "n": 5,
+      "median": 1.176,
+      "minimum": 1.083,
+      "maximum": 1.288
+    },
+    "lag_p95_ms": null,
+    "measure_sql": {
+      "begin": {
+        "n": 5,
+        "median": 0.238,
+        "minimum": 0.213,
+        "maximum": 0.24
+      },
+      "updates": {
+        "n": 5,
+        "median": 0.249,
+        "minimum": 0.219,
+        "maximum": 0.254
+      },
+      "xid": {
+        "n": 5,
+        "median": 0.162,
+        "minimum": 0.139,
+        "maximum": 0.164
+      },
+      "commit": {
+        "n": 5,
+        "median": 18.361,
+        "minimum": 18.222,
+        "maximum": 18.497
+      }
+    },
+    "measure_commit_share": {
+      "n": 5,
+      "median": 0.9696080253306911,
+      "minimum": 0.9692718432904494,
+      "maximum": 0.9721969597416821
+    },
+    "measure_waits": {
+      "IO:WalSync": 742,
+      "IPC:SyncRep": 2431,
+      "LWLock:WALWrite": 1030,
+      "none:none": 22,
+      "IO:WalInitSync": 1,
+      "Client:ClientRead": 5
+    },
+    "measure_storage_flush_mean_ms": {
+      "n": 5,
+      "median": 4.670428231271975,
+      "minimum": 4.655992729844758,
+      "maximum": 4.7107446226439045
+    },
+    "baseline_sql": {
+      "begin": {
+        "n": 6,
+        "median": 0.1825,
+        "minimum": 0.173,
+        "maximum": 0.202
+      },
+      "updates": {
+        "n": 6,
+        "median": 0.2155,
+        "minimum": 0.201,
+        "maximum": 0.231
+      },
+      "xid": {
+        "n": 6,
+        "median": 0.127,
+        "minimum": 0.116,
+        "maximum": 0.14
+      },
+      "commit": {
+        "n": 6,
+        "median": 12.576,
+        "minimum": 12.466,
+        "maximum": 12.789
+      }
+    },
+    "baseline_commit_share": {
+      "n": 6,
+      "median": 0.9657829117273506,
+      "minimum": 0.9623773767323883,
+      "maximum": 0.9683805390283686
+    },
+    "baseline_waits": {
+      "IO:WalSync": 128,
+      "IPC:SyncRep": 298,
+      "Client:ClientRead": 2,
+      "LWLock:WALWrite": 113,
+      "IO:WalWrite": 1,
+      "none:none": 8
+    },
+    "baseline_storage_flush_mean_ms": {
+      "n": 6,
+      "median": 3.3650050326606955,
+      "minimum": 3.305044271480139,
+      "maximum": 3.4089708554658817
+    },
+    "apply_median_batch_ms": {
+      "startup.imports": {
+        "n": 5,
+        "median": 203.6137635,
+        "minimum": 200.393967,
+        "maximum": 213.2922015
+      },
+      "apply.run": {
+        "n": 5,
+        "median": 1513.125753,
+        "minimum": 1440.169593,
+        "maximum": 1585.584136
+      },
+      "apply.plan": {
+        "n": 5,
+        "median": 1261.885692,
+        "minimum": 1177.4080255,
+        "maximum": 1333.436304
+      },
+      "apply.boundary": {
+        "n": 5,
+        "median": 1155.140237,
+        "minimum": 1043.972617,
+        "maximum": 1214.300042
+      },
+      "apply.delta_merge": {
+        "n": 5,
+        "median": 18.79555,
+        "minimum": 18.417044,
+        "maximum": 20.052235
+      },
+      "apply.journal": {
+        "n": 5,
+        "median": 53.854685,
+        "minimum": 43.7633735,
+        "maximum": 103.964967
+      },
+      "apply.inventory": {
+        "n": 5,
+        "median": 8.519542,
+        "minimum": 7.6540035,
+        "maximum": 9.240791
+      },
+      "apply.verify_previous": {
+        "n": 5,
+        "median": 4.815039,
+        "minimum": 4.3458535000000005,
+        "maximum": 5.059103
+      },
+      "apply.durable": {
+        "n": 5,
+        "median": 158.040933,
+        "minimum": 157.045249,
+        "maximum": 161.96677549999998
+      }
+    },
+    "capture_persistent_cpu_cores": {
+      "n": 5,
+      "median": 0.025132463581915683,
+      "minimum": 0.02448634569387645,
+      "maximum": 0.025141155787132902
+    },
+    "apply_boundary_calls": {
+      "n": 5,
+      "median": 631.0,
+      "minimum": 631.0,
+      "maximum": 631.0
+    },
+    "exceptions": [
+      {
+        "trial": "13-matrix-cpu16-rate1000-r2-p1-attempt1",
+        "worker": "incremental-6247.jsonl",
+        "context_id": "9acb0c2c-b215-47f0-b546-91c0ab3e51f4",
+        "stage": "apply.run",
+        "at_ms": 1790269153068.3645,
+        "type": "OperationalError",
+        "sqlite_errorcode": 5,
+        "sqlite_errorname": "SQLITE_BUSY",
+        "stack": [
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 147,
+            "function": "run"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 31,
+            "function": "plan"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "storage.py",
+            "line": 87,
+            "function": "journal"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 121,
+            "function": "execute"
+          }
+        ]
+      },
+      {
+        "trial": "14-matrix-cpu8-rate1000-r1-p1-attempt1",
+        "worker": "incremental-5498.jsonl",
+        "context_id": "f5457f1f-5430-4f52-ad0b-8f55d2b181b8",
+        "stage": "apply.run",
+        "at_ms": 1790269282893.061,
+        "type": "OperationalError",
+        "sqlite_errorcode": 5,
+        "sqlite_errorname": "SQLITE_BUSY",
+        "stack": [
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 147,
+            "function": "run"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 31,
+            "function": "plan"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "storage.py",
+            "line": 87,
+            "function": "journal"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 121,
+            "function": "execute"
+          }
+        ]
+      },
+      {
+        "trial": "15-matrix-cpu8-rate1000-r3-p1-attempt1",
+        "worker": "incremental-5929.jsonl",
+        "context_id": "40adfd96-8ac5-46ad-9784-23f72f96b568",
+        "stage": "apply.run",
+        "at_ms": 1790269418050.828,
+        "type": "OperationalError",
+        "sqlite_errorcode": 5,
+        "sqlite_errorname": "SQLITE_BUSY",
+        "stack": [
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 147,
+            "function": "run"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 31,
+            "function": "plan"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "storage.py",
+            "line": 87,
+            "function": "journal"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 121,
+            "function": "execute"
+          }
+        ]
+      },
+      {
+        "trial": "16-matrix-cpu16-rate1000-r3-p1-attempt1",
+        "worker": "incremental-2434.jsonl",
+        "context_id": "8e31b0a2-39d5-4ba0-b376-f04b10c566e1",
+        "stage": "apply.run",
+        "at_ms": 1790269478842.7063,
+        "type": "OperationalError",
+        "sqlite_errorcode": 5,
+        "sqlite_errorname": "SQLITE_BUSY",
+        "stack": [
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 147,
+            "function": "run"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "incremental_worker.py",
+            "line": 31,
+            "function": "plan"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 68,
+            "function": "measured"
+          },
+          {
+            "file": "storage.py",
+            "line": 87,
+            "function": "journal"
+          },
+          {
+            "file": "worker_profile.py",
+            "line": 121,
+            "function": "execute"
+          }
+        ]
+      }
+    ],
+    "daemon_stage_mean_ms": {
+      "publication.verify": {
+        "n": 5,
+        "median": 17.25063088235294,
+        "minimum": 16.039534529411764,
+        "maximum": 17.41281205263158
+      },
+      "publication.descriptor": {
+        "n": 5,
+        "median": 23.06215305882353,
+        "minimum": 21.30959570588235,
+        "maximum": 23.246029684210527
+      },
+      "publication.sqlite_commit": {
+        "n": 5,
+        "median": 10.763551555555557,
+        "minimum": 9.566449294117646,
+        "maximum": 12.280135684210526
+      },
+      "capture.dispatch": {
+        "n": 5,
+        "median": 44.05436758227848,
+        "minimum": 43.62252964285714,
+        "maximum": 44.43200029559748
+      },
+      "apply.dispatch": {
+        "n": 5,
+        "median": 19.26826689873418,
+        "minimum": 17.13469334591195,
+        "maximum": 20.902239850649348
+      }
+    },
+    "apply_growth": {
+      "first_third": {
+        "apply.boundary": {
+          "n": 5,
+          "median": 849.291538,
+          "minimum": 423.2912795,
+          "maximum": 1020.583146
+        },
+        "apply.delta_merge": {
+          "n": 5,
+          "median": 18.368995,
+          "minimum": 17.947848,
+          "maximum": 19.985063
+        },
+        "apply.run": {
+          "n": 5,
+          "median": 1211.088803,
+          "minimum": 743.441058,
+          "maximum": 1645.995046
+        }
+      },
+      "last_third": {
+        "apply.boundary": {
+          "n": 5,
+          "median": 1320.26337,
+          "minimum": 1226.275473,
+          "maximum": 1405.924679
+        },
+        "apply.delta_merge": {
+          "n": 5,
+          "median": 19.083929,
+          "minimum": 18.448059,
+          "maximum": 20.2052
+        },
+        "apply.run": {
+          "n": 5,
+          "median": 1708.626718,
+          "minimum": 1563.995581,
+          "maximum": 1834.977368
+        }
+      }
+    }
+  },
+  "controls": {
+    "False": {
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3850.888,
+        "minimum": 3696.675,
+        "maximum": 4498.955
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.757,
+        "minimum": 0.757,
+        "maximum": 0.768
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.038,
+        "minimum": 50.036,
+        "maximum": 50.038
+      }
+    },
+    "True": {
+      "lag_p95_ms": {
+        "n": 3,
+        "median": 3664.372,
+        "minimum": 3663.729,
+        "maximum": 3774.739
+      },
+      "average_cpu_cores": {
+        "n": 3,
+        "median": 0.778,
+        "minimum": 0.772,
+        "maximum": 0.784
+      },
+      "achieved": {
+        "n": 3,
+        "median": 50.034,
+        "minimum": 50.025,
+        "maximum": 50.038
+      }
+    }
+  },
+  "sampling_omissions": [],
+  "storage_sample_errors": []
+}
