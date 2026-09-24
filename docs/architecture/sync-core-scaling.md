@@ -14,7 +14,7 @@ This is a local screening experiment on a shared development machine. It does no
 establish an EC2 instance recommendation, a product SLA, or installed release
 qualification. The runtime is held constant throughout the matrix.
 
-## Results — 2026-09-24 UTC
+## Original matrix — 2026-09-24 UTC
 
 The 27-trial screening matrix found no useful scaling of this small-table sync
 workload from 4 to 8 to 16 logical CPUs. At 250 changed rows/s, each allocation
@@ -65,7 +65,9 @@ In the 4-CPU trial, capture-observed p95 was 99.361 seconds and durable
 commit-acknowledgment-to-admission p95 was 101.926 seconds. Worker-start-to-prepared
 p95 was 3.773 seconds and prepared-to-publication p95 was 0.649 seconds. This
 locates most of the delay before apply admission; it does not by itself prove
-which capture operation or shared resource is responsible.
+which capture operation or shared resource is responsible. The matched follow-up
+below repeats the four configurations affected by the later build; it does not
+replace or pool these original results.
 
 The 1,000-row/s setting is an overload probe, **not a demonstrated 1,000-row/s
 input**. Four clients achieved only 251.084–659.540 rows/s in the six trials that
@@ -79,15 +81,75 @@ The tested package was a private diagnostic installation with a locally rebuilt
 platform binary from `a8fd376536d3d6c5198df0badb6ee13cfaa6702f`. Its binary hash is
 `a521c26a3c12c559e3b2cdce8cc946b631378772f52cd61bec332ddeb85abff9`, and package manifest
 hash is `78928698010df68ad72717b042728148abcb48a01774890ff3efdd6af3d9bb48`.
-This is not new qualification of a signed alpha.36 archive. Capture throughput,
-worker failure diagnosis, and a quiet-host repeat take priority before using
-larger machines or adding table/project concurrency as a performance remedy.
+This is not new qualification of a signed alpha.36 archive. Capture throughput
+and worker failure diagnosis take priority before using larger machines or
+adding table/project concurrency as a performance remedy.
 
 A supplemental rerun added exception-only logging to a private package copy. It
 ran during ongoing host contention, accepted 217.054 rows/s at a 250-row/s target,
 and hit the drain timeout without emitting an incremental exception. It therefore
 did not establish the worker failure's cause. Its instrumentation and outcome
 are retained in the evidence archive and excluded from the primary matrix.
+
+## Matched follow-up after the build finished
+
+The [follow-up evidence](sync-performance-evidence/2026-09-24-quiet-followup/README.md)
+adds three fresh repeats of each affected configuration. The same package,
+CPU affinity, fixed 16 GiB memory limit, four clients, 45-second workload, and
+correctness/cleanup gates were used. The original 27 trials remain unchanged.
+
+| Logical CPUs | Offered rows/s | Complete / trials | Fresh trial p95, median (range) | Failure outcome |
+| --- | --- | --- | --- | --- |
+| 4 | 50 | 3 / 3 | 3.696 s (3.677–3.698) | None |
+| 16 | 50 | 3 / 3 | 4.097 s (3.660–4.438) | None |
+| 8 | 1,000 | 0 / 3 | No complete latency sample | Two worker failures after measurement; one during warmup |
+| 16 | 1,000 | 0 / 3 | No complete latency sample | Three worker failures during warmup |
+
+All six low-load trials met the offered rate and five-second p95 target and
+passed full-table equality. The earlier 51–55-second spikes did not recur. This
+supports the interpretation that the original low-load outliers were sensitive
+to host interference; it does not isolate the build's exact causal contribution.
+More available CPUs did not reduce low-load latency in these repeats.
+
+All six overload attempts reported `incremental_batch_failed_requires_resync`;
+stopped-fixture inspection confirmed `incremental_worker_failed` in each case.
+Only two reached measurement, both on 8 CPUs: they accepted 654.211 and 683.303
+changed rows/s while using 1.154 and 0.922 average CPU cores respectively. Their
+failed publications provide no valid complete lag percentile or replication
+throughput claim. The six five-second source-only baselines achieved
+863.707–888.173 rows/s, still below the offered 1,000. All 12 trials had clean
+owned-process teardown. The failure remains reproducible without observed
+external build activity and is tracked in [#88](https://github.com/supabricks/platform/issues/88).
+
+![Original and follow-up trials, kept separate](sync-performance-evidence/2026-09-24-quiet-followup/comparison.png)
+
+The original mutation-test process finished naturally. A monitor sampled build
+processes and whole-host counters every five seconds. The low-load matrix ran
+after a 60-second quiet interval, with no active build samples during its entire
+setup-to-cleanup window. New compiler jobs then overlapped an initial overload
+attempt: that failed result and the next interrupted attempt are retained
+separately, excluded from the quiet comparison for interference, not outcome.
+The restart rule was strengthened to five quiet minutes before each overload
+trial and repeating any overlapping attempt regardless of its result. All six
+subsequent trials met this rule without further retries.
+
+[Host validation](sync-performance-evidence/2026-09-24-quiet-followup/host-validation.json)
+records the intervals and sample counts. An unrelated idle Cargo/test pair
+remained present with unchanged CPU and I/O counters. Desktop applications and
+the user's stack remained running; no unrelated work was stopped. Thus “quiet”
+means no active external builds were observed, not exclusive CPU/disk ownership.
+Five-second sampling can miss very short jobs. Whole-host I/O wait was still
+5.647–5.889% during low-load measurements and 12.389–12.601% in the two measured
+overload attempts; absence of external builds does not make the pipeline's own
+storage work free.
+
+The follow-up used harness revision `f3dacfe4ecf3192eb84e28a2503337c7a5467800`.
+Compared with the original trial code, this adds a post-stop proof check for
+ambiguous drain timeouts; workload generation and runtime behavior are unchanged.
+No uncontended follow-up hit that timeout path. These short local repeats settle
+the affected-profile rerun, not maximum capacity or cloud sizing. Capture
+throughput/source-client capacity ([#87](https://github.com/supabricks/platform/issues/87))
+and the worker failure remain the next work.
 
 ## Method
 
@@ -175,8 +237,9 @@ Tracked findings: [capture throughput and CPU scaling
 (#87)](https://github.com/supabricks/platform/issues/87), and [incremental worker
 failures requiring resync (#88)](https://github.com/supabricks/platform/issues/88).
 The [quiet-host validation follow-up (#90)](https://github.com/supabricks/platform/issues/90)
-tracks the remaining isolation requirement. The archived matrix establishes a
-baseline and failure cases; these issues are not resolved by adding a benchmark.
+records the completed matched local repeats and their isolation limits. The
+archived matrices establish a baseline and failure cases; the performance and
+worker issues are not resolved by adding a benchmark.
 
 The current implementation has several distinct serial boundaries:
 
