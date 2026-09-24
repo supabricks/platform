@@ -119,6 +119,7 @@ class ComponentContractTests(unittest.TestCase):
             # Use the real fixture files for the other inventory checks.
             (root / "chart").symlink_to(ROOT / "chart", target_is_directory=True)
             (root / "spikes").symlink_to(ROOT / "spikes", target_is_directory=True)
+            (root / "install").symlink_to(ROOT / "install", target_is_directory=True)
             q["evidence"] = ["report.json"]
             errors = validate(self.manifest, root=root)
             self.assertIn("evidence must be a file inside the repo: report.json", errors)
@@ -133,6 +134,11 @@ class ComponentContractTests(unittest.TestCase):
     def test_legacy_image_drift_fails(self):
         self.manifest["legacy_images"]["images"][0]["reference"] = "example/neon@sha256:" + "0" * 64
         self.assert_invalid("digest inventory differs")
+
+    def test_demo_source_inventory_cannot_drift(self):
+        entry = next(e for e in self.manifest["legacy_images"]["images"] if e["name"] == "minio")
+        entry["reference"] = "source-sha256:" + "0" * 64
+        self.assert_invalid("source build differs")
 
     def test_artifact_checksums_and_target_uniqueness(self):
         artifacts = self.component("neon-engine")["artifacts"]
