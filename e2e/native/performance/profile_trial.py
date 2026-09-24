@@ -23,6 +23,7 @@ class Profile:
         self.cell=cell;self.report=report;self.root=cell.root/'sync-profile';self.root.mkdir(mode=0o700)
         (self.root/'enabled').write_text('private diagnostic trial\n')
         self.stop=threading.Event();self.rows=[];self.errors=[];self.phase='setup';self.thread=None;self.monitor_ns=0;self.observer_metrics=dict(calls=0,wall_ns=0,errors=0);self.storage_status={};self.storage_urls={};self.pg_settings={}
+        self.process_sample_errors=[];self.process_denials={}
         original=cell.transaction
         def transaction(db,key,value):
             timed=TimedSQL(db);result=original(timed,key,value);result['sql_ms']=timed.times;return result
@@ -63,6 +64,7 @@ class Profile:
     def processes(self):
         root=psutil.Process(self.cell.daemons[-1].pid);result=[]
         for p in [root,*root.children(recursive=True)]:
+            role='other'
             try:
                 cmd=p.cmdline();name=p.name();role='other'
                 for needle,label in [('capture_worker.py','capture'),('incremental_worker.py','apply'),('export.py','bootstrap'),('postgres','postgres'),('safekeeper','safekeeper'),('pageserver','pageserver'),('supabricks','daemon'),('weed','object_store'),('java','catalog'),('sail','sail')]:
@@ -71,7 +73,14 @@ class Profile:
                 context=Path(cmd[-1]).parent.name if cmd and role in ('capture','apply','bootstrap') else None
                 if context and not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',context):context=None
                 result.append(dict(pid=p.pid,created=p.create_time(),role=role,context_id=context,cpu_s=cpu.user+cpu.system,rss_bytes=p.memory_info().rss,read_bytes=io.read_bytes,write_bytes=io.write_bytes,voluntary_switches=switch.voluntary,involuntary_switches=switch.involuntary))
+                self.process_denials.pop(p.pid,None)
             except psutil.NoSuchProcess:pass
+            except psutil.AccessDenied:
+                # Linux can deny /proc reads while a short-lived worker exits.
+                # Retain the omission; persistent denials still invalidate profiling.
+                count=self.process_denials.get(p.pid,0)+1;self.process_denials[p.pid]=count
+                self.process_sample_errors.append(dict(at_ms=time.time()*1000,pid=p.pid,role=role,error='AccessDenied',consecutive=count))
+                if p.pid==root.pid or count>=3 or len(self.process_sample_errors)>100:raise
         return result
     def run(self):
         try:
@@ -113,9 +122,11 @@ class Profile:
         for p in publications:
             d=p.pop('descriptor') or {};m=d.get('manifest',{})
             p.update(export_id=d.get('export_id'),prepared_at_ms=d.get('prepared_at_ms'),input_bytes=m.get('input_bytes'),apply_metrics=m.get('apply_metrics'),generation_bytes=m.get('generation_bytes'),retained_bytes=m.get('retained_bytes'),file_count=len(m.get('files',[])),table_count=len(m.get('tables',[])))
+        # Persist partial observations before rejecting a monitor failure, so an
+        # invalid attempt remains diagnosable without exposing private logs.
+        data=dict(scope='Diagnostic timing; inclusive spans overlap. SQL text, row values, credentials and exception messages omitted.',workers=workers,observations=self.rows,monitor_wall_ns=self.monitor_ns,observer_metrics=self.observer_metrics,pg_settings=self.pg_settings,storage_status=self.storage_status,batches=batches,publications=publications,monitor_errors=self.errors,process_sample_errors=self.process_sample_errors)
+        path.write_bytes(gzip.compress((json.dumps(data,separators=(',',':'))+'\n').encode(),mtime=0))
         assert not self.errors,self.errors
         assert 'daemon.jsonl' in workers and any(k.startswith('capture-') for k in workers) and any(k.startswith('incremental-') for k in workers),'missing workflow profile'
         assert workers['daemon.jsonl'][-1].get('final'),'daemon profile missing final snapshot'
-        data=dict(scope='Diagnostic timing; inclusive spans overlap. SQL text, row values, credentials and exception messages omitted.',workers=workers,observations=self.rows,monitor_wall_ns=self.monitor_ns,observer_metrics=self.observer_metrics,pg_settings=self.pg_settings,storage_status=self.storage_status,batches=batches,publications=publications)
-        path.write_bytes(gzip.compress((json.dumps(data,separators=(',',':'))+'\n').encode(),mtime=0))
         return dict(path=path.name,workers=len(workers),observations=len(self.rows),monitor_wall_ns=self.monitor_ns)

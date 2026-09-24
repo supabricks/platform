@@ -125,6 +125,8 @@ Coverage:
   lookup, and COMMIT, without changing the source SQL or client count.
 - PostgreSQL wait-event samples every 200 ms; WAL statistics and owned-process
   CPU, RSS, I/O, and context-switch samples approximately once per second.
+- Safekeeper/pageserver WAL, flush, and write counters/histograms about once per
+  second, with identifying labels removed and endpoint availability recorded.
 - Capture socket wait/receive, decode, source checks, durable spool append,
   SQLite statement classes, progress/status writes, feedback, and pruning.
 - Native `fsync`/`fdatasync` counters and elapsed time in Python workers, including
@@ -151,6 +153,11 @@ last timestamp and `final` flag. A snapshot is attempted before worker receipts.
 Per-process counters start at process launch and include setup and shutdown;
 analysis must select the stated phase/window rather than label lifetime totals
 as load-only work. Short processes can fall between OS samples.
+An isolated process `AccessDenied` sample is retained as an explicit omission;
+denial for the daemon, three consecutive denials for one PID, or over 100
+omissions invalidates profiling. This tolerates Linux process-exit races without
+silently accepting a persistent permission problem. Monitor failures retain
+partial structured observations for diagnosis, but remain invalid trials.
 
 Python histograms use power-of-two microsecond buckets; report their bounds,
 not exact percentile estimates. Span totals are inclusive and overlap; `self_ns`

@@ -6,7 +6,11 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import Mock, patch
+from types import SimpleNamespace
 import worker_profile as p
+from profile_trial import Profile
+import psutil
 
 class ProfilingTests(unittest.TestCase):
     def setUp(self):p.METRICS.clear();p.ERRORS.clear()
@@ -35,6 +39,29 @@ class ProfilingTests(unittest.TestCase):
     def test_sql_labels_never_contain_literals(self):
         self.assertEqual(p.sql_label("SELECT 'secret'"),'sqlite.SELECT')
         self.assertEqual(p.sql_label('password=secret'),'sqlite.OTHER')
+    def test_process_sampling_retains_transient_denial_but_rejects_persistent_denial(self):
+        def process(pid):
+            obj=Mock(pid=pid)
+            obj.cmdline.return_value=['incremental_worker.py'];obj.name.return_value='python'
+            obj.cpu_times.return_value=SimpleNamespace(user=1,system=0)
+            obj.io_counters.return_value=SimpleNamespace(read_bytes=0,write_bytes=0)
+            obj.num_ctx_switches.return_value=SimpleNamespace(voluntary=1,involuntary=0)
+            obj.memory_info.return_value=SimpleNamespace(rss=4096);obj.create_time.return_value=1
+            return obj
+        root,child=process(1),process(2);root.children.return_value=[child]
+        profile=Profile.__new__(Profile);profile.cell=SimpleNamespace(daemons=[SimpleNamespace(pid=1)])
+        profile.process_sample_errors=[];profile.process_denials={}
+        with patch('profile_trial.psutil.Process',return_value=root):
+            child.io_counters.side_effect=[psutil.AccessDenied(2),SimpleNamespace(read_bytes=0,write_bytes=0)]
+            self.assertEqual(len(profile.processes()),1)
+            self.assertEqual(profile.process_sample_errors[0]['error'],'AccessDenied')
+            self.assertEqual(len(profile.processes()),2)
+            self.assertEqual(profile.process_denials,{})
+            child.io_counters.side_effect=psutil.AccessDenied(2)
+            profile.processes();profile.processes()
+            with self.assertRaises(psutil.AccessDenied):profile.processes()
+            root.io_counters.side_effect=psutil.AccessDenied(1)
+            with self.assertRaises(psutil.AccessDenied):profile.processes()
     def test_install_connect_factory_is_not_rebound_by_other_hooks(self):
         script="""
 import sys,tempfile,select,sqlite3
