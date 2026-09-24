@@ -33,7 +33,7 @@ This does not retroactively qualify failed predecessor archives.
 
 SY00–SY07 are merged. [SY08](../architecture/sy08-installed-sync.md) qualifies
 exact alpha.36 archives in [#86](https://github.com/supabricks/platform/pull/86),
-awaiting merge. Snapshot, triggered and continuous modes use platform-managed
+which tracks integration. Snapshot, triggered and continuous modes use platform-managed
 capture, consistent with **no user-managed CDC/ETL**. Reverse sync is deferred.
 
 ## Synchronization performance follow-up
