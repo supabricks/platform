@@ -284,6 +284,11 @@ Run instructions are in the [benchmark README](../../e2e/native/performance/READ
 
 ## Next experiments
 
+The [SP00–SP12 implementation plan](../plans/sync-performance-implementation.md)
+turns these findings into separate changes, with the same twelve trials and
+fresh predecessor comparisons after every logical slice. It owns the proposed
+sequence and targets; this report retains the original measured evidence.
+
 1. Fix the confirmed capture constraint using bounded group commit while preserving
    FULL durability and only acknowledging the committed contiguous cursor. Bound
    group bytes/count/time, preserve transaction boundaries and replay validation,

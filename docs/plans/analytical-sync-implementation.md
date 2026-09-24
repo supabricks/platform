@@ -338,11 +338,14 @@ required to implement it.
 
 ## Deferred reverse direction and decisions still open
 
-Post-SY08 performance work starts with the [local CPU scaling
-baseline](../architecture/sync-core-scaling.md). Its follow-up sequence measures
-the current pipeline before choosing batching, worker reuse, or bounded
-parallelism changes, then repeats the same workload and correctness checks.
-These screening measurements do not expand the qualified release envelope.
+Post-SY08 performance work is specified in the
+[SP00–SP12 implementation plan](sync-performance-implementation.md), based on the
+[local CPU scaling baseline](../architecture/sync-core-scaling.md) and completed
+[workflow profile](../architecture/sync-workflow-profile.md). Each logical change
+requires the same twelve trials plus fresh predecessor comparisons before the
+next slice is accepted. The plan separates durable batching, reader contention,
+WAL, planning, source capacity and conditional engine/parallelism experiments.
+Its targets and screening measurements do not expand the qualified release envelope.
 
 Lakehouse → PostgreSQL serving is a later separately scoped workstream, not a
 checkbox on this materializer. It needs source Delta/Iceberg version/change-feed
