@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import re
 import sqlite3
 import sys
 import threading
@@ -18,7 +19,7 @@ import traceback
 
 IMPORTED_NS=time.perf_counter_ns()
 METRICS={};WORK={};ERRORS=[];LOCK=threading.RLock();LOCAL=threading.local()
-ENABLED=False;OUTPUT=None;ROLE=None;START_MS=time.time()*1000;WRITTEN=0;WRITE_NS=0;WRITE_ERRORS=0;STOP=threading.Event()
+ENABLED=False;OUTPUT=None;ROLE=None;CONTEXT_ID=None;START_MS=time.time()*1000;WRITTEN=0;WRITE_NS=0;WRITE_ERRORS=0;STOP=threading.Event()
 BUDGET=8*1024*1024
 NATIVE=None
 
@@ -91,7 +92,7 @@ def flush(final=False):
     try:
         with LOCK:
             usage=resource.getrusage(resource.RUSAGE_SELF)
-            row=dict(role=ROLE,pid=os.getpid(),started_at_ms=START_MS,at_ms=time.time()*1000,final=final,
+            row=dict(role=ROLE,context_id=CONTEXT_ID,pid=os.getpid(),started_at_ms=START_MS,at_ms=time.time()*1000,final=final,
                 metrics=METRICS,work=WORK,native_io=native_io(),exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
                 maxrss_kib=usage.ru_maxrss,voluntary_switches=usage.ru_nvcsw,involuntary_switches=usage.ru_nivcsw,
                 profile_write_ns=WRITE_NS,profile_write_errors=WRITE_ERRORS,budget_exceeded=WRITTEN>=BUDGET)
@@ -133,7 +134,7 @@ class Connection(sqlite3.Connection):
 
 
 def install(namespace,role):
-    global ENABLED,OUTPUT,ROLE,NATIVE
+    global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID
     if len(sys.argv)<2:return
     path=Path(sys.argv[1])
     root=next((p for p in list(path.parents)[:6] if (p/'sync-profile/enabled').is_file()),None)
@@ -142,6 +143,8 @@ def install(namespace,role):
         NATIVE=ctypes.CDLL(None).sb_profile_io_snapshot
         NATIVE.argtypes=[ctypes.POINTER(ctypes.c_uint64)];NATIVE.restype=None
     except AttributeError:pass  # Unit tests can exercise Python hooks alone.
+    context=path.parent.name
+    CONTEXT_ID=context if re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',context) else None
     ENABLED=True;ROLE=role;OUTPUT=root/'sync-profile'/f'{role}-{os.getpid()}.jsonl'
     record('startup.imports',time.perf_counter_ns()-IMPORTED_NS)
     original_connect=sqlite3.connect

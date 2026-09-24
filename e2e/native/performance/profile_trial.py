@@ -66,9 +66,11 @@ class Profile:
             try:
                 cmd=p.cmdline();name=p.name();role='other'
                 for needle,label in [('capture_worker.py','capture'),('incremental_worker.py','apply'),('export.py','bootstrap'),('postgres','postgres'),('safekeeper','safekeeper'),('pageserver','pageserver'),('supabricks','daemon'),('weed','object_store'),('java','catalog'),('sail','sail')]:
-                    if any(needle in Path(x).name for x in cmd[:3]):role=label;break
+                    if any(needle in Path(x).name for x in cmd):role=label;break
                 cpu=p.cpu_times();io=p.io_counters();switch=p.num_ctx_switches()
-                result.append(dict(pid=p.pid,created=p.create_time(),role=role,cpu_s=cpu.user+cpu.system,rss_bytes=p.memory_info().rss,read_bytes=io.read_bytes,write_bytes=io.write_bytes,voluntary_switches=switch.voluntary,involuntary_switches=switch.involuntary))
+                context=Path(cmd[-1]).parent.name if cmd and role in ('capture','apply','bootstrap') else None
+                if context and not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',context):context=None
+                result.append(dict(pid=p.pid,created=p.create_time(),role=role,context_id=context,cpu_s=cpu.user+cpu.system,rss_bytes=p.memory_info().rss,read_bytes=io.read_bytes,write_bytes=io.write_bytes,voluntary_switches=switch.voluntary,involuntary_switches=switch.involuntary))
             except psutil.NoSuchProcess:pass
         return result
     def run(self):
