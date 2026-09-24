@@ -42,6 +42,9 @@ passed the full two-table comparison against frozen PostgreSQL.
 Across all 27 trials, 12 completed measurement and final data verification.
 Fifteen failed: nine reported `incremental_batch_failed_requires_resync`, and six
 did not publish all measured transactions within the 120-second drain limit.
+Read-only inspection of their stopped spools independently confirmed uncaptured
+source commits in all six timeout cases; see the
+[drain evidence](sync-performance-evidence/2026-09-24-local/drain-timeout-evidence.json).
 All 27 passed owned-process cleanup, with zero leaked or remaining descendants.
 Seven trials met both the offered input rate and five-second p95 target.
 

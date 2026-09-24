@@ -65,6 +65,10 @@ Report interpretation:
 The observer retries short SQLite lock conflicts, counts them, and rejects missing
 transaction markers. It never disables production spool pruning or holds a reader
 transaction across samples. Monitoring adds overhead; measurements include it.
+After a drain timeout, the runner checks the stopped spool's sequence against
+the number of source commits. Missing observation history is a measurement error
+unless that conservative count proves capture is still incomplete. When every
+measured commit marker is known, publication timeout can be classified directly.
 
 Run the accounting tests in the same qualification image:
 

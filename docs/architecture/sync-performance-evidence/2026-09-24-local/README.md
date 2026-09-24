@@ -30,6 +30,7 @@ that build to each trial's latency. A quiet-host repeat is tracked in
 | [scaling.png](scaling.png), [scaling.svg](scaling.svg) | Standalone chart exports, including slow runs and failure counts |
 | [host-contention.json](host-contention.json) | Bounded, read-only host observations used to flag the late interval |
 | [worker-failure-codes.json](worker-failure-codes.json) | Retained state confirms all nine resync failures had the generic `incremental_worker_failed` code |
+| [drain-timeout-evidence.json](drain-timeout-evidence.json) | Stopped-spool sequence counts independently prove incomplete capture in all six primary drain timeouts |
 | [development-attempts.json.gz](development-attempts.json.gz) | The separate 15-second pilot and three stopped harness-development attempts; excluded from primary statistics |
 | [diagnostic-report.json.gz](diagnostic-report.json.gz) | One supplemental exception-instrumented trial; excluded from primary statistics |
 | [SHA256SUMS](SHA256SUMS) | Integrity checks for the files in this evidence directory |
@@ -63,6 +64,16 @@ observer closes read connections promptly, retries only known SQLite busy/locked
 conditions, counts those events, and still rejects missing transaction markers.
 Development attempts use different harness revisions and are not pooled with
 the primary matrix.
+
+After the primary matrix, the harness gained a conservative timeout guard: if
+commit markers are missing and the durable sequence count cannot prove capture
+is incomplete, the trial is an invalid measurement rather than a runtime
+capacity result. For the archived six timeout cases, post-stop inspection proves
+at least 3,460–8,792 source commits were still uncaptured. Spool pruning retains
+the newest sequence anchor, so sequence numbering does not restart. Warmup and
+measured commits alone require more sequence entries than existed, even allowing
+for the captured control/barrier transactions. Thus the original timeout outcomes
+are corroborated independently of possible gaps in the observer's history.
 
 The supplemental diagnostic changed only exception logging in a private copy of
 `incremental_worker.py`, recording exception type, SQLite error code and stack

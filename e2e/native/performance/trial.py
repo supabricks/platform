@@ -145,6 +145,18 @@ def attribute(samples,observer,runs):
     return {name:dict(percentiles(values),maximum=round(max(values),3)) for name,values in stages.items()}
 
 
+def drain_timeout_evidence(required,captured_sequence,missing_markers):
+    # Pruning retains the newest anchor, so SQLite's next implicit sequence never
+    # resets. Even counting barriers, a smaller total proves capture is behind.
+    assert required>0 and captured_sequence>=0 and missing_markers>=0
+    if missing_markers and captured_sequence>=required:
+        raise AssertionError('missing transaction markers with no proof of incomplete capture; trial invalid')
+    if not missing_markers and captured_sequence<required:
+        raise AssertionError('transaction markers contradict the durable capture sequence')
+    return dict(required_source_commits=required,captured_sequence_after_stop=captured_sequence,
+        missing_observed_markers=missing_markers,uncaptured_commits_lower_bound=max(0,required-captured_sequence))
+
+
 class RuntimeFailure(Exception):
     """Valid overload/failure observation, without a successful latency claim."""
 
@@ -240,6 +252,16 @@ def trial(args):
             if (root/'control.sock').exists():cell.stop()
             report['checks'].append('owned_runtime_stopped')
         except Exception as error:report['status']='error';report['cleanup_error']=type(error).__name__
+        if report['status']=='runtime_failed' and report.get('runtime_error')=='publication_drain_timeout':
+            try:
+                with closing(sqlite3.connect(f'file:{observer.spool}?mode=ro',uri=True,timeout=3)) as db:
+                    sequence=db.execute('SELECT COALESCE(max(seq),0) FROM transactions').fetchone()[0]
+                report['drain_timeout_evidence']=drain_timeout_evidence(
+                    report['warmup']['completed_transactions']+len(samples),sequence,
+                    sum(s['xid'] not in observer.ends for s in samples))
+            except Exception as error:
+                report['status']='error';report['error_type']=type(error).__name__
+                import traceback;traceback.print_exc()
         assert sha(release/'release.json')==report['release_identity']
         args.report.write_text(json.dumps(report,indent=2)+'\n')
         if report['status']=='measured':shutil.rmtree(root)
