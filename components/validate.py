@@ -141,7 +141,7 @@ def validate(manifest, root=ROOT, require_qualified=False):
     # treating them as evidence about the native source combination.
     chart = (root / manifest["legacy_images"]["source"]).read_text()
     chart_images = dict(re.findall(
-        r'^  (\w+): \{name: "[^"]+", digest: "([^\"]+@sha256:[0-9a-f]{64})"\}',
+        r'^  (\w+): \{name: "[^"]+", digest: "((?:[^\"]+@sha256:|source-sha256:)[0-9a-f]{64})"\}',
         chart, re.MULTILINE,
     ))
     locked_images = {}
@@ -151,6 +151,16 @@ def validate(manifest, root=ROOT, require_qualified=False):
         locked_images[entry["name"]] = entry["reference"]
     if locked_images != chart_images:
         errors.append("legacy_images: digest inventory differs from chart/values.yaml")
+
+    source_builds = read_json(root / "install/minio/sources.json")
+    for source in source_builds:
+        name = source["name"]
+        if (name not in ("minio", "mc")
+                or not re.fullmatch(r"[0-9a-f]{40}", source["commit"])
+                or locked_images.get(name) != "source-sha256:" + source["sha256"]):
+            errors.append("legacy_images: source build differs from chart/inventory")
+    if {source["name"] for source in source_builds} != {"minio", "mc"}:
+        errors.append("legacy_images: missing demo source build")
 
     # Probe claims must continue to name the actual exercised package versions.
     report = read_json(root / "spikes/local-analytics/result.json")

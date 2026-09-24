@@ -36,6 +36,17 @@ exact alpha.36 archives in [#86](https://github.com/supabricks/platform/pull/86)
 awaiting merge. Snapshot, triggered and continuous modes use platform-managed
 capture, consistent with **no user-managed CDC/ETL**. Reverse sync is deferred.
 
+## Synchronization performance follow-up
+
+[SP00–SP12: measured performance improvements](sync-performance-implementation.md)
+is planned from the completed [workflow profile](../architecture/sync-workflow-profile.md).
+It targets sustained 1,000 changed rows/s and at most five-second p95 publication
+lag in a declared local profile. Every logical slice requires the same twelve
+candidate trials, fresh predecessor comparisons, and a recorded contribution or
+regression. Batching, reader retries, WAL, planning, source capacity and optional
+RocksDB/parallelism experiments are measured separately. These targets are not
+current release guarantees.
+
 ## IAM00 and UC09 navigation
 
 IAM00 is **UC09.0**, the governance/identity/isolation probe. It is not a missing

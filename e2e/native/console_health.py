@@ -79,7 +79,7 @@ def qualify(binary):
                 def closed():
                     try:
                         status,_=fetch('/api/overview');assert status!=200;return False
-                    except urllib.error.URLError:return True
+                    except (urllib.error.URLError,ConnectionResetError):return True
                 wait(closed)
                 print('PASS changed project binding terminates the console',flush=True)
             finally:

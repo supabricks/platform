@@ -1,0 +1,105 @@
+{
+  "rule": "Predeclared: wait for 300 seconds without active build samples before each trial; retain every attempt. Repeat a trial only if active external build samples overlap its entire setup-to-cleanup interval, regardless of outcome. Stop on measurement/cleanup errors. No latency-based exclusion.",
+  "order": [
+    {
+      "cpus": 16,
+      "repeat": 2
+    },
+    {
+      "cpus": 8,
+      "repeat": 1
+    },
+    {
+      "cpus": 8,
+      "repeat": 3
+    },
+    {
+      "cpus": 16,
+      "repeat": 3
+    },
+    {
+      "cpus": 16,
+      "repeat": 1
+    },
+    {
+      "cpus": 8,
+      "repeat": 2
+    }
+  ],
+  "attempts": [
+    {
+      "name": "01-cpu16-r2-attempt1",
+      "cpus": 16,
+      "repeat": 2,
+      "attempt": 1,
+      "started_at": 1790225614.3865135,
+      "ended_at": 1790225664.4487698,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    },
+    {
+      "name": "02-cpu8-r1-attempt1",
+      "cpus": 8,
+      "repeat": 1,
+      "attempt": 1,
+      "started_at": 1790225664.4491584,
+      "ended_at": 1790225786.1371682,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    },
+    {
+      "name": "03-cpu8-r3-attempt1",
+      "cpus": 8,
+      "repeat": 3,
+      "attempt": 1,
+      "started_at": 1790225786.1376534,
+      "ended_at": 1790225928.9953632,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    },
+    {
+      "name": "04-cpu16-r3-attempt1",
+      "cpus": 16,
+      "repeat": 3,
+      "attempt": 1,
+      "started_at": 1790225928.9957829,
+      "ended_at": 1790225960.8598685,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    },
+    {
+      "name": "05-cpu16-r1-attempt1",
+      "cpus": 16,
+      "repeat": 1,
+      "attempt": 1,
+      "started_at": 1790225960.8602896,
+      "ended_at": 1790225999.743197,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    },
+    {
+      "name": "06-cpu8-r2-attempt1",
+      "cpus": 8,
+      "repeat": 2,
+      "attempt": 1,
+      "started_at": 1790225999.7436533,
+      "ended_at": 1790226072.019628,
+      "exit_code": 0,
+      "overlap_samples": [],
+      "idle_process_counters_changed": false,
+      "include_in_quiet_comparison": true
+    }
+  ],
+  "started_at": 1790224679.3722527,
+  "completed_at": 1790226072.0200696
+}

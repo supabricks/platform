@@ -14,6 +14,7 @@ impl Store {
             .optional()?)
     }
     pub(crate) fn schedule_continuous(&mut self, now: i64) -> Result<()> {
+        let _profile = crate::sync_profile::span("sync.schedule");
         for mut p in self.sync_policies()?.into_iter().filter(|p| {
             p.config.continuous() && p.state == "active" && !p.pause_requested && p.error.is_none()
         }) {

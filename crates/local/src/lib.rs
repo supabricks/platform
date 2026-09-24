@@ -31,6 +31,7 @@ pub mod sessions;
 pub mod store;
 pub mod supervisor;
 pub mod sync;
+mod sync_profile;
 mod upgrade;
 use std::{net::SocketAddr, path::Path};
 use supabricks_core::{

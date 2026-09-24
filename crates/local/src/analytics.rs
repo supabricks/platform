@@ -273,6 +273,7 @@ impl Verifier {
         })
     }
     fn advance(&mut self, hook: &mut impl FnMut(&str) -> Result<()>) -> Result<bool> {
+        let _profile = crate::sync_profile::span("publication.verify");
         let mut budget = PER_TICK;
         let mut buffer = vec![0; CHUNK];
         while self.index < self.files.len() && budget > 0 {
@@ -292,7 +293,10 @@ impl Verifier {
                     "generation checksum mismatch",
                 )?;
                 if check.needs_sync {
-                    file.sync_all()?;
+                    {
+                        let _profile = crate::sync_profile::span("publication.file_fsync");
+                        file.sync_all()?;
+                    }
                     hook(&format!("synced_file:{}", self.index + 1))?;
                 }
                 self.current = None;
@@ -315,6 +319,7 @@ fn atomic_descriptor(
     value: &Value,
     hook: &mut impl FnMut(&str) -> Result<()>,
 ) -> Result<()> {
+    let _profile = crate::sync_profile::span("publication.descriptor");
     File::open(root.join("manifest.json"))?.sync_all()?;
     let bytes = serde_json::to_vec_pretty(value)?;
     require(
@@ -416,6 +421,7 @@ impl Publisher {
         })
     }
     pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("publication.tick");
         self.tick_with_hook(store, &mut |_| Ok(()))
     }
     /// Hook is used by subprocess crash tests, never selected through public IPC.

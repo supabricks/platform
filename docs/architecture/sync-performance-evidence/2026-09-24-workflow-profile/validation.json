@@ -1,0 +1,37 @@
+{
+  "instrumentation_runtime_source": "92272759ad06af6207b9537a02871f0477e17295",
+  "collector_source": "ca824fc1c14a7de7d036a3f4192e8be7025d1a7b",
+  "build": {
+    "rust": "cargo build --release -p supabricks-local --bin supabricks --features sync-profile",
+    "native": "cc -O2 -shared -fPIC -Wall -Wextra -Werror e2e/native/performance/profile_io.c -ldl -pthread -o /tmp/profile_io.so"
+  },
+  "checks": {
+    "python_accounting_and_profile_tests": 15,
+    "rust_feature_nested_span_test": 1,
+    "rust_sync_publication_tests_feature_enabled": 39,
+    "rust_sync_publication_tests_default": 39,
+    "rust_format": "passed",
+    "native_probe": {
+      "successful_syncs_forwarded": true,
+      "closed_descriptor_errno": "EBADF",
+      "sqlite_full_commit_native_sync_calls": 4
+    },
+    "console_health": [
+      "PASS same console URL and session recover after a 16-second control stall",
+      "PASS changed project binding terminates the console"
+    ],
+    "matrix_trials": 12,
+    "activation_controls": 6,
+    "clean_owned_teardowns": 18,
+    "unchanged_collector_hashes_and_clean_source": true,
+    "profiles_with_no_monitor_or_storage_errors": 15,
+    "profile_streams": 703,
+    "incremental_streams_without_final_snapshot": 19,
+    "archive_reanalysis": "same JSON values as original active results; repeat analysis from archive is byte-identical"
+  },
+  "limitations": [
+    "Focused validation is not release qualification.",
+    "Kubernetes e2e setup is blocked by inaccessible pinned MinIO image; issue #92.",
+    "Mac console health CI exposed RemoteDisconnected during expected listener termination; exception handling corrected and full transport check passed locally."
+  ]
+}

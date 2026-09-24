@@ -98,9 +98,8 @@ spec:
         envFrom:
         - secretRef: {name: {{ .Values.s3.existingSecret | default "sspc-s3" | quote }}}
         env:
-        # The image's /root has no owner-write bit; with CAP_DAC_OVERRIDE
-        # dropped even uid 0 obeys it — point mc's config home somewhere
-        # writable instead of granting the capability back.
+        # Keep client configuration in writable scratch space; no added
+        # filesystem capabilities are needed by the source-built client.
         - {name: HOME, value: /tmp}
         command: ["/bin/sh", "-c"]
         args:

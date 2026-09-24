@@ -278,6 +278,7 @@ impl Daemon {
         Ok(self)
     }
     pub fn serve(mut self) -> Result<()> {
+        let _profile_session = crate::sync_profile::init(self.store.root());
         self.listener.set_nonblocking(true)?;
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
@@ -378,6 +379,7 @@ impl Daemon {
                 }
             }
             if std::time::Instant::now() >= next_tick {
+                let _profile = crate::sync_profile::span("daemon.tick");
                 self.isolated.tick(&mut self.store, stopping)?;
                 let metadata_stopped =
                     match self
