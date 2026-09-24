@@ -14,6 +14,78 @@ This is a local screening experiment on a shared development machine. It does no
 establish an EC2 instance recommendation, a product SLA, or installed release
 qualification. The runtime is held constant throughout the matrix.
 
+## Results — 2026-09-24 UTC
+
+The 27-trial screening matrix found no useful scaling of this small-table sync
+workload from 4 to 8 to 16 logical CPUs. At 250 changed rows/s, each allocation
+had one complete result at roughly 104–105 seconds p95 and two worker failures
+requiring resynchronization. These nine trials preceded the external build
+contention identified later in the experiment.
+
+The full [evidence archive](sync-performance-evidence/2026-09-24-local/README.md)
+contains every primary trial, raw counters, provenance, summary data, and the
+earlier harness-development attempts. No slow or failed primary trial is omitted.
+
+| Logical CPUs / physical cores | 50 rows/s: median trial p95 (range), seconds | 50 rows/s: met 5 s p95 | 250 rows/s: completed / 3; completed trial p95 | 1,000 offered rows/s: completed / 3 |
+| --- | --- | --- | --- | --- |
+| 4 / 2 | 3.819 (3.686–55.434) | 2 / 3 | 1 / 3; 105.264 s | 0 / 3 |
+| 8 / 4 | 4.037 (3.954–4.102) | 3 / 3 | 1 / 3; 103.657 s | 0 / 3 |
+| 16 / 8 | 4.053 (3.711–51.284) | 2 / 3 | 1 / 3; 105.101 s | 0 / 3 |
+
+These are medians/ranges of trial p95s, not pooled transaction percentiles. At
+250 rows/s the listed latency is the sole complete trial for that allocation;
+it is not a latency claim for the two failed repeats. Every complete result
+passed the full two-table comparison against frozen PostgreSQL.
+
+![CPU scaling, latency ranges, and completion counts](sync-performance-evidence/2026-09-24-local/scaling.png)
+
+Across all 27 trials, 12 completed measurement and final data verification.
+Fifteen failed: nine reported `incremental_batch_failed_requires_resync`, and six
+did not publish all measured transactions within the 120-second drain limit.
+All 27 passed owned-process cleanup, with zero leaked or remaining descendants.
+Seven trials met both the offered input rate and five-second p95 target.
+
+At 50 rows/s, the seven trials before the identified contention had p95s between
+3.686 and 4.102 seconds across the three CPU allocations. The two later repeats
+on 4 and 16 CPUs had 55.434 and 51.284 seconds p95. A separate mutation-test
+build had started on the shared host; host I/O wait and stalls rose, and active
+compiler writes were observed. Trials 23–27 are flagged in the
+[CSV](sync-performance-evidence/2026-09-24-local/trials.csv) because their observed
+windows overlapped that build. The flags identify possible interference; they do
+not quantify its causal contribution. The affected runs remain in every full
+matrix statistic. A quiet-host repeat is tracked in
+[#90](https://github.com/supabricks/platform/issues/90).
+
+The three complete 250-row/s trials accepted 249.989–250.011 changed rows/s while
+using an average of 0.767, 0.800, and 1.075 CPU cores for the 4/8/16 allocations.
+In the 4-CPU trial, capture-observed p95 was 99.361 seconds and durable
+commit-acknowledgment-to-admission p95 was 101.926 seconds. Worker-start-to-prepared
+p95 was 3.773 seconds and prepared-to-publication p95 was 0.649 seconds. This
+locates most of the delay before apply admission; it does not by itself prove
+which capture operation or shared resource is responsible.
+
+The 1,000-row/s setting is an overload probe, **not a demonstrated 1,000-row/s
+input**. Four clients achieved only 251.084–659.540 rows/s in the six trials that
+reached measurement; the other three failed during warmup. Even the five-second
+source-only baselines varied from 139.419 to 894.300 rows/s. This does not establish
+maximum PostgreSQL throughput or an analytical capacity number. Source-client
+capacity and quiet-host isolation must be established before a sustained
+1,000-row/s end-to-end claim.
+
+The tested package was a private diagnostic installation with a locally rebuilt
+platform binary from `a8fd376536d3d6c5198df0badb6ee13cfaa6702f`. Its binary hash is
+`a521c26a3c12c559e3b2cdce8cc946b631378772f52cd61bec332ddeb85abff9`, and package manifest
+hash is `78928698010df68ad72717b042728148abcb48a01774890ff3efdd6af3d9bb48`.
+This is not new qualification of a signed alpha.36 archive. Capture throughput,
+worker failure diagnosis, and a quiet-host repeat take priority before using
+larger machines or adding table/project concurrency as a performance remedy.
+
+A supplemental rerun added exception-only logging to a private package copy. It
+ran during ongoing host contention, accepted 217.054 rows/s at a 250-row/s target,
+and hit the drain timeout without emitting an incremental exception. It therefore
+did not establish the worker failure's cause. Its instrumentation and outcome
+are retained in the evidence archive and excluded from the primary matrix.
+
 ## Method
 
 The [reproducible harness](../../e2e/native/performance/README.md) runs sequential,
@@ -41,6 +113,11 @@ ends is counted as unsent; completed transactions, achieved rate, source latency
 and submission lateness are retained. Compare the source-only baseline before
 attributing a missed input rate to synchronization. Five seconds is only a short
 source baseline, not a separate saturation test.
+
+The policy must report healthy after bootstrap and again after warmup before the
+measured phase starts. This can add a catch-up gap after warmup. A failure during
+warmup is retained as a runtime failure with no measured-phase latency or CPU
+claim. Only transactions from the measured phase enter the lag distribution.
 
 For every committed transaction, the observer maps its PostgreSQL transaction ID
 to its durable capture end LSN, then to the first atomic analytical publication
@@ -77,6 +154,10 @@ other host applications or reproduce EC2 scheduling, CPU frequency, memory
 bandwidth, EBS, or network storage. Shared cache and filesystem page cache remain
 enabled; repeated randomized trials reduce order bias but do not eliminate it.
 No global caches are dropped and no unrelated services are stopped.
+Affinity changes scheduling availability; it does not replace the host's exposed
+CPU topology. Libraries that size pools from host CPU count can therefore behave
+differently from a VM with fewer enumerated CPUs. Application thread settings are
+held unchanged in this experiment.
 
 These narrow-row updates over a small data set do not cover wide rows, large
 tables, inserts/deletes, many tables, many projects, long transactions, analytical
@@ -90,7 +171,9 @@ must be labeled as such; it is not a pooled transaction p95.
 Tracked findings: [capture throughput and CPU scaling
 (#87)](https://github.com/supabricks/platform/issues/87), and [incremental worker
 failures requiring resync (#88)](https://github.com/supabricks/platform/issues/88).
-Their initial measurements are provisional until the full matrix is archived.
+The [quiet-host validation follow-up (#90)](https://github.com/supabricks/platform/issues/90)
+tracks the remaining isolation requirement. The archived matrix establishes a
+baseline and failure cases; these issues are not resolved by adding a benchmark.
 
 The current implementation has several distinct serial boundaries:
 
@@ -115,6 +198,8 @@ These code boundaries suggest experiments; measurements determine their order.
 2. Address the demonstrated bottleneck. Evaluate bounded batching and worker
    reuse where setup or durable I/O dominates; evaluate bounded table parallelism
    where apply is CPU-bound. Avoid increasing all thread pools indiscriminately.
+   Use capture-only and observer-disabled controls to separate capture cost from
+   shared I/O and measurement overhead.
    Diagnose generic `incremental_worker_failed` results with private, bounded
    instrumentation before assigning a cause. In particular, distinguish a busy
    spool reader from decoding, schema, storage, and apply failures. A capture

@@ -1,0 +1,25 @@
+{
+  "scope": "read-only host observations; external mutation-test build was not stopped or altered",
+  "observed_at_utc": "2026-09-24T02:53:07.485769+00:00",
+  "external_build": "cargo-mutants",
+  "external_build_started_at_utc": "2026-09-24T02:37:50.045624+00:00",
+  "external_build_started_at_ms": 1790217470046,
+  "io_sample": {
+    "approximate_seconds": 5,
+    "processes": [
+      {
+        "name": "cargo",
+        "write_bytes_delta": 490004480
+      },
+      {
+        "name": "rustc",
+        "write_bytes_delta": 214114304
+      }
+    ],
+    "note": "Process accounting can include waited children; do not sum as disjoint disk throughput."
+  },
+  "interpretation": "Trials overlapping the external build can be affected by shared-host CPU and I/O contention. The host counters independently record stalls. This is not proof of an exact causal contribution.",
+  "start_time_precision": "Approximately one second, derived from proc uptime and process start ticks",
+  "external_build_running_after_matrix": false,
+  "post_matrix_observation_utc": "2026-09-24T03:05:59.549048+00:00"
+}

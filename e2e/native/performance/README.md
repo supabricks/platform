@@ -23,7 +23,7 @@ source clients, and 10,000 rows in each of two tables. Override with `--cpus`,
 `--memory-gib`, `--rates`, `--repeats`, `--seconds`, `--clients`, or `--rows`.
 The CPU counts must fit the host and select complete SMT sibling groups. Trials
 run sequentially in seeded randomized order; do not run other benchmarks beside
-them. Allow roughly an hour for the default matrix, including failed-trial drain
+them, and avoid concurrent builds or other disk-intensive work. Allow roughly an hour for the default matrix, including failed-trial drain
 timeouts. The host and its other applications remain running.
 
 Each trial starts a disposable native stack in its own network-isolated container,
@@ -73,3 +73,17 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
   -v "$PWD:/repo:ro" -w /repo supabricks-sy08-qualifier:latest \
   python3 -m unittest discover -s e2e/native/performance -p 'test_*.py' -v
 ```
+
+Summarize a completed output directory or an unpacked committed evidence directory:
+
+```sh
+python3 e2e/native/performance/summarize.py /path/to/results
+```
+
+This validates package identity, affinity, memory/swap/quota settings, trial
+completeness, and cleanup before writing `trials.csv` and `summary.json`. It accepts
+the archived `raw-reports.json.gz` format as well as individual trial directories.
+Add `--plot` in an environment with Matplotlib to produce standalone PNG/SVG
+charts. Failure counts remain visible, and the summary reports the number of
+available observations for each statistic. A source input-rate result is recorded
+independently of replication success.
