@@ -58,7 +58,7 @@ def summarize(root):
             observer_busy_samples=d.get('observer_busy_samples'),
             within_5s_p95=d.get('within_5s_p95'),offered_load_met=(source['achieved_rows_per_second']>=t['rate']*.95 if source else None)))
     with (root/'trials.csv').open('w',newline='') as f:
-        w=csv.DictWriter(f,fieldnames=list(records[0]));w.writeheader();w.writerows(records)
+        w=csv.DictWriter(f,fieldnames=list(records[0]),lineterminator='\n');w.writeheader();w.writerows(records)
     groups=collections.defaultdict(list)
     for d in records:groups[(d['cpus'],d['rate'])].append(d)
     summary=[]
@@ -106,6 +106,7 @@ def plot(root,records):
     fig.suptitle('Local sync scaling · fixed 16 GiB · 45-second load · three repeats',fontsize=13)
     fig.supxlabel('Median and min–max of available trial statistics. Complete measurements can miss the 5 s target.\nShared-host screening: late external build contention is retained; warmup failures have no load-phase CPU statistic.',fontsize=8)
     fig.savefig(root/'scaling.png',dpi=180);fig.savefig(root/'scaling.svg',metadata={'Date':None})
+    svg=root/'scaling.svg';svg.write_text('\n'.join(line.rstrip() for line in svg.read_text().splitlines())+'\n')
 
 
 if __name__=='__main__':
