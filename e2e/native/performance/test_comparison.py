@@ -119,6 +119,47 @@ class Comparisons(unittest.TestCase):
         prior['pairs']=[row,row]
         with self.assertRaisesRegex(ValueError,'duplicate'):validate_resume(prior,config)
 
+    def test_archive_round_trip_redacts_paths_and_checks_artifacts(self):
+        from archive_comparison import archive
+        from compare import comparison_report, expected, sha
+        with tempfile.TemporaryDirectory() as temporary:
+            source=Path(temporary)/'source';source.mkdir();(source/'host').mkdir()
+            (source/'host'/'0000.jsonl').write_text('{"active_builds":[]}\n')
+            pair=pair_order([(4,50)],1,1)[0]
+            identity=dict(revision=self.manifest['harness_revision'],files={
+                'e2e/native/performance/'+k:v for k,v in self.manifest['harness_sha256'].items()})
+            config=dict(order=[pair],slice='test',hypothesis='archive preserves accounting',
+                        image_id=self.manifest['image_id'],affinity={'4':self.expected['affinity']},
+                        memory_gib=16,parameters={k:v for k,v in self.expected['parameters'].items() if k!='rate'},arms={})
+            results={}
+            for arm in ('predecessor','candidate'):
+                config['arms'][arm]=dict(harness='/private/user/'+arm,release='/private/runtime',
+                    harness_identity=identity,package={k:self.expected[k] for k in ('release_identity','binary_sha256','runtime_revision')})
+                directory=source/arm;directory.mkdir()
+                trial_root=directory/self.entry['name'];trial_root.mkdir()
+                manifest=dict(self.manifest,local_harness_path='/private/user/'+arm)
+                for path,value in ((directory/'matrix.json',manifest),(trial_root/'trial.json',self.trial),(trial_root/'cleanup.json',self.cleanup)):
+                    path.write_text(json.dumps(value))
+                (trial_root/'profile.json.gz').write_bytes((ARCHIVE/'profile.json.gz').read_bytes())
+                results[arm]=dict(directory=arm,metrics=load_trial(directory,expected(config,arm,pair)),
+                    evidence_sha256={str(p.relative_to(directory)):sha(p) for p in directory.rglob('*') if p.is_file()})
+            item=dict(index=0,pair=pair,results=results,accepted=True)
+            record=dict(config=config,state='complete',historical=[],pairs=[item],attempts=[item])
+            (source/'experiment.json').write_text(json.dumps(record))
+            original=comparison_report(source,record)
+            destination=Path(temporary)/'archive'
+            archive(source,destination)
+            exported=json.loads((destination/'experiment.json').read_text())
+            self.assertEqual(comparison_report(destination,exported),original)
+            self.assertNotIn('/private/',(destination/'experiment.json').read_text())
+            self.assertNotIn('/private/',(destination/'candidate'/'matrix.json').read_text())
+            self.assertTrue((destination/'host'/'0000.jsonl.gz').exists())
+            self.assertTrue((destination/'analysis-source.json.gz').exists())
+            path=destination/'candidate'/'matrix.json'
+            path.write_text(path.read_text()+' ')
+            with self.assertRaisesRegex(ValueError,'checksum'):
+                comparison_report(destination,exported)
+
     def test_completed_resume_cannot_omit_pairs(self):
         config=dict(order=pair_order([(4,50)],1,1))
         with self.assertRaisesRegex(ValueError,'missing pairs'):

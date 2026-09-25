@@ -174,7 +174,7 @@ requested 12-trial matrix and preserve failures and all contended attempts.
 
 `compare.py` runs twelve candidate trials and twelve fresh predecessor trials.
 Its default explicit cells are `4:50,16:50,8:1000,16:1000`, each repeated three
- times. Pair order is seeded; each cell includes both predecessor-first and
+times. Pair order is seeded; each cell includes both predecessor-first and
 candidate-first trials. `matrix.py --cells` also accepts this explicit list.
 
 ```sh
@@ -234,8 +234,10 @@ python3 e2e/native/performance/archive_comparison.py \
   /absolute/results docs/architecture/sync-performance-evidence/NEW-DIRECTORY
 ```
 
-Export preserves the manifests verbatim, including local installation paths,
-and copies structured receipts/profiles and host samples with SHA-256 checksums.
+Export replaces local harness, installation and experiment paths with stable
+labels, retaining original artifact hashes alongside exported hashes. It copies
+structured receipts/profiles, compressed host samples and analysis source with
+SHA-256 checksums.
 It excludes private logs and scratch. Retain private output locally for diagnosis.
 Nondefault pilot dimensions are labeled `standard_matched_protocol: false`.
 A completed runner is not an automatic performance approval: document the result,

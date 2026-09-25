@@ -1,0 +1,8 @@
+{
+  "slice": "SP00",
+  "trigger": "16 CPU / 50 rows/s candidate repeat 2 completed correctly but p95 was 5365.567 ms",
+  "observed_mechanism": "Successful apply worker incremental-4173 spent 2430.136 ms in sqlite.SELECT, extending apply.run to 3367.416 ms; next workers did larger boundary scans",
+  "decision": "Keep the original outcome. After the mandatory matrix, run three additional paired repeats of the unchanged 16:50 cell, reversing the original cell's two predecessor-first / one candidate-first balance.",
+  "changes": "Only cell selection and repeat order for a separately labeled diagnostic block; runtime, harness, profiler, clients, rows, durations and envelope remain fixed",
+  "acceptance": "Report all six paired repeats together and separately. Do not replace the freshness miss or claim an optimization. Investigate further if evidence points to changed harness behavior rather than the known journal-read contention."
+}
