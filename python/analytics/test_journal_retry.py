@@ -108,13 +108,24 @@ class JournalRetryTests(unittest.TestCase):
             def execute(self,sql,*a):
                 cursor=self.db.execute(sql,*a)
                 if sql.startswith('SELECT end_lsn') and len(opened)==1:
-                    def rows():
-                        yield next(cursor)
-                        raise sql_error(sqlite3.SQLITE_BUSY)
-                    return rows()
+                    class Rows:
+                        count=0
+                        def __iter__(self):return self
+                        def __next__(self):
+                            self.count+=1
+                            if self.count==2:raise sql_error(sqlite3.SQLITE_BUSY)
+                            return next(cursor)
+                        def close(self):cursor.close()
+                    return Rows()
                 return cursor
             def close(self):self.db.close();self.closed=True
-        with patch.object(storage.sqlite3,'connect',Connection):result=storage.journal(self.config)
+        def backoff(seconds):
+            # Even while the caught exception retains its traceback/cursor,
+            # the failed snapshot must release every reader lease before sleep.
+            with connect(self.spool.path,timeout=0) as writer:
+                writer.execute('BEGIN EXCLUSIVE')
+            time.sleep(seconds)
+        with patch.object(storage.sqlite3,'connect',Connection),patch.object(storage,'journal_backoff',backoff):result=storage.journal(self.config)
         self.assertEqual(result[1],[(300,b'complete'),(400,b'second')])
         self.assertEqual(len(opened),2);self.assertTrue(all(db.closed for db in opened))
     def test_pruning_between_attempts_fails_history_validation(self):

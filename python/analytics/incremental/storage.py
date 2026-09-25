@@ -1,5 +1,6 @@
 """Versioned Delta roots, sealed epoch inventories, and bounded journal reads."""
 import copy
+from contextlib import ExitStack
 import hashlib
 import json
 import os
@@ -144,11 +145,14 @@ def journal_attempt(config,deadline):
     path=Path(config['spool'])
     if path.is_symlink() or path.stat().st_size>512*1024*1024:raise CaptureError('spool_budget')
     db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
+    cleanup=ExitStack();cleanup.callback(db.close)
     def execute(sql,parameters=()):
         remaining=deadline-time.monotonic()
         if remaining<=0:raise CaptureError('journal_read_deadline')
-        db.execute('PRAGMA busy_timeout='+str(int(min(JOURNAL_BUSY_SECONDS,remaining)*1000)))
-        return db.execute(sql,parameters)
+        timeout=db.execute('PRAGMA busy_timeout='+str(int(min(JOURNAL_BUSY_SECONDS,remaining)*1000)))
+        cleanup.callback(timeout.close)
+        cursor=db.execute(sql,parameters);cleanup.callback(cursor.close)
+        return cursor
     db.set_progress_handler(lambda:int(time.monotonic()>=deadline),1000)
     try:
         execute('BEGIN')
@@ -176,9 +180,10 @@ def journal_attempt(config,deadline):
             raise CaptureError('journal_read_deadline') from None
         raise
     finally:
-        # Close rolls back the read transaction, including failures while fetching
-        # payload rows. Never retain a cursor or partial result across attempts.
-        db.close()
+        # Finalize cursors before close: sqlite3_close_v2 alone leaves an active
+        # cursor's read lock alive when an exception traceback retains it.
+        # LIFO cleanup releases every statement, then rolls back/closes the DB.
+        cleanup.close()
 
 
 def initialize(config):
