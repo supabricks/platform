@@ -1,0 +1,4811 @@
+[
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 2
+    },
+    "directory": "01-attempt01-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299197093.2002,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.3757,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.4976,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.622,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.646588,
+        "run_errors": 1,
+        "run_ms": 3004.867081,
+        "select_errors": 1,
+        "select_max_ms": 3002.375964,
+        "select_ms": 3002.375964,
+        "started_at_ms": 1790299193888.834,
+        "stream": "incremental-1116.jsonl"
+      },
+      {
+        "boundary_ms": 85.878189,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.111084,
+        "run_errors": 0,
+        "run_ms": 2347.197166,
+        "select_errors": 0,
+        "select_max_ms": 2029.756883,
+        "select_ms": 2029.812737,
+        "started_at_ms": 1790299188997.5806,
+        "stream": "incremental-924.jsonl"
+      },
+      {
+        "boundary_ms": 294.816746,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 179.092728,
+        "run_errors": 0,
+        "run_ms": 705.303433,
+        "select_errors": 0,
+        "select_max_ms": 178.676421,
+        "select_ms": 178.743456,
+        "started_at_ms": 1790299192355.5398,
+        "stream": "incremental-1034.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299197093.2002,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.3757,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.4976,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299197093.622,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.646588,
+        "run_errors": 1,
+        "run_ms": 3004.867081,
+        "select_errors": 1,
+        "select_max_ms": 3002.375964,
+        "select_ms": 3002.375964,
+        "started_at_ms": 1790299193888.834,
+        "stream": "incremental-1116.jsonl"
+      },
+      {
+        "boundary_ms": 85.878189,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.111084,
+        "run_errors": 0,
+        "run_ms": 2347.197166,
+        "select_errors": 0,
+        "select_max_ms": 2029.756883,
+        "select_ms": 2029.812737,
+        "started_at_ms": 1790299188997.5806,
+        "stream": "incremental-924.jsonl"
+      },
+      {
+        "boundary_ms": 294.816746,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 179.092728,
+        "run_errors": 0,
+        "run_ms": 705.303433,
+        "select_errors": 0,
+        "select_max_ms": 178.676421,
+        "select_ms": 178.743456,
+        "started_at_ms": 1790299192355.5398,
+        "stream": "incremental-1034.jsonl"
+      }
+    ],
+    "measurement_end_ms": null,
+    "measurement_start_ms": null,
+    "phase": "warmup",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 2
+    },
+    "directory": "01-attempt01-predecessor",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 1822.012627,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2730.741001,
+        "run_errors": 0,
+        "run_ms": 4854.388929,
+        "select_errors": 0,
+        "select_max_ms": 2730.208959,
+        "select_ms": 2730.296121,
+        "started_at_ms": 1790299094755.0056,
+        "stream": "incremental-7125.jsonl"
+      },
+      {
+        "boundary_ms": 833.098834,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2630.543297,
+        "run_errors": 0,
+        "run_ms": 3722.541054,
+        "select_errors": 0,
+        "select_max_ms": 2630.129345,
+        "select_ms": 2630.189186,
+        "started_at_ms": 1790299000572.866,
+        "stream": "incremental-2561.jsonl"
+      },
+      {
+        "boundary_ms": 2054.663337,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 929.800442,
+        "run_errors": 0,
+        "run_ms": 3299.526732,
+        "select_errors": 0,
+        "select_max_ms": 929.160959,
+        "select_ms": 929.260514,
+        "started_at_ms": 1790299125076.0132,
+        "stream": "incremental-8387.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299153822.468,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299153822.6746,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299153822.7913,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299153822.9268,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.61881,
+        "run_errors": 1,
+        "run_ms": 3009.753911,
+        "select_errors": 1,
+        "select_max_ms": 3002.31307,
+        "select_ms": 3002.31307,
+        "started_at_ms": 1790299150617.781,
+        "stream": "incremental-9563.jsonl"
+      },
+      {
+        "boundary_ms": 1822.012627,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2730.741001,
+        "run_errors": 0,
+        "run_ms": 4854.388929,
+        "select_errors": 0,
+        "select_max_ms": 2730.208959,
+        "select_ms": 2730.296121,
+        "started_at_ms": 1790299094755.0056,
+        "stream": "incremental-7125.jsonl"
+      },
+      {
+        "boundary_ms": 833.098834,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2630.543297,
+        "run_errors": 0,
+        "run_ms": 3722.541054,
+        "select_errors": 0,
+        "select_max_ms": 2630.129345,
+        "select_ms": 2630.189186,
+        "started_at_ms": 1790299000572.866,
+        "stream": "incremental-2561.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299056288.1367,
+    "measurement_start_ms": 1790299010998.0627,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "02-attempt02-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 717.172734,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.643235,
+        "run_errors": 0,
+        "run_ms": 1013.353018,
+        "select_errors": 0,
+        "select_max_ms": 33.362301,
+        "select_ms": 33.403758,
+        "started_at_ms": 1790299365805.6187,
+        "stream": "incremental-3206.jsonl"
+      },
+      {
+        "boundary_ms": 600.50707,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.905016,
+        "run_errors": 0,
+        "run_ms": 986.118317,
+        "select_errors": 0,
+        "select_max_ms": 128.595869,
+        "select_ms": 128.641915,
+        "started_at_ms": 1790299358766.5776,
+        "stream": "incremental-2840.jsonl"
+      },
+      {
+        "boundary_ms": 661.944952,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.947925,
+        "run_errors": 0,
+        "run_ms": 974.182129,
+        "select_errors": 0,
+        "select_max_ms": 53.461739,
+        "select_ms": 53.540916,
+        "started_at_ms": 1790299360536.256,
+        "stream": "incremental-2933.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 343.154909,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.119655,
+        "run_errors": 0,
+        "run_ms": 796.329491,
+        "select_errors": 0,
+        "select_max_ms": 228.748352,
+        "select_ms": 228.799377,
+        "started_at_ms": 1790299334556.4473,
+        "stream": "incremental-1613.jsonl"
+      },
+      {
+        "boundary_ms": 600.50707,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.905016,
+        "run_errors": 0,
+        "run_ms": 986.118317,
+        "select_errors": 0,
+        "select_max_ms": 128.595869,
+        "select_ms": 128.641915,
+        "started_at_ms": 1790299358766.5776,
+        "stream": "incremental-2840.jsonl"
+      },
+      {
+        "boundary_ms": 661.944952,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.947925,
+        "run_errors": 0,
+        "run_ms": 974.182129,
+        "select_errors": 0,
+        "select_max_ms": 53.461739,
+        "select_ms": 53.540916,
+        "started_at_ms": 1790299360536.256,
+        "stream": "incremental-2933.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299368200.2556,
+    "measurement_start_ms": 1790299322983.1545,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 119,
+        "p50": 100,
+        "p95": 117,
+        "p99": 119
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 550.752,
+        "p50": 100.579,
+        "p95": 275.415,
+        "p99": 393.02
+      },
+      "commit_to_admission": {
+        "maximum": 2467.214,
+        "p50": 1339.76,
+        "p95": 2132.555,
+        "p99": 2307.97
+      },
+      "commit_to_publication": {
+        "maximum": 3904.214,
+        "p50": 2668.274,
+        "p95": 3579.795,
+        "p99": 3770.604
+      },
+      "prepared_to_publication": {
+        "maximum": 436,
+        "p50": 273,
+        "p95": 433,
+        "p99": 436
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1226,
+        "p50": 968,
+        "p95": 1211,
+        "p99": 1226
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "02-attempt02-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 693.784857,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1.504346,
+        "run_errors": 0,
+        "run_ms": 937.066044,
+        "select_errors": 0,
+        "select_max_ms": 1.15276,
+        "select_ms": 1.199498,
+        "started_at_ms": 1790299274577.1602,
+        "stream": "incremental-3114.jsonl"
+      },
+      {
+        "boundary_ms": 652.680349,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.654862,
+        "run_errors": 0,
+        "run_ms": 922.98901,
+        "select_errors": 0,
+        "select_max_ms": 18.318185,
+        "select_ms": 18.372727,
+        "started_at_ms": 1790299270997.9456,
+        "stream": "incremental-2930.jsonl"
+      },
+      {
+        "boundary_ms": 679.425134,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.652898,
+        "run_errors": 0,
+        "run_ms": 910.400587,
+        "select_errors": 0,
+        "select_max_ms": 18.313175,
+        "select_ms": 18.360273,
+        "started_at_ms": 1790299272804.0046,
+        "stream": "incremental-3024.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 292.41535,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.712545,
+        "run_errors": 0,
+        "run_ms": 558.801163,
+        "select_errors": 0,
+        "select_max_ms": 53.430539,
+        "select_ms": 53.472067,
+        "started_at_ms": 1790299240428.1914,
+        "stream": "incremental-1396.jsonl"
+      },
+      {
+        "boundary_ms": 724.476502,
+        "exceptions": [],
+        "final": false,
+        "journal_ms": 33.85524,
+        "run_errors": 0,
+        "run_ms": 0.0,
+        "select_errors": 0,
+        "select_max_ms": 33.397135,
+        "select_ms": 33.460433,
+        "started_at_ms": 1790299276347.359,
+        "stream": "incremental-3204.jsonl"
+      },
+      {
+        "boundary_ms": 126.456789,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.714167,
+        "run_errors": 0,
+        "run_ms": 307.723309,
+        "select_errors": 0,
+        "select_max_ms": 33.404568,
+        "select_ms": 33.45347,
+        "started_at_ms": 1790299235320.1692,
+        "stream": "incremental-1135.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299278392.989,
+    "measurement_start_ms": 1790299233175.0283,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 117,
+        "p50": 104,
+        "p95": 117,
+        "p99": 117
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 708.781,
+        "p50": 101.246,
+        "p95": 278.503,
+        "p99": 433.043
+      },
+      "commit_to_admission": {
+        "maximum": 2458.512,
+        "p50": 1353.588,
+        "p95": 2131.812,
+        "p99": 2294.557
+      },
+      "commit_to_publication": {
+        "maximum": 3995.512,
+        "p50": 2697.765,
+        "p95": 3594.389,
+        "p99": 3813.784
+      },
+      "prepared_to_publication": {
+        "maximum": 442,
+        "p50": 305,
+        "p95": 429,
+        "p99": 442
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1215,
+        "p50": 982,
+        "p95": 1179,
+        "p99": 1215
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "03-attempt03-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 720.60687,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 129.03305,
+        "run_errors": 0,
+        "run_ms": 1026.517034,
+        "select_errors": 0,
+        "select_max_ms": 128.60973,
+        "select_ms": 128.686554,
+        "started_at_ms": 1790299538617.3293,
+        "stream": "incremental-4841.jsonl"
+      },
+      {
+        "boundary_ms": 634.693885,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.957268,
+        "run_errors": 0,
+        "run_ms": 1020.274185,
+        "select_errors": 0,
+        "select_max_ms": 128.641288,
+        "select_ms": 128.687815,
+        "started_at_ms": 1790299527857.3245,
+        "stream": "incremental-4034.jsonl"
+      },
+      {
+        "boundary_ms": 686.811994,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 3.552177,
+        "run_errors": 0,
+        "run_ms": 938.144131,
+        "select_errors": 0,
+        "select_max_ms": 3.185833,
+        "select_ms": 3.23809,
+        "started_at_ms": 1790299535060.7432,
+        "stream": "incremental-4566.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 634.693885,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.957268,
+        "run_errors": 0,
+        "run_ms": 1020.274185,
+        "select_errors": 0,
+        "select_max_ms": 128.641288,
+        "select_ms": 128.687815,
+        "started_at_ms": 1790299527857.3245,
+        "stream": "incremental-4034.jsonl"
+      },
+      {
+        "boundary_ms": 720.60687,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 129.03305,
+        "run_errors": 0,
+        "run_ms": 1026.517034,
+        "select_errors": 0,
+        "select_max_ms": 128.60973,
+        "select_ms": 128.686554,
+        "started_at_ms": 1790299538617.3293,
+        "stream": "incremental-4841.jsonl"
+      },
+      {
+        "boundary_ms": 334.833058,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.981803,
+        "run_errors": 0,
+        "run_ms": 637.804371,
+        "select_errors": 0,
+        "select_max_ms": 103.61574,
+        "select_ms": 103.672997,
+        "started_at_ms": 1790299505555.6655,
+        "stream": "incremental-2346.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299539545.8464,
+    "measurement_start_ms": 1790299494329.317,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 116,
+        "p50": 100,
+        "p95": 116,
+        "p99": 116
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 542.933,
+        "p50": 99.373,
+        "p95": 276.52,
+        "p99": 396.366
+      },
+      "commit_to_admission": {
+        "maximum": 2620.693,
+        "p50": 1343.17,
+        "p95": 2160.665,
+        "p99": 2381.533
+      },
+      "commit_to_publication": {
+        "maximum": 3988.605,
+        "p50": 2671.297,
+        "p95": 3708.533,
+        "p99": 3894.333
+      },
+      "prepared_to_publication": {
+        "maximum": 434,
+        "p50": 305,
+        "p95": 405,
+        "p99": 434
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1309,
+        "p50": 911,
+        "p95": 1243,
+        "p99": 1309
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "03-attempt03-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 713.612307,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.645306,
+        "run_errors": 0,
+        "run_ms": 952.404039,
+        "select_errors": 0,
+        "select_max_ms": 18.299249,
+        "select_ms": 18.355033,
+        "started_at_ms": 1790299447379.3877,
+        "stream": "incremental-4695.jsonl"
+      },
+      {
+        "boundary_ms": 668.287236,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 0.36953,
+        "run_errors": 0,
+        "run_ms": 948.673409,
+        "select_errors": 0,
+        "select_max_ms": 0.067636,
+        "select_ms": 0.10718,
+        "started_at_ms": 1790299445569.2983,
+        "stream": "incremental-4560.jsonl"
+      },
+      {
+        "boundary_ms": 672.469444,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 8.583955,
+        "run_errors": 0,
+        "run_ms": 931.245765,
+        "select_errors": 0,
+        "select_max_ms": 8.258758,
+        "select_ms": 8.300366,
+        "started_at_ms": 1790299443825.6753,
+        "stream": "incremental-4430.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 263.76041,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.025484,
+        "run_errors": 0,
+        "run_ms": 688.821958,
+        "select_errors": 0,
+        "select_max_ms": 228.737307,
+        "select_ms": 228.78173,
+        "started_at_ms": 1790299411452.8215,
+        "stream": "incremental-2016.jsonl"
+      },
+      {
+        "boundary_ms": 66.440489,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.917461,
+        "run_errors": 0,
+        "run_ms": 426.728011,
+        "select_errors": 0,
+        "select_max_ms": 178.659621,
+        "select_ms": 178.699245,
+        "started_at_ms": 1790299406329.48,
+        "stream": "incremental-1605.jsonl"
+      },
+      {
+        "boundary_ms": 614.408834,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 78.891602,
+        "run_errors": 0,
+        "run_ms": 887.18892,
+        "select_errors": 0,
+        "select_max_ms": 78.511843,
+        "select_ms": 78.570142,
+        "started_at_ms": 1790299436764.8704,
+        "stream": "incremental-3904.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299449088.805,
+    "measurement_start_ms": 1790299403870.6687,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 116,
+        "p50": 97,
+        "p95": 116,
+        "p99": 116
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 707.586,
+        "p50": 99.565,
+        "p95": 274.878,
+        "p99": 393.258
+      },
+      "commit_to_admission": {
+        "maximum": 2435.933,
+        "p50": 1385.175,
+        "p95": 2153.063,
+        "p99": 2320.114
+      },
+      "commit_to_publication": {
+        "maximum": 3948.954,
+        "p50": 2728.747,
+        "p95": 3620.574,
+        "p99": 3830.844
+      },
+      "prepared_to_publication": {
+        "maximum": 466,
+        "p50": 280,
+        "p95": 433,
+        "p99": 465
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1200,
+        "p50": 935,
+        "p95": 1168,
+        "p99": 1200
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "04-attempt04-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 680.617396,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2430.483885,
+        "run_errors": 0,
+        "run_ms": 3367.415627,
+        "select_errors": 0,
+        "select_max_ms": 2430.074901,
+        "select_ms": 2430.135754,
+        "started_at_ms": 1790299616010.5337,
+        "stream": "incremental-4173.jsonl"
+      },
+      {
+        "boundary_ms": 1078.071295,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.972849,
+        "run_errors": 0,
+        "run_ms": 1437.817232,
+        "select_errors": 0,
+        "select_max_ms": 128.548617,
+        "select_ms": 128.607437,
+        "started_at_ms": 1790299620272.1328,
+        "stream": "incremental-4353.jsonl"
+      },
+      {
+        "boundary_ms": 1114.437763,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1.491653,
+        "run_errors": 0,
+        "run_ms": 1337.223699,
+        "select_errors": 0,
+        "select_max_ms": 1.135698,
+        "select_ms": 1.181834,
+        "started_at_ms": 1790299622526.2188,
+        "stream": "incremental-4498.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 680.617396,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2430.483885,
+        "run_errors": 0,
+        "run_ms": 3367.415627,
+        "select_errors": 0,
+        "select_max_ms": 2430.074901,
+        "select_ms": 2430.135754,
+        "started_at_ms": 1790299616010.5337,
+        "stream": "incremental-4173.jsonl"
+      },
+      {
+        "boundary_ms": 307.015789,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 179.04766,
+        "run_errors": 0,
+        "run_ms": 690.194061,
+        "select_errors": 0,
+        "select_max_ms": 178.721011,
+        "select_ms": 178.766445,
+        "started_at_ms": 1790299591069.841,
+        "stream": "incremental-2347.jsonl"
+      },
+      {
+        "boundary_ms": 210.606949,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 129.060993,
+        "run_errors": 0,
+        "run_ms": 547.570355,
+        "select_errors": 0,
+        "select_max_ms": 128.679991,
+        "select_ms": 128.745102,
+        "started_at_ms": 1790299584396.5244,
+        "stream": "incremental-1814.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299624944.996,
+    "measurement_start_ms": 1790299579729.1748,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 117,
+        "p50": 99,
+        "p95": 117,
+        "p99": 117
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 550.972,
+        "p50": 101.825,
+        "p95": 307.658,
+        "p99": 418.834
+      },
+      "commit_to_admission": {
+        "maximum": 4679.5,
+        "p50": 1421.515,
+        "p95": 2684.583,
+        "p99": 4236.804
+      },
+      "commit_to_publication": {
+        "maximum": 6685.5,
+        "p50": 2856.082,
+        "p95": 5365.567,
+        "p99": 6269.273
+      },
+      "prepared_to_publication": {
+        "maximum": 433,
+        "p50": 317,
+        "p95": 394,
+        "p99": 433
+      },
+      "worker_start_to_prepared": {
+        "maximum": 3582,
+        "p50": 1036,
+        "p95": 1684,
+        "p99": 3582
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": false
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "04-attempt04-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 680.702211,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.821819,
+        "run_errors": 0,
+        "run_ms": 963.561049,
+        "select_errors": 0,
+        "select_max_ms": 33.403967,
+        "select_ms": 33.46454,
+        "started_at_ms": 1790299711475.413,
+        "stream": "incremental-4567.jsonl"
+      },
+      {
+        "boundary_ms": 711.548562,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.639225,
+        "run_errors": 0,
+        "run_ms": 960.873984,
+        "select_errors": 0,
+        "select_max_ms": 18.316432,
+        "select_ms": 18.367728,
+        "started_at_ms": 1790299713258.5483,
+        "stream": "incremental-4698.jsonl"
+      },
+      {
+        "boundary_ms": 665.811825,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.733824,
+        "run_errors": 0,
+        "run_ms": 924.504314,
+        "select_errors": 0,
+        "select_max_ms": 33.381776,
+        "select_ms": 33.426369,
+        "started_at_ms": 1790299709727.906,
+        "stream": "incremental-4430.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 112.889599,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.871529,
+        "run_errors": 0,
+        "run_ms": 424.46074,
+        "select_errors": 0,
+        "select_max_ms": 103.581037,
+        "select_ms": 103.624297,
+        "started_at_ms": 1790299663549.6606,
+        "stream": "incremental-903.jsonl"
+      },
+      {
+        "boundary_ms": 563.502475,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.905495,
+        "run_errors": 0,
+        "run_ms": 920.088533,
+        "select_errors": 0,
+        "select_max_ms": 103.558256,
+        "select_ms": 103.611595,
+        "started_at_ms": 1790299699098.8105,
+        "stream": "incremental-3646.jsonl"
+      },
+      {
+        "boundary_ms": 401.507861,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.842387,
+        "run_errors": 0,
+        "run_ms": 716.893383,
+        "select_errors": 0,
+        "select_max_ms": 103.535964,
+        "select_ms": 103.580608,
+        "started_at_ms": 1790299684539.3423,
+        "stream": "incremental-2567.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299715327.9282,
+    "measurement_start_ms": 1790299670111.8303,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 120,
+        "p50": 96,
+        "p95": 117,
+        "p99": 120
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 593.875,
+        "p50": 99.519,
+        "p95": 275.069,
+        "p99": 393.875
+      },
+      "commit_to_admission": {
+        "maximum": 2435.708,
+        "p50": 1359.062,
+        "p95": 2173.488,
+        "p99": 2332.269
+      },
+      "commit_to_publication": {
+        "maximum": 3942.447,
+        "p50": 2701.179,
+        "p95": 3664.57,
+        "p99": 3854.29
+      },
+      "prepared_to_publication": {
+        "maximum": 432,
+        "p50": 296,
+        "p95": 410,
+        "p99": 432
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1199,
+        "p50": 985,
+        "p95": 1197,
+        "p99": 1199
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 1
+    },
+    "directory": "05-attempt05-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 1453.475032,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1329.860425,
+        "run_errors": 0,
+        "run_ms": 3062.790326,
+        "select_errors": 0,
+        "select_max_ms": 1329.404894,
+        "select_ms": 1329.469475,
+        "started_at_ms": 1790299961395.3843,
+        "stream": "incremental-6430.jsonl"
+      },
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299971295.3516,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.5347,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.6401,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.7566,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.65858,
+        "run_errors": 1,
+        "run_ms": 3012.681855,
+        "select_errors": 1,
+        "select_max_ms": 3002.356956,
+        "select_ms": 3002.356956,
+        "started_at_ms": 1790299968071.6555,
+        "stream": "incremental-6779.jsonl"
+      },
+      {
+        "boundary_ms": 766.886268,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1429.928243,
+        "run_errors": 0,
+        "run_ms": 2455.776912,
+        "select_errors": 0,
+        "select_max_ms": 1429.519119,
+        "select_ms": 1429.580213,
+        "started_at_ms": 1790299904995.74,
+        "stream": "incremental-2931.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299971295.3516,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.5347,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.6401,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299971295.7566,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.65858,
+        "run_errors": 1,
+        "run_ms": 3012.681855,
+        "select_errors": 1,
+        "select_max_ms": 3002.356956,
+        "select_ms": 3002.356956,
+        "started_at_ms": 1790299968071.6555,
+        "stream": "incremental-6779.jsonl"
+      },
+      {
+        "boundary_ms": 766.886268,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1429.928243,
+        "run_errors": 0,
+        "run_ms": 2455.776912,
+        "select_errors": 0,
+        "select_max_ms": 1429.519119,
+        "select_ms": 1429.580213,
+        "started_at_ms": 1790299904995.74,
+        "stream": "incremental-2931.jsonl"
+      },
+      {
+        "boundary_ms": 1453.475032,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1329.860425,
+        "run_errors": 0,
+        "run_ms": 3062.790326,
+        "select_errors": 0,
+        "select_max_ms": 1329.404894,
+        "select_ms": 1329.469475,
+        "started_at_ms": 1790299961395.3843,
+        "stream": "incremental-6430.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299964234.5322,
+    "measurement_start_ms": 1790299918956.9792,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 1
+    },
+    "directory": "05-attempt05-predecessor",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299838202.3425,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.5261,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.6296,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.732,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.594666,
+        "run_errors": 1,
+        "run_ms": 3011.783909,
+        "select_errors": 1,
+        "select_max_ms": 3002.310535,
+        "select_ms": 3002.310535,
+        "started_at_ms": 1790299834969.366,
+        "stream": "incremental-5881.jsonl"
+      },
+      {
+        "boundary_ms": 734.783026,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.004866,
+        "run_errors": 0,
+        "run_ms": 2708.041684,
+        "select_errors": 0,
+        "select_max_ms": 1729.59478,
+        "select_ms": 1729.65351,
+        "started_at_ms": 1790299783941.0356,
+        "stream": "incremental-2843.jsonl"
+      },
+      {
+        "boundary_ms": 1324.835697,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1029.576177,
+        "run_errors": 0,
+        "run_ms": 2650.475737,
+        "select_errors": 0,
+        "select_max_ms": 1029.173805,
+        "select_ms": 1029.233436,
+        "started_at_ms": 1790299831377.3804,
+        "stream": "incremental-5703.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790299838202.3425,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.5261,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.6296,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790299838202.732,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.594666,
+        "run_errors": 1,
+        "run_ms": 3011.783909,
+        "select_errors": 1,
+        "select_max_ms": 3002.310535,
+        "select_ms": 3002.310535,
+        "started_at_ms": 1790299834969.366,
+        "stream": "incremental-5881.jsonl"
+      },
+      {
+        "boundary_ms": 467.208372,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.047021,
+        "run_errors": 0,
+        "run_ms": 2446.564181,
+        "select_errors": 0,
+        "select_max_ms": 1729.659718,
+        "select_ms": 1729.717195,
+        "started_at_ms": 1790299765799.77,
+        "stream": "incremental-1737.jsonl"
+      },
+      {
+        "boundary_ms": 734.783026,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.004866,
+        "run_errors": 0,
+        "run_ms": 2708.041684,
+        "select_errors": 0,
+        "select_max_ms": 1729.59478,
+        "select_ms": 1729.65351,
+        "started_at_ms": 1790299783941.0356,
+        "stream": "incremental-2843.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790299843283.5686,
+    "measurement_start_ms": 1790299798008.256,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "06-attempt06-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1204.940257,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.632147,
+        "run_errors": 0,
+        "run_ms": 1384.969473,
+        "select_errors": 0,
+        "select_max_ms": 18.313853,
+        "select_ms": 18.360591,
+        "started_at_ms": 1790300141591.1233,
+        "stream": "incremental-4832.jsonl"
+      },
+      {
+        "boundary_ms": 700.076255,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.781893,
+        "run_errors": 0,
+        "run_ms": 1020.745899,
+        "select_errors": 0,
+        "select_max_ms": 53.445605,
+        "select_ms": 53.489737,
+        "started_at_ms": 1790300139558.0264,
+        "stream": "incremental-4687.jsonl"
+      },
+      {
+        "boundary_ms": 703.127934,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.753337,
+        "run_errors": 0,
+        "run_ms": 1013.392292,
+        "select_errors": 0,
+        "select_max_ms": 33.39592,
+        "select_ms": 33.446053,
+        "started_at_ms": 1790300137566.072,
+        "stream": "incremental-4547.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 504.986084,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.879592,
+        "run_errors": 0,
+        "run_ms": 887.985876,
+        "select_errors": 0,
+        "select_max_ms": 128.585392,
+        "select_ms": 128.629404,
+        "started_at_ms": 1790300120083.3093,
+        "stream": "incremental-3259.jsonl"
+      },
+      {
+        "boundary_ms": 536.33575,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.947225,
+        "run_errors": 0,
+        "run_ms": 877.623056,
+        "select_errors": 0,
+        "select_max_ms": 103.57507,
+        "select_ms": 103.632738,
+        "started_at_ms": 1790300126859.8552,
+        "stream": "incremental-3764.jsonl"
+      },
+      {
+        "boundary_ms": 341.992753,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.81903,
+        "run_errors": 0,
+        "run_ms": 629.451923,
+        "select_errors": 0,
+        "select_max_ms": 103.517728,
+        "select_ms": 103.56142,
+        "started_at_ms": 1790300110941.1836,
+        "stream": "incremental-2555.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790300141980.6572,
+    "measurement_start_ms": 1790300096764.7434,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 128,
+        "p50": 101,
+        "p95": 120,
+        "p99": 128
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 430.997,
+        "p50": 89.986,
+        "p95": 269.774,
+        "p99": 379.519
+      },
+      "commit_to_admission": {
+        "maximum": 2651.759,
+        "p50": 1378.844,
+        "p95": 2233.058,
+        "p99": 2471.208
+      },
+      "commit_to_publication": {
+        "maximum": 4523.759,
+        "p50": 2726.475,
+        "p95": 3816.864,
+        "p99": 4202.687
+      },
+      "prepared_to_publication": {
+        "maximum": 459,
+        "p50": 301,
+        "p95": 455,
+        "p99": 459
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1648,
+        "p50": 987,
+        "p95": 1237,
+        "p99": 1648
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "06-attempt06-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 715.222598,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.598149,
+        "run_errors": 0,
+        "run_ms": 946.613554,
+        "select_errors": 0,
+        "select_max_ms": 18.312946,
+        "select_ms": 18.355566,
+        "started_at_ms": 1790300050923.0662,
+        "stream": "incremental-4706.jsonl"
+      },
+      {
+        "boundary_ms": 683.3579,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 3.506249,
+        "run_errors": 0,
+        "run_ms": 938.445112,
+        "select_errors": 0,
+        "select_max_ms": 3.186853,
+        "select_ms": 3.229833,
+        "started_at_ms": 1790300049130.2712,
+        "stream": "incremental-4571.jsonl"
+      },
+      {
+        "boundary_ms": 524.009064,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.996111,
+        "run_errors": 0,
+        "run_ms": 920.801004,
+        "select_errors": 0,
+        "select_max_ms": 178.665403,
+        "select_ms": 178.71218,
+        "started_at_ms": 1790300033338.4897,
+        "stream": "incremental-3402.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 524.009064,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.996111,
+        "run_errors": 0,
+        "run_ms": 920.801004,
+        "select_errors": 0,
+        "select_max_ms": 178.665403,
+        "select_ms": 178.71218,
+        "started_at_ms": 1790300033338.4897,
+        "stream": "incremental-3402.jsonl"
+      },
+      {
+        "boundary_ms": 230.218111,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 129.072327,
+        "run_errors": 0,
+        "run_ms": 556.165395,
+        "select_errors": 0,
+        "select_max_ms": 128.695002,
+        "select_ms": 128.769952,
+        "started_at_ms": 1790300011718.797,
+        "stream": "incremental-1799.jsonl"
+      },
+      {
+        "boundary_ms": 64.362811,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.886073,
+        "run_errors": 0,
+        "run_ms": 399.497543,
+        "select_errors": 0,
+        "select_max_ms": 128.580352,
+        "select_ms": 128.631287,
+        "started_at_ms": 1790300003121.264,
+        "stream": "incremental-1101.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790300052194.2134,
+    "measurement_start_ms": 1790300006974.2344,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 119,
+        "p50": 99,
+        "p95": 116,
+        "p99": 119
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 554.331,
+        "p50": 96.013,
+        "p95": 268.503,
+        "p99": 384.368
+      },
+      "commit_to_admission": {
+        "maximum": 2427.484,
+        "p50": 1353.625,
+        "p95": 2161.879,
+        "p99": 2333.297
+      },
+      "commit_to_publication": {
+        "maximum": 3965.048,
+        "p50": 2723.71,
+        "p95": 3653.83,
+        "p99": 3844.97
+      },
+      "prepared_to_publication": {
+        "maximum": 460,
+        "p50": 314,
+        "p95": 440,
+        "p99": 460
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1211,
+        "p50": 996,
+        "p95": 1177,
+        "p99": 1211
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 1
+    },
+    "directory": "07-attempt07-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 1926.541271,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.147473,
+        "run_errors": 0,
+        "run_ms": 3949.983597,
+        "select_errors": 0,
+        "select_max_ms": 1729.622903,
+        "select_ms": 1729.704275,
+        "started_at_ms": 1790300323289.5405,
+        "stream": "incremental-7720.jsonl"
+      },
+      {
+        "boundary_ms": 1865.648695,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.285288,
+        "run_errors": 0,
+        "run_ms": 3895.96581,
+        "select_errors": 0,
+        "select_max_ms": 1729.632349,
+        "select_ms": 1729.748486,
+        "started_at_ms": 1790300314939.32,
+        "stream": "incremental-7365.jsonl"
+      },
+      {
+        "boundary_ms": 171.221069,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2930.828862,
+        "run_errors": 0,
+        "run_ms": 3577.522971,
+        "select_errors": 0,
+        "select_max_ms": 2930.284856,
+        "select_ms": 2930.367921,
+        "started_at_ms": 1790300342749.952,
+        "stream": "incremental-8597.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790300361291.7925,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300361291.991,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300361292.1108,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300361292.2253,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.563666,
+        "run_errors": 1,
+        "run_ms": 3008.694814,
+        "select_errors": 1,
+        "select_max_ms": 3002.264217,
+        "select_ms": 3002.264217,
+        "started_at_ms": 1790300358058.657,
+        "stream": "incremental-9323.jsonl"
+      },
+      {
+        "boundary_ms": 171.221069,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2930.828862,
+        "run_errors": 0,
+        "run_ms": 3577.522971,
+        "select_errors": 0,
+        "select_max_ms": 2930.284856,
+        "select_ms": 2930.367921,
+        "started_at_ms": 1790300342749.952,
+        "stream": "incremental-8597.jsonl"
+      },
+      {
+        "boundary_ms": 553.791412,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1830.091663,
+        "run_errors": 0,
+        "run_ms": 2608.461939,
+        "select_errors": 0,
+        "select_max_ms": 1829.657522,
+        "select_ms": 1829.719788,
+        "started_at_ms": 1790300198896.6174,
+        "stream": "incremental-1687.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790300272258.0198,
+    "measurement_start_ms": 1790300226974.5383,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 1
+    },
+    "directory": "07-attempt07-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 2110.175541,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2830.889957,
+        "run_errors": 0,
+        "run_ms": 5249.32009,
+        "select_errors": 0,
+        "select_max_ms": 2830.296068,
+        "select_ms": 2830.396346,
+        "started_at_ms": 1790300564603.5034,
+        "stream": "incremental-8558.jsonl"
+      },
+      {
+        "boundary_ms": 1743.712319,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.518461,
+        "run_errors": 0,
+        "run_ms": 4564.770713,
+        "select_errors": 0,
+        "select_max_ms": 2530.028416,
+        "select_ms": 2530.100541,
+        "started_at_ms": 1790300522289.1814,
+        "stream": "incremental-6679.jsonl"
+      },
+      {
+        "boundary_ms": 1507.298797,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.694093,
+        "run_errors": 0,
+        "run_ms": 4296.193683,
+        "select_errors": 0,
+        "select_max_ms": 2530.065078,
+        "select_ms": 2530.161628,
+        "started_at_ms": 1790300497719.0952,
+        "stream": "incremental-5590.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 2110.175541,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2830.889957,
+        "run_errors": 0,
+        "run_ms": 5249.32009,
+        "select_errors": 0,
+        "select_max_ms": 2830.296068,
+        "select_ms": 2830.396346,
+        "started_at_ms": 1790300564603.5034,
+        "stream": "incremental-8558.jsonl"
+      },
+      {
+        "boundary_ms": 1507.298797,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.694093,
+        "run_errors": 0,
+        "run_ms": 4296.193683,
+        "select_errors": 0,
+        "select_max_ms": 2530.065078,
+        "select_ms": 2530.161628,
+        "started_at_ms": 1790300497719.0952,
+        "stream": "incremental-5590.jsonl"
+      },
+      {
+        "boundary_ms": 1743.712319,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.518461,
+        "run_errors": 0,
+        "run_ms": 4564.770713,
+        "select_errors": 0,
+        "select_max_ms": 2530.028416,
+        "select_ms": 2530.100541,
+        "started_at_ms": 1790300522289.1814,
+        "stream": "incremental-6679.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790300487373.0479,
+    "measurement_start_ms": 1790300442090.274,
+    "phase": "drain",
+    "runtime_error": "publication_drain_timeout",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 3
+    },
+    "directory": "08-attempt08-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 628.161446,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2430.450081,
+        "run_errors": 0,
+        "run_ms": 3281.97183,
+        "select_errors": 0,
+        "select_max_ms": 2429.955447,
+        "select_ms": 2430.033783,
+        "started_at_ms": 1790300905296.5728,
+        "stream": "incremental-2303.jsonl"
+      },
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790300923075.731,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923075.9521,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923076.077,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923076.2024,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.634642,
+        "run_errors": 1,
+        "run_ms": 3008.130009,
+        "select_errors": 1,
+        "select_max_ms": 3002.313843,
+        "select_ms": 3002.313843,
+        "started_at_ms": 1790300919869.8193,
+        "stream": "incremental-3113.jsonl"
+      },
+      {
+        "boundary_ms": 569.986671,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.092301,
+        "run_errors": 0,
+        "run_ms": 2548.594472,
+        "select_errors": 0,
+        "select_max_ms": 1729.6842,
+        "select_ms": 1729.744773,
+        "started_at_ms": 1790300901793.3477,
+        "stream": "incremental-2153.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790300923075.731,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923075.9521,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923076.077,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790300923076.2024,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.634642,
+        "run_errors": 1,
+        "run_ms": 3008.130009,
+        "select_errors": 1,
+        "select_max_ms": 3002.313843,
+        "select_ms": 3002.313843,
+        "started_at_ms": 1790300919869.8193,
+        "stream": "incremental-3113.jsonl"
+      },
+      {
+        "boundary_ms": 628.161446,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2430.450081,
+        "run_errors": 0,
+        "run_ms": 3281.97183,
+        "select_errors": 0,
+        "select_max_ms": 2429.955447,
+        "select_ms": 2430.033783,
+        "started_at_ms": 1790300905296.5728,
+        "stream": "incremental-2303.jsonl"
+      },
+      {
+        "boundary_ms": 569.986671,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1730.092301,
+        "run_errors": 0,
+        "run_ms": 2548.594472,
+        "select_errors": 0,
+        "select_max_ms": 1729.6842,
+        "select_ms": 1729.744773,
+        "started_at_ms": 1790300901793.3477,
+        "stream": "incremental-2153.jsonl"
+      }
+    ],
+    "measurement_end_ms": null,
+    "measurement_start_ms": null,
+    "phase": "warmup",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 3
+    },
+    "directory": "08-attempt08-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1646.088884,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2330.550825,
+        "run_errors": 0,
+        "run_ms": 4265.476733,
+        "select_errors": 0,
+        "select_max_ms": 2329.934815,
+        "select_ms": 2330.033539,
+        "started_at_ms": 1790300752867.4644,
+        "stream": "incremental-7320.jsonl"
+      },
+      {
+        "boundary_ms": 1574.843237,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.354606,
+        "run_errors": 0,
+        "run_ms": 3896.677947,
+        "select_errors": 0,
+        "select_max_ms": 2029.796825,
+        "select_ms": 2029.890791,
+        "started_at_ms": 1790300748121.5566,
+        "stream": "incremental-7113.jsonl"
+      },
+      {
+        "boundary_ms": 518.844034,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.280016,
+        "run_errors": 0,
+        "run_ms": 3037.947922,
+        "select_errors": 0,
+        "select_max_ms": 2229.91288,
+        "select_ms": 2229.967081,
+        "started_at_ms": 1790300694269.1504,
+        "stream": "incremental-4072.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 1646.088884,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2330.550825,
+        "run_errors": 0,
+        "run_ms": 4265.476733,
+        "select_errors": 0,
+        "select_max_ms": 2329.934815,
+        "select_ms": 2330.033539,
+        "started_at_ms": 1790300752867.4644,
+        "stream": "incremental-7320.jsonl"
+      },
+      {
+        "boundary_ms": 518.844034,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.280016,
+        "run_errors": 0,
+        "run_ms": 3037.947922,
+        "select_errors": 0,
+        "select_max_ms": 2229.91288,
+        "select_ms": 2229.967081,
+        "started_at_ms": 1790300694269.1504,
+        "stream": "incremental-4072.jsonl"
+      },
+      {
+        "boundary_ms": 1574.843237,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.354606,
+        "run_errors": 0,
+        "run_ms": 3896.677947,
+        "select_errors": 0,
+        "select_max_ms": 2029.796825,
+        "select_ms": 2029.890791,
+        "started_at_ms": 1790300748121.5566,
+        "stream": "incremental-7113.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790300734158.2158,
+    "measurement_start_ms": 1790300688884.8472,
+    "phase": "drain",
+    "runtime_error": "publication_drain_timeout",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "09-attempt09-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 691.086054,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.928187,
+        "run_errors": 0,
+        "run_ms": 1067.765099,
+        "select_errors": 0,
+        "select_max_ms": 128.59805,
+        "select_ms": 128.642002,
+        "started_at_ms": 1790301002946.8318,
+        "stream": "incremental-3129.jsonl"
+      },
+      {
+        "boundary_ms": 634.915731,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.992226,
+        "run_errors": 0,
+        "run_ms": 963.510607,
+        "select_errors": 0,
+        "select_max_ms": 128.584005,
+        "select_ms": 128.648555,
+        "started_at_ms": 1790300995844.2297,
+        "stream": "incremental-2757.jsonl"
+      },
+      {
+        "boundary_ms": 673.661019,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.758952,
+        "run_errors": 0,
+        "run_ms": 960.303079,
+        "select_errors": 0,
+        "select_max_ms": 18.327658,
+        "select_ms": 18.389624,
+        "started_at_ms": 1790301001168.809,
+        "stream": "incremental-3034.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 417.1013,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.163332,
+        "run_errors": 0,
+        "run_ms": 839.51401,
+        "select_errors": 0,
+        "select_max_ms": 228.747806,
+        "select_ms": 228.808088,
+        "started_at_ms": 1790300983888.9548,
+        "stream": "incremental-2144.jsonl"
+      },
+      {
+        "boundary_ms": 634.915731,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.992226,
+        "run_errors": 0,
+        "run_ms": 963.510607,
+        "select_errors": 0,
+        "select_max_ms": 128.584005,
+        "select_ms": 128.648555,
+        "started_at_ms": 1790300995844.2297,
+        "stream": "incremental-2757.jsonl"
+      },
+      {
+        "boundary_ms": 691.086054,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.928187,
+        "run_errors": 0,
+        "run_ms": 1067.765099,
+        "select_errors": 0,
+        "select_max_ms": 128.59805,
+        "select_ms": 128.642002,
+        "started_at_ms": 1790301002946.8318,
+        "stream": "incremental-3129.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301007011.184,
+    "measurement_start_ms": 1790300961793.4163,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 128,
+        "p50": 99,
+        "p95": 117,
+        "p99": 128
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 557.892,
+        "p50": 98.469,
+        "p95": 270.099,
+        "p99": 388.011
+      },
+      "commit_to_admission": {
+        "maximum": 2588.96,
+        "p50": 1369.647,
+        "p95": 2201.691,
+        "p99": 2394.829
+      },
+      "commit_to_publication": {
+        "maximum": 4150.392,
+        "p50": 2707.278,
+        "p95": 3719.271,
+        "p99": 3955.829
+      },
+      "prepared_to_publication": {
+        "maximum": 471,
+        "p50": 323,
+        "p95": 431,
+        "p99": 471
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1275,
+        "p50": 978,
+        "p95": 1209,
+        "p99": 1275
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "09-attempt09-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 707.246543,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 78.826472,
+        "run_errors": 0,
+        "run_ms": 1069.710677,
+        "select_errors": 0,
+        "select_max_ms": 78.485406,
+        "select_ms": 78.527895,
+        "started_at_ms": 1790301088064.244,
+        "stream": "incremental-3109.jsonl"
+      },
+      {
+        "boundary_ms": 716.684857,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.65833,
+        "run_errors": 0,
+        "run_ms": 976.380755,
+        "select_errors": 0,
+        "select_max_ms": 33.362708,
+        "select_ms": 33.40669,
+        "started_at_ms": 1790301090112.7473,
+        "stream": "incremental-3210.jsonl"
+      },
+      {
+        "boundary_ms": 679.365443,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.756137,
+        "run_errors": 0,
+        "run_ms": 954.49557,
+        "select_errors": 0,
+        "select_max_ms": 18.328207,
+        "select_ms": 18.387378,
+        "started_at_ms": 1790301086291.6663,
+        "stream": "incremental-3018.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 121.645249,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 329.302898,
+        "run_errors": 0,
+        "run_ms": 665.472121,
+        "select_errors": 0,
+        "select_max_ms": 329.04141,
+        "select_ms": 329.074592,
+        "started_at_ms": 1790301040678.1997,
+        "stream": "incremental-699.jsonl"
+      },
+      {
+        "boundary_ms": 707.246543,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 78.826472,
+        "run_errors": 0,
+        "run_ms": 1069.710677,
+        "select_errors": 0,
+        "select_max_ms": 78.485406,
+        "select_ms": 78.527895,
+        "started_at_ms": 1790301088064.244,
+        "stream": "incremental-3109.jsonl"
+      },
+      {
+        "boundary_ms": 196.753586,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 78.720314,
+        "run_errors": 0,
+        "run_ms": 437.526977,
+        "select_errors": 0,
+        "select_max_ms": 78.47094,
+        "select_ms": 78.510043,
+        "started_at_ms": 1790301052008.45,
+        "stream": "incremental-1267.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301092286.773,
+    "measurement_start_ms": 1790301047070.175,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 122,
+        "p50": 98,
+        "p95": 122,
+        "p99": 122
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 556.393,
+        "p50": 87.829,
+        "p95": 272.739,
+        "p99": 392.707
+      },
+      "commit_to_admission": {
+        "maximum": 2557.988,
+        "p50": 1366.571,
+        "p95": 2197.926,
+        "p99": 2406.577
+      },
+      "commit_to_publication": {
+        "maximum": 4160.78,
+        "p50": 2708.606,
+        "p95": 3739.877,
+        "p99": 3991.585
+      },
+      "prepared_to_publication": {
+        "maximum": 465,
+        "p50": 297,
+        "p95": 451,
+        "p99": 465
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1275,
+        "p50": 938,
+        "p95": 1217,
+        "p99": 1275
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 3
+    },
+    "directory": "10-attempt10-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301165127.2185,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.3955,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.498,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.606,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.557911,
+        "run_errors": 1,
+        "run_ms": 3006.915353,
+        "select_errors": 1,
+        "select_max_ms": 3002.275514,
+        "select_ms": 3002.275514,
+        "started_at_ms": 1790301161927.2405,
+        "stream": "incremental-2257.jsonl"
+      },
+      {
+        "boundary_ms": 381.91747,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1529.920159,
+        "run_errors": 0,
+        "run_ms": 2153.802009,
+        "select_errors": 0,
+        "select_max_ms": 1529.483765,
+        "select_ms": 1529.551341,
+        "started_at_ms": 1790301139012.47,
+        "stream": "incremental-1184.jsonl"
+      },
+      {
+        "boundary_ms": 576.905599,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1229.763297,
+        "run_errors": 0,
+        "run_ms": 2041.004645,
+        "select_errors": 0,
+        "select_max_ms": 1229.326792,
+        "select_ms": 1229.398275,
+        "started_at_ms": 1790301153375.6143,
+        "stream": "incremental-1850.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301165127.2185,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.3955,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.498,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301165127.606,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.557911,
+        "run_errors": 1,
+        "run_ms": 3006.915353,
+        "select_errors": 1,
+        "select_max_ms": 3002.275514,
+        "select_ms": 3002.275514,
+        "started_at_ms": 1790301161927.2405,
+        "stream": "incremental-2257.jsonl"
+      },
+      {
+        "boundary_ms": 381.91747,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1529.920159,
+        "run_errors": 0,
+        "run_ms": 2153.802009,
+        "select_errors": 0,
+        "select_max_ms": 1529.483765,
+        "select_ms": 1529.551341,
+        "started_at_ms": 1790301139012.47,
+        "stream": "incremental-1184.jsonl"
+      },
+      {
+        "boundary_ms": 108.460835,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1329.684466,
+        "run_errors": 0,
+        "run_ms": 1660.447005,
+        "select_errors": 0,
+        "select_max_ms": 1329.335315,
+        "select_ms": 1329.392862,
+        "started_at_ms": 1790301133975.0078,
+        "stream": "incremental-986.jsonl"
+      }
+    ],
+    "measurement_end_ms": null,
+    "measurement_start_ms": null,
+    "phase": "warmup",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 8,
+      "rate": 1000,
+      "repeat": 3
+    },
+    "directory": "10-attempt10-predecessor",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 1021.927719,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2330.477378,
+        "run_errors": 0,
+        "run_ms": 3628.070675,
+        "select_errors": 0,
+        "select_max_ms": 2329.989487,
+        "select_ms": 2330.06073,
+        "started_at_ms": 1790301253393.8013,
+        "stream": "incremental-3339.jsonl"
+      },
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301294749.1445,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.3267,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.432,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.5347,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.516695,
+        "run_errors": 1,
+        "run_ms": 3011.877425,
+        "select_errors": 1,
+        "select_max_ms": 3002.223718,
+        "select_ms": 3002.223718,
+        "started_at_ms": 1790301291541.4785,
+        "stream": "incremental-5142.jsonl"
+      },
+      {
+        "boundary_ms": 680.944186,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.150253,
+        "run_errors": 0,
+        "run_ms": 2915.242621,
+        "select_errors": 0,
+        "select_max_ms": 2029.762398,
+        "select_ms": 2029.821899,
+        "started_at_ms": 1790301227600.333,
+        "stream": "incremental-2097.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301294749.1445,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.3267,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.432,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301294749.5347,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.516695,
+        "run_errors": 1,
+        "run_ms": 3011.877425,
+        "select_errors": 1,
+        "select_max_ms": 3002.223718,
+        "select_ms": 3002.223718,
+        "started_at_ms": 1790301291541.4785,
+        "stream": "incremental-5142.jsonl"
+      },
+      {
+        "boundary_ms": 1021.927719,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2330.477378,
+        "run_errors": 0,
+        "run_ms": 3628.070675,
+        "select_errors": 0,
+        "select_max_ms": 2329.989487,
+        "select_ms": 2330.06073,
+        "started_at_ms": 1790301253393.8013,
+        "stream": "incremental-3339.jsonl"
+      },
+      {
+        "boundary_ms": 680.944186,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2030.150253,
+        "run_errors": 0,
+        "run_ms": 2915.242621,
+        "select_errors": 0,
+        "select_max_ms": 2029.762398,
+        "select_ms": 2029.821899,
+        "started_at_ms": 1790301227600.333,
+        "stream": "incremental-2097.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301290013.126,
+    "measurement_start_ms": 1790301244732.2126,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 2
+    },
+    "directory": "11-attempt11-candidate",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 1671.106546,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.520761,
+        "run_errors": 0,
+        "run_ms": 4211.554356,
+        "select_errors": 0,
+        "select_max_ms": 2229.931822,
+        "select_ms": 2230.023714,
+        "started_at_ms": 1790301450488.2,
+        "stream": "incremental-7820.jsonl"
+      },
+      {
+        "boundary_ms": 1537.614733,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.497227,
+        "run_errors": 0,
+        "run_ms": 4046.329878,
+        "select_errors": 0,
+        "select_max_ms": 2229.865298,
+        "select_ms": 2229.960485,
+        "started_at_ms": 1790301430048.5442,
+        "stream": "incremental-6848.jsonl"
+      },
+      {
+        "boundary_ms": 1471.546253,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.394077,
+        "run_errors": 0,
+        "run_ms": 3986.227193,
+        "select_errors": 0,
+        "select_max_ms": 2229.870119,
+        "select_ms": 2229.949347,
+        "started_at_ms": 1790301425069.4675,
+        "stream": "incremental-6638.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301518442.8857,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301518443.0952,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301518443.217,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301518443.3306,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3036.126993,
+        "run_errors": 1,
+        "run_ms": 3041.879589,
+        "select_errors": 1,
+        "select_max_ms": 3035.816835,
+        "select_ms": 3035.816835,
+        "started_at_ms": 1790301515164.4517,
+        "stream": "incremental-11292.jsonl"
+      },
+      {
+        "boundary_ms": 665.49435,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2509.020235,
+        "run_errors": 0,
+        "run_ms": 3437.601093,
+        "select_errors": 0,
+        "select_max_ms": 2508.421267,
+        "select_ms": 2508.527686,
+        "started_at_ms": 1790301357771.7886,
+        "stream": "incremental-2608.jsonl"
+      },
+      {
+        "boundary_ms": 1671.106546,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2230.520761,
+        "run_errors": 0,
+        "run_ms": 4211.554356,
+        "select_errors": 0,
+        "select_max_ms": 2229.931822,
+        "select_ms": 2230.023714,
+        "started_at_ms": 1790301450488.2,
+        "stream": "incremental-7820.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301415414.472,
+    "measurement_start_ms": 1790301370136.7405,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 1000,
+      "repeat": 2
+    },
+    "directory": "11-attempt11-predecessor",
+    "failed_read_workers": 1,
+    "longest_apply": [
+      {
+        "boundary_ms": 804.271055,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.41234,
+        "run_errors": 0,
+        "run_ms": 3585.640571,
+        "select_errors": 0,
+        "select_max_ms": 2530.017974,
+        "select_ms": 2530.076433,
+        "started_at_ms": 1790301586034.5781,
+        "stream": "incremental-3086.jsonl"
+      },
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301700258.0845,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.2666,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.3723,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.4746,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.681428,
+        "run_errors": 1,
+        "run_ms": 3015.643338,
+        "select_errors": 1,
+        "select_max_ms": 3002.398059,
+        "select_ms": 3002.398059,
+        "started_at_ms": 1790301697025.2322,
+        "stream": "incremental-9471.jsonl"
+      },
+      {
+        "boundary_ms": 1529.538634,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 929.780423,
+        "run_errors": 0,
+        "run_ms": 2765.126539,
+        "select_errors": 0,
+        "select_max_ms": 929.222021,
+        "select_ms": 929.306288,
+        "started_at_ms": 1790301654563.0852,
+        "stream": "incremental-7075.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 0.0,
+        "exceptions": [
+          {
+            "at_ms": 1790301700258.0845,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "sqlite.SELECT",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.2666,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.journal",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.3723,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.plan",
+            "type": "OperationalError"
+          },
+          {
+            "at_ms": 1790301700258.4746,
+            "sqlite_errorcode": 5,
+            "sqlite_errorname": "SQLITE_BUSY",
+            "stack": [
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "run",
+                "line": 147
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "incremental_worker.py",
+                "function": "plan",
+                "line": 31
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "measured",
+                "line": 68
+              },
+              {
+                "file": "storage.py",
+                "function": "journal",
+                "line": 87
+              },
+              {
+                "file": "worker_profile.py",
+                "function": "execute",
+                "line": 121
+              }
+            ],
+            "stage": "apply.run",
+            "type": "OperationalError"
+          }
+        ],
+        "final": true,
+        "journal_ms": 3002.681428,
+        "run_errors": 1,
+        "run_ms": 3015.643338,
+        "select_errors": 1,
+        "select_max_ms": 3002.398059,
+        "select_ms": 3002.398059,
+        "started_at_ms": 1790301697025.2322,
+        "stream": "incremental-9471.jsonl"
+      },
+      {
+        "boundary_ms": 804.271055,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 2530.41234,
+        "run_errors": 0,
+        "run_ms": 3585.640571,
+        "select_errors": 0,
+        "select_max_ms": 2530.017974,
+        "select_ms": 2530.076433,
+        "started_at_ms": 1790301586034.5781,
+        "stream": "incremental-3086.jsonl"
+      },
+      {
+        "boundary_ms": 302.46225,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 1629.994171,
+        "run_errors": 0,
+        "run_ms": 2199.548628,
+        "select_errors": 0,
+        "select_max_ms": 1629.563899,
+        "select_ms": 1629.62342,
+        "started_at_ms": 1790301599617.316,
+        "stream": "incremental-3819.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301642191.1511,
+    "measurement_start_ms": 1790301596918.9219,
+    "phase": "drain",
+    "runtime_error": "incremental_batch_failed_requires_resync",
+    "stages_ms": null,
+    "status": "runtime_failed",
+    "within_5s_p95": null
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "12-attempt12-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 700.803028,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.849258,
+        "run_errors": 0,
+        "run_ms": 1036.613026,
+        "select_errors": 0,
+        "select_max_ms": 103.539831,
+        "select_ms": 103.585306,
+        "started_at_ms": 1790301784176.3274,
+        "stream": "incremental-3207.jsonl"
+      },
+      {
+        "boundary_ms": 700.899886,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 8.820485,
+        "run_errors": 0,
+        "run_ms": 965.823269,
+        "select_errors": 0,
+        "select_max_ms": 8.300646,
+        "select_ms": 8.368483,
+        "started_at_ms": 1790301782427.0933,
+        "stream": "incremental-3114.jsonl"
+      },
+      {
+        "boundary_ms": 681.084503,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.711185,
+        "run_errors": 0,
+        "run_ms": 916.279474,
+        "select_errors": 0,
+        "select_max_ms": 18.335495,
+        "select_ms": 18.390528,
+        "started_at_ms": 1790301780615.2283,
+        "stream": "incremental-3030.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 249.801487,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.871216,
+        "run_errors": 0,
+        "run_ms": 621.809904,
+        "select_errors": 0,
+        "select_max_ms": 128.592857,
+        "select_ms": 128.633643,
+        "started_at_ms": 1790301749553.1802,
+        "stream": "incremental-1467.jsonl"
+      },
+      {
+        "boundary_ms": 700.803028,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.849258,
+        "run_errors": 0,
+        "run_ms": 1036.613026,
+        "select_errors": 0,
+        "select_max_ms": 103.539831,
+        "select_ms": 103.585306,
+        "started_at_ms": 1790301784176.3274,
+        "stream": "incremental-3207.jsonl"
+      },
+      {
+        "boundary_ms": 580.842153,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.799151,
+        "run_errors": 0,
+        "run_ms": 828.846421,
+        "select_errors": 0,
+        "select_max_ms": 53.439922,
+        "select_ms": 53.498761,
+        "started_at_ms": 1790301771591.0703,
+        "stream": "incremental-2575.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301785855.5,
+    "measurement_start_ms": 1790301740639.3906,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 118,
+        "p50": 104,
+        "p95": 118,
+        "p99": 118
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 581.317,
+        "p50": 100.02,
+        "p95": 306.274,
+        "p99": 394.917
+      },
+      "commit_to_admission": {
+        "maximum": 2498.741,
+        "p50": 1385.406,
+        "p95": 2184.681,
+        "p99": 2364.168
+      },
+      "commit_to_publication": {
+        "maximum": 4140.835,
+        "p50": 2735.715,
+        "p95": 3701.861,
+        "p99": 3910.961
+      },
+      "prepared_to_publication": {
+        "maximum": 480,
+        "p50": 338,
+        "p95": 467,
+        "p99": 480
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1261,
+        "p50": 975,
+        "p95": 1182,
+        "p99": 1261
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 4,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "12-attempt12-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1248.001002,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 0.358739,
+        "run_errors": 0,
+        "run_ms": 1424.865231,
+        "select_errors": 0,
+        "select_max_ms": 0.067296,
+        "select_ms": 0.110527,
+        "started_at_ms": 1790301876075.3118,
+        "stream": "incremental-3386.jsonl"
+      },
+      {
+        "boundary_ms": 737.426172,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.957302,
+        "run_errors": 0,
+        "run_ms": 1086.143151,
+        "select_errors": 0,
+        "select_max_ms": 128.60803,
+        "select_ms": 128.65583,
+        "started_at_ms": 1790301874170.161,
+        "stream": "incremental-3282.jsonl"
+      },
+      {
+        "boundary_ms": 722.936183,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 8.536407,
+        "run_errors": 0,
+        "run_ms": 948.395644,
+        "select_errors": 0,
+        "select_max_ms": 8.241367,
+        "select_ms": 8.28601,
+        "started_at_ms": 1790301872390.4377,
+        "stream": "incremental-3190.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 318.350347,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.099095,
+        "run_errors": 0,
+        "run_ms": 722.479645,
+        "select_errors": 0,
+        "select_max_ms": 228.747509,
+        "select_ms": 228.792172,
+        "started_at_ms": 1790301844302.4583,
+        "stream": "incremental-1733.jsonl"
+      },
+      {
+        "boundary_ms": 264.001593,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.975322,
+        "run_errors": 0,
+        "run_ms": 580.16157,
+        "select_errors": 0,
+        "select_max_ms": 128.622375,
+        "select_ms": 128.675955,
+        "started_at_ms": 1790301837398.505,
+        "stream": "incremental-1379.jsonl"
+      },
+      {
+        "boundary_ms": 737.426172,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.957302,
+        "run_errors": 0,
+        "run_ms": 1086.143151,
+        "select_errors": 0,
+        "select_max_ms": 128.60803,
+        "select_ms": 128.65583,
+        "started_at_ms": 1790301874170.161,
+        "stream": "incremental-3282.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790301875585.1438,
+    "measurement_start_ms": 1790301830369.0127,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 133,
+        "p50": 101,
+        "p95": 117,
+        "p99": 133
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 588.708,
+        "p50": 104.181,
+        "p95": 303.074,
+        "p99": 397.938
+      },
+      "commit_to_admission": {
+        "maximum": 2622.651,
+        "p50": 1318.529,
+        "p95": 2145.971,
+        "p99": 2355.424
+      },
+      "commit_to_publication": {
+        "maximum": 4471.836,
+        "p50": 2668.95,
+        "p95": 3742.971,
+        "p99": 4110.787
+      },
+      "prepared_to_publication": {
+        "maximum": 405,
+        "p50": 302,
+        "p95": 374,
+        "p99": 405
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1659,
+        "p50": 980,
+        "p95": 1348,
+        "p99": 1659
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  }
+]

@@ -40,6 +40,26 @@ def affinity(groups,count):
     raise ValueError('requested CPUs exceed available topology')
 
 
+def cells(value):
+    """Explicit CPU:rate cells avoid accidentally expanding a matched matrix."""
+    result = []
+    for item in value.split(','):
+        try:
+            cpu, rate = map(int, item.split(':'))
+        except ValueError:
+            raise argparse.ArgumentTypeError('cells must be comma-separated CPU:rate pairs') from None
+        if min(cpu, rate) < 1 or (cpu, rate) in result:
+            raise argparse.ArgumentTypeError('cells must be positive and unique')
+        result.append((cpu, rate))
+    return result
+
+
+def trial_order(selected, repeats, seed):
+    result = [(repeat, rate, cpu) for repeat in range(1, repeats + 1) for cpu, rate in selected]
+    random.Random(seed).shuffle(result)
+    return result
+
+
 def accepted(entry):
     cleanup=entry.get('cleanup',{})
     clean=cleanup.get('remaining_descendants')==0 and cleanup.get('leaked_descendants')==0 and not cleanup.get('timed_out',True)
@@ -57,10 +77,10 @@ def main(args):
     fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     scratch=args.output/'scratch';scratch.mkdir(exist_ok=args.resume)
     release=args.release.resolve();package=json.loads((release/'release.json').read_text())
-    groups=topology();sets={n:affinity(groups,n) for n in args.cpus}
+    selected=args.cells if args.cells is not None else [(c,r) for r in args.rates for c in args.cpus]
+    groups=topology();sets={n:affinity(groups,n) for n in sorted({c for c,r in selected})}
     image=output('docker','image','inspect',args.image,'--format','{{.Id}}')
-    matrix=list(itertools.product(range(1,args.repeats+1),args.rates,args.cpus))
-    random.Random(args.seed).shuffle(matrix)
+    matrix=trial_order(selected,args.repeats,args.seed)
     manifest=dict(scope='local same-host CPU scaling; not EC2 emulation or release qualification',
         harness_revision=output('git','-C',str(ROOT),'rev-parse','HEAD'),
         harness_dirty=bool(output('git','-C',str(ROOT),'status','--porcelain')),
@@ -73,18 +93,18 @@ def main(args):
         cpu_quota='none; affinity restriction only',network='none; loopback within each container',
         filesystem=output('findmnt','--json','-T',str(scratch),'-o','SOURCE,FSTYPE,OPTIONS'),
         host_memory_before=Path('/proc/meminfo').read_text(),seed=args.seed,
-        workload=dict(profile=args.profile,rates=args.rates,seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=5,warmup_seconds=5),
+        workload=dict(profile=args.profile,cells=selected,rates=sorted({r for c,r in selected}),seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=5,warmup_seconds=5),
         order=[dict(repeat=r,rate=rate,cpus=cpus) for r,rate,cpus in matrix],started_at=time.time(),trials=[])
     # The full inventory is unchanged; keep source metadata but not thousands of
     # dependency hashes in each summary. release_identity binds that inventory.
     manifest['package_provenance']={k:v for k,v in (package.get('provenance') or {}).items() if k in ('platform_revision','platform_dirty','source_revision')}
+    manifest=json.loads(json.dumps(manifest))
     if args.resume:
         prior=json.loads((args.output/'matrix.json').read_text())
         if prior.get('completed_at'):raise ValueError('matrix is already complete')
-        for key in ('runtime_revision','release_identity','binary_sha256','image_id','cpu_siblings','memory_gib','seed','workload','order'):
+        for key in ('runtime_revision','release_identity','binary_sha256','image_id','cpu_siblings','affinity','binary_sha256','memory_gib','seed','workload','order'):
             if prior[key]!=manifest[key]:raise ValueError('resume changed '+key)
-        for name in ('trial.py','test_trial.py'):
-            if prior['harness_sha256'][name]!=manifest['harness_sha256'][name]:raise ValueError('resume changed trial code')
+        if prior['harness_sha256']!=manifest['harness_sha256']:raise ValueError('resume changed harness code')
         for entry,expected in zip(prior['trials'],manifest['order']):
             if any(entry[k]!=expected[k] for k in ('repeat','rate','cpus')):raise ValueError('completed trial order differs')
             if not accepted(entry):raise ValueError('cannot resume after a measurement or cleanup failure')
@@ -139,6 +159,7 @@ def main(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--cells',type=cells,help='explicit cells, e.g. 4:50,16:50,8:1000,16:1000; replaces CPU/rate product')
     p.add_argument('--profile',action='store_true',help='enable bounded diagnostic instrumentation')
     p.add_argument('--release',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--runtime-revision',required=True)

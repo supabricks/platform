@@ -97,3 +97,8 @@ remains beside its owning record in the existing evidence directories.
 - [R04 — Complete local workflow qualification and handoff](r04-local-release.md)
 - [UC08: qualify the complete installed local catalog product](uc08-release-qualification.md)
 - [UC09.8 — Installed governed release qualification](uc098-governed-release.md)
+
+## Synchronization performance
+
+- [SP00: reproducible comparisons and measured baseline](sp00-reproducible-comparisons.md)
+- [Measurement and long-run profiling contract](sync-performance-comparisons.md)
