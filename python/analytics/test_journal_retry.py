@@ -44,19 +44,38 @@ class JournalRetryTests(unittest.TestCase):
         self.assertEqual(self.config['_journal_read']['outcome'],'complete')
         self.spool.append(380,400,b'next')
     def test_persistent_lock_has_one_three_second_budget(self):
-        thread=self.lock(3.5);started=time.monotonic()
-        with self.assertRaises(storage.JournalBusyDeferred):storage.journal(self.config)
-        elapsed=time.monotonic()-started
-        self.assertGreater(elapsed,2.9);self.assertLess(elapsed,3.25)
+        with sqlite3.connect(self.spool.path) as db:
+            db.execute('BEGIN EXCLUSIVE');started=time.monotonic()
+            with self.assertRaises(storage.JournalBusyDeferred):storage.journal(self.config)
+            elapsed=time.monotonic()-started
+        # Shared CI scheduling may delay return; the virtual-clock test below
+        # checks the exact requested budget without relying on wall-clock jitter.
+        self.assertGreater(elapsed,2.9);self.assertLess(elapsed,5)
         self.assertLessEqual(self.config['_journal_read']['attempts'],32)
         self.assertEqual(self.config['_journal_read']['outcome'],'deferred')
-        thread.join();self.assertEqual(storage.journal(self.config)[2],300)
+        self.assertEqual(storage.journal(self.config)[2],300)
     def test_global_deadline_caps_sqlite_and_backoff(self):
-        thread=self.lock(.5)
-        self.config['deadline_ms']=int(time.time()*1000)+180
-        started=time.monotonic()
-        with self.assertRaises(storage.JournalBusyDeferred):storage.journal(self.config)
-        self.assertLess(time.monotonic()-started,.3);thread.join()
+        with sqlite3.connect(self.spool.path) as db:
+            db.execute('BEGIN EXCLUSIVE')
+            self.config['deadline_ms']=int(time.time()*1000)+180
+            started=time.monotonic()
+            with self.assertRaises(storage.JournalBusyDeferred):storage.journal(self.config)
+            self.assertLess(time.monotonic()-started,1)
+    def test_retry_and_backoff_never_reset_the_monotonic_budget(self):
+        for budget in (.18,3):
+            with self.subTest(budget=budget):
+                clock=[100.0];deadlines=[]
+                self.config['deadline_ms']=100000+budget*1000
+                def attempt(request,deadline):
+                    deadlines.append(deadline)
+                    clock[0]+=min(.1,max(0,deadline-clock[0]))
+                    raise sql_error(sqlite3.SQLITE_BUSY)
+                def backoff(delay):clock[0]+=delay
+                with patch.object(storage.time,'monotonic',side_effect=lambda:clock[0]),patch.object(storage.time,'time',return_value=100),patch.object(storage,'journal_attempt',attempt),patch.object(storage,'journal_backoff',backoff),self.assertRaises(storage.JournalBusyDeferred):
+                    storage.journal(self.config)
+                self.assertEqual(set(deadlines),{100+budget})
+                self.assertAlmostEqual(clock[0],100+budget)
+                self.assertLessEqual(len(deadlines),32)
     def test_only_recognized_busy_codes_are_retried(self):
         for code in (sqlite3.SQLITE_BUSY,261,517,773,sqlite3.SQLITE_LOCKED,sqlite3.SQLITE_IOERR,sqlite3.SQLITE_CORRUPT):
             with self.subTest(code=code),patch.object(storage,'journal_attempt',side_effect=[sql_error(code),('ok',)]) as attempt:
