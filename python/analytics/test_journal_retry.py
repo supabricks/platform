@@ -3,7 +3,6 @@ import copy
 from pathlib import Path
 import sqlite3
 import tempfile
-import threading
 import time
 import unittest
 from unittest.mock import patch
@@ -27,17 +26,14 @@ class JournalRetryTests(unittest.TestCase):
         self.config=dict(spool=str(self.spool.path),identity=self.spool.get('identity'),bootstrap_lsn='0/64',after_lsn='0/64',target_lsn='0/12C',deadline_ms=int(time.time()*1000)+60000)
     def tearDown(self):
         self.spool.close();self.temp.cleanup()
-    def lock(self,duration):
-        acquired=threading.Event()
-        def hold():
-            with sqlite3.connect(self.spool.path) as db:
-                db.execute('BEGIN EXCLUSIVE');acquired.set();time.sleep(duration)
-        thread=threading.Thread(target=hold);thread.start()
-        self.assertTrue(acquired.wait(2));self.addCleanup(thread.join)
-        return thread
     def test_short_writer_lock_reopens_read_snapshot(self):
-        thread=self.lock(.4)
-        result=storage.journal(self.config);thread.join()
+        with sqlite3.connect(self.spool.path) as db:
+            db.execute('BEGIN EXCLUSIVE')
+            def release(seconds):
+                # Release only after SQLite reported contention. A timed helper
+                # thread can release before a descheduled CI reader ever runs.
+                db.rollback();time.sleep(seconds)
+            with patch.object(storage,'journal_backoff',release):result=storage.journal(self.config)
         self.assertEqual(result,({},[(300,b'complete')],300,8))
         self.assertGreater(self.config['_journal_read']['busy'],0)
         self.assertGreater(self.config['_journal_read']['attempts'],1)
