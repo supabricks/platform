@@ -15,7 +15,22 @@ BUILD_NAMES = {'cargo', 'cargo-mutants', 'rustc', 'rustdoc', 'make', 'gmake', 'c
 def active_builds(previous, current):
     # A parked build parent does not make the host busy forever. New identities
     # and changing CPU/I/O counters do; PID reuse cannot inherit idle status.
-    return [key for key, value in current.items() if previous.get(key) != value]
+    return [key for key, value in current.items() if value.get('io_error') or previous.get(key) != value]
+
+
+def build_observation(path, name, fields):
+    try:
+        io = {k: int(v) for k, v in (line.split(': ') for line in (path / 'io').read_text().splitlines())}
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM):
+            raise
+        # A process can change access during exec. Unknown activity is never
+        # idle: retain it and block quiet admission until readable or gone.
+        return dict(tool=name if name in BUILD_NAMES else 'build-child',
+                    user_ticks=int(fields[11]), system_ticks=int(fields[12]),
+                    io=None, io_error='permission_denied')
+    return dict(tool=name if name in BUILD_NAMES else 'build-child',
+                user_ticks=int(fields[11]), system_ticks=int(fields[12]), io=io)
 
 
 def observe(root, previous):
@@ -40,11 +55,8 @@ def observe(root, previous):
     for pid in selected:
         path, name, fields = processes[pid]
         try:
-            io = dict(line.split(': ') for line in (path / 'io').read_text().splitlines())
             identity = f'{pid}:{fields[19]}'
-            builds[identity] = dict(tool=name if name in BUILD_NAMES else 'build-child',
-                                    user_ticks=int(fields[11]), system_ticks=int(fields[12]),
-                                    io={k: int(v) for k, v in io.items()})
+            builds[identity] = build_observation(path, name, fields)
         except OSError as error:
             if error.errno not in (errno.ENOENT, errno.ESRCH):
                 raise

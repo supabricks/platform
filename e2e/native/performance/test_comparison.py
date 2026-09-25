@@ -216,3 +216,22 @@ class ActivationTests(unittest.TestCase):
         with self.assertRaises(ValueError):validate_activation(arms,True,True)
         arms['candidate']['package']['runtime_revision']='changed'
         with self.assertRaises(ValueError):validate_activation(arms,True,False)
+
+
+class UnreadableBuildTests(unittest.TestCase):
+    def test_unreadable_io_never_becomes_quiet_and_readable_recovery_is_observed(self):
+        import errno
+        from host_monitor import build_observation
+        fields=['0']*20
+        with patch.object(Path,'read_text',side_effect=PermissionError(errno.EACCES,'denied')):
+            value=build_observation(Path('/proc/123'),'cargo',fields)
+        previous={'123:0':value}
+        self.assertEqual(value['io_error'],'permission_denied')
+        self.assertEqual(active_builds(previous,previous),['123:0'])
+        with patch.object(Path,'read_text',return_value='read_bytes: 12\nwrite_bytes: 0\n'):
+            recovered={'123:0':build_observation(Path('/proc/123'),'cargo',fields)}
+        self.assertEqual(active_builds(previous,recovered),['123:0'])
+        self.assertEqual(active_builds(recovered,recovered),[])
+        self.assertEqual(active_builds(previous,{}),[])
+        with patch.object(Path,'read_text',side_effect=OSError(errno.EIO,'broken')),self.assertRaises(OSError):
+            build_observation(Path('/proc/123'),'cargo',fields)
