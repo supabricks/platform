@@ -109,9 +109,40 @@ class IncrementalTests(unittest.TestCase):
             if point=='after_first_table':raise SystemExit(86)
         with patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):run(config)
         self.assertEqual(len(self.rows(self.first,42)),1);self.assertEqual(len(self.rows(self.first,43)),1)
-        run(config);result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        with patch('incremental_worker.journal',side_effect=AssertionError('saved plan must bypass journal')):run(config)
+        result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
         self.assertEqual([t['version'] for t in result['manifest']['tables']],[1,1,0])
         self.assertEqual(len(self.rows(result,42)),2);self.assertEqual(len(self.rows(result,43)),2)
+    def test_busy_preflight_precedes_initialization_and_compaction(self):
+        from incremental.storage import JournalBusyDeferred
+        config=self.config_next('0/12C')
+        config.update(storage_generation='compact',previous_generation=config['generation'],generation=str(self.root/'analytics/incremental/compact'))
+        with patch('incremental_worker.journal',side_effect=JournalBusyDeferred()),patch('incremental_worker.initialize') as initialize,self.assertRaises(JournalBusyDeferred):run(config)
+        initialize.assert_not_called()
+        self.assertFalse(Path(config['generation']).exists())
+        self.assertFalse((Path(config['workspace'])/'plan.json').exists())
+    def test_locked_worker_receipt_and_termination_leave_storage_untouched(self):
+        import sqlite3
+        config=self.config_next('0/12C')
+        config.update(attempt=1,storage_generation='compact',previous_generation=config['generation'],generation=str(self.root/'analytics/incremental/compact'))
+        path=Path(config['workspace'])/'config.json';path.write_bytes(canonical(config))
+        with sqlite3.connect(self.spool.path) as db:
+            db.execute('BEGIN EXCLUSIVE')
+            completed=subprocess.run([sys.executable,str(Path(__file__).with_name('incremental_worker.py')),str(path)],timeout=10)
+            self.assertEqual(completed.returncode,2)
+            result=path.with_name('result.json');receipt=json.loads(result.read_text())
+            self.assertEqual(receipt['state'],'deferred');self.assertEqual(receipt['attempt'],1)
+            self.assertEqual(receipt['identity'],config['identity']);self.assertEqual(receipt['journal_read']['outcome'],'deferred')
+            result.unlink()
+            child=subprocess.Popen([sys.executable,str(Path(__file__).with_name('incremental_worker.py')),str(path)])
+            try:
+                time.sleep(1);started=time.monotonic();child.terminate();child.wait(timeout=2)
+                self.assertLess(time.monotonic()-started,1)
+            finally:
+                if child.poll() is None:child.kill();child.wait()
+            self.assertFalse(result.exists())
+        self.assertFalse(Path(config['generation']).exists())
+        self.assertFalse((Path(config['workspace'])/'plan.json').exists())
     def test_cross_transaction_order_and_empty_table(self):
         self.spool.append(280,300,tx(280,300,change(b'I',42,new=[2,None,'inserted']),change(b'D',43,old=[1,None,None])))
         self.spool.append(380,400,tx(380,400,change(b'U',42,new=[3,None,UNCHANGED],old=[2,None,None]),change(b'D',42,old=[1,None,None])))

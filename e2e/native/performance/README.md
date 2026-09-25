@@ -244,3 +244,17 @@ A completed runner is not an automatic performance approval: document the result
 its limitations and a retain/revise/revert decision after each logical slice.
 See [the measurement contract](../../../docs/architecture/sync-performance-comparisons.md)
 for long-run profiling design and counter requirements.
+
+Profiler activation controls use `compare.py --activation-control --cells 4:50`.
+Both arms must identify the same immutable runtime and harness. The predecessor
+arm disables profiling; the candidate enables it. The default three balanced
+pairs retain the same quiet-host, complete-pair replacement, cleanup and evidence
+rules. These controls are labeled separately and never count as the mandatory
+12-pair predecessor/candidate experiment.
+
+SP01 adds bounded operational counters to exported `batches`: `attempts`,
+`journal_deferrals`, and `journal_reads` (at most three read receipts per batch).
+Each read records attempts, recognized busy errors, backoff milliseconds, total
+read milliseconds, and outcome. Backoff time excludes SQLite's own busy wait;
+read time includes both. Collection occurs after the measured workload. Older
+runtimes omit these fields; absence must not be interpreted as zero contention.

@@ -262,6 +262,9 @@ impl Store {
                         worker_generation: 0,
                         started_at_ms: None,
                         attempts: 0,
+                        journal_deferrals: 0,
+                        retry_at_ms: None,
+                        journal_reads: Vec::new(),
                     };
                     self.db.execute("INSERT INTO analytical_artifacts(id,project_id,branch_id,kind) VALUES (?1,?2,?3,'incremental')",params![r.id.to_string(),project.to_string(),r.branch_id.to_string()])?;
                     let order: i64 = self.db.query_row(
@@ -309,7 +312,90 @@ impl Store {
             }
         }
     }
+    pub(crate) fn record_journal_read(&self, r: &mut Run, v: &Value) -> Result<()> {
+        if v["journal_read"].is_null() {
+            return Ok(());
+        }
+        let read: crate::incremental::JournalRead =
+            serde_json::from_value(v["journal_read"].clone())?;
+        if r.journal_reads.len() >= 3
+            || read.attempts == 0
+            || read.attempts > 32
+            || read.busy > read.attempts
+            || read.wait_ms > read.elapsed_ms.saturating_add(32)
+            || !matches!(read.outcome.as_str(), "complete" | "deferred" | "failed")
+        {
+            return Err(invalid("invalid journal read accounting"));
+        }
+        r.journal_reads.push(read);
+        Ok(())
+    }
+    pub(crate) fn defer_incremental(&self, r: &mut Run, v: &Value, now: i64) -> Result<()> {
+        let c = self.incremental_live(r)?;
+        let plan = self
+            .root()
+            .join("analytics/apply-work")
+            .join(r.id.to_string())
+            .join("plan.json");
+        if r.state != "running"
+            || r.attempts == 0
+            || r.attempts > 3
+            || r.worker_generation != self.generation()
+            || v["worker_generation"] != json!(r.worker_generation)
+            || v["id"] != json!(r.id)
+            || v["attempt"] != json!(r.attempts)
+            || v["state"] != "deferred"
+            || v["error"] != "journal_read_busy_deferred"
+            || v["phase"] != "journal_before_initialize"
+            || v["identity"] != c.identity
+            || v["bootstrap_lsn"] != json!(c.bootstrap_lsn)
+            || v["after_lsn"] != r.after_lsn
+            || v["target_lsn"] != r.target_lsn
+            || plan.try_exists()?
+            || plan.is_symlink()
+            || v["journal_read"]["outcome"] != "deferred"
+            || v["journal_read"]["busy"].as_u64().is_none_or(|n| n == 0)
+        {
+            return Err(invalid("invalid pre-mutation journal deferral"));
+        }
+        self.record_journal_read(r, v)?;
+        r.journal_deferrals += 1;
+        // The same run/request keeps its original overall deadline and attempt
+        // budget. This receipt authorizes no Delta replay after a saved plan.
+        if r.attempts >= 3 || now >= r.deadline_ms {
+            return self.fail_incremental_inner(r, "journal_read_busy_exhausted", false, false);
+        }
+        r.state = "requested".into();
+        r.error = Some("journal_read_busy_deferred".into());
+        r.retry_at_ms = Some(now + 100);
+        self.save_incremental(r)
+    }
+    pub(crate) fn pause_deferred_incremental(&self, r: &mut Run) -> Result<bool> {
+        if r.retry_at_ms.is_none() || r.state != "requested" {
+            return Ok(false);
+        }
+        if let Some(id) = r.sync_run_id {
+            let parent = self.sync_run(r.project_id, id)?;
+            if self
+                .sync_policy(r.project_id, parent.policy_id)?
+                .pause_requested
+            {
+                self.fail_incremental_inner(r, "journal_read_paused_before_write", true, false)?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
     pub(crate) fn fail_incremental(&self, r: &mut Run, code: &str, cancel: bool) -> Result<()> {
+        self.fail_incremental_inner(r, code, cancel, true)
+    }
+    fn fail_incremental_inner(
+        &self,
+        r: &mut Run,
+        code: &str,
+        cancel: bool,
+        fence: bool,
+    ) -> Result<()> {
         self.db.execute_batch("SAVEPOINT incremental_fail")?;
         let result = (|| {
             r.state = if cancel { "cancelled" } else { "failed" }.into();
@@ -323,7 +409,7 @@ impl Store {
             // A partial table commit requires reconciliation under the SAME run;
             // abandoning that run fences the generation, preserving published maps.
             let mut c = self.capture(r.project_id, r.capture_id)?;
-            if matches!(c.desired.as_str(), "running" | "paused") {
+            if fence && matches!(c.desired.as_str(), "running" | "paused") {
                 c.desired = "fenced".into();
                 c.state = "resync_required".into();
                 c.error = Some(code.into());

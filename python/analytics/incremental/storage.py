@@ -1,4 +1,5 @@
 """Versioned Delta roots, sealed epoch inventories, and bounded journal reads."""
+import copy
 import hashlib
 import json
 import os
@@ -77,14 +78,74 @@ def durable(root,sealed=frozenset()):
             finally:os.close(fd)
 
 
+JOURNAL_READ_SECONDS=3.0
+JOURNAL_BUSY_SECONDS=0.1
+JOURNAL_MAX_ATTEMPTS=32
+BUSY_CODES=frozenset((sqlite3.SQLITE_BUSY, 261, 517, 773))
+
+
+class JournalBusyDeferred(CaptureError):
+    """Only raised by the read-only pre-initialization boundary."""
+    def __init__(self):super().__init__('journal_read_busy_deferred')
+
+
+def journal_backoff(seconds):
+    time.sleep(seconds)
+
+
 def journal(config):
+    # Freeze the request once. A retry must not follow a newer target or identity.
+    request=copy.deepcopy({k:config[k] for k in ('spool','identity','bootstrap_lsn','after_lsn','target_lsn')})
+    started=time.monotonic()
+    remaining=(config['deadline_ms']-time.time()*1000)/1000
+    if remaining<=0:raise CaptureError('apply_deadline')
+    deadline=started+min(JOURNAL_READ_SECONDS,remaining)
+    stats=dict(attempts=0,busy=0,wait_ms=0,elapsed_ms=0,outcome='reading')
+    config['_journal_read']=stats
+    try:
+        while True:
+            if stats['busy'] and time.monotonic()>=deadline:
+                stats['outcome']='deferred'
+                raise JournalBusyDeferred()
+            stats['attempts']+=1
+            try:
+                result=journal_attempt(request,deadline)
+                stats['outcome']='complete'
+                return result
+            except sqlite3.OperationalError as error:
+                # LOCKED, I/O errors and corruption are not busy retries.
+                if getattr(error,'sqlite_errorcode',None) not in BUSY_CODES:raise
+                stats['busy']+=1
+                remaining=deadline-time.monotonic()
+                if remaining<=0 or stats['attempts']>=JOURNAL_MAX_ATTEMPTS:
+                    stats['outcome']='deferred'
+                    raise JournalBusyDeferred() from None
+                delay=min(.01*2**min(stats['busy']-1,4),.1,remaining)
+                before=time.monotonic()
+                journal_backoff(delay)
+                stats['wait_ms']+=round((time.monotonic()-before)*1000)
+                if time.monotonic()>=deadline:
+                    stats['outcome']='deferred'
+                    raise JournalBusyDeferred() from None
+    finally:
+        stats['elapsed_ms']=round((time.monotonic()-started)*1000)
+        if stats['outcome']=='reading':stats['outcome']='failed'
+
+
+def journal_attempt(config,deadline):
     path=Path(config['spool'])
     if path.is_symlink() or path.stat().st_size>512*1024*1024:raise CaptureError('spool_budget')
-    db=sqlite3.connect(f'file:{path}?mode=ro',uri=True,timeout=3)
+    db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
+    def execute(sql,parameters=()):
+        remaining=deadline-time.monotonic()
+        if remaining<=0:raise CaptureError('journal_read_deadline')
+        db.execute('PRAGMA busy_timeout='+str(int(min(JOURNAL_BUSY_SECONDS,remaining)*1000)))
+        return db.execute(sql,parameters)
+    db.set_progress_handler(lambda:int(time.monotonic()>=deadline),1000)
     try:
-        db.execute('BEGIN')
+        execute('BEGIN')
         meta={}
-        for k,v,size in db.execute('SELECT key,CASE WHEN length(value)<=2097152 THEN value ELSE NULL END,length(value) FROM metadata LIMIT 33'):
+        for k,v,size in execute('SELECT key,CASE WHEN length(value)<=2097152 THEN value ELSE NULL END,length(value) FROM metadata LIMIT 33'):
             if len(meta)>=32 or size>2097152:raise CaptureError('spool_metadata_budget')
             meta[k]=json.loads(v)
         if meta['identity']!=config['identity'] or meta['bootstrap']['lsn']!=config['bootstrap_lsn']:raise CaptureError('spool_identity_mismatch')
@@ -92,7 +153,7 @@ def journal(config):
         prefix=checked_prefix(meta.get('pruned_prefix'),meta['identity'],meta['start'],meta['captured'])
         if meta['captured']<target or prefix['lsn']>after:raise CaptureError('source_history_lost')
         result=[];used=0;previous=None;end=after
-        cursor=db.execute('SELECT end_lsn,previous_lsn,commit_lsn,length(payload),CASE WHEN length(payload)<=4194304 THEN payload ELSE NULL END,sha256 FROM transactions WHERE end_lsn>? AND end_lsn<=? ORDER BY seq',(f'{after:016x}',f'{target:016x}'))
+        cursor=execute('SELECT end_lsn,previous_lsn,commit_lsn,length(payload),CASE WHEN length(payload)<=4194304 THEN payload ELSE NULL END,sha256 FROM transactions WHERE end_lsn>? AND end_lsn<=? ORDER BY seq',(f'{after:016x}',f'{target:016x}'))
         for cut,prior,commit,size,payload,checksum in cursor:
             cut,prior,commit=int(cut,16),int(prior,16),int(commit,16)
             if size>MAX_TRANSACTION or len(payload)!=size or hashlib.sha256(payload).hexdigest()!=checksum:raise CaptureError('spool_corrupt')
@@ -100,8 +161,16 @@ def journal(config):
             if used+size>MAX_BATCH:break
             used+=size;result.append((cut,payload));previous=end=cut
         if not result and target>after:raise CaptureError('spool_history_gap')
+        if time.monotonic()>=deadline:raise CaptureError('journal_read_deadline')
         return meta['schema'],result,end,used
-    finally:db.close()
+    except sqlite3.OperationalError as error:
+        if getattr(error,'sqlite_errorcode',None)==sqlite3.SQLITE_INTERRUPT and time.monotonic()>=deadline:
+            raise CaptureError('journal_read_deadline') from None
+        raise
+    finally:
+        # Close rolls back the read transaction, including failures while fetching
+        # payload rows. Never retain a cursor or partial result across attempts.
+        db.close()
 
 
 def initialize(config):

@@ -199,3 +199,20 @@ class Comparisons(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class ActivationTests(unittest.TestCase):
+    def test_controls_require_same_package_and_harness_and_change_only_profile(self):
+        from compare import validate_activation, expected
+        import copy
+        arm=dict(package={'runtime_revision':'a'},harness_identity={'revision':'b'})
+        arms={'predecessor':copy.deepcopy(arm),'candidate':copy.deepcopy(arm)}
+        validate_activation(arms,True,False)
+        config=dict(arms=arms,activation_control=True,image_id='image',affinity={'4':[0,1,2,3]},memory_gib=16,parameters=dict(profile=True,seconds=45))
+        pair=dict(cpus=4,rate=50)
+        a=expected(config,'predecessor',pair);b=expected(config,'candidate',pair)
+        self.assertFalse(a['parameters']['profile']);self.assertTrue(b['parameters']['profile'])
+        a['parameters']['profile']=True;self.assertEqual(a,b)
+        with self.assertRaises(ValueError):validate_activation(arms,True,True)
+        arms['candidate']['package']['runtime_revision']='changed'
+        with self.assertRaises(ValueError):validate_activation(arms,True,False)

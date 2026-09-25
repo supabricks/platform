@@ -118,7 +118,7 @@ class Profile:
             batches=[json.loads(r[0]) for r in db.execute('SELECT record FROM incremental_runs')]
             publications=[dict(ordinal=o,state=s,requested_at_ms=q,published_at_ms=p,descriptor=json.loads(d) if d else None) for o,s,q,p,d in db.execute('SELECT ordinal,state,requested_at_ms,published_at_ms,descriptor FROM publications')]
         # Export only numeric timing/cursor/work metrics, not source or connection metadata.
-        batches=[{k:v for k,v in b.items() if k in ('id','state','created_at_ms','started_at_ms','finished_at_ms','deadline_ms','target_lsn','after_lsn','applied_lsn','error')} for b in batches]
+        batches=[{k:v for k,v in b.items() if k in ('id','state','created_at_ms','started_at_ms','finished_at_ms','deadline_ms','target_lsn','after_lsn','applied_lsn','error','attempts','journal_deferrals','journal_reads')} for b in batches]
         for p in publications:
             d=p.pop('descriptor') or {};m=d.get('manifest',{})
             p.update(export_id=d.get('export_id'),prepared_at_ms=d.get('prepared_at_ms'),input_bytes=m.get('input_bytes'),apply_metrics=m.get('apply_metrics'),generation_bytes=m.get('generation_bytes'),retained_bytes=m.get('retained_bytes'),file_count=len(m.get('files',[])),table_count=len(m.get('tables',[])))

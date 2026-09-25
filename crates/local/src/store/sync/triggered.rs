@@ -159,8 +159,18 @@ impl Store {
                     }
                     self.save_sync_run(&r)?;
                 } else if matches!(a.state.as_str(), "failed" | "cancelled") {
-                    self.fail_sync_run(r.id, "incremental_batch_failed_requires_resync", now)?;
-                    continue;
+                    if a.error.as_deref() == Some("journal_read_paused_before_write") {
+                        r.apply_id = None;
+                        self.save_sync_run(&r)?;
+                    } else {
+                        let reason = if a.error.as_deref() == Some("journal_read_busy_exhausted") {
+                            "journal_read_busy_exhausted"
+                        } else {
+                            "incremental_batch_failed_requires_resync"
+                        };
+                        self.fail_sync_run(r.id, reason, now)?;
+                        continue;
+                    }
                 }
             }
             let mut p = self.sync_policy(r.project_id, r.policy_id)?;

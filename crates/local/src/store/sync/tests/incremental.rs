@@ -451,3 +451,95 @@ fn compaction_admission_is_durable_and_old_roots_wait_for_explicit_unpinned_gc()
     let third = apply(&mut s, &c, "reuse");
     assert_eq!(third.storage_generation, next.storage_generation);
 }
+
+pub(super) fn deferred_receipt(
+    s: &Store,
+    c: &crate::capture::Capture,
+    r: &mut Apply,
+    attempt: u32,
+) -> serde_json::Value {
+    r.state = "running".into();
+    r.worker_generation = s.generation();
+    r.attempts = attempt;
+    r.retry_at_ms = None;
+    s.save_incremental(r).unwrap();
+    json!({"id":r.id,"worker_generation":r.worker_generation,"attempt":attempt,
+        "state":"deferred","error":"journal_read_busy_deferred","phase":"journal_before_initialize",
+        "identity":c.identity,"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,
+        "journal_read":{"attempts":17,"busy":17,"wait_ms":1400,"elapsed_ms":3000,"outcome":"deferred"}})
+}
+
+#[test]
+fn journal_deferral_preserves_prefix_and_exhausts_across_reopen_without_resync() {
+    let (dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut first = apply(&mut s, &c, "first");
+    prepare(&mut s, &c, &mut first, 0);
+    finish(&mut s, &first);
+    let old = head(&s, &c);
+    let mut r = apply(&mut s, &c, "next");
+    let request = (
+        r.id,
+        r.after_lsn.clone(),
+        r.target_lsn.clone(),
+        r.deadline_ms,
+    );
+    for attempt in 1..=3 {
+        let receipt = deferred_receipt(&s, &c, &mut r, attempt);
+        s.defer_incremental(&mut r, &receipt, super::super::super::now_ms().unwrap())
+            .unwrap();
+        assert_eq!(head(&s, &c), old);
+        assert_eq!(s.capture(p, c.id).unwrap().state, "capturing");
+        assert_eq!(r.journal_deferrals, attempt);
+        assert_eq!(r.journal_reads.len(), attempt as usize);
+        assert!(s.defer_incremental(&mut r, &receipt, 0).is_err());
+        drop(s);
+        s = Store::open(dir.path()).unwrap();
+        r = s.incremental_run(p, r.id).unwrap();
+        assert_eq!(
+            (
+                r.id,
+                r.after_lsn.clone(),
+                r.target_lsn.clone(),
+                r.deadline_ms
+            ),
+            request
+        );
+        assert_eq!(r.state, if attempt < 3 { "requested" } else { "failed" });
+    }
+    assert_eq!(r.error.as_deref(), Some("journal_read_busy_exhausted"));
+    assert_eq!(s.publication(r.id).unwrap().state, "failed");
+    // A new explicitly requested run can use the same durable capture prefix.
+    let next = apply(&mut s, &c, "manual-retry");
+    assert_eq!(next.after_lsn, r.after_lsn);
+}
+
+#[test]
+fn journal_deferral_rejects_changed_identity_stale_attempt_and_saved_plan() {
+    let (_dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut r = apply(&mut s, &c, "first");
+    let receipt = deferred_receipt(&s, &c, &mut r, 1);
+    for key in [
+        "id",
+        "worker_generation",
+        "attempt",
+        "identity",
+        "bootstrap_lsn",
+        "after_lsn",
+        "target_lsn",
+        "phase",
+    ] {
+        let mut invalid = receipt.clone();
+        invalid[key] = json!("changed");
+        assert!(s.defer_incremental(&mut r, &invalid, 0).is_err(), "{key}");
+        assert_eq!(r.journal_deferrals, 0);
+    }
+    let work = s.root().join("analytics/apply-work").join(r.id.to_string());
+    fs::create_dir_all(&work).unwrap();
+    fs::write(work.join("plan.json"), "{}").unwrap();
+    assert!(s.defer_incremental(&mut r, &receipt, 0).is_err());
+    s.fail_incremental(&mut r, "uncertain_mutation", false)
+        .unwrap();
+    assert_eq!(s.capture(p, c.id).unwrap().state, "resync_required");
+}

@@ -70,6 +70,8 @@ def profile_metrics(profile, trial):
                   counter_capabilities=dict(capture_groups='existing one-transaction append / COMMIT counters',
                                             checkpoints='not separately instrumented in predecessor',
                                             journal_retries='not implemented in predecessor'))
+    if any('journal_reads' in batch for batch in profile.get('batches', [])):
+        result['counter_capabilities']['journal_retries']='bounded operational counters in batches.journal_reads; all worker attempts retained'
     if start is None or end is None:
         return result
     tx = commits = ns = syncs = duration = 0
