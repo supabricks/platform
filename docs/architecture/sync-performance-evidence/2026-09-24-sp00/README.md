@@ -2,8 +2,12 @@
 
 The mandatory experiment contains **12 predecessor + 12 candidate trials**, all
 accepted without environmental replacement. Runtime failures remain outcomes.
-The separate low-load follow-up is being collected under the predeclared
-[follow-up decision](followup-declaration.json); no original result is replaced.
+The separate [low-load follow-up](low-load-followup/comparison.json) contains six
+additional completed trials under the predeclared [decision](followup-declaration.json).
+All six pass, but no original result is replaced. The [combined analysis](low-load-combined.json)
+retains the original freshness miss; [combined_low_load.py](combined_low_load.py)
+reproduces it. See the [human report](../../sp00-reproducible-comparisons.md) and
+[contribution decision](decision.json).
 
 - [Experiment and immutable identities](experiment.json)
 - [Machine-readable comparisons](comparison.json), [compact table](comparison.md)

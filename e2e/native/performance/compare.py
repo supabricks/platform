@@ -136,13 +136,13 @@ def comparison_report(root, record):
     save(root/'comparison.json', report)
     lines = ['# Paired synchronization comparison', '', record['config']['hypothesis'], '',
              'Trial medians and ranges; failed trials have no complete latency. Individual pairs and all metrics are in comparison.json.', '',
-             '| CPUs | Offered rows/s | Predecessor complete | Candidate complete | Predecessor p95 median (ms) | Candidate p95 median (ms) |',
+             '| CPUs | Offered rows/s | Predecessor complete / fresh | Candidate complete / fresh | Predecessor p95 median (ms) | Candidate p95 median (ms) |',
              '| --- | --- | --- | --- | --- | --- |']
     for group in report['groups']:
         a, b = group['predecessor'], group['candidate']
         def show(x):
             return 'Unavailable' if x is None else f'{x:.3f}'
-        lines.append(f"| {group['cpus']} | {group['rate']} | {a['measured']}/{a['trials']} | {b['measured']}/{b['trials']} | {show(a['metrics']['lag_p95_ms']['median'])} | {show(b['metrics']['lag_p95_ms']['median'])} |")
+        lines.append(f"| {group['cpus']} | {group['rate']} | {a['measured']}/{a['trials']} · {a['freshness_passes']}/{a['trials']} | {b['measured']}/{b['trials']} · {b['freshness_passes']}/{b['trials']} | {show(a['metrics']['lag_p95_ms']['median'])} | {show(b['metrics']['lag_p95_ms']['median'])} |")
     (root/'comparison.md').write_text('\n'.join(lines)+'\n')
     return report
 

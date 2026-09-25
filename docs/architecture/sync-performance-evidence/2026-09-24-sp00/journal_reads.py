@@ -37,5 +37,6 @@ for pair in record['pairs']:
             stages_ms=trial.get('stages_ms'),measurement_start_ms=trial.get('measurement_start_ms'),
             measurement_end_ms=trial.get('measurement_end_ms'),
             longest_reads=sorted(workers,key=lambda r:r['select_ms'],reverse=True)[:3],
+            longest_apply=sorted(workers,key=lambda r:r['run_ms'],reverse=True)[:3],
             failed_read_workers=sum(r['select_errors']>0 for r in workers)))
 print(json.dumps(result,indent=2,sort_keys=True))

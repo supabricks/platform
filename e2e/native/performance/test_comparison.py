@@ -118,6 +118,9 @@ class Comparisons(unittest.TestCase):
         row=dict(index=0,pair=config['order'][0],results=dict(candidate={},predecessor={}))
         prior['pairs']=[row,row]
         with self.assertRaisesRegex(ValueError,'duplicate'):validate_resume(prior,config)
+        prior['pairs']=[copy.deepcopy(row)]
+        prior['pairs'][0]['pair']=dict(config['order'][0],repeat=2)
+        with self.assertRaisesRegex(ValueError,'pair identity'):validate_resume(prior,config)
 
     def test_archive_round_trip_redacts_paths_and_checks_artifacts(self):
         from archive_comparison import archive

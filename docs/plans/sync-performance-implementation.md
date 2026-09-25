@@ -4,9 +4,11 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **planned**, 2026-09-24. This plan turns the completed workflow profile
-into separately measured implementation slices. No slice below is delivered by
-this document. The existing SY00–SY08 correctness contract and qualified release
+Status: **SP00 implemented and measured; SP01–SP12 planned**, 2026-09-24.
+[SP00 report](../architecture/sp00-reproducible-comparisons.md) and
+[PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
+and six follow-up trials; decision: keep for reliability/enabling, no runtime
+speedup. This plan turns the workflow profile into separately measured slices. The existing SY00–SY08 correctness contract and qualified release
 envelope remain authoritative until a new exact release passes qualification.
 
 ## Objective and scope
@@ -218,7 +220,7 @@ Maintain a contribution ledger in the performance architecture report:
 
 | Slice | One changed mechanism | Predecessor / candidate | Targeted-stage delta | Complete pipeline delta / failures | Resource cost | Decision / evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| SP00 | Measurement reproducibility | To record | To measure | To measure | To measure | Planned |
+| SP00 | Measurement reproducibility | `bc03909` / `f0a93ed`, same diagnostic package | Capture remains ~30 transactions/s, four syncs/commit | Mandatory low-load complete 6/6 per arm, fresh 6/6 predecessor and 5/6 candidate; overload complete 0/6 per arm; six additional low-load trials all pass | Mandatory low-load CPU −2.01% / +0.72%; peak memory +0.13% / −1.19% | [Keep — reliability/enabling; no speedup](../architecture/sp00-reproducible-comparisons.md) |
 
 No cumulative result may omit rejected attempts or credit all gains to the last
 change. No runtime slice is complete until its report and ledger row exist.
@@ -256,6 +258,10 @@ to shipping a new dependency. A skipped optional slice needs a recorded rational
 an implemented sub-slice always needs its own measurements.
 
 ### SP00 — Reproducible baseline and comparison runner
+
+Implemented and measured in [PR #95](https://github.com/supabricks/platform/pull/95);
+[report, unexpected-tail investigation and evidence](../architecture/sp00-reproducible-comparisons.md).
+Decision: keep for reliability/enabling. No runtime performance target is qualified.
 
 Primary code: `e2e/native/performance/{matrix,trial,profile_trial,summarize}.py`,
 `worker_profile.py`, `profile_package.py`, and archived orchestration/analysis.

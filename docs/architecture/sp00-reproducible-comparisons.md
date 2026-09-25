@@ -4,8 +4,9 @@ The supported paired runner reproduced the original runtime's main limitations
 across **24 mandatory trials**. Both harnesses completed all six low-load trials
 correctly and failed all six overload trials. One candidate low-load trial missed
 the five-second freshness target. Its profile identifies a 2.43-second successful
-journal read; a predeclared six-trial follow-up is in progress before the final
-SP00 decision. No runtime optimization or throughput improvement is claimed.
+journal read; a predeclared six-trial follow-up passed all correctness, input and freshness
+checks. **Keep — reliability/enabling:** SP00 supplies reproducible comparisons,
+not a runtime optimization or throughput improvement.
 
 [Raw evidence and reproduction](sync-performance-evidence/2026-09-24-sp00/README.md) ·
 [Measurement contract](sync-performance-comparisons.md) ·
@@ -87,7 +88,7 @@ paired predecessor for attribution rather than crediting drift as improvement.
 In candidate 16-CPU repeat 2, p95 is 5,365.567 ms and p99 is 6,269.273 ms. Worker
 `incremental-4173` spends 2,430.136 ms in SQLite SELECT and 2,430.484 ms in journal
 reading, extending its apply run to 3,367.416 ms. It succeeds before the existing
-three-second busy timeout. Later workers scan larger accumulated batches. Capture
+three-second busy timeout. The following workers spend about 1.08–1.11 seconds in directory boundary checks. Capture
 COMMIT cost remains near its low-load baseline and the cgroup is not throttled.
 
 This is an existing reader/writer contention mechanism, now observed as a
@@ -97,6 +98,43 @@ Bounded retries alone will not remove this tail. The original result stays in
 the mandatory matrix; the follow-up repeats the unchanged 16:50 cell three times
 per arm with the original order balance reversed. It is additional diagnostic
 evidence, not a replacement acceptance matrix.
+
+## Retained follow-up and combined result
+
+The [additional block](sync-performance-evidence/2026-09-24-sp00/low-load-followup/comparison.json)
+completed all six trials with correctness, input rate and freshness passing. It
+took 13.99 minutes including another initial quiet wait, with no replacements or
+cleanup failures. Combined with the original 16:50 cell, each arm ran first in
+three pairs and second in three pairs.
+
+The [combined six-pair analysis](sync-performance-evidence/2026-09-24-sp00/low-load-combined.json)
+retains every original outcome:
+
+| 16 CPUs / 50 rows/s, six trials per arm | Predecessor | Candidate |
+| --- | --- | --- |
+| Correct completion / input target | 6/6 · 6/6 | 6/6 · 6/6 |
+| Five-second p95 freshness | 6/6 | 5/6 |
+| P95 trial median [range], seconds | 3.659 [3.621, 4.076] | 3.836 [3.709, 5.366] |
+| P99 trial median [range], seconds | 3.850 [3.824, 4.639] | 4.302 [3.894, 6.269] |
+| Median average CPU cores | 1.249 | 1.241 |
+
+Combined p95 is +4.84% and p99 +11.76%. The p99 change exceeds the plan's 10%
+investigation threshold. Inspection identifies longer apply preparation and
+admission tails: candidate workers in original repeat 1 and follow-up repeats
+1/3 spend 1.16–1.20 seconds in the existing directory boundary checks. The final
+follow-up predecessor also reproduces that mechanism (1.15-second boundary,
+1.44-second apply run, p99 4.64 seconds). The separate 2.43-second journal read
+explains the original freshness miss. These profiles connect the tails to the
+unchanged mechanisms tracked in [#91](https://github.com/supabricks/platform/issues/91)
+and [#96](https://github.com/supabricks/platform/issues/96); they do not establish
+statistical latency equivalence or prove why a particular fixture gets a larger
+batch. The fresh comparisons and individual pairs remain available for the next
+slice, with no timing improvement credited to SP00.
+
+Median CPU and peak memory across these six pairs change by −0.64% and −1.81%.
+The additional block does not erase the original freshness miss or establish a
+reliable five-second product guarantee. Original and follow-up blocks are named
+separately; only the original block is the mandatory four-cell protocol.
 
 ## Host, evidence and validation
 
@@ -124,5 +162,16 @@ activation controls before later optimizations can be credited.
 
 ## Contribution decision
 
-Pending the retained low-load follow-up. The intended contribution is enabling:
-reproducible paired evidence and stricter accounting, with no runtime speedup.
+**Keep — reliability/enabling.** The 24-trial mandatory comparison and six-trial
+investigation are retained, and the unexpected freshness/tail results have
+identified existing journal and directory-scan contributors. All 30 teardown
+receipts are clean. No runtime speedup or latency equivalence is claimed.
+
+| Slice | Changed mechanism | Measured contribution | Remaining constraint | Decision |
+| --- | --- | --- | --- | --- |
+| SP00 | Reproducible paired orchestration and accounting | Frozen identities, quiet-host receipts, explicit failure/input denominators, raw evidence and validated export; 30 retained trials | Overload fails 6/6 per arm; original low-load freshness miss remains; capture ~30 transactions/s and source input below 1,000 rows/s | Keep — reliability/enabling |
+
+SP01 can now measure bounded journal-read recovery against this frozen baseline.
+It must retain the freshness tail and distinguish reliability gains from throughput
+or latency gains. SP02/SP03 address durable capture and reader/writer coexistence;
+the directory-scan and source-capacity work remain separate measured slices.

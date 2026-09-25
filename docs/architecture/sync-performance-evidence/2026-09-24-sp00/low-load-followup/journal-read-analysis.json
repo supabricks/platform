@@ -1,0 +1,818 @@
+[
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "01-attempt01-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 719.986,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.995258,
+        "run_errors": 0,
+        "run_ms": 1057.605137,
+        "select_errors": 0,
+        "select_max_ms": 178.641448,
+        "select_ms": 178.696511,
+        "started_at_ms": 1790302421519.1182,
+        "stream": "incremental-4695.jsonl"
+      },
+      {
+        "boundary_ms": 560.482323,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.066113,
+        "run_errors": 0,
+        "run_ms": 1040.226283,
+        "select_errors": 0,
+        "select_max_ms": 228.717132,
+        "select_ms": 228.765132,
+        "started_at_ms": 1790302406979.4531,
+        "stream": "incremental-3651.jsonl"
+      },
+      {
+        "boundary_ms": 677.081605,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.656704,
+        "run_errors": 0,
+        "run_ms": 957.361279,
+        "select_errors": 0,
+        "select_max_ms": 18.320357,
+        "select_ms": 18.363598,
+        "started_at_ms": 1790302419726.8733,
+        "stream": "incremental-4561.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 560.482323,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.066113,
+        "run_errors": 0,
+        "run_ms": 1040.226283,
+        "select_errors": 0,
+        "select_max_ms": 228.717132,
+        "select_ms": 228.765132,
+        "started_at_ms": 1790302406979.4531,
+        "stream": "incremental-3651.jsonl"
+      },
+      {
+        "boundary_ms": 719.986,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.995258,
+        "run_errors": 0,
+        "run_ms": 1057.605137,
+        "select_errors": 0,
+        "select_max_ms": 178.641448,
+        "select_ms": 178.696511,
+        "started_at_ms": 1790302421519.1182,
+        "stream": "incremental-4695.jsonl"
+      },
+      {
+        "boundary_ms": 269.068858,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.947359,
+        "run_errors": 0,
+        "run_ms": 619.348352,
+        "select_errors": 0,
+        "select_max_ms": 128.608687,
+        "select_ms": 128.667166,
+        "started_at_ms": 1790302383282.9136,
+        "stream": "incremental-1899.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302422239.0608,
+    "measurement_start_ms": 1790302377021.6301,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 188,
+        "p50": 96,
+        "p95": 118,
+        "p99": 188
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 443.304,
+        "p50": 95.265,
+        "p95": 271.391,
+        "p99": 389.559
+      },
+      "commit_to_admission": {
+        "maximum": 2544.023,
+        "p50": 1398.937,
+        "p95": 2235.868,
+        "p99": 2422.498
+      },
+      "commit_to_publication": {
+        "maximum": 4146.225,
+        "p50": 2789.177,
+        "p95": 3783.611,
+        "p99": 3992.246
+      },
+      "prepared_to_publication": {
+        "maximum": 432,
+        "p50": 321,
+        "p95": 428,
+        "p99": 432
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1333,
+        "p50": 993,
+        "p95": 1273,
+        "p99": 1333
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 2
+    },
+    "directory": "01-attempt01-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 622.681989,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 104.084652,
+        "run_errors": 0,
+        "run_ms": 961.00582,
+        "select_errors": 0,
+        "select_max_ms": 103.563219,
+        "select_ms": 103.634923,
+        "started_at_ms": 1790302324466.7598,
+        "stream": "incremental-4430.jsonl"
+      },
+      {
+        "boundary_ms": 723.978758,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 8.567502,
+        "run_errors": 0,
+        "run_ms": 951.749419,
+        "select_errors": 0,
+        "select_max_ms": 8.245191,
+        "select_ms": 8.291828,
+        "started_at_ms": 1790302329808.921,
+        "stream": "incremental-4836.jsonl"
+      },
+      {
+        "boundary_ms": 754.999249,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 0.35378,
+        "run_errors": 0,
+        "run_ms": 918.526687,
+        "select_errors": 0,
+        "select_max_ms": 0.076122,
+        "select_ms": 0.111689,
+        "started_at_ms": 1790302333051.2336,
+        "stream": "incremental-5105.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 244.51282,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.28249,
+        "run_errors": 0,
+        "run_ms": 648.022373,
+        "select_errors": 0,
+        "select_max_ms": 228.746721,
+        "select_ms": 228.827402,
+        "started_at_ms": 1790302294592.4846,
+        "stream": "incremental-2139.jsonl"
+      },
+      {
+        "boundary_ms": 76.953377,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.844654,
+        "run_errors": 0,
+        "run_ms": 360.577883,
+        "select_errors": 0,
+        "select_max_ms": 128.597202,
+        "select_ms": 128.63908,
+        "started_at_ms": 1790302283280.9915,
+        "stream": "incremental-1218.jsonl"
+      },
+      {
+        "boundary_ms": 622.681989,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 104.084652,
+        "run_errors": 0,
+        "run_ms": 961.00582,
+        "select_errors": 0,
+        "select_max_ms": 103.563219,
+        "select_ms": 103.634923,
+        "started_at_ms": 1790302324466.7598,
+        "stream": "incremental-4430.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302331198.3364,
+    "measurement_start_ms": 1790302285982.5593,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 116,
+        "p50": 100,
+        "p95": 114,
+        "p99": 116
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 433.699,
+        "p50": 101.103,
+        "p95": 274.89,
+        "p99": 390.632
+      },
+      "commit_to_admission": {
+        "maximum": 2466.389,
+        "p50": 1341.354,
+        "p95": 2116.321,
+        "p99": 2309.728
+      },
+      "commit_to_publication": {
+        "maximum": 3995.389,
+        "p50": 2639.646,
+        "p95": 3623.174,
+        "p99": 3824.243
+      },
+      "prepared_to_publication": {
+        "maximum": 461,
+        "p50": 276,
+        "p95": 434,
+        "p99": 461
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1221,
+        "p50": 955,
+        "p95": 1218,
+        "p99": 1221
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "02-attempt02-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1157.354392,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 33.683158,
+        "run_errors": 0,
+        "run_ms": 1413.97316,
+        "select_errors": 0,
+        "select_max_ms": 33.342653,
+        "select_ms": 33.387297,
+        "started_at_ms": 1790302504954.0112,
+        "stream": "incremental-4601.jsonl"
+      },
+      {
+        "boundary_ms": 1022.480656,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.90895,
+        "run_errors": 0,
+        "run_ms": 1373.594802,
+        "select_errors": 0,
+        "select_max_ms": 103.556792,
+        "select_ms": 103.615942,
+        "started_at_ms": 1790302495821.9175,
+        "stream": "incremental-4021.jsonl"
+      },
+      {
+        "boundary_ms": 1112.511129,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.722519,
+        "run_errors": 0,
+        "run_ms": 1366.167633,
+        "select_errors": 0,
+        "select_max_ms": 18.323514,
+        "select_ms": 18.388575,
+        "started_at_ms": 1790302502700.6714,
+        "stream": "incremental-4454.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 586.967165,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.092799,
+        "run_errors": 0,
+        "run_ms": 1054.433471,
+        "select_errors": 0,
+        "select_max_ms": 228.744299,
+        "select_ms": 228.794342,
+        "started_at_ms": 1790302493798.5598,
+        "stream": "incremental-3888.jsonl"
+      },
+      {
+        "boundary_ms": 469.894656,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.941138,
+        "run_errors": 0,
+        "run_ms": 837.010017,
+        "select_errors": 0,
+        "select_max_ms": 128.628354,
+        "select_ms": 128.674941,
+        "started_at_ms": 1790302485520.1052,
+        "stream": "incremental-3260.jsonl"
+      },
+      {
+        "boundary_ms": 368.1691,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.854446,
+        "run_errors": 0,
+        "run_ms": 699.086797,
+        "select_errors": 0,
+        "select_max_ms": 128.560728,
+        "select_ms": 128.60495,
+        "started_at_ms": 1790302476309.465,
+        "stream": "incremental-2558.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302506661.083,
+    "measurement_start_ms": 1790302461441.9622,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 117,
+        "p50": 101,
+        "p95": 115,
+        "p99": 117
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 471.532,
+        "p50": 90.707,
+        "p95": 267.424,
+        "p99": 356.871
+      },
+      "commit_to_admission": {
+        "maximum": 2862.207,
+        "p50": 1368.616,
+        "p95": 2437.921,
+        "p99": 2730.792
+      },
+      "commit_to_publication": {
+        "maximum": 4969.207,
+        "p50": 2808.396,
+        "p95": 4406.702,
+        "p99": 4746.832
+      },
+      "prepared_to_publication": {
+        "maximum": 441,
+        "p50": 324,
+        "p95": 428,
+        "p99": 428
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1664,
+        "p50": 957,
+        "p95": 1625,
+        "p99": 1664
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 3
+    },
+    "directory": "02-attempt02-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 534.769066,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.054721,
+        "run_errors": 0,
+        "run_ms": 1000.766712,
+        "select_errors": 0,
+        "select_max_ms": 228.691774,
+        "select_ms": 228.738691,
+        "started_at_ms": 1790302579649.8215,
+        "stream": "incremental-3400.jsonl"
+      },
+      {
+        "boundary_ms": 635.554836,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.740042,
+        "run_errors": 0,
+        "run_ms": 935.898281,
+        "select_errors": 0,
+        "select_max_ms": 18.320509,
+        "select_ms": 18.38017,
+        "started_at_ms": 1790302595805.244,
+        "stream": "incremental-4572.jsonl"
+      },
+      {
+        "boundary_ms": 654.228703,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.62636,
+        "run_errors": 0,
+        "run_ms": 921.331242,
+        "select_errors": 0,
+        "select_max_ms": 18.31005,
+        "select_ms": 18.355875,
+        "started_at_ms": 1790302592198.3552,
+        "stream": "incremental-4304.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 534.769066,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 229.054721,
+        "run_errors": 0,
+        "run_ms": 1000.766712,
+        "select_errors": 0,
+        "select_max_ms": 228.691774,
+        "select_ms": 228.738691,
+        "started_at_ms": 1790302579649.8215,
+        "stream": "incremental-3400.jsonl"
+      },
+      {
+        "boundary_ms": 166.728899,
+        "exceptions": [],
+        "final": false,
+        "journal_ms": 129.070796,
+        "run_errors": 0,
+        "run_ms": 0.0,
+        "select_errors": 0,
+        "select_max_ms": 128.663657,
+        "select_ms": 128.734349,
+        "started_at_ms": 1790302556109.333,
+        "stream": "incremental-1617.jsonl"
+      },
+      {
+        "boundary_ms": 339.0449,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.976492,
+        "run_errors": 0,
+        "run_ms": 644.727228,
+        "select_errors": 0,
+        "select_max_ms": 128.608836,
+        "select_ms": 128.664369,
+        "started_at_ms": 1790302565918.835,
+        "stream": "incremental-2360.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302598144.7808,
+    "measurement_start_ms": 1790302552929.1372,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 118,
+        "p50": 100,
+        "p95": 117,
+        "p99": 118
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 438.151,
+        "p50": 101.484,
+        "p95": 277.715,
+        "p99": 387.039
+      },
+      "commit_to_admission": {
+        "maximum": 2533.572,
+        "p50": 1334.72,
+        "p95": 2158.641,
+        "p99": 2343.187
+      },
+      "commit_to_publication": {
+        "maximum": 4049.572,
+        "p50": 2685.749,
+        "p95": 3681.859,
+        "p99": 3886.704
+      },
+      "prepared_to_publication": {
+        "maximum": 462,
+        "p50": 294,
+        "p95": 428,
+        "p99": 462
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1217,
+        "p50": 932,
+        "p95": 1158,
+        "p99": 1217
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "candidate",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "03-attempt03-candidate",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1185.161649,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 18.605843,
+        "run_errors": 0,
+        "run_ms": 1435.384263,
+        "select_errors": 0,
+        "select_max_ms": 18.305412,
+        "select_ms": 18.349084,
+        "started_at_ms": 1790302682248.3267,
+        "stream": "incremental-4713.jsonl"
+      },
+      {
+        "boundary_ms": 698.838257,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.949117,
+        "run_errors": 0,
+        "run_ms": 1039.080612,
+        "select_errors": 0,
+        "select_max_ms": 103.557957,
+        "select_ms": 103.60774,
+        "started_at_ms": 1790302680199.9246,
+        "stream": "incremental-4573.jsonl"
+      },
+      {
+        "boundary_ms": 664.732164,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 53.751534,
+        "run_errors": 0,
+        "run_ms": 1006.488283,
+        "select_errors": 0,
+        "select_max_ms": 53.435945,
+        "select_ms": 53.476521,
+        "started_at_ms": 1790302678414.7769,
+        "stream": "incremental-4441.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 472.818317,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 178.934885,
+        "run_errors": 0,
+        "run_ms": 895.35825,
+        "select_errors": 0,
+        "select_max_ms": 178.627572,
+        "select_ms": 178.669961,
+        "started_at_ms": 1790302659288.181,
+        "stream": "incremental-3038.jsonl"
+      },
+      {
+        "boundary_ms": 115.354616,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.86533,
+        "run_errors": 0,
+        "run_ms": 412.810355,
+        "select_errors": 0,
+        "select_max_ms": 128.595576,
+        "select_ms": 128.629249,
+        "started_at_ms": 1790302632651.679,
+        "stream": "incremental-921.jsonl"
+      },
+      {
+        "boundary_ms": 576.46025,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 103.995362,
+        "run_errors": 0,
+        "run_ms": 918.15185,
+        "select_errors": 0,
+        "select_max_ms": 103.607649,
+        "select_ms": 103.668603,
+        "started_at_ms": 1790302667759.662,
+        "stream": "incremental-3655.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302684203.6414,
+    "measurement_start_ms": 1790302638983.0693,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 119,
+        "p50": 100,
+        "p95": 114,
+        "p99": 119
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 685.166,
+        "p50": 105.13,
+        "p95": 314.299,
+        "p99": 431.927
+      },
+      "commit_to_admission": {
+        "maximum": 2777.586,
+        "p50": 1352.894,
+        "p95": 2251.49,
+        "p99": 2566.779
+      },
+      "commit_to_publication": {
+        "maximum": 4662.204,
+        "p50": 2733.622,
+        "p95": 3855.643,
+        "p99": 4402.259
+      },
+      "prepared_to_publication": {
+        "maximum": 435,
+        "p50": 271,
+        "p95": 366,
+        "p99": 435
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1674,
+        "p50": 1034,
+        "p95": 1611,
+        "p99": 1674
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  },
+  {
+    "arm": "predecessor",
+    "cell": {
+      "cpus": 16,
+      "rate": 50,
+      "repeat": 1
+    },
+    "directory": "03-attempt03-predecessor",
+    "failed_read_workers": 0,
+    "longest_apply": [
+      {
+        "boundary_ms": 1152.582589,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 0.398634,
+        "run_errors": 0,
+        "run_ms": 1440.400484,
+        "select_errors": 0,
+        "select_max_ms": 0.077585,
+        "select_ms": 0.120185,
+        "started_at_ms": 1790302772183.9717,
+        "stream": "incremental-4604.jsonl"
+      },
+      {
+        "boundary_ms": 1178.382774,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 0.383335,
+        "run_errors": 0,
+        "run_ms": 1338.373139,
+        "select_errors": 0,
+        "select_max_ms": 0.074238,
+        "select_ms": 0.123881,
+        "started_at_ms": 1790302774476.6953,
+        "stream": "incremental-4752.jsonl"
+      },
+      {
+        "boundary_ms": 1119.103147,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 3.567627,
+        "run_errors": 0,
+        "run_ms": 1330.386455,
+        "select_errors": 0,
+        "select_max_ms": 3.187998,
+        "select_ms": 3.232481,
+        "started_at_ms": 1790302769892.701,
+        "stream": "incremental-4457.jsonl"
+      }
+    ],
+    "longest_reads": [
+      {
+        "boundary_ms": 135.382548,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.919226,
+        "run_errors": 0,
+        "run_ms": 405.158579,
+        "select_errors": 0,
+        "select_max_ms": 128.645345,
+        "select_ms": 128.682905,
+        "started_at_ms": 1790302723729.4316,
+        "stream": "incremental-1012.jsonl"
+      },
+      {
+        "boundary_ms": 346.42111,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.999798,
+        "run_errors": 0,
+        "run_ms": 686.092435,
+        "select_errors": 0,
+        "select_max_ms": 128.614508,
+        "select_ms": 128.670413,
+        "started_at_ms": 1790302739899.2097,
+        "stream": "incremental-2250.jsonl"
+      },
+      {
+        "boundary_ms": 267.710799,
+        "exceptions": [],
+        "final": true,
+        "journal_ms": 128.859485,
+        "run_errors": 0,
+        "run_ms": 567.918204,
+        "select_errors": 0,
+        "select_max_ms": 128.598468,
+        "select_ms": 128.639845,
+        "started_at_ms": 1790302735362.2217,
+        "stream": "incremental-1919.jsonl"
+      }
+    ],
+    "measurement_end_ms": 1790302774348.137,
+    "measurement_start_ms": 1790302729126.4941,
+    "phase": "complete",
+    "runtime_error": null,
+    "stages_ms": {
+      "admission_to_worker_start": {
+        "maximum": 128,
+        "p50": 100,
+        "p95": 116,
+        "p99": 128
+      },
+      "capture_observed_upper_bound": {
+        "maximum": 430.386,
+        "p50": 89.937,
+        "p95": 272.821,
+        "p99": 362.896
+      },
+      "commit_to_admission": {
+        "maximum": 2985.905,
+        "p50": 1393.879,
+        "p95": 2318.635,
+        "p99": 2699.522
+      },
+      "commit_to_publication": {
+        "maximum": 4858.644,
+        "p50": 2815.641,
+        "p95": 4075.595,
+        "p99": 4639.154
+      },
+      "prepared_to_publication": {
+        "maximum": 443,
+        "p50": 328,
+        "p95": 406,
+        "p99": 443
+      },
+      "worker_start_to_prepared": {
+        "maximum": 1655,
+        "p50": 1033,
+        "p95": 1598,
+        "p99": 1655
+      }
+    },
+    "status": "measured",
+    "within_5s_p95": true
+  }
+]

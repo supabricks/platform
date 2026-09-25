@@ -85,7 +85,8 @@ argv and unrelated process paths; local private logs are excluded from export.
 
 ## SP00 contribution ledger
 
-Implementation and accounting checks are in progress. The paired unchanged-runtime
-experiment must be completed and linked here before marking SP00 complete. The
-expected contribution is reproducible evidence and safer comparisons; no runtime
-throughput improvement is claimed by adding this harness.
+SP00 is implemented and measured in [PR #95](https://github.com/supabricks/platform/pull/95).
+The [report and contribution ledger](sp00-reproducible-comparisons.md) retain 24
+mandatory trials plus six predeclared follow-up trials. Decision: **Keep —
+reliability/enabling**, with no runtime speedup or latency-equivalence claim. The
+original low-load freshness miss and overload failures remain visible.
