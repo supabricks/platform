@@ -1,0 +1,213 @@
+{
+  "archive": {
+    "sha256": "d4bbe3fe951f8ac11b8f42bbd313f099a96fb7226b22e12726fc2fa58e35350c",
+    "target": "macos-arm64",
+    "version": "v0.1.0-alpha.36"
+  },
+  "binary_sha256": "21d11f385e6d1775e430438497d55bbf4344a22af62fdee2dfc23d22ceda3e94",
+  "checks": [
+    "signed_curl_install_and_bundled_sync_workers_verified",
+    "exact_installed_triggered"
+  ],
+  "network_evidence": "macOS Seatbelt; external network and Homebrew denied for all sync descendants",
+  "provenance": {
+    "artifact_id": 10849238131,
+    "head": "b6a0b4b546de460308f6adccfe6aec34528d1893",
+    "job": "https://github.com/supabricks/platform/actions/runs/36096958052/job/107962514273",
+    "merge_commit": "8836184d42d3e5be80af0c24c4bb3da62d8b84f0",
+    "note": "Large third-party source inventory omitted; installed identities and complete suite results retained.",
+    "original_report_sha256": "044304442052244adc516dd93347a096ab9e9d94f31e91df8aa3cdce718cc93c",
+    "parents": [
+      "00fcf95c36f5d4b5c00eb2c001f1a7e6d0ed4d69",
+      "b6a0b4b546de460308f6adccfe6aec34528d1893"
+    ]
+  },
+  "release_identity": "238c67dcb5c0817f0e5eb721f8ec5bc202e4cb76572c3d8f76fc10ed315c5857",
+  "status": "failed",
+  "suites": {
+    "continuous": {
+      "binary_sha256": "21d11f385e6d1775e430438497d55bbf4344a22af62fdee2dfc23d22ceda3e94",
+      "checks": [],
+      "cleanup": {
+        "descendants_observed": 65,
+        "exit_code": 1,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "diagnostics": {
+        "available": true,
+        "bytes": 2476,
+        "console_errors": [],
+        "failure_types": [
+          "AssertionError"
+        ],
+        "frames": [
+          {
+            "file": "installed_sync.py",
+            "function": "main",
+            "line": 184
+          },
+          {
+            "file": "installed_sync.py",
+            "function": "run",
+            "line": 135
+          },
+          {
+            "file": "continuous.py",
+            "function": "workload",
+            "line": 176
+          }
+        ],
+        "native_errors": [],
+        "readiness_poll_503_observed": 0,
+        "truncated": false
+      },
+      "duration_seconds": 69.41625758299995,
+      "exact_installed": true,
+      "exit_code": 1,
+      "host": {
+        "cpu_count": 3,
+        "machine": "arm64",
+        "memory_bytes": 7516192768,
+        "system": "Darwin"
+      },
+      "metrics": {
+        "baseline_oltp_transaction_ms": {
+          "p50": 1.801,
+          "p95": 3.134,
+          "p99": 5.681
+        },
+        "host_workload": {
+          "scope": "host-wide counters during workload, not per-process or container utilization"
+        },
+        "materialization_ms": {
+          "admission_to_worker_start": {
+            "batches": 16,
+            "maximum": 95,
+            "p50": 32,
+            "p95": 95,
+            "p99": 95
+          },
+          "prepared_to_publication": {
+            "batches": 16,
+            "maximum": 250,
+            "p50": 209,
+            "p95": 250,
+            "p99": 250
+          },
+          "worker_start_to_prepared": {
+            "batches": 16,
+            "maximum": 2859,
+            "p50": 1396,
+            "p95": 2859,
+            "p99": 2859
+          }
+        },
+        "resources": {
+          "peak_allocated_data_bytes": 141230080,
+          "peak_owned_rss_bytes": 1539325952,
+          "retained_wal_bytes": 260776,
+          "sampled_owned_cpu_seconds_lower_bound": 29.128,
+          "spool_bytes": 131072
+        },
+        "source_table_bytes": 1277952,
+        "storage": {
+          "compaction_bytes": 0,
+          "input_bytes": 95834,
+          "new_parquet_bytes": 826817,
+          "peak_generation_bytes": 997536,
+          "peak_inventory_files": 76,
+          "write_amplification_ratio": 8.628
+        },
+        "transaction_stages_ms": {
+          "admission_to_worker_start": {
+            "p50": 32,
+            "p95": 95,
+            "p99": 95
+          },
+          "commit_to_admission": {
+            "p50": 1563.869,
+            "p95": 2974.878,
+            "p99": 3418.451
+          },
+          "commit_to_capture_observed_upper_bound": {
+            "p50": 323.539,
+            "p95": 633.954,
+            "p99": 663.628
+          },
+          "prepared_to_publication": {
+            "p50": 223,
+            "p95": 243,
+            "p99": 250
+          },
+          "worker_start_to_prepared": {
+            "p50": 1627,
+            "p95": 2578,
+            "p99": 2859
+          }
+        },
+        "workload": {
+          "achieved_rows_per_second": 49.89,
+          "burst_changed_rows": 200,
+          "burst_commit_to_publication_ms": 4677.918,
+          "changed_rows": 1500,
+          "commit_to_publication_ms": {
+            "p50": 3464.966,
+            "p95": 5728.462,
+            "p99": 6072.373
+          },
+          "elapsed_seconds": 30.067,
+          "oltp_transaction_ms": {
+            "p50": 5.62,
+            "p95": 17.209,
+            "p99": 31.237
+          },
+          "rows_per_table": 10000,
+          "tables": 2,
+          "target_rows_per_second": 50,
+          "transactions": 750
+        }
+      },
+      "release_identity": "238c67dcb5c0817f0e5eb721f8ec5bc202e4cb76572c3d8f76fc10ed315c5857",
+      "report_sha256": "0aa27c48e21abbf961160980df315a0b48f1365e15c8bc66f5383115b9bd3ceb",
+      "status": "FAIL"
+    },
+    "triggered": {
+      "binary_sha256": "21d11f385e6d1775e430438497d55bbf4344a22af62fdee2dfc23d22ceda3e94",
+      "checks": [
+        "triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader",
+        "triggered_production_input_budget_preserves_complete_transactions",
+        "triggered_restart_reuses_checkpoint_and_delete_retires_source"
+      ],
+      "cleanup": {
+        "descendants_observed": 94,
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "duration_seconds": 69.67017462499996,
+      "exact_installed": true,
+      "exit_code": 0,
+      "host": {
+        "cpu_count": 3,
+        "machine": "arm64",
+        "memory_bytes": 7516192768,
+        "system": "Darwin"
+      },
+      "metrics": {},
+      "release_identity": "238c67dcb5c0817f0e5eb721f8ec5bc202e4cb76572c3d8f76fc10ed315c5857",
+      "report_sha256": "ea702ee341b914c06bd3b35dfb110447462239e4adb242177d05862bbdc30c39",
+      "status": "PASS"
+    }
+  },
+  "worker_inventory": {
+    "capture/spool.py": "bc1b92cd7dc2dcf58fd251df464d990e651054cec3d25f7a2f4074c3e2812897",
+    "capture_worker.py": "55d2f9526517805d827eb780299cb8c3564564e73e3ffa29b553def3cdb373e7",
+    "incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6",
+    "incremental/storage.py": "710a3079e14a495b1741d9df41e0a2052708cf0a32d2fc640e61046c9e23cb7e",
+    "incremental_worker.py": "6bfba19358d1ad91a8cee41bce8e92c51f8d50ae48473b4b9a92708e2a5929f8",
+    "session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b"
+  }
+}

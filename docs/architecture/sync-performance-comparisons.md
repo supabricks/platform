@@ -90,3 +90,13 @@ The [report and contribution ledger](sp00-reproducible-comparisons.md) retain 24
 mandatory trials plus six predeclared follow-up trials. Decision: **Keep —
 reliability/enabling**, with no runtime speedup or latency-equivalence claim. The
 original low-load freshness miss and overload failures remain visible.
+
+## SP01 contribution ledger
+
+[SP01's report](sp01-journal-contention-recovery.md) retains the 24 mandatory
+trials, contended replacements, activation controls and a predeclared low-load
+follow-up. Bounded read-only retries eliminate the four observed overload resync
+failures; all six overload trials still time out. Decision: **Keep —
+reliability/enabling**, with no throughput improvement established. The
+[cumulative ledger](../plans/sync-performance-implementation.md#attribution-decisions-and-reports)
+keeps SP00 and SP01 contributions separate.

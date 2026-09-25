@@ -1,0 +1,185 @@
+{
+  "source": "https://github.com/supabricks/platform/actions/runs/36092406729/job/107942135391",
+  "artifact_id": 10846832293,
+  "report": {
+    "status": "PASS",
+    "checks": [
+      {
+        "name": "automatic_bootstrap_and_fresh_idle_observation_without_empty_epoch_churn",
+        "status": "PASS"
+      },
+      {
+        "name": "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups",
+        "status": "PASS"
+      },
+      {
+        "name": "long_transaction_is_invisible_until_complete_commit_and_old_reader_stays_pinned",
+        "status": "PASS"
+      },
+      {
+        "name": "held_batch_reports_lag_then_pause_drains_and_resume_reuses_checkpoint",
+        "status": "PASS"
+      },
+      {
+        "name": "stale_worker_is_unavailable_then_sigkill_and_full_restart_recover_without_resync",
+        "status": "PASS"
+      },
+      {
+        "name": "delayed_controller_tick_coalesces_catchup_without_losing_captured_commits",
+        "status": "PASS"
+      },
+      {
+        "name": "schema_failure_preserves_epoch_and_explicit_resync_builds_new_baseline",
+        "status": "PASS"
+      },
+      {
+        "name": "policy_delete_cleans_owned_continuous_capture",
+        "status": "PASS"
+      }
+    ],
+    "host": {
+      "system": "Darwin",
+      "machine": "arm64",
+      "cpu_count": 3
+    },
+    "scope": "Disposable source-level native test; no installed archive or production SLA claim.",
+    "provenance": {
+      "binary_sha256": "17ff5f2c3312cd48e3b7a9628298155caa044185d745acd80779039deecce1f6",
+      "engine_manifest_sha256": "714f82004cf48c92d300ab5e759c37b11f46374b4bb187c60b36ae3075af72db",
+      "source_files": {
+        "crates/local/src/sync.rs": "bdec17e8a6d83b201878686473d24aad0f8a90c0435f694ace4ced7380f412ce",
+        "crates/local/src/store/sync.rs": "e97d35e145334b4833876332e11f2b9ba00a7b098ccffae5f2783e20f5d3f66a",
+        "crates/local/src/store/sync/continuous.rs": "b16061c18a114aa0e1a284425981c5bb7138a6afdf429fb4137cbe421d01e3e4",
+        "crates/local/src/store/sync/governed.rs": "dee0764531adee4d02b24734d3e27298c898006d92267674e3e1e846e41f655f",
+        "crates/local/src/store/sync/surfaces.rs": "f7ac9e42edc901ecc3db87d77ef299f1be282382d598308fff05cd36f2f00beb",
+        "crates/local/src/store/sync/tests.rs": "96c9c1d1bd1db4005d8f2ffdb4d7714d37890f1421e4a9eda27a35f1fcbcaa24",
+        "crates/local/src/store/sync/triggered.rs": "98a3722a8847ba0556883578c8b0e5afcab592fad44bd445eaaaa2e940a12467",
+        "crates/local/src/engine/captures.rs": "78c6f15029c48295656bc7ad42f688dcb97a832f172b69305494e63791edbd7d",
+        "crates/local/src/engine/incremental.rs": "cebd7084a00f664038ef03a2baa09c5fe12ef3b2e119e1c866bda1846abf4d06",
+        "e2e/native/continuous.py": "872e5b7854f68f0cea04b248cbd9bc78049485fd7b080479e427d74306dc915b",
+        "python/analytics/capture_worker.py": "55d2f9526517805d827eb780299cb8c3564564e73e3ffa29b553def3cdb373e7",
+        "python/analytics/export.py": "886c3714b36b05b7659277284b3d571f5a340c4db9582352eeb5f51aa2ffe88c",
+        "python/analytics/incremental_worker.py": "6bfba19358d1ad91a8cee41bce8e92c51f8d50ae48473b4b9a92708e2a5929f8",
+        "python/analytics/qualify.py": "f427e9fa5ac99b64067b21e7163190e3ebf49878a9cd4dbbf91da583fb816875",
+        "python/analytics/read_delta.py": "8a0b028ea09423ffd5ee838853cda0b9de7bd7bdb5b5231c70594e34d1c15947",
+        "python/analytics/runtime_environment.py": "9046a51cc7e7e0974de4f4ce8a8aa27e841295b03ee1af9339fe7aa99d2adf85",
+        "python/analytics/session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b",
+        "python/analytics/shell.py": "a887de432185c7218f3750acd83335d1dbd851d8611666ad66e8f025861f8e53",
+        "python/analytics/test_capture.py": "b8f354d858236b5db551b90ca5b078065938c29853e9fa8e254cc952bb2b313d",
+        "python/analytics/test_continuous.py": "9ed9ed52c9454e5db8584f9c6c0194e5205ffc67ff4940f03537a34cb4c75227",
+        "python/analytics/test_export.py": "6beeb43482c14d1c9d50308516af2e23385044ff434743816f42a4fa68f7e57e",
+        "python/analytics/test_incremental.py": "624ffa0e0574fb241c4adfa4d1e12cf9cc5e521f0c3b41b7132ae44563d06880",
+        "python/analytics/test_journal_retry.py": "706347408f6d7d2c1bbadb77ff64437a0916174e448a04e6661cdc744b5a9b12",
+        "python/analytics/test_maintenance.py": "01fd1ffb7d179620456bf0a5327b07d6b63f52d64080916cb17db744a06d4f95",
+        "python/analytics/test_session.py": "763a159fa3d6bdbd723e44c6e2b3a3c973075b09c23fba1dfd40cb2263cf7e4b",
+        "python/analytics/test_triggered.py": "4dd4f1e4eac45aac32c53598437c9ea0c42a50daa60f498d3a2d7c45738f463b",
+        "python/analytics/capture/__init__.py": "98e6bac22be4793def55d64044daf2f2723c479fea7c308381371ab27bc791c8",
+        "python/analytics/capture/bootstrap.py": "d4119c18ffbc88cf2100e7c219083c37f0f2d85401f003ac02af837fadf67293",
+        "python/analytics/capture/protocol.py": "e3e34c8615526b1d478c314564a99c78b27a2d3b695f0a5441fc66badf3c861c",
+        "python/analytics/capture/source.py": "e8c27f7bce75149e20086ca64ee1c718a8432aa3e778e9974436a52b9059e8b8",
+        "python/analytics/capture/spool.py": "bc1b92cd7dc2dcf58fd251df464d990e651054cec3d25f7a2f4074c3e2812897",
+        "python/analytics/incremental/__init__.py": "b7b3bc30ec72bb7fd9e7f2ec530bf8bb7aaa83abf59c3987e54f0e6bf7e7d1b4",
+        "python/analytics/incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6",
+        "python/analytics/incremental/rows.py": "b4f2d0abf4c0e03547e139ab4f010148c5fe8746acdd9b174be24274b2de1bd3",
+        "python/analytics/incremental/storage.py": "6a2657cdb6caa6cdf40e31fbbb091a8549fff093c651650218fcc552eb61825d"
+      }
+    },
+    "metrics": {
+      "source_table_bytes": 1277952,
+      "baseline_oltp_transaction_ms": {
+        "p50": 1.323,
+        "p95": 1.72,
+        "p99": 2.561
+      },
+      "host_workload": {
+        "scope": "host-wide counters during workload, not per-process or container utilization"
+      },
+      "materialization_ms": {
+        "admission_to_worker_start": {
+          "p50": 20,
+          "p95": 32,
+          "p99": 47,
+          "maximum": 47,
+          "batches": 26
+        },
+        "worker_start_to_prepared": {
+          "p50": 751,
+          "p95": 1514,
+          "p99": 2233,
+          "maximum": 2233,
+          "batches": 26
+        },
+        "prepared_to_publication": {
+          "p50": 157,
+          "p95": 261,
+          "p99": 267,
+          "maximum": 267,
+          "batches": 26
+        }
+      },
+      "storage": {
+        "input_bytes": 95669,
+        "new_parquet_bytes": 1331387,
+        "write_amplification_ratio": 13.917,
+        "peak_inventory_files": 116,
+        "peak_generation_bytes": 1533867,
+        "compaction_bytes": 0
+      },
+      "transaction_stages_ms": {
+        "commit_to_admission": {
+          "p50": 1089.054,
+          "p95": 1822.772,
+          "p99": 2219.155
+        },
+        "admission_to_worker_start": {
+          "p50": 21,
+          "p95": 32,
+          "p99": 47
+        },
+        "worker_start_to_prepared": {
+          "p50": 899,
+          "p95": 1514,
+          "p99": 2233
+        },
+        "prepared_to_publication": {
+          "p50": 181,
+          "p95": 261,
+          "p99": 267
+        },
+        "commit_to_capture_observed_upper_bound": {
+          "p50": 333.83,
+          "p95": 652.262,
+          "p99": 675.1
+        }
+      },
+      "workload": {
+        "tables": 2,
+        "rows_per_table": 10000,
+        "transactions": 750,
+        "changed_rows": 1500,
+        "target_rows_per_second": 50,
+        "achieved_rows_per_second": 50.04,
+        "elapsed_seconds": 29.973,
+        "commit_to_publication_ms": {
+          "p50": 2097.886,
+          "p95": 3692.607,
+          "p99": 4736.155
+        },
+        "oltp_transaction_ms": {
+          "p50": 2.938,
+          "p95": 9.316,
+          "p99": 26.531
+        },
+        "burst_changed_rows": 200,
+        "burst_commit_to_publication_ms": 3673.898
+      },
+      "resources": {
+        "peak_owned_rss_bytes": 1132560384,
+        "peak_allocated_data_bytes": 237187072,
+        "spool_bytes": 114688,
+        "retained_wal_bytes": 335824,
+        "sampled_owned_cpu_seconds_lower_bound": 15.91
+      }
+    }
+  }
+}

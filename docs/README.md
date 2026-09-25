@@ -20,7 +20,7 @@ build or operate the stack.
 | Run local continuous incremental analytics | [Continuous sync workflow](handbook/continuous-sync.md) |
 | Check installed synchronization qualification | [SY08 archive gates and evidence](architecture/sy08-installed-sync.md) |
 | Understand synchronization CPU scaling | [Local benchmark methodology and results](architecture/sync-core-scaling.md) |
-| Compare measured synchronization performance | [SP00 comparison report](architecture/sp00-reproducible-comparisons.md) |
+| Compare measured synchronization performance | [SP01 comparison and contribution](architecture/sp01-journal-contention-recovery.md) |
 | Find the plan to improve synchronization performance | [Measured performance plan (SP00–SP12)](plans/sync-performance-implementation.md) |
 | Understand the synchronization roadmap | [Managed synchronization plan](plans/analytical-sync-implementation.md) |
 | Understand a subsystem or its acceptance evidence | [Architecture and evidence index](architecture/README.md) |
