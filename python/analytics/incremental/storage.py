@@ -112,6 +112,14 @@ def journal(config):
                 result=journal_attempt(request,deadline)
                 stats['outcome']='complete'
                 return result
+            except CaptureError as error:
+                # A scheduling pause can cross the deadline after the outer
+                # guard but before the next statement. Prior BUSY still proves
+                # this is exhausted read-only contention, never partial apply.
+                if error.code=='journal_read_deadline' and stats['busy']:
+                    stats['outcome']='deferred'
+                    raise JournalBusyDeferred() from None
+                raise
             except sqlite3.OperationalError as error:
                 # LOCKED, I/O errors and corruption are not busy retries.
                 if getattr(error,'sqlite_errorcode',None) not in BUSY_CODES:raise

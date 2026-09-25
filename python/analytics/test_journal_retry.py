@@ -72,6 +72,15 @@ class JournalRetryTests(unittest.TestCase):
                 self.assertEqual(set(deadlines),{100+budget})
                 self.assertAlmostEqual(clock[0],100+budget)
                 self.assertLessEqual(len(deadlines),32)
+    def test_deadline_crossed_inside_a_retry_remains_a_safe_deferral(self):
+        with patch.object(storage,'journal_attempt',side_effect=[sql_error(sqlite3.SQLITE_BUSY),CaptureError('journal_read_deadline')]),self.assertRaises(storage.JournalBusyDeferred):
+            storage.journal(self.config)
+        self.assertEqual(self.config['_journal_read']['outcome'],'deferred')
+        self.assertEqual(self.config['_journal_read']['busy'],1)
+        # Without a recognized BUSY error, a slow read is not retried as contention.
+        with patch.object(storage,'journal_attempt',side_effect=CaptureError('journal_read_deadline')) as attempt,self.assertRaisesRegex(CaptureError,'journal_read_deadline'):
+            storage.journal(self.config)
+        self.assertEqual(attempt.call_count,1)
     def test_only_recognized_busy_codes_are_retried(self):
         for code in (sqlite3.SQLITE_BUSY,261,517,773,sqlite3.SQLITE_LOCKED,sqlite3.SQLITE_IOERR,sqlite3.SQLITE_CORRUPT):
             with self.subTest(code=code),patch.object(storage,'journal_attempt',side_effect=[sql_error(code),('ok',)]) as attempt:

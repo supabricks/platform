@@ -315,6 +315,25 @@ fn deferred_read_pause_stops_at_safe_boundary_and_exhaustion_is_explicit() {
             assert_eq!(s.sync_policy(p, policy.id).unwrap().state, "paused");
         } else {
             assert_eq!(parent.error.as_deref(), Some("journal_read_busy_exhausted"));
+            s.schedule_continuous(now() + 1000).unwrap();
+            assert!(s.active_sync_runs().unwrap().is_empty());
+            let current = s.sync_policy(p, policy.id).unwrap();
+            s.sync_command(
+                p,
+                d,
+                Command::Resume {
+                    id: policy.id,
+                    expected_revision: current.revision,
+                    key: "resume-busy".into(),
+                },
+                now(),
+            )
+            .unwrap();
+            s.schedule_continuous(now() + 1000).unwrap();
+            let resumed = s.active_sync_runs().unwrap();
+            assert_eq!(resumed.len(), 1);
+            assert_eq!(resumed[0].capture_id, Some(c.id));
+            assert_eq!(s.capture(p, c.id).unwrap().bootstrap_id, c.bootstrap_id);
         }
     }
 }
