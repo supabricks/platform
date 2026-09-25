@@ -169,3 +169,76 @@ probe overhead. Use paired profiling-on/off controls with the same diagnostic
 package and host monitoring; controls estimate activation overhead, not the cost
 of diagnostic code imported in both modes. Keep controls separate from the
 requested 12-trial matrix and preserve failures and all contended attempts.
+
+## Paired slice comparisons (SP00 onward)
+
+`compare.py` runs twelve candidate trials and twelve fresh predecessor trials.
+Its default explicit cells are `4:50,16:50,8:1000,16:1000`, each repeated three
+ times. Pair order is seeded; each cell includes both predecessor-first and
+candidate-first trials. `matrix.py --cells` also accepts this explicit list.
+
+```sh
+python3 e2e/native/performance/compare.py \
+  --slice SP00 --hypothesis 'Unchanged runtime; old versus supported harness' \
+  --predecessor-release /absolute/diagnostic-package \
+  --candidate-release /absolute/diagnostic-package \
+  --predecessor-revision FULL_RUNTIME_COMMIT \
+  --candidate-revision FULL_RUNTIME_COMMIT \
+  --predecessor-harness /absolute/clean-old-checkout \
+  --candidate-harness /absolute/clean-new-checkout \
+  --baseline docs/architecture/sync-performance-evidence/2026-09-24-workflow-profile \
+  --output /absolute/new-comparison-directory
+```
+
+Both harness checkouts must be committed and clean. The runner freezes their
+revisions and tracked native qualification/installer Python hashes, runtime
+binary and package manifest hashes, immutable container image, workload,
+affinity, memory and filesystem. It rechecks identities before and after each
+trial. Runtime source revision is still an operator assertion. Use the same
+profiling activation on both arms. Changed instrumentation needs separately
+recorded activation controls before attributing a runtime improvement.
+
+Before every trial, the host must have five rolling quiet minutes. Five-second
+samples record CPU, memory, disk/pressure counters, optional frequency/thermal
+sensors, and known build process identities and their descendants' activity.
+Idle build parents do not prevent progress. This is a shared-host observation,
+not exclusive host ownership: short processes between samples and unknown build
+tools can escape detection. Do not intentionally start other intensive work.
+Each JSONL segment is limited to approximately 16 MiB, with a hard 256 MiB total
+budget; exhaustion, read failures or sampling gaps stop measurement. No external
+process is signaled. Qualifier children alone are stopped on interruption.
+
+A build overlapping either arm invalidates the entire pair. Both arms remain in
+`attempts`, and both are repeated after another quiet interval. Runtime failures
+remain accepted outcomes. Measurement, malformed evidence or cleanup failures
+stop the series. `--resume` requires identical inputs and validates all accepted
+receipts and artifact checksums. It refuses an interrupted active trial because
+cleanup is uncertain. An interruption safely between trials retains and replaces
+the incomplete pair, consuming the same bounded attempt budget.
+
+`experiment.json` retains every attempt and quiet receipt. `comparison.json`
+reports pairwise changes, failure counts, trial medians/ranges and observation
+counts against both the fresh predecessor and the checksum-verified original
+archive. Failed trials never supply complete latency. Aggregate latency changes
+are suppressed if either group contains failures. Source input shortfalls are
+separate from replication outcomes. Component metrics may have fewer observations:
+capture rates use differences between cumulative snapshots strictly inside the
+load window; apply medians use only successful workers started in that window.
+They do not represent failed workers or complete end-to-end latency.
+
+Recompute and export evidence without restarting any runtime:
+
+```sh
+python3 e2e/native/performance/report_comparison.py /absolute/results
+python3 e2e/native/performance/archive_comparison.py \
+  /absolute/results docs/architecture/sync-performance-evidence/NEW-DIRECTORY
+```
+
+Export preserves the manifests verbatim, including local installation paths,
+and copies structured receipts/profiles and host samples with SHA-256 checksums.
+It excludes private logs and scratch. Retain private output locally for diagnosis.
+Nondefault pilot dimensions are labeled `standard_matched_protocol: false`.
+A completed runner is not an automatic performance approval: document the result,
+its limitations and a retain/revise/revert decision after each logical slice.
+See [the measurement contract](../../../docs/architecture/sync-performance-comparisons.md)
+for long-run profiling design and counter requirements.
