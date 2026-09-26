@@ -34,3 +34,24 @@ class SourceAccounting(unittest.TestCase):
             self.assertEqual({v['clients'] for v in b['variants']},{8})
             self.assertEqual({v['profile'] for v in b['variants']},{True,False})
         self.assertEqual({b['variants'][0]['profile'] for b in control},{True,False})
+
+class SourceSelection(unittest.TestCase):
+    def trials(self):
+        return [dict(cpus=cpu,clients=client,repeat=repeat,profile=True,seconds=300,
+                     minute_rows_s=[{4:850,8:1500,16:2400}[client]]*5)
+                for cpu in (8,16) for client in (4,8,16) for repeat in (1,2,3)]
+    def test_smallest_count_must_pass_every_cpu_repeat_and_minute(self):
+        from source_analysis import select_client
+        trials=self.trials()
+        self.assertEqual(select_client(trials)['clients'],8)
+        next(t for t in trials if t['clients']==8)['minute_rows_s'][4]=1200
+        self.assertEqual(select_client(trials)['clients'],16)
+        next(t for t in trials if t['clients']==16)['minute_rows_s'][0]=999
+        chosen=select_client(trials)
+        self.assertEqual(chosen,dict(clients=8,qualification_floor_rows_s=1000,preferred_headroom=False))
+    def test_incomplete_cell_and_low_minute_cannot_qualify(self):
+        from source_analysis import select_client
+        trials=[t for t in self.trials() if t['clients']==8]
+        self.assertIsNone(select_client(trials[:-1]))
+        trials[-1]['minute_rows_s'][2]=999
+        self.assertIsNone(select_client(trials))
