@@ -289,3 +289,28 @@ more than 100 total omissions stop measurement, and missing spools/cgroup files,
 malformed status, missing transaction markers and cleanup errors still fail.
 Healthy-path SQL is unchanged; a capture-state lookup is added only when a policy
 fails or status disappears. Status omission never advances publication or feedback.
+
+## SP06 source-only capacity
+
+`source_capacity.py` runs fresh isolated source fixtures with no sync policy,
+using unchanged installed runtime and transaction SQL. The declared screen,
+activation controls, 4-CPU envelope and separate full-stack load profile are in
+[the SP06 protocol](../../../docs/architecture/sync-performance-sp06.md).
+
+```sh
+python3 e2e/native/performance/source_capacity.py \
+  --mode screen --release /absolute/path/to/accepted-diagnostic-package \
+  --runtime-revision FULL_ACCEPTED_RUNTIME_COMMIT \
+  --output /absolute/path/to/new-source-screen
+```
+
+Defaults are 4/8/16 clients at 8/16 logical CPUs, three repeats, 60-second warmup
+and 300-second measurement. Keep the new output directory outside the frozen
+harness checkout. Numeric sample archives omit row values and private connections.
+The controller stops on measurement or cleanup failure and retains whole contended
+blocks before replacement. Profiling off/on controls use `--mode controls --clients N`;
+the 4-CPU envelope uses `--mode envelope --cpus 4 --clients 4 N`.
+
+`matrix.py` and `compare.py` additionally accept `--baseline-seconds` and
+`--warmup-seconds`; both default to five and preserve the mandatory comparison.
+Longer warmup or different concurrency is a separately labeled profile.

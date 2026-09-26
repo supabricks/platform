@@ -93,7 +93,7 @@ def main(args):
         cpu_quota='none; affinity restriction only',network='none; loopback within each container',
         filesystem=output('findmnt','--json','-T',str(scratch),'-o','SOURCE,FSTYPE,OPTIONS'),
         host_memory_before=Path('/proc/meminfo').read_text(),seed=args.seed,
-        workload=dict(profile=args.profile,cells=selected,rates=sorted({r for c,r in selected}),seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=5,warmup_seconds=5),
+        workload=dict(profile=args.profile,cells=selected,rates=sorted({r for c,r in selected}),seconds=args.seconds,clients=args.clients,rows_per_table=args.rows,baseline_seconds=args.baseline_seconds,warmup_seconds=args.warmup_seconds),
         order=[dict(repeat=r,rate=rate,cpus=cpus) for r,rate,cpus in matrix],started_at=time.time(),trials=[])
     # The full inventory is unchanged; keep source metadata but not thousands of
     # dependency hashes in each summary. release_identity binds that inventory.
@@ -127,7 +127,7 @@ def main(args):
             '-v',f'{scratch.resolve()}:/scratch','-w','/repo',image,
             'python3','install/native/catalog_gate.py','--timeout','600','--report','/reports/cleanup.json','--',
             'python3','e2e/native/performance/trial.py','--release','/release','--report','/reports/trial.json',
-            '--scratch','/scratch','--rate',str(rate),'--seconds',str(args.seconds),'--clients',str(args.clients),'--rows',str(args.rows)]
+            '--scratch','/scratch','--rate',str(rate),'--seconds',str(args.seconds),'--clients',str(args.clients),'--rows',str(args.rows),'--baseline',str(args.baseline_seconds),'--warmup',str(args.warmup_seconds)]
         if args.profile:command.append('--profile')
         print(f'[{index}/{len(matrix)}] {trial} start',flush=True)
         start=time.time()
@@ -168,7 +168,8 @@ if __name__=='__main__':
     p.add_argument('--cpus',type=int,nargs='+',default=[4,8,16]);p.add_argument('--memory-gib',type=int,default=16)
     p.add_argument('--rates',type=int,nargs='+',default=[50,250,1000]);p.add_argument('--seconds',type=int,default=45)
     p.add_argument('--repeats',type=int,default=3);p.add_argument('--clients',type=int,default=4);p.add_argument('--rows',type=int,default=10000)
+    p.add_argument('--baseline-seconds',type=int,default=5);p.add_argument('--warmup-seconds',type=int,default=5)
     p.add_argument('--seed',type=int,default=20260923)
     a=p.parse_args()
-    if min([a.memory_gib,a.seconds,a.repeats,a.clients,a.rows,*a.cpus,*a.rates])<1:p.error('all dimensions must be positive')
+    if min([a.memory_gib,a.seconds,a.repeats,a.clients,a.rows,a.baseline_seconds,a.warmup_seconds,*a.cpus,*a.rates])<1:p.error('all dimensions must be positive')
     main(a)

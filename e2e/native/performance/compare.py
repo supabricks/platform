@@ -167,6 +167,9 @@ def run_trial(config, arm, pair, directory, monitor, quiet):
                '--repeats', '1', '--image', config['image_id'], '--memory-gib', str(config['memory_gib']),
                '--seconds', str(config['parameters']['seconds']), '--clients', str(config['parameters']['clients']),
                '--rows', str(config['parameters']['rows']), '--seed', str(config['seed'])]
+    # Keep the original runner's CLI valid for unchanged mandatory trials.
+    if config['parameters']['baseline'] != 5 or config['parameters']['warmup'] != 5:
+        command.extend(['--baseline-seconds',str(config['parameters']['baseline']),'--warmup-seconds',str(config['parameters']['warmup'])])
     if arm_profile(config, arm):
         command.append('--profile')
     # The predecessor may be the original runner, so invoke its existing one-cell
@@ -223,7 +226,7 @@ def main(args):
                   host={"lscpu": [r for r in json.loads(output('lscpu','-J'))['lscpu'] if 'MHz' not in r['field']]},
                   filesystem=json.loads(output('findmnt','--json','-T',str(args.output),'-o','SOURCE,FSTYPE,OPTIONS')),
                   memory_gib=args.memory_gib, parameters=dict(profile=not args.no_profile, seconds=args.seconds,
-                  clients=args.clients, rows=args.rows, baseline=5, warmup=5),
+                  clients=args.clients, rows=args.rows, baseline=args.baseline_seconds, warmup=args.warmup_seconds),
                   seed=args.seed, order=pair_order(selected, args.repeats, args.seed),
                   quiet_seconds=args.quiet_seconds, sample_interval=5,
                   max_wait_seconds=args.max_wait_seconds, max_pair_attempts=args.max_pair_attempts,
@@ -233,6 +236,7 @@ def main(args):
         config['activation_control'] = True
     config['standard_matched_protocol'] = (set(selected) == set(cells(DEFAULT_CELLS)) and args.repeats == 3
         and args.memory_gib == 16 and args.seconds == 45 and args.clients == 4 and args.rows == 10000
+        and args.baseline_seconds == 5 and args.warmup_seconds == 5
         and args.quiet_seconds >= 300 and not args.no_profile and not args.activation_control)
     record = dict(config=config, historical=historical_rows(args.baseline), started_at_ms=time.time()*1000,
                   state='between_pairs', pairs=[], attempts=[])
@@ -308,6 +312,8 @@ if __name__ == '__main__':
     parser.add_argument('--memory-gib', type=int, default=16)
     parser.add_argument('--seconds', type=int, default=45)
     parser.add_argument('--clients', type=int, default=4)
+    parser.add_argument('--baseline-seconds', type=int, default=5)
+    parser.add_argument('--warmup-seconds', type=int, default=5)
     parser.add_argument('--rows', type=int, default=10000)
     parser.add_argument('--quiet-seconds', type=int, default=300)
     parser.add_argument('--max-wait-seconds', type=int, default=21600)
@@ -317,6 +323,6 @@ if __name__ == '__main__':
     parser.add_argument('--activation-control', action='store_true', help='same immutable runtime: predecessor profiler off, candidate profiler on')
     parser.add_argument('--no-profile', action='store_true', help='separately labeled profiler activation control')
     args = parser.parse_args()
-    if min(args.repeats,args.memory_gib,args.seconds,args.clients,args.rows,args.quiet_seconds,args.max_wait_seconds,args.max_pair_attempts) < 1 or args.rows < args.clients:
+    if min(args.repeats,args.memory_gib,args.seconds,args.clients,args.rows,args.baseline_seconds,args.warmup_seconds,args.quiet_seconds,args.max_wait_seconds,args.max_pair_attempts) < 1 or args.rows < args.clients:
         parser.error('positive dimensions and at least one row/client required')
     main(args)
