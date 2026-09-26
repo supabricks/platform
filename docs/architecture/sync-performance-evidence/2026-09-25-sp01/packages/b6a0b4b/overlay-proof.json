@@ -1,0 +1,41 @@
+{
+  "base_release_sha256": "5e06525d48333da3a5b4c0587eb2a0a085d626dea3a1eca99cee28dfc152286e",
+  "candidate_release_sha256": "3a88a7e46e4a222a3757e6960e75da2e230a0f943a0bb793959101041a43da4c",
+  "runtime_revision": "b6a0b4b546de460308f6adccfe6aec34528d1893",
+  "build": [
+    "cargo",
+    "build",
+    "--locked",
+    "--release",
+    "-p",
+    "supabricks-local",
+    "--features",
+    "sync-profile",
+    "--bin",
+    "supabricks"
+  ],
+  "changes": {
+    "bin/supabricks": {
+      "before": "29d70940c6a6c88c36f3a3c90cdc826d7a5f38ec1797083968b962d296809156",
+      "after": "7413c196866cbb2527e3031582912c8933fdccb430307c273a29787dbf26e00a"
+    },
+    "python/analytics/incremental/storage.py": {
+      "before": "77c22ac5526007689584d9c9994d5ca8f6306422f850974eda6d55b41f5b0659",
+      "after": "710a3079e14a495b1741d9df41e0a2052708cf0a32d2fc640e61046c9e23cb7e"
+    },
+    "python/analytics/incremental_worker.py": {
+      "before": "b586ab09e47368f242e50a23a6a51d40ef5577775eec1bf13c6277dee16133b6",
+      "after": "161d63ddd1c3e1b50b0f62241037a8f255f305c4a294b9080a67699f85d7f168"
+    },
+    "python/analytics/incremental/__pycache__/storage.cpython-312.pyc": {
+      "before": "3aab44f4fe2cac56a021537ed023a5c099aec680e167d533c2308a0b88263a1b",
+      "after": "4fa117bfcc53789870e8162a4cffb77548114c9e7cef974f61380f8139f72930"
+    },
+    "python/analytics/__pycache__/incremental_worker.cpython-312.pyc": {
+      "before": "01c99db16ee7c8323ad218eab6e46e3540005a0e205c63c7f1f911373434e675",
+      "after": "d0052797aae1632adf7ab8d3807f8edbe82ea955a0d21f0b27c3b67438afec38"
+    }
+  },
+  "probe_change": false,
+  "bytecode": "checked-hash; changed modules only; relative diagnostic filenames"
+}

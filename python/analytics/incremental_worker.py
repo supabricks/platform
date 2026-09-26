@@ -14,7 +14,7 @@ import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
 from incremental.rows import changes, overlay, MAX_ROWS, MAX_VALUES
-from incremental.storage import read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
+from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
 
 
@@ -26,8 +26,8 @@ def schema_for(table,path):
     return table.to_pyarrow_dataset(filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem())).schema
 
 
-def plan(config,root,previous):
-    schema,transactions,end,input_bytes=journal(config)
+def plan(config,root,previous,journal_data=None):
+    schema,transactions,end,input_bytes=journal(config) if journal_data is None else journal_data
     operations=[]
     for end,payload in transactions:
         operations.extend(changes(payload,schema,end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None))
@@ -123,7 +123,14 @@ def apply_table(config,root,table,planned,checksum,sealed):
 
 def run(config):
     os.umask(0o077)
-    root=initialize(config);work=Path(config['workspace'])
+    work=Path(config['workspace']);plan_path=work/'plan.json'
+    journal_data=None
+    if config['previous'] is not None and not plan_path.exists():
+        # A deferred read must precede initialization too: initialize may compact
+        # Delta tables into a new generation. Existing plans use crash replay and
+        # never re-enter this retryable boundary after partial table mutation.
+        journal_data=journal(config)
+    root=initialize(config)
     previous,compaction=base(config,root)
     sealed=frozenset()
     if config['previous'] is None:
@@ -138,12 +145,11 @@ def run(config):
         # durability. A compacted root must flush its independently created files.
         if compaction is None:
             sealed=frozenset(root/entry['path'] for entry in previous['manifest']['files'])
-        plan_path=work/'plan.json'
         if plan_path.exists():
             prepared=read_json(plan_path,64*1024*1024)
             if any(prepared[k]!=config[k] for k in ('identity','after_lsn','target_lsn')) or prepared['run_id']!=config['id'] or prepared['previous_epoch']!=previous['epoch_id']:raise CaptureError('apply_plan_identity')
         else:
-            prepared=plan(config,root,previous);atomic(plan_path,prepared)
+            prepared=plan(config,root,previous,journal_data);atomic(plan_path,prepared)
         fault('after_apply_plan')
         checksum=hashlib.sha256(canonical(prepared)).hexdigest()
         tables=copy.deepcopy(previous['manifest']['tables']);metrics=[]
@@ -170,14 +176,20 @@ def run(config):
     if len(canonical(descriptor))>2*1024*1024:raise CaptureError('epoch_metadata_budget')
     durable(root,sealed)
     fault('before_epoch_receipt')
-    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],descriptor=descriptor))
+    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),descriptor=descriptor))
     fault('after_epoch_receipt')
 
 
 if __name__=='__main__':
     config=read_json(sys.argv[1],4*1024*1024)
     try:run(config)
+    except JournalBusyDeferred:
+        atomic(Path(config['workspace'])/'result.json',dict(state='deferred',error='journal_read_busy_deferred',
+            phase='journal_before_initialize',id=config['id'],worker_generation=config['worker_generation'],
+            attempt=config['attempt'],identity=config['identity'],bootstrap_lsn=config['bootstrap_lsn'],
+            after_lsn=config['after_lsn'],target_lsn=config['target_lsn'],journal_read=config['_journal_read']))
+        sys.exit(2)
     except Exception as error:
         code=error.code if isinstance(error,CaptureError) else 'incremental_worker_failed'
-        atomic(Path(config['workspace'])/'result.json',dict(state='failed',id=config['id'],worker_generation=config['worker_generation'],error=code))
+        atomic(Path(config['workspace'])/'result.json',dict(state='failed',id=config['id'],worker_generation=config['worker_generation'],error=code,journal_read=config.get('_journal_read')))
         sys.exit(1)

@@ -98,7 +98,7 @@ class PruningTests(unittest.TestCase):
             spool.db.execute("DELETE FROM metadata WHERE key='barrier_at_ms'") # Pre-SY07 spool.
             self.assertGreater(spool.prune(pg_lsn(2200)),0)
             self.assertEqual(spool.progress(pg_lsn(2200)),expected);spool.verify()
-            config=dict(spool=str(spool.path),identity=identity,bootstrap_lsn='0/C8',after_lsn='0/C8',target_lsn=pg_lsn(2200))
+            config=dict(spool=str(spool.path),identity=identity,bootstrap_lsn='0/C8',after_lsn='0/C8',target_lsn=pg_lsn(2200),deadline_ms=int(time.time()*1000)+60000)
             with self.assertRaisesRegex(CaptureError,'source_history_lost'):journal(config)
             spool.append(2280,2300,fixture.tx(2280,2300,insert()))
             config.update(after_lsn=pg_lsn(2200),target_lsn=pg_lsn(2300))

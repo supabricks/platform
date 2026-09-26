@@ -101,4 +101,5 @@ remains beside its owning record in the existing evidence directories.
 ## Synchronization performance
 
 - [SP00: reproducible comparisons and measured baseline](sp00-reproducible-comparisons.md)
+- [SP01: safe journal-read contention recovery](sp01-journal-contention-recovery.md)
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)

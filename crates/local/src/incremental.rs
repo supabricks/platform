@@ -25,6 +25,12 @@ pub struct Run {
     pub worker_generation: i64,
     pub started_at_ms: Option<i64>,
     pub attempts: u32,
+    #[serde(default)]
+    pub journal_deferrals: u32,
+    #[serde(default)]
+    pub retry_at_ms: Option<i64>,
+    #[serde(default)]
+    pub journal_reads: Vec<JournalRead>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -48,4 +54,15 @@ pub(crate) fn lsn(s: &str) -> crate::store::Result<u64> {
     let a = u32::from_str_radix(a, 16).map_err(|_| crate::store::error::invalid("invalid LSN"))?;
     let b = u32::from_str_radix(b, 16).map_err(|_| crate::store::error::invalid("invalid LSN"))?;
     Ok((u64::from(a) << 32) | u64::from(b))
+}
+
+/// Fixed, bounded operational counters; no source values or SQL text.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JournalRead {
+    pub attempts: u32,
+    pub busy: u32,
+    pub wait_ms: u64,
+    pub elapsed_ms: u64,
+    pub outcome: String,
 }

@@ -269,3 +269,109 @@ fn queued_run_cannot_adopt_a_replacement_capture_generation() {
     assert!(s.active_incremental().unwrap().is_empty());
     assert_eq!(s.capture(p, replacement.id).unwrap().desired, "running");
 }
+
+#[test]
+fn deferred_read_pause_stops_at_safe_boundary_and_exhaustion_is_explicit() {
+    for pause in [true, false] {
+        let (_dir, mut s, p, d, b) = setup();
+        let policy = super::continuous::policy(&mut s, p, d, b);
+        let c = super::continuous::captured(&s, &policy);
+        s.schedule_continuous(now()).unwrap();
+        let parent = s.active_sync_runs().unwrap().remove(0);
+        s.tick_triggered(now()).unwrap();
+        let mut r = s
+            .incremental_run(p, s.sync_run(p, parent.id).unwrap().apply_id.unwrap())
+            .unwrap();
+        prepare(&mut s, &c, &mut r, 0);
+        finish(&mut s, &r);
+        s.reconcile_sync(now()).unwrap();
+        s.tick_triggered(now()).unwrap();
+        let mut r = s
+            .incremental_run(p, s.sync_run(p, parent.id).unwrap().apply_id.unwrap())
+            .unwrap();
+        let receipt =
+            super::incremental::deferred_receipt(&s, &c, &mut r, if pause { 1 } else { 3 });
+        s.defer_incremental(&mut r, &receipt, now()).unwrap();
+        if pause {
+            s.sync_command(
+                p,
+                d,
+                Command::Pause {
+                    id: policy.id,
+                    expected_revision: policy.revision,
+                    key: "pause".into(),
+                },
+                now(),
+            )
+            .unwrap();
+            assert!(s.pause_deferred_incremental(&mut r).unwrap());
+        }
+        s.reconcile_sync(now()).unwrap();
+        let parent = s.sync_run(p, parent.id).unwrap();
+        assert_eq!(parent.state, if pause { "cancelled" } else { "failed" });
+        assert_eq!(s.capture(p, c.id).unwrap().state, "capturing");
+        assert!(s.active_incremental().unwrap().is_empty());
+        if pause {
+            assert_eq!(s.sync_policy(p, policy.id).unwrap().state, "paused");
+        } else {
+            assert_eq!(parent.error.as_deref(), Some("journal_read_busy_exhausted"));
+            s.schedule_continuous(now() + 1000).unwrap();
+            assert!(s.active_sync_runs().unwrap().is_empty());
+            let current = s.sync_policy(p, policy.id).unwrap();
+            s.sync_command(
+                p,
+                d,
+                Command::Resume {
+                    id: policy.id,
+                    expected_revision: current.revision,
+                    key: "resume-busy".into(),
+                },
+                now(),
+            )
+            .unwrap();
+            s.schedule_continuous(now() + 1000).unwrap();
+            let resumed = s.active_sync_runs().unwrap();
+            assert_eq!(resumed.len(), 1);
+            assert_eq!(resumed[0].capture_id, Some(c.id));
+            assert_eq!(s.capture(p, c.id).unwrap().bootstrap_id, c.bootstrap_id);
+        }
+    }
+}
+
+#[test]
+fn deferred_read_cannot_resume_after_cancel_or_authority_revocation() {
+    for cancel in [true, false] {
+        let (_dir, mut s, p, d, b) = setup();
+        let policy = policy(&mut s, p, d, b);
+        let parent = trigger(&mut s, &policy, "run");
+        let c = captured(&s, &policy, &parent);
+        s.tick_triggered(now()).unwrap();
+        let mut r = s
+            .incremental_run(p, s.sync_run(p, parent.id).unwrap().apply_id.unwrap())
+            .unwrap();
+        let receipt = super::incremental::deferred_receipt(&s, &c, &mut r, 1);
+        s.defer_incremental(&mut r, &receipt, now()).unwrap();
+        if cancel {
+            s.sync_command(
+                p,
+                d,
+                Command::Cancel {
+                    id: parent.id,
+                    key: "cancel".into(),
+                },
+                now(),
+            )
+            .unwrap();
+        } else {
+            // The managed policy's authority is revoked before the next dispatch.
+            s.db.execute(
+                "INSERT INTO governed_branches VALUES (?1,'ready')",
+                [b.to_string()],
+            )
+            .unwrap();
+        }
+        assert!(s.incremental_live(&r).is_err());
+        assert!(s.defer_incremental(&mut r, &receipt, now()).is_err());
+        assert!(s.snapshot(p, r.epoch_id).is_err());
+    }
+}

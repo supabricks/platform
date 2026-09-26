@@ -199,3 +199,39 @@ class Comparisons(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class ActivationTests(unittest.TestCase):
+    def test_controls_require_same_package_and_harness_and_change_only_profile(self):
+        from compare import validate_activation, expected
+        import copy
+        arm=dict(package={'runtime_revision':'a'},harness_identity={'revision':'b'})
+        arms={'predecessor':copy.deepcopy(arm),'candidate':copy.deepcopy(arm)}
+        validate_activation(arms,True,False)
+        config=dict(arms=arms,activation_control=True,image_id='image',affinity={'4':[0,1,2,3]},memory_gib=16,parameters=dict(profile=True,seconds=45))
+        pair=dict(cpus=4,rate=50)
+        a=expected(config,'predecessor',pair);b=expected(config,'candidate',pair)
+        self.assertFalse(a['parameters']['profile']);self.assertTrue(b['parameters']['profile'])
+        a['parameters']['profile']=True;self.assertEqual(a,b)
+        with self.assertRaises(ValueError):validate_activation(arms,True,True)
+        arms['candidate']['package']['runtime_revision']='changed'
+        with self.assertRaises(ValueError):validate_activation(arms,True,False)
+
+
+class UnreadableBuildTests(unittest.TestCase):
+    def test_unreadable_io_never_becomes_quiet_and_readable_recovery_is_observed(self):
+        import errno
+        from host_monitor import build_observation
+        fields=['0']*20
+        with patch.object(Path,'read_text',side_effect=PermissionError(errno.EACCES,'denied')):
+            value=build_observation(Path('/proc/123'),'cargo',fields)
+        previous={'123:0':value}
+        self.assertEqual(value['io_error'],'permission_denied')
+        self.assertEqual(active_builds(previous,previous),['123:0'])
+        with patch.object(Path,'read_text',return_value='read_bytes: 12\nwrite_bytes: 0\n'):
+            recovered={'123:0':build_observation(Path('/proc/123'),'cargo',fields)}
+        self.assertEqual(active_builds(previous,recovered),['123:0'])
+        self.assertEqual(active_builds(recovered,recovered),[])
+        self.assertEqual(active_builds(previous,{}),[])
+        with patch.object(Path,'read_text',side_effect=OSError(errno.EIO,'broken')),self.assertRaises(OSError):
+            build_observation(Path('/proc/123'),'cargo',fields)

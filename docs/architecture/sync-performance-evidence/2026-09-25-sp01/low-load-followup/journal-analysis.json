@@ -1,0 +1,1803 @@
+{
+  "groups": [
+    {
+      "arm": "predecessor",
+      "backoff_ms": {
+        "max": null,
+        "median": null,
+        "min": null,
+        "n": 0
+      },
+      "busy_errors": {
+        "max": null,
+        "median": null,
+        "min": null,
+        "n": 0
+      },
+      "cpus": 4,
+      "journal_deferrals": {
+        "max": null,
+        "median": null,
+        "min": null,
+        "n": 0
+      },
+      "rate": 50,
+      "retried_complete_reads": {
+        "max": null,
+        "median": null,
+        "min": null,
+        "n": 0
+      },
+      "trials": 3
+    },
+    {
+      "arm": "candidate",
+      "backoff_ms": {
+        "max": 60,
+        "median": 10,
+        "min": 0,
+        "n": 3
+      },
+      "busy_errors": {
+        "max": 6,
+        "median": 1,
+        "min": 0,
+        "n": 3
+      },
+      "cpus": 4,
+      "journal_deferrals": {
+        "max": 0,
+        "median": 0,
+        "min": 0,
+        "n": 3
+      },
+      "rate": 50,
+      "retried_complete_reads": {
+        "max": 6,
+        "median": 1,
+        "min": 0,
+        "n": 3
+      },
+      "trials": 3
+    }
+  ],
+  "scope": "Accepted trials only; rejected/contended attempts remain in the immutable experiment archive. Missing predecessor counters remain null, never zero.",
+  "trials": [
+    {
+      "arm": "candidate",
+      "backoff_ms": 0,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 37
+      },
+      "batches": 37,
+      "busy_errors": 0,
+      "cpus": 4,
+      "directory": "01-attempt01-candidate",
+      "elapsed_ms": {
+        "max": 34,
+        "median": 9.0,
+        "min": 0,
+        "n": 36
+      },
+      "journal_deferrals": 0,
+      "profiled_read_workers": [
+        {
+          "context_id": "5dbb7c04-ba6a-48b8-9599-88aa65c6d5c0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.878847,
+          "stream": "incremental-2757.jsonl"
+        },
+        {
+          "context_id": "436c7a57-283c-4894-9cca-3f117436c0f2",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.742391,
+          "stream": "incremental-1086.jsonl"
+        },
+        {
+          "context_id": "f921c4a2-730b-41cc-b7ba-859b37557a34",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.856284,
+          "stream": "incremental-1277.jsonl"
+        },
+        {
+          "context_id": "12f126c2-efc2-4be8-bc8d-14b538513773",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.49847,
+          "stream": "incremental-2403.jsonl"
+        },
+        {
+          "context_id": "10f46c17-3fbf-4251-ad4c-d447de316802",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.417459,
+          "stream": "incremental-1023.jsonl"
+        },
+        {
+          "context_id": "def29d5b-8478-449d-8ed4-cab5181c5c8c",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.654645,
+          "stream": "incremental-1701.jsonl"
+        },
+        {
+          "context_id": "0eeffb89-2c3d-47ba-80fb-c365d73b7bd3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.492849,
+          "stream": "incremental-2580.jsonl"
+        },
+        {
+          "context_id": "77618675-78f9-4a2d-8b81-5801621b9478",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.933569,
+          "stream": "incremental-2943.jsonl"
+        },
+        {
+          "context_id": "a5a84075-eb0f-4fca-a0a8-ffab3a94d865",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.74358,
+          "stream": "incremental-1414.jsonl"
+        },
+        {
+          "context_id": "c9815827-6c9d-4d1f-b156-b32a3735b4a0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.928951,
+          "stream": "incremental-3129.jsonl"
+        },
+        {
+          "context_id": "e0feb4c0-9dba-456f-95f1-2e28c897392b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.470588,
+          "stream": "incremental-2082.jsonl"
+        },
+        {
+          "context_id": "8111482e-fe60-40c4-8598-900631c22d8a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.806963,
+          "stream": "incremental-2320.jsonl"
+        },
+        {
+          "context_id": "1fd0cbda-fae7-4fdb-891c-1dde5682ae45",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.483121,
+          "stream": "incremental-2002.jsonl"
+        },
+        {
+          "context_id": "16dc6abd-c150-4b12-a3bd-ba7900e25f66",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 18.798266,
+          "stream": "incremental-3225.jsonl"
+        },
+        {
+          "context_id": "ae1d2d6c-3423-457a-9883-ecd3b02c2db9",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.885299,
+          "stream": "incremental-1551.jsonl"
+        },
+        {
+          "context_id": "047a3ecd-a414-44ad-b621-e4288222f131",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.880319,
+          "stream": "incremental-1345.jsonl"
+        },
+        {
+          "context_id": "a4e3ed42-cfe6-4931-b078-c48211e5c2b6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.836237,
+          "stream": "incremental-1851.jsonl"
+        },
+        {
+          "context_id": "d67896e9-8f0c-4c74-8f3b-2a5d25bffb12",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.910531,
+          "stream": "incremental-2157.jsonl"
+        },
+        {
+          "context_id": "c84d1416-2ac3-4055-aa23-68c4700c06df",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.449829,
+          "stream": "incremental-821.jsonl"
+        },
+        {
+          "context_id": "f95806dd-4014-49a8-914e-b9112d69cf1c",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.474635,
+          "stream": "incremental-3318.jsonl"
+        },
+        {
+          "context_id": "35e5719c-4c61-4f90-a3ca-79808cac5c59",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.481008,
+          "stream": "incremental-2671.jsonl"
+        },
+        {
+          "context_id": "5fccd907-c04e-4ef3-a59a-43aec4f39333",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.717746,
+          "stream": "incremental-881.jsonl"
+        },
+        {
+          "context_id": "a897f63e-7ee4-4d49-ae18-49824292b3a8",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.489994,
+          "stream": "incremental-1483.jsonl"
+        },
+        {
+          "context_id": "28531844-dbac-4303-b3e5-a2e3a66a3497",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.475157,
+          "stream": "incremental-939.jsonl"
+        },
+        {
+          "context_id": "813f3ffe-fdde-4f21-8ecc-60fc8d79bfd1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.496566,
+          "stream": "incremental-1776.jsonl"
+        },
+        {
+          "context_id": "6bec7af7-9471-4007-86f2-e142bf771a25",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.827491,
+          "stream": "incremental-1925.jsonl"
+        },
+        {
+          "context_id": "581a147d-d2d0-4f48-ad3a-c7b1f3a3010a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.416076,
+          "stream": "incremental-657.jsonl"
+        },
+        {
+          "context_id": "90da7a8a-a992-4385-9780-b676f2998f08",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.820679,
+          "stream": "incremental-3033.jsonl"
+        },
+        {
+          "context_id": "f7c163e6-dc5a-4a6e-ae07-004812f8a77f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.675874,
+          "stream": "incremental-2491.jsonl"
+        },
+        {
+          "context_id": "8dc87437-869f-4daa-bcc1-a13b9f0802ca",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.507176,
+          "stream": "incremental-1625.jsonl"
+        },
+        {
+          "context_id": "c905b8f6-a828-4bdb-a0cf-3c2739df4ee8",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 0.486487,
+          "stream": "incremental-769.jsonl"
+        },
+        {
+          "context_id": "c41cb269-73c6-4877-bc80-a7dda12ed7e9",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.786204,
+          "stream": "incremental-1215.jsonl"
+        },
+        {
+          "context_id": "4506df26-d631-4302-ab89-3843648df61c",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.679397,
+          "stream": "incremental-2238.jsonl"
+        },
+        {
+          "context_id": "79b81e32-0617-4d9d-9e1a-a6f566cfe43a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.805931,
+          "stream": "incremental-709.jsonl"
+        },
+        {
+          "context_id": "2015f473-1a2e-45e5-b38b-1a659c9318c6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.518387,
+          "stream": "incremental-2850.jsonl"
+        },
+        {
+          "context_id": "141ef5b0-d963-496f-80f5-019171e66ad3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.756137,
+          "stream": "incremental-1146.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 0,
+      "rate": 50,
+      "read_attempts": 36,
+      "read_outcomes": {
+        "complete": 36
+      },
+      "reads": 36,
+      "receipt_counters_available": true,
+      "repeat": 3,
+      "retried_complete_reads": 0,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": 37
+    },
+    {
+      "arm": "predecessor",
+      "backoff_ms": null,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 38
+      },
+      "batches": 38,
+      "busy_errors": null,
+      "cpus": 4,
+      "directory": "01-attempt01-predecessor",
+      "elapsed_ms": null,
+      "journal_deferrals": null,
+      "profiled_read_workers": [
+        {
+          "context_id": "9b77190e-fab3-4554-80c2-7383be897469",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.632276,
+          "stream": "incremental-1457.jsonl"
+        },
+        {
+          "context_id": "4a443f87-497f-4383-83b4-b6e43a215562",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.351215,
+          "stream": "incremental-3403.jsonl"
+        },
+        {
+          "context_id": "35abb3f5-8bb0-4b30-a1d6-4295217f3fee",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.904422,
+          "stream": "incremental-2474.jsonl"
+        },
+        {
+          "context_id": "c6fa52d0-1993-4c76-8ccc-c766f68f91bd",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.338111,
+          "stream": "incremental-2566.jsonl"
+        },
+        {
+          "context_id": "923a8bfb-3153-4a2d-bd81-870c7450ec53",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.642702,
+          "stream": "incremental-1973.jsonl"
+        },
+        {
+          "context_id": "0d011716-e0a4-405a-8d50-63f030b8bf4a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.679762,
+          "stream": "incremental-1193.jsonl"
+        },
+        {
+          "context_id": "d0206bd6-ad45-4e1b-9e39-ba9cb5cb9193",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.622958,
+          "stream": "incremental-770.jsonl"
+        },
+        {
+          "context_id": "66ab808c-6c83-4ce8-b3a7-5da5173da86b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.355724,
+          "stream": "incremental-2387.jsonl"
+        },
+        {
+          "context_id": "80f042ad-f155-4dcb-b20f-dc5e0bc274cd",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.659837,
+          "stream": "incremental-3208.jsonl"
+        },
+        {
+          "context_id": "7943a4fc-e930-40da-8e84-8ea138e1e566",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.621826,
+          "stream": "incremental-1259.jsonl"
+        },
+        {
+          "context_id": "12d09ba7-fbd8-4f30-9327-565b66c1d44b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.597441,
+          "stream": "incremental-2930.jsonl"
+        },
+        {
+          "context_id": "23c1b14d-c16f-45bb-9b10-958776a40d7d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.29528,
+          "stream": "incremental-987.jsonl"
+        },
+        {
+          "context_id": "7e5324fb-136c-4c7c-9acd-9f491a2b2788",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.731261,
+          "stream": "incremental-2052.jsonl"
+        },
+        {
+          "context_id": "f0425667-ca19-4500-a826-1ec01a4508d6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.573627,
+          "stream": "incremental-1391.jsonl"
+        },
+        {
+          "context_id": "a18e39e9-12c2-4f28-be1a-472520efa6a6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.582554,
+          "stream": "incremental-1665.jsonl"
+        },
+        {
+          "context_id": "9c91453f-c6c2-4d03-82d0-9320a55317ed",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.665247,
+          "stream": "incremental-2840.jsonl"
+        },
+        {
+          "context_id": "83daedf8-be2d-4ed6-8938-e1a375525d01",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.28452,
+          "stream": "incremental-821.jsonl"
+        },
+        {
+          "context_id": "1272b007-7c14-4c55-9218-7334ca341ec3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.348159,
+          "stream": "incremental-2133.jsonl"
+        },
+        {
+          "context_id": "fe9d9a4f-e02d-4117-8a5c-16c27cf14f9d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.269863,
+          "stream": "incremental-649.jsonl"
+        },
+        {
+          "context_id": "36c5c7c1-0cc8-4309-bce2-3624b6394d06",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.372465,
+          "stream": "incremental-3117.jsonl"
+        },
+        {
+          "context_id": "80b242ab-aa69-4a59-8475-1dfe48a8c4ea",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 0.310589,
+          "stream": "incremental-931.jsonl"
+        },
+        {
+          "context_id": "a9e725dc-0168-4f0c-a293-ad5cbe1b06d2",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.553689,
+          "stream": "incremental-1132.jsonl"
+        },
+        {
+          "context_id": "2d4bfd76-5c2f-4712-aec8-b5fb3a96a53e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 128.914773,
+          "stream": "incremental-2657.jsonl"
+        },
+        {
+          "context_id": "cda17136-fa74-46f9-8f39-77dd66e212d1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.348801,
+          "stream": "incremental-1527.jsonl"
+        },
+        {
+          "context_id": "3820bb9a-9b2a-4a5c-9f2a-6b60d4fc1e92",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.737133,
+          "stream": "incremental-1322.jsonl"
+        },
+        {
+          "context_id": "50ac35be-e5bf-4cb8-9cf2-ef13cfaca457",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.700193,
+          "stream": "incremental-1891.jsonl"
+        },
+        {
+          "context_id": "3b9c1608-d07f-4924-b127-b0adf0e70be4",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 229.180386,
+          "stream": "incremental-698.jsonl"
+        },
+        {
+          "context_id": "6f70f086-4028-4d99-b6cf-f775751493d8",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.764032,
+          "stream": "incremental-3024.jsonl"
+        },
+        {
+          "context_id": "5341be9b-da7e-4c35-8b67-0e23e6d35e1f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.605997,
+          "stream": "incremental-2215.jsonl"
+        },
+        {
+          "context_id": "2d108505-18ee-4574-bbda-b934e6c08809",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.674745,
+          "stream": "incremental-3306.jsonl"
+        },
+        {
+          "context_id": "eb4cdde9-9312-4c2a-ada0-93aedc043a60",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.582663,
+          "stream": "incremental-1817.jsonl"
+        },
+        {
+          "context_id": "f1691846-fa84-4f11-99b9-5040ee90b270",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.49733,
+          "stream": "incremental-877.jsonl"
+        },
+        {
+          "context_id": "0c3f18db-b471-4845-ad11-8f6bce063330",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.563648,
+          "stream": "incremental-1067.jsonl"
+        },
+        {
+          "context_id": "8b239948-ff77-45e4-bfe8-3022f0907999",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.635669,
+          "stream": "incremental-1593.jsonl"
+        },
+        {
+          "context_id": "2fe2633e-311c-457e-8307-b1b5f5a3b7ba",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.810569,
+          "stream": "incremental-2302.jsonl"
+        },
+        {
+          "context_id": "774d3ee2-569a-4d07-b426-652b84de3cb3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.499859,
+          "stream": "incremental-2744.jsonl"
+        },
+        {
+          "context_id": "553db693-aef8-4d3f-a1fe-1ffee40a5c4a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.469045,
+          "stream": "incremental-1738.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 0,
+      "rate": 50,
+      "read_attempts": null,
+      "read_outcomes": null,
+      "reads": null,
+      "receipt_counters_available": false,
+      "repeat": 3,
+      "retried_complete_reads": null,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": null
+    },
+    {
+      "arm": "candidate",
+      "backoff_ms": 60,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 38
+      },
+      "batches": 38,
+      "busy_errors": 6,
+      "cpus": 4,
+      "directory": "02-attempt02-candidate",
+      "elapsed_ms": {
+        "max": 165,
+        "median": 19,
+        "min": 0,
+        "n": 37
+      },
+      "journal_deferrals": 0,
+      "profiled_read_workers": [
+        {
+          "context_id": "49019ca7-43bd-40c6-aa61-bdaf368f4288",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 164.90623,
+          "stream": "incremental-1827.jsonl"
+        },
+        {
+          "context_id": "4f712f21-ee36-43ad-a9b5-02e5695e7bf3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 144.616933,
+          "stream": "incremental-3118.jsonl"
+        },
+        {
+          "context_id": "957198f2-3e41-4316-af74-07d43f0cb450",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 78.9657,
+          "stream": "incremental-1528.jsonl"
+        },
+        {
+          "context_id": "50dd8628-6895-4443-8d6a-23bec39fae3b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.46103,
+          "stream": "incremental-1135.jsonl"
+        },
+        {
+          "context_id": "ed9e8c98-fc4c-4dd1-b1db-ba484b567f2d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.896338,
+          "stream": "incremental-816.jsonl"
+        },
+        {
+          "context_id": "3eb356c7-1b3b-4b7f-91d6-164754aeb960",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.761494,
+          "stream": "incremental-2063.jsonl"
+        },
+        {
+          "context_id": "fba6e190-9097-4e19-b471-d38878b5d235",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.802954,
+          "stream": "incremental-1071.jsonl"
+        },
+        {
+          "context_id": "22459642-3d18-4a27-89a6-5d6917d03291",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.864009,
+          "stream": "incremental-1196.jsonl"
+        },
+        {
+          "context_id": "fb979fd9-4221-467f-a4cf-9fc09c765d61",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.974522,
+          "stream": "incremental-1908.jsonl"
+        },
+        {
+          "context_id": "9760cf6c-8b4a-4d01-b676-589b57324a34",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.708956,
+          "stream": "incremental-2933.jsonl"
+        },
+        {
+          "context_id": "5dfed640-391c-419a-a65a-8c1ea4dbde56",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.851546,
+          "stream": "incremental-1984.jsonl"
+        },
+        {
+          "context_id": "8deb2797-a463-42da-925f-68868e147b76",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.496386,
+          "stream": "incremental-1671.jsonl"
+        },
+        {
+          "context_id": "442a963a-14a4-449b-9e5c-43751bdb997d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 111.353444,
+          "stream": "incremental-1594.jsonl"
+        },
+        {
+          "context_id": "403e3914-82d4-4a50-ad96-d495b0ef570a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.452885,
+          "stream": "incremental-641.jsonl"
+        },
+        {
+          "context_id": "4e55a959-98f2-49d2-b7c1-12de6b9d25e7",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.495013,
+          "stream": "incremental-2225.jsonl"
+        },
+        {
+          "context_id": "510db03d-7c63-473d-be49-be1f2e2fa9f5",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.488591,
+          "stream": "incremental-1749.jsonl"
+        },
+        {
+          "context_id": "dcd5dae3-1dc2-4248-8b7e-c92d4929a111",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.458866,
+          "stream": "incremental-1263.jsonl"
+        },
+        {
+          "context_id": "016c4da2-5de3-461b-aafb-391d3bc72bc6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 144.889282,
+          "stream": "incremental-2308.jsonl"
+        },
+        {
+          "context_id": "755edf8e-e196-456d-b578-638aba719eee",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.483201,
+          "stream": "incremental-930.jsonl"
+        },
+        {
+          "context_id": "afca546e-6e05-4624-9bb2-953742496aeb",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.459457,
+          "stream": "incremental-1326.jsonl"
+        },
+        {
+          "context_id": "87577ed7-ca59-44ef-b95b-4e4ae1c39f9a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.705369,
+          "stream": "incremental-2841.jsonl"
+        },
+        {
+          "context_id": "5af5867f-83c3-4044-bf9d-11817c56d864",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.795772,
+          "stream": "incremental-2661.jsonl"
+        },
+        {
+          "context_id": "8f8ac316-88fa-4c1f-9384-dd8807eddc80",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.537021,
+          "stream": "incremental-3026.jsonl"
+        },
+        {
+          "context_id": "cef47c53-afdb-496d-b5b7-5f68179327ea",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.459607,
+          "stream": "incremental-1394.jsonl"
+        },
+        {
+          "context_id": "ea120fef-1908-479e-8ad4-5b633be7fb9e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.859891,
+          "stream": "incremental-3219.jsonl"
+        },
+        {
+          "context_id": "7faa239a-5cce-4847-9f5e-6c05b5c0b79e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.448326,
+          "stream": "incremental-990.jsonl"
+        },
+        {
+          "context_id": "ee565afa-f36b-4ebb-8f06-c6ded0ed2c7b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 113.842478,
+          "stream": "incremental-690.jsonl"
+        },
+        {
+          "context_id": "9a667af5-6924-4000-9d05-87c0d830c314",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 54.047799,
+          "stream": "incremental-2140.jsonl"
+        },
+        {
+          "context_id": "0c82601b-0e80-4f0e-953b-25feb96eed48",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.523276,
+          "stream": "incremental-3319.jsonl"
+        },
+        {
+          "context_id": "44152203-3d46-43a3-8138-902fd4d50916",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 101.163486,
+          "stream": "incremental-2393.jsonl"
+        },
+        {
+          "context_id": "d3e9538b-3727-4036-86c6-8fc2d102d30f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.936423,
+          "stream": "incremental-1459.jsonl"
+        },
+        {
+          "context_id": "774bfd30-f707-4d9a-be51-8902f9283340",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.523406,
+          "stream": "incremental-2576.jsonl"
+        },
+        {
+          "context_id": "61df3799-a043-41cd-bc6e-48a14d3e8c61",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.803386,
+          "stream": "incremental-2748.jsonl"
+        },
+        {
+          "context_id": "480d90ed-0150-4a9d-8ba8-b3a76a651e9f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.491246,
+          "stream": "incremental-3417.jsonl"
+        },
+        {
+          "context_id": "90d4b99a-b02f-4d4a-b2b2-e495e8087f3b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.84895,
+          "stream": "incremental-2485.jsonl"
+        },
+        {
+          "context_id": "4b542b28-3959-481c-9bf5-16bd1fb222d0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.790031,
+          "stream": "incremental-761.jsonl"
+        },
+        {
+          "context_id": "07e83a5c-f921-47e2-aea6-69912f3dddf1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 144.715006,
+          "stream": "incremental-868.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 6,
+      "rate": 50,
+      "read_attempts": 43,
+      "read_outcomes": {
+        "complete": 37
+      },
+      "reads": 37,
+      "receipt_counters_available": true,
+      "repeat": 1,
+      "retried_complete_reads": 6,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": 38
+    },
+    {
+      "arm": "predecessor",
+      "backoff_ms": null,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 38
+      },
+      "batches": 38,
+      "busy_errors": null,
+      "cpus": 4,
+      "directory": "02-attempt02-predecessor",
+      "elapsed_ms": null,
+      "journal_deferrals": null,
+      "profiled_read_workers": [
+        {
+          "context_id": "292f18bb-afac-440c-8ac8-f29d76faea7d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.920639,
+          "stream": "incremental-1901.jsonl"
+        },
+        {
+          "context_id": "8b0f1399-b5a6-42f0-99b8-f2c28d594114",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.637025,
+          "stream": "incremental-3119.jsonl"
+        },
+        {
+          "context_id": "4a0e0061-d87d-40f1-b452-cf033a42607f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.329956,
+          "stream": "incremental-3407.jsonl"
+        },
+        {
+          "context_id": "c9f5104b-a02c-4341-8ad0-9de86b90d682",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.794764,
+          "stream": "incremental-1825.jsonl"
+        },
+        {
+          "context_id": "583a8c58-8272-46ed-a4c7-2ec476088026",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.754705,
+          "stream": "incremental-1191.jsonl"
+        },
+        {
+          "context_id": "3d85869a-6a49-434c-ac4c-a7d8bfabdd7f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.59679,
+          "stream": "incremental-1528.jsonl"
+        },
+        {
+          "context_id": "518d2c7c-5197-467b-80eb-5fc296d185d6",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.86217,
+          "stream": "incremental-1672.jsonl"
+        },
+        {
+          "context_id": "ade95491-4e0e-4975-aaa3-c5b2247d76ed",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.636815,
+          "stream": "incremental-1124.jsonl"
+        },
+        {
+          "context_id": "f85e835b-78d9-489b-8dfd-73045c895b72",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 179.040224,
+          "stream": "incremental-1984.jsonl"
+        },
+        {
+          "context_id": "e367dd69-d684-49fa-8d62-214501f8d523",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.856842,
+          "stream": "incremental-2143.jsonl"
+        },
+        {
+          "context_id": "93c7a170-75ee-4ebc-8c09-c3a33305b36d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.592081,
+          "stream": "incremental-2843.jsonl"
+        },
+        {
+          "context_id": "5309fb18-4c11-450d-a138-6db214f71c75",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.362285,
+          "stream": "incremental-2931.jsonl"
+        },
+        {
+          "context_id": "b2865066-ab39-4a62-bc96-e3200d34270f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.308275,
+          "stream": "incremental-1392.jsonl"
+        },
+        {
+          "context_id": "a8089532-c927-4cef-be7e-2bbbf82d1d0f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 128.884936,
+          "stream": "incremental-2400.jsonl"
+        },
+        {
+          "context_id": "535b34ea-c023-4b0c-85a0-6a6c9974a2d0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.498844,
+          "stream": "incremental-711.jsonl"
+        },
+        {
+          "context_id": "81acc780-10b2-45fc-9224-958b35e17e18",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 33.701164,
+          "stream": "incremental-2229.jsonl"
+        },
+        {
+          "context_id": "973891c2-cc08-4998-bfd7-49123f34904f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.550554,
+          "stream": "incremental-1462.jsonl"
+        },
+        {
+          "context_id": "c9f36cd0-8659-496a-9b83-7df23887381f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.293567,
+          "stream": "incremental-992.jsonl"
+        },
+        {
+          "context_id": "8044db1b-f7a7-4e96-83ab-522b7a675c60",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.761747,
+          "stream": "incremental-3214.jsonl"
+        },
+        {
+          "context_id": "0a8e93cf-aa7f-4704-92f0-2c4512e30b63",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.683612,
+          "stream": "incremental-2311.jsonl"
+        },
+        {
+          "context_id": "b14b0b10-07bb-433c-b6f9-595f09c488f0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.515788,
+          "stream": "incremental-3027.jsonl"
+        },
+        {
+          "context_id": "78a2417b-dc7c-4619-9f90-12530f6d9018",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.597277,
+          "stream": "incremental-1328.jsonl"
+        },
+        {
+          "context_id": "a30bfbe2-8485-450b-ac1a-41044744613d",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 0.309307,
+          "stream": "incremental-935.jsonl"
+        },
+        {
+          "context_id": "779077f7-3270-4a3e-821c-68c3214fcdde",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.26268,
+          "stream": "incremental-657.jsonl"
+        },
+        {
+          "context_id": "9d50f595-39d8-4072-9184-34b06279b09c",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.652244,
+          "stream": "incremental-1601.jsonl"
+        },
+        {
+          "context_id": "4e9f98f0-8afd-4f6d-8823-5c7380c4bfb1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.468253,
+          "stream": "incremental-1748.jsonl"
+        },
+        {
+          "context_id": "b9926368-594e-47f5-9cb3-8d40096b5c92",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.348531,
+          "stream": "incremental-2066.jsonl"
+        },
+        {
+          "context_id": "ea4b1651-989c-4d73-8c74-9890997fa228",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.506615,
+          "stream": "incremental-2667.jsonl"
+        },
+        {
+          "context_id": "dd1a1e70-bb72-4fb1-9dfe-d676368c8451",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.608231,
+          "stream": "incremental-773.jsonl"
+        },
+        {
+          "context_id": "727a9c0c-5e10-4a13-ad4e-dc811e0afc90",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.531849,
+          "stream": "incremental-824.jsonl"
+        },
+        {
+          "context_id": "6fe97a97-ab99-447b-88e4-1421353c26b3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.630983,
+          "stream": "incremental-2573.jsonl"
+        },
+        {
+          "context_id": "7e51d3aa-c32a-4508-9498-694c12a9d0b9",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 8.672727,
+          "stream": "incremental-2486.jsonl"
+        },
+        {
+          "context_id": "3a4c940d-942d-43f8-92c4-bb4e7c0711a7",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.364019,
+          "stream": "incremental-2754.jsonl"
+        },
+        {
+          "context_id": "eda00867-b951-4105-bfa9-bb23993b3d67",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.69888,
+          "stream": "incremental-1254.jsonl"
+        },
+        {
+          "context_id": "0651b3da-af6e-4899-a40b-ce7aba1590a1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.297616,
+          "stream": "incremental-877.jsonl"
+        },
+        {
+          "context_id": "3d680f6d-2432-4629-a682-dc32ea81b852",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.263281,
+          "stream": "incremental-1067.jsonl"
+        },
+        {
+          "context_id": "34a0ea2a-7b30-447f-aa0f-8d993d21110f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.386641,
+          "stream": "incremental-3312.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 0,
+      "rate": 50,
+      "read_attempts": null,
+      "read_outcomes": null,
+      "reads": null,
+      "receipt_counters_available": false,
+      "repeat": 1,
+      "retried_complete_reads": null,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": null
+    },
+    {
+      "arm": "candidate",
+      "backoff_ms": 10,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 38
+      },
+      "batches": 38,
+      "busy_errors": 1,
+      "cpus": 4,
+      "directory": "03-attempt03-candidate",
+      "elapsed_ms": {
+        "max": 145,
+        "median": 19,
+        "min": 0,
+        "n": 37
+      },
+      "journal_deferrals": 0,
+      "profiled_read_workers": [
+        {
+          "context_id": "da951772-db84-4d77-a830-4c3b5986a840",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.827777,
+          "stream": "incremental-819.jsonl"
+        },
+        {
+          "context_id": "4e82796a-043a-4025-b0fa-6f0632253df7",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.633728,
+          "stream": "incremental-1068.jsonl"
+        },
+        {
+          "context_id": "7a4fc5e8-203d-4e7f-b88c-f31bbd2dffdf",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.490064,
+          "stream": "incremental-1129.jsonl"
+        },
+        {
+          "context_id": "5f206fdb-e215-4fcc-8d37-05d5c2426cbf",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.834714,
+          "stream": "incremental-3122.jsonl"
+        },
+        {
+          "context_id": "4f1c979c-3894-4ed6-97e0-f0651431e420",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.757038,
+          "stream": "incremental-3218.jsonl"
+        },
+        {
+          "context_id": "8f39993b-7cac-4883-b66e-1d0f682caa3f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.867976,
+          "stream": "incremental-2479.jsonl"
+        },
+        {
+          "context_id": "5e4f65e0-c8df-466f-b24a-84a19a1ad20b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.836824,
+          "stream": "incremental-1465.jsonl"
+        },
+        {
+          "context_id": "94deea5b-2b6d-4e0e-9353-faed39d31078",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.448817,
+          "stream": "incremental-767.jsonl"
+        },
+        {
+          "context_id": "00c74ac4-18b3-4e50-928e-686545b911cb",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 144.678266,
+          "stream": "incremental-2303.jsonl"
+        },
+        {
+          "context_id": "3fe65af5-b714-4f5f-bde7-7b9753ec019b",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.766797,
+          "stream": "incremental-3309.jsonl"
+        },
+        {
+          "context_id": "26c3af2a-4111-4e69-b43a-7f10b9c98115",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 78.933719,
+          "stream": "incremental-2389.jsonl"
+        },
+        {
+          "context_id": "665244d4-62fc-4271-b815-9dced7836c08",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 1.509826,
+          "stream": "incremental-700.jsonl"
+        },
+        {
+          "context_id": "444a651c-fe38-4c13-af16-235550f4be34",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.716739,
+          "stream": "incremental-871.jsonl"
+        },
+        {
+          "context_id": "838a7c9f-83c1-46da-bcfb-0f6eb47d315f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.823192,
+          "stream": "incremental-2061.jsonl"
+        },
+        {
+          "context_id": "0c1e60ad-fcda-428b-a8a9-786447f6868a",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.476108,
+          "stream": "incremental-1195.jsonl"
+        },
+        {
+          "context_id": "5f4b50cf-b99a-4a83-9146-e828ba34d1f7",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.497939,
+          "stream": "incremental-2568.jsonl"
+        },
+        {
+          "context_id": "58208c65-9284-4815-9341-3ac40147a6b8",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.824083,
+          "stream": "incremental-1392.jsonl"
+        },
+        {
+          "context_id": "7453692a-3162-4587-ae23-e144eb7f19af",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.853128,
+          "stream": "incremental-2660.jsonl"
+        },
+        {
+          "context_id": "361a17a6-18ca-41a1-a5fd-014d02bbb57e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.458304,
+          "stream": "incremental-1258.jsonl"
+        },
+        {
+          "context_id": "6bb88c4d-78cb-4b7b-a536-b141d842165f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.812753,
+          "stream": "incremental-1828.jsonl"
+        },
+        {
+          "context_id": "13e40664-dc90-4782-b571-9821cd42700f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.814406,
+          "stream": "incremental-2841.jsonl"
+        },
+        {
+          "context_id": "ecb83e3f-7f9e-446c-b367-ffcab07708be",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.807823,
+          "stream": "incremental-1530.jsonl"
+        },
+        {
+          "context_id": "47fdafcd-9f9e-4dcb-8722-0b9e9cc15fd5",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.481808,
+          "stream": "incremental-929.jsonl"
+        },
+        {
+          "context_id": "2fdb8f3f-9fc3-40b9-966b-aa4cf528da1f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.840154,
+          "stream": "incremental-2139.jsonl"
+        },
+        {
+          "context_id": "a4d32908-f176-4f1e-abd3-a04ec1b45e54",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.727143,
+          "stream": "incremental-3032.jsonl"
+        },
+        {
+          "context_id": "84ba61f1-54d0-4de4-baff-9ee1e83c69a0",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.829413,
+          "stream": "incremental-1903.jsonl"
+        },
+        {
+          "context_id": "d0dc0e7a-731d-494e-a55c-1656fbf5805e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.927423,
+          "stream": "incremental-1982.jsonl"
+        },
+        {
+          "context_id": "32be722a-06b9-445c-890d-e1bd1d601228",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.72536,
+          "stream": "incremental-1327.jsonl"
+        },
+        {
+          "context_id": "952e5358-e2d8-4f93-8655-7360cbb933ce",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.441643,
+          "stream": "incremental-985.jsonl"
+        },
+        {
+          "context_id": "4dc6e05d-54f2-4129-b335-b1c331b3ac18",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 19.019959,
+          "stream": "incremental-2748.jsonl"
+        },
+        {
+          "context_id": "9610bc0b-140d-4efa-8a08-4493069671f1",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.895136,
+          "stream": "incremental-1748.jsonl"
+        },
+        {
+          "context_id": "36fb4750-6148-4529-95b0-96e62b812820",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.483322,
+          "stream": "incremental-3411.jsonl"
+        },
+        {
+          "context_id": "045bd1c2-6726-4725-bb6e-83c64447c558",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.437406,
+          "stream": "incremental-655.jsonl"
+        },
+        {
+          "context_id": "82069811-2499-4ef0-981d-a152f3ebb440",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.846401,
+          "stream": "incremental-2935.jsonl"
+        },
+        {
+          "context_id": "6c9e7407-852a-45f3-87fd-7a59d8a6f301",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.887568,
+          "stream": "incremental-2221.jsonl"
+        },
+        {
+          "context_id": "272eb4e9-5f89-4a71-a120-0738bdef0ef3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.682766,
+          "stream": "incremental-1676.jsonl"
+        },
+        {
+          "context_id": "c0d36a23-a995-4220-b9dd-495f9377a4fc",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 3.737312,
+          "stream": "incremental-1606.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 1,
+      "rate": 50,
+      "read_attempts": 38,
+      "read_outcomes": {
+        "complete": 37
+      },
+      "reads": 37,
+      "receipt_counters_available": true,
+      "repeat": 2,
+      "retried_complete_reads": 1,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": 38
+    },
+    {
+      "arm": "predecessor",
+      "backoff_ms": null,
+      "batch_errors": {},
+      "batch_states": {
+        "succeeded": 38
+      },
+      "batches": 38,
+      "busy_errors": null,
+      "cpus": 4,
+      "directory": "03-attempt03-predecessor",
+      "elapsed_ms": null,
+      "journal_deferrals": null,
+      "profiled_read_workers": [
+        {
+          "context_id": "a3614375-1664-426a-b902-ea59a732e118",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.598213,
+          "stream": "incremental-1923.jsonl"
+        },
+        {
+          "context_id": "2aea034f-8dc1-4440-a43d-3727f16a33c9",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.263682,
+          "stream": "incremental-643.jsonl"
+        },
+        {
+          "context_id": "29290f00-9ec3-49d8-9781-3a532c8b83fe",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.672171,
+          "stream": "incremental-2784.jsonl"
+        },
+        {
+          "context_id": "876fe385-a309-4d99-9c5d-c3e8748d3a0f",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.357497,
+          "stream": "incremental-3343.jsonl"
+        },
+        {
+          "context_id": "5a2acdc0-70fe-4aae-b26e-fe715cef3bfd",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.592832,
+          "stream": "incremental-2334.jsonl"
+        },
+        {
+          "context_id": "e76969ca-c43d-4862-9047-fa220e267cb4",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.348571,
+          "stream": "incremental-2879.jsonl"
+        },
+        {
+          "context_id": "e30102f4-c63a-4563-8241-45ef8139efd5",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.492645,
+          "stream": "incremental-2252.jsonl"
+        },
+        {
+          "context_id": "92a76a41-a360-4127-9650-eae719f23289",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.464532,
+          "stream": "incremental-1402.jsonl"
+        },
+        {
+          "context_id": "ab9ec75b-6cee-445c-a747-ac9db1e126aa",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.266788,
+          "stream": "incremental-1071.jsonl"
+        },
+        {
+          "context_id": "2cb5e925-a408-4eb5-a245-ae154f85baab",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.753813,
+          "stream": "incremental-1769.jsonl"
+        },
+        {
+          "context_id": "6c61e4e8-7a1b-44ed-a94d-6ee842d0b639",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.700484,
+          "stream": "incremental-870.jsonl"
+        },
+        {
+          "context_id": "3fa24910-e09c-4ad2-aefb-53458fc972e3",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.798784,
+          "stream": "incremental-1269.jsonl"
+        },
+        {
+          "context_id": "5b0080b0-2519-4fd1-9639-2b3364006212",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.711138,
+          "stream": "incremental-700.jsonl"
+        },
+        {
+          "context_id": "bf66e9ab-4eac-4459-804d-65e66abe4f06",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 78.884567,
+          "stream": "incremental-2082.jsonl"
+        },
+        {
+          "context_id": "f1861d3f-4fbf-476a-a2dd-21c7ff021e1c",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.874041,
+          "stream": "incremental-2424.jsonl"
+        },
+        {
+          "context_id": "b79b30e6-3923-4855-a77e-dc7805eb2a82",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 8.618356,
+          "stream": "incremental-1541.jsonl"
+        },
+        {
+          "context_id": "df24f5ac-a82b-44cc-924a-f4f933e4e496",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.324144,
+          "stream": "incremental-1612.jsonl"
+        },
+        {
+          "context_id": "2d959241-d16a-4460-a7e0-d671dc8d71bf",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 0.315519,
+          "stream": "incremental-3437.jsonl"
+        },
+        {
+          "context_id": "129e5cac-6a77-4e55-9c7a-ec3120cadc6e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 78.779061,
+          "stream": "incremental-1199.jsonl"
+        },
+        {
+          "context_id": "7a68dd13-c298-4ad6-bb88-0973dd9268fb",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 3.574097,
+          "stream": "incremental-2002.jsonl"
+        },
+        {
+          "context_id": "4d7d8b48-2b7e-49ee-875f-edf1a86a1245",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.320177,
+          "stream": "incremental-1332.jsonl"
+        },
+        {
+          "context_id": "fe096b14-919b-495d-818f-d79ee4ae411e",
+          "errors": 0,
+          "final": false,
+          "milliseconds": 0.324295,
+          "stream": "incremental-931.jsonl"
+        },
+        {
+          "context_id": "4a8df7cb-bc12-4f11-a34e-31c4b7aca6ed",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.885824,
+          "stream": "incremental-1466.jsonl"
+        },
+        {
+          "context_id": "384d6313-fd9e-446c-bebe-089c60dec531",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 1.473589,
+          "stream": "incremental-3164.jsonl"
+        },
+        {
+          "context_id": "6e61547e-48a3-46e7-ae1d-8c2f3c727410",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.676268,
+          "stream": "incremental-2169.jsonl"
+        },
+        {
+          "context_id": "1db5615f-a797-4269-baed-eefc705ca433",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.551976,
+          "stream": "incremental-1138.jsonl"
+        },
+        {
+          "context_id": "fb901b0f-b953-4a7e-bf1d-88401e28ed3e",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.336367,
+          "stream": "incremental-760.jsonl"
+        },
+        {
+          "context_id": "76fb488d-f094-4995-9e7a-83fee98c80f5",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 53.709828,
+          "stream": "incremental-2510.jsonl"
+        },
+        {
+          "context_id": "7ce1d1a9-9e24-4859-a274-273188fc63a4",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.847983,
+          "stream": "incremental-1689.jsonl"
+        },
+        {
+          "context_id": "be58e872-2e07-4391-8423-7c35840c4540",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.267399,
+          "stream": "incremental-988.jsonl"
+        },
+        {
+          "context_id": "c6802aef-9ae8-47ad-8284-6a589b113dfa",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 103.846691,
+          "stream": "incremental-812.jsonl"
+        },
+        {
+          "context_id": "c90c61c4-c3c2-4163-b58f-eaa302b3ccfe",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.781775,
+          "stream": "incremental-3067.jsonl"
+        },
+        {
+          "context_id": "5a315f9c-4143-43bb-98bb-5873e5b92aa2",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.649658,
+          "stream": "incremental-1844.jsonl"
+        },
+        {
+          "context_id": "ec12d909-f815-4e46-be5a-002647886d36",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 18.610294,
+          "stream": "incremental-2596.jsonl"
+        },
+        {
+          "context_id": "198f12a5-b436-47d3-b7a8-b40f4ad45f53",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 33.672691,
+          "stream": "incremental-2971.jsonl"
+        },
+        {
+          "context_id": "3c0dcf2b-cff4-4abc-bddf-ea34913f70ab",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 0.408873,
+          "stream": "incremental-2688.jsonl"
+        },
+        {
+          "context_id": "484d9729-6430-4149-a5c6-65f63bf25a3d",
+          "errors": 0,
+          "final": true,
+          "milliseconds": 1.433754,
+          "stream": "incremental-3255.jsonl"
+        }
+      ],
+      "profiled_sqlite_select_busy_events": 0,
+      "rate": 50,
+      "read_attempts": null,
+      "read_outcomes": null,
+      "reads": null,
+      "receipt_counters_available": false,
+      "repeat": 2,
+      "retried_complete_reads": null,
+      "runtime_error": null,
+      "scope": "whole fixture: bootstrap, warmup, measured load and drain; receipt totals are not a steady-state rate",
+      "status": "measured",
+      "worker_attempts": null
+    }
+  ]
+}

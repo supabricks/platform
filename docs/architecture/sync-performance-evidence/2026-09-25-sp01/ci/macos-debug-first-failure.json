@@ -1,0 +1,104 @@
+{
+  "outcome": "freshness_assertion_failed",
+  "runtime_revision": "909823976dc524fe8a1363a0eece320dbf7e1051",
+  "head_revision": "cc19526e5e2cb4e6859dae8fe8e74d452086cb27",
+  "source": "https://github.com/supabricks/platform/actions/runs/36092406729/job/107937401908",
+  "scope": "First macOS native-cell debug fixture; not a release-package matched trial; retain even if rerun passes",
+  "metrics": {
+    "source_table_bytes": 1277952,
+    "baseline_oltp_transaction_ms": {
+      "p50": 1.041,
+      "p95": 2.623,
+      "p99": 3.172
+    },
+    "host_workload": {
+      "scope": "host-wide counters during workload, not per-process or container utilization"
+    },
+    "materialization_ms": {
+      "admission_to_worker_start": {
+        "p50": 21,
+        "p95": 49,
+        "p99": 56,
+        "maximum": 56,
+        "batches": 23
+      },
+      "worker_start_to_prepared": {
+        "p50": 818,
+        "p95": 2419,
+        "p99": 2756,
+        "maximum": 2756,
+        "batches": 23
+      },
+      "prepared_to_publication": {
+        "p50": 186,
+        "p95": 287,
+        "p99": 298,
+        "maximum": 298,
+        "batches": 23
+      }
+    },
+    "storage": {
+      "input_bytes": 95669,
+      "new_parquet_bytes": 1172555,
+      "write_amplification_ratio": 12.256,
+      "peak_inventory_files": 104,
+      "peak_generation_bytes": 1365504,
+      "compaction_bytes": 0
+    },
+    "transaction_stages_ms": {
+      "commit_to_admission": {
+        "p50": 1212.996,
+        "p95": 2503.545,
+        "p99": 3100.468
+      },
+      "admission_to_worker_start": {
+        "p50": 24,
+        "p95": 56,
+        "p99": 56
+      },
+      "worker_start_to_prepared": {
+        "p50": 1001,
+        "p95": 2756,
+        "p99": 2756
+      },
+      "prepared_to_publication": {
+        "p50": 191,
+        "p95": 287,
+        "p99": 298
+      },
+      "commit_to_capture_observed_upper_bound": {
+        "p50": 342.963,
+        "p95": 641.121,
+        "p99": 689.336
+      }
+    },
+    "workload": {
+      "tables": 2,
+      "rows_per_table": 10000,
+      "transactions": 750,
+      "changed_rows": 1500,
+      "target_rows_per_second": 50,
+      "achieved_rows_per_second": 49.85,
+      "elapsed_seconds": 30.09,
+      "commit_to_publication_ms": {
+        "p50": 2438.016,
+        "p95": 5211.412,
+        "p99": 6115.468
+      },
+      "oltp_transaction_ms": {
+        "p50": 3.601,
+        "p95": 11.075,
+        "p99": 26.409
+      },
+      "burst_changed_rows": 200,
+      "burst_commit_to_publication_ms": 3933.138
+    },
+    "resources": {
+      "peak_owned_rss_bytes": 1139081216,
+      "peak_allocated_data_bytes": 237473792,
+      "spool_bytes": 135168,
+      "retained_wal_bytes": 336528,
+      "sampled_owned_cpu_seconds_lower_bound": 19.18
+    }
+  }
+}

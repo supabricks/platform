@@ -3,7 +3,7 @@ use super::*;
 fn now() -> i64 {
     super::super::super::now_ms().unwrap()
 }
-fn policy(s: &mut Store, p: ProjectId, d: DeploymentId, b: BranchId) -> Policy {
+pub(super) fn policy(s: &mut Store, p: ProjectId, d: DeploymentId, b: BranchId) -> Policy {
     serde_json::from_value(
         s.sync_command(
             p,
@@ -23,7 +23,7 @@ fn policy(s: &mut Store, p: ProjectId, d: DeploymentId, b: BranchId) -> Policy {
     )
     .unwrap()
 }
-fn captured(s: &Store, p: &Policy) -> crate::capture::Capture {
+pub(super) fn captured(s: &Store, p: &Policy) -> crate::capture::Capture {
     let mut c = s.capture(p.project_id, p.capture_id.unwrap()).unwrap();
     c.state = "capturing".into();
     c.worker_generation = s.generation();

@@ -91,13 +91,33 @@ impl Cell {
                 .join("analytics/apply-work")
                 .join(r.id.to_string());
             let result = work.join("result.json");
-            if result.is_file() && result.metadata()?.len() <= 2 * 1024 * 1024 {
+            if r.state == "running"
+                && result.is_file()
+                && result.metadata()?.len() <= 2 * 1024 * 1024
+            {
                 let v: Value = serde_json::from_slice(&fs::read(&result)?)?;
                 if v["id"] == json!(r.id)
                     && v["worker_generation"] == json!(store.generation())
                     && r.worker_generation == store.generation()
                 {
                     self.stop_incremental(store, &r)?;
+                    if v["state"] == "deferred" {
+                        if store
+                            .defer_incremental(&mut r, &v, chrono::Utc::now().timestamp_millis())
+                            .is_err()
+                        {
+                            store.fail_incremental(
+                                &mut r,
+                                "invalid_incremental_deferral",
+                                false,
+                            )?;
+                        }
+                        continue;
+                    }
+                    if store.record_journal_read(&mut r, &v).is_err() {
+                        store.fail_incremental(&mut r, "invalid_journal_read_accounting", false)?;
+                        continue;
+                    }
                     if v["state"] == "failed" {
                         store.fail_incremental(
                             &mut r,
@@ -178,6 +198,14 @@ impl Cell {
                     }
                 }
             }
+            if store.pause_deferred_incremental(&mut r)? {
+                continue;
+            }
+            if r.retry_at_ms
+                .is_some_and(|at| chrono::Utc::now().timestamp_millis() < at)
+            {
+                continue;
+            }
             let role = format!("incremental-{}", r.id);
             let process = store
                 .native_processes()?
@@ -232,13 +260,15 @@ impl Cell {
             let bootstrap = c
                 .bootstrap_id
                 .ok_or_else(|| conflict("missing capture bootstrap"))?;
-            let config = json!({"id":r.id,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
+            let config = json!({"id":r.id,"attempt":r.attempts+1,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;
             }
             r.worker_generation = store.generation();
             r.state = "running".into();
+            r.retry_at_ms = None;
+            r.error = None;
             r.started_at_ms = Some(chrono::Utc::now().timestamp_millis());
             r.attempts += 1;
             store.save_incremental(&r)?;

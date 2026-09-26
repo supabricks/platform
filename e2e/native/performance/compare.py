@@ -60,11 +60,22 @@ def pair_order(selected, repeats, seed):
     return result
 
 
+def arm_profile(config, arm):
+    return config['parameters']['profile'] and not (config.get('activation_control') and arm == 'predecessor')
+
+
+def validate_activation(arms, enabled, no_profile):
+    if enabled:
+        require(not no_profile, 'activation control needs profiling enabled on its candidate arm')
+        require(arms['predecessor']['package'] == arms['candidate']['package'], 'activation control requires identical runtime packages')
+        require(arms['predecessor']['harness_identity'] == arms['candidate']['harness_identity'], 'activation control requires identical harnesses')
+
+
 def expected(config, arm, pair):
     return dict(config['arms'][arm]['package'], image_id=config['image_id'],
                 cpus=pair['cpus'], rate=pair['rate'], affinity=config['affinity'][str(pair['cpus'])],
                 memory_gib=config['memory_gib'], harness_identity=config['arms'][arm]['harness_identity'],
-                parameters=dict(config['parameters'], rate=pair['rate']))
+                parameters=dict(config['parameters'], rate=pair['rate'], profile=arm_profile(config, arm)))
 
 
 def verify_identities(config):
@@ -156,7 +167,7 @@ def run_trial(config, arm, pair, directory, monitor, quiet):
                '--repeats', '1', '--image', config['image_id'], '--memory-gib', str(config['memory_gib']),
                '--seconds', str(config['parameters']['seconds']), '--clients', str(config['parameters']['clients']),
                '--rows', str(config['parameters']['rows']), '--seed', str(config['seed'])]
-    if config['parameters']['profile']:
+    if arm_profile(config, arm):
         command.append('--profile')
     # The predecessor may be the original runner, so invoke its existing one-cell
     # interface. Explicit pairing lives here; neither arm gets a changed workload.
@@ -217,9 +228,12 @@ def main(args):
                   quiet_seconds=args.quiet_seconds, sample_interval=5,
                   max_wait_seconds=args.max_wait_seconds, max_pair_attempts=args.max_pair_attempts,
                   baseline_identity=sha(args.baseline/'SHA256SUMS') if args.baseline else None)
+    validate_activation(arms, args.activation_control, args.no_profile)
+    if args.activation_control:
+        config['activation_control'] = True
     config['standard_matched_protocol'] = (set(selected) == set(cells(DEFAULT_CELLS)) and args.repeats == 3
         and args.memory_gib == 16 and args.seconds == 45 and args.clients == 4 and args.rows == 10000
-        and args.quiet_seconds >= 300 and not args.no_profile)
+        and args.quiet_seconds >= 300 and not args.no_profile and not args.activation_control)
     record = dict(config=config, historical=historical_rows(args.baseline), started_at_ms=time.time()*1000,
                   state='between_pairs', pairs=[], attempts=[])
     manifest = args.output/'experiment.json'
@@ -300,6 +314,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-pair-attempts', type=int, default=3)
     parser.add_argument('--image', default='supabricks-sy08-qualifier:latest')
     parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--activation-control', action='store_true', help='same immutable runtime: predecessor profiler off, candidate profiler on')
     parser.add_argument('--no-profile', action='store_true', help='separately labeled profiler activation control')
     args = parser.parse_args()
     if min(args.repeats,args.memory_gib,args.seconds,args.clients,args.rows,args.quiet_seconds,args.max_wait_seconds,args.max_pair_attempts) < 1 or args.rows < args.clients:
