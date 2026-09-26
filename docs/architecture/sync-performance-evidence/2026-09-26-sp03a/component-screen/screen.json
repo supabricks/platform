@@ -1,0 +1,243 @@
+{
+  "state": "complete",
+  "protocol": "three repeats, shuffled one-axis component variants; 10 s; same disk, FULL/DELETE, bounded readers and pruning; not end-to-end",
+  "source_sha256": {
+    "analytics/capture_worker.py": "afa131e69c52ebae66552abaeab3b64787072c22db9b462aa290ac139da87fc4",
+    "analytics/test_triggered.py": "4dd4f1e4eac45aac32c53598437c9ea0c42a50daa60f498d3a2d7c45738f463b",
+    "analytics/session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b",
+    "analytics/test_capture.py": "b8f354d858236b5db551b90ca5b078065938c29853e9fa8e254cc952bb2b313d",
+    "analytics/runtime_environment.py": "9046a51cc7e7e0974de4f4ce8a8aa27e841295b03ee1af9339fe7aa99d2adf85",
+    "analytics/export.py": "886c3714b36b05b7659277284b3d571f5a340c4db9582352eeb5f51aa2ffe88c",
+    "analytics/shell.py": "a887de432185c7218f3750acd83335d1dbd851d8611666ad66e8f025861f8e53",
+    "analytics/incremental_worker.py": "6bfba19358d1ad91a8cee41bce8e92c51f8d50ae48473b4b9a92708e2a5929f8",
+    "analytics/test_incremental.py": "624ffa0e0574fb241c4adfa4d1e12cf9cc5e521f0c3b41b7132ae44563d06880",
+    "analytics/test_journal_retry.py": "22c01dfa930a87a686b23046643e10fecb58757f9df5ce310fd22927c6c78912",
+    "analytics/test_continuous.py": "9ed9ed52c9454e5db8584f9c6c0194e5205ffc67ff4940f03537a34cb4c75227",
+    "analytics/read_delta.py": "8a0b028ea09423ffd5ee838853cda0b9de7bd7bdb5b5231c70594e34d1c15947",
+    "analytics/test_session.py": "763a159fa3d6bdbd723e44c6e2b3a3c973075b09c23fba1dfd40cb2263cf7e4b",
+    "analytics/test_capture_groups.py": "5e961de011a16fa7e988cc6b910c54508104616fb772bb483634c631bacc9972",
+    "analytics/test_maintenance.py": "01fd1ffb7d179620456bf0a5327b07d6b63f52d64080916cb17db744a06d4f95",
+    "analytics/test_export.py": "6beeb43482c14d1c9d50308516af2e23385044ff434743816f42a4fa68f7e57e",
+    "analytics/qualify.py": "f427e9fa5ac99b64067b21e7163190e3ebf49878a9cd4dbbf91da583fb816875",
+    "analytics/capture/groups.py": "46a3b8e2c971ab5ba915f452e97ffded5e1737df971834049da05323de823abc",
+    "analytics/capture/bootstrap.py": "d4119c18ffbc88cf2100e7c219083c37f0f2d85401f003ac02af837fadf67293",
+    "analytics/capture/__init__.py": "98e6bac22be4793def55d64044daf2f2723c479fea7c308381371ab27bc791c8",
+    "analytics/capture/spool.py": "58d3549358c8f21f66e5623c505475b3787461740e262e9af54346c0fba38627",
+    "analytics/capture/source.py": "e8c27f7bce75149e20086ca64ee1c718a8432aa3e778e9974436a52b9059e8b8",
+    "analytics/capture/protocol.py": "5e3dac8879aabfd90f7bfa616e589b9e97ee0e205539ffdccad9512e0befeea4",
+    "analytics/incremental/__init__.py": "b7b3bc30ec72bb7fd9e7f2ec530bf8bb7aaa83abf59c3987e54f0e6bf7e7d1b4",
+    "analytics/incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6",
+    "analytics/incremental/storage.py": "710a3079e14a495b1741d9df41e0a2052708cf0a32d2fc640e61046c9e23cb7e",
+    "analytics/incremental/rows.py": "b4f2d0abf4c0e03547e139ab4f010148c5fe8746acdd9b174be24274b2de1bd3"
+  },
+  "trials": [
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 1
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 304.98175258300034,
+        "sample_count": 61,
+        "at_ms": 1790396720220.2024
+      },
+      "start_ms": 1790396720220.2053,
+      "end_ms": 1790396735383.525,
+      "overlap": [],
+      "file": "01-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": false,
+          "single": false
+        },
+        "repeat": 1
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 320.14533230202505,
+        "sample_count": 64,
+        "at_ms": 1790396735383.7803
+      },
+      "start_ms": 1790396735383.7815,
+      "end_ms": 1790396750540.628,
+      "overlap": [],
+      "file": "02-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 0,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 3
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 335.3024760709959,
+        "sample_count": 67,
+        "at_ms": 1790396750540.9238
+      },
+      "start_ms": 1790396750540.9248,
+      "end_ms": 1790396765710.826,
+      "overlap": [],
+      "file": "03-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 3
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 350.4726888029836,
+        "sample_count": 70,
+        "at_ms": 1790396765711.1365
+      },
+      "start_ms": 1790396765711.1372,
+      "end_ms": 1790396780861.185,
+      "overlap": [],
+      "file": "04-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": false,
+          "single": false
+        },
+        "repeat": 3
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 365.62309542600997,
+        "sample_count": 73,
+        "at_ms": 1790396780861.5435
+      },
+      "start_ms": 1790396780861.5442,
+      "end_ms": 1790396796023.9553,
+      "overlap": [],
+      "file": "05-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 2
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 380.78582967899274,
+        "sample_count": 76,
+        "at_ms": 1790396796024.2773
+      },
+      "start_ms": 1790396796024.2778,
+      "end_ms": 1790396811208.944,
+      "overlap": [],
+      "file": "06-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 500,
+          "reader": false,
+          "single": false
+        },
+        "repeat": 2
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 395.9709017039859,
+        "sample_count": 79,
+        "at_ms": 1790396811209.3496
+      },
+      "start_ms": 1790396811209.3503,
+      "end_ms": 1790396826373.04,
+      "overlap": [],
+      "file": "07-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 0,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 1
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 411.1350051520276,
+        "sample_count": 82,
+        "at_ms": 1790396826373.4531
+      },
+      "start_ms": 1790396826373.454,
+      "end_ms": 1790396841533.0242,
+      "overlap": [],
+      "file": "08-attempt1.json",
+      "exit_code": 0
+    },
+    {
+      "trial": {
+        "config": {
+          "count": 32,
+          "age_ms": 10,
+          "rate": 0,
+          "reader": true,
+          "single": false
+        },
+        "repeat": 2
+      },
+      "attempt": 1,
+      "quiet": {
+        "quiet_seconds": 426.29501218302175,
+        "sample_count": 85,
+        "at_ms": 1790396841533.46
+      },
+      "start_ms": 1790396841533.4607,
+      "end_ms": 1790396856747.6455,
+      "overlap": [],
+      "file": "09-attempt1.json",
+      "exit_code": 0
+    }
+  ],
+  "seed": 20260926
+}

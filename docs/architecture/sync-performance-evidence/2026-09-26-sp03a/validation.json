@@ -1,0 +1,38 @@
+{
+  "runtime_revision": "da548e7b7564d554018a9b34281e9e42320028ee",
+  "tests": [
+    {
+      "name": "analytics",
+      "passed": 72
+    },
+    {
+      "name": "Rust installation",
+      "passed": 3
+    },
+    {
+      "name": "SQLite qualification",
+      "passed": 5
+    },
+    {
+      "name": "sync evidence",
+      "passed": 3
+    },
+    {
+      "name": "analytical packaging",
+      "passed": 1
+    }
+  ],
+  "checks": [
+    "cargo fmt --check",
+    "components/validate.py",
+    "git diff --check"
+  ],
+  "capture_mode": "DELETE/FULL",
+  "platform_installed_qualification": "Linux and macOS: SQLite gates and all four installed sync suites passed",
+  "other_ci_failure": {
+    "issue": 101,
+    "job": 108345491984,
+    "retry": "Same-head retry passed; both attempts retained; issue remains open"
+  },
+  "runtime_release_workflow": "passed after retained lifecycle retry"
+}

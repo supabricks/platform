@@ -1,0 +1,33 @@
+{
+  "base_release_sha256": "0e9337107a1a6e32c9c68bce28b36f45a7b0814861dfc5171465731b1e9278fe",
+  "release_sha256": "f43fa8dfe55529ec2fff3234011c1631b94f10f575f0f1d44e64ef37aa552a42",
+  "source_revision": "da548e7b7564d554018a9b34281e9e42320028ee",
+  "changes": {
+    "bin/supabricks": {
+      "before": "7413c196866cbb2527e3031582912c8933fdccb430307c273a29787dbf26e00a",
+      "after": "60b2cc62e18ca81c29b9e5097f1f94734cd9188dafaa317935f05c7c76c37c20",
+      "bytes": 29771640
+    },
+    "provenance/sqlite-policy.json": {
+      "before": null,
+      "after": "55cc724131072557d91e9482e76559055e5973ef49a3978db17ade53acebe526",
+      "bytes": 713
+    }
+  },
+  "unchanged_files": 26020,
+  "native_build": [
+    "cargo",
+    "build",
+    "--locked",
+    "--release",
+    "-p",
+    "supabricks-local",
+    "--features",
+    "sync-profile",
+    "--bin",
+    "supabricks"
+  ],
+  "sqlite_dependency_change": false,
+  "worker_or_probe_change": false,
+  "signed_release": false
+}

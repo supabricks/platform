@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP01 merged and measured; SP02 implemented and measured; SP03–SP12 planned**, 2026-09-26.
+Status: **SP00–SP02 merged and measured; SP03a implemented, qualified and measured; SP03b–SP12 planned**, 2026-09-26.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -15,6 +15,7 @@ no throughput improvement established. [SP02](../architecture/sp02-durable-captu
 then reduces overload sync calls per captured transaction by about 93.4%, with all
 six candidate overload trials completing at 684–689 actual changed rows/s. Decision:
 keep for performance; the 1,000-row/s source input and sustained target remain unqualified.
+[SP03a](../architecture/sync-performance-sp03a.md) verifies the existing fixed SQLite builds on Linux/macOS with no dependency upgrade: all 24 fresh comparison trials and 18 activation controls pass; no speedup is established. Decision: keep for reliability/enabling.
 This plan turns the workflow profile into separately measured slices. The existing SY00–SY08 correctness contract and qualified release
 envelope remain authoritative until a new exact release passes qualification.
 
@@ -229,8 +230,8 @@ Maintain a contribution ledger in the performance architecture report:
 | --- | --- | --- | --- | --- | --- | --- |
 | SP00 | Measurement reproducibility | `bc03909` / `f0a93ed`, same diagnostic package | Capture remains ~30 transactions/s, four syncs/commit | Mandatory low-load complete 6/6 per arm, fresh 6/6 predecessor and 5/6 candidate; overload complete 0/6 per arm; six additional low-load trials all pass | Mandatory low-load CPU −2.01% / +0.72%; peak memory +0.13% / −1.19% | [Keep — reliability/enabling; no speedup](../architecture/sp00-reproducible-comparisons.md) |
 | SP01 | Bounded pre-mutation journal-read retry | Runtime `9227275` / `b6a0b4b`, shared harness `c52f466` | Mandatory candidate fixtures recover 477 BUSY responses across 260 completed reads; bounded deferral/exhaustion verified by fault tests | Mandatory low-load complete 6/6 per arm, fresh 5/6 predecessor and 6/6 candidate; overload complete 0/6 per arm, resync failures 4 → 0 | Paired median CPU +3.47% / +2.64% at low load, +4.68% / +4.42% under overload; no material memory regression observed | [Keep — reliability/enabling; no throughput gain](../architecture/sp01-journal-contention-recovery.md) |
-
 | SP02 | Bounded durable capture group commit, retaining FULL/DELETE | `485b552` / `838f0b1`, common probe/harness | Overload capture ~30 → 343–344 transactions/s; paired sync calls/transaction −93.38% / −93.48%, durable time/transaction −93.50% / −93.63% | Low-load correct/fresh 6/6 per arm; overload completion 0/6 → 6/6 at 684–689 actual changed rows/s, p95 4.49–4.63 s; 1,000-row/s input not achieved | Paired median CPU +3.67% / +4.14% at low load, +7.91% / +10.92% under overload with far more capture/apply work completed; memory costs retained | [Keep — performance](../architecture/sp02-durable-capture-groups.md) |
+| SP03a | Loaded SQLite identity and release qualification, retaining SP02 FULL/DELETE | Accepted SP02 `838f0b1` (merged `a88eb145`) / `da548e7`, shared frozen harness | Python 3.53.1 and Rust 3.53.2 already fixed on Linux/macOS; no dependency upgrade; overload syncs/transaction within +0.89% paired median | All 24 mandatory trials correct/fresh; 18 controls and nine component trials pass; four contended trials retained/replaced; 1,000-row/s source input still unmet | Paired median CPU +0.08% to +0.79%, memory −2.87% to +2.68%; diagnostic binary +54,544 bytes, policy +713 bytes | [Keep — reliability/enabling; no speedup](../architecture/sync-performance-sp03a.md) |
 
 No cumulative result may omit rejected attempts or credit all gains to the last
 change. No runtime slice is complete until its report and ledger row exist.
