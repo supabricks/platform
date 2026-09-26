@@ -94,7 +94,7 @@ class Spool:
         existed = self.path.exists()
         from .wal import Journal, private_sizes, fixed_sqlite
         sizes = private_sizes(self.path)
-        if (journal_mode == 'wal' or sizes['-wal']) and not fixed_sqlite():
+        if not fixed_sqlite():
             raise CaptureError('sqlite_wal_unqualified')
         self.journal = Journal(self, journal_mode)
         os.close(private_file(self.path))

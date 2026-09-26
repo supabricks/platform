@@ -168,10 +168,20 @@ class WalTests(unittest.TestCase):
                         self.assertLessEqual(s.journal.physical(),LIMIT)
                     finally:s.close()
 
+    def test_low_disk_migration_retains_original_mode_and_committed_prefix(self):
+        s=self.open('delete');s.append(180,200,b'kept');s.close()
+        with patch('capture.wal.os.statvfs') as disk:
+            disk.return_value.f_bavail=0;disk.return_value.f_frsize=4096
+            with self.assertRaises(SpoolBackpressure):Spool(self.root,IDENTITY,LIMIT)
+        with sqlite3.connect(s.path.as_uri()+'?mode=ro',uri=True) as db:
+            self.assertEqual(db.execute('PRAGMA journal_mode').fetchone()[0],'delete')
+        s=self.open();self.assertEqual(s.captured,200);s.verify()
+
     def test_unqualified_sqlite_is_rejected_before_a_wal_connection_opens(self):
-        with patch('capture.wal.fixed_sqlite',return_value=False),patch('capture.spool.sqlite3.connect') as connect:
-            with self.assertRaisesRegex(CaptureError,'sqlite_wal_unqualified'):self.open()
-        connect.assert_not_called()
+        for mode in ('wal','delete'):
+            with patch('capture.wal.fixed_sqlite',return_value=False),patch('capture.spool.sqlite3.connect') as connect:
+                with self.assertRaisesRegex(CaptureError,'sqlite_wal_unqualified'):self.open(mode)
+            connect.assert_not_called()
 
 
 if __name__=='__main__':unittest.main()

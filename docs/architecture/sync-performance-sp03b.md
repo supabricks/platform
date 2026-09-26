@@ -44,7 +44,8 @@ work. Live databases never use immutable=1. Existing SQLite readers that do not
 use the lease still block incompatible journal-mode transitions in SQLite.
 
 Migration holds the exclusive writer lock, verifies identity and the durable
-chain, then requires an exclusive reader lease before changing mode. An existing
+chain, then requires an exclusive reader lease and write-headroom admission before
+changing mode. Low free space preserves the original mode and committed prefix. An existing
 spool above the new page cap is left unavailable with spool_migration_budget;
 it must be drained/pruned under the previous release or moved to a larger supported
 physical budget before retry. A migration-busy error preserves the journal and

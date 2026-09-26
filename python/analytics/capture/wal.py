@@ -62,7 +62,7 @@ class Journal:
         if not hasattr(sqlite3.Connection,'setconfig') or not hasattr(sqlite3,'SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE'):
             raise CaptureError('sqlite_wal_unqualified')
         if mode not in ('wal', 'delete'):raise CaptureError('invalid_journal_mode')
-        if mode == 'wal' and not fixed_sqlite():raise CaptureError('sqlite_wal_unqualified')
+        if not fixed_sqlite():raise CaptureError('sqlite_wal_unqualified')
         self.spool, self.mode = spool, mode
         # Reserve room for a complete transaction image, sidecars and checkpoint
         # growth. This is a physical envelope, not a promise of limit bytes of rows.
@@ -109,6 +109,7 @@ class Journal:
             try:
                 try:fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:raise CaptureError('spool_migration_busy') from None
+                self.before_write()
                 if current == 'wal':
                     busy, _, _ = self.checkpoint(force=True)
                     if busy:raise CaptureError('spool_migration_busy')
