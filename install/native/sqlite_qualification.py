@@ -60,7 +60,7 @@ def collect(release, verification):
                 policy_sha256=hashlib.sha256(POLICY.read_bytes()).hexdigest(),
                 rust=rust, python=python,
                 qualification_reader=dict(identity=reader, wal_reset_fixed=wal_reset_fixed(reader['version']),
-                    scope='Harness interpreter, not the production worker. Live spool reads use mode=ro; stopped corruption fixtures use DELETE. No permission to write/checkpoint a live WAL database is established.'),
+                    scope='Harness interpreter, not the production worker. Live spool reads use mode=ro; stopped corruption fixtures execute with the separately qualified analytical interpreter. No permission to write/checkpoint a WAL database with the harness interpreter is established.'),
                 probe_journal_mode='delete', probe_synchronous=2,
                 wal_mode_qualified=False)
 
