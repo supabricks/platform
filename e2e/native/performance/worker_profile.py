@@ -22,6 +22,7 @@ METRICS={};WORK={};ERRORS=[];LOCK=threading.RLock();LOCAL=threading.local()
 ENABLED=False;OUTPUT=None;ROLE=None;CONTEXT_ID=None;START_MS=time.time()*1000;WRITTEN=0;WRITE_NS=0;WRITE_ERRORS=0;STOP=threading.Event()
 BUDGET=8*1024*1024
 NATIVE=None
+CAPTURE_CURSORS=dict(decoded=None,durable=None,feedback=None)
 
 def native_io():
     if NATIVE is None:return None
@@ -71,6 +72,12 @@ def wrap(function,name):
                 # Full exception stays in the private worker log, never the exported trace.
                 traceback.print_exc();flush()
             raise
+        if name.startswith('capture.'):
+            with LOCK:
+                if name=='capture.decode.feed' and result:CAPTURE_CURSORS['decoded']=result[1]
+                elif name=='capture.spool.append' and result:
+                    CAPTURE_CURSORS['durable']=result['captured_lsn'] if isinstance(result,dict) else args[2]
+                elif name=='capture.wire.feedback':CAPTURE_CURSORS['feedback']=args[1]
         values={}
         if name=='capture.spool.append' and result:
             if isinstance(result,dict):
@@ -98,7 +105,7 @@ def flush(final=False):
         with LOCK:
             usage=resource.getrusage(resource.RUSAGE_SELF)
             row=dict(role=ROLE,context_id=CONTEXT_ID,pid=os.getpid(),started_at_ms=START_MS,at_ms=time.time()*1000,final=final,
-                metrics=METRICS,work=WORK,native_io=native_io(),exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
+                metrics=METRICS,work=WORK,native_io=native_io(),capture_cursors=dict(CAPTURE_CURSORS) if ROLE=='capture' else None,exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
                 maxrss_kib=usage.ru_maxrss,voluntary_switches=usage.ru_nvcsw,involuntary_switches=usage.ru_nivcsw,
                 profile_write_ns=WRITE_NS,profile_write_errors=WRITE_ERRORS,budget_exceeded=WRITTEN>=BUDGET)
             data=(json.dumps(row,separators=(',',':'))+'\n').encode()
@@ -134,6 +141,8 @@ class Connection(sqlite3.Connection):
                             key='sqlite.COMMIT.'+name+'.'+field
                             metric=WORK.setdefault(key,dict(count=0,total=0,maximum=0))
                             metric['count']+=1;metric['total']+=value;metric['maximum']=max(metric['maximum'],value)
+    def executemany(self,sql,*args,**kwargs):
+        with Span(sql_label(sql)):return super().executemany(sql,*args,**kwargs)
     def executescript(self,sql,*args,**kwargs):
         with Span('sqlite.script'):return super().executescript(sql,*args,**kwargs)
 
