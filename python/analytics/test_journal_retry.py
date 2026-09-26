@@ -19,7 +19,7 @@ def sql_error(code):
 class JournalRetryTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
-        self.spool=Spool(Path(self.temp.name)/'spool?literal',{'generation':'one','decoder_version':1})
+        self.spool=Spool(Path(self.temp.name)/'spool?literal',{'generation':'one','decoder_version':1},journal_mode='delete')
         self.spool.establish(100,{})
         self.spool.set('bootstrap',{'lsn':'0/64'})
         self.spool.append(280,300,b'complete')

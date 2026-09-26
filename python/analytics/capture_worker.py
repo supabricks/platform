@@ -12,6 +12,7 @@ import psycopg
 from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
 from capture.groups import Groups
+from capture.wal import SpoolBackpressure
 from capture.source import Source
 from capture.bootstrap import verify
 
@@ -35,20 +36,44 @@ def run(path):
         durable=spool.captured
         wire.feedback(durable,request=request);last_ack=time.monotonic();feedback_lsn=durable
     def flush():
-        if groups and groups.flush() is not None and wire:feedback()
+        nonlocal last_source_check, observed
+        if not groups:return
+        while True:
+            try:
+                result=groups.flush()
+                if result is not None and wire:feedback()
+                return
+            except SpoolBackpressure:
+                control=read(path)
+                if control['identity']!=identity or control['worker_generation']!=generation:
+                    raise CaptureError('worker_fenced')
+                if stopping or control['desired']!='running':raise
+                now=time.monotonic()
+                if now-last_source_check>=1:
+                    observed=source.check();last_source_check=now
+                    if verified:
+                        try:spool.prune(control.get('published_lsn'))
+                        except SpoolBackpressure:pass
+                if now-last_report>=.25:report('capturing','spool_backpressure')
+                if wire and now-last_ack>=1:feedback(request=True)
+                # Stop receiving; pending groups and the source slot retain all
+                # unacknowledged work while bounded readers release their pins.
+                time.sleep(.05)
     last_report=0;last_source_check=0;last_ack=0;observed=None;baseline=None;verified=None;emitted=None;stream_observed=None;current=config
     def report(state,error=None):
         nonlocal last_report
         last_report=time.monotonic()
         progress=spool.progress(current.get('published_lsn')) if spool else None
-        if progress is not None:
+        if spool:
+            if progress is None:progress={}
+            progress['capture_journal']=spool.journal.progress()
             progress['stream_observed_at_ms']=stream_observed
             if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
             source_lsn=observed['source'] if observed else None,retained_wal_bytes=observed['retained_bytes'] if observed else None,
-            spool_bytes=spool.path.stat().st_size if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
+            spool_bytes=spool.journal.physical() if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
     try:
         if config['desired']=='deleted':
             source=Source(config,None)
@@ -119,7 +144,7 @@ def run(path):
         code=error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
         # Resource/history/codec failures abandon this generation, never skip changes.
         # Source outages retain the slot under its server cap and can reconnect after restart.
-        state='unavailable' if code=='source_unavailable' else 'resync_required'
+        state='unavailable' if code in ('source_unavailable','spool_backpressure','spool_migration_busy','spool_migration_budget') else 'resync_required'
         if state=='resync_required' and source:
             try:source.cleanup()
             except Exception:code+=':cleanup_pending'

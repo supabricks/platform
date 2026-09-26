@@ -123,6 +123,9 @@ class IncrementalTests(unittest.TestCase):
         self.assertFalse((Path(config['workspace'])/'plan.json').exists())
     def test_locked_worker_receipt_and_termination_leave_storage_untouched(self):
         import sqlite3
+        # Retain SP01 rollback-journal contention coverage after the WAL default.
+        self.spool.close()
+        self.spool=Spool(self.spool.root,self.spool.identity,journal_mode='delete')
         config=self.config_next('0/12C')
         config.update(attempt=1,storage_generation='compact',previous_generation=config['generation'],generation=str(self.root/'analytics/incremental/compact'))
         path=Path(config['workspace'])/'config.json';path.write_bytes(canonical(config))

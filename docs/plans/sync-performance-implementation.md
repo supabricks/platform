@@ -385,6 +385,8 @@ needed, retain the verification evidence and unchanged-runtime comparison.
 
 ### SP03b — WAL for the capture spool
 
+Implementation in progress; [policy and frozen measurement declaration](../architecture/sync-performance-sp03b.md). Platform qualification and performance decision pending.
+
 Change the capture spool only to WAL with FULL durability, retaining SP02 group
 settings. SQLite documents concurrent readers/writer and commit-time WAL syncing
 with FULL, but WAL can still return busy and needs checkpoints.

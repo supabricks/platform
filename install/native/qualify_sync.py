@@ -18,6 +18,7 @@ from stage import stage
 from diagnostics import summarize
 from sync_evidence import WORKERS
 from sqlite_qualification import collect as collect_sqlite
+from capture_wal_qualification import collect as collect_wal
 
 ROOT=Path(__file__).resolve().parents[2]
 SUITES=('triggered','continuous','maintenance','governed')
@@ -50,6 +51,8 @@ def qualify(args):
         verification=json.loads(run([binary,'installation','verify'],env=env))
         identity=verification['identity']
         report['sqlite']=collect_sqlite(release,verification)
+        report['capture_wal']=collect_wal(release)
+        report['checks'].append('exact_installed_capture_wal_faults')
         manifest=json.loads((release/'release.json').read_text())
         report.update(release_identity=identity,binary_sha256=sha(binary),source=manifest['provenance'])
         report['worker_inventory']={name:sha(release/'python/analytics'/name) for name in WORKERS}
