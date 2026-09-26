@@ -95,6 +95,15 @@ include the load-launch delay and final in-flight transaction tail, while capaci
 counts acknowledgments strictly inside the declared interval. Memory peak includes
 setup/warmup; load samples are separately available with profiling enabled.
 
+Host disk counters can decrease through reset or overflow, as described in the
+[Linux I/O statistics documentation](https://docs.kernel.org/admin-guide/iostats.html).
+The offline analyzer checks consecutive samples, retains discontinuity receipts,
+and marks the affected device's derived utilization/queue/delta unavailable. It
+does not guess a wrap modulus or turn a decrease into zero I/O. This was observed
+in the first, separately contended block and is tracked in
+[#122](https://github.com/supabricks/platform/issues/122). Raw observations and the
+frozen measurement harness remain unchanged.
+
 Three repeats are a screen, not statistical certainty. Preserve original failed or
 contended outcomes, phase coverage, profiler overhead and sampled-process omissions.
 If controls cross the selection threshold or attribution is ambiguous, qualification

@@ -60,3 +60,21 @@ class SourceSelection(unittest.TestCase):
         trials=[t for t in self.trials() if t['clients']==8]
         trials[-1]['repeat']=trials[-2]['repeat']
         self.assertIsNone(select_client(trials))
+
+class HostDiskAttribution(unittest.TestCase):
+    def test_intermediate_decrease_is_unavailable_even_if_end_exceeds_start(self):
+        from source_analysis import host_disk_summary
+        rows=[dict(at_ms=i*1000,host_disks={'1:0':dict(io_ms=v,weighted_io_ms=v*2)})
+              for i,v in enumerate((100,50,200))]
+        result=host_disk_summary(rows)['1:0']
+        self.assertIsNone(result['busy_percent'])
+        self.assertIsNone(result['delta'])
+        self.assertEqual(len(result['discontinuities']),1)
+    def test_missing_device_is_unavailable_and_stable_device_retains_delta(self):
+        from source_analysis import host_disk_summary
+        rows=[dict(at_ms=0,host_disks={'1:0':dict(io_ms=100,weighted_io_ms=200),'2:0':dict(io_ms=0,weighted_io_ms=0)}),
+              dict(at_ms=1000,host_disks={'1:0':dict(io_ms=150,weighted_io_ms=400)})]
+        result=host_disk_summary(rows)
+        self.assertEqual(result['1:0']['busy_percent'],5)
+        self.assertEqual(result['1:0']['weighted_queue_mean'],.2)
+        self.assertIsNone(result['2:0']['delta'])

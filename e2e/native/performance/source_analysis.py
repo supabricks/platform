@@ -35,6 +35,30 @@ def io_values(text):
     return result
 
 
+def host_disk_summary(resources):
+    """Shared host counters can reset/overflow; never infer a wrap modulus."""
+    seconds=(resources[-1]['at_ms']-resources[0]['at_ms'])/1000
+    assert seconds>0
+    result={}
+    for device in sorted({d for r in resources for d in r['host_disks']}):
+        values=[r['host_disks'].get(device) for r in resources]
+        discontinuities=[]
+        for index,(before,after) in enumerate(zip(values,values[1:]),1):
+            if before is None or after is None:
+                discontinuities.append(dict(at_ms=resources[index]['at_ms'],reason='device_missing'))
+            else:
+                decreased={k:dict(before=v,after=after[k]) for k,v in before.items() if after[k]<v}
+                if decreased:discontinuities.append(dict(at_ms=resources[index]['at_ms'],decreased=decreased))
+        if discontinuities:
+            result[device]=dict(delta=None,busy_percent=None,weighted_queue_mean=None,
+                unavailable_reason='counter decrease or device appearance/disappearance; raw samples retained',
+                discontinuities=discontinuities)
+            continue
+        delta={k:values[-1][k]-v for k,v in values[0].items()}
+        if any(delta.values()):result[device]=dict(delta=delta,busy_percent=100*delta['io_ms']/(seconds*1000),weighted_queue_mean=delta['weighted_io_ms']/(seconds*1000))
+    return result
+
+
 def profile_summary(profile,source):
     start,end=source['measurement_start_ms'],source['measurement_end_ms']
     rows=[r for r in profile['observations'] if start<=r['at_ms']<end]
@@ -59,12 +83,7 @@ def profile_summary(profile,source):
     assert all(v>=0 for v in wal.values())
     resources=[r for r in profile['resources'] if start<=r['at_ms']<end];assert len(resources)>=2
     ra,rb=resources[0],resources[-1];resource_seconds=(rb['at_ms']-ra['at_ms'])/1000
-    disks={}
-    for device,old in ra['host_disks'].items():
-        new=rb['host_disks'].get(device)
-        if new is None:continue
-        d={k:new[k]-v for k,v in old.items()};assert min(d.values())>=0
-        if any(d.values()):disks[device]=dict(delta=d,busy_percent=100*d['io_ms']/(resource_seconds*1000),weighted_queue_mean=d['weighted_io_ms']/(resource_seconds*1000))
+    disks=host_disk_summary(resources)
     cg_a=io_values(ra['cgroup']['io.stat']);cg_b=io_values(rb['cgroup']['io.stat'])
     cgroup={dev:{k:v-cg_a.get(dev,{}).get(k,0) for k,v in counters.items()} for dev,counters in cg_b.items()}
     assert all(v>=0 for counters in cgroup.values() for v in counters.values())
