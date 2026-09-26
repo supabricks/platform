@@ -23,6 +23,7 @@ CHECKS=frozenset((
     'test_process_death_at_migration_and_checkpoint_boundaries',
     'test_unqualified_sqlite_is_rejected_before_a_wal_connection_opens',
     'test_low_disk_migration_retains_original_mode_and_committed_prefix',
+    'test_extant_sidecars_are_admitted_before_open_and_before_write',
 ))
 
 

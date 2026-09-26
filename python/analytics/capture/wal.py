@@ -171,7 +171,7 @@ class Journal:
         # also bounds checkpoint DB growth when the main file lags the WAL.
         sizes = private_sizes(self.spool.path)
         image = self.pages * (PAGE + 24) + 32
-        shm = 1024 * 1024
+        shm = max(1024 * 1024, sizes['-shm'])
         db_bound = self.pages * PAGE
         needed = db_bound + sizes['-wal'] + sizes['-journal'] + image + shm
         if needed > self.spool.limit:

@@ -177,6 +177,22 @@ class WalTests(unittest.TestCase):
             self.assertEqual(db.execute('PRAGMA journal_mode').fetchone()[0],'delete')
         s=self.open();self.assertEqual(s.captured,200);s.verify()
 
+    def test_extant_sidecars_are_admitted_before_open_and_before_write(self):
+        s=self.open();s.append(180,200,b'kept')
+        shm=Path(str(s.path)+'-shm');original=shm.stat().st_size
+        with shm.open('r+b') as stream:stream.truncate(10*1024*1024)
+        try:
+            with self.assertRaises(SpoolBackpressure):s.append(280,300,b'not admitted')
+            self.assertEqual(s.captured,200)
+        finally:
+            with shm.open('r+b') as stream:stream.truncate(original)
+        s.close()
+        wal=Path(str(s.path)+'-wal')
+        with wal.open('ab') as stream:stream.truncate(LIMIT+1)
+        with patch('capture.spool.sqlite3.connect') as connect:
+            with self.assertRaisesRegex(CaptureError,'spool_budget'):Spool(self.root,IDENTITY,LIMIT)
+        connect.assert_not_called()
+
     def test_unqualified_sqlite_is_rejected_before_a_wal_connection_opens(self):
         for mode in ('wal','delete'):
             with patch('capture.wal.fixed_sqlite',return_value=False),patch('capture.spool.sqlite3.connect') as connect:

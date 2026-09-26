@@ -23,7 +23,9 @@ The configured 16–512 MiB spool budget covers database, WAL, shared memory and
 rollback journal. Temporary SQLite storage stays in memory and cache spilling is
 disabled. The database page cap is floor((limit − 1 MiB) / (3 × 4 KiB)). Before each
 mutation the writer reserves the complete capped database's WAL frame image,
-checkpoint growth and 1 MiB for shared memory, in addition to existing sidecars.
+checkpoint growth and at least 1 MiB for shared memory (or its larger extant size),
+in addition to existing sidecars. An inherited total above the configured physical
+limit is refused before opening SQLite.
 It retains the 64 MiB filesystem reserve. This deliberately makes usable row
 capacity smaller than the physical limit; a 512 MiB limit is not 512 MiB of rows.
 Append admission also retains 256 KiB of database metadata/pruning headroom and
