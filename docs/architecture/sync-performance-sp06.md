@@ -69,6 +69,16 @@ manufacture capacity. Source settings are checked against accepted SP04 settings
    establish either 1,250 or 1,000 achieved replication throughput. Missing source
    headroom and any replication limit remain explicit outcomes.
 
+8. If the separately named full-stack profile completes, run profiler off/on
+   controls for that same 1,250-offered/selected-client/300-second profile at
+   8 and 16 CPUs, three pairs each (12 additional trials). This qualifies observer
+   overhead at the newly supplied rate; the historical four-client controls do
+   not establish it. Retain failures and investigate the same regression triggers
+   before any conclusion about the new profile.
+
+This additional-profile control requirement was recorded before the source
+acceptance screen began; it changes no frozen harness, runtime or earlier phase.
+
 One short source-only functional smoke run is retained separately and excluded
 from capacity selection. No fresh runtime package or native build is needed:
 source hashes bind the existing accepted/installed-qualified runtime. Freeze the
