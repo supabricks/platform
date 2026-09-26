@@ -36,6 +36,17 @@ class ProfilingTests(unittest.TestCase):
                 a.execute('ROLLBACK');b.execute('BEGIN IMMEDIATE');b.execute('INSERT INTO t VALUES (1)');b.execute('COMMIT')
                 self.assertEqual(a.execute('SELECT * FROM t').fetchall(),[(1,)])
             finally:a.close();b.close()
+    def test_filesystem_counts_are_nested_and_contain_no_paths(self):
+        p.WORK.clear();p.LOCAL.fs_counts={}
+        with patch.object(p,'COUNT_FS',True):
+            count=p.count_filesystem(lambda path:None,'python_stat_calls')
+            with p.Span('apply.plan'):
+                count('/private/source')
+                with p.Span('apply.boundary'):count('/private/source')
+            self.assertEqual(p.WORK['apply.plan.python_stat_calls']['total'],2)
+            self.assertEqual(p.WORK['apply.boundary.python_stat_calls']['total'],1)
+            self.assertNotIn('/private',json.dumps(p.WORK))
+
     def test_sql_labels_never_contain_literals(self):
         self.assertEqual(p.sql_label("SELECT 'secret'"),'sqlite.SELECT')
         self.assertEqual(p.sql_label('password=secret'),'sqlite.OTHER')
