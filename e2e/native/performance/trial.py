@@ -82,10 +82,23 @@ def load(cell,rate,seconds,clients,rows,offset=0):
 
 class Observer:
     def __init__(self,cell,capture):
-        self.cell=cell;self.spool=cell.root/'capture'/capture/'spool/spool.sqlite3'
+        self.cell=cell;self.capture_id=capture;self.spool=cell.root/'capture'/capture/'spool/spool.sqlite3'
         self.stop=threading.Event();self.ends={};self.captured={};self.publications=[]
         self.series=[];self.errors=[];self.busy_samples=0;self.seq=0;self.ordinal=0;self.runtime_error=None
+        self.missing_status_samples=0;self.missing_status_streak=0
         self.thread=threading.Thread(target=self.run)
+    def failure(self,db,check_capture=False):
+        policy=db.execute('SELECT record FROM sync_policies WHERE id=?',(self.cell.policy_id,)).fetchone()
+        if policy:self.runtime_error=json.loads(policy[0]).get('error')
+        # Keep healthy-path SQL identical. Consult capture for a more precise
+        # cause only on policy failure or status disappearance.
+        if self.runtime_error or check_capture:
+            capture=db.execute('SELECT record FROM sync_captures WHERE id=?',(self.capture_id,)).fetchone()
+            if capture:
+                capture=json.loads(capture[0])
+                if capture.get('state')=='resync_required' or capture.get('desired')=='fenced':
+                    self.runtime_error=capture.get('error') or 'capture_fenced'
+
     def poll(self):
         # Read short SQLite snapshots, never retain a lease that prevents pruning.
         with closing(sqlite3.connect(f'file:{self.spool}?mode=ro',uri=True,timeout=.05)) as db:
@@ -96,12 +109,23 @@ class Observer:
             self.ends[key]=int(end,16);self.captured.setdefault(key,stamp)
         with closing(sqlite3.connect(f'file:{self.cell.root}/state.sqlite3?mode=ro',uri=True,timeout=.05)) as db:
             rows=db.execute("SELECT ordinal,published_at_ms,json_extract(descriptor,'$.manifest.source.lsn'),export_id,json_extract(descriptor,'$.prepared_at_ms') FROM publications WHERE state='published' AND ordinal>? ORDER BY ordinal",(self.ordinal,)).fetchall()
-            policy=db.execute('SELECT record FROM sync_policies WHERE id=?',(self.cell.policy_id,)).fetchone()
-            if policy:self.runtime_error=json.loads(policy[0]).get('error')
+            self.failure(db)
         for ordinal,at,end,run,prepared in rows:
             self.ordinal=ordinal;self.publications.append(dict(at=at,end=lsn(end),run=run,prepared=prepared))
         # Status file avoids issuing benchmark monitoring RPCs to the single writer.
-        status=json.loads((self.spool.parent.parent/'status.json').read_text())
+        if self.runtime_error:return  # Durable failure wins over transient worker files.
+        try:status=json.loads((self.spool.parent.parent/'status.json').read_text())
+        except FileNotFoundError:
+            with closing(sqlite3.connect(f'file:{self.cell.root}/state.sqlite3?mode=ro',uri=True,timeout=.05)) as db:
+                self.failure(db,check_capture=True)
+            if self.runtime_error:return
+            # The daemon replaces status on restart. Marker/publication samples
+            # above remain recorded; only this non-authoritative status is absent.
+            self.missing_status_samples+=1;self.missing_status_streak+=1
+            if self.missing_status_streak>=10 or self.missing_status_samples>100:
+                raise RuntimeError('capture status persistently missing') from None
+            return
+        self.missing_status_streak=0
         progress=status.get('progress') or {}
         self.series.append(dict(at_ms=stamp,backlog_bytes=progress.get('backlog_bytes'),
             captured_lsn=status.get('captured_lsn'),published_lsn=progress.get('published_lsn'),
@@ -221,7 +245,7 @@ def trial(args):
             time.sleep(.1)
         else:raise RuntimeFailure('publication_drain_timeout')
         report['drain_seconds']=round(time.perf_counter()-drain,3)
-        observer.finish();report['backlog_series']=observer.series;report['observer_busy_samples']=observer.busy_samples
+        observer.finish();report['backlog_series']=observer.series;report['observer_busy_samples']=observer.busy_samples;report['observer_missing_status_samples']=observer.missing_status_samples
         with closing(sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro',uri=True)) as db:
             runs={r['id']:r for (text,) in db.execute('SELECT record FROM incremental_runs') for r in [json.loads(text)]}
         report['stages_ms']=attribute(samples,observer,runs)
@@ -248,7 +272,7 @@ def trial(args):
     finally:
         if observer:
             observer.stop.set();observer.thread.join(timeout=10)
-            report['observer_busy_samples']=observer.busy_samples
+            report['observer_busy_samples']=observer.busy_samples;report['observer_missing_status_samples']=observer.missing_status_samples
             report.setdefault('backlog_series',observer.series)
             report['observed_transactions']=len(observer.ends)
             report['observed_publications']=len(observer.publications)

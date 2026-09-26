@@ -1,0 +1,76 @@
+{
+  "activation_control_trials": 24,
+  "candidate_overload_p95_ms_range": [
+    4492.201,
+    4632.884
+  ],
+  "candidate_overload_source_rows_s_range": [
+    683.58,
+    689.444
+  ],
+  "cleanup_failures": 0,
+  "component_trials": 33,
+  "decision": "keep_performance",
+  "fixed_issues": [
+    104,
+    105
+  ],
+  "low_load_freshness_guaranteed": false,
+  "low_load_latency_speedup_established": false,
+  "macos_release": "Initial burst gate failed; one same-head retry passed. Both retained.",
+  "mandatory_low_load": {
+    "candidate": {
+      "complete": 6,
+      "fresh": 6
+    },
+    "predecessor": {
+      "complete": 6,
+      "fresh": 6
+    }
+  },
+  "mandatory_overload": {
+    "candidate": {
+      "complete": 6,
+      "fresh": 6
+    },
+    "predecessor": {
+      "complete": 0,
+      "drain_timeouts": 6
+    }
+  },
+  "mandatory_trials": 24,
+  "next_slice": "SP03a",
+  "open_constraints": [
+    87,
+    91,
+    96,
+    99,
+    106,
+    107
+  ],
+  "paired_median_cpu_change_percent": {
+    "16_cpus_1000_rows_s": 10.915750915750918,
+    "16_cpus_50_rows_s": 4.139610389610384,
+    "4_cpus_50_rows_s": 3.670886075949356,
+    "8_cpus_1000_rows_s": 7.905803195962982
+  },
+  "paired_median_sync_calls_per_transaction_change_percent": {
+    "16_cpus": -93.47964111702791,
+    "8_cpus": -93.37658581539624
+  },
+  "power_loss_qualified": false,
+  "predecessor_revision": "485b552ea5c802d4e446433b300f95851ce5aa6c",
+  "release_identity": "0e9337107a1a6e32c9c68bce28b36f45a7b0814861dfc5171465731b1e9278fe",
+  "retained_contended_trials": 0,
+  "runtime_revision": "838f0b1d4977489526bbd6e77d036569f3df83a9",
+  "shared_harness_revision": "838f0b1d4977489526bbd6e77d036569f3df83a9",
+  "slice": "SP02",
+  "source_1000_rows_s_qualified": false,
+  "superseded": {
+    "component_trials": 33,
+    "incomplete_comparison_trial_receipts": 2,
+    "low_load_control_trials": 12,
+    "reason": "Deadline-crossing group admission race, corrected before all final measurements"
+  },
+  "sustained_capacity_qualified": false
+}

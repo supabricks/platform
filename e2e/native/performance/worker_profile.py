@@ -22,6 +22,7 @@ METRICS={};WORK={};ERRORS=[];LOCK=threading.RLock();LOCAL=threading.local()
 ENABLED=False;OUTPUT=None;ROLE=None;CONTEXT_ID=None;START_MS=time.time()*1000;WRITTEN=0;WRITE_NS=0;WRITE_ERRORS=0;STOP=threading.Event()
 BUDGET=8*1024*1024
 NATIVE=None
+CAPTURE_CURSORS=dict(decoded=None,durable=None,feedback=None)
 
 def native_io():
     if NATIVE is None:return None
@@ -71,8 +72,19 @@ def wrap(function,name):
                 # Full exception stays in the private worker log, never the exported trace.
                 traceback.print_exc();flush()
             raise
+        if name.startswith('capture.'):
+            with LOCK:
+                if name=='capture.decode.feed' and result:CAPTURE_CURSORS['decoded']=result[1]
+                elif name=='capture.spool.append' and result:
+                    CAPTURE_CURSORS['durable']=result['captured_lsn'] if isinstance(result,dict) else args[2]
+                elif name=='capture.wire.feedback':CAPTURE_CURSORS['feedback']=args[1]
         values={}
-        if name=='capture.spool.append' and result:values=dict(transactions=1,payload_bytes=len(args[3]))
+        if name=='capture.spool.append' and result:
+            if isinstance(result,dict):
+                values=dict(transactions=result['transactions'],payload_bytes=result['payload_bytes'],groups=int(result['transactions']>0))
+            else:values=dict(transactions=1,payload_bytes=len(args[3]),groups=1)
+        elif name=='capture.groups.flush' and result:
+            values={key:result[key] for key in ('accumulation_ms','commit_ms')}
         elif name=='apply.journal':values=dict(transactions=len(result[1]),input_bytes=result[3])
         elif name=='apply.delta_merge':
             values={k:float(v) for k,v in result.items() if k in ('execution_time_ms','scan_time_ms','rewrite_time_ms','num_source_rows','num_target_rows_updated','num_target_rows_inserted','num_target_rows_deleted','num_target_files_added','num_target_files_removed')}
@@ -93,7 +105,7 @@ def flush(final=False):
         with LOCK:
             usage=resource.getrusage(resource.RUSAGE_SELF)
             row=dict(role=ROLE,context_id=CONTEXT_ID,pid=os.getpid(),started_at_ms=START_MS,at_ms=time.time()*1000,final=final,
-                metrics=METRICS,work=WORK,native_io=native_io(),exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
+                metrics=METRICS,work=WORK,native_io=native_io(),capture_cursors=dict(CAPTURE_CURSORS) if ROLE=='capture' else None,exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
                 maxrss_kib=usage.ru_maxrss,voluntary_switches=usage.ru_nvcsw,involuntary_switches=usage.ru_nivcsw,
                 profile_write_ns=WRITE_NS,profile_write_errors=WRITE_ERRORS,budget_exceeded=WRITTEN>=BUDGET)
             data=(json.dumps(row,separators=(',',':'))+'\n').encode()
@@ -129,6 +141,8 @@ class Connection(sqlite3.Connection):
                             key='sqlite.COMMIT.'+name+'.'+field
                             metric=WORK.setdefault(key,dict(count=0,total=0,maximum=0))
                             metric['count']+=1;metric['total']+=value;metric['maximum']=max(metric['maximum'],value)
+    def executemany(self,sql,*args,**kwargs):
+        with Span(sql_label(sql)):return super().executemany(sql,*args,**kwargs)
     def executescript(self,sql,*args,**kwargs):
         with Span('sqlite.script'):return super().executescript(sql,*args,**kwargs)
 
@@ -158,7 +172,13 @@ def install(namespace,role):
         from capture.spool import Spool
         from capture.source import Source
         from capture.protocol import Decoder,Wire
-        for cls,names,prefix in ((Spool,('append','prune','progress','verify'),'capture.spool'),(Source,('setup','check'),'capture.source'),(Wire,('receive','feedback'),'capture.wire'),(Decoder,('feed',),'capture.decode')):
+        append_name='append_many' if hasattr(Spool,'append_many') else 'append'
+        targets.append((Spool,append_name,'capture.spool.append'))
+        try:
+            from capture.groups import Groups
+        except ImportError:pass  # Predecessor has only one-transaction appends.
+        else:targets.append((Groups,'flush','capture.groups.flush'))
+        for cls,names,prefix in ((Spool,('prune','progress','verify'),'capture.spool'),(Source,('setup','check'),'capture.source'),(Wire,('receive','feedback'),'capture.wire'),(Decoder,('feed',),'capture.decode')):
             for name in names:targets.append((cls,name,prefix+'.'+name))
         # Bound capture loop and blocking socket wait separately.
         namespace['select'].select=wrap(namespace['select'].select,'capture.socket_wait')

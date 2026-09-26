@@ -258,3 +258,34 @@ Each read records attempts, recognized busy errors, backoff milliseconds, total
 read milliseconds, and outcome. Backoff time excludes SQLite's own busy wait;
 read time includes both. Collection occurs after the measured workload. Older
 runtimes omit these fields; absence must not be interpreted as zero contention.
+
+
+SP02 retains the same capture append span label for single and grouped writes.
+Its transaction/payload counters count only successfully durable new records;
+`capture.spool.append.groups` counts commits that add records. Replay-only groups
+add neither transactions nor groups. The generic SQLite COMMIT/sync totals also
+include metadata/pruning, so `capture_syncs_per_transaction` describes amortized
+capture-process durable work, not only the payload commit. Group flush counters
+record accumulation and commit milliseconds separately. Old packages without the
+new group counter retain an explicit missing value rather than fabricated groups.
+Both comparison arms must use the same probe version; activation controls precede
+attribution. Capture status also exposes bounded per-worker group totals, limits,
+and separate decoded, durable and feedback cursors under `progress.capture_groups`.
+
+`capture_groups.py` screens count and age settings with real FULL/DELETE writes,
+a bounded two-millisecond reader (optional), periodic authorized prefix pruning,
+and independent stopped-file validation of every retained payload and the prefix
+count. Use the packaged Python and preload `profile_io.so`; provide an immutable
+analytics source/package, scratch directory, and a new JSON output path. Its
+synthetic two-table transaction throughput excludes PostgreSQL, decoding, apply
+and publication, and cannot establish the end-to-end target. The reader-disabled
+variant is a component observer-cost control with the same final correctness
+check. Keep all individual repetitions and host observations.
+
+The observer retains a durable capture error as the runtime outcome before reading
+transient worker status. Only a missing `status.json` is tolerated briefly:
+`observer_missing_status_samples` records omissions, ten consecutive samples or
+more than 100 total omissions stop measurement, and missing spools/cgroup files,
+malformed status, missing transaction markers and cleanup errors still fail.
+Healthy-path SQL is unchanged; a capture-state lookup is added only when a policy
+fails or status disappears. Status omission never advances publication or feedback.

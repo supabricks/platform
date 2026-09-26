@@ -84,6 +84,23 @@ class Comparisons(unittest.TestCase):
         profile['workers'][name][0]['native_io']=None
         with self.assertRaisesRegex(ValueError,'native'):profile_metrics(profile,self.trial)
 
+    def test_grouped_capture_counts_transactions_separately_from_commits(self):
+        profile=json.loads(gzip.decompress((ARCHIVE/'profile.json.gz').read_bytes()))
+        baseline=profile_metrics(profile,self.trial)
+        for name,rows in profile['workers'].items():
+            if not name.startswith('capture-'):continue
+            for row in rows:
+                work=row.get('work',{})
+                old=work.get('capture.spool.append.transactions')
+                if old:
+                    work['capture.spool.append.groups']=copy.deepcopy(old)
+                    old['total']*=32
+        grouped=profile_metrics(profile,self.trial)
+        self.assertAlmostEqual(grouped['capture_transactions_s'],baseline['capture_transactions_s']*32)
+        self.assertAlmostEqual(grouped['capture_transactions_per_group'],32)
+        self.assertAlmostEqual(grouped['capture_syncs_per_transaction'],baseline['capture_syncs_per_transaction']/32)
+        self.assertEqual(grouped['capture_commit_ms'],baseline['capture_commit_ms'])
+
     def test_failure_to_success_does_not_create_aggregate_latency_speedup(self):
         ok=dict(status='measured',lag_p95_ms=4000)
         failed=dict(status='runtime_failed',lag_p95_ms=None)

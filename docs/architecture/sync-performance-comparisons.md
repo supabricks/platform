@@ -100,3 +100,15 @@ failures; all six overload trials still time out. Decision: **Keep —
 reliability/enabling**, with no throughput improvement established. The
 [cumulative ledger](../plans/sync-performance-implementation.md#attribution-decisions-and-reports)
 keeps SP00 and SP01 contributions separate.
+
+## SP02 contribution ledger
+
+[SP02's report](sp02-durable-capture-groups.md) retains 24 mandatory trials,
+24 profiler controls and 33 durable component trials. Bounded FULL/DELETE groups
+reduce overload sync calls per captured transaction by about 93.4%; capture rises
+from about 30 to 343–344 transactions/s. All six candidate overload trials complete
+correctly within five-second p95, while all six fresh SP01 overload trials time
+out. Actual generated input is only 684–689 changed rows/s. Decision: **Keep —
+performance**, with resource costs and remaining source, apply, macOS and sustained
+qualification constraints retained. SP03a starts from this accepted grouping
+runtime and must qualify the bundled SQLite dependency before changing journal mode.
