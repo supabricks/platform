@@ -42,7 +42,10 @@ capture, consistent with **no user-managed CDC/ETL**. Reverse sync is deferred.
 starts from the completed [workflow profile](../architecture/sync-workflow-profile.md).
 [SP00](../architecture/sp00-reproducible-comparisons.md) and
 [SP01](../architecture/sp01-journal-contention-recovery.md) are implemented and measured;
-[SP02](../architecture/sp02-durable-capture-groups.md) is implemented and measured; SP03–SP12 remain planned.
+[SP02](../architecture/sp02-durable-capture-groups.md),
+[SP03a](../architecture/sync-performance-sp03a.md) and
+[SP03b](../architecture/sync-performance-sp03b.md) are merged and measured.
+[SP04](../architecture/sync-performance-sp04.md) is implemented, measured and qualified; SP05–SP12 remain planned.
 It targets sustained 1,000 changed rows/s and at most five-second p95 publication
 lag in a declared local profile. Every logical slice requires the same twelve
 candidate trials, fresh predecessor comparisons, and a recorded contribution or

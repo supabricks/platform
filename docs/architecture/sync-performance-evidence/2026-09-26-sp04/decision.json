@@ -1,0 +1,44 @@
+{
+  "category": "latency_with_resource_and_input_tradeoffs",
+  "claims": {
+    "long_duration_qualification": false,
+    "signed_release_capacity": false,
+    "sustained_1000_rows_s": false
+  },
+  "decision": "keep",
+  "measurements": {
+    "component": 24,
+    "controls": 36,
+    "correctness_failures": 0,
+    "detected_contended_pairs": 0,
+    "fullstack_freshness_misses": 0,
+    "main": 24,
+    "rejected_pairs": 0
+  },
+  "next": [
+    "Measure fixed worker/publication costs separately (119)",
+    "Qualify sustained source capacity in SP06 (107)"
+  ],
+  "paired_main_p95_change_percent_range": [
+    -39.723,
+    -32.586
+  ],
+  "predecessor_runtime_revision": "5382e80032bb4fc70706f112db26f8415849a961",
+  "qualification": {
+    "checkout": "b12db00554c66796f6881bb02e00fa5a023caca8",
+    "head": "cde8839c21dd37286ce2d9979a6a133f89ae31d8",
+    "linux": "passed",
+    "macos": "passed",
+    "tree_equal": true,
+    "workflow": 36249393933
+  },
+  "runtime_revision": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+  "slice": "SP04",
+  "tradeoffs": {
+    "achieved_source_16_1000_percent": -2.82,
+    "achieved_source_8_1000_percent": -2.316,
+    "cpu_16_50_percent": 9.472,
+    "issue": 119,
+    "source_wait_causality_isolated": false
+  }
+}
