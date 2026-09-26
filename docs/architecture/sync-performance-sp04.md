@@ -1,6 +1,6 @@
 # SP04 — Bounded filesystem work during planning
 
-Status: **implemented, measured and qualified; keep for latency improvement** in
+Status: **merged, measured and qualified; keep for latency improvement** in
 [PR #117](https://github.com/supabricks/platform/pull/117), 2026-09-26.
 All 84 declared measurements passed correctness; all 60 full-stack trials met
 five-second p95 freshness, with no detected contention or rejected trial pairs.
