@@ -108,3 +108,4 @@ remains beside its owning record in the existing evidence directories.
 - [SP04: bounded planning inventories and measurement](sync-performance-sp04.md)
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)
 - [SP05: maintenance assessment and conditional deferral](sync-performance-sp05.md)
+- [SP06: source-capacity protocol and attribution limits (measurement in progress)](sync-performance-sp06.md)
