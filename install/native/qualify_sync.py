@@ -17,6 +17,7 @@ from qualify import Handler,run
 from stage import stage
 from diagnostics import summarize
 from sync_evidence import WORKERS
+from sqlite_qualification import collect as collect_sqlite
 
 ROOT=Path(__file__).resolve().parents[2]
 SUITES=('triggered','continuous','maintenance','governed')
@@ -46,7 +47,9 @@ def qualify(args):
         curl.stdout.close();curl.wait(timeout=10)
         assert curl.returncode==0 and bash.returncode==0,'signed sync installation failed'
         release=(prefix/'current').resolve();binary=release/'bin/supabricks'
-        identity=json.loads(run([binary,'installation','verify'],env=env))['identity']
+        verification=json.loads(run([binary,'installation','verify'],env=env))
+        identity=verification['identity']
+        report['sqlite']=collect_sqlite(release,verification)
         manifest=json.loads((release/'release.json').read_text())
         report.update(release_identity=identity,binary_sha256=sha(binary),source=manifest['provenance'])
         report['worker_inventory']={name:sha(release/'python/analytics'/name) for name in WORKERS}

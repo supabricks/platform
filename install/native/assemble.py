@@ -254,7 +254,10 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     manifest = dict(format_version=1, version=args.version, target=args.target,
                     profile='local-postgres-alpha' if args.postgres_only else 'local-analytical-preview', provenance=provenance, files=files)
     (destination / 'release.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
-    subprocess.run([str(destination / 'bin/supabricks'), 'installation', 'verify'], check=True)
+    verification = json.loads(subprocess.check_output(
+        [str(destination / 'bin/supabricks'), 'installation', 'verify'], text=True))
+    from sqlite_qualification import validate
+    validate(verification.get('sqlite', {}), 'rust')
     subprocess.run([str(destination / 'bin/psql'), '--version'], check=True)
     archive = destination.with_suffix(destination.suffix + '.tar.gz')
     with tarfile.open(archive, 'w:gz', compresslevel=3, format=tarfile.PAX_FORMAT) as tar:

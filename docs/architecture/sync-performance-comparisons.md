@@ -112,3 +112,15 @@ out. Actual generated input is only 684–689 changed rows/s. Decision: **Keep �
 performance**, with resource costs and remaining source, apply, macOS and sustained
 qualification constraints retained. SP03a starts from this accepted grouping
 runtime and must qualify the bundled SQLite dependency before changing journal mode.
+
+
+## SP03a contribution ledger
+
+[SP03a's report](sync-performance-sp03a.md) qualifies actual Python SQLite 3.53.1
+and Rust SQLite 3.53.2 on both installed platforms. No dependency upgrade is
+needed; capture remains DELETE/FULL with unchanged SP02 groups. All 24 fresh
+comparison trials, 18 profiler controls and nine component trials pass. Four
+contended trials are retained and replaced as whole pairs. Paired median CPU
+changes stay below +0.8%, memory within ±3%, and p95 between −1.97% and +0.85%.
+Decision: **Keep — reliability/enabling**, with no speedup or equivalence claim.
+SP03b can now measure capture WAL separately; its behavior is not qualified here.

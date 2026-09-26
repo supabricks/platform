@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 import re
+from sqlite_qualification import validate_evidence as validate_sqlite
 
 ROOT=Path(__file__).resolve().parents[2]
 NETWORK={
@@ -53,6 +54,7 @@ def collect(data,base,revision,target):
     require(data.get('status')=='passed' and not data.get('failure'),'incomplete qualification')
     require(data.get('release_identity')==base['release_sha256'] and data.get('archive')==base['archive'],'mixed archive')
     require(sha(data.get('binary_sha256')),'missing binary identity')
+    sqlite=validate_sqlite(data.get('sqlite'),data['release_identity'])
     source=data.get('source',{})
     require(source.get('platform_commit')==revision and source.get('platform_dirty') is False,'unreviewed source')
     require(source.get('data_formats',{}).get('local_catalog')==29,'unqualified storage format')
@@ -103,7 +105,7 @@ def collect(data,base,revision,target):
     # Copy only fixed measurements, never arbitrary suite fields or fixture data.
     clean_work={k:work[k] for k in ('tables','rows_per_table','transactions','changed_rows','target_rows_per_second','achieved_rows_per_second','elapsed_seconds','burst_changed_rows','burst_commit_to_publication_ms')}
     clean_work.update({k:{p:work[k][p] for p in ('p50','p95','p99')} for k in ('commit_to_publication_ms','oltp_transaction_ms')})
-    return dict(status='passed',release_identity=data['release_identity'],archive=data['archive'],reports=reports,
+    return dict(status='passed',release_identity=data['release_identity'],archive=data['archive'],reports=reports,sqlite=sqlite,
         worker_inventory=expected,network=data['network_evidence'],
         host={k:host[k] for k in ('system','machine','cpu_count','memory_bytes')},workload=clean_work,
         baseline_oltp_transaction_ms={p:baseline[p] for p in ('p50','p95','p99')},

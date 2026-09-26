@@ -1,0 +1,22 @@
+{
+  "accepted_predecessor_runtime_revision": "838f0b1d4977489526bbd6e77d036569f3df83a9",
+  "candidate_runtime_revision": "da548e7b7564d554018a9b34281e9e42320028ee",
+  "unchanged_source_paths": [
+    "Cargo.lock",
+    "components/analytical-runtime.lock.json",
+    "components/components.lock.json",
+    "python/analytics",
+    "e2e/native/performance/compare.py",
+    "e2e/native/performance/matrix.py",
+    "e2e/native/performance/trial.py",
+    "e2e/native/performance/profile.py",
+    "e2e/native/performance/capture_groups.py"
+  ],
+  "dependency_upgrade": false,
+  "sync_path_change": false,
+  "native_changes": [
+    "crates/local/src/cli.rs",
+    "crates/local/src/installation.rs"
+  ],
+  "native_change_scope": "Only explicit installation verification queries an in-memory SQLite connection; no cell startup or synchronization path changes."
+}

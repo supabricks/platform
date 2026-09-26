@@ -12,8 +12,18 @@ installed product. Do not promote an old probe to new-source qualification.
 Installed releases are governed by `native-cell.lock.json`,
 `release-build.lock.json`, the Python/notebook/UV locks, `sail-source.lock.json`,
 and each verified release's manifest/provenance. The R04 collector checks the
-complete archive evidence. There is no unselected local SQLite runtime: it is
-bundled through `rusqlite` and `libsqlite3-sys` in Cargo.lock.
+complete archive evidence. Rust control metadata uses SQLite bundled through
+`rusqlite` and `libsqlite3-sys` in Cargo.lock; analytical workers use the SQLite
+built into the pinned standalone Python. These are distinct builds.
+
+[The SP03a policy](sqlite-policy.json) pins their reviewed SQLite versions and
+source IDs. `installation verify` reports the SQLite actually linked into the
+native executable without opening cell data. Native assembly and installed sync
+qualification reject an unexpected production version/source ID or unsupported
+build, and retain compile options plus the qualification interpreter's separate
+identity. Python qualification exercises FULL/DELETE commit, rollback, reopening
+and read-only rejection. The host `sqlite3` executable is not runtime evidence.
+Capture remains in DELETE mode; this prerequisite does not qualify a WAL rollout.
 
 ## Run the checks
 
