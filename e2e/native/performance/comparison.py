@@ -10,6 +10,7 @@ from matrix import accepted
 METRICS = ('lag_p95_ms', 'lag_p99_ms', 'source_rows_s', 'baseline_rows_s', 'cpu_cores',
            'peak_memory_bytes', 'peak_backlog_bytes', 'last_backlog_bytes',
            'capture_transactions_s', 'capture_commit_ms', 'capture_syncs_per_commit',
+           'capture_transactions_per_group', 'capture_syncs_per_transaction', 'capture_durable_ms_per_transaction',
            'apply_directory_ms', 'apply_merge_ms', 'apply_run_ms')
 
 
@@ -74,7 +75,8 @@ def profile_metrics(profile, trial):
         result['counter_capabilities']['journal_retries']='bounded operational counters in batches.journal_reads; all worker attempts retained'
     if start is None or end is None:
         return result
-    tx = commits = ns = syncs = duration = 0
+    tx = commits = ns = syncs = duration = groups = 0
+    groups_available=False
     apply = []
     for name, rows in workers.items():
         if name.startswith('capture-'):
@@ -88,6 +90,9 @@ def profile_metrics(profile, trial):
                 require(b >= a, 'profile cumulative counter regressed')
                 return b-a
             tx += difference('work', 'capture.spool.append.transactions', 'total')
+            if 'capture.spool.append.groups' in last.get('work',{}):
+                groups_available=True
+                groups+=difference('work','capture.spool.append.groups','total')
             commits += difference('metrics', 'sqlite.COMMIT', 'calls')
             ns += difference('metrics', 'sqlite.COMMIT', 'total_ns')
             syncs += sum(difference('work', 'sqlite.COMMIT.'+op+'.calls', 'total') for op in ('fsync', 'fdatasync'))
@@ -103,9 +108,13 @@ def profile_metrics(profile, trial):
     result.update(capture_transactions_s=tx/duration if duration else None,
                   capture_commit_ms=ns/commits/1e6 if commits else None,
                   capture_syncs_per_commit=syncs/commits if commits else None,
-                  capture_window=dict(seconds=duration, transactions=tx, commits=commits),
+                  capture_transactions_per_group=tx/groups if groups_available and groups else None,
+                  capture_syncs_per_transaction=syncs/tx if tx else None,
+                  capture_durable_ms_per_transaction=ns/tx/1e6 if tx else None,
+                  capture_window=dict(seconds=duration, transactions=tx, commits=commits,groups=groups if groups_available else None),
                   successful_apply_workers=len(apply),
                   **{key: median([r[key] for r in apply]) for key in ('apply_directory_ms', 'apply_merge_ms', 'apply_run_ms')})
+    if groups_available:result['counter_capabilities']['capture_groups']='durable append group and transaction counters; COMMIT totals also include metadata/pruning'
     return result
 
 

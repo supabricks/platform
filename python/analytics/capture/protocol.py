@@ -1,5 +1,6 @@
 """Strict pgoutput v1 complete-transaction parser and bounded replication framing."""
 import socket
+import select
 import struct
 import time
 from .spool import CaptureError, MAX_MESSAGE, MAX_TRANSACTION, fault, pg_lsn
@@ -133,8 +134,31 @@ class Wire:
         body=b'r'+struct.pack('!QQQqB',captured,captured,0,stamp,int(request))
         self.socket.sendall(b'd'+struct.pack('!I',len(body)+4)+body)
         fault('after_source_ack')
-    def receive(self):
-        tag,data=self.packet()
+    def stream_packet(self, timeout):
+        # Keep a partial frame across deadlines. A readable socket does not
+        # promise that its whole packet is available; exact() could wait 3 s.
+        if not hasattr(self,'stream_buffer'):self.stream_buffer=bytearray()
+        deadline=time.monotonic()+timeout
+        while True:
+            size=5
+            if len(self.stream_buffer)>=5:
+                payload_size=struct.unpack('!I',self.stream_buffer[1:5])[0]-4
+                if payload_size<0 or payload_size>MAX_MESSAGE+25:raise CaptureError('message_budget')
+                size=5+payload_size
+                if len(self.stream_buffer)==size:
+                    tag=bytes(self.stream_buffer[:1]);data=bytes(self.stream_buffer[5:]);self.stream_buffer.clear()
+                    return tag,data
+            remaining=max(0,deadline-time.monotonic())
+            if not select.select([self.socket],[],[],remaining)[0]:return None
+            part=self.socket.recv(size-len(self.stream_buffer))
+            if not part:raise ConnectionError('replication_disconnected')
+            self.stream_buffer.extend(part)
+            if time.monotonic()>=deadline:return None
+
+    def receive(self, timeout=None):
+        packet=self.packet() if timeout is None else self.stream_packet(timeout)
+        if packet is None:return None
+        tag,data=packet
         if tag!=b'd' or not data:raise CaptureError('replication_stream_failed')
         if data[0:1]==b'w' and len(data)>=25:return 'data',struct.unpack('!Q',data[9:17])[0],data[25:]
         if data[0:1]==b'k' and len(data)==18:return 'keepalive',struct.unpack('!Q',data[1:9])[0],data[17]

@@ -72,7 +72,12 @@ def wrap(function,name):
                 traceback.print_exc();flush()
             raise
         values={}
-        if name=='capture.spool.append' and result:values=dict(transactions=1,payload_bytes=len(args[3]))
+        if name=='capture.spool.append' and result:
+            if isinstance(result,dict):
+                values=dict(transactions=result['transactions'],payload_bytes=result['payload_bytes'],groups=int(result['transactions']>0))
+            else:values=dict(transactions=1,payload_bytes=len(args[3]),groups=1)
+        elif name=='capture.groups.flush' and result:
+            values={key:result[key] for key in ('accumulation_ms','commit_ms')}
         elif name=='apply.journal':values=dict(transactions=len(result[1]),input_bytes=result[3])
         elif name=='apply.delta_merge':
             values={k:float(v) for k,v in result.items() if k in ('execution_time_ms','scan_time_ms','rewrite_time_ms','num_source_rows','num_target_rows_updated','num_target_rows_inserted','num_target_rows_deleted','num_target_files_added','num_target_files_removed')}
@@ -158,7 +163,13 @@ def install(namespace,role):
         from capture.spool import Spool
         from capture.source import Source
         from capture.protocol import Decoder,Wire
-        for cls,names,prefix in ((Spool,('append','prune','progress','verify'),'capture.spool'),(Source,('setup','check'),'capture.source'),(Wire,('receive','feedback'),'capture.wire'),(Decoder,('feed',),'capture.decode')):
+        append_name='append_many' if hasattr(Spool,'append_many') else 'append'
+        targets.append((Spool,append_name,'capture.spool.append'))
+        try:
+            from capture.groups import Groups
+        except ImportError:pass  # Predecessor has only one-transaction appends.
+        else:targets.append((Groups,'flush','capture.groups.flush'))
+        for cls,names,prefix in ((Spool,('prune','progress','verify'),'capture.spool'),(Source,('setup','check'),'capture.source'),(Wire,('receive','feedback'),'capture.wire'),(Decoder,('feed',),'capture.decode')):
             for name in names:targets.append((cls,name,prefix+'.'+name))
         # Bound capture loop and blocking socket wait separately.
         namespace['select'].select=wrap(namespace['select'].select,'capture.socket_wait')

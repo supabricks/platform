@@ -11,6 +11,7 @@ import struct
 MAX_MESSAGE = 1024 * 1024
 MAX_TRANSACTION = 4 * 1024 * 1024
 MAX_BATCH = 16 * 1024 * 1024
+MAX_GROUP_TRANSACTIONS = 128
 RESERVE = 64 * 1024 * 1024
 
 class CaptureError(Exception):
@@ -191,37 +192,81 @@ class Spool:
                     last_data_lsn=pg_lsn(self.last_data_lsn),barrier_commit_at_ms=self.get('barrier_at_ms') if receipt is None else stamp(receipt))
 
     def append(self, commit, end, payload):
-        if len(payload)>MAX_TRANSACTION: raise CaptureError('transaction_budget')
-        digest=hashlib.sha256(payload).hexdigest()
+        return bool(self.append_many([(commit,end,payload)])['transactions'])
+
+    def append_many(self, transactions):
+        """Commit a bounded ordered group, preserving each transaction/replay anchor.
+
+        The owner lock excludes other writers. Validate the entire group before
+        BEGIN; no feedback or in-memory cursor is authorized by a partial insert.
+        """
+        if not transactions or len(transactions)>MAX_GROUP_TRANSACTIONS:
+            raise CaptureError('group_budget')
+        if sum(len(tx[2]) for tx in transactions)>MAX_TRANSACTION:
+            raise CaptureError('group_budget')
+        if self.get('identity')!=self.identity:raise CaptureError('spool_identity_mismatch')
         previous=self.captured
-        if previous is None: raise CaptureError('spool_not_established')
-        if end<=previous:
-            row=self.db.execute('SELECT sha256 FROM transactions WHERE end_lsn=?',(f'{end:016x}',)).fetchone()
-            if row is None or row[0]!=digest: raise CaptureError('replay_mismatch')
-            return False
-        if not previous<=commit<end: raise CaptureError('noncontiguous_commit_order')
-        # Reserve database pages, rollback journal and next complete transaction BEFORE writing.
+        if previous is None:raise CaptureError('spool_not_established')
+        records=[];total=0;last=None;barrier=self.get('barrier');barrier_at=self.get('barrier_at_ms');last_data=self.last_data_lsn
+        for commit,end,payload in transactions:
+            if len(payload)>MAX_TRANSACTION:raise CaptureError('transaction_budget')
+            if last is not None and end<=last:raise CaptureError('noncontiguous_commit_order')
+            last=end;digest=hashlib.sha256(payload).hexdigest()
+            if end<=previous:
+                row=self.db.execute('SELECT commit_lsn,sha256 FROM transactions WHERE end_lsn=?',(f'{end:016x}',)).fetchone()
+                if row!=(f'{commit:016x}',digest):raise CaptureError('replay_mismatch')
+                continue
+            if not previous<=commit<end:raise CaptureError('noncontiguous_commit_order')
+            next_barrier=self.barrier_for(payload,end,barrier)
+            if next_barrier!=barrier:barrier_at=commit_time(payload)
+            barrier=next_barrier
+            if self.has_data(payload):last_data=end
+            records.append((f'{end:016x}',f'{previous:016x}',f'{commit:016x}',payload,digest))
+            previous=end;total+=len(payload)
+        result=dict(transactions=len(records),payload_bytes=total,captured_lsn=previous)
+        if not records:return result
+        # Physical reservation is independent of the accumulation target. Include
+        # page/index overhead for every small record and the rollback journal.
         used=self.path.stat().st_size-self.db.execute('PRAGMA freelist_count').fetchone()[0]*self.db.execute('PRAGMA page_size').fetchone()[0]
+        reservation=2*total+65536+len(records)*16384
         space=os.statvfs(self.root)
-        if used+2*len(payload)+65536>self.limit or space.f_bavail*space.f_frsize<RESERVE+2*len(payload)+65536:
+        if used+reservation>self.limit or space.f_bavail*space.f_frsize<RESERVE+reservation:
             raise CaptureError('spool_budget')
+        total_bytes=(self.get('bytes') or 0)+total
+        fault('before_spool_group')
         self.db.execute('BEGIN IMMEDIATE')
+        committing=False
         try:
-            self.db.execute('INSERT INTO transactions(end_lsn,previous_lsn,commit_lsn,payload,sha256) VALUES (?,?,?,?,?)',
-                (f'{end:016x}',f'{previous:016x}',f'{commit:016x}',payload,digest))
-            self.set('captured',end);self.set('bytes',(self.get('bytes') or 0)+len(payload))
-            barrier=self.barrier_for(payload,end,self.get('barrier'))
+            self.db.executemany('INSERT INTO transactions(end_lsn,previous_lsn,commit_lsn,payload,sha256) VALUES (?,?,?,?,?)',records)
+            self.set('captured',previous);self.set('bytes',total_bytes)
             if barrier is not None:
-                if barrier!=self.get('barrier'):self.set('barrier_at_ms',commit_time(payload))
-                self.set('barrier',barrier)
+                self.set('barrier',barrier);self.set('barrier_at_ms',barrier_at)
             fault('before_spool_commit')
+            committing=True
             self.db.execute('COMMIT')
-        except BaseException:
-            if self.db.in_transaction:self.db.execute('ROLLBACK')
-            raise
-        if self.has_data(payload):self.last_data_lsn=end
+        except BaseException as error:
+            if self.db.in_transaction:
+                self.db.execute('ROLLBACK')
+                raise
+            if not committing or not isinstance(error,sqlite3.Error):raise
+            # A failed COMMIT response can be ambiguous. Never infer success from
+            # RAM: close/reopen and verify the complete durable prefix first.
+            self.db.close()
+            self.db=sqlite3.connect(self.path,isolation_level=None)
+            self.db.execute('PRAGMA journal_mode=DELETE')
+            self.db.execute('PRAGMA synchronous=FULL')
+            self.db.execute('PRAGMA foreign_keys=ON')
+            self.db.execute('PRAGMA temp_store=FILE')
+            self.db.execute(f'PRAGMA max_page_count={self.limit//4096}')
+            if self.get('identity')!=self.identity:raise CaptureError('spool_identity_mismatch') from error
+            self.verify()
+            if self.captured!=previous or self.get('bytes')!=total_bytes:raise error
+            for end,prior,commit,payload,digest in records:
+                if self.db.execute('SELECT previous_lsn,commit_lsn,sha256 FROM transactions WHERE end_lsn=?',(end,)).fetchone()!=(prior,commit,digest):
+                    raise CaptureError('spool_corrupt') from error
+        self.last_data_lsn=last_data
         fault('after_spool_commit')
-        return True
+        return result
 
     def prefix(self):
         return checked_prefix(self.get('pruned_prefix'),self.identity,self.get('start'),self.captured)

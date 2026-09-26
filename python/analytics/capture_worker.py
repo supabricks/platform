@@ -4,12 +4,14 @@ import json
 import os
 from pathlib import Path
 import select
+import signal
 import sqlite3
 import sys
 import time
 import psycopg
 from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
+from capture.groups import Groups
 from capture.source import Source
 from capture.bootstrap import verify
 
@@ -22,13 +24,26 @@ def read(path):
 def run(path):
     config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
-    spool=source=wire=None
+    spool=source=wire=groups=None
+    stopping=False;feedback_lsn=None
+    def stop(signum, frame):
+        nonlocal stopping
+        stopping=True
+    previous_handlers={sig:signal.signal(sig,stop) for sig in (signal.SIGTERM,signal.SIGINT)}
+    def feedback(request=False):
+        nonlocal last_ack,feedback_lsn
+        durable=spool.captured
+        wire.feedback(durable,request=request);last_ack=time.monotonic();feedback_lsn=durable
+    def flush():
+        if groups and groups.flush() is not None and wire:feedback()
     last_report=0;last_source_check=0;last_ack=0;observed=None;baseline=None;verified=None;emitted=None;stream_observed=None;current=config
     def report(state,error=None):
         nonlocal last_report
         last_report=time.monotonic()
         progress=spool.progress(current.get('published_lsn')) if spool else None
-        if progress is not None:progress['stream_observed_at_ms']=stream_observed
+        if progress is not None:
+            progress['stream_observed_at_ms']=stream_observed
+            if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
@@ -40,27 +55,35 @@ def run(path):
             source.cleanup();report('deleted');return
         spool=Spool(root/'spool',identity,config['spool_bytes'])
         source=Source(config,spool)
-        profile=source.setup();report('established')
+        profile=source.setup();groups=Groups(spool);report('established')
         while True:
             current=read(path)
             if current['identity']!=identity or current['worker_generation']!=generation:raise CaptureError('worker_fenced')
+            if stopping:
+                flush();report('paused');return
+            if groups.wait()==0:flush()
             if current['desired']=='deleted':
+                flush()
                 if wire:wire.close();wire=None
                 source.cleanup();report('deleted');return
             if current.get('bootstrap') and verified is None:
+                flush()
                 if baseline is None:baseline=verify(current,spool)
                 try:verified=next(baseline)
                 except StopIteration:raise CaptureError('bootstrap_verification')
             if time.monotonic()-last_source_check>=1:
+                flush()
                 observed=source.check();last_source_check=time.monotonic()
                 if verified:spool.prune(current.get('published_lsn'))
             if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
-                report('paused' if current['desired']=='paused' else 'capturing')
+                flush();report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':
+                flush()
                 if wire:wire.close();wire=None
                 time.sleep(.1);continue
             requested=current.get('barrier_request')
             if verified and requested and requested!=emitted and (spool.get('barrier') or {}).get('run_id')!=requested:
+                flush()
                 from capture.protocol import barrier_message
                 prefix='supabricks.barrier.'+identity['generation']
                 barrier_message(1,prefix,requested.encode(),prefix if identity.get('decoder_version')==2 else None)
@@ -76,20 +99,21 @@ def run(path):
                 wire=Wire(config['socket_dir'],config['port'])
                 wire.start(source.slot,source.publication,spool.captured)
                 decoder=Decoder(profile['relations'],source.fence,'supabricks.barrier.'+identity['generation'] if identity.get('decoder_version')==2 else None)
-            if not select.select([wire.socket],[],[],.2)[0]:
-                if time.monotonic()-last_ack>=1:
-                    wire.feedback(spool.captured,request=True);last_ack=time.monotonic()
+            packet=wire.receive(timeout=groups.wait())
+            if groups.wait()==0:flush()
+            if packet is None:
+                if time.monotonic()-last_ack>=1:feedback(request=True)
                 continue
-            kind,end,data=wire.receive()
+            kind,end,data=packet
             stream_observed=int(time.time()*1000)
             if kind=='data':
                 tx=decoder.feed(data)
                 if tx:
-                    spool.append(*tx)
-                    # This value is re-read from FULL-synchronous SQLite, never from XLogData's WAL end.
-                    wire.feedback(spool.captured);last_ack=time.monotonic()
+                    if groups.before(tx):flush()
+                    if groups.add(tx):flush()
             elif data:
-                wire.feedback(spool.captured);last_ack=time.monotonic()
+                # A keepalive cannot acknowledge decoded or buffered progress.
+                feedback()
     except (CaptureError,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
         if wire:wire.close();wire=None
         code=error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
@@ -103,6 +127,7 @@ def run(path):
         except OSError:pass  # No disk space is never an acknowledgment.
         return 1
     finally:
+        for sig,handler in previous_handlers.items():signal.signal(sig,handler)
         if wire:wire.close()
         if source:source.close()
         if spool:spool.close()
