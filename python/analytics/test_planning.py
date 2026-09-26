@@ -77,7 +77,7 @@ class PlanningTests(unittest.TestCase):
             with PlanningBoundary(self.root,self.deadline,lease):pass
     def test_overlapping_process_and_kill_recovery(self):
         script="import sys,time;from incremental.planning import mutation_lease;\nwith mutation_lease(sys.argv[1]):\n print('locked',flush=True);time.sleep(60)"
-        process=subprocess.Popen([sys.executable,'-c',script,str(self.root)],stdout=subprocess.PIPE,text=True)
+        process=subprocess.Popen([sys.executable,'-c',script,str(self.root)],stdout=subprocess.PIPE,text=True,cwd=Path(__file__).resolve().parent)
         try:
             self.assertEqual(process.stdout.readline().strip(),'locked')
             with self.assertRaisesRegex(CaptureError,'incremental_writer_busy'):

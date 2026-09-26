@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP03a merged and measured; SP03b implemented/qualified and measured (PR #111); SP04–SP12 planned**, 2026-09-26.
+Status: **SP00–SP03b merged and measured; SP04 implemented, measurement in progress (PR #117); SP05–SP12 planned**, 2026-09-26.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -387,7 +387,7 @@ needed, retain the verification evidence and unchanged-runtime comparison.
 
 ### SP03b — WAL for the capture spool
 
-Complete on the SP03b branch; **keep — performance**. [Policy, qualification and measured attribution](../architecture/sync-performance-sp03b.md). All 24 main trials are correct/fresh; 36 full-stack profiler controls, 12 grouping ablations and 36 component/control trials are retained. Achieved overload input improves by 8–9%, but 1,000 rows/s remains unqualified. Native sync calls per transaction fall about 44% including checkpoint work; total CPU rises about 7–9%. Both installed platform gates pass. Keep grouping with WAL; the ungrouped variants miss freshness. SP05 should follow up the bounded retained-WAL allocation observed in [#116](https://github.com/supabricks/platform/issues/116).
+Merged in PR #111; **keep — performance**. [Policy, qualification and measured attribution](../architecture/sync-performance-sp03b.md). All 24 main trials are correct/fresh; 36 full-stack profiler controls, 12 grouping ablations and 36 component/control trials are retained. Achieved overload input improves by 8–9%, but 1,000 rows/s remains unqualified. Native sync calls per transaction fall about 44% including checkpoint work; total CPU rises about 7–9%. Both installed platform gates pass. Keep grouping with WAL; the ungrouped variants miss freshness. SP05 should follow up the bounded retained-WAL allocation observed in [#116](https://github.com/supabricks/platform/issues/116).
 
 Change the capture spool only to WAL with FULL durability, retaining SP02 group
 settings. SQLite documents concurrent readers/writer and commit-time WAL syncing
@@ -415,6 +415,8 @@ Run a batching-on/off by DELETE/WAL component factorial, plus end-to-end ablatio
 to distinguish interacting improvements from additive assumptions.
 
 ### SP04 — Bound filesystem work during apply planning
+
+Implementation in [PR #117](https://github.com/supabricks/platform/pull/117); measurement and qualification in progress. [Safety contract and predeclared protocol](../architecture/sync-performance-sp04.md). No performance decision yet.
 
 Primary code: `python/analytics/incremental/storage.py:{boundary,files}`,
 `incremental_worker.py:plan`, inventory/durability callers. Track

@@ -54,3 +54,5 @@ evidence from the architecture index, and update the affected handbook workflow.
 Change the stack overview when product behavior, ownership or support changes.
 Keep historical failures and qualification limits visible. A successful source
 build or local smoke test does not qualify a new release archive.
+
+SP04 implementation and measurement: [bounded planning inventories](architecture/sync-performance-sp04.md).
