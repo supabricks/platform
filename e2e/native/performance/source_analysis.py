@@ -20,7 +20,9 @@ def select_client(trials,cpus=(8,16),repeats=3):
     for target in (1250,1000):
         for client in sorted({t['clients'] for t in trials}):
             selected=[t for t in trials if t['clients']==client and t['cpus'] in cpus]
-            if all(len([t for t in selected if t['cpus']==c and t['profile']])==repeats for c in cpus):
+            if all(len([t for t in selected if t['cpus']==c and t['profile']])==repeats
+                   and {t['repeat'] for t in selected if t['cpus']==c and t['profile']}==set(range(1,repeats+1))
+                   for c in cpus):
                 if all(t['seconds']==300 and len(t['minute_rows_s'])==5 and min(t['minute_rows_s'])>=target for t in selected):
                     return dict(clients=client,qualification_floor_rows_s=target,preferred_headroom=target==1250)
     return None
@@ -79,6 +81,8 @@ def profile_summary(profile,source):
 
 def analyze(root):
     experiment=read(root/'experiment.json');assert experiment['state']=='complete'
+    assert [b['block'] for b in experiment['blocks']]==experiment['config']['order'],'incomplete or changed block order'
+    assert [a for a in experiment['attempts'] if a['accepted']]==experiment['blocks'],'accepted attempt history differs'
     trials=[]
     for block in experiment['blocks']:
         assert block['accepted'] and len(block['results'])==len(block['block']['variants'])

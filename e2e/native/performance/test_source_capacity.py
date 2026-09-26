@@ -55,3 +55,8 @@ class SourceSelection(unittest.TestCase):
         self.assertIsNone(select_client(trials[:-1]))
         trials[-1]['minute_rows_s'][2]=999
         self.assertIsNone(select_client(trials))
+    def test_duplicate_repeat_cannot_replace_independent_trial(self):
+        from source_analysis import select_client
+        trials=[t for t in self.trials() if t['clients']==8]
+        trials[-1]['repeat']=trials[-2]['repeat']
+        self.assertIsNone(select_client(trials))
