@@ -40,6 +40,23 @@ pub struct Installation {
 // validation. One entry bounds memory and never caches installation file checks.
 static PARSED_MANIFEST: Mutex<Option<(String, Arc<Manifest>)>> = Mutex::new(None);
 
+/// Inspect the SQLite linked into this executable, without opening cell data.
+/// Only explicit installation verification calls this; it is not a runtime probe.
+pub(crate) fn sqlite_identity() -> Result<serde_json::Value> {
+    let db = rusqlite::Connection::open_in_memory()?;
+    let (version, source_id): (String, String) =
+        db.query_row("SELECT sqlite_version(), sqlite_source_id()", [], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?;
+    let mut statement = db.prepare("PRAGMA compile_options")?;
+    let mut options = statement
+        .query_map([], |row| row.get::<_, String>(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    options.sort();
+    Ok(serde_json::json!({"version":version,"source_id":source_id,
+        "compile_options":options,"binding":"rusqlite/bundled"}))
+}
+
 impl Installation {
     pub fn discover() -> Result<Option<Self>> {
         Self::at_executable(&std::env::current_exe()?.canonicalize()?)

@@ -234,7 +234,8 @@ pub fn run() -> Result<u8> {
         installed.verify()?;
         println!(
             "{}",
-            json!({"verified":true,"version":installed.manifest.version,"identity":installed.identity,"root":installed.root})
+            json!({"verified":true,"version":installed.manifest.version,"identity":installed.identity,"root":installed.root,
+                "sqlite":crate::installation::sqlite_identity()?})
         );
         return Ok(0);
     }
