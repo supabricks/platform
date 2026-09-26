@@ -129,6 +129,8 @@ class Observer:
         progress=status.get('progress') or {}
         self.series.append(dict(at_ms=stamp,backlog_bytes=progress.get('backlog_bytes'),
             captured_lsn=status.get('captured_lsn'),published_lsn=progress.get('published_lsn'),
+            capture_journal=progress.get('capture_journal'),
+            capture_groups=progress.get('capture_groups'),spool_bytes=status.get('spool_bytes'),
             memory_bytes=int((Path('/sys/fs/cgroup')/'memory.current').read_text())))
     def run(self):
         while not self.stop.is_set():

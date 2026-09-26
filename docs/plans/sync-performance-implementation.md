@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP02 merged and measured; SP03a implemented, qualified and measured; SP03b–SP12 planned**, 2026-09-26.
+Status: **SP00–SP03a merged and measured; SP03b in implementation/qualification; SP04–SP12 planned**, 2026-09-26.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime

@@ -126,7 +126,7 @@ class CaptureTests(unittest.TestCase):
 
     def test_private_paths(self):
         self.root.mkdir(mode=0o700);(self.root/'spool.sqlite3').symlink_to(self.root/'other')
-        with self.assertRaises(OSError):self.spool()
+        with self.assertRaisesRegex(CaptureError,'unsafe_spool_path'):self.spool()
 
     def test_status_replacement_recovers_a_longer_crash_temporary(self):
         from capture.spool import atomic

@@ -73,7 +73,9 @@ Freeze one clean source/harness revision. Create immutable diagnostic overlays o
 the accepted SP03a package; retain manifests, changed-file hashes and native binary
 identity. Both main arms receive the identical updated profiler. It separates
 explicit SQLite WAL_CHECKPOINT calls and their native sync counters from COMMIT;
-no SQL text, rows or credentials enter traces. The predecessor runtime remains
+no SQL text, rows or credentials enter traces. The common trial observer also
+retains fixed checkpoint/physical-size/group status counters in its existing
+backlog samples. The predecessor runtime remains
 SP03a. The candidate includes the SP03b worker and native status handling.
 
 Run 30 component trials first: batching on/off × DELETE/WAL × saturated/500 offered
