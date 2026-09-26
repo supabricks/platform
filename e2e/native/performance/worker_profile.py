@@ -22,6 +22,7 @@ METRICS={};WORK={};ERRORS=[];LOCK=threading.RLock();LOCAL=threading.local()
 ENABLED=False;OUTPUT=None;ROLE=None;CONTEXT_ID=None;START_MS=time.time()*1000;WRITTEN=0;WRITE_NS=0;WRITE_ERRORS=0;STOP=threading.Event()
 BUDGET=8*1024*1024
 NATIVE=None
+COUNT_FS=False
 CAPTURE_CURSORS=dict(decoded=None,durable=None,feedback=None)
 
 def native_io():
@@ -53,12 +54,28 @@ class Span:
     def __enter__(self):
         self.start=time.perf_counter_ns();self.children=0
         if not hasattr(LOCAL,'stack'):LOCAL.stack=[]
+        self.fs_start=dict(getattr(LOCAL,'fs_counts',{})) if COUNT_FS else None
         LOCAL.stack.append(self);return self
     def __exit__(self,kind,error,tb):
         elapsed=time.perf_counter_ns()-self.start
         LOCAL.stack.pop()
         if LOCAL.stack:LOCAL.stack[-1].children+=elapsed
         record(self.name,elapsed,self.children,error)
+        if self.fs_start is not None:
+            with LOCK:
+                for key,value in getattr(LOCAL,'fs_counts',{}).items():
+                    delta=value-self.fs_start.get(key,0)
+                    metric=WORK.setdefault(self.name+'.'+key,dict(count=0,total=0,maximum=0))
+                    metric['count']+=1;metric['total']+=delta;metric['maximum']=max(metric['maximum'],delta)
+
+
+def count_filesystem(function,name):
+    @functools.wraps(function)
+    def counted(*args,**kwargs):
+        if not hasattr(LOCAL,'fs_counts'):LOCAL.fs_counts={}
+        LOCAL.fs_counts[name]=LOCAL.fs_counts.get(name,0)+1
+        return function(*args,**kwargs)
+    return counted
 
 
 def wrap(function,name):
@@ -149,7 +166,7 @@ class Connection(sqlite3.Connection):
 
 
 def install(namespace,role):
-    global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID
+    global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID,COUNT_FS
     if len(sys.argv)<2:return
     path=Path(sys.argv[1])
     root=next((p for p in list(path.parents)[:6] if (p/'sync-profile/enabled').is_file()),None)
@@ -184,7 +201,16 @@ def install(namespace,role):
         # Bound capture loop and blocking socket wait separately.
         namespace['select'].select=wrap(namespace['select'].select,'capture.socket_wait')
     if role=='incremental':
+        COUNT_FS=True
+        for name in ('stat','lstat','fstat','statvfs','scandir'):
+            setattr(os,name,count_filesystem(getattr(os,name),'python_'+name+'_calls'))
+        Path.rglob=count_filesystem(Path.rglob,'python_recursive_walks')
         from incremental import storage,maintenance
+        try:from incremental import planning
+        except ImportError:pass
+        else:
+            targets.extend([(planning,'inventory_snapshot','apply.planning_inventory'),
+                (planning.PlanningBoundary,'check','apply.planning_check')])
         for mod,names,prefix in ((storage,('journal','initialize','verify_previous','inventory','durable','boundary','retained_boundary','digest'),'apply'),(maintenance,('base','compact'),'apply.maintenance')):
             for name in names:
                 if hasattr(mod,name):targets.append((mod,name,prefix+'.'+name))

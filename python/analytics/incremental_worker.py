@@ -16,6 +16,7 @@ from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
 from incremental.rows import changes, overlay, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
+from incremental.planning import mutation_lease, PlanningBoundary
 
 
 def quote(name):return '"'+name.replace('"','""')+'"'
@@ -26,7 +27,12 @@ def schema_for(table,path):
     return table.to_pyarrow_dataset(filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem())).schema
 
 
-def plan(config,root,previous,journal_data=None):
+def plan(config,root,previous,journal_data=None,lease=None):
+    with PlanningBoundary(root,config['deadline_ms'],lease) as guard:
+        return plan_rows(config,root,previous,journal_data,guard)
+
+
+def plan_rows(config,root,previous,journal_data,guard):
     schema,transactions,end,input_bytes=journal(config) if journal_data is None else journal_data
     operations=[]
     for end,payload in transactions:
@@ -45,7 +51,7 @@ def plan(config,root,previous,journal_data=None):
         dataset=delta.to_pyarrow_dataset(filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem()))
         rows={}
         for batch in dataset.scanner(filter=ds.field(pk).isin(sorted(touched[oid])),batch_size=32).to_batches():
-            boundary(root,config['deadline_ms'])
+            guard.check()
             size+=batch.nbytes
             if size>MAX_VALUES:raise CaptureError('apply_value_budget')
             for row in batch.to_pylist():
@@ -131,6 +137,12 @@ def run(config):
         # never re-enter this retryable boundary after partial table mutation.
         journal_data=journal(config)
     root=initialize(config)
+    with mutation_lease(root) as lease:
+        return run_owned(config,root,journal_data,lease)
+
+
+def run_owned(config,root,journal_data,lease):
+    work=Path(config['workspace']);plan_path=work/'plan.json'
     previous,compaction=base(config,root)
     sealed=frozenset()
     if config['previous'] is None:
@@ -149,13 +161,14 @@ def run(config):
             prepared=read_json(plan_path,64*1024*1024)
             if any(prepared[k]!=config[k] for k in ('identity','after_lsn','target_lsn')) or prepared['run_id']!=config['id'] or prepared['previous_epoch']!=previous['epoch_id']:raise CaptureError('apply_plan_identity')
         else:
-            prepared=plan(config,root,previous,journal_data);atomic(plan_path,prepared)
+            prepared=plan(config,root,previous,journal_data,lease);atomic(plan_path,prepared)
         fault('after_apply_plan')
         checksum=hashlib.sha256(canonical(prepared)).hexdigest()
         tables=copy.deepcopy(previous['manifest']['tables']);metrics=[]
         for table in tables:
             selected=next((t for t in prepared['tables'] if t['oid']==str(table['oid'])),None)
             if selected:
+                lease.check()
                 table['version'],metric=apply_table(config,root,table,selected,checksum,sealed)
                 metrics.append(dict(oid=table['oid'],metrics=metric))
                 table['rows']+=selected['row_delta']
@@ -176,6 +189,7 @@ def run(config):
     if len(canonical(descriptor))>2*1024*1024:raise CaptureError('epoch_metadata_budget')
     durable(root,sealed)
     fault('before_epoch_receipt')
+    lease.check()
     atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),descriptor=descriptor))
     fault('after_epoch_receipt')
 

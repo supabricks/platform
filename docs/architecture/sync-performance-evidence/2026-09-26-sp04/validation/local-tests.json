@@ -1,0 +1,16 @@
+{
+  "runtime_unchanged_since": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+  "checks": [
+    {
+      "command": "/tmp/supabricks-sy00-venv/bin/python -B -m unittest discover -s e2e/native/performance -p test_*.py -q",
+      "tests": 40,
+      "status": "passed"
+    },
+    {
+      "command": "python3 -B -m unittest discover -s install/native -p test_sync_evidence.py -q",
+      "tests": 3,
+      "status": "passed"
+    }
+  ],
+  "full_analytics_qualification": "93 tests on Linux/macOS; qualified CI receipt under ci/; initial cwd fixture failure retained separately"
+}

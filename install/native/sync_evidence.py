@@ -15,7 +15,7 @@ NETWORK={
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
     *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed'))}
-WORKERS=('capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','incremental/storage.py','incremental/maintenance.py')
+WORKERS=('capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
     'triggered':{'triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader',
         'triggered_production_input_budget_preserves_complete_transactions','triggered_restart_reuses_checkpoint_and_delete_retires_source'},

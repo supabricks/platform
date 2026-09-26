@@ -69,6 +69,8 @@ class SyncEvidence(unittest.TestCase):
             lambda d:d['source'].update(platform_dirty=True),lambda d:d['source']['data_formats'].update(local_catalog=28),
             lambda d:d.update(network_evidence='host online'),lambda d:d['checks'].clear(),
             lambda d:d['worker_inventory'].update({'capture_worker.py':'c'*64}),
+            lambda d:d['worker_inventory'].pop('incremental/planning.py'),
+            lambda d:d['worker_inventory'].update({'incremental/planning.py':'c'*64}),
             lambda d:d['suites'].pop('maintenance'),lambda d:d['suites']['triggered'].update(exact_installed=False),
             lambda d:d['suites']['triggered'].update(status='FAIL'),lambda d:d['suites']['governed'].update(exit_code=1),
             lambda d:d['suites']['continuous'].update(release_identity='c'*64),
