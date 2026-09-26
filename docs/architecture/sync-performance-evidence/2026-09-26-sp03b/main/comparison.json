@@ -1,0 +1,4186 @@
+{
+  "accepted_pairs": 12,
+  "attempts": 12,
+  "baseline_identity": "5f7a6bad72ef2fda29bfb31e8cd5fb01d3f62c52144d5f09b3bc4529ed22c236",
+  "complete": true,
+  "decision": "Review required; do not infer speedup from implementation",
+  "groups": [
+    {
+      "candidate": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 480.106127,
+            "median": 477.054061,
+            "minimum": 466.8312925,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 17.968604,
+            "median": 17.834525499999998,
+            "minimum": 17.4350825,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 676.206958,
+            "median": 658.096681,
+            "minimum": 637.882994,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.36,
+            "median": 50.347,
+            "minimum": 50.346,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 7.49783434305924,
+            "median": 7.46706573128945,
+            "minimum": 7.426765364757709,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 7.304091853574505,
+            "median": 7.27039148024583,
+            "minimum": 7.24796103955288,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 1.032714412024757,
+            "median": 1.0325991189427313,
+            "minimum": 1.0324616771866546,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 1.0077386070507308,
+            "median": 1.0060292850990527,
+            "minimum": 1.0052677787532924,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 1.0307692307692307,
+            "median": 1.0301685891748003,
+            "minimum": 1.028293545534925,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 25.879847722998722,
+            "median": 25.83829985786854,
+            "minimum": 25.794764356965477,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 0.882,
+            "median": 0.882,
+            "minimum": 0.876,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 3566.878,
+            "median": 3498.586,
+            "minimum": 3392.025,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 4194.405,
+            "median": 4140.881,
+            "minimum": 3579.427,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 11506,
+            "median": 9086,
+            "minimum": 7348,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 12322,
+            "median": 12322,
+            "minimum": 12157,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1202520064,
+            "median": 1190739968,
+            "minimum": 1188261888,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.04,
+            "median": 50.038,
+            "minimum": 50.033,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "cpus": 4,
+      "historical": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 485.251992,
+            "median": 458.348152,
+            "minimum": 425.0160365,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 16.653773,
+            "median": 16.630111,
+            "minimum": 16.5618765,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 750.74018,
+            "median": 703.820409,
+            "minimum": 628.7900215,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.36,
+            "median": 50.359,
+            "minimum": 50.355,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 27.525940137575237,
+            "median": 27.501229570446736,
+            "minimum": 27.318652567425566,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 27.620939068162212,
+            "median": 27.596061396551725,
+            "minimum": 27.41467595079086,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 4.014059753954306,
+            "median": 4.013805004314064,
+            "minimum": 4.0137931034482754,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "capture_transactions_s": {
+            "maximum": 25.85912395913202,
+            "median": 25.772491005398688,
+            "minimum": 25.7506967042064,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 0.793,
+            "median": 0.791,
+            "minimum": 0.773,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4360.628,
+            "median": 4031.367,
+            "minimum": 3867.313,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 4792.242,
+            "median": 4511.877,
+            "minimum": 4297.83,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 15454,
+            "median": 14212,
+            "minimum": 9207,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 16669,
+            "median": 14836,
+            "minimum": 14821,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1247145984,
+            "median": 1231310848,
+            "minimum": 1167245312,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.039,
+            "median": 50.037,
+            "minimum": 50.037,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "marginal": {
+        "apply_directory_ms": {
+          "absolute": 16.32304799999997,
+          "percent": 3.54285853120983
+        },
+        "apply_merge_ms": {
+          "absolute": 0.2840089999999975,
+          "percent": 1.6182372752391505
+        },
+        "apply_run_ms": {
+          "absolute": -43.83546999999999,
+          "percent": -6.244972528691023
+        },
+        "baseline_rows_s": {
+          "absolute": -0.001999999999995339,
+          "percent": -0.0039722735307460705
+        },
+        "capture_commit_ms": {
+          "absolute": -16.392218132006427,
+          "percent": -68.70373069840343
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -15.100467457364008,
+          "percent": -67.50061541882567
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.9674008810572685,
+          "percent": -74.18502202643171
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -2.744629187245109,
+          "percent": -73.17726227228883
+        },
+        "capture_transactions_per_group": {
+          "absolute": -0.040320132629711125,
+          "percent": -3.766516340475209
+        },
+        "capture_transactions_s": {
+          "absolute": -0.04267832237540148,
+          "percent": -0.16490227717891925
+        },
+        "cpu_cores": {
+          "absolute": 0.06600000000000006,
+          "percent": 8.088235294117656
+        },
+        "lag_p95_ms": {
+          "absolute": -214.154,
+          "percent": -5.768085026153192
+        },
+        "lag_p99_ms": {
+          "absolute": 253.91500000000042,
+          "percent": 6.532472885021388
+        },
+        "last_backlog_bytes": {
+          "absolute": -2057,
+          "percent": -18.460019743336623
+        },
+        "peak_backlog_bytes": {
+          "absolute": -1028,
+          "percent": -7.700374531835206
+        },
+        "peak_memory_bytes": {
+          "absolute": -21897216,
+          "percent": -1.8057516534145799
+        },
+        "source_rows_s": {
+          "absolute": 0.001999999999995339,
+          "percent": 0.003997122072098767
+        }
+      },
+      "original_baseline": {
+        "apply_directory_ms": {
+          "absolute": 18.705908999999963,
+          "percent": 4.081157285870319
+        },
+        "apply_merge_ms": {
+          "absolute": 1.2044144999999986,
+          "percent": 7.242371984167747
+        },
+        "apply_run_ms": {
+          "absolute": -45.72372800000005,
+          "percent": -6.496504991232791
+        },
+        "baseline_rows_s": {
+          "absolute": -0.012000000000000455,
+          "percent": -0.02382890843742023
+        },
+        "capture_commit_ms": {
+          "absolute": -20.034163839157287,
+          "percent": -72.84824770411836
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -20.325669916305895,
+          "percent": -73.65424226388225
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.9674008810572685,
+          "percent": -74.18502202643171
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -3.0077757192150116,
+          "percent": -74.93577082051156
+        },
+        "capture_transactions_per_group": {
+          "absolute": null,
+          "percent": null
+        },
+        "capture_transactions_s": {
+          "absolute": 0.06580885246985346,
+          "percent": 0.2553453310200716
+        },
+        "cpu_cores": {
+          "absolute": 0.09099999999999997,
+          "percent": 11.50442477876106
+        },
+        "lag_p95_ms": {
+          "absolute": -532.7810000000004,
+          "percent": -13.215889300081098
+        },
+        "lag_p99_ms": {
+          "absolute": -370.9960000000001,
+          "percent": -8.222653232789813
+        },
+        "last_backlog_bytes": {
+          "absolute": -5126,
+          "percent": -36.06811145510836
+        },
+        "peak_backlog_bytes": {
+          "absolute": -2514,
+          "percent": -16.945268266379077
+        },
+        "peak_memory_bytes": {
+          "absolute": -40570880,
+          "percent": -3.294934018156234
+        },
+        "source_rows_s": {
+          "absolute": 0.0009999999999976694,
+          "percent": 0.0019985210943854934
+        }
+      },
+      "outcome_transitions": [
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 2
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 3
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 1
+        }
+      ],
+      "paired": {
+        "apply_directory_ms": [
+          {
+            "absolute": 19.375113999999996,
+            "percent": 4.205298417799367,
+            "repeat": 2
+          },
+          {
+            "absolute": -21.848458499999992,
+            "percent": -4.4709154523572625,
+            "repeat": 3
+          },
+          {
+            "absolute": 38.25111050000004,
+            "percent": 8.717149795008055,
+            "repeat": 1
+          }
+        ],
+        "apply_merge_ms": [
+          {
+            "absolute": -0.026652500000000856,
+            "percent": -0.15263374458495022,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.24106450000000024,
+            "percent": 1.370193732773786,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.4180874999999986,
+            "percent": 2.382194848795468,
+            "repeat": 1
+          }
+        ],
+        "apply_run_ms": [
+          {
+            "absolute": -64.04915699999992,
+            "percent": -9.124693449182088,
+            "repeat": 2
+          },
+          {
+            "absolute": -52.716511999999966,
+            "percent": -7.416366567073547,
+            "repeat": 3
+          },
+          {
+            "absolute": -4.09636050000006,
+            "percent": -0.6021373685243988,
+            "repeat": 1
+          }
+        ],
+        "baseline_rows_s": [
+          {
+            "absolute": 0.006000000000000227,
+            "percent": 0.011915637288001405,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.0030000000000001137,
+            "percent": -0.005958410296133218,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.0010000000000047748,
+            "percent": 0.001986255114616404,
+            "repeat": 1
+          }
+        ],
+        "capture_commit_ms": [
+          {
+            "absolute": -16.549950750786024,
+            "percent": -68.90927007164976,
+            "repeat": 2
+          },
+          {
+            "absolute": -16.243433223642665,
+            "percent": -68.62398371090468,
+            "repeat": 3
+          },
+          {
+            "absolute": -16.36144952023664,
+            "percent": -68.57477204253564,
+            "repeat": 1
+          }
+        ],
+        "capture_durable_ms_per_transaction": [
+          {
+            "absolute": -15.100467457364008,
+            "percent": -67.50061541882567,
+            "repeat": 2
+          },
+          {
+            "absolute": -14.967528241395318,
+            "percent": -67.37429030757984,
+            "repeat": 3
+          },
+          {
+            "absolute": -15.067914437909252,
+            "percent": -67.35164580945556,
+            "repeat": 1
+          }
+        ],
+        "capture_syncs_per_commit": [
+          {
+            "absolute": -2.967538322813345,
+            "percent": -74.18845807033362,
+            "repeat": 2
+          },
+          {
+            "absolute": -2.9674008810572685,
+            "percent": -74.18502202643171,
+            "repeat": 3
+          },
+          {
+            "absolute": -2.967285587975243,
+            "percent": -74.18213969938108,
+            "repeat": 1
+          }
+        ],
+        "capture_syncs_per_transaction": [
+          {
+            "absolute": -2.7205670191377447,
+            "percent": -73.01899216459324,
+            "repeat": 2
+          },
+          {
+            "absolute": -2.7464317177956254,
+            "percent": -73.1568224174279,
+            "repeat": 3
+          },
+          {
+            "absolute": -2.744629187245109,
+            "percent": -73.17726227228883,
+            "repeat": 1
+          }
+        ],
+        "capture_transactions_per_group": [
+          {
+            "absolute": -0.04688228438228448,
+            "percent": -4.350412329322707,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.04119002254019244,
+            "percent": -3.851393679131251,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.040320132629711125,
+            "percent": -3.766516340475209,
+            "repeat": 1
+          }
+        ],
+        "capture_transactions_s": [
+          {
+            "absolute": 0.022039065284204185,
+            "percent": 0.08523175948874911,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.04267832237540148,
+            "percent": -0.16490227717891925,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.08695382807175633,
+            "percent": -0.33596621155556117,
+            "repeat": 1
+          }
+        ],
+        "cpu_cores": [
+          {
+            "absolute": 0.06400000000000006,
+            "percent": 7.823960880195607,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.06700000000000006,
+            "percent": 8.220858895705529,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.06000000000000005,
+            "percent": 7.352941176470595,
+            "repeat": 1
+          }
+        ],
+        "lag_p95_ms": [
+          {
+            "absolute": -229.15599999999995,
+            "percent": -6.3282117077273945,
+            "repeat": 2
+          },
+          {
+            "absolute": -214.154,
+            "percent": -5.768085026153192,
+            "repeat": 3
+          },
+          {
+            "absolute": -154.00900000000001,
+            "percent": -4.139039965470599,
+            "repeat": 1
+          }
+        ],
+        "lag_p99_ms": [
+          {
+            "absolute": -267.1369999999997,
+            "percent": -6.944821404245444,
+            "repeat": 2
+          },
+          {
+            "absolute": 253.91500000000042,
+            "percent": 6.532472885021388,
+            "repeat": 3
+          },
+          {
+            "absolute": 202.21099999999979,
+            "percent": 5.065159659074679,
+            "repeat": 1
+          }
+        ],
+        "last_backlog_bytes": [
+          {
+            "absolute": -5368,
+            "percent": -42.21453287197232,
+            "repeat": 2
+          },
+          {
+            "absolute": 484,
+            "percent": 4.391217564870259,
+            "repeat": 3
+          },
+          {
+            "absolute": -2057,
+            "percent": -18.460019743336623,
+            "repeat": 1
+          }
+        ],
+        "peak_backlog_bytes": [
+          {
+            "absolute": -1193,
+            "percent": -8.936329588014981,
+            "repeat": 2
+          },
+          {
+            "absolute": -952,
+            "percent": -7.17191502184722,
+            "repeat": 3
+          },
+          {
+            "absolute": -1493,
+            "percent": -10.80709373868983,
+            "repeat": 1
+          }
+        ],
+        "peak_memory_bytes": [
+          {
+            "absolute": -21897216,
+            "percent": -1.8057516534145799,
+            "repeat": 2
+          },
+          {
+            "absolute": -62967808,
+            "percent": -5.032473909570637,
+            "repeat": 3
+          },
+          {
+            "absolute": 2048000,
+            "percent": 0.17059955507636035,
+            "repeat": 1
+          }
+        ],
+        "source_rows_s": [
+          {
+            "absolute": 0.003999999999997783,
+            "percent": 0.007994563696681823,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.0020000000000024443,
+            "percent": 0.003996962308650314,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.0030000000000001137,
+            "percent": -0.0059956831081623505,
+            "repeat": 1
+          }
+        ]
+      },
+      "predecessor": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 488.679751,
+            "median": 460.731013,
+            "minimum": 438.80295049999995,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 17.593460999999998,
+            "median": 17.5505165,
+            "minimum": 17.461735,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 710.813193,
+            "median": 701.932151,
+            "minimum": 680.3033185,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.354,
+            "median": 50.349,
+            "minimum": 50.346,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 24.017016482075473,
+            "median": 23.85928386329588,
+            "minimum": 23.670198588400375,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 22.372006291483757,
+            "median": 22.37085893760984,
+            "minimum": 22.215489280948198,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 3.7541703248463563,
+            "median": 3.7506584723441616,
+            "minimum": 3.725834797891037,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 1.0776515151515151,
+            "median": 1.0704887218045114,
+            "minimum": 1.0694835680751174,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 25.881718185037233,
+            "median": 25.880978180243943,
+            "minimum": 25.857808657714518,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 0.818,
+            "median": 0.816,
+            "minimum": 0.815,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 3720.887,
+            "median": 3712.74,
+            "minimum": 3621.181,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 3992.194,
+            "median": 3886.966,
+            "minimum": 3846.564,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 12716,
+            "median": 11143,
+            "minimum": 11022,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 13815,
+            "median": 13350,
+            "minimum": 13274,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1251229696,
+            "median": 1212637184,
+            "minimum": 1200472064,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.038,
+            "median": 50.036,
+            "minimum": 50.034,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "rate": 50
+    },
+    {
+      "candidate": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 0,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 764.787465,
+            "median": 723.629859,
+            "minimum": 721.830509,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 18.809434,
+            "median": 18.770021,
+            "minimum": 18.749205,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 1029.009975,
+            "median": 987.702541,
+            "minimum": 978.029979,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 873.992,
+            "median": 863.387,
+            "minimum": 861.808,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 7.450718787974684,
+            "median": 7.432215716276978,
+            "minimum": 7.396591525393259,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 1.0114760009205843,
+            "median": 1.008680524379081,
+            "minimum": 1.0043583634810205,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 1.0193345323741008,
+            "median": 1.018987341772152,
+            "minimum": 1.016179775280899,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 0.13834136815768597,
+            "median": 0.1383331287590524,
+            "minimum": 0.13798364457463688,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 7.5135259055479136,
+            "median": 7.512217611802674,
+            "minimum": 7.509624197983501,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 372.3560180797712,
+            "median": 372.3134343857322,
+            "minimum": 370.24717449762886,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.381,
+            "median": 1.371,
+            "minimum": 1.363,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4536.397,
+            "median": 4524.161,
+            "minimum": 4468.862,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 5054.476,
+            "median": 4975.667,
+            "minimum": 4957.878,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 209506,
+            "median": 176066,
+            "minimum": 168685,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 253473,
+            "median": 250448,
+            "minimum": 244640,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1395273728,
+            "median": 1351766016,
+            "minimum": 1348427776,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 744.609,
+            "median": 741.856,
+            "minimum": 740.197,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "cpus": 8,
+      "historical": {
+        "failures": 3,
+        "freshness_passes": 0,
+        "input_passes": 0,
+        "measured": 0,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 1214.300042,
+            "median": 1191.082506,
+            "minimum": 1155.140237,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 18.79555,
+            "median": 18.514662,
+            "minimum": 18.417044,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 1585.584136,
+            "median": 1532.518105,
+            "minimum": 1504.6081315000001,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 885.995,
+            "median": 872.739,
+            "minimum": 863.777,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 29.912198653614457,
+            "median": 29.74221405754858,
+            "minimum": 29.668612524271847,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 30.002567833836856,
+            "median": 29.831396108695653,
+            "minimum": 29.757507243445694,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 4.0120845921450154,
+            "median": 4.011994002998501,
+            "minimum": 4.011985018726592,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "capture_transactions_s": {
+            "maximum": 30.335249172758996,
+            "median": 30.312362182373757,
+            "minimum": 30.08515043815105,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.176,
+            "median": 1.151,
+            "minimum": 1.083,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "lag_p99_ms": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "last_backlog_bytes": {
+            "maximum": 19888,
+            "median": 15246,
+            "minimum": 12628,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 31697,
+            "median": 25631,
+            "minimum": 22299,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1367670784,
+            "median": 1340846080,
+            "minimum": 1325133824,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 654.401,
+            "median": 654.243,
+            "minimum": 651.154,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "marginal": {
+        "apply_directory_ms": {
+          "absolute": 15.355062999999973,
+          "percent": 2.1679527616566454
+        },
+        "apply_merge_ms": {
+          "absolute": -0.11639500000000069,
+          "percent": -0.6162895067015398
+        },
+        "apply_run_ms": {
+          "absolute": -3.083071000000018,
+          "percent": -0.3111743814866801
+        },
+        "baseline_rows_s": {
+          "absolute": 1.4179999999998927,
+          "percent": 0.1645070762405484
+        },
+        "capture_commit_ms": {
+          "absolute": -21.914521698065652,
+          "percent": -74.67447365155954
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -0.9380736456902945,
+          "percent": -48.18654867228895
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.981012658227848,
+          "percent": -74.5253164556962
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -0.12701209753761095,
+          "percent": -47.86673546393779
+        },
+        "capture_transactions_per_group": {
+          "absolute": -8.214869964572072,
+          "percent": -52.23389216012545
+        },
+        "capture_transactions_s": {
+          "absolute": 28.417378631898373,
+          "percent": 8.2633627680336
+        },
+        "cpu_cores": {
+          "absolute": 0.09099999999999997,
+          "percent": 7.109374999999998
+        },
+        "lag_p95_ms": {
+          "absolute": -14.453999999999724,
+          "percent": -0.3184671975922109
+        },
+        "lag_p99_ms": {
+          "absolute": 5.507000000000517,
+          "percent": 0.11080126193121582
+        },
+        "last_backlog_bytes": {
+          "absolute": 15609,
+          "percent": 9.72783985740728
+        },
+        "peak_backlog_bytes": {
+          "absolute": 31823,
+          "percent": 14.555974842767295
+        },
+        "peak_memory_bytes": {
+          "absolute": -64675840,
+          "percent": -4.566078002145681
+        },
+        "source_rows_s": {
+          "absolute": 55.74199999999996,
+          "percent": 8.124305873367977
+        }
+      },
+      "original_baseline": {
+        "apply_directory_ms": {
+          "absolute": -467.45264699999996,
+          "percent": -39.24603414500993
+        },
+        "apply_merge_ms": {
+          "absolute": 0.25535899999999856,
+          "percent": 1.37922582653682
+        },
+        "apply_run_ms": {
+          "absolute": -544.8155640000001,
+          "percent": -35.55035090433728
+        },
+        "baseline_rows_s": {
+          "absolute": -9.35200000000009,
+          "percent": -1.0715689341257912
+        },
+        "capture_commit_ms": {
+          "absolute": -22.3099983412716,
+          "percent": -75.01122242649357
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -28.822715584316573,
+          "percent": -96.61872840042825
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.981012658227848,
+          "percent": -74.5253164556962
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -3.873660874239448,
+          "percent": -96.5520105798846
+        },
+        "capture_transactions_per_group": {
+          "absolute": null,
+          "percent": null
+        },
+        "capture_transactions_s": {
+          "absolute": 342.00107220335843,
+          "percent": 1128.256089531114
+        },
+        "cpu_cores": {
+          "absolute": 0.21999999999999997,
+          "percent": 19.113814074717634
+        },
+        "lag_p95_ms": {
+          "absolute": null,
+          "percent": null
+        },
+        "lag_p99_ms": {
+          "absolute": null,
+          "percent": null
+        },
+        "last_backlog_bytes": {
+          "absolute": 160820,
+          "percent": 1054.8340548340548
+        },
+        "peak_backlog_bytes": {
+          "absolute": 224817,
+          "percent": 877.1292575396981
+        },
+        "peak_memory_bytes": {
+          "absolute": 10919936,
+          "percent": 0.814406378396542
+        },
+        "source_rows_s": {
+          "absolute": 87.61299999999994,
+          "percent": 13.391507436839207
+        }
+      },
+      "outcome_transitions": [
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 2
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 1
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 3
+        }
+      ],
+      "paired": {
+        "apply_directory_ms": [
+          {
+            "absolute": 6.251923000000033,
+            "percent": 0.8714964158027901,
+            "repeat": 2
+          },
+          {
+            "absolute": 78.72128799999996,
+            "percent": 11.474299512071699,
+            "repeat": 1
+          },
+          {
+            "absolute": 13.555712999999969,
+            "percent": 1.9139058846306833,
+            "repeat": 3
+          }
+        ],
+        "apply_merge_ms": [
+          {
+            "absolute": 0.15591600000000128,
+            "percent": 0.8376228671751947,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.13721100000000064,
+            "percent": -0.7265062889645163,
+            "repeat": 1
+          },
+          {
+            "absolute": -0.3080449999999999,
+            "percent": -1.6113264724914824,
+            "repeat": 3
+          }
+        ],
+        "apply_run_ms": [
+          {
+            "absolute": -55.770037000000116,
+            "percent": -5.344657653284313,
+            "repeat": 2
+          },
+          {
+            "absolute": 38.224362999999926,
+            "percent": 3.857985273205595,
+            "repeat": 1
+          },
+          {
+            "absolute": 14.077548999999976,
+            "percent": 1.4603987252773434,
+            "repeat": 3
+          }
+        ],
+        "baseline_rows_s": [
+          {
+            "absolute": 24.101999999999975,
+            "percent": 2.8358964101236603,
+            "repeat": 2
+          },
+          {
+            "absolute": -14.856999999999971,
+            "percent": -1.6947180507947701,
+            "repeat": 1
+          },
+          {
+            "absolute": 1.4179999999998927,
+            "percent": 0.1645070762405484,
+            "repeat": 3
+          }
+        ],
+        "capture_commit_ms": [
+          {
+            "absolute": -21.950145888949372,
+            "percent": -74.7958642865073,
+            "repeat": 2
+          },
+          {
+            "absolute": -21.74938185086027,
+            "percent": -74.48392770925753,
+            "repeat": 1
+          },
+          {
+            "absolute": -21.96296885055229,
+            "percent": -74.7162134689782,
+            "repeat": 3
+          }
+        ],
+        "capture_durable_ms_per_transaction": [
+          {
+            "absolute": -0.9423958065883551,
+            "percent": -48.40856750571498,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.920938780498074,
+            "percent": -47.65740716503826,
+            "repeat": 1
+          },
+          {
+            "absolute": -0.9422430822642756,
+            "percent": -48.29728232595653,
+            "repeat": 3
+          }
+        ],
+        "capture_syncs_per_commit": [
+          {
+            "absolute": -2.983820224719101,
+            "percent": -74.59550561797752,
+            "repeat": 2
+          },
+          {
+            "absolute": -2.981012658227848,
+            "percent": -74.5253164556962,
+            "repeat": 1
+          },
+          {
+            "absolute": -2.980665467625899,
+            "percent": -74.51663669064747,
+            "repeat": 3
+          }
+        ],
+        "capture_syncs_per_transaction": [
+          {
+            "absolute": -0.12736158172202647,
+            "percent": -47.99844470525076,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.12638031251568416,
+            "percent": -47.74231029111913,
+            "repeat": 1
+          },
+          {
+            "absolute": -0.1271338973175795,
+            "percent": -47.889168540797506,
+            "repeat": 3
+          }
+        ],
+        "capture_transactions_per_group": [
+          {
+            "absolute": -8.206886705443289,
+            "percent": -52.218248413226874,
+            "repeat": 2
+          },
+          {
+            "absolute": -8.256779348683649,
+            "percent": -52.36084051112029,
+            "repeat": 1
+          },
+          {
+            "absolute": -8.213561670826833,
+            "percent": -52.2255734314423,
+            "repeat": 3
+          }
+        ],
+        "capture_transactions_s": [
+          {
+            "absolute": 28.417378631898373,
+            "percent": 8.2633627680336,
+            "repeat": 2
+          },
+          {
+            "absolute": 24.444964897559544,
+            "percent": 7.069059774323271,
+            "repeat": 1
+          },
+          {
+            "absolute": 29.218734832892494,
+            "percent": 8.515173447902583,
+            "repeat": 3
+          }
+        ],
+        "cpu_cores": [
+          {
+            "absolute": 0.08699999999999997,
+            "percent": 6.818181818181815,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.09000000000000008,
+            "percent": 7.025761124121786,
+            "repeat": 1
+          },
+          {
+            "absolute": 0.10099999999999998,
+            "percent": 7.890624999999998,
+            "repeat": 3
+          }
+        ],
+        "lag_p95_ms": [
+          {
+            "absolute": -2.217999999999847,
+            "percent": -0.048869533987788066,
+            "repeat": 2
+          },
+          {
+            "absolute": 67.78700000000026,
+            "percent": 1.52112457347611,
+            "repeat": 1
+          },
+          {
+            "absolute": -122.27899999999954,
+            "percent": -2.663368430636296,
+            "repeat": 3
+          }
+        ],
+        "lag_p99_ms": [
+          {
+            "absolute": 129.79599999999937,
+            "percent": 2.6356230252523893,
+            "repeat": 2
+          },
+          {
+            "absolute": -12.282000000000153,
+            "percent": -0.24711478101308917,
+            "repeat": 1
+          },
+          {
+            "absolute": -23.91699999999946,
+            "percent": -0.47837980119944906,
+            "repeat": 3
+          }
+        ],
+        "last_backlog_bytes": [
+          {
+            "absolute": -8393,
+            "percent": -3.8517845423797263,
+            "repeat": 2
+          },
+          {
+            "absolute": 15609,
+            "percent": 9.72783985740728,
+            "repeat": 1
+          },
+          {
+            "absolute": 29282,
+            "percent": 21.005286830269075,
+            "repeat": 3
+          }
+        ],
+        "peak_backlog_bytes": [
+          {
+            "absolute": 26741,
+            "percent": 12.27219950527538,
+            "repeat": 2
+          },
+          {
+            "absolute": 31823,
+            "percent": 14.555974842767295,
+            "repeat": 1
+          },
+          {
+            "absolute": 21296,
+            "percent": 9.172312502961104,
+            "repeat": 3
+          }
+        ],
+        "peak_memory_bytes": [
+          {
+            "absolute": -14319616,
+            "percent": -1.015868587983344,
+            "repeat": 2
+          },
+          {
+            "absolute": -68014080,
+            "percent": -4.8017558724274245,
+            "repeat": 1
+          },
+          {
+            "absolute": -74764288,
+            "percent": -5.240988417165795,
+            "repeat": 3
+          }
+        ],
+        "source_rows_s": [
+          {
+            "absolute": 55.74199999999996,
+            "percent": 8.124305873367977,
+            "repeat": 2
+          },
+          {
+            "absolute": 49.74400000000003,
+            "percent": 7.2045454216289935,
+            "repeat": 1
+          },
+          {
+            "absolute": 58.754999999999995,
+            "percent": 8.566692036497564,
+            "repeat": 3
+          }
+        ]
+      },
+      "predecessor": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 0,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 717.377936,
+            "median": 708.274796,
+            "minimum": 686.066177,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 19.117479,
+            "median": 18.886416,
+            "minimum": 18.614105,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 1043.472578,
+            "median": 990.785612,
+            "minimum": 963.95243,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 876.665,
+            "median": 861.969,
+            "minimum": 849.89,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 29.39518456682927,
+            "median": 29.34673741434263,
+            "minimum": 29.200100638834954,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 1.9509236066433566,
+            "median": 1.9467541700693756,
+            "minimum": 1.9324147814186583,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 0.26547526547526545,
+            "median": 0.26534522629666335,
+            "minimum": 0.26471344127473656,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 15.768996960486323,
+            "median": 15.727087576374746,
+            "minimum": 15.71651090342679,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 345.8022096000693,
+            "median": 343.8960557538338,
+            "minimum": 343.1372832468787,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.281,
+            "median": 1.28,
+            "minimum": 1.276,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4591.141,
+            "median": 4538.615,
+            "minimum": 4456.374,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 4999.584,
+            "median": 4970.16,
+            "minimum": 4924.68,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 217899,
+            "median": 160457,
+            "minimum": 139403,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 232177,
+            "median": 218625,
+            "minimum": 217899,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1426530304,
+            "median": 1416441856,
+            "minimum": 1409593344,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 690.453,
+            "median": 686.114,
+            "minimum": 685.854,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "rate": 1000
+    },
+    {
+      "candidate": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 481.431309,
+            "median": 472.4839105,
+            "minimum": 436.4783,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 19.9528535,
+            "median": 19.868208,
+            "minimum": 19.833691,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 634.988168,
+            "median": 631.897723,
+            "minimum": 621.47868,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.361,
+            "median": 50.358,
+            "minimum": 50.358,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 7.520643548561151,
+            "median": 7.409623582585278,
+            "minimum": 7.353740776173285,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 7.3423666602282704,
+            "median": 7.240632167543859,
+            "minimum": 7.1535950658472345,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 1.0333935018050542,
+            "median": 1.033273381294964,
+            "minimum": 1.0323159784560143,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 1.0087796312554873,
+            "median": 1.0087719298245614,
+            "minimum": 1.0052677787532924,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 1.0317028985507246,
+            "median": 1.0279783393501805,
+            "minimum": 1.027027027027027,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 25.902824036551927,
+            "median": 25.881167843718075,
+            "minimum": 25.88088614923434,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.407,
+            "median": 1.401,
+            "minimum": 1.377,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 3433.519,
+            "median": 3376.941,
+            "minimum": 3327.123,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 3635.716,
+            "median": 3554.633,
+            "minimum": 3504.644,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 10780,
+            "median": 8195,
+            "minimum": 7634,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 12232,
+            "median": 12157,
+            "minimum": 11506,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1365479424,
+            "median": 1318244352,
+            "minimum": 1309753344,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.04,
+            "median": 50.038,
+            "minimum": 50.027,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "cpus": 16,
+      "historical": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 470.47582850000003,
+            "median": 457.3234305,
+            "minimum": 401.656288,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 19.440054,
+            "median": 19.255077999999997,
+            "minimum": 19.198053,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 707.715683,
+            "median": 694.351099,
+            "minimum": 662.979164,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.361,
+            "median": 50.359,
+            "minimum": 50.312,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 27.811047121716285,
+            "median": 27.60591340542907,
+            "minimum": 27.536591030927838,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 27.908801241652018,
+            "median": 27.702946492970124,
+            "minimum": 27.631544793103448,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 4.014059753954306,
+            "median": 4.014059753954306,
+            "minimum": 4.0137931034482754,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "capture_transactions_s": {
+            "maximum": 25.85818362476432,
+            "median": 25.857565666512333,
+            "minimum": 25.772005782493995,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.238,
+            "median": 1.234,
+            "minimum": 1.16,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4944.655,
+            "median": 3765.403,
+            "minimum": 3676.418,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 5490.43,
+            "median": 3988.892,
+            "minimum": 3876.004,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 13442,
+            "median": 13365,
+            "minimum": 11022,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 18318,
+            "median": 13442,
+            "minimum": 13274,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1284079616,
+            "median": 1277489152,
+            "minimum": 1273524224,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.039,
+            "median": 50.035,
+            "minimum": 50.034,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "marginal": {
+        "apply_directory_ms": {
+          "absolute": 75.70374049999998,
+          "percent": 19.079517129094427
+        },
+        "apply_merge_ms": {
+          "absolute": -0.14334399999999903,
+          "percent": -0.7163062615033509
+        },
+        "apply_run_ms": {
+          "absolute": -61.34067099999993,
+          "percent": -8.848423793446145
+        },
+        "baseline_rows_s": {
+          "absolute": -0.0010000000000047748,
+          "percent": -0.0019857423697944255
+        },
+        "capture_commit_ms": {
+          "absolute": -16.327828996165884,
+          "percent": -68.78509369106403
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -15.060525661253331,
+          "percent": -67.53248318706518
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.966726618705036,
+          "percent": -74.1681654676259
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -2.752422100026185,
+          "percent": -73.17947646895016
+        },
+        "capture_transactions_per_group": {
+          "absolute": -0.039500573489557045,
+          "percent": -3.7003610108303224
+        },
+        "capture_transactions_s": {
+          "absolute": 0.0001497496658551256,
+          "percent": 0.0005786080953652282
+        },
+        "cpu_cores": {
+          "absolute": 0.11699999999999999,
+          "percent": 9.11214953271028
+        },
+        "lag_p95_ms": {
+          "absolute": -258.076,
+          "percent": -7.099719203514042
+        },
+        "lag_p99_ms": {
+          "absolute": -293.33500000000004,
+          "percent": -7.623114329433094
+        },
+        "last_backlog_bytes": {
+          "absolute": -3718,
+          "percent": -31.209602954755308
+        },
+        "peak_backlog_bytes": {
+          "absolute": -1208,
+          "percent": -9.038533482977927
+        },
+        "peak_memory_bytes": {
+          "absolute": -3440640,
+          "percent": -0.26032224174639035
+        },
+        "source_rows_s": {
+          "absolute": 0.0,
+          "percent": 0.0
+        }
+      },
+      "original_baseline": {
+        "apply_directory_ms": {
+          "absolute": 15.160480000000007,
+          "percent": 3.315045543025158
+        },
+        "apply_merge_ms": {
+          "absolute": 0.6131300000000017,
+          "percent": 3.1842509285083227
+        },
+        "apply_run_ms": {
+          "absolute": -62.453375999999935,
+          "percent": -8.994495161013626
+        },
+        "baseline_rows_s": {
+          "absolute": -0.0010000000000047748,
+          "percent": -0.0019857423697944255
+        },
+        "capture_commit_ms": {
+          "absolute": -20.196289822843795,
+          "percent": -73.15928846923039
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -20.462314325426263,
+          "percent": -73.86331389196728
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.966726618705036,
+          "percent": -74.1681654676259
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -3.005287824129744,
+          "percent": -74.86903554859126
+        },
+        "capture_transactions_per_group": {
+          "absolute": null,
+          "percent": null
+        },
+        "capture_transactions_s": {
+          "absolute": 0.02360217720574198,
+          "percent": 0.09127764581608985
+        },
+        "cpu_cores": {
+          "absolute": 0.16700000000000004,
+          "percent": 13.533225283630472
+        },
+        "lag_p95_ms": {
+          "absolute": -388.462,
+          "percent": -10.316611528699584
+        },
+        "lag_p99_ms": {
+          "absolute": -434.259,
+          "percent": -10.886707386412068
+        },
+        "last_backlog_bytes": {
+          "absolute": -5170,
+          "percent": -38.68312757201646
+        },
+        "peak_backlog_bytes": {
+          "absolute": -1285,
+          "percent": -9.559589346823389
+        },
+        "peak_memory_bytes": {
+          "absolute": 40755200,
+          "percent": 3.190258010112637
+        },
+        "source_rows_s": {
+          "absolute": 0.0030000000000001137,
+          "percent": 0.005995802937943667
+        }
+      },
+      "outcome_transitions": [
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 3
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 2
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 1
+        }
+      ],
+      "paired": {
+        "apply_directory_ms": [
+          {
+            "absolute": 84.651139,
+            "percent": 21.334518557215198,
+            "repeat": 3
+          },
+          {
+            "absolute": 75.91977149999997,
+            "percent": 19.144386502381135,
+            "repeat": 2
+          },
+          {
+            "absolute": -31.924559999999985,
+            "percent": -6.81562021205421,
+            "repeat": 1
+          }
+        ],
+        "apply_merge_ms": [
+          {
+            "absolute": -0.1907790000000027,
+            "percent": -0.9510899029946163,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.1441315000000003,
+            "percent": 0.7276163500098608,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.1778609999999965,
+            "percent": -0.8887916339522117,
+            "repeat": 1
+          }
+        ],
+        "apply_run_ms": [
+          {
+            "absolute": -6.698136499999919,
+            "percent": -1.0488850499663973,
+            "repeat": 3
+          },
+          {
+            "absolute": -87.95488899999998,
+            "percent": -12.166226392018588,
+            "repeat": 2
+          },
+          {
+            "absolute": -71.75971399999992,
+            "percent": -10.351376181856413,
+            "repeat": 1
+          }
+        ],
+        "baseline_rows_s": [
+          {
+            "absolute": 0.0030000000000001137,
+            "percent": 0.0059573454068869176,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.0010000000000047748,
+            "percent": -0.0019857423697944255,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.0010000000000047748,
+            "percent": -0.0019857423697944255,
+            "repeat": 1
+          }
+        ],
+        "capture_commit_ms": [
+          {
+            "absolute": -16.327828996165884,
+            "percent": -68.78509369106403,
+            "repeat": 3
+          },
+          {
+            "absolute": -16.3077042628835,
+            "percent": -68.43825007057762,
+            "repeat": 2
+          },
+          {
+            "absolute": -16.356189218224472,
+            "percent": -68.98455297881164,
+            "repeat": 1
+          }
+        ],
+        "capture_durable_ms_per_transaction": [
+          {
+            "absolute": -15.121340279339373,
+            "percent": -67.62078039071618,
+            "repeat": 3
+          },
+          {
+            "absolute": -14.95879116856892,
+            "percent": -67.07629838506784,
+            "repeat": 2
+          },
+          {
+            "absolute": -15.140816719929763,
+            "percent": -67.91305761019916,
+            "repeat": 1
+          }
+        ],
+        "capture_syncs_per_commit": [
+          {
+            "absolute": -2.9676840215439855,
+            "percent": -74.19210053859963,
+            "repeat": 3
+          },
+          {
+            "absolute": -2.966726618705036,
+            "percent": -74.1681654676259,
+            "repeat": 2
+          },
+          {
+            "absolute": -2.966606498194946,
+            "percent": -74.16516245487365,
+            "repeat": 1
+          }
+        ],
+        "capture_syncs_per_transaction": [
+          {
+            "absolute": -2.759445805030575,
+            "percent": -73.22946812511242,
+            "repeat": 3
+          },
+          {
+            "absolute": -2.7348551360842848,
+            "percent": -73.0534709193246,
+            "repeat": 2
+          },
+          {
+            "absolute": -2.755926251097454,
+            "percent": -73.27264239028945,
+            "repeat": 1
+          }
+        ],
+        "capture_transactions_per_group": [
+          {
+            "absolute": -0.038454731625919614,
+            "percent": -3.6091403079989526,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.04452636874774796,
+            "percent": -4.151624548736464,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.03577601428901289,
+            "percent": -3.351449275362314,
+            "repeat": 1
+          }
+        ],
+        "capture_transactions_s": [
+          {
+            "absolute": 0.02246550956818183,
+            "percent": 0.08680524863965282,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.00013194481788048051,
+            "percent": -0.0005098130892725703,
+            "repeat": 2
+          },
+          {
+            "absolute": -0.0002755266834455483,
+            "percent": -0.0010645723250529587,
+            "repeat": 1
+          }
+        ],
+        "cpu_cores": [
+          {
+            "absolute": 0.07000000000000006,
+            "percent": 5.355776587605208,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.11699999999999999,
+            "percent": 9.11214953271028,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.1260000000000001,
+            "percent": 9.836065573770503,
+            "repeat": 1
+          }
+        ],
+        "lag_p95_ms": [
+          {
+            "absolute": -258.076,
+            "percent": -7.099719203514042,
+            "repeat": 3
+          },
+          {
+            "absolute": -340.53499999999985,
+            "percent": -9.284807907389398,
+            "repeat": 2
+          },
+          {
+            "absolute": -191.45400000000018,
+            "percent": -5.281528993457335,
+            "repeat": 1
+          }
+        ],
+        "lag_p99_ms": [
+          {
+            "absolute": -293.33500000000004,
+            "percent": -7.623114329433094,
+            "repeat": 3
+          },
+          {
+            "absolute": -346.0770000000002,
+            "percent": -8.987329905230741,
+            "repeat": 2
+          },
+          {
+            "absolute": -184.5630000000001,
+            "percent": -4.831139296370766,
+            "repeat": 1
+          }
+        ],
+        "last_backlog_bytes": [
+          {
+            "absolute": -2706,
+            "percent": -20.0652528548124,
+            "repeat": 3
+          },
+          {
+            "absolute": -4279,
+            "percent": -35.91874422899354,
+            "repeat": 2
+          },
+          {
+            "absolute": -891,
+            "percent": -9.806295399515738,
+            "repeat": 1
+          }
+        ],
+        "peak_backlog_bytes": [
+          {
+            "absolute": -1329,
+            "percent": -9.85466409609966,
+            "repeat": 3
+          },
+          {
+            "absolute": -1768,
+            "percent": -13.319270754859122,
+            "repeat": 2
+          },
+          {
+            "absolute": -1133,
+            "percent": -8.477366255144032,
+            "repeat": 1
+          }
+        ],
+        "peak_memory_bytes": [
+          {
+            "absolute": 43794432,
+            "percent": 3.313530248514769,
+            "repeat": 3
+          },
+          {
+            "absolute": 2383872,
+            "percent": 0.18234110946105983,
+            "repeat": 2
+          },
+          {
+            "absolute": -10309632,
+            "percent": -0.7760039956343995,
+            "repeat": 1
+          }
+        ],
+        "source_rows_s": [
+          {
+            "absolute": -0.01099999999999568,
+            "percent": -0.02198329269754123,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.0020000000000024443,
+            "percent": 0.003996962308650314,
+            "repeat": 2
+          },
+          {
+            "absolute": 0.0,
+            "percent": 0.0,
+            "repeat": 1
+          }
+        ]
+      },
+      "predecessor": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 3,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 468.40286,
+            "median": 396.78017,
+            "minimum": 396.564139,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 20.058987000000002,
+            "median": 20.011552,
+            "minimum": 19.808722,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 722.943057,
+            "median": 693.238394,
+            "minimum": 638.5958595,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 50.359,
+            "median": 50.359,
+            "minimum": 50.358,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 23.82834781144465,
+            "median": 23.737452578751164,
+            "minimum": 23.709929994397758,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 22.361972446883232,
+            "median": 22.30115782879719,
+            "minimum": 22.294411785776997,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 3.7682177348551362,
+            "median": 3.7611940298507465,
+            "minimum": 3.743634767339772,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 1.0725047080979284,
+            "median": 1.0674789128397375,
+            "minimum": 1.0654817586529466,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 25.88144337040152,
+            "median": 25.88101809405222,
+            "minimum": 25.880358526983745,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.307,
+            "median": 1.284,
+            "minimum": 1.281,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 3667.658,
+            "median": 3635.017,
+            "minimum": 3624.973,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 3850.721,
+            "median": 3847.968,
+            "minimum": 3820.279,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 13486,
+            "median": 11913,
+            "minimum": 9086,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 13486,
+            "median": 13365,
+            "minimum": 13274,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1328553984,
+            "median": 1321684992,
+            "minimum": 1307369472,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 50.038,
+            "median": 50.038,
+            "minimum": 50.038,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "rate": 50
+    },
+    {
+      "candidate": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 0,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 719.124206,
+            "median": 718.077186,
+            "minimum": 697.5918385,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 20.492733,
+            "median": 20.29153,
+            "minimum": 20.211645,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 987.4217805,
+            "median": 979.957822,
+            "minimum": 958.9674605,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 866.35,
+            "median": 852.149,
+            "minimum": 848.861,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 7.611943696230599,
+            "median": 7.58902238129823,
+            "minimum": 7.563923168294849,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 1.0220263789818398,
+            "median": 1.0177522557983807,
+            "minimum": 1.0174992518368078,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 1.0199556541019956,
+            "median": 1.019538188277087,
+            "minimum": 1.0195188379482525,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 0.13714831849949227,
+            "median": 0.13694551949985115,
+            "minimum": 0.1367261216290254,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 7.605092592592593,
+            "median": 7.596110357304387,
+            "minimum": 7.581974637681159,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 373.2434997114206,
+            "median": 373.1412636052906,
+            "minimum": 371.9480787960551,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.607,
+            "median": 1.607,
+            "minimum": 1.592,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4506.509,
+            "median": 4465.064,
+            "minimum": 4462.953,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 4972.896,
+            "median": 4945.338,
+            "minimum": 4918.673,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 244156,
+            "median": 200068,
+            "minimum": 137181,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 249194,
+            "median": 244156,
+            "minimum": 239679,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1492561920,
+            "median": 1481629696,
+            "minimum": 1411997696,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 746.827,
+            "median": 745.789,
+            "minimum": 744.823,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "cpus": 16,
+      "historical": {
+        "failures": 3,
+        "freshness_passes": 0,
+        "input_passes": 0,
+        "measured": 0,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 1081.753084,
+            "median": 1062.8628505,
+            "minimum": 1043.972617,
+            "n": 2
+          },
+          "apply_merge_ms": {
+            "maximum": 20.052235,
+            "median": 20.018649,
+            "minimum": 19.985063,
+            "n": 2
+          },
+          "apply_run_ms": {
+            "maximum": 1513.125753,
+            "median": 1476.647673,
+            "minimum": 1440.169593,
+            "n": 2
+          },
+          "baseline_rows_s": {
+            "maximum": 866.715,
+            "median": 864.178,
+            "minimum": 857.704,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 30.344108615149196,
+            "median": 30.271756071653748,
+            "minimum": 30.199403528158296,
+            "n": 2
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 30.437260138142747,
+            "median": 30.376008310477026,
+            "minimum": 30.314756482811305,
+            "n": 2
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 2
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 4.015278838808251,
+            "median": 4.013779097071048,
+            "minimum": 4.012279355333845,
+            "n": 2
+          },
+          "capture_transactions_per_group": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "capture_transactions_s": {
+            "maximum": 29.7423482237785,
+            "median": 29.67471656310022,
+            "minimum": 29.60708490242194,
+            "n": 2
+          },
+          "cpu_cores": {
+            "maximum": 1.288,
+            "median": 1.2635,
+            "minimum": 1.239,
+            "n": 2
+          },
+          "lag_p95_ms": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "lag_p99_ms": {
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "n": 0
+          },
+          "last_backlog_bytes": {
+            "maximum": 19723,
+            "median": 18997.0,
+            "minimum": 18271,
+            "n": 2
+          },
+          "peak_backlog_bytes": {
+            "maximum": 26226,
+            "median": 25576.0,
+            "minimum": 24926,
+            "n": 2
+          },
+          "peak_memory_bytes": {
+            "maximum": 1405022208,
+            "median": 1371056128.0,
+            "minimum": 1337090048,
+            "n": 2
+          },
+          "source_rows_s": {
+            "maximum": 653.117,
+            "median": 652.1959999999999,
+            "minimum": 651.275,
+            "n": 2
+          }
+        },
+        "trials": 3
+      },
+      "marginal": {
+        "apply_directory_ms": {
+          "absolute": 23.704629999999952,
+          "percent": 3.4138201164736053
+        },
+        "apply_merge_ms": {
+          "absolute": -0.037677999999999656,
+          "percent": -0.1853392419419372
+        },
+        "apply_run_ms": {
+          "absolute": -23.084237000000144,
+          "percent": -2.3014226365556762
+        },
+        "baseline_rows_s": {
+          "absolute": -19.434999999999945,
+          "percent": -2.2298481844549634
+        },
+        "capture_commit_ms": {
+          "absolute": -22.30519982187323,
+          "percent": -74.61374867116257
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -0.9408278346502914,
+          "percent": -48.03621966946301
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.980461811722913,
+          "percent": -74.51154529307283
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -0.125115385636179,
+          "percent": -47.742865564489406
+        },
+        "capture_transactions_per_group": {
+          "absolute": -8.346953824890228,
+          "percent": -52.35476524150354
+        },
+        "capture_transactions_s": {
+          "absolute": 30.96253151208259,
+          "percent": 9.048642889835868
+        },
+        "cpu_cores": {
+          "absolute": 0.11499999999999999,
+          "percent": 7.707774798927614
+        },
+        "lag_p95_ms": {
+          "absolute": -94.70299999999952,
+          "percent": -2.0769262990850086
+        },
+        "lag_p99_ms": {
+          "absolute": -74.71500000000015,
+          "percent": -1.4883309000920937
+        },
+        "last_backlog_bytes": {
+          "absolute": -24849,
+          "percent": -11.048075512300093
+        },
+        "peak_backlog_bytes": {
+          "absolute": 19239,
+          "percent": 8.553822076588252
+        },
+        "peak_memory_bytes": {
+          "absolute": 65912832,
+          "percent": 4.6557919649108594
+        },
+        "source_rows_s": {
+          "absolute": 61.139999999999986,
+          "percent": 8.930123318664014
+        }
+      },
+      "original_baseline": {
+        "apply_directory_ms": {
+          "absolute": -344.78566449999994,
+          "percent": -32.439337242599386
+        },
+        "apply_merge_ms": {
+          "absolute": 0.2728810000000017,
+          "percent": 1.3631339457522917
+        },
+        "apply_run_ms": {
+          "absolute": -496.689851,
+          "percent": -33.63631420560265
+        },
+        "baseline_rows_s": {
+          "absolute": -12.028999999999996,
+          "percent": -1.3919586011215277
+        },
+        "capture_commit_ms": {
+          "absolute": -22.68273369035552,
+          "percent": -74.9303530216916
+        },
+        "capture_durable_ms_per_transaction": {
+          "absolute": -29.358256054678645,
+          "percent": -96.64948651121041
+        },
+        "capture_syncs_per_commit": {
+          "absolute": -2.980461811722913,
+          "percent": -74.51154529307283
+        },
+        "capture_syncs_per_transaction": {
+          "absolute": -3.8768335775711966,
+          "percent": -96.58811518551722
+        },
+        "capture_transactions_per_group": {
+          "absolute": null,
+          "percent": null
+        },
+        "capture_transactions_s": {
+          "absolute": 343.46654704219037,
+          "percent": 1157.438340857761
+        },
+        "cpu_cores": {
+          "absolute": 0.3434999999999999,
+          "percent": 27.18638702018203
+        },
+        "lag_p95_ms": {
+          "absolute": null,
+          "percent": null
+        },
+        "lag_p99_ms": {
+          "absolute": null,
+          "percent": null
+        },
+        "last_backlog_bytes": {
+          "absolute": 181071.0,
+          "percent": 953.1557614360162
+        },
+        "peak_backlog_bytes": {
+          "absolute": 218580.0,
+          "percent": 854.6293400062559
+        },
+        "peak_memory_bytes": {
+          "absolute": 110573568.0,
+          "percent": 8.064846197164584
+        },
+        "source_rows_s": {
+          "absolute": 93.59300000000007,
+          "percent": 14.350440665076155
+        }
+      },
+      "outcome_transitions": [
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 1
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 3
+        },
+        {
+          "after": "measured",
+          "before": "measured",
+          "repeat": 2
+        }
+      ],
+      "paired": {
+        "apply_directory_ms": [
+          {
+            "absolute": 32.68420100000003,
+            "percent": 4.761406788929796,
+            "repeat": 1
+          },
+          {
+            "absolute": 3.219282499999963,
+            "percent": 0.4636246741295407,
+            "repeat": 3
+          },
+          {
+            "absolute": 19.91181800000004,
+            "percent": 2.852020296715726,
+            "repeat": 2
+          }
+        ],
+        "apply_merge_ms": [
+          {
+            "absolute": -0.11756300000000053,
+            "percent": -0.5782960162540544,
+            "repeat": 1
+          },
+          {
+            "absolute": 0.37259050000000116,
+            "percent": 1.8518283357088607,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.13408299999999684,
+            "percent": -0.6564454148817803,
+            "repeat": 2
+          }
+        ],
+        "apply_run_ms": [
+          {
+            "absolute": -15.620278500000154,
+            "percent": -1.557290480478262,
+            "repeat": 1
+          },
+          {
+            "absolute": -96.77084049999985,
+            "percent": -9.166176921718014,
+            "repeat": 3
+          },
+          {
+            "absolute": -19.548631,
+            "percent": -1.9558283932359966,
+            "repeat": 2
+          }
+        ],
+        "baseline_rows_s": [
+          {
+            "absolute": -23.993000000000052,
+            "percent": -2.7487987681788764,
+            "repeat": 1
+          },
+          {
+            "absolute": -5.233999999999924,
+            "percent": -0.6005158424202285,
+            "repeat": 3
+          },
+          {
+            "absolute": -7.530999999999949,
+            "percent": -0.8760236367020228,
+            "repeat": 2
+          }
+        ],
+        "capture_commit_ms": [
+          {
+            "absolute": -22.33029903487661,
+            "percent": -74.6977087515848,
+            "repeat": 1
+          },
+          {
+            "absolute": -22.256544568196723,
+            "percent": -74.57236314478304,
+            "repeat": 3
+          },
+          {
+            "absolute": -22.283092946980503,
+            "percent": -74.53776763321278,
+            "repeat": 2
+          }
+        ],
+        "capture_durable_ms_per_transaction": [
+          {
+            "absolute": -0.9454885265700645,
+            "percent": -48.1657877328919,
+            "repeat": 1
+          },
+          {
+            "absolute": -0.9312656386607223,
+            "percent": -47.781276986128944,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.9365537114668323,
+            "percent": -47.81799406795187,
+            "repeat": 2
+          }
+        ],
+        "capture_syncs_per_commit": [
+          {
+            "absolute": -2.980461811722913,
+            "percent": -74.51154529307283,
+            "repeat": 1
+          },
+          {
+            "absolute": -2.9804811620517473,
+            "percent": -74.51202905129368,
+            "repeat": 3
+          },
+          {
+            "absolute": -2.9800443458980044,
+            "percent": -74.50110864745011,
+            "repeat": 2
+          }
+        ],
+        "capture_syncs_per_transaction": [
+          {
+            "absolute": -0.1255094974578161,
+            "percent": -47.784413724895984,
+            "repeat": 1
+          },
+          {
+            "absolute": -0.12448759868759732,
+            "percent": -47.65737363898927,
+            "repeat": 3
+          },
+          {
+            "absolute": -0.125115385636179,
+            "percent": -47.742865564489406,
+            "repeat": 2
+          }
+        ],
+        "capture_transactions_per_group": [
+          {
+            "absolute": -8.324857660455486,
+            "percent": -52.335106729142254,
+            "repeat": 1
+          },
+          {
+            "absolute": -8.369617628692971,
+            "percent": -52.3929230186651,
+            "repeat": 3
+          },
+          {
+            "absolute": -8.346953824890228,
+            "percent": -52.35476524150354,
+            "repeat": 2
+          }
+        ],
+        "capture_transactions_s": [
+          {
+            "absolute": 30.556091626581747,
+            "percent": 8.950441947957358,
+            "repeat": 1
+          },
+          {
+            "absolute": 28.760233126938658,
+            "percent": 8.348804112342979,
+            "repeat": 3
+          },
+          {
+            "absolute": 30.96253151208259,
+            "percent": 9.048642889835868,
+            "repeat": 2
+          }
+        ],
+        "cpu_cores": [
+          {
+            "absolute": 0.125,
+            "percent": 8.434547908232119,
+            "repeat": 1
+          },
+          {
+            "absolute": 0.10000000000000009,
+            "percent": 6.702412868632714,
+            "repeat": 3
+          },
+          {
+            "absolute": 0.10099999999999998,
+            "percent": 6.706507304116864,
+            "repeat": 2
+          }
+        ],
+        "lag_p95_ms": [
+          {
+            "absolute": -94.70299999999952,
+            "percent": -2.0769262990850086,
+            "repeat": 1
+          },
+          {
+            "absolute": -93.00799999999981,
+            "percent": -2.0221253666417542,
+            "repeat": 3
+          },
+          {
+            "absolute": -51.64299999999912,
+            "percent": -1.1439118804871826,
+            "repeat": 2
+          }
+        ],
+        "lag_p99_ms": [
+          {
+            "absolute": -74.71500000000015,
+            "percent": -1.4883309000920937,
+            "repeat": 1
+          },
+          {
+            "absolute": -89.95700000000033,
+            "percent": -1.7768045013355185,
+            "repeat": 3
+          },
+          {
+            "absolute": -54.45100000000002,
+            "percent": -1.0949053351575393,
+            "repeat": 2
+          }
+        ],
+        "last_backlog_bytes": [
+          {
+            "absolute": -92939,
+            "percent": -40.38718929254302,
+            "repeat": 1
+          },
+          {
+            "absolute": 19239,
+            "percent": 8.553822076588252,
+            "repeat": 3
+          },
+          {
+            "absolute": 27027,
+            "percent": 15.618841777382238,
+            "repeat": 2
+          }
+        ],
+        "peak_backlog_bytes": [
+          {
+            "absolute": 19074,
+            "percent": 8.288718929254301,
+            "repeat": 1
+          },
+          {
+            "absolute": 19239,
+            "percent": 8.553822076588252,
+            "repeat": 3
+          },
+          {
+            "absolute": 19602,
+            "percent": 8.906882591093117,
+            "repeat": 2
+          }
+        ],
+        "peak_memory_bytes": [
+          {
+            "absolute": -30900224,
+            "percent": -2.1415391603031764,
+            "repeat": 1
+          },
+          {
+            "absolute": 74698752,
+            "percent": 5.3093403282201175,
+            "repeat": 3
+          },
+          {
+            "absolute": 76845056,
+            "percent": 5.42799608834779,
+            "repeat": 2
+          }
+        ],
+        "source_rows_s": [
+          {
+            "absolute": 62.47399999999993,
+            "percent": 9.155725295999543,
+            "repeat": 1
+          },
+          {
+            "absolute": 58.660999999999945,
+            "percent": 8.537128453505016,
+            "repeat": 3
+          },
+          {
+            "absolute": 62.178,
+            "percent": 9.081733851944572,
+            "repeat": 2
+          }
+        ]
+      },
+      "predecessor": {
+        "failures": 0,
+        "freshness_passes": 3,
+        "input_passes": 0,
+        "measured": 3,
+        "metrics": {
+          "apply_directory_ms": {
+            "maximum": 698.165368,
+            "median": 694.372556,
+            "minimum": 686.4400049999999,
+            "n": 3
+          },
+          "apply_merge_ms": {
+            "maximum": 20.425613,
+            "median": 20.329208,
+            "minimum": 20.1201425,
+            "n": 3
+          },
+          "apply_run_ms": {
+            "maximum": 1055.7383009999999,
+            "median": 1003.0420590000001,
+            "minimum": 999.506453,
+            "n": 3
+          },
+          "baseline_rows_s": {
+            "maximum": 872.854,
+            "median": 871.584,
+            "minimum": 859.68,
+            "n": 3
+          },
+          "capture_commit_ms": {
+            "maximum": 29.8950366432111,
+            "median": 29.89422220317146,
+            "minimum": 29.845566949494952,
+            "n": 3
+          },
+          "capture_durable_ms_per_transaction": {
+            "maximum": 1.9629877784068723,
+            "median": 1.958580090448672,
+            "minimum": 1.949017894459103,
+            "n": 3
+          },
+          "capture_syncs_per_commit": {
+            "maximum": 4.0,
+            "median": 4.0,
+            "minimum": 4.0,
+            "n": 3
+          },
+          "capture_syncs_per_transaction": {
+            "maximum": 0.26265781595730836,
+            "median": 0.26206090513603014,
+            "minimum": 0.2612137203166227,
+            "n": 3
+          },
+          "capture_transactions_per_group": {
+            "maximum": 15.974710221285564,
+            "median": 15.943064182194616,
+            "minimum": 15.906832298136646,
+            "n": 3
+          },
+          "capture_transactions_s": {
+            "maximum": 344.48326658448195,
+            "median": 342.178732093208,
+            "minimum": 341.39198716947334,
+            "n": 3
+          },
+          "cpu_cores": {
+            "maximum": 1.506,
+            "median": 1.492,
+            "minimum": 1.482,
+            "n": 3
+          },
+          "lag_p95_ms": {
+            "maximum": 4599.517,
+            "median": 4559.767,
+            "minimum": 4514.596,
+            "n": 3
+          },
+          "lag_p99_ms": {
+            "maximum": 5062.853,
+            "median": 5020.053,
+            "minimum": 4973.124,
+            "n": 3
+          },
+          "last_backlog_bytes": {
+            "maximum": 230120,
+            "median": 224917,
+            "minimum": 173041,
+            "n": 3
+          },
+          "peak_backlog_bytes": {
+            "maximum": 230120,
+            "median": 224917,
+            "minimum": 220077,
+            "n": 3
+          },
+          "peak_memory_bytes": {
+            "maximum": 1442897920,
+            "median": 1415716864,
+            "minimum": 1406930944,
+            "n": 3
+          },
+          "source_rows_s": {
+            "maximum": 687.128,
+            "median": 684.649,
+            "minimum": 682.349,
+            "n": 3
+          }
+        },
+        "trials": 3
+      },
+      "rate": 1000
+    }
+  ],
+  "hypothesis": "Capture-only WAL/FULL with bounded checkpoints improves durable capture reader concurrency over SP03a batching; no source capacity claim.",
+  "interpretation": "Trial-level medians/ranges and paired deltas, not pooled percentiles. Missing/failing outcomes never become latency samples; historical differences are not controlled causal effects.",
+  "pairs": [
+    {
+      "candidate": {
+        "apply_directory_ms": 723.629859,
+        "apply_merge_ms": 18.770021,
+        "apply_run_ms": 987.702541,
+        "baseline_rows_s": 873.992,
+        "capture_commit_ms": 7.396591525393259,
+        "capture_durable_ms_per_transaction": 1.0043583634810205,
+        "capture_syncs_per_commit": 1.016179775280899,
+        "capture_syncs_per_transaction": 0.13798364457463688,
+        "capture_transactions_per_group": 7.509624197983501,
+        "capture_transactions_s": 372.3134343857322,
+        "capture_window": {
+          "commits": 2225,
+          "groups": 2182,
+          "seconds": 44.0113046875,
+          "transactions": 16386
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.363,
+        "incomplete_worker_tails": [
+          "incremental-1695.jsonl"
+        ],
+        "lag_p95_ms": 4536.397,
+        "lag_p99_ms": 5054.476,
+        "last_backlog_bytes": 209506,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 244640,
+        "peak_memory_bytes": 1395273728,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 741.856,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 8,
+      "predecessor": {
+        "apply_directory_ms": 717.377936,
+        "apply_merge_ms": 18.614105,
+        "apply_run_ms": 1043.472578,
+        "baseline_rows_s": 849.89,
+        "capture_commit_ms": 29.34673741434263,
+        "capture_durable_ms_per_transaction": 1.9467541700693756,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.26534522629666335,
+        "capture_transactions_per_group": 15.71651090342679,
+        "capture_transactions_s": 343.8960557538338,
+        "capture_window": {
+          "commits": 1004,
+          "groups": 963,
+          "seconds": 44.010391357421874,
+          "transactions": 15135
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.276,
+        "incomplete_worker_tails": [],
+        "lag_p95_ms": 4538.615,
+        "lag_p99_ms": 4924.68,
+        "last_backlog_bytes": 217899,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 217899,
+        "peak_memory_bytes": 1409593344,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 686.114,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "rate": 1000,
+      "repeat": 2
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 480.106127,
+        "apply_merge_ms": 17.4350825,
+        "apply_run_ms": 637.882994,
+        "baseline_rows_s": 50.36,
+        "capture_commit_ms": 7.46706573128945,
+        "capture_durable_ms_per_transaction": 7.27039148024583,
+        "capture_syncs_per_commit": 1.0324616771866546,
+        "capture_syncs_per_transaction": 1.0052677787532924,
+        "capture_transactions_per_group": 1.0307692307692307,
+        "capture_transactions_s": 25.879847722998722,
+        "capture_window": {
+          "commits": 1109,
+          "groups": 1105,
+          "seconds": 44.011078125,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.882,
+        "incomplete_worker_tails": [
+          "incremental-861.jsonl"
+        ],
+        "lag_p95_ms": 3392.025,
+        "lag_p99_ms": 3579.427,
+        "last_backlog_bytes": 7348,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 12157,
+        "peak_memory_bytes": 1190739968,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 32,
+        "within_5s_p95": true,
+        "worker_streams": 45
+      },
+      "cpus": 4,
+      "predecessor": {
+        "apply_directory_ms": 460.731013,
+        "apply_merge_ms": 17.461735,
+        "apply_run_ms": 701.932151,
+        "baseline_rows_s": 50.354,
+        "capture_commit_ms": 24.017016482075473,
+        "capture_durable_ms_per_transaction": 22.37085893760984,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.725834797891037,
+        "capture_transactions_per_group": 1.0776515151515151,
+        "capture_transactions_s": 25.857808657714518,
+        "capture_window": {
+          "commits": 1060,
+          "groups": 1056,
+          "seconds": 44.00991650390625,
+          "transactions": 1138
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.818,
+        "incomplete_worker_tails": [
+          "incremental-3507.jsonl"
+        ],
+        "lag_p95_ms": 3621.181,
+        "lag_p99_ms": 3846.564,
+        "last_backlog_bytes": 12716,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13350,
+        "peak_memory_bytes": 1212637184,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.034,
+        "status": "measured",
+        "successful_apply_workers": 29,
+        "within_5s_p95": true,
+        "worker_streams": 42
+      },
+      "rate": 50,
+      "repeat": 2
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 481.431309,
+        "apply_merge_ms": 19.868208,
+        "apply_run_ms": 631.897723,
+        "baseline_rows_s": 50.361,
+        "capture_commit_ms": 7.409623582585278,
+        "capture_durable_ms_per_transaction": 7.240632167543859,
+        "capture_syncs_per_commit": 1.0323159784560143,
+        "capture_syncs_per_transaction": 1.0087719298245614,
+        "capture_transactions_per_group": 1.027027027027027,
+        "capture_transactions_s": 25.902824036551927,
+        "capture_window": {
+          "commits": 1114,
+          "groups": 1110,
+          "seconds": 44.010645263671876,
+          "transactions": 1140
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.377,
+        "incomplete_worker_tails": [
+          "incremental-5211.jsonl"
+        ],
+        "lag_p95_ms": 3376.941,
+        "lag_p99_ms": 3554.633,
+        "last_backlog_bytes": 10780,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 12157,
+        "peak_memory_bytes": 1365479424,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.027,
+        "status": "measured",
+        "successful_apply_workers": 31,
+        "within_5s_p95": true,
+        "worker_streams": 44
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 396.78017,
+        "apply_merge_ms": 20.058987000000002,
+        "apply_run_ms": 638.5958595,
+        "baseline_rows_s": 50.358,
+        "capture_commit_ms": 23.737452578751164,
+        "capture_durable_ms_per_transaction": 22.361972446883232,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.7682177348551362,
+        "capture_transactions_per_group": 1.0654817586529466,
+        "capture_transactions_s": 25.880358526983745,
+        "capture_window": {
+          "commits": 1073,
+          "groups": 1069,
+          "seconds": 44.01020947265625,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.307,
+        "incomplete_worker_tails": [],
+        "lag_p95_ms": 3635.017,
+        "lag_p99_ms": 3847.968,
+        "last_backlog_bytes": 13486,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13486,
+        "peak_memory_bytes": 1321684992,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 30,
+        "within_5s_p95": true,
+        "worker_streams": 42
+      },
+      "rate": 50,
+      "repeat": 3
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 472.4839105,
+        "apply_merge_ms": 19.9528535,
+        "apply_run_ms": 634.988168,
+        "baseline_rows_s": 50.358,
+        "capture_commit_ms": 7.520643548561151,
+        "capture_durable_ms_per_transaction": 7.3423666602282704,
+        "capture_syncs_per_commit": 1.033273381294964,
+        "capture_syncs_per_transaction": 1.0087796312554873,
+        "capture_transactions_per_group": 1.0279783393501805,
+        "capture_transactions_s": 25.88088614923434,
+        "capture_window": {
+          "commits": 1112,
+          "groups": 1108,
+          "seconds": 44.00931225585938,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.401,
+        "incomplete_worker_tails": [
+          "incremental-3663.jsonl",
+          "incremental-3782.jsonl"
+        ],
+        "lag_p95_ms": 3327.123,
+        "lag_p99_ms": 3504.644,
+        "last_backlog_bytes": 7634,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 11506,
+        "peak_memory_bytes": 1309753344,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.04,
+        "status": "measured",
+        "successful_apply_workers": 30,
+        "within_5s_p95": true,
+        "worker_streams": 44
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 396.564139,
+        "apply_merge_ms": 19.808722,
+        "apply_run_ms": 722.943057,
+        "baseline_rows_s": 50.359,
+        "capture_commit_ms": 23.82834781144465,
+        "capture_durable_ms_per_transaction": 22.30115782879719,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.743634767339772,
+        "capture_transactions_per_group": 1.0725047080979284,
+        "capture_transactions_s": 25.88101809405222,
+        "capture_window": {
+          "commits": 1066,
+          "groups": 1062,
+          "seconds": 44.009087890625,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.284,
+        "incomplete_worker_tails": [
+          "incremental-5078.jsonl",
+          "incremental-1187.jsonl",
+          "incremental-1097.jsonl"
+        ],
+        "lag_p95_ms": 3667.658,
+        "lag_p99_ms": 3850.721,
+        "last_backlog_bytes": 11913,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13274,
+        "peak_memory_bytes": 1307369472,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 29,
+        "within_5s_p95": true,
+        "worker_streams": 42
+      },
+      "rate": 50,
+      "repeat": 2
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 719.124206,
+        "apply_merge_ms": 20.211645,
+        "apply_run_ms": 987.4217805,
+        "baseline_rows_s": 848.861,
+        "capture_commit_ms": 7.563923168294849,
+        "capture_durable_ms_per_transaction": 1.0174992518368078,
+        "capture_syncs_per_commit": 1.019538188277087,
+        "capture_syncs_per_transaction": 0.13714831849949227,
+        "capture_transactions_per_group": 7.581974637681159,
+        "capture_transactions_s": 371.9480787960551,
+        "capture_window": {
+          "commits": 2252,
+          "groups": 2208,
+          "seconds": 45.00897021484375,
+          "transactions": 16741
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.607,
+        "incomplete_worker_tails": [
+          "incremental-1425.jsonl"
+        ],
+        "lag_p95_ms": 4465.064,
+        "lag_p99_ms": 4945.338,
+        "last_backlog_bytes": 137181,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 249194,
+        "peak_memory_bytes": 1411997696,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 744.823,
+        "status": "measured",
+        "successful_apply_workers": 24,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 686.4400049999999,
+        "apply_merge_ms": 20.329208,
+        "apply_run_ms": 1003.0420590000001,
+        "baseline_rows_s": 872.854,
+        "capture_commit_ms": 29.89422220317146,
+        "capture_durable_ms_per_transaction": 1.9629877784068723,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.26265781595730836,
+        "capture_transactions_per_group": 15.906832298136646,
+        "capture_transactions_s": 341.39198716947334,
+        "capture_window": {
+          "commits": 1009,
+          "groups": 966,
+          "seconds": 45.00984375,
+          "transactions": 15366
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.482,
+        "incomplete_worker_tails": [
+          "incremental-2586.jsonl"
+        ],
+        "lag_p95_ms": 4559.767,
+        "lag_p99_ms": 5020.053,
+        "last_backlog_bytes": 230120,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 230120,
+        "peak_memory_bytes": 1442897920,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 682.349,
+        "status": "measured",
+        "successful_apply_workers": 22,
+        "within_5s_p95": true,
+        "worker_streams": 35
+      },
+      "rate": 1000,
+      "repeat": 1
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 436.4783,
+        "apply_merge_ms": 19.833691,
+        "apply_run_ms": 621.47868,
+        "baseline_rows_s": 50.358,
+        "capture_commit_ms": 7.353740776173285,
+        "capture_durable_ms_per_transaction": 7.1535950658472345,
+        "capture_syncs_per_commit": 1.0333935018050542,
+        "capture_syncs_per_transaction": 1.0052677787532924,
+        "capture_transactions_per_group": 1.0317028985507246,
+        "capture_transactions_s": 25.881167843718075,
+        "capture_window": {
+          "commits": 1108,
+          "groups": 1104,
+          "seconds": 44.00883325195313,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.407,
+        "incomplete_worker_tails": [
+          "incremental-3475.jsonl",
+          "incremental-1594.jsonl",
+          "incremental-5191.jsonl"
+        ],
+        "lag_p95_ms": 3433.519,
+        "lag_p99_ms": 3635.716,
+        "last_backlog_bytes": 8195,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 12232,
+        "peak_memory_bytes": 1318244352,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 29,
+        "within_5s_p95": true,
+        "worker_streams": 44
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 468.40286,
+        "apply_merge_ms": 20.011552,
+        "apply_run_ms": 693.238394,
+        "baseline_rows_s": 50.359,
+        "capture_commit_ms": 23.709929994397758,
+        "capture_durable_ms_per_transaction": 22.294411785776997,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.7611940298507465,
+        "capture_transactions_per_group": 1.0674789128397375,
+        "capture_transactions_s": 25.88144337040152,
+        "capture_window": {
+          "commits": 1071,
+          "groups": 1067,
+          "seconds": 44.00836474609375,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.281,
+        "incomplete_worker_tails": [
+          "incremental-4957.jsonl",
+          "incremental-1192.jsonl"
+        ],
+        "lag_p95_ms": 3624.973,
+        "lag_p99_ms": 3820.279,
+        "last_backlog_bytes": 9086,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13365,
+        "peak_memory_bytes": 1328553984,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 29,
+        "within_5s_p95": true,
+        "worker_streams": 41
+      },
+      "rate": 50,
+      "repeat": 1
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 764.787465,
+        "apply_merge_ms": 18.749205,
+        "apply_run_ms": 1029.009975,
+        "baseline_rows_s": 861.808,
+        "capture_commit_ms": 7.450718787974684,
+        "capture_durable_ms_per_transaction": 1.0114760009205843,
+        "capture_syncs_per_commit": 1.018987341772152,
+        "capture_syncs_per_transaction": 0.1383331287590524,
+        "capture_transactions_per_group": 7.512217611802674,
+        "capture_transactions_s": 370.24717449762886,
+        "capture_window": {
+          "commits": 2212,
+          "groups": 2169,
+          "seconds": 44.0084384765625,
+          "transactions": 16294
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.371,
+        "incomplete_worker_tails": [
+          "incremental-2266.jsonl",
+          "incremental-1082.jsonl",
+          "incremental-1508.jsonl"
+        ],
+        "lag_p95_ms": 4524.161,
+        "lag_p99_ms": 4957.878,
+        "last_backlog_bytes": 176066,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 250448,
+        "peak_memory_bytes": 1348427776,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 740.197,
+        "status": "measured",
+        "successful_apply_workers": 22,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 8,
+      "predecessor": {
+        "apply_directory_ms": 686.066177,
+        "apply_merge_ms": 18.886416,
+        "apply_run_ms": 990.785612,
+        "baseline_rows_s": 876.665,
+        "capture_commit_ms": 29.200100638834954,
+        "capture_durable_ms_per_transaction": 1.9324147814186583,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.26471344127473656,
+        "capture_transactions_per_group": 15.768996960486323,
+        "capture_transactions_s": 345.8022096000693,
+        "capture_window": {
+          "commits": 1030,
+          "groups": 987,
+          "seconds": 45.00838793945312,
+          "transactions": 15564
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.281,
+        "incomplete_worker_tails": [
+          "incremental-3232.jsonl"
+        ],
+        "lag_p95_ms": 4456.374,
+        "lag_p99_ms": 4970.16,
+        "last_backlog_bytes": 160457,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 218625,
+        "peak_memory_bytes": 1416441856,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 690.453,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 35
+      },
+      "rate": 1000,
+      "repeat": 1
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 697.5918385,
+        "apply_merge_ms": 20.492733,
+        "apply_run_ms": 958.9674605,
+        "baseline_rows_s": 866.35,
+        "capture_commit_ms": 7.58902238129823,
+        "capture_durable_ms_per_transaction": 1.0177522557983807,
+        "capture_syncs_per_commit": 1.0195188379482525,
+        "capture_syncs_per_transaction": 0.1367261216290254,
+        "capture_transactions_per_group": 7.605092592592593,
+        "capture_transactions_s": 373.2434997114206,
+        "capture_window": {
+          "commits": 2203,
+          "groups": 2160,
+          "seconds": 44.011483154296876,
+          "transactions": 16427
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.592,
+        "incomplete_worker_tails": [
+          "incremental-2105.jsonl",
+          "incremental-2820.jsonl"
+        ],
+        "lag_p95_ms": 4506.509,
+        "lag_p99_ms": 4972.896,
+        "last_backlog_bytes": 244156,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 244156,
+        "peak_memory_bytes": 1481629696,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 745.789,
+        "status": "measured",
+        "successful_apply_workers": 22,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 694.372556,
+        "apply_merge_ms": 20.1201425,
+        "apply_run_ms": 1055.7383009999999,
+        "baseline_rows_s": 871.584,
+        "capture_commit_ms": 29.845566949494952,
+        "capture_durable_ms_per_transaction": 1.949017894459103,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.2612137203166227,
+        "capture_transactions_per_group": 15.974710221285564,
+        "capture_transactions_s": 344.48326658448195,
+        "capture_window": {
+          "commits": 990,
+          "groups": 949,
+          "seconds": 44.007943115234376,
+          "transactions": 15160
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.492,
+        "incomplete_worker_tails": [
+          "incremental-1978.jsonl",
+          "incremental-3064.jsonl",
+          "incremental-1108.jsonl",
+          "incremental-2939.jsonl"
+        ],
+        "lag_p95_ms": 4599.517,
+        "lag_p99_ms": 5062.853,
+        "last_backlog_bytes": 224917,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 224917,
+        "peak_memory_bytes": 1406930944,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 687.128,
+        "status": "measured",
+        "successful_apply_workers": 20,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "rate": 1000,
+      "repeat": 3
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 466.8312925,
+        "apply_merge_ms": 17.834525499999998,
+        "apply_run_ms": 658.096681,
+        "baseline_rows_s": 50.346,
+        "capture_commit_ms": 7.426765364757709,
+        "capture_durable_ms_per_transaction": 7.24796103955288,
+        "capture_syncs_per_commit": 1.0325991189427313,
+        "capture_syncs_per_transaction": 1.0077386070507308,
+        "capture_transactions_per_group": 1.028293545534925,
+        "capture_transactions_s": 25.83829985786854,
+        "capture_window": {
+          "commits": 1135,
+          "groups": 1131,
+          "seconds": 45.01070141601563,
+          "transactions": 1163
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.882,
+        "incomplete_worker_tails": [
+          "incremental-978.jsonl",
+          "incremental-1513.jsonl"
+        ],
+        "lag_p95_ms": 3498.586,
+        "lag_p99_ms": 4140.881,
+        "last_backlog_bytes": 11506,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 12322,
+        "peak_memory_bytes": 1188261888,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.04,
+        "status": "measured",
+        "successful_apply_workers": 30,
+        "within_5s_p95": true,
+        "worker_streams": 44
+      },
+      "cpus": 4,
+      "predecessor": {
+        "apply_directory_ms": 488.679751,
+        "apply_merge_ms": 17.593460999999998,
+        "apply_run_ms": 710.813193,
+        "baseline_rows_s": 50.349,
+        "capture_commit_ms": 23.670198588400375,
+        "capture_durable_ms_per_transaction": 22.215489280948198,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.7541703248463563,
+        "capture_transactions_per_group": 1.0694835680751174,
+        "capture_transactions_s": 25.880978180243943,
+        "capture_window": {
+          "commits": 1069,
+          "groups": 1065,
+          "seconds": 44.00915576171875,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.815,
+        "incomplete_worker_tails": [
+          "incremental-1579.jsonl",
+          "incremental-977.jsonl"
+        ],
+        "lag_p95_ms": 3712.74,
+        "lag_p99_ms": 3886.966,
+        "last_backlog_bytes": 11022,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13274,
+        "peak_memory_bytes": 1251229696,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.038,
+        "status": "measured",
+        "successful_apply_workers": 28,
+        "within_5s_p95": true,
+        "worker_streams": 42
+      },
+      "rate": 50,
+      "repeat": 3
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 721.830509,
+        "apply_merge_ms": 18.809434,
+        "apply_run_ms": 978.029979,
+        "baseline_rows_s": 863.387,
+        "capture_commit_ms": 7.432215716276978,
+        "capture_durable_ms_per_transaction": 1.008680524379081,
+        "capture_syncs_per_commit": 1.0193345323741008,
+        "capture_syncs_per_transaction": 0.13834136815768597,
+        "capture_transactions_per_group": 7.5135259055479136,
+        "capture_transactions_s": 372.3560180797712,
+        "capture_window": {
+          "commits": 2224,
+          "groups": 2181,
+          "seconds": 44.00895703125,
+          "transactions": 16387
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.381,
+        "incomplete_worker_tails": [
+          "incremental-2256.jsonl",
+          "incremental-1505.jsonl",
+          "incremental-3096.jsonl"
+        ],
+        "lag_p95_ms": 4468.862,
+        "lag_p99_ms": 4975.667,
+        "last_backlog_bytes": 168685,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 253473,
+        "peak_memory_bytes": 1351766016,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 744.609,
+        "status": "measured",
+        "successful_apply_workers": 22,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 8,
+      "predecessor": {
+        "apply_directory_ms": 708.274796,
+        "apply_merge_ms": 19.117479,
+        "apply_run_ms": 963.95243,
+        "baseline_rows_s": 861.969,
+        "capture_commit_ms": 29.39518456682927,
+        "capture_durable_ms_per_transaction": 1.9509236066433566,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.26547526547526545,
+        "capture_transactions_per_group": 15.727087576374746,
+        "capture_transactions_s": 343.1372832468787,
+        "capture_window": {
+          "commits": 1025,
+          "groups": 982,
+          "seconds": 45.00822485351563,
+          "transactions": 15444
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.28,
+        "incomplete_worker_tails": [
+          "incremental-2187.jsonl"
+        ],
+        "lag_p95_ms": 4591.141,
+        "lag_p99_ms": 4999.584,
+        "last_backlog_bytes": 139403,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 232177,
+        "peak_memory_bytes": 1426530304,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 685.854,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 35
+      },
+      "rate": 1000,
+      "repeat": 3
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 718.077186,
+        "apply_merge_ms": 20.29153,
+        "apply_run_ms": 979.957822,
+        "baseline_rows_s": 852.149,
+        "capture_commit_ms": 7.611943696230599,
+        "capture_durable_ms_per_transaction": 1.0220263789818398,
+        "capture_syncs_per_commit": 1.0199556541019956,
+        "capture_syncs_per_transaction": 0.13694551949985115,
+        "capture_transactions_per_group": 7.596110357304387,
+        "capture_transactions_s": 373.1412636052906,
+        "capture_window": {
+          "commits": 2255,
+          "groups": 2211,
+          "seconds": 45.00976342773438,
+          "transactions": 16795
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.607,
+        "incomplete_worker_tails": [
+          "incremental-3826.jsonl"
+        ],
+        "lag_p95_ms": 4462.953,
+        "lag_p99_ms": 4918.673,
+        "last_backlog_bytes": 200068,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 239679,
+        "peak_memory_bytes": 1492561920,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 746.827,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 36
+      },
+      "cpus": 16,
+      "predecessor": {
+        "apply_directory_ms": 698.165368,
+        "apply_merge_ms": 20.425613,
+        "apply_run_ms": 999.506453,
+        "baseline_rows_s": 859.68,
+        "capture_commit_ms": 29.8950366432111,
+        "capture_durable_ms_per_transaction": 1.958580090448672,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 0.26206090513603014,
+        "capture_transactions_per_group": 15.943064182194616,
+        "capture_transactions_s": 342.178732093208,
+        "capture_window": {
+          "commits": 1009,
+          "groups": 966,
+          "seconds": 45.008641845703124,
+          "transactions": 15401
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 1.506,
+        "incomplete_worker_tails": [
+          "incremental-3062.jsonl"
+        ],
+        "lag_p95_ms": 4514.596,
+        "lag_p99_ms": 4973.124,
+        "last_backlog_bytes": 173041,
+        "offered_load_met": false,
+        "peak_backlog_bytes": 220077,
+        "peak_memory_bytes": 1415716864,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 684.649,
+        "status": "measured",
+        "successful_apply_workers": 23,
+        "within_5s_p95": true,
+        "worker_streams": 35
+      },
+      "rate": 1000,
+      "repeat": 2
+    },
+    {
+      "candidate": {
+        "apply_directory_ms": 477.054061,
+        "apply_merge_ms": 17.968604,
+        "apply_run_ms": 676.206958,
+        "baseline_rows_s": 50.347,
+        "capture_commit_ms": 7.49783434305924,
+        "capture_durable_ms_per_transaction": 7.304091853574505,
+        "capture_syncs_per_commit": 1.032714412024757,
+        "capture_syncs_per_transaction": 1.0060292850990527,
+        "capture_transactions_per_group": 1.0301685891748003,
+        "capture_transactions_s": 25.794764356965477,
+        "capture_window": {
+          "commits": 1131,
+          "groups": 1127,
+          "seconds": 45.0091337890625,
+          "transactions": 1161
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.876,
+        "incomplete_worker_tails": [],
+        "lag_p95_ms": 3566.878,
+        "lag_p99_ms": 4194.405,
+        "last_backlog_bytes": 9086,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 12322,
+        "peak_memory_bytes": 1202520064,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.033,
+        "status": "measured",
+        "successful_apply_workers": 31,
+        "within_5s_p95": true,
+        "worker_streams": 44
+      },
+      "cpus": 4,
+      "predecessor": {
+        "apply_directory_ms": 438.80295049999995,
+        "apply_merge_ms": 17.5505165,
+        "apply_run_ms": 680.3033185,
+        "baseline_rows_s": 50.346,
+        "capture_commit_ms": 23.85928386329588,
+        "capture_durable_ms_per_transaction": 22.372006291483757,
+        "capture_syncs_per_commit": 4.0,
+        "capture_syncs_per_transaction": 3.7506584723441616,
+        "capture_transactions_per_group": 1.0704887218045114,
+        "capture_transactions_s": 25.881718185037233,
+        "capture_window": {
+          "commits": 1068,
+          "groups": 1064,
+          "seconds": 44.0078974609375,
+          "transactions": 1139
+        },
+        "counter_capabilities": {
+          "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+          "checkpoints": "not separately instrumented in predecessor",
+          "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+        },
+        "cpu_cores": 0.816,
+        "incomplete_worker_tails": [
+          "incremental-3204.jsonl",
+          "incremental-871.jsonl"
+        ],
+        "lag_p95_ms": 3720.887,
+        "lag_p99_ms": 3992.194,
+        "last_backlog_bytes": 11143,
+        "offered_load_met": true,
+        "peak_backlog_bytes": 13815,
+        "peak_memory_bytes": 1200472064,
+        "phase": "complete",
+        "runtime_error": null,
+        "source_rows_s": 50.036,
+        "status": "measured",
+        "successful_apply_workers": 28,
+        "within_5s_p95": true,
+        "worker_streams": 41
+      },
+      "rate": 50,
+      "repeat": 1
+    }
+  ],
+  "slice": "SP03b",
+  "standard_matched_protocol": true
+}

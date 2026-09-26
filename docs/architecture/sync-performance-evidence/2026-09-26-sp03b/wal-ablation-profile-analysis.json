@@ -1,0 +1,975 @@
+{
+  "groups": [
+    {
+      "arm": "candidate",
+      "capture": {
+        "accumulation_ms_maximum": {
+          "maximum": 13.15482595236972,
+          "median": 13.146075012627989,
+          "minimum": 12.06058100797236,
+          "n": 3
+        },
+        "accumulation_ms_mean": {
+          "maximum": 9.688141608619082,
+          "median": 9.687916267846855,
+          "minimum": 9.657900076185955,
+          "n": 3
+        },
+        "commit_ms_maximum": {
+          "maximum": 52.6431420003064,
+          "median": 31.55364200938493,
+          "minimum": 30.45767795993015,
+          "n": 3
+        },
+        "commit_ms_mean": {
+          "maximum": 8.308938527081443,
+          "median": 8.260285468128574,
+          "minimum": 8.240597066256536,
+          "n": 3
+        },
+        "maximum_group_payload_bytes": {
+          "maximum": 3509,
+          "median": 3388,
+          "minimum": 3146,
+          "n": 3
+        },
+        "maximum_group_transactions": {
+          "maximum": 29,
+          "median": 28,
+          "minimum": 26,
+          "n": 3
+        }
+      },
+      "comparable_cursor_samples": 182,
+      "cpus": 16,
+      "load_window": {
+        "capture_cpu_seconds": {
+          "maximum": 6.108936999999999,
+          "median": 6.065119999999999,
+          "minimum": 5.960477,
+          "n": 3
+        },
+        "native_commit_sync_ms_per_transaction": {
+          "maximum": 1.0111370478803594,
+          "median": 1.0058346688211575,
+          "minimum": 1.003861611763318,
+          "n": 3
+        },
+        "payload_bytes_per_group": {
+          "maximum": 933.6394712853236,
+          "median": 931.3582713754647,
+          "minimum": 926.2881818181818,
+          "n": 3
+        },
+        "payload_bytes_s": {
+          "maximum": 45543.25148202714,
+          "median": 45510.45223860069,
+          "minimum": 45276.1695756179,
+          "n": 3
+        }
+      },
+      "missing_status_samples": [
+        0,
+        0,
+        0
+      ],
+      "rate": 1000,
+      "source_sql_trial_p95_ms": {
+        "begin": {
+          "maximum": 0.208,
+          "median": 0.206,
+          "minimum": 0.204,
+          "n": 3
+        },
+        "commit": {
+          "maximum": 17.239,
+          "median": 17.215,
+          "minimum": 17.039,
+          "n": 3
+        },
+        "updates": {
+          "maximum": 0.219,
+          "median": 0.217,
+          "minimum": 0.216,
+          "n": 3
+        },
+        "xid": {
+          "maximum": 0.14,
+          "median": 0.137,
+          "minimum": 0.136,
+          "n": 3
+        }
+      },
+      "stage_trial_p95_ms": {
+        "admission_to_worker_start": {
+          "maximum": 109,
+          "median": 105,
+          "minimum": 100,
+          "n": 3
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 113.279,
+          "median": 111.828,
+          "minimum": 111.623,
+          "n": 3
+        },
+        "commit_to_admission": {
+          "maximum": 2559.904,
+          "median": 2519.302,
+          "minimum": 2485.12,
+          "n": 3
+        },
+        "commit_to_publication": {
+          "maximum": 4602.57,
+          "median": 4542.314,
+          "minimum": 4449.475,
+          "n": 3
+        },
+        "prepared_to_publication": {
+          "maximum": 665,
+          "median": 605,
+          "minimum": 550,
+          "n": 3
+        },
+        "worker_start_to_prepared": {
+          "maximum": 1575,
+          "median": 1530,
+          "minimum": 1512,
+          "n": 3
+        }
+      },
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": {
+          "maximum": 16023,
+          "median": 15887,
+          "minimum": 15861,
+          "n": 3
+        },
+        "lifecycle_cpu_seconds": {
+          "maximum": 46.631738999999996,
+          "median": 46.60325599999999,
+          "minimum": 46.339851999999986,
+          "n": 3
+        },
+        "workers": {
+          "maximum": 24,
+          "median": 24,
+          "minimum": 24,
+          "n": 3
+        }
+      },
+      "trials": 3
+    },
+    {
+      "arm": "predecessor",
+      "capture": {
+        "accumulation_ms_maximum": {
+          "maximum": 0.06982102058827877,
+          "median": 0.05015399074181914,
+          "minimum": 0.022100983187556267,
+          "n": 3
+        },
+        "accumulation_ms_mean": {
+          "maximum": 0.0046003624430152115,
+          "median": 0.0045922267408021545,
+          "minimum": 0.004568048752983113,
+          "n": 3
+        },
+        "commit_ms_maximum": {
+          "maximum": 36.18257702328265,
+          "median": 33.396633982192725,
+          "minimum": 32.63443399919197,
+          "n": 3
+        },
+        "commit_ms_mean": {
+          "maximum": 8.350678092584134,
+          "median": 8.32709437235496,
+          "minimum": 8.315570474766353,
+          "n": 3
+        },
+        "maximum_group_payload_bytes": {
+          "maximum": 165,
+          "median": 165,
+          "minimum": 165,
+          "n": 3
+        },
+        "maximum_group_transactions": {
+          "maximum": 1,
+          "median": 1,
+          "minimum": 1,
+          "n": 3
+        }
+      },
+      "comparable_cursor_samples": 495,
+      "cpus": 16,
+      "load_window": {
+        "capture_cpu_seconds": {
+          "maximum": 2.9750769999999997,
+          "median": 2.9626540000000006,
+          "minimum": 2.9532040000000004,
+          "n": 3
+        },
+        "native_commit_sync_ms_per_transaction": {
+          "maximum": 9.221879693982387,
+          "median": 9.16409326902569,
+          "minimum": 9.131704665845245,
+          "n": 3
+        },
+        "payload_bytes_per_group": {
+          "maximum": 120.61261705273533,
+          "median": 120.58070770722249,
+          "minimum": 120.57681017612525,
+          "n": 3
+        },
+        "payload_bytes_s": {
+          "maximum": 11121.348633154541,
+          "median": 11053.696114008404,
+          "minimum": 10951.585498783661,
+          "n": 3
+        }
+      },
+      "missing_status_samples": [
+        0,
+        0,
+        0
+      ],
+      "rate": 1000,
+      "source_sql_trial_p95_ms": {
+        "begin": {
+          "maximum": 0.214,
+          "median": 0.213,
+          "minimum": 0.212,
+          "n": 3
+        },
+        "commit": {
+          "maximum": 18.345,
+          "median": 18.323,
+          "minimum": 18.135,
+          "n": 3
+        },
+        "updates": {
+          "maximum": 0.222,
+          "median": 0.222,
+          "minimum": 0.215,
+          "n": 3
+        },
+        "xid": {
+          "maximum": 0.144,
+          "median": 0.141,
+          "minimum": 0.141,
+          "n": 3
+        }
+      },
+      "stage_trial_p95_ms": {
+        "admission_to_worker_start": {
+          "maximum": 113,
+          "median": 112,
+          "minimum": 112,
+          "n": 3
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 91540.512,
+          "median": 91197.839,
+          "minimum": 89862.907,
+          "n": 3
+        },
+        "commit_to_admission": {
+          "maximum": 92719.95,
+          "median": 92635.745,
+          "minimum": 91257.634,
+          "n": 3
+        },
+        "commit_to_publication": {
+          "maximum": 93765.95,
+          "median": 93671.745,
+          "minimum": 92303.634,
+          "n": 3
+        },
+        "prepared_to_publication": {
+          "maximum": 738,
+          "median": 684,
+          "minimum": 643,
+          "n": 3
+        },
+        "worker_start_to_prepared": {
+          "maximum": 2534,
+          "median": 2507,
+          "minimum": 2497,
+          "n": 3
+        }
+      },
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": {
+          "maximum": 4009,
+          "median": 3947,
+          "minimum": 3512,
+          "n": 3
+        },
+        "lifecycle_cpu_seconds": {
+          "maximum": 46.72039899999999,
+          "median": 46.584824999999995,
+          "minimum": 42.273512999999994,
+          "n": 3
+        },
+        "workers": {
+          "maximum": 22,
+          "median": 22,
+          "minimum": 20,
+          "n": 3
+        }
+      },
+      "trials": 3
+    }
+  ],
+  "scope": "All-run capture statistics and sampled cursor invariants; stage statistics are medians/ranges of complete trial p95s, never pooled percentiles. Missing outcomes remain missing. Successful apply-worker CPU covers full lifetimes of completed workers started during load, can cross load edges and excludes failed workers; it does not sum to cgroup load CPU. Sampling is not a durability proof.",
+  "trials": [
+    {
+      "arm": "candidate",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 13.146075012627989,
+          "accumulation_ms_mean": 9.687916267846855,
+          "commit_ms_maximum": 30.45767795993015,
+          "commit_ms_mean": 8.240597066256536,
+          "comparable_cursor_samples": 61,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 39888640,
+            "durable": 39888640,
+            "feedback": 39888640
+          },
+          "load_window": {
+            "capture_cpu_seconds": 6.065119999999999,
+            "groups": 2200,
+            "native_commit_sync_ms_per_transaction": 1.0058346688211575,
+            "payload_bytes": 2037834,
+            "payload_bytes_per_group": 926.2881818181818,
+            "payload_bytes_s": 45276.1695756179,
+            "seconds": 45.00897534179688,
+            "transactions": 16864
+          },
+          "maximum_group_payload_bytes": 3388,
+          "maximum_group_transactions": 28,
+          "snapshots": 68,
+          "stream": "capture-515.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 2,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.086,
+          "p95": 0.204,
+          "p99": 0.281,
+          "total_ms": 1791.753
+        },
+        "commit": {
+          "p50": 10.011,
+          "p95": 17.239,
+          "p99": 20.245,
+          "total_ms": 174079.988
+        },
+        "updates": {
+          "p50": 0.133,
+          "p95": 0.216,
+          "p99": 0.327,
+          "total_ms": 2490.706
+        },
+        "xid": {
+          "p50": 0.061,
+          "p95": 0.136,
+          "p99": 0.205,
+          "total_ms": 1269.536
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 105,
+          "p50": 85,
+          "p95": 105,
+          "p99": 105
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 175.921,
+          "p50": 63.86,
+          "p95": 111.623,
+          "p99": 124.588
+        },
+        "commit_to_admission": {
+          "maximum": 3108.329,
+          "p50": 1483.145,
+          "p95": 2519.302,
+          "p99": 2855.245
+        },
+        "commit_to_publication": {
+          "maximum": 5338.329,
+          "p50": 3178.111,
+          "p95": 4542.314,
+          "p99": 4951.714
+        },
+        "prepared_to_publication": {
+          "maximum": 632,
+          "p50": 400,
+          "p95": 550,
+          "p99": 632
+        },
+        "worker_start_to_prepared": {
+          "maximum": 1575,
+          "p50": 1246,
+          "p95": 1575,
+          "p99": 1575
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 16023,
+        "lifecycle_cpu_seconds": 46.60325599999999,
+        "workers": 24
+      }
+    },
+    {
+      "arm": "predecessor",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 0.05015399074181914,
+          "accumulation_ms_mean": 0.0045922267408021545,
+          "commit_ms_maximum": 36.18257702328265,
+          "commit_ms_mean": 8.350678092584134,
+          "comparable_cursor_samples": 166,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 38905152,
+            "durable": 38905152,
+            "feedback": 38905152
+          },
+          "load_window": {
+            "capture_cpu_seconds": 2.9626540000000006,
+            "groups": 4088,
+            "native_commit_sync_ms_per_transaction": 9.221879693982387,
+            "payload_bytes": 492918,
+            "payload_bytes_per_group": 120.57681017612525,
+            "payload_bytes_s": 10951.585498783661,
+            "seconds": 45.008825439453126,
+            "transactions": 4088
+          },
+          "maximum_group_payload_bytes": 165,
+          "maximum_group_transactions": 1,
+          "snapshots": 173,
+          "stream": "capture-507.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 2,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.099,
+          "p95": 0.214,
+          "p99": 0.281,
+          "total_ms": 1685.647
+        },
+        "commit": {
+          "p50": 11.2,
+          "p95": 18.323,
+          "p99": 21.539,
+          "total_ms": 174521.509
+        },
+        "updates": {
+          "p50": 0.138,
+          "p95": 0.222,
+          "p99": 0.325,
+          "total_ms": 2286.614
+        },
+        "xid": {
+          "p50": 0.064,
+          "p95": 0.144,
+          "p99": 0.211,
+          "total_ms": 1163.553
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 129,
+          "p50": 98,
+          "p95": 112,
+          "p99": 129
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 96435.572,
+          "p50": 52458.986,
+          "p95": 91540.512,
+          "p99": 95331.916
+        },
+        "commit_to_admission": {
+          "maximum": 97992.654,
+          "p50": 54404.868,
+          "p95": 92719.95,
+          "p99": 96759.7
+        },
+        "commit_to_publication": {
+          "maximum": 99080.654,
+          "p50": 57161.868,
+          "p95": 93765.95,
+          "p99": 97941.7
+        },
+        "prepared_to_publication": {
+          "maximum": 786,
+          "p50": 471,
+          "p95": 643,
+          "p99": 786
+        },
+        "worker_start_to_prepared": {
+          "maximum": 2570,
+          "p50": 1864,
+          "p95": 2534,
+          "p99": 2570
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 3512,
+        "lifecycle_cpu_seconds": 42.273512999999994,
+        "workers": 20
+      }
+    },
+    {
+      "arm": "candidate",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 13.15482595236972,
+          "accumulation_ms_mean": 9.688141608619082,
+          "commit_ms_maximum": 31.55364200938493,
+          "commit_ms_mean": 8.260285468128574,
+          "comparable_cursor_samples": 60,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 39867472,
+            "durable": 39867472,
+            "feedback": 39867472
+          },
+          "load_window": {
+            "capture_cpu_seconds": 6.108936999999999,
+            "groups": 2194,
+            "native_commit_sync_ms_per_transaction": 1.003861611763318,
+            "payload_bytes": 2048405,
+            "payload_bytes_per_group": 933.6394712853236,
+            "payload_bytes_s": 45510.45223860069,
+            "seconds": 45.00955053710938,
+            "transactions": 16951
+          },
+          "maximum_group_payload_bytes": 3509,
+          "maximum_group_transactions": 29,
+          "snapshots": 67,
+          "stream": "capture-506.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 3,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.086,
+          "p95": 0.208,
+          "p99": 0.287,
+          "total_ms": 1806.725
+        },
+        "commit": {
+          "p50": 9.968,
+          "p95": 17.215,
+          "p99": 20.264,
+          "total_ms": 173980.861
+        },
+        "updates": {
+          "p50": 0.134,
+          "p95": 0.219,
+          "p99": 0.366,
+          "total_ms": 2548.171
+        },
+        "xid": {
+          "p50": 0.061,
+          "p95": 0.137,
+          "p99": 0.197,
+          "total_ms": 1262.405
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 102,
+          "p50": 90,
+          "p95": 100,
+          "p99": 102
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 157.824,
+          "p50": 64.755,
+          "p95": 111.828,
+          "p99": 123.718
+        },
+        "commit_to_admission": {
+          "maximum": 3039.371,
+          "p50": 1466.013,
+          "p95": 2485.12,
+          "p99": 2769.708
+        },
+        "commit_to_publication": {
+          "maximum": 5115.654,
+          "p50": 3129.815,
+          "p95": 4449.475,
+          "p99": 4900.881
+        },
+        "prepared_to_publication": {
+          "maximum": 605,
+          "p50": 369,
+          "p95": 605,
+          "p99": 605
+        },
+        "worker_start_to_prepared": {
+          "maximum": 1530,
+          "p50": 1246,
+          "p95": 1530,
+          "p99": 1530
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 15861,
+        "lifecycle_cpu_seconds": 46.339851999999986,
+        "workers": 24
+      }
+    },
+    {
+      "arm": "predecessor",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 0.06982102058827877,
+          "accumulation_ms_mean": 0.004568048752983113,
+          "commit_ms_maximum": 32.63443399919197,
+          "commit_ms_mean": 8.32709437235496,
+          "comparable_cursor_samples": 165,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 38960384,
+            "durable": 38960384,
+            "feedback": 38960384
+          },
+          "load_window": {
+            "capture_cpu_seconds": 2.9750769999999997,
+            "groups": 4126,
+            "native_commit_sync_ms_per_transaction": 9.16409326902569,
+            "payload_bytes": 497516,
+            "payload_bytes_per_group": 120.58070770722249,
+            "payload_bytes_s": 11053.696114008404,
+            "seconds": 45.009017333984374,
+            "transactions": 4126
+          },
+          "maximum_group_payload_bytes": 165,
+          "maximum_group_transactions": 1,
+          "snapshots": 172,
+          "stream": "capture-506.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 3,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.1,
+          "p95": 0.213,
+          "p99": 0.287,
+          "total_ms": 1712.514
+        },
+        "commit": {
+          "p50": 11.268,
+          "p95": 18.135,
+          "p99": 21.126,
+          "total_ms": 174507.666
+        },
+        "updates": {
+          "p50": 0.137,
+          "p95": 0.222,
+          "p99": 0.335,
+          "total_ms": 2288.714
+        },
+        "xid": {
+          "p50": 0.063,
+          "p95": 0.141,
+          "p99": 0.208,
+          "total_ms": 1165.361
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 191,
+          "p50": 98,
+          "p95": 113,
+          "p99": 191
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 96197.731,
+          "p50": 52383.605,
+          "p95": 91197.839,
+          "p99": 95201.824
+        },
+        "commit_to_admission": {
+          "maximum": 97878.772,
+          "p50": 54358.22,
+          "p95": 92635.745,
+          "p99": 96654.816
+        },
+        "commit_to_publication": {
+          "maximum": 98984.772,
+          "p50": 57111.22,
+          "p95": 93671.745,
+          "p99": 97863.816
+        },
+        "prepared_to_publication": {
+          "maximum": 794,
+          "p50": 471,
+          "p95": 738,
+          "p99": 794
+        },
+        "worker_start_to_prepared": {
+          "maximum": 2556,
+          "p50": 1864,
+          "p95": 2497,
+          "p99": 2556
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 3947,
+        "lifecycle_cpu_seconds": 46.72039899999999,
+        "workers": 22
+      }
+    },
+    {
+      "arm": "candidate",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 12.06058100797236,
+          "accumulation_ms_mean": 9.657900076185955,
+          "commit_ms_maximum": 52.6431420003064,
+          "commit_ms_mean": 8.308938527081443,
+          "comparable_cursor_samples": 61,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 39834776,
+            "durable": 39834776,
+            "feedback": 39834776
+          },
+          "load_window": {
+            "capture_cpu_seconds": 5.960477,
+            "groups": 2152,
+            "native_commit_sync_ms_per_transaction": 1.0111370478803594,
+            "payload_bytes": 2004283,
+            "payload_bytes_per_group": 931.3582713754647,
+            "payload_bytes_s": 45543.25148202714,
+            "seconds": 44.00834228515625,
+            "transactions": 16583
+          },
+          "maximum_group_payload_bytes": 3146,
+          "maximum_group_transactions": 26,
+          "snapshots": 68,
+          "stream": "capture-509.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 1,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.086,
+          "p95": 0.206,
+          "p99": 0.283,
+          "total_ms": 1783.269
+        },
+        "commit": {
+          "p50": 9.968,
+          "p95": 17.039,
+          "p99": 20.134,
+          "total_ms": 174036.725
+        },
+        "updates": {
+          "p50": 0.133,
+          "p95": 0.217,
+          "p99": 0.321,
+          "total_ms": 2501.594
+        },
+        "xid": {
+          "p50": 0.061,
+          "p95": 0.14,
+          "p99": 0.217,
+          "total_ms": 1287.884
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 109,
+          "p50": 90,
+          "p95": 109,
+          "p99": 109
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 167.064,
+          "p50": 65.223,
+          "p95": 113.279,
+          "p99": 128.939
+        },
+        "commit_to_admission": {
+          "maximum": 3149.946,
+          "p50": 1474.99,
+          "p95": 2559.904,
+          "p99": 2892.272
+        },
+        "commit_to_publication": {
+          "maximum": 5417.946,
+          "p50": 3159.749,
+          "p95": 4602.57,
+          "p99": 5036.806
+        },
+        "prepared_to_publication": {
+          "maximum": 665,
+          "p50": 368,
+          "p95": 665,
+          "p99": 665
+        },
+        "worker_start_to_prepared": {
+          "maximum": 1528,
+          "p50": 1238,
+          "p95": 1512,
+          "p99": 1512
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 15887,
+        "lifecycle_cpu_seconds": 46.631738999999996,
+        "workers": 24
+      }
+    },
+    {
+      "arm": "predecessor",
+      "busy_samples": 0,
+      "capture": [
+        {
+          "accumulation_ms_maximum": 0.022100983187556267,
+          "accumulation_ms_mean": 0.0046003624430152115,
+          "commit_ms_maximum": 33.396633982192725,
+          "commit_ms_mean": 8.315570474766353,
+          "comparable_cursor_samples": 164,
+          "feedback_beyond_durable": 0,
+          "final": true,
+          "last_cursors": {
+            "decoded": 38897448,
+            "durable": 38897448,
+            "feedback": 38897448
+          },
+          "load_window": {
+            "capture_cpu_seconds": 2.9532040000000004,
+            "groups": 4058,
+            "native_commit_sync_ms_per_transaction": 9.131704665845245,
+            "payload_bytes": 489446,
+            "payload_bytes_per_group": 120.61261705273533,
+            "payload_bytes_s": 11121.348633154541,
+            "seconds": 44.009590576171874,
+            "transactions": 4058
+          },
+          "maximum_group_payload_bytes": 165,
+          "maximum_group_transactions": 1,
+          "snapshots": 171,
+          "stream": "capture-497.jsonl"
+        }
+      ],
+      "cpus": 16,
+      "missing_status_samples": 0,
+      "rate": 1000,
+      "repeat": 1,
+      "source_sql_ms": {
+        "begin": {
+          "p50": 0.099,
+          "p95": 0.212,
+          "p99": 0.283,
+          "total_ms": 1674.841
+        },
+        "commit": {
+          "p50": 11.321,
+          "p95": 18.345,
+          "p99": 21.533,
+          "total_ms": 174606.845
+        },
+        "updates": {
+          "p50": 0.135,
+          "p95": 0.215,
+          "p99": 0.302,
+          "total_ms": 2225.28
+        },
+        "xid": {
+          "p50": 0.062,
+          "p95": 0.141,
+          "p99": 0.221,
+          "total_ms": 1137.136
+        }
+      },
+      "stages_ms": {
+        "admission_to_worker_start": {
+          "maximum": 122,
+          "p50": 97,
+          "p95": 112,
+          "p99": 122
+        },
+        "capture_observed_upper_bound": {
+          "maximum": 94465.7,
+          "p50": 51545.315,
+          "p95": 89862.907,
+          "p99": 93578.509
+        },
+        "commit_to_admission": {
+          "maximum": 96380.692,
+          "p50": 53001.809,
+          "p95": 91257.634,
+          "p99": 95096.173
+        },
+        "commit_to_publication": {
+          "maximum": 97471.692,
+          "p50": 55730.809,
+          "p95": 92303.634,
+          "p99": 96260.173
+        },
+        "prepared_to_publication": {
+          "maximum": 804,
+          "p50": 464,
+          "p95": 684,
+          "p99": 804
+        },
+        "worker_start_to_prepared": {
+          "maximum": 2561,
+          "p50": 1901,
+          "p95": 2507,
+          "p99": 2561
+        }
+      },
+      "status": "measured",
+      "successful_apply_workers_started_in_load": {
+        "journal_transactions": 4009,
+        "lifecycle_cpu_seconds": 46.584824999999995,
+        "workers": 22
+      }
+    }
+  ]
+}

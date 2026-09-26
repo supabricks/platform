@@ -1,0 +1,38 @@
+{
+  "slice": "SP03b",
+  "decision": "keep_performance",
+  "predecessor_runtime": "da548e7b7564d554018a9b34281e9e42320028ee",
+  "candidate_runtime": "5382e80032bb4fc70706f112db26f8415849a961",
+  "common_harness": "5382e80032bb4fc70706f112db26f8415849a961",
+  "production_grouping_unchanged": true,
+  "source_1000_rows_s_qualified": false,
+  "installed_wal_and_sync_gates": [
+    "linux-x86_64",
+    "macos-arm64"
+  ],
+  "frozen_catalog_probe": "failed twice; issue110",
+  "retained_release_flakes": {
+    "114": "first failure, same-head retry passed",
+    "115": "first failure, same-head retry passed"
+  },
+  "wal_retained_allocation_followup": 116,
+  "measurements": {
+    "full_stack_trials": 72,
+    "component_and_control_trials": 36,
+    "superseded_component_trials": 30,
+    "contended_trials": 0,
+    "main_correct_and_fresh": 24,
+    "grouped_full_stack_correct_and_fresh": 66,
+    "diagnostic_ungrouped_delete_timeouts": 3,
+    "diagnostic_ungrouped_wal_freshness_misses": 3,
+    "decision": "keep_performance"
+  },
+  "next_slice": "SP04",
+  "evidence_limits": [
+    "Three paired repeats are a screen, not a certainty claim.",
+    "Deliberately ungrouped failures are diagnostic; all grouped runs are correct/fresh.",
+    "Process-crash qualification does not establish physical power-loss behavior.",
+    "Sampled worker CPU does not reconcile all cgroup CPU.",
+    "No EC2 scaling prediction or sustained 1000-row/s qualification."
+  ]
+}
