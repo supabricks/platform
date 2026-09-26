@@ -1,0 +1,123 @@
+{
+  "accepted_pairs": 3,
+  "arms": {
+    "reader_off": {
+      "cpu_seconds": {
+        "maximum": 0.8891899719999999,
+        "median": 0.888781209,
+        "minimum": 0.8866936099999999,
+        "n": 3
+      },
+      "physical_bytes": {
+        "maximum": 7361272,
+        "median": 7270944,
+        "minimum": 7254560,
+        "n": 3
+      },
+      "transactions_s": {
+        "maximum": 3816.7357742479803,
+        "median": 3799.211346165476,
+        "minimum": 3784.6043826638634,
+        "n": 3
+      }
+    },
+    "reader_on": {
+      "cpu_seconds": {
+        "maximum": 0.920587467,
+        "median": 0.915357805,
+        "minimum": 0.907959969,
+        "n": 3
+      },
+      "physical_bytes": {
+        "maximum": 14324144,
+        "median": 7274920,
+        "minimum": 7254512,
+        "n": 3
+      },
+      "transactions_s": {
+        "maximum": 3793.76951141354,
+        "median": 3785.1895064240675,
+        "minimum": 3782.9065682410305,
+        "n": 3
+      }
+    }
+  },
+  "paired_changes_percent": {
+    "cpu_seconds": {
+      "maximum": 3.8224992960082416,
+      "median": 2.9428844031093027,
+      "minimum": 2.157871904332742,
+      "n": 3
+    },
+    "physical_bytes": {
+      "maximum": 97.00528569605267,
+      "median": 0.28065106636376846,
+      "minimum": -1.4502928298261497,
+      "n": 3
+    },
+    "transactions_s": {
+      "maximum": 0.015460632104224992,
+      "median": -0.42916217179920224,
+      "minimum": -0.6017252488211722,
+      "n": 3
+    }
+  },
+  "pairs": [
+    {
+      "on_vs_off_percent": {
+        "cpu_seconds": 2.9428844031093027,
+        "physical_bytes": -1.4502928298261497,
+        "transactions_s": -0.6017252488211722
+      },
+      "reader_off": {
+        "cpu_seconds": 0.8891899719999999,
+        "physical_bytes": 7361272,
+        "transactions_s": 3816.7357742479803
+      },
+      "reader_on": {
+        "cpu_seconds": 0.915357805,
+        "physical_bytes": 7254512,
+        "transactions_s": 3793.76951141354
+      },
+      "repeat": 1
+    },
+    {
+      "on_vs_off_percent": {
+        "cpu_seconds": 2.157871904332742,
+        "physical_bytes": 97.00528569605267,
+        "transactions_s": -0.42916217179920224
+      },
+      "reader_off": {
+        "cpu_seconds": 0.888781209,
+        "physical_bytes": 7270944,
+        "transactions_s": 3799.211346165476
+      },
+      "reader_on": {
+        "cpu_seconds": 0.907959969,
+        "physical_bytes": 14324144,
+        "transactions_s": 3782.9065682410305
+      },
+      "repeat": 2
+    },
+    {
+      "on_vs_off_percent": {
+        "cpu_seconds": 3.8224992960082416,
+        "physical_bytes": 0.28065106636376846,
+        "transactions_s": 0.015460632104224992
+      },
+      "reader_off": {
+        "cpu_seconds": 0.8866936099999999,
+        "physical_bytes": 7254560,
+        "transactions_s": 3784.6043826638634
+      },
+      "reader_on": {
+        "cpu_seconds": 0.920587467,
+        "physical_bytes": 7274920,
+        "transactions_s": 3785.1895064240675
+      },
+      "repeat": 3
+    }
+  ],
+  "retained_attempts": 3,
+  "scope": "Native profiling disabled in both arms. Three pairs screen read-observer overhead; sync counters are unavailable. No source or publication capacity claim."
+}

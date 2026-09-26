@@ -144,8 +144,13 @@ def journal(config):
 def journal_attempt(config,deadline):
     path=Path(config['spool'])
     if path.is_symlink() or path.stat().st_size>512*1024*1024:raise CaptureError('spool_budget')
-    db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
-    cleanup=ExitStack();cleanup.callback(db.close)
+    from capture.wal import reader_lease
+    lease=reader_lease(path)
+    cleanup=ExitStack();cleanup.callback(os.close,lease)
+    try:db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
+    except BaseException:
+        cleanup.close();raise
+    cleanup.callback(db.close)
     def execute(sql,parameters=()):
         remaining=deadline-time.monotonic()
         if remaining<=0:raise CaptureError('journal_read_deadline')

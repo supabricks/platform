@@ -8,6 +8,7 @@ import shutil
 import signal
 import sqlite3
 import struct
+import subprocess
 import tempfile
 import time
 import psycopg
@@ -104,8 +105,10 @@ class Capture(Policies):
         self.check('pause_retains_owned_source_history_and_resume_captures_backlog')
 
         self.stop()
-        with sqlite3.connect(self.root/'capture'/cap['id']/'spool/spool.sqlite3') as db:
-            db.execute("UPDATE transactions SET payload=x'00' WHERE seq=1")
+        # Only the configured analytical interpreter is a qualified WAL writer.
+        # The harness interpreter remains a read-only inspector. Stack is stopped.
+        corrupt="import sqlite3,sys;assert sqlite3.sqlite_version_info>=(3,53,0);db=sqlite3.connect(sys.argv[1]);db.execute(\"UPDATE transactions SET payload=x'00' WHERE seq=1\");db.commit();db.close()"
+        subprocess.run([str(self.python),'-I','-B','-c',corrupt,str(self.root/'capture'/cap['id']/'spool/spool.sqlite3')],check=True,timeout=10)
         self.start();bad=self.state_is(cap,'resync_required');assert bad['error'].startswith('spool_corrupt'),bad
         wait(lambda:self.status(cap)['cleanup_complete'])
         self.delete_capture(cap)

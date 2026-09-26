@@ -60,8 +60,8 @@ def collect(release, verification):
                 policy_sha256=hashlib.sha256(POLICY.read_bytes()).hexdigest(),
                 rust=rust, python=python,
                 qualification_reader=dict(identity=reader, wal_reset_fixed=wal_reset_fixed(reader['version']),
-                    scope='Harness interpreter, not the production worker. Live spool reads use mode=ro; stopped corruption fixtures use DELETE. No permission to write/checkpoint a live WAL database is established.'),
-                capture_journal_mode='delete', capture_synchronous=2,
+                    scope='Harness interpreter, not the production worker. Live spool reads use mode=ro; stopped corruption fixtures execute with the separately qualified analytical interpreter. No permission to write/checkpoint a WAL database with the harness interpreter is established.'),
+                probe_journal_mode='delete', probe_synchronous=2,
                 wal_mode_qualified=False)
 
 
@@ -69,7 +69,7 @@ def validate_evidence(record, release_identity):
     require(isinstance(record, dict) and record.get('format_version') == 1 and record.get('status') == 'passed', 'missing installed evidence')
     require(record.get('release_identity') == release_identity, 'mixed installed SQLite evidence')
     require(record.get('policy_sha256') == hashlib.sha256(POLICY.read_bytes()).hexdigest(), 'unreviewed SQLite policy')
-    require(record.get('capture_journal_mode') == 'delete' and record.get('capture_synchronous') == 2 and record.get('wal_mode_qualified') is False, 'unqualified journal-mode change')
+    require(record.get('probe_journal_mode') == 'delete' and record.get('probe_synchronous') == 2 and record.get('wal_mode_qualified') is False, 'unqualified journal-mode change')
     rust = validate(record.get('rust', {}), 'rust')
     python = validate(record.get('python', {}), 'python')
     reader = record.get('qualification_reader', {})
@@ -83,4 +83,4 @@ def validate_evidence(record, release_identity):
     return dict(format_version=1, status='passed', release_identity=release_identity,
                 policy_sha256=record['policy_sha256'], rust=clean(rust), python=clean(python),
                 qualification_reader=dict(identity=clean(reader['identity']), wal_reset_fixed=reader['wal_reset_fixed']),
-                capture_journal_mode='delete', capture_synchronous=2, wal_mode_qualified=False)
+                probe_journal_mode='delete', probe_synchronous=2, wal_mode_qualified=False)

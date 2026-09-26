@@ -43,7 +43,7 @@ def pg_lsn(value):
 def private_file(path):
     fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     meta = os.fstat(fd)
-    if not stat.S_ISREG(meta.st_mode) or meta.st_uid != os.getuid() or meta.st_mode & 0o077:
+    if not stat.S_ISREG(meta.st_mode) or meta.st_uid != os.getuid() or meta.st_mode & 0o077 or meta.st_nlink != 1:
         os.close(fd)
         raise CaptureError('unsafe_spool_path')
     return fd
@@ -66,14 +66,14 @@ def atomic(path, value):
 
 
 class Spool:
-    def __init__(self, directory, identity, limit=512*1024*1024):
+    def __init__(self, directory, identity, limit=512*1024*1024, journal_mode='wal'):
         self.lock = self.db = None
-        try: self.open(directory, identity, limit)
+        try: self.open(directory, identity, limit, journal_mode)
         except BaseException:
             self.close()
             raise
 
-    def open(self, directory, identity, limit):
+    def open(self, directory, identity, limit, journal_mode):
         self.root = Path(directory)
         self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
         # Persist the directory entry before this journal can authorize feedback.
@@ -92,17 +92,19 @@ class Spool:
         self.limit = limit
         self.path = self.root/'spool.sqlite3'
         existed = self.path.exists()
+        from .wal import Journal, private_sizes, fixed_sqlite
+        sizes = private_sizes(self.path)
+        if sum(sizes.values()) > limit:raise CaptureError('spool_budget')
+        if not fixed_sqlite():
+            raise CaptureError('sqlite_wal_unqualified')
+        self.journal = Journal(self, journal_mode)
         os.close(private_file(self.path))
-        if self.path.stat().st_size > limit:
-            raise CaptureError('spool_budget')
+        if self.path.stat().st_size > limit:raise CaptureError('spool_budget')
         self.db = sqlite3.connect(self.path, isolation_level=None)
         if not existed: self.db.execute('PRAGMA auto_vacuum=INCREMENTAL')
-        self.db.execute('PRAGMA journal_mode=DELETE')
-        self.db.execute('PRAGMA synchronous=FULL')
-        self.db.execute('PRAGMA foreign_keys=ON')
-        self.db.execute('PRAGMA temp_store=FILE')
-        self.db.execute(f'PRAGMA max_page_count={limit//4096}')
+        self.journal.configure()
         if not existed:
+            self.journal.before_write()
             self.db.executescript('BEGIN IMMEDIATE; CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL); '
                 'CREATE TABLE transactions(seq INTEGER PRIMARY KEY,end_lsn TEXT NOT NULL UNIQUE,previous_lsn TEXT NOT NULL,commit_lsn TEXT NOT NULL,payload BLOB NOT NULL,sha256 TEXT NOT NULL); COMMIT;')
             self.set('identity', identity)
@@ -112,6 +114,8 @@ class Spool:
         if self.get('identity') != identity:
             raise CaptureError('spool_identity_mismatch')
         self.verify()
+        self.journal.activate()
+        self.journal.after_write()
 
     def close(self):
         if self.db is not None:
@@ -124,17 +128,22 @@ class Spool:
         return json.loads(row[0]) if row else None
 
     def set(self, key, value):
+        implicit = not self.db.in_transaction
+        if implicit:self.journal.before_write()
         self.db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,canonical(value).decode()))
+        if implicit:self.journal.after_write()
 
     def establish(self, start, schema):
         previous=self.get('start')
         if previous is not None:
             if previous!=start or self.get('schema')!=schema: raise CaptureError('source_generation_changed')
             return
+        self.journal.before_write()
         self.db.execute('BEGIN IMMEDIATE')
         try:
             self.set('start',start);self.set('captured',start);self.set('schema',schema);self.set('bytes',0)
             self.db.execute('COMMIT')
+            self.journal.after_write()
         except BaseException:
             if self.db.in_transaction:self.db.execute('ROLLBACK')
             raise
@@ -225,13 +234,8 @@ class Spool:
             previous=end;total+=len(payload)
         result=dict(transactions=len(records),payload_bytes=total,captured_lsn=previous)
         if not records:return result
-        # Physical reservation is independent of the accumulation target. Include
-        # page/index overhead for every small record and the rollback journal.
-        used=self.path.stat().st_size-self.db.execute('PRAGMA freelist_count').fetchone()[0]*self.db.execute('PRAGMA page_size').fetchone()[0]
-        reservation=2*total+65536+len(records)*16384
-        space=os.statvfs(self.root)
-        if used+reservation>self.limit or space.f_bavail*space.f_frsize<RESERVE+reservation:
-            raise CaptureError('spool_budget')
+        self.journal.before_append(total + len(records)*16384 + 65536)
+        self.journal.before_write()
         total_bytes=(self.get('bytes') or 0)+total
         fault('before_spool_group')
         self.db.execute('BEGIN IMMEDIATE')
@@ -253,11 +257,9 @@ class Spool:
             # RAM: close/reopen and verify the complete durable prefix first.
             self.db.close()
             self.db=sqlite3.connect(self.path,isolation_level=None)
-            self.db.execute('PRAGMA journal_mode=DELETE')
-            self.db.execute('PRAGMA synchronous=FULL')
-            self.db.execute('PRAGMA foreign_keys=ON')
-            self.db.execute('PRAGMA temp_store=FILE')
-            self.db.execute(f'PRAGMA max_page_count={self.limit//4096}')
+            self.journal.configure()
+            if self.db.execute('PRAGMA journal_mode').fetchone()[0] != self.journal.mode:
+                raise CaptureError('spool_journal_mode') from error
             if self.get('identity')!=self.identity:raise CaptureError('spool_identity_mismatch') from error
             self.verify()
             if self.captured!=previous or self.get('bytes')!=total_bytes:raise error
@@ -266,6 +268,7 @@ class Spool:
                     raise CaptureError('spool_corrupt') from error
         self.last_data_lsn=last_data
         fault('after_spool_commit')
+        self.journal.after_write()
         return result
 
     def prefix(self):
@@ -305,6 +308,7 @@ class Spool:
         timeout=self.db.execute('PRAGMA busy_timeout').fetchone()[0]
         self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
         try:
+            self.journal.before_write()
             self.db.execute('BEGIN IMMEDIATE')
             # Older spools did not save the barrier timestamp separately.
             current=self.get('barrier')
@@ -324,10 +328,14 @@ class Spool:
             raise
         finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')
         fault('after_spool_prune_commit')
+        self.journal.after_write()
         # Existing v1 spools reuse their free pages; new spools can also return
         # free tail pages without a second full-size VACUUM copy.
         self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
-        try:self.db.execute('PRAGMA incremental_vacuum(64)')
+        try:
+            self.journal.before_write()
+            self.db.execute('PRAGMA incremental_vacuum(64)').fetchall()
+            self.journal.after_write()
         except sqlite3.OperationalError as error:
             if getattr(error,'sqlite_errorcode',None) not in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):raise
         finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')

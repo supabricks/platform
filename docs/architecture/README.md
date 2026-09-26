@@ -104,4 +104,6 @@ remains beside its owning record in the existing evidence directories.
 - [SP01: safe journal-read contention recovery](sp01-journal-contention-recovery.md)
 - [SP02: bounded durable capture groups](sp02-durable-capture-groups.md)
 - [SP03a: packaged SQLite qualification](sync-performance-sp03a.md)
+- [SP03b: capture WAL qualification and attribution](sync-performance-sp03b.md)
+- [SP03b: capture WAL implementation and measurement protocol](sync-performance-sp03b.md)
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)

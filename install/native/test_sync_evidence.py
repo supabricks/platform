@@ -2,6 +2,7 @@ import copy
 import json
 import hashlib
 from sqlite_qualification import POLICY, CHECKS
+from capture_wal_qualification import CHECKS as WAL_CHECKS, TEST as WAL_TEST, digest as wal_digest
 import unittest
 from sync_evidence import collect, digest, NETWORK, REQUIRED, ROOT, TOP_CHECKS, WORKERS
 
@@ -32,10 +33,11 @@ def fixture(target='linux-x86_64'):
     policy=json.loads(POLICY.read_text())
     identities={role:dict(version=pin['version'],source_id=pin['source_id'],compile_options=['THREADSAFE=1'],
         journal_mode='delete',synchronous=2,checks=sorted(CHECKS)) for role,pin in policy['runtimes'].items()}
+    data['capture_wal']=dict(status='passed',release_identity=HASH,test_sha256=wal_digest(WAL_TEST),checks=sorted(WAL_CHECKS),journal_mode='wal',synchronous=2)
     data['sqlite']=dict(format_version=1,status='passed',release_identity=HASH,
         policy_sha256=hashlib.sha256(POLICY.read_bytes()).hexdigest(),**identities,
         qualification_reader=dict(identity=identities['python'],wal_reset_fixed=True),
-        capture_journal_mode='delete',capture_synchronous=2,wal_mode_qualified=False)
+        probe_journal_mode='delete',probe_synchronous=2,wal_mode_qualified=False)
     return data,base
 
 
@@ -55,6 +57,7 @@ class SyncEvidence(unittest.TestCase):
 
     def test_partial_mixed_source_override_or_leaked_evidence_is_rejected(self):
         mutations=[
+            lambda d:d.pop('capture_wal'),lambda d:d['capture_wal'].update(release_identity='c'*64),lambda d:d['capture_wal'].update(checks=[]),
             lambda d:d.pop('sqlite'),lambda d:d['sqlite'].update(release_identity='c'*64),
             lambda d:d['sqlite']['python'].update(source_id='unreviewed'),
             lambda d:d['sqlite'].update(policy_sha256='c'*64),

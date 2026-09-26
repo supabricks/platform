@@ -123,12 +123,13 @@ def sql_label(sql):
     # Only return fixed labels, never a statement, literal, parameter or source name.
     words=str(sql).upper().split();op=words[0] if words else 'OTHER'
     if op not in ('SELECT','INSERT','UPDATE','DELETE','BEGIN','COMMIT','ROLLBACK','PRAGMA'):op='OTHER'
+    if op=='PRAGMA' and len(words)>1 and words[1].startswith('WAL_CHECKPOINT('):return 'sqlite.WAL_CHECKPOINT'
     return 'sqlite.'+op
 
 
 class Connection(sqlite3.Connection):
     def execute(self,sql,*args,**kwargs):
-        label=sql_label(sql);before=native_io() if label=='sqlite.COMMIT' else None
+        label=sql_label(sql);before=native_io() if label in ('sqlite.COMMIT','sqlite.WAL_CHECKPOINT') else None
         try:
             with Span(label):return super().execute(sql,*args,**kwargs)
         finally:
@@ -138,7 +139,7 @@ class Connection(sqlite3.Connection):
                     for name in ('fsync','fdatasync'):
                         for field in ('calls','total_ns','errors'):
                             value=after[name][field]-before[name][field]
-                            key='sqlite.COMMIT.'+name+'.'+field
+                            key=label+'.'+name+'.'+field
                             metric=WORK.setdefault(key,dict(count=0,total=0,maximum=0))
                             metric['count']+=1;metric['total']+=value;metric['maximum']=max(metric['maximum'],value)
     def executemany(self,sql,*args,**kwargs):

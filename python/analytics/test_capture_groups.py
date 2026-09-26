@@ -55,7 +55,7 @@ class GroupTests(unittest.TestCase):
     def test_whole_group_space_reservation_and_sqlite_full_rollback(self):
         with patch('capture.spool.os.statvfs') as space:
             space.return_value.f_bavail=0;space.return_value.f_frsize=4096
-            with self.assertRaisesRegex(CaptureError,'spool_budget'):self.spool.append_many(self.txs())
+            with self.assertRaisesRegex(CaptureError,'spool_backpressure'):self.spool.append_many(self.txs())
         self.assertEqual(self.spool.captured,100)
         pages=self.spool.db.execute('PRAGMA page_count').fetchone()[0]
         self.spool.db.execute(f'PRAGMA max_page_count={pages+1}')
@@ -200,6 +200,51 @@ class WorkerGroupTests(unittest.TestCase):
         self.assertEqual(result,1);self.assertEqual(captured,100)
         self.assertEqual(events[0],('feedback',100));self.assertNotIn(('feedback',200),events)
         self.assertEqual(status['error'],'worker_fenced')
+
+    def test_pressure_retains_source_slot_and_never_acknowledges_pending_work(self):
+        import capture_worker as worker
+        import signal
+        from capture.wal import SpoolBackpressure
+        for action in ('pause','stop','recover'):
+            with self.subTest(action=action),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp);path=root/'config.json'
+                config=dict(identity={'id':1},worker_generation=1,desired='running',spool_bytes=16*1024*1024,socket_dir='/unused',port=123)
+                path.write_text(json.dumps(config));events=[];pressure=[True]
+                class Source:
+                    def __init__(self,config,spool):self.spool=spool;self.slot='slot';self.publication='pub';self.fence='fence'
+                    def setup(self):self.spool.establish(100,{});return {'relations':{}}
+                    def check(self):return {'source':'0/C8','retained_bytes':100}
+                    def cleanup(self):events.append('cleanup')
+                    def close(self):pass
+                class Decoder:
+                    def __init__(self,*args):pass
+                    def feed(self,data):return (180,200,b'complete')
+                class Wire:
+                    def __init__(self,*args):self.received=False
+                    def start(self,*args):pass
+                    def feedback(self,captured,request=False):events.append(captured)
+                    def close(self):pass
+                    def receive(self,timeout):
+                        if self.received:signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None);return None
+                        self.received=True;return ('data',999,b'tx')
+                append=Spool.append_many
+                def append_or_pressure(spool,transactions):
+                    if pressure[0]:raise SpoolBackpressure()
+                    return append(spool,transactions)
+                def release_or_control(_):
+                    if action=='recover':pressure[0]=False
+                    elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
+                    else:config['desired']='paused';path.write_text(json.dumps(config))
+                with patch.object(worker,'Groups',lambda spool:Groups(spool,count=1)),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'sleep',release_or_control),patch.object(Spool,'append_many',append_or_pressure):
+                    result=worker.run(path)
+                self.assertNotIn('cleanup',events)
+                s=Spool(root/'spool',config['identity'])
+                try:self.assertEqual(s.captured,200 if action=='recover' else 100);s.verify()
+                finally:s.close()
+                if action=='recover':self.assertIsNone(result);self.assertIn(200,events)
+                else:
+                    self.assertEqual(result,1);self.assertNotIn(200,events)
+                    self.assertEqual(json.loads((root/'status.json').read_text())['error'],'spool_backpressure')
 
 
 class StreamTests(unittest.TestCase):

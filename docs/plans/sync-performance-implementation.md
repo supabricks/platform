@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP02 merged and measured; SP03a implemented, qualified and measured; SP03b–SP12 planned**, 2026-09-26.
+Status: **SP00–SP03a merged and measured; SP03b implemented/qualified and measured (PR #111); SP04–SP12 planned**, 2026-09-26.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -16,6 +16,7 @@ then reduces overload sync calls per captured transaction by about 93.4%, with a
 six candidate overload trials completing at 684–689 actual changed rows/s. Decision:
 keep for performance; the 1,000-row/s source input and sustained target remain unqualified.
 [SP03a](../architecture/sync-performance-sp03a.md) verifies the existing fixed SQLite builds on Linux/macOS with no dependency upgrade: all 24 fresh comparison trials and 18 activation controls pass; no speedup is established. Decision: keep for reliability/enabling.
+[SP03b](../architecture/sync-performance-sp03b.md) qualifies bounded capture WAL/FULL on both platforms: all 24 fresh main trials pass, achieved overload input improves 8–9%, native sync calls/transaction fall about 44%, and total CPU rises about 7–9%. All controls/ablations are retained. Decision: keep for performance; 1,000 rows/s remains unqualified.
 This plan turns the workflow profile into separately measured slices. The existing SY00–SY08 correctness contract and qualified release
 envelope remain authoritative until a new exact release passes qualification.
 
@@ -232,6 +233,7 @@ Maintain a contribution ledger in the performance architecture report:
 | SP01 | Bounded pre-mutation journal-read retry | Runtime `9227275` / `b6a0b4b`, shared harness `c52f466` | Mandatory candidate fixtures recover 477 BUSY responses across 260 completed reads; bounded deferral/exhaustion verified by fault tests | Mandatory low-load complete 6/6 per arm, fresh 5/6 predecessor and 6/6 candidate; overload complete 0/6 per arm, resync failures 4 → 0 | Paired median CPU +3.47% / +2.64% at low load, +4.68% / +4.42% under overload; no material memory regression observed | [Keep — reliability/enabling; no throughput gain](../architecture/sp01-journal-contention-recovery.md) |
 | SP02 | Bounded durable capture group commit, retaining FULL/DELETE | `485b552` / `838f0b1`, common probe/harness | Overload capture ~30 → 343–344 transactions/s; paired sync calls/transaction −93.38% / −93.48%, durable time/transaction −93.50% / −93.63% | Low-load correct/fresh 6/6 per arm; overload completion 0/6 → 6/6 at 684–689 actual changed rows/s, p95 4.49–4.63 s; 1,000-row/s input not achieved | Paired median CPU +3.67% / +4.14% at low load, +7.91% / +10.92% under overload with far more capture/apply work completed; memory costs retained | [Keep — performance](../architecture/sp02-durable-capture-groups.md) |
 | SP03a | Loaded SQLite identity and release qualification, retaining SP02 FULL/DELETE | Accepted SP02 `838f0b1` (merged `a88eb145`) / `da548e7`, shared frozen harness | Python 3.53.1 and Rust 3.53.2 already fixed on Linux/macOS; no dependency upgrade; overload syncs/transaction within +0.89% paired median | All 24 mandatory trials correct/fresh; 18 controls and nine component trials pass; four contended trials retained/replaced; 1,000-row/s source input still unmet | Paired median CPU +0.08% to +0.79%, memory −2.87% to +2.68%; diagnostic binary +54,544 bytes, policy +713 bytes | [Keep — reliability/enabling; no speedup](../architecture/sync-performance-sp03a.md) |
+| SP03b | Capture-only WAL/FULL, owned checkpoints and physical admission; SP02 grouping retained | SP03a `da548e7` (merged `43c046e`) / `5382e80`, common frozen harness | Overload native syncs/transaction −43.87% / −43.83%; COMMIT + checkpoint time/transaction −46.71% / −46.37% | All 24 main trials correct/fresh; achieved overload medians 742/746 rows/s (+8.12%/+9.08% paired); 1,000 input unmet. Grouping ablations: three DELETE timeouts, three WAL freshness misses without grouping; all grouped runs pass | Main paired CPU +6.71% to +9.11%, peak memory −4.80% to +5.31%; conservative DB/WAL headroom; bounded transient-reader WAL allocation tracked in #116 | [Keep — performance; retain grouping](../architecture/sync-performance-sp03b.md) |
 
 No cumulative result may omit rejected attempts or credit all gains to the last
 change. No runtime slice is complete until its report and ledger row exist.
@@ -384,6 +386,8 @@ size, reproducible native builds and package inventory changes. If no upgrade is
 needed, retain the verification evidence and unchanged-runtime comparison.
 
 ### SP03b — WAL for the capture spool
+
+Complete on the SP03b branch; **keep — performance**. [Policy, qualification and measured attribution](../architecture/sync-performance-sp03b.md). All 24 main trials are correct/fresh; 36 full-stack profiler controls, 12 grouping ablations and 36 component/control trials are retained. Achieved overload input improves by 8–9%, but 1,000 rows/s remains unqualified. Native sync calls per transaction fall about 44% including checkpoint work; total CPU rises about 7–9%. Both installed platform gates pass. Keep grouping with WAL; the ungrouped variants miss freshness. SP05 should follow up the bounded retained-WAL allocation observed in [#116](https://github.com/supabricks/platform/issues/116).
 
 Change the capture spool only to WAL with FULL durability, retaining SP02 group
 settings. SQLite documents concurrent readers/writer and commit-time WAL syncing

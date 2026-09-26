@@ -92,12 +92,21 @@ impl Cell {
                             }
                             Some("unavailable") => {
                                 c.state = "unavailable".into();
-                                c.error = Some("source_unavailable".into());
+                                c.error = Some(
+                                    match v["error"].as_str() {
+                                        Some("spool_backpressure") => "spool_backpressure",
+                                        Some("spool_migration_busy") => "spool_migration_busy",
+                                        Some("spool_migration_budget") => "spool_migration_budget",
+                                        _ => "source_unavailable",
+                                    }
+                                    .into(),
+                                );
                             }
                             Some("established" | "capturing" | "paused")
                                 if matches!(c.desired.as_str(), "running" | "paused") =>
                             {
-                                c.error = None;
+                                c.error = (v["error"].as_str() == Some("spool_backpressure"))
+                                    .then(|| "spool_backpressure".into());
                                 c.state = if c.desired == "paused" {
                                     "paused"
                                 } else if c.bootstrap_lsn.is_some() {
