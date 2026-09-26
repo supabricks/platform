@@ -20,7 +20,10 @@ class Groups:
 
     def add(self, tx):
         if len(tx[2])>MAX_TRANSACTION:raise CaptureError('transaction_budget')
-        if self.before(tx):raise CaptureError('group_budget')
+        # The age can expire after the caller's before() check. That requests
+        # an immediate flush below; only hard capacity limits reject admission.
+        if self.pending and (len(self.pending)>=self.count or self.bytes+len(tx[2])>self.byte_limit):
+            raise CaptureError('group_budget')
         if not self.pending:self.started=self.clock()
         self.pending.append(tx);self.bytes+=len(tx[2]);self.decoded=max(self.decoded,tx[1])
         # A supported oversized transaction is isolated, never split. Any

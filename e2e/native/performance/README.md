@@ -281,3 +281,11 @@ synthetic two-table transaction throughput excludes PostgreSQL, decoding, apply
 and publication, and cannot establish the end-to-end target. The reader-disabled
 variant is a component observer-cost control with the same final correctness
 check. Keep all individual repetitions and host observations.
+
+The observer retains a durable capture error as the runtime outcome before reading
+transient worker status. Only a missing `status.json` is tolerated briefly:
+`observer_missing_status_samples` records omissions, ten consecutive samples or
+more than 100 total omissions stop measurement, and missing spools/cgroup files,
+malformed status, missing transaction markers and cleanup errors still fail.
+Healthy-path SQL is unchanged; a capture-state lookup is added only when a policy
+fails or status disappears. Status omission never advances publication or feedback.

@@ -92,6 +92,16 @@ class GroupTests(unittest.TestCase):
         immediate=Groups(self.spool,age=0);self.assertTrue(immediate.add((580,600,b'end')))
         self.assertEqual(g.progress()['durable_lsn'],500)
 
+    def test_deadline_crossing_between_before_and_add_requests_flush(self):
+        now=[10.0];g=Groups(self.spool,clock=lambda:now[0])
+        self.assertFalse(g.add((180,200,b'one')))
+        now[0]=10.009;self.assertFalse(g.before((280,300,b'two')))
+        now[0]=10.011
+        self.assertTrue(g.add((280,300,b'two')))
+        self.assertEqual(self.spool.captured,100)
+        result=g.flush();self.assertEqual(result['transactions'],2)
+        self.assertEqual(self.spool.captured,300);self.spool.verify()
+
     def test_barrier_in_middle_of_atomic_group_survives_reopen(self):
         import uuid
         from test_triggered import message
@@ -168,7 +178,7 @@ class WorkerGroupTests(unittest.TestCase):
                     elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
                     else:control('paused')
                     return ('keepalive',999,1)
-            with patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
+            with patch.object(worker,'Groups',lambda spool:Groups(spool,clock=lambda:clock[0])),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
                 result=worker.run(path)
             s=Spool(root/'spool',config['identity']);captured=s.captured;s.verify();s.close()
             return result,captured,events,json.loads((root/'status.json').read_text())
