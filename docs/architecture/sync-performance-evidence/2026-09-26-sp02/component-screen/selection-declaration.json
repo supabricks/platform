@@ -1,0 +1,26 @@
+{
+  "slice": "SP02",
+  "declared_before_screen_results": true,
+  "initial": {
+    "transactions": 32,
+    "payload_bytes": 1048576,
+    "age_ms": 10
+  },
+  "selection": "Retain proposed 32/1MiB/10ms if count32 saturated median reaches 750 transactions/s and paced500 median reaches 475 transactions/s with correctness. Count8/128 and age0/5/25 are one-axis screening controls, not production variants. If the proposed setting misses either threshold, inspect evidence and declare a new frozen variant before acceptance.",
+  "component_reference": "single=True disables grouping within the candidate implementation; this is a same-code ablation, not the SP01 predecessor. Fresh full-stack comparisons use the SP01 runtime.",
+  "observer_control": "bounded reader on/off is a component control with independent stopped-file correctness; it does not measure the complete end-to-end observer cost.",
+  "mandatory_matrix": {
+    "cells": [
+      "4:50",
+      "16:50",
+      "8:1000",
+      "16:1000"
+    ],
+    "repeats": 3,
+    "source_clients": 4,
+    "changed_rows_per_transaction": 2,
+    "load_seconds": 45,
+    "drain_seconds": 120
+  },
+  "historical_reference": "2026-09-24-workflow-profile"
+}
