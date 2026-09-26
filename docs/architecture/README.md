@@ -107,3 +107,4 @@ remains beside its owning record in the existing evidence directories.
 - [SP03b: capture WAL qualification and attribution](sync-performance-sp03b.md)
 - [SP04: bounded planning inventories and measurement](sync-performance-sp04.md)
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)
+- [SP05: maintenance assessment and conditional deferral](sync-performance-sp05.md)

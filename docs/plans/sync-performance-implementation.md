@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP03b merged and measured; SP04 implemented, measured and qualified (PR #117); SP05–SP12 planned**, 2026-09-26.
+Status: **SP00–SP04 merged and measured; SP05 assessed, tuning deferred; SP06–SP12 planned**, 2026-09-26.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -234,8 +234,8 @@ Maintain a contribution ledger in the performance architecture report:
 | SP02 | Bounded durable capture group commit, retaining FULL/DELETE | `485b552` / `838f0b1`, common probe/harness | Overload capture ~30 → 343–344 transactions/s; paired sync calls/transaction −93.38% / −93.48%, durable time/transaction −93.50% / −93.63% | Low-load correct/fresh 6/6 per arm; overload completion 0/6 → 6/6 at 684–689 actual changed rows/s, p95 4.49–4.63 s; 1,000-row/s input not achieved | Paired median CPU +3.67% / +4.14% at low load, +7.91% / +10.92% under overload with far more capture/apply work completed; memory costs retained | [Keep — performance](../architecture/sp02-durable-capture-groups.md) |
 | SP03a | Loaded SQLite identity and release qualification, retaining SP02 FULL/DELETE | Accepted SP02 `838f0b1` (merged `a88eb145`) / `da548e7`, shared frozen harness | Python 3.53.1 and Rust 3.53.2 already fixed on Linux/macOS; no dependency upgrade; overload syncs/transaction within +0.89% paired median | All 24 mandatory trials correct/fresh; 18 controls and nine component trials pass; four contended trials retained/replaced; 1,000-row/s source input still unmet | Paired median CPU +0.08% to +0.79%, memory −2.87% to +2.68%; diagnostic binary +54,544 bytes, policy +713 bytes | [Keep — reliability/enabling; no speedup](../architecture/sync-performance-sp03a.md) |
 | SP03b | Capture-only WAL/FULL, owned checkpoints and physical admission; SP02 grouping retained | SP03a `da548e7` (merged `43c046e`) / `5382e80`, common frozen harness | Overload native syncs/transaction −43.87% / −43.83%; COMMIT + checkpoint time/transaction −46.71% / −46.37% | All 24 main trials correct/fresh; achieved overload medians 742/746 rows/s (+8.12%/+9.08% paired); 1,000 input unmet. Grouping ablations: three DELETE timeouts, three WAL freshness misses without grouping; all grouped runs pass | Main paired CPU +6.71% to +9.11%, peak memory −4.80% to +5.31%; conservative DB/WAL headroom; bounded transient-reader WAL allocation tracked in #116 | [Keep — performance; retain grouping](../architecture/sync-performance-sp03b.md) |
-
 | SP04 | Two owned planning inventories with bounded per-batch checks; existing output/durability checks retained | SP03b `5382e80` (merged `f02dca8`) / `e10d515`, common frozen harness | Matched aged directory checks −98.27%/−98.96%; planning walks 206–800 → 2; fresh checks −79.38% to −82.49% | All 24 main + 36 controls correct/fresh and 24 component plans equal; main paired p95 −32.59% to −39.72%; achieved overload input −2.32%/−2.82%, 1,000 input unmet | CPU −12.56% to +9.47%, peak RSS −2.57% to +4.48%; faster worker frequency exposes startup/publication costs in #119 | [Keep — latency, with resource/input tradeoffs](../architecture/sync-performance-sp04.md) |
+| SP05 | Offline maintenance triage; no runtime/profiler/harness change | Accepted SP04 `e10d515` (merged `c8e23e2`); existing 24 main trials reused | Candidate checkpoint 0.73–1.10% and prune 0.23–2.21% of covered wall time; inclusive spans overlap; no compaction exercised | No new benchmark trials or speedup; source target remains unmet; sustained rotation/reader-pressure performance unqualified | Observed spool <1.12% of budget with no busy/backpressure increments in short main runs; #116/#119 remain open | [Defer tuning — assessment complete; sustained cases required in SP11](../architecture/sync-performance-sp05.md) |
 
 No cumulative result may omit rejected attempts or credit all gains to the last
 change. No runtime slice is complete until its report and ledger row exist.
@@ -418,7 +418,7 @@ to distinguish interacting improvements from additive assumptions.
 
 ### SP04 — Bound filesystem work during apply planning
 
-Implemented and qualified in [PR #117](https://github.com/supabricks/platform/pull/117).
+Merged and qualified in [PR #117](https://github.com/supabricks/platform/pull/117).
 [Report and evidence](../architecture/sync-performance-sp04.md): all 84 declared
 measurements pass; main paired p95 improves 33–40%. Keep for latency, with 16/50
 CPU +9.47% and achieved overload source input −2.32%/−2.82% explicitly accepted
@@ -454,6 +454,13 @@ Exit: improved matched planning cost and no weakened deadline, ENOSPC, reservati
 retention or unsafe-path checks. Hold old readers through growth/maintenance tests.
 
 ### SP05 — Sustained storage maintenance, if needed
+
+**Assessment complete; tuning deferred.** [Report and reproducible analysis](../architecture/sync-performance-sp05.md)
+find no demonstrated maintenance bottleneck in the accepted SP04 short profiles.
+No runtime or measurement change and no speedup claim. Follow the conditional
+exit below: repeated reclamation, actual rotation and pinned-reader pressure
+remain required in SP11; #116 and #119 remain open. A later policy change needs
+its own SP05 sub-slice and full fresh comparison.
 
 Use the new profiles to determine whether checkpoints, spool pruning/vacuum,
 Delta compaction, inventory sealing or retained-reader pressure now dominate.
@@ -613,6 +620,16 @@ profile retained separately. If a failure needs a code fix, give that fix its ow
 logical slice and full comparison before restarting the affected qualification.
 
 Required additional experiments:
+
+- Carry forward the [SP05 deferred maintenance assessment](../architecture/sync-performance-sp05.md).
+  Per required maintenance run, require at least three successful checkpoint and
+  reclamation cycles plus a real generation rotation; extend duration until they
+  occur. Repeatedly pin/release bounded SQLite snapshots and hold a Sail epoch
+  across rotation/GC. Archive reader lifetimes, incomplete checkpoints, physical
+  DB/WAL/sidecar and retained-root high-water marks, reuse and post-unpin cleanup.
+  Predeclare stable-storage criteria and early/late windows. Request counts or
+  maintenance-base lookups do not prove successful cycles. Keep #116/#119 open
+  until their scoped evidence is obtained; isolate any fix as a new measured slice.
 
 - Three 15-minute steady target-load runs at each of 8 and 16 logical CPUs, then
   at least one 60-minute run at each. Use the frozen source-qualified client count

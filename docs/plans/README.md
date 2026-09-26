@@ -45,7 +45,8 @@ starts from the completed [workflow profile](../architecture/sync-workflow-profi
 [SP02](../architecture/sp02-durable-capture-groups.md),
 [SP03a](../architecture/sync-performance-sp03a.md) and
 [SP03b](../architecture/sync-performance-sp03b.md) are merged and measured.
-[SP04](../architecture/sync-performance-sp04.md) is implemented, measured and qualified; SP05–SP12 remain planned.
+[SP04](../architecture/sync-performance-sp04.md) is merged and measured.
+[SP05](../architecture/sync-performance-sp05.md) is assessed with runtime tuning deferred to evidence from SP11; SP06–SP12 remain planned.
 It targets sustained 1,000 changed rows/s and at most five-second p95 publication
 lag in a declared local profile. Every logical slice requires the same twelve
 candidate trials, fresh predecessor comparisons, and a recorded contribution or
