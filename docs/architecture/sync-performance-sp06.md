@@ -1,6 +1,6 @@
 # SP06 — Source capacity and a separate load profile
 
-Status: implementation and measurement in progress. SP05 merged as
+Status: measurement recovery and fresh campaign preparation, 2026-09-27. SP05 merged as
 `d2debe471d749e162ec96a29f2edd3e4ee7e5478`. No capacity decision yet.
 Tracks [#107](https://github.com/supabricks/platform/issues/107).
 
@@ -110,3 +110,14 @@ If controls cross the selection threshold or attribution is ambiguous, qualifica
 is inconclusive until a separately recorded investigation resolves it. No source
 runtime fix is bundled into SP06. Any source fix belongs to a separately measured
 SP07 slice. Long-duration replication and maintenance claims still require SP11.
+
+## Resumption after temporary artifact loss
+
+The original nine contended trials are no longer available after their temporary
+storage disappeared; no accepted source capacity result existed. The
+[recovery record](sync-performance-evidence/2026-09-27-sp06-recovery/README.md)
+documents the limitation and the new persistent campaign. Restore and verify the
+exact historical package inventory and all payload files before running the frozen
+harness. Preserve incomplete campaigns explicitly rather than waiting for a
+complete screen to archive evidence. This changes evidence retention, not the
+measurement protocol or runtime. Tracks #124.

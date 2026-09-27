@@ -314,3 +314,23 @@ the 4-CPU envelope uses `--mode envelope --cpus 4 --clients 4 N`.
 `matrix.py` and `compare.py` additionally accept `--baseline-seconds` and
 `--warmup-seconds`; both default to five and preserve the mandatory comparison.
 Longer warmup or different concurrency is a separately labeled profile.
+
+## SP06 campaign retention
+
+Keep runtime packages, frozen harnesses and raw campaigns in persistent storage
+(for example, ignored `build/sp06-CAMPAIGN/`), not `/tmp`. Before deferring a stopped
+source campaign, export its structured evidence even if contention, interruption
+or a measurement failure prevented completion:
+
+```sh
+python3 e2e/native/performance/archive_source.py \
+  /absolute/stopped-source-campaign /absolute/new-evidence-directory \
+  --allow-incomplete
+```
+
+The archiver refuses an active controller, preserves the original incomplete
+state and excludes private logs/scratch. An incomplete export is diagnostic
+evidence only; it establishes neither capacity nor cleanup. Investigate cleanup
+separately before restarting an interrupted fixture. Never reset a depleted retry
+budget or relabel a missing attempt as retained; record a fresh campaign and its
+reason explicitly.
