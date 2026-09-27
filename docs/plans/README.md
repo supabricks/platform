@@ -54,6 +54,16 @@ regression. Batching, reader retries, WAL, planning, source capacity and optiona
 RocksDB/parallelism experiments are measured separately. These targets are not
 current release guarantees.
 
+## Proposed data ingestion and warehouse migration
+
+[Data ingestion strategy](data-ingestion-strategy.md) compares Databricks'
+documented ingestion paths with our current file-import contract and proposes
+uploads, cloud storage, Snowflake and Databricks snapshot imports. It makes
+L01/direct analytical dataset ownership a foundation for this proposed workstream,
+alongside shared durable jobs, validation and recovery. The document includes
+user flows, source-specific transfer options, a delivery sequence and measurement
+criteria. These capabilities are proposed, not delivered or qualified.
+
 ## IAM00 and UC09 navigation
 
 IAM00 is **UC09.0**, the governance/identity/isolation probe. It is not a missing
