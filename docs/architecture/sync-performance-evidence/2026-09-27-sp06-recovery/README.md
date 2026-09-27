@@ -78,3 +78,26 @@ failed measurements. Its status is in `campaign-status.json`; raw phase logs and
 outputs remain under the workspace, with public archives under `archives/`.
 Completion still requires review of attribution, observer costs, CI and the final
 report; the continuation recipe does not mark the PR ready or claim a speedup.
+
+## Host-controller dependency failure and second screen
+
+The first recovered campaign completed one 8-CPU/8-client source fixture with
+exact table validation and clean teardown. The controller then failed during
+host-side receipt recomputation because its Python environment lacked `psycopg`.
+The same trial had 34 observed host-build overlaps. It is excluded; zero complete
+blocks were accepted. `interrupted-source-screen/` preserves the original state,
+structured trial evidence, host observations and hashes. This is distinct from
+the original missing nine trials. Tracked in [#125](https://github.com/supabricks/platform/issues/125).
+
+A persistent isolated `build/sp06-controller-venv` now uses the 14 pinned host
+packages listed in `e2e/native/performance/controller-requirements.txt`, matching
+the existing qualifier image. `controller_preflight.py` verifies dependency
+versions, imports the actual frozen harness and recomputes raw acknowledgment
+samples before a long campaign starts. The passing receipt is retained here.
+The container-only smoke did not establish this host capability; the new preflight
+does. No frozen harness, runtime or measurement settings changed.
+
+`source-screen-02/` is a fresh screen after diagnosis, not a performance retry of
+an accepted result or a reset of the stopped manifest. The old controller status
+and archive remain intact. Both this controller and `continue_campaign_02.py` use
+the pinned interpreter. The continuation follows the same predeclared phases.

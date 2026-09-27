@@ -334,3 +334,26 @@ evidence only; it establishes neither capacity nor cleanup. Investigate cleanup
 separately before restarting an interrupted fixture. Never reset a depleted retry
 budget or relabel a missing attempt as retained; record a fresh campaign and its
 reason explicitly.
+
+## SP06 host-controller preflight
+
+The host controller also needs Python dependencies: its post-trial accounting
+imports the native fixture modules even though database work runs in Docker.
+Container-only tests do not verify those host imports. Use a persistent venv and
+run preflight before a long source campaign:
+
+```sh
+python3 -m venv build/sp06-controller-venv
+build/sp06-controller-venv/bin/python -m pip install \
+  -r e2e/native/performance/controller-requirements.txt
+build/sp06-controller-venv/bin/python e2e/native/performance/controller_preflight.py \
+  --harness /absolute/frozen-harness --report /absolute/new-preflight.json
+```
+
+The requirements pin the host import dependencies to the existing SP06 qualifier
+image `sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec`.
+Use that venv's interpreter for both `source_capacity.py` and any continuation
+process, so child controllers inherit it. Optional `--trial /absolute/trial-dir`
+recomputes a retained trial's raw acknowledgments and checks cleanup; it does not
+admit an excluded trial or qualify capacity. A changed qualifier requires an
+explicit new dependency/provenance review, not an unrecorded package upgrade.
