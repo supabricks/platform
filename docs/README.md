@@ -16,7 +16,7 @@ build or operate the stack.
 | Find a user or operator workflow | [Handbook](handbook/README.md) |
 | See what shipped and what remains | [Delivery status and release history](plans/status.md) |
 | Find implementation plans, including IAM00 and UC09 | [Implementation plan index](plans/README.md) |
-| Understand the proposed upload and warehouse migration experience | [Data ingestion strategy and Databricks comparison](plans/data-ingestion-strategy.md) |
+| Understand the proposed upload, PostgreSQL and warehouse migration experience | [Data ingestion strategy and Databricks comparison](plans/data-ingestion-strategy.md) |
 | Run local triggered incremental analytics | [Triggered sync workflow](handbook/triggered-sync.md) |
 | Run local continuous incremental analytics | [Continuous sync workflow](handbook/continuous-sync.md) |
 | Check installed synchronization qualification | [SY08 archive gates and evidence](architecture/sy08-installed-sync.md) |

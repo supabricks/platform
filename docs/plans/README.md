@@ -54,13 +54,15 @@ regression. Batching, reader retries, WAL, planning, source capacity and optiona
 RocksDB/parallelism experiments are measured separately. These targets are not
 current release guarantees.
 
-## Proposed data ingestion and warehouse migration
+## Proposed data ingestion and database migration
 
 [Data ingestion strategy](data-ingestion-strategy.md) compares Databricks'
 documented ingestion paths with our current file-import contract and proposes
-uploads, cloud storage, Snowflake and Databricks snapshot imports. It makes
-L01/direct analytical dataset ownership a foundation for this proposed workstream,
-alongside shared durable jobs, validation and recovery. The document includes
+uploads, PostgreSQL migration, cloud storage, Snowflake and Databricks snapshot
+imports. It evaluates pgcopydb, native replication, Debezium, PeerDB and Airbyte,
+with snapshot migration preceding CDC/cutover qualification. L01/direct analytical
+ownership supports the analytical track; PG migration can proceed independently
+using shared durable jobs, validation and recovery. The document includes
 user flows, source-specific transfer options, a delivery sequence and measurement
 criteria. These capabilities are proposed, not delivered or qualified.
 
