@@ -59,3 +59,22 @@ The recovered payload passed a 5-second warmup / 10-second source-only functiona
 smoke with exact two-table validation, profiling and clean teardown. `smoke/`
 retains public receipts and numeric timings. This smoke is excluded from all
 source-capacity selection and performance claims.
+
+## Fresh campaign launch
+
+The source screen runs from frozen `be4701c` using the restored SP04 package,
+4/8/16 clients, 8/16 logical CPUs, three repeats, 60-second warmup and 300-second
+measurement. The original seed `20260926`, 10,000 offered changed rows/s ceiling,
+16 GiB/no-swap/no-quota envelope and five-minute quiet interval are unchanged.
+It is a new campaign, not a resumption of missing evidence.
+
+`continue_campaign.py` is the campaign-local continuation recipe (copy it into
+the persistent workspace before running). It waits for the launched screen's
+controller lock, validates and archives the completed screen, then runs the
+predeclared source controls/envelope and historical comparisons. A separately
+named full-stack profile is gated on capacity and source-observer checks. It
+stops on controller failures rather than silently resetting budgets or rerunning
+failed measurements. Its status is in `campaign-status.json`; raw phase logs and
+outputs remain under the workspace, with public archives under `archives/`.
+Completion still requires review of attribution, observer costs, CI and the final
+report; the continuation recipe does not mark the PR ready or claim a speedup.
