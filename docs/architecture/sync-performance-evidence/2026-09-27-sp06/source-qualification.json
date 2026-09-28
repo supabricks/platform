@@ -1,0 +1,812 @@
+{
+  "decision": "qualified_for_profile_trial",
+  "scope": "Source input capacity only; no 1000-row/s analytical replication claim.",
+  "identities": {
+    "source-screen-02": {
+      "raw_experiment_sha256": "186e6d06aa0238dce2f0a3cee2a857ae6ca2f63ec82f8be6c63fbf54f4e12c92",
+      "archive_manifest_sha256": "ac776abaf28f49ff8a7344504e1ff997da3d2a6a131270b4d17963fd4be7e684"
+    },
+    "source-controls": {
+      "raw_experiment_sha256": "96e89570110551cee59204d081264d47b75952ff6baab1b662870a890616d08b",
+      "archive_manifest_sha256": "d47e4e0a5beac3973980e3359098c1f24d74fe652952b87634bb0edc35a6ba5a"
+    },
+    "source-envelope": {
+      "raw_experiment_sha256": "8696dfdc231e64ec73706e7673eea65214b27382ce929bc7713a6f67e00ee75d",
+      "archive_manifest_sha256": "a29cbb109e96b4a0d42d44926ec09a9a043dbebce495cf12b0a4f07031cdc8f3"
+    },
+    "historical-main": {
+      "raw_experiment_sha256": "aaa6dc330ec578643fa0c8272963e0cac5d771faf513b3cc17b1539807838146",
+      "archive_manifest_sha256": "de31ef7e6dc3c7db998da3a964456855ffe81eb8345ae60aecbfa25c5db68339"
+    },
+    "historical-controls": {
+      "raw_experiment_sha256": "63ca1d9363f40705e85b09af659e16be5501a685f6001e9bcfd2e0a74cda1062",
+      "archive_manifest_sha256": "35beedf55f9e499366017a85696dab8da73f66d1c67c1a2bb1ddc399578d010e"
+    }
+  },
+  "accepted_trials": 78,
+  "source_clients": 8,
+  "source_floor_rows_s": 1250,
+  "minimum_required_minute_rows_s": 1671.2333333333333,
+  "minimum_margin_above_floor_percent": 33.698666666666675,
+  "source_screen_groups": [
+    {
+      "cpus": 8,
+      "clients": 4,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 827.4733333333334,
+          "minimum": 827.2333333333333,
+          "maximum": 831.2
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 815.0333333333333,
+          "minimum": 812.7333333333333,
+          "maximum": 819.4666666666667
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.749,
+          "minimum": 12.744,
+          "maximum": 12.761
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 16.459,
+          "minimum": 16.074,
+          "maximum": 16.573
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 12.464,
+          "minimum": 12.46,
+          "maximum": 12.476
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.367,
+          "minimum": 0.366,
+          "maximum": 0.369
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1543921664,
+          "minimum": 1524105216,
+          "maximum": 1554333696
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 4,
+          "minimum": 4,
+          "maximum": 4
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 53.2001414427157,
+        "minimum": 52.42563739376771,
+        "maximum": 53.704360155973056
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 3.3565781849032312,
+        "minimum": 3.342887596882521,
+        "maximum": 3.356829299881869
+      }
+    },
+    {
+      "cpus": 8,
+      "clients": 8,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1704.4733333333334,
+          "minimum": 1704.3266666666666,
+          "maximum": 1705.2933333333333
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1671.6333333333334,
+          "minimum": 1671.2333333333333,
+          "maximum": 1672.5333333333333
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 13.017,
+          "minimum": 13.008,
+          "maximum": 13.021
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.465,
+          "minimum": 18.464,
+          "maximum": 18.559
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 11.915,
+          "minimum": 11.915,
+          "maximum": 11.935
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.712,
+          "minimum": 0.711,
+          "maximum": 0.715
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1960763392,
+          "minimum": 1951723520,
+          "maximum": 1992130560
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 52.22387320455671,
+        "minimum": 51.95799391500638,
+        "maximum": 53.536537710042985
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 2.8648724285747647,
+        "minimum": 2.8609203501903586,
+        "maximum": 2.8654145080295423
+      }
+    },
+    {
+      "cpus": 8,
+      "clients": 16,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 2640.806666666667,
+          "minimum": 2602.9733333333334,
+          "maximum": 2644.7533333333336
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 2566.1,
+          "minimum": 2511.7,
+          "maximum": 2576.5
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 16.351,
+          "minimum": 16.35,
+          "maximum": 16.873
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 21.589,
+          "minimum": 21.513,
+          "maximum": 22.516
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 14.077,
+          "minimum": 14.072,
+          "maximum": 14.535
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 1.082,
+          "minimum": 1.067,
+          "maximum": 1.083
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2291277824,
+          "minimum": 2280431616,
+          "maximum": 2297475072
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 16,
+          "minimum": 16,
+          "maximum": 16
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 64.41298917568693,
+        "minimum": 62.99853948994495,
+        "maximum": 65.51953818827708
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 3.471492057997323,
+        "minimum": 3.4611262421238207,
+        "maximum": 3.5221011147708476
+      }
+    },
+    {
+      "cpus": 16,
+      "clients": 4,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 831.8466666666667,
+          "minimum": 830.4533333333334,
+          "maximum": 833.2733333333333
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 820.8,
+          "minimum": 819.8,
+          "maximum": 821.0
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.74,
+          "minimum": 12.735,
+          "maximum": 12.75
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 15.96,
+          "minimum": 15.838,
+          "maximum": 15.994
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 12.468,
+          "minimum": 12.466,
+          "maximum": 12.48
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.349,
+          "minimum": 0.349,
+          "maximum": 0.35
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1647886336,
+          "minimum": 1614135296,
+          "maximum": 1660055552
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 4,
+          "minimum": 4,
+          "maximum": 4
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 54.176947479732114,
+        "minimum": 53.5178980779404,
+        "maximum": 54.45562025763191
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 3.356318460477173,
+        "minimum": 3.3555518240230273,
+        "maximum": 3.360566632340786
+      }
+    },
+    {
+      "cpus": 16,
+      "clients": 8,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1727.9466666666667,
+          "minimum": 1726.4933333333333,
+          "maximum": 1731.5866666666666
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1698.4,
+          "minimum": 1696.5333333333333,
+          "maximum": 1702.0
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.914,
+          "minimum": 12.905,
+          "maximum": 12.919
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.145,
+          "minimum": 18.053,
+          "maximum": 18.343
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 11.898,
+          "minimum": 11.89,
+          "maximum": 11.907
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.673,
+          "minimum": 0.671,
+          "maximum": 0.676
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2038603776,
+          "minimum": 2020175872,
+          "maximum": 2066669568
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 52.39953179867343,
+        "minimum": 50.481052424896916,
+        "maximum": 52.87480376766091
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 2.8295959324143904,
+        "minimum": 2.81804303453387,
+        "maximum": 2.8363943371659075
+      }
+    },
+    {
+      "cpus": 16,
+      "clients": 16,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 2705.46,
+          "minimum": 2699.0133333333333,
+          "maximum": 2706.0666666666666
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 2629.3333333333335,
+          "minimum": 2618.9333333333334,
+          "maximum": 2630.3
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 16.318,
+          "minimum": 16.218,
+          "maximum": 16.34
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 21.544,
+          "minimum": 21.422,
+          "maximum": 21.63
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 14.114,
+          "minimum": 14.033,
+          "maximum": 14.116
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 1.037,
+          "minimum": 1.036,
+          "maximum": 1.037
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2456498176,
+          "minimum": 2448347136,
+          "maximum": 2473263104
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 16,
+          "minimum": 16,
+          "maximum": 16
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 64.26506681210799,
+        "minimum": 62.652345706494515,
+        "maximum": 66.2364280966098
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 3.4019638284428853,
+        "minimum": 3.400492991903513,
+        "maximum": 3.407655170241551
+      }
+    }
+  ],
+  "source_control_pairs": [
+    {
+      "cpus": 8,
+      "paired_percent": {
+        "rows_s": {
+          "n": 3,
+          "median": -0.5583247148111665,
+          "minimum": -1.2047354836715434,
+          "maximum": -0.5216031615141693
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": -0.38311134049268875,
+          "minimum": -1.3891882359856638,
+          "maximum": 0.03191128662318572
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 0.7189795129493619,
+          "minimum": 0.6881088603680255,
+          "maximum": 0.7891682785299693
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 5.1622418879055925,
+          "minimum": 4.252199413489723,
+          "maximum": 5.294117647058812
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2.9370671784529874,
+          "minimum": 0.2185484456168658,
+          "maximum": 6.3677471268389105
+        }
+      }
+    },
+    {
+      "cpus": 16,
+      "paired_percent": {
+        "rows_s": {
+          "n": 3,
+          "median": -0.49921972953180305,
+          "minimum": -0.7241054432886719,
+          "maximum": -0.23342293389939112
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": -0.36774774069871985,
+          "minimum": -1.0608424336973408,
+          "maximum": 0.5896805896805897
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 0.568403021100992,
+          "minimum": 0.45143212951431994,
+          "maximum": 0.5837030119075359
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 5.460218408736354,
+          "minimum": 5.156250000000004,
+          "maximum": 5.956112852664582
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2.232850660751866,
+          "minimum": 1.2505764087429678,
+          "maximum": 5.372519074491398
+        }
+      }
+    }
+  ],
+  "four_cpu_envelope": [
+    {
+      "cpus": 4,
+      "clients": 4,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 838.1333333333333,
+          "minimum": 837.6066666666667,
+          "maximum": 839.3733333333333
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 823.5333333333333,
+          "minimum": 821.5,
+          "maximum": 824.7
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.779,
+          "minimum": 12.768,
+          "maximum": 12.78
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 16.822,
+          "minimum": 16.773,
+          "maximum": 17.019
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 12.46,
+          "minimum": 12.449,
+          "maximum": 12.463
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.395,
+          "minimum": 0.395,
+          "maximum": 0.396
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1473978368,
+          "minimum": 1459855360,
+          "maximum": 1508569088
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 4,
+          "minimum": 4,
+          "maximum": 4
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 53.21511732043704,
+        "minimum": 52.89906943450251,
+        "maximum": 55.11545293072824
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 3.2807731440657992,
+        "minimum": 3.2761595465324658,
+        "maximum": 3.2827521664655612
+      }
+    },
+    {
+      "cpus": 4,
+      "clients": 8,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1666.4266666666667,
+          "minimum": 1661.7733333333333,
+          "maximum": 1667.18
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1635.5333333333333,
+          "minimum": 1635.0666666666666,
+          "maximum": 1636.3
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 13.653,
+          "minimum": 13.63,
+          "maximum": 13.664
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.956,
+          "minimum": 18.878,
+          "maximum": 19.386
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 12.273,
+          "minimum": 12.269,
+          "maximum": 12.32
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.763,
+          "minimum": 0.76,
+          "maximum": 0.765
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1841487872,
+          "minimum": 1835335680,
+          "maximum": 1849561088
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 54.927580269421654,
+        "minimum": 52.55429795044356,
+        "maximum": 55.02821442966546
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 2.902617905748165,
+        "minimum": 2.895739229969799,
+        "maximum": 2.907689320640734
+      }
+    }
+  ],
+  "historical_comparisons": [
+    {
+      "phase": "historical-main",
+      "cpus": 4,
+      "offered_rows_s": 50,
+      "predecessor": {
+        "source_rows_s": 50.035,
+        "lag_p95_ms": 2255.646
+      },
+      "candidate": {
+        "source_rows_s": 50.036,
+        "lag_p95_ms": 2203.016
+      },
+      "paired_percent_medians": {
+        "source_rows_s": 0.0,
+        "lag_p95_ms": -2.333256193569386,
+        "cpu_cores": 0.7528230865746556,
+        "peak_memory_bytes": -0.2130209026760751
+      }
+    },
+    {
+      "phase": "historical-main",
+      "cpus": 8,
+      "offered_rows_s": 1000,
+      "predecessor": {
+        "source_rows_s": 727.526,
+        "lag_p95_ms": 3035.116
+      },
+      "candidate": {
+        "source_rows_s": 730.023,
+        "lag_p95_ms": 3044.21
+      },
+      "paired_percent_medians": {
+        "source_rows_s": -0.28617533943803986,
+        "lag_p95_ms": 0.2996261098422614,
+        "cpu_cores": -0.16625103906899433,
+        "peak_memory_bytes": 0.6945112337119191
+      }
+    },
+    {
+      "phase": "historical-main",
+      "cpus": 16,
+      "offered_rows_s": 50,
+      "predecessor": {
+        "source_rows_s": 50.037,
+        "lag_p95_ms": 2265.526
+      },
+      "candidate": {
+        "source_rows_s": 50.036,
+        "lag_p95_ms": 2252.04
+      },
+      "paired_percent_medians": {
+        "source_rows_s": -0.0019984811543180573,
+        "lag_p95_ms": -0.3358956997384592,
+        "cpu_cores": 0.25559105431309925,
+        "peak_memory_bytes": 0.4086609657884289
+      }
+    },
+    {
+      "phase": "historical-main",
+      "cpus": 16,
+      "offered_rows_s": 1000,
+      "predecessor": {
+        "source_rows_s": 732.754,
+        "lag_p95_ms": 3051.558
+      },
+      "candidate": {
+        "source_rows_s": 738.107,
+        "lag_p95_ms": 3030.182
+      },
+      "paired_percent_medians": {
+        "source_rows_s": 0.4460901788035067,
+        "lag_p95_ms": -0.21312931931001053,
+        "cpu_cores": -0.2549394518801787,
+        "peak_memory_bytes": 0.5003843489596272
+      }
+    },
+    {
+      "phase": "historical-controls",
+      "cpus": 4,
+      "offered_rows_s": 50,
+      "predecessor": {
+        "source_rows_s": 50.037,
+        "lag_p95_ms": 2185.672
+      },
+      "candidate": {
+        "source_rows_s": 50.038,
+        "lag_p95_ms": 2165.393
+      },
+      "paired_percent_medians": {
+        "source_rows_s": 0.005995563283170681,
+        "lag_p95_ms": -0.706354713988296,
+        "cpu_cores": 3.8759689922480653,
+        "peak_memory_bytes": 0.6996360001890908
+      }
+    },
+    {
+      "phase": "historical-controls",
+      "cpus": 8,
+      "offered_rows_s": 1000,
+      "predecessor": {
+        "source_rows_s": 729.348,
+        "lag_p95_ms": 3028.397
+      },
+      "candidate": {
+        "source_rows_s": 724.793,
+        "lag_p95_ms": 3037.286
+      },
+      "paired_percent_medians": {
+        "source_rows_s": -0.6245304024964695,
+        "lag_p95_ms": 1.4307163533530798,
+        "cpu_cores": 3.0042918454935554,
+        "peak_memory_bytes": 4.037949751161497
+      }
+    },
+    {
+      "phase": "historical-controls",
+      "cpus": 16,
+      "offered_rows_s": 1000,
+      "predecessor": {
+        "source_rows_s": 741.989,
+        "lag_p95_ms": 3026.643
+      },
+      "candidate": {
+        "source_rows_s": 732.518,
+        "lag_p95_ms": 3021.288
+      },
+      "paired_percent_medians": {
+        "source_rows_s": -1.4658733981425542,
+        "lag_p95_ms": -0.12972217943883213,
+        "cpu_cores": 4.868421052631583,
+        "peak_memory_bytes": 1.0633367588090858
+      }
+    }
+  ],
+  "reviewed_flags": [
+    "repeatable source profiler throughput loss at both CPU sizes"
+  ],
+  "disposition": "Retain and disclose observer cost. Activation costs about 0.5-0.6% median source throughput, 5.2-5.5% CPU and <1% transaction p95. Every required minute in both arms retains at least 33% headroom above the 1250-row/s floor. Selection remains eight clients with profiling on or off. Historical profiler controls also show a small input cost, without correctness or five-second freshness failures at achieved input. Proceed using identical diagnostic activation in both higher-load comparison arms, followed by separately required controls at that load. Do not subtract or normalize measured overhead out of results.",
+  "limitations": [
+    "Three-repeat screen is not statistical certainty or an EC2 scaling claim.",
+    "Observer activation is the tested intervention; individual timing/resource probe costs are not separately isolated.",
+    "Historical four-client overload runs still supply only about 725-742 rows/s; they do not qualify 1000-row/s replication.",
+    "Original nine temporary contended trials remain missing; one recovered dependency-failure trial and three fresh contended trials remain excluded and archived."
+  ],
+  "next_profile": {
+    "id": "sp06-source-qualified-8clients-v1",
+    "clients": 8,
+    "cpus": [
+      8,
+      16
+    ],
+    "memory_gib": 16,
+    "swap": false,
+    "cpu_quota": false,
+    "rows_per_table": 10000,
+    "tables": 2,
+    "changes_per_transaction": 2,
+    "baseline_seconds": 5,
+    "warmup_seconds": 60,
+    "seconds": 300,
+    "offered_changed_rows_s": 1250,
+    "comparison_pairs": 6,
+    "activation_control_pairs": 6
+  },
+  "runtime_revision": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+  "harness_revision": "be4701cce5694ed00349ab3db9b577592965d7d7",
+  "measurement_change": false,
+  "runtime_change": false
+}

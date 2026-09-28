@@ -1,7 +1,10 @@
 # SP06 — Source capacity and a separate load profile
 
-Status: measurement recovery and fresh campaign preparation, 2026-09-27. SP05 merged as
-`d2debe471d749e162ec96a29f2edd3e4ee7e5478`. No capacity decision yet.
+Status: **source input qualified; higher-load full-stack comparison pending**,
+2026-09-27. SP05 merged as `d2debe471d749e162ec96a29f2edd3e4ee7e5478`.
+The [78-trial source/control review](sync-performance-evidence/2026-09-27-sp06/README.md)
+selects eight clients with measured observer cost. No end-to-end throughput
+qualification or runtime speedup is claimed.
 Tracks [#107](https://github.com/supabricks/platform/issues/107).
 
 This is a measurement-enabling slice. The accepted SP04/SP05 runtime, dependencies,

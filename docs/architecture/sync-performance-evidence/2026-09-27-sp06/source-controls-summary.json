@@ -1,0 +1,1293 @@
+{
+  "scope": "Three-repeat source-only screen, not a replication-engine speedup or EC2 claim. Rates exclude tail acknowledgments. PG wait shares are sampled active-client observations, not exact time. Safekeeper histograms provide bucket bounds. Host disks are shared; devices may overlap and must not be summed. Memory peak includes setup/warmup. Profile-disabled attribution is unavailable, not zero.",
+  "accepted_blocks": 6,
+  "attempts": 6,
+  "retained_rejected_blocks": 0,
+  "provisional_selection": null,
+  "groups": [
+    {
+      "cpus": 8,
+      "clients": 8,
+      "profile": false,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1714.6533333333334,
+          "minimum": 1713.9466666666667,
+          "maximum": 1725.4133333333334
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1679.2333333333333,
+          "minimum": 1671.3,
+          "maximum": 1701.2333333333333
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.934,
+          "minimum": 12.925,
+          "maximum": 12.935
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.229,
+          "minimum": 18.198,
+          "maximum": 18.43
+        },
+        "commit_p95_ms": {
+          "n": 0,
+          "median": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.68,
+          "minimum": 0.678,
+          "maximum": 0.682
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1890922496,
+          "minimum": 1873248256,
+          "maximum": 1919164416
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": null,
+      "safekeeper_flush_mean_ms": null
+    },
+    {
+      "cpus": 8,
+      "clients": 8,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1705.0066666666667,
+          "minimum": 1704.6266666666668,
+          "maximum": 1705.08
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1672.8,
+          "minimum": 1671.8333333333333,
+          "maximum": 1677.6
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 13.027,
+          "minimum": 13.023,
+          "maximum": 13.028
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.473,
+          "minimum": 18.413,
+          "maximum": 18.497
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 11.932,
+          "minimum": 11.918,
+          "maximum": 11.938
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.713,
+          "minimum": 0.711,
+          "maximum": 0.716
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1946460160,
+          "minimum": 1923358720,
+          "maximum": 1992531968
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 53.2958358002763,
+        "minimum": 52.981832543443915,
+        "maximum": 53.468264885046175
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 2.8621841112372395,
+        "minimum": 2.860982934634065,
+        "maximum": 2.8630418354920915
+      }
+    },
+    {
+      "cpus": 16,
+      "clients": 8,
+      "profile": false,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1733.6333333333334,
+          "minimum": 1733.62,
+          "maximum": 1738.7133333333334
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1704.0666666666666,
+          "minimum": 1695.8333333333333,
+          "maximum": 1709.3333333333333
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.848,
+          "minimum": 12.843,
+          "maximum": 12.849
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.072,
+          "minimum": 18.044,
+          "maximum": 18.223
+        },
+        "commit_p95_ms": {
+          "n": 0,
+          "median": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.64,
+          "minimum": 0.638,
+          "maximum": 0.641
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 1998581760,
+          "minimum": 1979338752,
+          "maximum": 2020253696
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": null,
+      "safekeeper_flush_mean_ms": null
+    },
+    {
+      "cpus": 16,
+      "clients": 8,
+      "profile": true,
+      "metrics": {
+        "rows_s": {
+          "n": 3,
+          "median": 1729.5733333333333,
+          "minimum": 1721.08,
+          "maximum": 1730.0333333333333
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": 1697.8,
+          "minimum": 1691.2,
+          "maximum": 1705.8333333333333
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 12.916,
+          "minimum": 12.906,
+          "maximum": 12.924
+        },
+        "transaction_p99_ms": {
+          "n": 3,
+          "median": 18.123,
+          "minimum": 18.114,
+          "maximum": 18.182
+        },
+        "commit_p95_ms": {
+          "n": 3,
+          "median": 11.91,
+          "minimum": 11.889,
+          "maximum": 11.918
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 0.676,
+          "minimum": 0.673,
+          "maximum": 0.676
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2065362944,
+          "minimum": 2023575552,
+          "maximum": 2085679104
+        },
+        "tail_transactions": {
+          "n": 3,
+          "median": 8,
+          "minimum": 8,
+          "maximum": 8
+        }
+      },
+      "syncrep_active_share_percent": {
+        "n": 3,
+        "median": 52.42964261369169,
+        "minimum": 52.077909555491274,
+        "maximum": 53.45046364080039
+      },
+      "safekeeper_flush_mean_ms": {
+        "n": 3,
+        "median": 2.8306229777062155,
+        "minimum": 2.824622480542508,
+        "maximum": 2.8479102667846328
+      }
+    }
+  ],
+  "controls": [
+    {
+      "cpus": 8,
+      "paired_percent": {
+        "rows_s": {
+          "n": 3,
+          "median": -0.5583247148111665,
+          "minimum": -1.2047354836715434,
+          "maximum": -0.5216031615141693
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": -0.38311134049268875,
+          "minimum": -1.3891882359856638,
+          "maximum": 0.03191128662318572
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 0.7189795129493619,
+          "minimum": 0.6881088603680255,
+          "maximum": 0.7891682785299693
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 5.1622418879055925,
+          "minimum": 4.252199413489723,
+          "maximum": 5.294117647058812
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2.9370671784529874,
+          "minimum": 0.2185484456168658,
+          "maximum": 6.3677471268389105
+        }
+      }
+    },
+    {
+      "cpus": 16,
+      "paired_percent": {
+        "rows_s": {
+          "n": 3,
+          "median": -0.49921972953180305,
+          "minimum": -0.7241054432886719,
+          "maximum": -0.23342293389939112
+        },
+        "min_minute_rows_s": {
+          "n": 3,
+          "median": -0.36774774069871985,
+          "minimum": -1.0608424336973408,
+          "maximum": 0.5896805896805897
+        },
+        "transaction_p95_ms": {
+          "n": 3,
+          "median": 0.568403021100992,
+          "minimum": 0.45143212951431994,
+          "maximum": 0.5837030119075359
+        },
+        "cpu_cores": {
+          "n": 3,
+          "median": 5.460218408736354,
+          "minimum": 5.156250000000004,
+          "maximum": 5.956112852664582
+        },
+        "peak_memory_bytes": {
+          "n": 3,
+          "median": 2.232850660751866,
+          "minimum": 1.2505764087429678,
+          "maximum": 5.372519074491398
+        }
+      }
+    }
+  ],
+  "trials": [
+    {
+      "directory": "01-attempt1-cpu8-clients8-profile0",
+      "cpus": 8,
+      "repeat": 2,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1725.4133333333334,
+      "minute_rows_s": [
+        1714.5,
+        1714.5666666666666,
+        1749.6666666666667,
+        1747.1,
+        1701.2333333333333
+      ],
+      "min_minute_rows_s": 1701.2333333333333,
+      "transaction_p95_ms": 12.925,
+      "transaction_p99_ms": 18.198,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.682,
+      "peak_memory_bytes": 1919164416,
+      "tail_transactions": 8,
+      "attribution": null
+    },
+    {
+      "directory": "01-attempt1-cpu8-clients8-profile1",
+      "cpus": 8,
+      "repeat": 2,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1704.6266666666668,
+      "minute_rows_s": [
+        1691.1666666666667,
+        1697.3666666666666,
+        1728.0333333333333,
+        1728.9666666666667,
+        1677.6
+      ],
+      "min_minute_rows_s": 1677.6,
+      "transaction_p95_ms": 13.027,
+      "transaction_p99_ms": 18.473,
+      "commit_p95_ms": 11.938,
+      "cpu_cores": 0.711,
+      "peak_memory_bytes": 1923358720,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1454,
+        "active_client_samples": 10134,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 13,
+            "share_percent": 0.12828103414249062
+          },
+          "IO/WalSync": {
+            "samples": 1018,
+            "share_percent": 10.045391750542727
+          },
+          "IO/WalWrite": {
+            "samples": 1,
+            "share_percent": 0.009867771857114663
+          },
+          "IPC/SyncRep": {
+            "samples": 5401,
+            "share_percent": 53.2958358002763
+          },
+          "LWLock/WALWrite": {
+            "samples": 3639,
+            "share_percent": 35.908821788040264
+          },
+          "running/running": {
+            "samples": 62,
+            "share_percent": 0.6118018551411092
+          }
+        },
+        "client_state_samples": {
+          "idle": 3248,
+          "active": 10134,
+          "idle in transaction": 1158
+        },
+        "storage_covered_seconds": 299.11340502929687,
+        "safekeeper_flush": {
+          "calls": 85388.0,
+          "total_ms": 244469.41624899872,
+          "mean_ms": 2.8630418354920915,
+          "calls_s": 285.4703218387575,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 1.0,
+            "0.005": 73791.0,
+            "0.01": 85072.0,
+            "0.05": 85388.0,
+            "0.1": 85388.0,
+            "0.5": 85388.0,
+            "1": 85388.0,
+            "5": 85388.0,
+            "10": 85388.0,
+            "30": 85388.0,
+            "+Inf": 85388.0
+          }
+        },
+        "safekeeper_written_bytes": 63138280.0,
+        "pg_wal_delta": {
+          "records": 802398.0,
+          "full_page_images": 312.0,
+          "bytes": 59284618.0,
+          "buffer_full": 0.0,
+          "writes": 87883.0,
+          "syncs": 87874.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 299.11727099609374,
+        "load_peak_memory_bytes": 1922838528,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 0,
+            "wbytes": 2014289920,
+            "rios": 0,
+            "wios": 355484,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377384,
+              "write_sectors": 4949326,
+              "write_ms": 47827900,
+              "io_ms": 261005,
+              "weighted_io_ms": 48213240
+            },
+            "busy_percent": 87.2584184560204,
+            "weighted_queue_mean": 161.18507580469878
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377384,
+              "write_sectors": 4949326,
+              "write_ms": 47827900,
+              "io_ms": 294342,
+              "weighted_io_ms": 47827901
+            },
+            "busy_percent": 98.40354554580163,
+            "weighted_queue_mean": 159.89682187433635
+          }
+        },
+        "monitor_wall_ns": 10984131871,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "02-attempt1-cpu16-clients8-profile1",
+      "cpus": 16,
+      "repeat": 1,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1730.0333333333333,
+      "minute_rows_s": [
+        1713.8666666666666,
+        1722.6333333333334,
+        1760.0,
+        1755.8666666666666,
+        1697.8
+      ],
+      "min_minute_rows_s": 1697.8,
+      "transaction_p95_ms": 12.906,
+      "transaction_p99_ms": 18.182,
+      "commit_p95_ms": 11.889,
+      "cpu_cores": 0.676,
+      "peak_memory_bytes": 2065362944,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1456,
+        "active_client_samples": 10269,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 11,
+            "share_percent": 0.10711851202648749
+          },
+          "IO/WalSync": {
+            "samples": 1013,
+            "share_percent": 9.864641152984712
+          },
+          "IO/WalWrite": {
+            "samples": 3,
+            "share_percent": 0.029214139643587496
+          },
+          "IPC/SyncRep": {
+            "samples": 5384,
+            "share_percent": 52.42964261369169
+          },
+          "LWLock/WALWrite": {
+            "samples": 3800,
+            "share_percent": 37.0045768818775
+          },
+          "running/running": {
+            "samples": 58,
+            "share_percent": 0.5648066997760249
+          }
+        },
+        "client_state_samples": {
+          "idle": 3180,
+          "active": 10269,
+          "idle in transaction": 1111
+        },
+        "storage_covered_seconds": 298.88579638671877,
+        "safekeeper_flush": {
+          "calls": 86342.0,
+          "total_ms": 243883.55421500123,
+          "mean_ms": 2.824622480542508,
+          "calls_s": 288.87956886477417,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 0,
+            "0.005": 75039.0,
+            "0.01": 86011.0,
+            "0.05": 86342.0,
+            "0.1": 86342.0,
+            "0.5": 86342.0,
+            "1": 86342.0,
+            "5": 86342.0,
+            "10": 86342.0,
+            "30": 86342.0,
+            "+Inf": 86342.0
+          }
+        },
+        "safekeeper_written_bytes": 63867856.0,
+        "pg_wal_delta": {
+          "records": 808667.0,
+          "full_page_images": 316.0,
+          "bytes": 59857455.0,
+          "buffer_full": 0.0,
+          "writes": 88241.0,
+          "syncs": 88230.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 298.88623681640627,
+        "load_peak_memory_bytes": 2051555328,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 0,
+            "wbytes": 2028773376,
+            "rios": 0,
+            "wios": 358641,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 380755,
+              "write_sectors": 4960458,
+              "write_ms": 48736132,
+              "io_ms": 263853,
+              "weighted_io_ms": 49127533
+            },
+            "busy_percent": 88.2787386968488,
+            "weighted_queue_mean": 164.36866924112354
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 380755,
+              "write_sectors": 4960458,
+              "write_ms": 48736132,
+              "io_ms": 294487,
+              "weighted_io_ms": 48736133
+            },
+            "busy_percent": 98.52812332101176,
+            "weighted_queue_mean": 163.05914089291653
+          }
+        },
+        "monitor_wall_ns": 11329792111,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "02-attempt1-cpu16-clients8-profile0",
+      "cpus": 16,
+      "repeat": 1,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1738.7133333333334,
+      "minute_rows_s": [
+        1724.6666666666667,
+        1733.9,
+        1766.1666666666667,
+        1764.7666666666667,
+        1704.0666666666666
+      ],
+      "min_minute_rows_s": 1704.0666666666666,
+      "transaction_p95_ms": 12.848,
+      "transaction_p99_ms": 18.072,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.638,
+      "peak_memory_bytes": 2020253696,
+      "tail_transactions": 8,
+      "attribution": null
+    },
+    {
+      "directory": "03-attempt1-cpu8-clients8-profile1",
+      "cpus": 8,
+      "repeat": 3,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1705.0066666666667,
+      "minute_rows_s": [
+        1700.9333333333334,
+        1691.6,
+        1727.6333333333334,
+        1732.0666666666666,
+        1672.8
+      ],
+      "min_minute_rows_s": 1672.8,
+      "transaction_p95_ms": 13.028,
+      "transaction_p99_ms": 18.413,
+      "commit_p95_ms": 11.932,
+      "cpu_cores": 0.713,
+      "peak_memory_bytes": 1992531968,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1454,
+        "active_client_samples": 10178,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 4,
+            "share_percent": 0.039300451955197484
+          },
+          "IO/WalSync": {
+            "samples": 1000,
+            "share_percent": 9.825112988799372
+          },
+          "IO/WalWrite": {
+            "samples": 3,
+            "share_percent": 0.029475338966398115
+          },
+          "IPC/SyncRep": {
+            "samples": 5442,
+            "share_percent": 53.468264885046175
+          },
+          "LWLock/WALWrite": {
+            "samples": 3662,
+            "share_percent": 35.9795637649833
+          },
+          "running/running": {
+            "samples": 67,
+            "share_percent": 0.6582825702495578
+          }
+        },
+        "client_state_samples": {
+          "idle": 3208,
+          "active": 10178,
+          "idle in transaction": 1154
+        },
+        "storage_covered_seconds": 299.16873510742187,
+        "safekeeper_flush": {
+          "calls": 85335.0,
+          "total_ms": 244141.97872699794,
+          "mean_ms": 2.860982934634065,
+          "calls_s": 285.24036767865783,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 0,
+            "0.005": 73605.0,
+            "0.01": 85034.0,
+            "0.05": 85335.0,
+            "0.1": 85335.0,
+            "0.5": 85335.0,
+            "1": 85335.0,
+            "5": 85335.0,
+            "10": 85335.0,
+            "30": 85335.0,
+            "+Inf": 85335.0
+          }
+        },
+        "safekeeper_written_bytes": 62949256.0,
+        "pg_wal_delta": {
+          "records": 798837.0,
+          "full_page_images": 317.0,
+          "bytes": 59081805.0,
+          "buffer_full": 0.0,
+          "writes": 87775.0,
+          "syncs": 87764.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 299.1671364746094,
+        "load_peak_memory_bytes": 1978937344,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 0,
+            "wbytes": 2064617472,
+            "rios": 0,
+            "wios": 355573,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377527,
+              "write_sectors": 5026851,
+              "write_ms": 118933427,
+              "io_ms": 261081,
+              "weighted_io_ms": 119317611
+            },
+            "busy_percent": 87.26927799509764,
+            "weighted_queue_mean": 398.8326137892041
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377527,
+              "write_sectors": 5026851,
+              "write_ms": 118933427,
+              "io_ms": 294424,
+              "weighted_io_ms": 118933427
+            },
+            "busy_percent": 98.41455297179276,
+            "weighted_queue_mean": 397.5484353044707
+          }
+        },
+        "monitor_wall_ns": 11039668039,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "03-attempt1-cpu8-clients8-profile0",
+      "cpus": 8,
+      "repeat": 3,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1713.9466666666667,
+      "minute_rows_s": [
+        1703.7,
+        1709.9666666666667,
+        1743.3333333333333,
+        1733.5,
+        1679.2333333333333
+      ],
+      "min_minute_rows_s": 1679.2333333333333,
+      "transaction_p95_ms": 12.935,
+      "transaction_p99_ms": 18.229,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.678,
+      "peak_memory_bytes": 1873248256,
+      "tail_transactions": 8,
+      "attribution": null
+    },
+    {
+      "directory": "04-attempt1-cpu16-clients8-profile0",
+      "cpus": 16,
+      "repeat": 2,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1733.62,
+      "minute_rows_s": [
+        1721.2666666666667,
+        1731.2,
+        1757.2,
+        1762.6,
+        1695.8333333333333
+      ],
+      "min_minute_rows_s": 1695.8333333333333,
+      "transaction_p95_ms": 12.843,
+      "transaction_p99_ms": 18.223,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.641,
+      "peak_memory_bytes": 1979338752,
+      "tail_transactions": 8,
+      "attribution": null
+    },
+    {
+      "directory": "04-attempt1-cpu16-clients8-profile1",
+      "cpus": 16,
+      "repeat": 2,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1729.5733333333333,
+      "minute_rows_s": [
+        1722.2666666666667,
+        1723.5,
+        1752.0,
+        1744.2666666666667,
+        1705.8333333333333
+      ],
+      "min_minute_rows_s": 1705.8333333333333,
+      "transaction_p95_ms": 12.916,
+      "transaction_p99_ms": 18.123,
+      "commit_p95_ms": 11.91,
+      "cpu_cores": 0.676,
+      "peak_memory_bytes": 2085679104,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1456,
+        "active_client_samples": 10245,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 20,
+            "share_percent": 0.19521717911176184
+          },
+          "IO/WalInitWrite": {
+            "samples": 1,
+            "share_percent": 0.009760858955588092
+          },
+          "IO/WalSync": {
+            "samples": 1032,
+            "share_percent": 10.07320644216691
+          },
+          "IO/WalWrite": {
+            "samples": 1,
+            "share_percent": 0.009760858955588092
+          },
+          "IPC/SyncRep": {
+            "samples": 5476,
+            "share_percent": 53.45046364080039
+          },
+          "LWLock/WALWrite": {
+            "samples": 3633,
+            "share_percent": 35.46120058565154
+          },
+          "running/running": {
+            "samples": 82,
+            "share_percent": 0.8003904343582235
+          }
+        },
+        "client_state_samples": {
+          "idle": 3287,
+          "active": 10245,
+          "idle in transaction": 1028
+        },
+        "storage_covered_seconds": 298.860318359375,
+        "safekeeper_flush": {
+          "calls": 86347.0,
+          "total_ms": 244415.8022559986,
+          "mean_ms": 2.8306229777062155,
+          "calls_s": 288.92092625080136,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 0,
+            "0.005": 74968.0,
+            "0.01": 86057.0,
+            "0.05": 86347.0,
+            "0.1": 86347.0,
+            "0.5": 86347.0,
+            "1": 86347.0,
+            "5": 86347.0,
+            "10": 86347.0,
+            "30": 86347.0,
+            "+Inf": 86347.0
+          }
+        },
+        "safekeeper_written_bytes": 63730240.0,
+        "pg_wal_delta": {
+          "records": 808652.0,
+          "full_page_images": 316.0,
+          "bytes": 59718902.0,
+          "buffer_full": 0.0,
+          "writes": 88336.0,
+          "syncs": 88325.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 298.86104833984376,
+        "load_peak_memory_bytes": 2075537408,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 20480,
+            "wbytes": 2079440896,
+            "rios": 5,
+            "wios": 359129,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 5,
+              "read_sectors": 40,
+              "read_ms": 0,
+              "write_ios": 381279,
+              "write_sectors": 5062689,
+              "write_ms": 18471710,
+              "io_ms": 264003,
+              "weighted_io_ms": 18864205
+            },
+            "busy_percent": 88.33636951570696,
+            "weighted_queue_mean": 63.12031997742628
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 5,
+              "read_sectors": 40,
+              "read_ms": 1,
+              "write_ios": 381279,
+              "write_sectors": 5062689,
+              "write_ms": 18471710,
+              "io_ms": 294420,
+              "weighted_io_ms": 18471711
+            },
+            "busy_percent": 98.5140089802557,
+            "weighted_queue_mean": 61.8070206961038
+          }
+        },
+        "monitor_wall_ns": 11275861755,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "05-attempt1-cpu16-clients8-profile1",
+      "cpus": 16,
+      "repeat": 3,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1721.08,
+      "minute_rows_s": [
+        1709.0333333333333,
+        1713.8666666666666,
+        1743.7333333333333,
+        1747.5666666666666,
+        1691.2
+      ],
+      "min_minute_rows_s": 1691.2,
+      "transaction_p95_ms": 12.924,
+      "transaction_p99_ms": 18.114,
+      "commit_p95_ms": 11.918,
+      "cpu_cores": 0.673,
+      "peak_memory_bytes": 2023575552,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1455,
+        "active_client_samples": 10371,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 10,
+            "share_percent": 0.09642271719217048
+          },
+          "IO/WalInitSync": {
+            "samples": 1,
+            "share_percent": 0.009642271719217048
+          },
+          "IO/WalSync": {
+            "samples": 1037,
+            "share_percent": 9.999035772828078
+          },
+          "IO/WalWrite": {
+            "samples": 1,
+            "share_percent": 0.009642271719217048
+          },
+          "IPC/SyncRep": {
+            "samples": 5401,
+            "share_percent": 52.077909555491274
+          },
+          "LWLock/WALWrite": {
+            "samples": 3853,
+            "share_percent": 37.151672934143285
+          },
+          "running/running": {
+            "samples": 68,
+            "share_percent": 0.6556744769067593
+          }
+        },
+        "client_state_samples": {
+          "idle": 3177,
+          "active": 10371,
+          "idle in transaction": 1002
+        },
+        "storage_covered_seconds": 298.97837475585936,
+        "safekeeper_flush": {
+          "calls": 85927.0,
+          "total_ms": 244712.38549400313,
+          "mean_ms": 2.8479102667846328,
+          "calls_s": 287.40205732326467,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 0,
+            "0.005": 74226.0,
+            "0.01": 85623.0,
+            "0.05": 85927.0,
+            "0.1": 85927.0,
+            "0.5": 85927.0,
+            "1": 85927.0,
+            "5": 85927.0,
+            "10": 85927.0,
+            "30": 85927.0,
+            "+Inf": 85927.0
+          }
+        },
+        "safekeeper_written_bytes": 63707536.0,
+        "pg_wal_delta": {
+          "records": 808181.0,
+          "full_page_images": 318.0,
+          "bytes": 59669687.0,
+          "buffer_full": 0.0,
+          "writes": 87895.0,
+          "syncs": 87884.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 298.97689404296875,
+        "load_peak_memory_bytes": 2019749888,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 4096,
+            "wbytes": 2117787648,
+            "rios": 1,
+            "wios": 357804,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 47,
+              "read_sectors": 2192,
+              "read_ms": 11,
+              "write_ios": 380043,
+              "write_sectors": 5137700,
+              "write_ms": 37333319,
+              "io_ms": 264196,
+              "weighted_io_ms": 37725171
+            },
+            "busy_percent": 88.36669497343495,
+            "weighted_queue_mean": 126.18089140553505
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 47,
+              "read_sectors": 2192,
+              "read_ms": 11,
+              "write_ios": 380043,
+              "write_sectors": 5137700,
+              "write_ms": 37333320,
+              "io_ms": 294552,
+              "weighted_io_ms": 37333330
+            },
+            "busy_percent": 98.51998795521209,
+            "weighted_queue_mean": 124.87028510850233
+          }
+        },
+        "monitor_wall_ns": 11225385269,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "05-attempt1-cpu16-clients8-profile0",
+      "cpus": 16,
+      "repeat": 3,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1733.6333333333334,
+      "minute_rows_s": [
+        1715.5666666666666,
+        1731.4666666666667,
+        1760.4333333333334,
+        1751.3666666666666,
+        1709.3333333333333
+      ],
+      "min_minute_rows_s": 1709.3333333333333,
+      "transaction_p95_ms": 12.849,
+      "transaction_p99_ms": 18.044,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.64,
+      "peak_memory_bytes": 1998581760,
+      "tail_transactions": 8,
+      "attribution": null
+    },
+    {
+      "directory": "06-attempt1-cpu8-clients8-profile1",
+      "cpus": 8,
+      "repeat": 1,
+      "clients": 8,
+      "profile": true,
+      "seconds": 300,
+      "rows_s": 1705.08,
+      "minute_rows_s": [
+        1697.6,
+        1702.3,
+        1728.8,
+        1724.8666666666666,
+        1671.8333333333333
+      ],
+      "min_minute_rows_s": 1671.8333333333333,
+      "transaction_p95_ms": 13.023,
+      "transaction_p99_ms": 18.497,
+      "commit_p95_ms": 11.918,
+      "cpu_cores": 0.716,
+      "peak_memory_bytes": 1946460160,
+      "tail_transactions": 8,
+      "attribution": {
+        "observations": 1453,
+        "active_client_samples": 10128,
+        "active_client_waits": {
+          "Client/ClientRead": {
+            "samples": 18,
+            "share_percent": 0.17772511848341233
+          },
+          "IO/WalSync": {
+            "samples": 1020,
+            "share_percent": 10.071090047393366
+          },
+          "IO/WalWrite": {
+            "samples": 1,
+            "share_percent": 0.009873617693522907
+          },
+          "IPC/SyncRep": {
+            "samples": 5366,
+            "share_percent": 52.981832543443915
+          },
+          "LWLock/WALWrite": {
+            "samples": 3670,
+            "share_percent": 36.23617693522907
+          },
+          "running/running": {
+            "samples": 53,
+            "share_percent": 0.5233017377567141
+          }
+        },
+        "client_state_samples": {
+          "idle": 3185,
+          "active": 10128,
+          "idle in transaction": 1217
+        },
+        "storage_covered_seconds": 299.2471022949219,
+        "safekeeper_flush": {
+          "calls": 85439.0,
+          "total_ms": 244542.1482799985,
+          "mean_ms": 2.8621841112372395,
+          "calls_s": 285.513207462226,
+          "p95_bucket_upper_seconds": "0.01",
+          "buckets": {
+            "0.001": 0,
+            "0.005": 73861.0,
+            "0.01": 85132.0,
+            "0.05": 85439.0,
+            "0.1": 85439.0,
+            "0.5": 85439.0,
+            "1": 85439.0,
+            "5": 85439.0,
+            "10": 85439.0,
+            "30": 85439.0,
+            "+Inf": 85439.0
+          }
+        },
+        "safekeeper_written_bytes": 63144920.0,
+        "pg_wal_delta": {
+          "records": 800712.0,
+          "full_page_images": 315.0,
+          "bytes": 59295767.0,
+          "buffer_full": 0.0,
+          "writes": 87888.0,
+          "syncs": 87877.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_time_available": false,
+        "resource_covered_seconds": 299.245689453125,
+        "load_peak_memory_bytes": 1941200896,
+        "cgroup_io_delta": {
+          "259:2": {
+            "rbytes": 0,
+            "wbytes": 2059759616,
+            "rios": 0,
+            "wios": 356000,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "host_disk_deltas": {
+          "259:2": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377888,
+              "write_sectors": 4942770,
+              "write_ms": 58098921,
+              "io_ms": 260699,
+              "weighted_io_ms": 58484249
+            },
+            "busy_percent": 87.11871521906647,
+            "weighted_queue_mean": 195.4389020837047
+          },
+          "259:7": {
+            "delta": {
+              "read_ios": 0,
+              "read_sectors": 0,
+              "read_ms": 0,
+              "write_ios": 377888,
+              "write_sectors": 4942770,
+              "write_ms": 58098921,
+              "io_ms": 294288,
+              "weighted_io_ms": 58098921
+            },
+            "busy_percent": 98.34327122232396,
+            "weighted_queue_mean": 194.15123775442333
+          }
+        },
+        "monitor_wall_ns": 11066256504,
+        "process_sample_errors": []
+      }
+    },
+    {
+      "directory": "06-attempt1-cpu8-clients8-profile0",
+      "cpus": 8,
+      "repeat": 1,
+      "clients": 8,
+      "profile": false,
+      "seconds": 300,
+      "rows_s": 1714.6533333333334,
+      "minute_rows_s": [
+        1706.8,
+        1707.9666666666667,
+        1742.6333333333334,
+        1744.5666666666666,
+        1671.3
+      ],
+      "min_minute_rows_s": 1671.3,
+      "transaction_p95_ms": 12.934,
+      "transaction_p99_ms": 18.43,
+      "commit_p95_ms": null,
+      "cpu_cores": 0.68,
+      "peak_memory_bytes": 1890922496,
+      "tail_transactions": 8,
+      "attribution": null
+    }
+  ]
+}
