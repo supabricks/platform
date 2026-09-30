@@ -69,6 +69,10 @@ Freeze before launch:
   fixed role labels and opaque cgroup hashes only. Never export argv, file paths,
   SQL, row values or credentials. Bind the owned Docker container to its cgroup
   hash to distinguish fixture I/O from readable external processes.
+- Record controller-process CPU seconds and sampled RSS in **both** arms, outside
+  the fixture cgroup. Keep lifetime peak RSS labeled separately because it can
+  include previous trials. This exposes observer overhead outside the 16-GiB
+  stack limit; container CPU alone cannot measure that overhead.
 - Preserve permission denials, exits, new identities, counter resets, sampler
   wall time and missing coverage. Root-owned processes may be unreadable. Do not
   interpret inaccessible or short-lived processes as idle. The existing build
@@ -94,3 +98,13 @@ If the shortfall does not recur or coverage cannot distinguish causes, retain an
 inconclusive result and #127. Source capacity already meets the target in SP06;
 that supports declining speculative source changes, not declaring the historical
 stall fixed. Sustained behavior and release claims remain SP11/SP12 work.
+
+## Functional preflight and protocol revision
+
+The initial short on/off functional check passed with exact correctness and
+cleanup. The sampler bound its container cgroup and read all sampled owned-process
+I/O counters; inaccessible unrelated processes remain explicit. Before any
+full-duration trial began, admission was stopped to add controller-process CPU/RSS
+accounting in both arms. The waiting manifest and zero-measurement hold are
+archived unchanged. A separately frozen controller runs another functional check
+then `observer-controls-02`; no performance result or retry budget was reset.

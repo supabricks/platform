@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import random
+import resource
 import signal
 import shutil
 import subprocess
@@ -166,18 +167,32 @@ def run_trial(config, arm, pair, directory, monitor, quiet):
     require(shutil.disk_usage(directory.parent).free >= config.get('minimum_free_gib', 0)*1024**3,
             'insufficient free disk for trial admission')
     enabled = config.get('host_io') == 'both' or (config.get('host_io') == 'candidate' and arm == 'candidate')
+    samples = [] if config.get('host_io', 'off') != 'off' else None
+    before_cpu = time.process_time()
+    before_wall = time.monotonic()
     sampler = HostIO(directory/'host-io.json.gz').start() if enabled else None
     try:
-        result = run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler)
+        result = run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler, samples)
     finally:
         if sampler:
             sampler.close()
+    if samples is not None:
+        # Includes controller work and the sampler thread, outside the 16-GiB
+        # fixture. Process CPU is separate from elapsed probe wall time.
+        report = dict(cpu_seconds=time.process_time()-before_cpu,
+            elapsed_seconds=time.monotonic()-before_wall,
+            sampled_peak_rss_bytes=max((s['rss_bytes'] for s in samples), default=None),
+            controller_lifetime_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
+            scope='Linux controller process including observer, identity checks and evidence export; separate from fixture cgroup. RSS is sampled; lifetime peak can include preceding trials.',
+            samples=samples)
+        save(directory/'observer-controller.json', report)
+        result['evidence_sha256']['observer-controller.json'] = sha(directory/'observer-controller.json')
     if sampler:
         result['evidence_sha256']['host-io.json.gz'] = sha(directory/'host-io.json.gz')
     return result
 
 
-def run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler=None):
+def run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler=None, controller_samples=None):
     definition = config['arms'][arm]
     verify_identities(config)
     command = [sys.executable, str(Path(definition['harness'])/'e2e/native/performance/matrix.py'),
@@ -201,6 +216,9 @@ def run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler=Non
             deadline = time.monotonic()+720
             while child.poll() is None:
                 monitor.check()
+                if controller_samples is not None:
+                    resident = int(Path('/proc/self/statm').read_text().split()[1])*os.sysconf('SC_PAGE_SIZE')
+                    controller_samples.append(dict(at_ms=time.time()*1000, rss_bytes=resident, cpu_seconds=time.process_time()))
                 if sampler:
                     sampler.bind_container('sb-scale-'+str(child.pid)+'-1')
                     sampler.check()

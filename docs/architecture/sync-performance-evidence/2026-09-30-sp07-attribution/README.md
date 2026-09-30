@@ -19,3 +19,10 @@ The [SP07 protocol](../../sync-performance-sp07.md) defines the separate six-tri
 host-sampler control before launch. `source-paths.json` binds the exact inspected
 PG/Neon source files to component pins; later sibling-repository revisions are not
 used as runtime evidence. New experiment results remain pending.
+
+The first functional smoke pair is retained in `initial-functional-smoke/` and
+is excluded from performance denominators. `initial-observer-controls/` preserves
+the subsequent admission hold with **zero measured trials**: controller CPU/RSS
+accounting was added before full-duration measurement. The original waiting
+manifest was not reset or reclassified. `admission-hold.json` records the reason.
+The subsequent campaign uses a new frozen controller and distinct output names.

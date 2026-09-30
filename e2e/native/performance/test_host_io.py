@@ -61,11 +61,13 @@ class HostIOTests(unittest.TestCase):
     def test_arm_selection_and_evidence_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory=Path(tmp)/'trial'
-            def measured(*args):return dict(evidence_sha256={})
+            def measured(*args):
+                directory.mkdir(exist_ok=True)
+                return dict(evidence_sha256={})
             with patch('compare.run_measured_trial',side_effect=measured),patch('host_io.observe',return_value=self.sample()):
                 off=run_trial(dict(host_io='candidate'),'predecessor',{},directory,None,{})
-                self.assertEqual(off['evidence_sha256'],{})
-                self.assertFalse(directory.exists())
+                self.assertIn('observer-controller.json',off['evidence_sha256'])
+                self.assertFalse((directory/'host-io.json.gz').exists())
                 on=run_trial(dict(host_io='candidate'),'candidate',{},directory,None,{})
                 self.assertIn('host-io.json.gz',on['evidence_sha256'])
 
