@@ -1,11 +1,21 @@
 # SP06 — Source capacity and a separate load profile
 
-Status: **source input qualified; higher-load full-stack comparison pending**,
-2026-09-27. SP05 merged as `d2debe471d749e162ec96a29f2edd3e4ee7e5478`.
+Status: **source qualified; higher-load main complete with an 8-core input
+shortfall; profiler controls restarted**, 2026-09-30. SP05 merged as
+`d2debe471d749e162ec96a29f2edd3e4ee7e5478`.
 The [78-trial source/control review](sync-performance-evidence/2026-09-27-sp06/README.md)
-selects eight clients with measured observer cost. No end-to-end throughput
-qualification or runtime speedup is claimed.
-Tracks [#107](https://github.com/supabricks/platform/issues/107).
+selects eight clients with measured observer cost. The
+[higher-load checkpoint](sync-performance-evidence/2026-09-30-sp06-full-stack/README.md)
+adds 12 accepted trials: all six 16-core trials deliver about 1,249 rows/s with
+p95 below 3.77 seconds, but two accepted 8-core trials supply only 737–839 rows/s.
+All pass correctness and cleanup; the input misses remain in the denominator.
+The first profiler-control campaign failed on disk exhaustion, with no final
+measurement/cleanup receipt. Its evidence is preserved; a fresh 12-trial control
+campaign uses the unchanged frozen protocol after disk recovery. No complete
+end-to-end qualification or runtime speedup is claimed.
+Tracks [#107](https://github.com/supabricks/platform/issues/107),
+[#126 (disk exhaustion)](https://github.com/supabricks/platform/issues/126), and
+[#127 (durable commit slowdown)](https://github.com/supabricks/platform/issues/127).
 
 This is a measurement-enabling slice. The accepted SP04/SP05 runtime, dependencies,
 worker profiler, durability settings and two-row source transaction remain unchanged.
