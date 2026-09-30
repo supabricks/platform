@@ -109,3 +109,5 @@ remains beside its owning record in the existing evidence directories.
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)
 - [SP05: maintenance assessment and conditional deferral](sync-performance-sp05.md)
 - [SP06: source qualification, completed measurements and attribution limits](sync-performance-sp06.md)
+
+- [SP07: source commit attribution and diagnostic controls](sync-performance-sp07.md)

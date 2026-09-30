@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07–SP12 planned**, 2026-09-30.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic in progress; SP08–SP12 planned**, 2026-09-30.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -509,6 +509,10 @@ and a scoped SP07 issue. No 1,000-row/s replication claim is allowed when the
 source supplied less than the claimed rate.
 
 ### SP07 — Fix a proven source bottleneck, conditionally
+
+**Diagnostic in progress.** The [SP07 protocol](../architecture/sync-performance-sp07.md)
+traces the retained commit/flush slowdown and freezes three 8-core pairs to qualify
+read-only host I/O attribution. No runtime intervention is selected yet.
 
 Proceed only with SP06 evidence. Map waits to the exact PG/Neon/safekeeper path
 before modifying it. If concurrency alone supplies sufficient input, record this

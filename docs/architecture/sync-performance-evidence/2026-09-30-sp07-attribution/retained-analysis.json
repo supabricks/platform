@@ -1,0 +1,883 @@
+{
+  "qualified-main": {
+    "source_manifest_sha256": "8ef1481c9d7f8df80f425164df7c8e3e24352104cbe669f54762807f039059bf",
+    "trials": [
+      {
+        "directory": "01-attempt01-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 1,
+        "arm": "candidate",
+        "source_rows_s": 1249.597,
+        "capture_commit_mean_ms": 7.765328882777703,
+        "source_commit_ms": {
+          "p50": 11.106,
+          "p95": 19.241,
+          "p99": 24.236,
+          "total_ms": 2207477.333
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.1704706885121697,
+          "IO/WalSync": 10.086182403636707,
+          "IO/WalWrite": 0.02841178141869495,
+          "IPC/SyncRep": 58.56615209773653,
+          "LWLock/WALWrite": 30.542665025097072,
+          "running/running": 0.6061180035988256
+        },
+        "active_wait_samples": 10559,
+        "covered_seconds": 299.21064453125,
+        "safekeeper_flush_mean_ms": 4.203289151614657,
+        "safekeeper_flush_calls_s": 204.7186526266867,
+        "pg_wal_delta": {
+          "records": 590955.0,
+          "full_page_images": 306.0,
+          "bytes": 44704594.0,
+          "buffer_full": 0.0,
+          "writes": 68455.0,
+          "syncs": 68446.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "01-attempt01-predecessor",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 1,
+        "arm": "predecessor",
+        "source_rows_s": 1249.641,
+        "capture_commit_mean_ms": 7.76766031416616,
+        "source_commit_ms": {
+          "p50": 11.112,
+          "p95": 19.272,
+          "p99": 24.243,
+          "total_ms": 2208033.394
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.10379316852236271,
+          "IO/WalSync": 10.077373089262124,
+          "IO/WalWrite": 0.028307227778826195,
+          "IPC/SyncRep": 59.05831288922438,
+          "LWLock/WALWrite": 30.326476693715794,
+          "running/running": 0.4057369314965088
+        },
+        "active_wait_samples": 10598,
+        "covered_seconds": 299.9980834960937,
+        "safekeeper_flush_mean_ms": 4.200553985847456,
+        "safekeeper_flush_calls_s": 204.20463786328716,
+        "pg_wal_delta": {
+          "records": 597300.0,
+          "full_page_images": 315.0,
+          "bytes": 45154932.0,
+          "buffer_full": 0.0,
+          "writes": 68705.0,
+          "syncs": 68696.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "02-attempt02-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 3,
+        "arm": "candidate",
+        "source_rows_s": 1249.227,
+        "capture_commit_mean_ms": 7.786107945121127,
+        "source_commit_ms": {
+          "p50": 11.127,
+          "p95": 19.217,
+          "p99": 24.956,
+          "total_ms": 2209143.414
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.1905850962454736,
+          "IO/WalInitSync": 0.01905850962454736,
+          "IO/WalSync": 10.20583190394511,
+          "IO/WalWrite": 0.02858776443682104,
+          "IPC/SyncRep": 57.956927768248526,
+          "LWLock/WALWrite": 31.036782923575377,
+          "running/running": 0.5622260339241472
+        },
+        "active_wait_samples": 10494,
+        "covered_seconds": 300.04553442382814,
+        "safekeeper_flush_mean_ms": 4.2029599337447445,
+        "safekeeper_flush_calls_s": 204.1290170094129,
+        "pg_wal_delta": {
+          "records": 598257.0,
+          "full_page_images": 316.0,
+          "bytes": 45112775.0,
+          "buffer_full": 0.0,
+          "writes": 68041.0,
+          "syncs": 68032.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "02-attempt02-predecessor",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 3,
+        "arm": "predecessor",
+        "source_rows_s": 1249.562,
+        "capture_commit_mean_ms": 7.803674276484914,
+        "source_commit_ms": {
+          "p50": 11.102,
+          "p95": 19.364,
+          "p99": 24.384,
+          "total_ms": 2208404.22
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.08541330549492265,
+          "IO/WalSync": 10.211635190281864,
+          "IO/WalWrite": 0.028471101831640883,
+          "IPC/SyncRep": 58.05257663471576,
+          "LWLock/WALWrite": 31.090443200151846,
+          "running/running": 0.5314605675239632
+        },
+        "active_wait_samples": 10537,
+        "covered_seconds": 300.0907998046875,
+        "safekeeper_flush_mean_ms": 4.20396909831224,
+        "safekeeper_flush_calls_s": 204.35481540891308,
+        "pg_wal_delta": {
+          "records": 595022.0,
+          "full_page_images": 309.0,
+          "bytes": 45005711.0,
+          "buffer_full": 0.0,
+          "writes": 68734.0,
+          "syncs": 68724.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "03-attempt03-candidate",
+        "accepted": false,
+        "cpus": 8,
+        "repeat": 3,
+        "arm": "candidate",
+        "source_rows_s": 1198.152,
+        "capture_commit_mean_ms": 7.883327841851827,
+        "source_commit_ms": {
+          "p50": 11.643,
+          "p95": 20.226,
+          "p99": 27.111,
+          "total_ms": 2207772.571
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.14161631419939577,
+          "IO/WalInitSync": 0.00944108761329305,
+          "IO/WalSync": 9.441087613293051,
+          "IO/WalWrite": 0.00944108761329305,
+          "IPC/SyncRep": 57.958836858006045,
+          "IPC/XactGroupUpdate": 0.00944108761329305,
+          "LWLock/WALWrite": 31.920317220543808,
+          "LWLock/XactSLRU": 0.00944108761329305,
+          "running/running": 0.5003776435045317
+        },
+        "active_wait_samples": 10592,
+        "covered_seconds": 299.1506091308594,
+        "safekeeper_flush_mean_ms": 4.34425612768183,
+        "safekeeper_flush_calls_s": 191.95682123742776,
+        "pg_wal_delta": {
+          "records": 574158.0,
+          "full_page_images": 312.0,
+          "bytes": 43415068.0,
+          "buffer_full": 0.0,
+          "writes": 62070.0,
+          "syncs": 62062.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "03-attempt03-predecessor",
+        "accepted": false,
+        "cpus": 8,
+        "repeat": 3,
+        "arm": "predecessor",
+        "source_rows_s": 1248.064,
+        "capture_commit_mean_ms": 7.6012091648697515,
+        "source_commit_ms": {
+          "p50": 11.121,
+          "p95": 19.257,
+          "p99": 23.947,
+          "total_ms": 2197340.3
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.11410097936673956,
+          "IO/WalSync": 10.097936673956452,
+          "IO/WalWrite": 0.009508414947228297,
+          "IPC/SyncRep": 60.77778834268327,
+          "LWLock/WALWrite": 28.65836265094609,
+          "running/running": 0.34230293810021867
+        },
+        "active_wait_samples": 10517,
+        "covered_seconds": 300.30228076171875,
+        "safekeeper_flush_mean_ms": 4.173320886526702,
+        "safekeeper_flush_calls_s": 204.10101396676853,
+        "pg_wal_delta": {
+          "records": 597091.0,
+          "full_page_images": 320.0,
+          "bytes": 45116875.0,
+          "buffer_full": 0.0,
+          "writes": 68084.0,
+          "syncs": 68075.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "03-attempt04-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 3,
+        "arm": "candidate",
+        "source_rows_s": 1248.243,
+        "capture_commit_mean_ms": 7.598601843770908,
+        "source_commit_ms": {
+          "p50": 11.154,
+          "p95": 19.245,
+          "p99": 23.822,
+          "total_ms": 2196838.102
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.1454192922927775,
+          "IO/WalInitSync": 0.009694619486185167,
+          "IO/WalSync": 10.3926320891905,
+          "IPC/SyncRep": 58.187106156083374,
+          "LWLock/WALWrite": 30.857973824527388,
+          "running/running": 0.407174018419777
+        },
+        "active_wait_samples": 10315,
+        "covered_seconds": 300.4069135742188,
+        "safekeeper_flush_mean_ms": 4.166656345209546,
+        "safekeeper_flush_calls_s": 204.05322657414612,
+        "pg_wal_delta": {
+          "records": 599229.0,
+          "full_page_images": 316.0,
+          "bytes": 45245749.0,
+          "buffer_full": 0.0,
+          "writes": 67838.0,
+          "syncs": 67829.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "03-attempt04-predecessor",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 3,
+        "arm": "predecessor",
+        "source_rows_s": 1247.523,
+        "capture_commit_mean_ms": 7.619238872121904,
+        "source_commit_ms": {
+          "p50": 11.126,
+          "p95": 19.18,
+          "p99": 23.666,
+          "total_ms": 2195415.981
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.09563886763580719,
+          "IO/WalInitSync": 0.009563886763580718,
+          "IO/WalInitWrite": 0.009563886763580718,
+          "IO/WalSync": 10.175975516449885,
+          "IO/WalWrite": 0.028691660290742157,
+          "IPC/SyncRep": 58.02410099464422,
+          "LWLock/WALWrite": 31.11132364192808,
+          "running/running": 0.545141545524101
+        },
+        "active_wait_samples": 10456,
+        "covered_seconds": 300.2154609375,
+        "safekeeper_flush_mean_ms": 4.1708530593512885,
+        "safekeeper_flush_calls_s": 204.17336205333154,
+        "pg_wal_delta": {
+          "records": 595613.0,
+          "full_page_images": 315.0,
+          "bytes": 45051497.0,
+          "buffer_full": 0.0,
+          "writes": 68112.0,
+          "syncs": 68102.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "04-attempt05-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 2,
+        "arm": "candidate",
+        "source_rows_s": 737.593,
+        "capture_commit_mean_ms": 13.782544227312862,
+        "source_commit_ms": {
+          "p50": 19.771,
+          "p95": 32.978,
+          "p99": 46.894,
+          "total_ms": 2281981.873
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.10016390457111637,
+          "IO/WalSync": 9.697687124385357,
+          "IO/WalWrite": 0.009105809506465124,
+          "IPC/SyncRep": 54.82607903842651,
+          "LWLock/SyncRep": 0.009105809506465124,
+          "LWLock/WALWrite": 35.11200145692952,
+          "running/running": 0.24585685667455837
+        },
+        "active_wait_samples": 10982,
+        "covered_seconds": 299.5363857421875,
+        "safekeeper_flush_mean_ms": 7.373229778288537,
+        "safekeeper_flush_calls_s": 114.74065133970593,
+        "pg_wal_delta": {
+          "records": 361746.0,
+          "full_page_images": 301.0,
+          "bytes": 27727334.0,
+          "buffer_full": 0.0,
+          "writes": 36844.0,
+          "syncs": 36839.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "04-attempt05-predecessor",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 2,
+        "arm": "predecessor",
+        "source_rows_s": 839.428,
+        "capture_commit_mean_ms": 12.052847822473524,
+        "source_commit_ms": {
+          "p50": 17.042,
+          "p95": 31.43,
+          "p99": 44.055,
+          "total_ms": 2263054.568
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.0735496920106647,
+          "IO/WalSync": 9.745334191413074,
+          "IO/WalWrite": 0.009193711501333088,
+          "IPC/SyncRep": 54.987588489473204,
+          "LWLock/WALWrite": 34.74303576353774,
+          "running/running": 0.44129815206398826
+        },
+        "active_wait_samples": 10877,
+        "covered_seconds": 299.35527392578126,
+        "safekeeper_flush_mean_ms": 6.387796917188099,
+        "safekeeper_flush_calls_s": 132.43127298244588,
+        "pg_wal_delta": {
+          "records": 408230.0,
+          "full_page_images": 313.0,
+          "bytes": 31130116.0,
+          "buffer_full": 0.0,
+          "writes": 43170.0,
+          "syncs": 43164.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "05-attempt06-candidate",
+        "accepted": false,
+        "cpus": 16,
+        "repeat": 2,
+        "arm": "candidate",
+        "source_rows_s": 647.416,
+        "capture_commit_mean_ms": 15.793325721152788,
+        "source_commit_ms": {
+          "p50": 22.536,
+          "p95": 36.23,
+          "p99": 54.44,
+          "total_ms": 2298240.259
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.0718132854578097,
+          "IO/WalInitSync": 0.008976660682226212,
+          "IO/WalSync": 9.344703770197487,
+          "IPC/SyncRep": 57.37881508078995,
+          "LWLock/WALWrite": 32.87253141831239,
+          "running/running": 0.3231597845601436
+        },
+        "active_wait_samples": 11140,
+        "covered_seconds": 299.77445483398435,
+        "safekeeper_flush_mean_ms": 8.542479427149598,
+        "safekeeper_flush_calls_s": 98.54075130037117,
+        "pg_wal_delta": {
+          "records": 315694.0,
+          "full_page_images": 285.0,
+          "bytes": 24337062.0,
+          "buffer_full": 0.0,
+          "writes": 31754.0,
+          "syncs": 31750.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "05-attempt06-predecessor",
+        "accepted": false,
+        "cpus": 16,
+        "repeat": 2,
+        "arm": "predecessor",
+        "source_rows_s": 1249.749,
+        "capture_commit_mean_ms": 7.63516332564223,
+        "source_commit_ms": {
+          "p50": 11.022,
+          "p95": 19.249,
+          "p99": 24.185,
+          "total_ms": 2199834.52
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.11471178663607685,
+          "IO/WalSync": 10.314501481693911,
+          "IO/WalWrite": 0.009559315553006405,
+          "IPC/SyncRep": 58.474333237740176,
+          "LWLock/WALWrite": 30.513335245196444,
+          "running/running": 0.5735589331803843
+        },
+        "active_wait_samples": 10461,
+        "covered_seconds": 299.10293920898437,
+        "safekeeper_flush_mean_ms": 4.180798896954442,
+        "safekeeper_flush_calls_s": 206.70809910296882,
+        "pg_wal_delta": {
+          "records": 598394.0,
+          "full_page_images": 315.0,
+          "bytes": 45120425.0,
+          "buffer_full": 0.0,
+          "writes": 69735.0,
+          "syncs": 69727.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "05-attempt07-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 2,
+        "arm": "candidate",
+        "source_rows_s": 1249.566,
+        "capture_commit_mean_ms": 7.673626978794792,
+        "source_commit_ms": {
+          "p50": 11.008,
+          "p95": 19.216,
+          "p99": 23.838,
+          "total_ms": 2200726.204
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.17162471395881007,
+          "IO/WalInitSync": 0.009534706331045004,
+          "IO/WalSync": 10.621662852784134,
+          "IO/WalWrite": 0.01906941266209001,
+          "IPC/SyncRep": 57.89473684210526,
+          "LWLock/WALWrite": 30.778032036613272,
+          "running/running": 0.5053394355453852
+        },
+        "active_wait_samples": 10488,
+        "covered_seconds": 299.2104211425781,
+        "safekeeper_flush_mean_ms": 4.18351319041855,
+        "safekeeper_flush_calls_s": 206.98476932555934,
+        "pg_wal_delta": {
+          "records": 597361.0,
+          "full_page_images": 317.0,
+          "bytes": 45093831.0,
+          "buffer_full": 0.0,
+          "writes": 69949.0,
+          "syncs": 69941.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "05-attempt07-predecessor",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 2,
+        "arm": "predecessor",
+        "source_rows_s": 1249.689,
+        "capture_commit_mean_ms": 7.692511613321684,
+        "source_commit_ms": {
+          "p50": 11.027,
+          "p95": 19.313,
+          "p99": 24.302,
+          "total_ms": 2201451.046
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.1333079413445058,
+          "IO/WalInitSync": 0.009521995810321843,
+          "IO/WalSync": 10.312321462578556,
+          "IO/WalWrite": 0.009521995810321843,
+          "IPC/SyncRep": 61.09312511902495,
+          "LWLock/WALWrite": 27.88992572843268,
+          "running/running": 0.5522757569986669
+        },
+        "active_wait_samples": 10502,
+        "covered_seconds": 299.25413037109377,
+        "safekeeper_flush_mean_ms": 4.1800049133431605,
+        "safekeeper_flush_calls_s": 206.53683183371763,
+        "pg_wal_delta": {
+          "records": 591952.0,
+          "full_page_images": 308.0,
+          "bytes": 44778364.0,
+          "buffer_full": 0.0,
+          "writes": 69768.0,
+          "syncs": 69760.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "06-attempt08-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 1,
+        "arm": "candidate",
+        "source_rows_s": 1249.009,
+        "capture_commit_mean_ms": 7.552739301687905,
+        "source_commit_ms": {
+          "p50": 11.084,
+          "p95": 19.078,
+          "p99": 23.706,
+          "total_ms": 2191500.549
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.20147750167897918,
+          "IO/WalSync": 10.438453420320446,
+          "IO/WalWrite": 0.009594166746618057,
+          "IPC/SyncRep": 59.08087882567399,
+          "LWLock/WALWrite": 29.57881607982347,
+          "running/running": 0.6907800057565
+        },
+        "active_wait_samples": 10423,
+        "covered_seconds": 299.28073779296875,
+        "safekeeper_flush_mean_ms": 4.1579062830875815,
+        "safekeeper_flush_calls_s": 206.43827750364332,
+        "pg_wal_delta": {
+          "records": 596667.0,
+          "full_page_images": 311.0,
+          "bytes": 45031268.0,
+          "buffer_full": 0.0,
+          "writes": 69255.0,
+          "syncs": 69246.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "06-attempt08-predecessor",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 1,
+        "arm": "predecessor",
+        "source_rows_s": 1249.085,
+        "capture_commit_mean_ms": 7.5243971706195865,
+        "source_commit_ms": {
+          "p50": 11.04,
+          "p95": 19.15,
+          "p99": 23.604,
+          "total_ms": 2189612.136
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.09582215408202377,
+          "IO/WalSync": 10.44461479494059,
+          "IO/WalWrite": 0.009582215408202376,
+          "IPC/SyncRep": 58.566500574932924,
+          "LWLock/WALWrite": 30.40436949022614,
+          "running/running": 0.47911077041011885
+        },
+        "active_wait_samples": 10436,
+        "covered_seconds": 300.21887036132813,
+        "safekeeper_flush_mean_ms": 4.146687380934076,
+        "safekeeper_flush_calls_s": 207.1288854200221,
+        "pg_wal_delta": {
+          "records": 596783.0,
+          "full_page_images": 313.0,
+          "bytes": 45144494.0,
+          "buffer_full": 0.0,
+          "writes": 69935.0,
+          "syncs": 69926.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      }
+    ]
+  },
+  "controls": {
+    "source_manifest_sha256": "ef67fcb75db2fee2be95c6a6602fdf3a22da9360404911f1861d7e7de13d0130",
+    "trials": [
+      {
+        "directory": "01-attempt01-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 1,
+        "arm": "candidate",
+        "source_rows_s": 1245.437,
+        "capture_commit_mean_ms": 7.694713587890625,
+        "source_commit_ms": {
+          "p50": 11.111,
+          "p95": 19.584,
+          "p99": 24.999,
+          "total_ms": 2209615.686
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.20956372642408078,
+          "IO/WalSync": 10.316250714421795,
+          "IO/WalWrite": 0.009525623928367309,
+          "IPC/SyncRep": 58.74452276624119,
+          "LWLock/WALWrite": 30.139074109354162,
+          "running/running": 0.5810630596304058
+        },
+        "active_wait_samples": 10498,
+        "covered_seconds": 299.51729833984376,
+        "safekeeper_flush_mean_ms": 4.206427265190444,
+        "safekeeper_flush_calls_s": 202.646058629749,
+        "pg_wal_delta": {
+          "records": 595312.0,
+          "full_page_images": 315.0,
+          "bytes": 44998856.0,
+          "buffer_full": 0.0,
+          "writes": 67197.0,
+          "syncs": 67188.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "02-attempt02-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 3,
+        "arm": "candidate",
+        "source_rows_s": 1248.505,
+        "capture_commit_mean_ms": 7.689654979450209,
+        "source_commit_ms": {
+          "p50": 11.12,
+          "p95": 19.337,
+          "p99": 24.382,
+          "total_ms": 2207072.874
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.20934437149110285,
+          "IO/WalInitSync": 0.009515653249595584,
+          "IO/WalSync": 10.096108097820915,
+          "IO/WalWrite": 0.009515653249595584,
+          "IPC/SyncRep": 59.29203539823009,
+          "LWLock/WALWrite": 29.80302597773337,
+          "running/running": 0.5804548482253307
+        },
+        "active_wait_samples": 10509,
+        "covered_seconds": 299.60315185546875,
+        "safekeeper_flush_mean_ms": 4.204787718670517,
+        "safekeeper_flush_calls_s": 203.35233332054787,
+        "pg_wal_delta": {
+          "records": 599905.0,
+          "full_page_images": 320.0,
+          "bytes": 45273247.0,
+          "buffer_full": 0.0,
+          "writes": 67679.0,
+          "syncs": 67670.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "03-attempt03-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 3,
+        "arm": "candidate",
+        "source_rows_s": 1242.011,
+        "capture_commit_mean_ms": 7.5146151320629,
+        "source_commit_ms": {
+          "p50": 11.212,
+          "p95": 19.38,
+          "p99": 24.192,
+          "total_ms": 2195728.974
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.15544544836296512,
+          "IO/WalSync": 10.00680073836588,
+          "IO/WalWrite": 0.02914602156805596,
+          "IPC/SyncRep": 60.254541921694354,
+          "LWLock/WALWrite": 28.96143009812494,
+          "running/running": 0.5926357718838046
+        },
+        "active_wait_samples": 10293,
+        "covered_seconds": 299.8398598632813,
+        "safekeeper_flush_mean_ms": 4.18048609700861,
+        "safekeeper_flush_calls_s": 202.80492402753666,
+        "pg_wal_delta": {
+          "records": 595150.0,
+          "full_page_images": 308.0,
+          "bytes": 44912169.0,
+          "buffer_full": 0.0,
+          "writes": 67205.0,
+          "syncs": 67195.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "04-attempt04-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 2,
+        "arm": "candidate",
+        "source_rows_s": 1245.006,
+        "capture_commit_mean_ms": 7.486631546259908,
+        "source_commit_ms": {
+          "p50": 11.176,
+          "p95": 19.313,
+          "p99": 23.805,
+          "total_ms": 2195922.374
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.2380498952580461,
+          "IO/WalInitWrite": 0.009521995810321843,
+          "IO/WalSync": 9.855265663683108,
+          "IO/WalWrite": 0.009521995810321843,
+          "IPC/SyncRep": 60.23614549609598,
+          "LWLock/WALWrite": 29.08969720053323,
+          "running/running": 0.5617977528089888
+        },
+        "active_wait_samples": 10502,
+        "covered_seconds": 300.8735346679687,
+        "safekeeper_flush_mean_ms": 4.17342965416521,
+        "safekeeper_flush_calls_s": 202.76293183221858,
+        "pg_wal_delta": {
+          "records": 597316.0,
+          "full_page_images": 321.0,
+          "bytes": 45108240.0,
+          "buffer_full": 0.0,
+          "writes": 67376.0,
+          "syncs": 67367.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "05-attempt05-candidate",
+        "accepted": true,
+        "cpus": 16,
+        "repeat": 2,
+        "arm": "candidate",
+        "source_rows_s": 1246.935,
+        "capture_commit_mean_ms": 7.686078308977036,
+        "source_commit_ms": {
+          "p50": 11.118,
+          "p95": 19.426,
+          "p99": 24.639,
+          "total_ms": 2209025.747
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.17154293338416088,
+          "IO/WalInitSync": 0.009530162965786714,
+          "IO/WalSync": 10.254455351186506,
+          "IO/WalWrite": 0.009530162965786714,
+          "IPC/SyncRep": 57.80043838749643,
+          "LWLock/WALWrite": 31.049270942533116,
+          "LWLock/XactSLRU": 0.009530162965786714,
+          "running/running": 0.6957018965024302
+        },
+        "active_wait_samples": 10493,
+        "covered_seconds": 300.8505051269531,
+        "safekeeper_flush_mean_ms": 4.2068452225124915,
+        "safekeeper_flush_calls_s": 202.36628811478633,
+        "pg_wal_delta": {
+          "records": 596415.0,
+          "full_page_images": 305.0,
+          "bytes": 45028946.0,
+          "buffer_full": 0.0,
+          "writes": 67404.0,
+          "syncs": 67395.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      },
+      {
+        "directory": "06-attempt06-candidate",
+        "accepted": true,
+        "cpus": 8,
+        "repeat": 1,
+        "arm": "candidate",
+        "source_rows_s": 1243.044,
+        "capture_commit_mean_ms": 7.509851216907601,
+        "source_commit_ms": {
+          "p50": 11.19,
+          "p95": 19.322,
+          "p99": 24.087,
+          "total_ms": 2196479.628
+        },
+        "active_wait_share_percent": {
+          "Client/ClientRead": 0.17113519680547631,
+          "IO/WalSync": 10.23008176459403,
+          "IO/WalWrite": 0.019015021867275148,
+          "IPC/SyncRep": 58.9085377448184,
+          "LWLock/WALWrite": 30.110287126830197,
+          "running/running": 0.5609431450846168
+        },
+        "active_wait_samples": 10518,
+        "covered_seconds": 299.9125185546875,
+        "safekeeper_flush_mean_ms": 4.183634544287334,
+        "safekeeper_flush_calls_s": 202.5624015054989,
+        "pg_wal_delta": {
+          "records": 595463.0,
+          "full_page_images": 315.0,
+          "bytes": 44962789.0,
+          "buffer_full": 0.0,
+          "writes": 67313.0,
+          "syncs": 67304.0,
+          "write_ms": 0.0,
+          "sync_ms": 0.0
+        },
+        "pg_wal_timing_available": false,
+        "scope": "Sampled active waits and async flush wall time include scheduling; percentages are not exact transaction time. Disabled PG WAL timing is unavailable, not zero cost."
+      }
+    ]
+  }
+}

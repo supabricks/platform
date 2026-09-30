@@ -64,7 +64,7 @@ def archive_stopped(source, destination, allow_incomplete):
         for folder in sorted(source.glob('*-attempt*-*')):
             if not folder.is_dir():
                 continue
-            paths = [folder/'matrix.json']
+            paths = [folder/'matrix.json', folder/'host-io.json.gz']
             for trial in folder.glob('*-cpu*-rate*-r*'):
                 paths.extend(trial/name for name in ('trial.json', 'cleanup.json', 'profile.json.gz'))
             for path in paths:
