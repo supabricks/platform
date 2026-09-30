@@ -1,18 +1,17 @@
 # SP06 — Source capacity and a separate load profile
 
-Status: **source qualified; higher-load main complete with an 8-core input
-shortfall; profiler controls restarted**, 2026-09-30. SP05 merged as
-`d2debe471d749e162ec96a29f2edd3e4ee7e5478`.
+Status: **required measurements and review complete; source capacity qualified;
+intermittent 8-core full-stack input shortfall unresolved**, 2026-09-30.
+SP05 merged as `d2debe471d749e162ec96a29f2edd3e4ee7e5478`.
 The [78-trial source/control review](sync-performance-evidence/2026-09-27-sp06/README.md)
-selects eight clients with measured observer cost. The
-[higher-load checkpoint](sync-performance-evidence/2026-09-30-sp06-full-stack/README.md)
-adds 12 accepted trials: all six 16-core trials deliver about 1,249 rows/s with
-p95 below 3.77 seconds, but two accepted 8-core trials supply only 737–839 rows/s.
-All pass correctness and cleanup; the input misses remain in the denominator.
-The first profiler-control campaign failed on disk exhaustion, with no final
-measurement/cleanup receipt. Its evidence is preserved; a fresh 12-trial control
-campaign uses the unchanged frozen protocol after disk recovery. No complete
-end-to-end qualification or runtime speedup is claimed.
+selects eight clients. The [12-trial higher-load main comparison](sync-performance-evidence/2026-09-30-sp06-full-stack/README.md)
+retains two accepted 8-core input misses (737–839 rows/s). The
+[12 final activation controls and disposition](sync-performance-evidence/2026-09-30-sp06-controls/README.md)
+all pass at 1,242–1,249 actual rows/s and 3.71–3.77-second p95. Total: **102
+accepted trials**, with recoverable failed/contended evidence preserved.
+Median profiler cost is 0.15–0.29% input and 5.1–6.3% CPU; it remains disclosed.
+No runtime speedup, universal 8-core capacity or release qualification is claimed.
+PR #121 awaits required checks and merge review.
 Tracks [#107](https://github.com/supabricks/platform/issues/107),
 [#126 (disk exhaustion)](https://github.com/supabricks/platform/issues/126), and
 [#127 (durable commit slowdown)](https://github.com/supabricks/platform/issues/127).

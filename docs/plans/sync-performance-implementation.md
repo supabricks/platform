@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurement in progress; SP07–SP12 planned**, 2026-09-26.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07–SP12 planned**, 2026-09-30.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -480,9 +480,13 @@ record a deferral and exercise these cases in SP11.
 
 ### SP06 — Source capacity and a separate target-load profile
 
-**Measurement in progress.** The [frozen protocol and attribution limits](../architecture/sync-performance-sp06.md)
-describe source-only concurrency screening, profiler controls and the separate
-full-stack profile. No source-capacity or replication-speedup decision is accepted yet.
+**Measurements and review complete; pending merge.** The [protocol and final disposition](../architecture/sync-performance-sp06.md)
+record 102 accepted trials. Eight clients independently supply the source floor;
+all 12 final controls supply 1,242–1,249 rows/s at 3.71–3.77-second p95. Two earlier
+accepted 8-core main trials remain below target as durable commit waits increase.
+Their root cause remains unresolved in #127. This is a measurement-enabling slice,
+not a runtime speedup or blanket throughput qualification. Investigate that limit
+before choosing any conditional SP07 intervention.
 
 Keep the mandatory four-client comparison unchanged. Add source-only runs with
 4, 8 and 16 clients, disjoint key ranges, unchanged two-row transactions and the
