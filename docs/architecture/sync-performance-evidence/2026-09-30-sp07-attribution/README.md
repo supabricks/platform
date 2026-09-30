@@ -26,3 +26,15 @@ the subsequent admission hold with **zero measured trials**: controller CPU/RSS
 accounting was added before full-duration measurement. The original waiting
 manifest was not reset or reclassified. `admission-hold.json` records the reason.
 The subsequent campaign uses a new frozen controller and distinct output names.
+
+The revised functional pair (`functional-smoke-02/`) also passed. Both arms
+retain controller CPU/RSS samples; the candidate additionally retains a bound
+container cgroup and host process I/O. `functional-review.json` verifies that
+analysis works, but its short-run values are **not** performance results.
+The six full-duration trials are running or waiting under `observer-controls-02`
+with frozen controller `5c79acf` and unchanged workload harness `be4701c`.
+
+`run_campaign_02.py` and `review_when_complete.py` are exact launch/automatic
+analysis recipes, originally located in `build/sp07-20260930/` (not executable
+from this archive). The latter recomputes results after all trials are archived;
+it does not automatically assert causality or select a source patch.
