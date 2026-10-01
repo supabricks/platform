@@ -1,7 +1,11 @@
 # SP08: observe durable capture before admission
 
 Status: implementation and qualification in progress; no performance decision.
-Tracked in [#131](https://github.com/supabricks/platform/issues/131).
+Tracked in [#131](https://github.com/supabricks/platform/issues/131); draft
+[PR #132](https://github.com/supabricks/platform/pull/132) is stacked on SP07.
+[Preflight receipts](sync-performance-evidence/2026-10-01-sp08-preflight/README.md):
+207 Rust tests and 71 accounting tests pass; native lifecycle and performance
+qualification remain pending.
 
 The accepted SP04 runtime, retained through SP07, schedules continuous work before
 ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;
