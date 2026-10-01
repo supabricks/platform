@@ -138,6 +138,15 @@ def run(config_path, root):
 
     try:
         verify()
+        # Exercise the actual installation parser before any expensive fixture.
+        # Payload hashing alone does not establish release-schema compatibility.
+        installations = {}
+        for key, arm in config['arms'].items():
+            result = json.loads(subprocess.check_output(
+                [str(Path(arm['release'])/'bin/supabricks'), 'installation', 'verify'], text=True))
+            assert result['verified'] and result['identity'] == arm['identity']['release_identity']
+            installations[key] = result
+        save(root/'installation-preflight.json', installations)
         component()
         bridge = phase('common-refactor-controls', 'accepted', 'common', '8:1250', 8, 300, 60)
         # Equivalence screen flags material drift; never discard unfavorable runs.

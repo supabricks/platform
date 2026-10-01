@@ -1,0 +1,47 @@
+{
+  "status": "error",
+  "scope": "local scaling benchmark; not EC2 emulation or release qualification",
+  "parameters": {
+    "profile": true,
+    "release": "/release",
+    "report": "/reports/trial.json",
+    "scratch": "/scratch",
+    "rate": 1250,
+    "seconds": 300,
+    "baseline": 5,
+    "warmup": 60,
+    "clients": 8,
+    "rows": 10000
+  },
+  "release_identity": "eebc24dd4031a4c316a6a207c22f5e5278f5f049a54c9c5ebffdfe38c608dba1",
+  "binary_sha256": "d0df9b1150e15f25a178cec70c2dcc3a621f1855bf94589093fe1c4d8550262a",
+  "affinity": [
+    0,
+    1,
+    2,
+    3,
+    8,
+    9,
+    10,
+    11
+  ],
+  "cgroup_limits": {
+    "cpu.stat": "usage_usec 229271\nuser_usec 167785\nsystem_usec 61486\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "io.stat": "259:2 rbytes=12697600 wbytes=0 rios=732 wios=0 dbytes=0 dios=0\n",
+    "cpu.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=480\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=479\n",
+    "io.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=21009\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=21009\n",
+    "memory.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+    "cpu.max": "max 100000",
+    "cpuset.cpus.effective": "0-3,8-11",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "memory.current": "59731968",
+    "memory.peak": "59731968"
+  },
+  "checks": [
+    "owned_runtime_stopped"
+  ],
+  "error_type": "CalledProcessError",
+  "profile_error": "OperationalError"
+}

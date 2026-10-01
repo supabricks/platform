@@ -1,6 +1,6 @@
 # SP08: observe durable capture before admission
 
-Status: shutdown correction passes native capture regression gate; fresh qualification in progress. No performance decision.
+Status: all three lifecycle pairs pass; package verification corrected before fresh performance qualification. No performance decision.
 Tracked in [#131](https://github.com/supabricks/platform/issues/131); draft
 [PR #132](https://github.com/supabricks/platform/pull/132) is stacked on SP07.
 [Preflight receipts](sync-performance-evidence/2026-10-01-sp08-preflight/README.md):
@@ -23,6 +23,18 @@ gate explicitly verifies daemon/compute restart and worker SIGKILL recovery;
 cleanup reports no leaks. Fresh `campaign-02` retains the same controller, common
 predecessor and protocol. Continuous lifecycle qualification, performance matrices
 and updated CI remain pending.
+
+Campaign-02 subsequently completed all three lifecycle pairs (six fixtures).
+Native-cell and installed release-sync CI pass on both platforms. Its first
+common-refactor comparison then stopped at `installation verify`: the overlay
+tool had added an unsupported manifest field. The accepted-runtime arm completed;
+the rebuilt common arm launched no daemon. [Recovery evidence](sync-performance-evidence/2026-10-01-sp08-package-recovery/README.md)
+retains both outcomes and the passed component pairs. Corrected manifests retain
+byte-identical frozen native binaries; provenance is external and actual installation
+verification is mandatory before any fixture. Issue #134 tracks this packaging fix.
+All 73 accounting/package tests pass. A fresh campaign repeats qualification.
+Release CI issues #135–#137 remain under investigation; they do not establish a
+new sync regression or permit release acceptance.
 
 The accepted SP04 runtime, retained through SP07, schedules continuous work before
 ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;

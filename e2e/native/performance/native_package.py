@@ -35,13 +35,18 @@ def overlay(base, binary, destination, revision, proof):
                    changed_payload_files=['bin/supabricks'],
                    verified_shared_payload_files=len(manifest['files'])-1,
                    signed_release=False)
-    manifest['diagnostic_native_overlay'] = receipt
+    # The installation manifest rejects unknown fields. Overlay provenance lives
+    # in the external proof, never in the runtime's release schema.
     path = destination/'release.json'
     path.unlink()
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True)+'\n')
     assert sha(base/'release.json') == original
     assert sha(base/'bin/supabricks') == before
-    proof.write_text(json.dumps(dict(receipt, release_sha256=sha(path)), indent=2)+'\n')
+    verification = json.loads(subprocess.check_output(
+        [str(target), 'installation', 'verify'], text=True))
+    assert verification['verified'] and verification['identity'] == sha(path)
+    proof.write_text(json.dumps(dict(receipt, release_sha256=sha(path),
+                                    installation_verification=verification), indent=2)+'\n')
 
 
 if __name__ == '__main__':
