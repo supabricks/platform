@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic reviewed, source patch deferred; SP08–SP12 planned**, 2026-10-01 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic reviewed, source patch deferred; SP08 implementation/qualification in progress; SP09–SP12 planned**, 2026-10-01 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -533,6 +533,9 @@ Exit: source-qualified input is available with quantified OLTP latency/resource
 cost. If not achieved, keep the overall target open and document the limit.
 
 ### SP08 — Remove measured scheduling delay, conditionally
+
+[Receipt-order experiment and frozen protocol](../architecture/sync-performance-sp08.md):
+implementation in progress; no acceptance or speedup claim yet.
 
 Primary code: continuous supervision and admission in
 `crates/local/src/store/{sync,incremental}.rs`, `crates/local/src/sync.rs`, daemon

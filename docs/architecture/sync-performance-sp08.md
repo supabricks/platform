@@ -1,6 +1,7 @@
 # SP08: observe durable capture before admission
 
 Status: implementation and qualification in progress; no performance decision.
+Tracked in [#131](https://github.com/supabricks/platform/issues/131).
 
 The accepted SP04 runtime, retained through SP07, schedules continuous work before
 ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;
@@ -44,7 +45,7 @@ Before performance acceptance:
 - Verify the common refactor/profiler against the accepted runtime: three matched
   pairs at 8 CPUs, 8 clients, 1,250 rows/s, 60 s warmup, 300 s measurement. Also
   run three profiling-off/on pairs of the common predecessor at this load.
-- Run local correctness tests and native continuous lifecycle/fault checks,
+- Run local correctness tests and three matched pairs of native continuous lifecycle/fault checks,
   including stale worker, daemon restart, controller delay, pause, schema fence,
   source atomicity and idle no-change behavior. Record idle CPU and control API
   latency under the unchanged observation cadence in both arms.
@@ -61,7 +62,10 @@ SMT affinities, seeded balanced order and sequential fixtures. Require five buil
 quiet minutes per measured trial, keep and repeat whole contended pairs within
 the existing replacement bounds, retain runtime failures, and stop on measurement
 or cleanup failure. Require at least 64 GiB free at admission; this is not a
-continuous free-space guard. Do not enable the optional SP07 host I/O sampler.
+continuous free-space guard. The common-refactor screen stops for review if any
+trial fails input/correctness/freshness, or paired median source throughput falls
+more than 5%, p95 lag rises more than 5%, or CPU/peak memory rises more than 10%.
+These are screening bounds, not statistical equivalence claims. Do not enable the optional SP07 host I/O sampler.
 
 Report individual trials, paired changes, CPU, peak memory, apply count and all
 existing latency stages. Native `capture.dispatch` excludes receipt observation

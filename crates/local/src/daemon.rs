@@ -470,10 +470,19 @@ impl Daemon {
                     self.consoles.tick(&mut self.store)
                 };
                 self.consoles.last_error = console_result.err().map(|e| e.to_string());
-                if !stopping {
+                // Observe each capture receipt once, before sampling admission targets.
+                // A read failure defers both admission and native dispatch this turn;
+                // the unchanged periodic tick retries it from durable state.
+                let capture_observation = match &mut self.cell {
+                    Some(cell) => cell.observe_captures(&mut self.store),
+                    None => Ok(()),
+                };
+                if !stopping && capture_observation.is_ok() {
                     self.sync_error = crate::sync::tick(&mut self.store, self.cell.as_ref())
                         .err()
                         .map(|e| e.to_string());
+                }
+                if !stopping {
                     self.sessions.last_error = self
                         .sessions
                         .tick(&mut self.store, &self.catalog)
@@ -526,7 +535,7 @@ impl Daemon {
                             }
                         }
                     } else if !stopping || !ingestion_stopped {
-                        match cell.tick(&mut self.store) {
+                        match cell.tick(&mut self.store, capture_observation) {
                             Ok(()) => cell.last_error = None,
                             Err(e) => cell.last_error = Some(e.to_string()),
                         }
