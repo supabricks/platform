@@ -1,6 +1,11 @@
 # SP07 — Attribute the source commit limit before selecting a fix
 
-Status: **diagnostic implementation and frozen experiment protocol**, 2026-09-30.
+Status: **diagnostic reviewed; source patch deferred, original cause unresolved**,
+2026-10-01 UTC. The [final controls and disposition](sync-performance-evidence/2026-10-01-sp07-controls/README.md)
+record six accepted trials at 1,246–1,248 rows/s and 3.70–3.76-second p95, plus
+four preserved contended trials. Host sampling costs about 0.038 additional CPU
+cores; process-visibility and memory-attribution limits remain explicit. An offline
+process-I/O summation error (#130) was corrected without changing raw measurements.
 Tracks [#127](https://github.com/supabricks/platform/issues/127). Based on the
 completed [SP06 measurements](sync-performance-sp06.md), on a branch stacked over
 SP06's unmerged PR #121. No source/runtime change or performance improvement is

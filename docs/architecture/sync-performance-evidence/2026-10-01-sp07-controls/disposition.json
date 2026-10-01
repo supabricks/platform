@@ -1,0 +1,38 @@
+{
+  "status": "diagnostic_review_complete",
+  "source_runtime_change": false,
+  "source_fix": "deferred; no proven intervention",
+  "historical_slowdown": "not reproduced; cause unresolved in issue127",
+  "observer": "retain as opt-in diagnostic with disclosed CPU/RSS and visibility limits",
+  "accepted_trials": 6,
+  "excluded_contended_trials": 4,
+  "input_range_rows_s": [
+    1245.849,
+    1248.158
+  ],
+  "lag_p95_range_ms": [
+    3704.101,
+    3757.006
+  ],
+  "paired_fixture_percent_medians": {
+    "source_rows_s": -0.08276651901826249,
+    "lag_p95_ms": -0.05845651210907299,
+    "cpu_cores": 0.21913805697590938,
+    "peak_memory_bytes": 0.010460187921301767
+  },
+  "controller_additional_cpu_cores_median": 0.0383508574654069,
+  "observer_memory_disposition": "Sampled controller RSS 212-233 MiB in accepted trials; lifetime peak up to330 MiB. Same controller persists across arms; retained allocator state and export work confound negative paired RSS. Do not claim a memory benefit or isolated incremental memory cost.",
+  "invalidated_analysis": "Original grouped PID I/O sums are not physical totals or lower bounds because counters include waited-for children. Preserved only as superseded evidence (#130). Corrected report retains individual identities and independent fixture cgroup io.stat deltas; raw measurements unchanged.",
+  "no_causal_attribution": "Permission-denied and process-turnover gaps remain. Successful fresh pairs do not erase original SP06 737/839-row/s results or prove absence of external contention.",
+  "validation": {
+    "local_accounting_tests": 71,
+    "previous_ci_head": "e883fa8bb68d809b17b015aa7b6a4b282c4bccca",
+    "previous_ci": "all checks passed",
+    "final_ci": "pending"
+  },
+  "review_sha256": "7cff4cf6f7c3e43864d397d241768ed0010b8251d29a7ee0f1c383c95d183318",
+  "analyzer_sha256": {
+    "host_io_analysis.py": "1921f324905196fd9ef45ace5e125f99727d4132ff89704ec7d6fc377d6e9d42",
+    "host_io.py": "466fc4d59e5fb006e3a1e335f555b8a7c0d93097bbca9420bea0bbf2b9c98c2b"
+  }
+}

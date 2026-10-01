@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Review observer controls; visible process I/O is a lower bound, not causality."""
+"""Review observer controls; process I/O counters are inclusive, not additive physical I/O."""
 import argparse
-from collections import defaultdict
 import gzip
 import hashlib
 import json
@@ -9,6 +8,8 @@ from pathlib import Path
 import statistics
 
 from host_io import deltas
+from compare import expected
+from comparison import load_trial
 
 
 def read(p):return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz' else p.read_bytes())
@@ -17,7 +18,7 @@ def read(p):return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz'
 def summarize(data,start,end):
     group=data['owned_container_cgroup_sha256'];assert group and not data['error']
     rows=[s for s in data['samples'] if start<=s['at_ms']<=end];assert len(rows)>=2
-    totals=defaultdict(lambda:dict(read_bytes=0,write_bytes=0,cpu_ticks=0))
+    totals={}
     gaps=dict(new_identities=0,exited_identities=0,unavailable_intervals=0)
     for a,b in zip(rows,rows[1:]):
         assert b['at_ms']>a['at_ms'] and b['at_ms']-a['at_ms']<10000
@@ -25,11 +26,14 @@ def summarize(data,start,end):
         for k in ('new_identities','exited_identities'):gaps[k]+=d[k]
         gaps['unavailable_intervals']+=len(d['unavailable'])
         for r in d['processes']:
-            label='owned' if r['cgroup_sha256']==group else 'external:'+r['cgroup_sha256']
-            for key in ('read_bytes','write_bytes','cpu_ticks'):totals[label][key]+=r[key]
-    return dict(covered_seconds=(rows[-1]['at_ms']-rows[0]['at_ms'])/1000,visible_group_deltas=dict(totals),
+            identity=(r['pid'],r['start_ticks'],r['cgroup_sha256'])
+            value=totals.setdefault(identity,dict(pid=r['pid'],start_ticks=r['start_ticks'],
+                role=r['role'],cgroup_sha256=r['cgroup_sha256'],owned=r['cgroup_sha256']==group,
+                read_bytes=0,write_bytes=0,cpu_ticks=0))
+            for key in ('read_bytes','write_bytes','cpu_ticks'):value[key]+=r[key]
+    return dict(covered_seconds=(rows[-1]['at_ms']-rows[0]['at_ms'])/1000,process_counter_deltas=[totals[k] for k in sorted(totals)],
         coverage_gaps=gaps,permission_denied_samples=sum(s['permission_denied'] for s in rows),
-        scope='Summed stable readable identities only. Process turnover/inaccessible I/O is omitted, never interpreted as idle. This is a lower bound and does not establish cause.')
+        scope='Separate stable process counters. /proc/pid/io includes waited-for children: never sum parent/child values or interpret them as disjoint physical I/O or a lower bound. Turnover/inaccessible counters are missing coverage, not idle. Causality is not established.')
 
 
 def analyze(root):
@@ -43,9 +47,17 @@ def analyze(root):
             for name,digest in receipt['evidence_sha256'].items():
                 path=(folder/name).resolve();assert path.is_relative_to(root.resolve())
                 assert hashlib.sha256(path.read_bytes()).hexdigest()==digest
+            assert load_trial(folder,expected(record['config'],arm,attempt['pair']))==receipt['metrics']
             t=read(next(folder.glob('*-cpu*/trial.json')));c=read(folder/'observer-controller.json')
             row=dict(directory=receipt['directory'],arm=arm,accepted=attempt['accepted'],metrics=receipt['metrics'],
                 controller_cpu_cores=c['cpu_seconds']/c['elapsed_seconds'],controller_sampled_peak_rss_bytes=c['sampled_peak_rss_bytes'],controller_scope=c['scope'])
+            def io_values(text):
+                return {parts[0]:{k:int(v) for k,v in (x.split('=') for x in parts[1:])}
+                        for parts in (line.split() for line in text.splitlines())}
+            before=io_values(t['cgroup_before']['io.stat']);after=io_values(t['cgroup_after']['io.stat'])
+            row['fixture_cgroup_io_delta']={dev:{k:value-before.get(dev,{}).get(k,0) for k,value in counters.items()} for dev,counters in after.items()}
+            assert all(v>=0 for counters in row['fixture_cgroup_io_delta'].values() for v in counters.values())
+            row['fixture_io_scope']='Cgroup load bookends include launch delay and final transaction tail; distinct from sampled process counters.'
             if arm=='candidate':
                 d=read(folder/'host-io.json.gz');row['host_io']=summarize(d,t['measurement_start_ms'],t['measurement_end_ms'])
                 row['sampler_wall_ns']=d['monitor_wall_ns'];row['sampler_raw_sample_bytes']=d['sample_bytes']
