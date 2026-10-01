@@ -13,6 +13,7 @@ import time
 import traceback
 
 from compare import ROOT, harness_identity, package_identity
+from diagnostic_preflight import check as diagnostic_preflight
 from host_monitor import HostMonitor
 from matrix import affinity, topology
 
@@ -147,6 +148,8 @@ def run(config_path, root):
             assert result['verified'] and result['identity'] == arm['identity']['release_identity']
             installations[key] = result
         save(root/'installation-preflight.json', installations)
+        save(root/'diagnostic-preflight.json', {key:diagnostic_preflight(Path(arm['release'])/'bin/supabricks')
+                                              for key,arm in config['arms'].items()})
         component()
         bridge = phase('common-refactor-controls', 'accepted', 'common', '8:1250', 8, 300, 60)
         # Equivalence screen flags material drift; never discard unfavorable runs.

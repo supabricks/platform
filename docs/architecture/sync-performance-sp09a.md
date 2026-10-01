@@ -86,3 +86,27 @@ request tails, process recycling, memory growth, idle cost and lifecycle outcome
 Keep reuse only for demonstrated net benefit without a lifecycle or authority
 regression. Otherwise retain short-lived workers. A passing startup screen alone
 does not complete SP09a.
+
+## First campaign: diagnostic packaging failure
+
+Campaign 01 passed six lifecycle fixtures, six accepted/common instrumentation
+trials and six common profiler activation trials. It stopped during the first
+candidate historical trial: the native binary had been compiled without
+`--features sync-profile`, so `daemon.jsonl` was absent. Capture and per-request
+apply profiles were present. The collector correctly rejected incomplete workflow
+instrumentation; cleanup recorded zero leaked/remaining descendants. The trial is
+retained as invalid measurement, not a performance gain or a runtime failure.
+
+[Retained failure and recovery evidence](sync-performance-evidence/2026-10-01-sp09a-diagnostic-recovery/failed-campaign.json)
+includes the invalid trial, partial profile and cleanup receipt. Issue #139 tracks
+the admission gap. A new behavioral preflight runs an exact binary copy as an
+engine-free daemon, enables profiling, shuts down, and requires a final daemon
+profile. It rejects the original binary and accepts the corrected feature-enabled
+build. Campaign 02 will rerun all phases with new immutable package identities;
+no frozen package or incomplete campaign is edited/resumed.
+
+On head `53b67c0`, all required CI and both installed sync gates passed. The macOS
+catalog browser gate aborted with PermissionError during descendant census before
+producing its report/cleanup receipt (#140); Linux catalog passed. This separate
+qualification failure remains unresolved. The previously observed #135/#137
+release gates passed on this head without a targeted fix here.
