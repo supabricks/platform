@@ -1,11 +1,21 @@
 # SP08: observe durable capture before admission
 
-Status: implementation and qualification in progress; no performance decision.
+Status: initial candidate failed shutdown/restart qualification; correction in progress. No performance decision.
 Tracked in [#131](https://github.com/supabricks/platform/issues/131); draft
 [PR #132](https://github.com/supabricks/platform/pull/132) is stacked on SP07.
 [Preflight receipts](sync-performance-evidence/2026-10-01-sp08-preflight/README.md):
 207 Rust tests and 71 accounting tests pass; native lifecycle and performance
 qualification remain pending.
+
+The [first quiet component pair](sync-performance-evidence/2026-10-01-sp08-shutdown/README.md)
+passed on the predecessor and failed candidate daemon restart. Early observation
+was also running during source teardown, adopting a terminal stream error as a
+permanent resync requirement. Linux and macOS CI reproduced that failure.
+[#133](https://github.com/supabricks/platform/issues/133) tracks the correction:
+observe before admission during normal operation, but never ingest receipts
+while the native cell is stopping Postgres. Both fixtures cleaned up without
+leaks; no main performance trials ran. Retain this failed candidate unchanged
+and qualify the correction as a fresh package/campaign.
 
 The accepted SP04 runtime, retained through SP07, schedules continuous work before
 ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;
