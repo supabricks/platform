@@ -101,10 +101,12 @@ def profile_metrics(profile, trial):
             last = rows[-1]
             run = last.get('metrics', {}).get('apply.run', {})
             if run.get('calls') and not run.get('errors'):
-                apply.append({key: last['metrics'].get(stage, {}).get('total_ns', 0)/1e6
+                apply.append(dict(pid=last['pid'],request_index=last.get('worker_request_index',1),
+                                  imports_ms=last['metrics'].get('startup.imports',{}).get('total_ns',0)/1e6,
+                                  **{key: last['metrics'].get(stage, {}).get('total_ns', 0)/1e6
                               for key, stage in [('apply_directory_ms', 'apply.boundary'),
                                                  ('apply_merge_ms', 'apply.delta_merge'),
-                                                 ('apply_run_ms', 'apply.run')]})
+                                                 ('apply_run_ms', 'apply.run')]}))
     result.update(capture_transactions_s=tx/duration if duration else None,
                   capture_commit_ms=ns/commits/1e6 if commits else None,
                   capture_syncs_per_commit=syncs/commits if commits else None,
@@ -112,7 +114,13 @@ def profile_metrics(profile, trial):
                   capture_syncs_per_transaction=syncs/tx if tx else None,
                   capture_durable_ms_per_transaction=ns/tx/1e6 if tx else None,
                   capture_window=dict(seconds=duration, transactions=tx, commits=commits,groups=groups if groups_available else None),
-                  successful_apply_workers=len(apply),
+                  successful_apply_requests=len(apply),
+                  successful_apply_workers=len({r['pid'] for r in apply}),
+                  cold_requests=sum(r['request_index']==1 for r in apply),
+                  warm_requests=sum(r['request_index']>1 for r in apply),
+                  cold_imports_ms=median([r['imports_ms'] for r in apply if r['request_index']==1]),
+                  cold_apply_ms=median([r['apply_run_ms'] for r in apply if r['request_index']==1]),
+                  warm_apply_ms=median([r['apply_run_ms'] for r in apply if r['request_index']>1]),
                   **{key: median([r[key] for r in apply]) for key in ('apply_directory_ms', 'apply_merge_ms', 'apply_run_ms')})
     if groups_available:result['counter_capabilities']['capture_groups']='durable append group and transaction counters; COMMIT totals also include metadata/pruning'
     return result

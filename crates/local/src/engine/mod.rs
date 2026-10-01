@@ -264,6 +264,7 @@ pub struct Cell {
     generation: i64,
     key: ComputeKey,
     launches: BTreeMap<String, Launch>,
+    apply_workers: std::collections::HashMap<OperationId, incremental::Worker>,
     processes: BTreeMap<String, Value>,
     supervisor: Option<Child>,
     bucket_ready: bool,
@@ -331,6 +332,7 @@ impl Cell {
             generation: store.generation(),
             key,
             launches: BTreeMap::new(),
+            apply_workers: std::collections::HashMap::new(),
             processes: BTreeMap::new(),
             supervisor: None,
             bucket_ready: false,
@@ -389,6 +391,11 @@ impl Cell {
             supervisor::stop(&record)
                 .map_err(|e| conflict(format!("cannot stop {}: {e}", record.role)))?;
             store.forget_native_process(&record)?;
+        }
+        // Every former worker group is fenced above; mailboxes are never replayed.
+        let mailboxes = store.root().join("analytics/apply-workers");
+        if mailboxes.exists() {
+            fs::remove_dir_all(mailboxes)?;
         }
         store.interrupt_exports()?;
         if !store.processes()?.is_empty() {

@@ -562,6 +562,11 @@ freshness regression from smaller, more expensive batches.
 
 ### SP09a — Worker reuse, only if startup remains material
 
+**In progress.** The SP08 startup screen finds 201–219 ms median imports per
+request across 18 main candidate trials. A bounded reuse candidate and common
+per-request profiler are being qualified; no improvement claim yet. See the
+[implementation and frozen measurement contract](../architecture/sync-performance-sp09a.md).
+
 Reuse a bounded worker for the same authorized generation only if imports/startup
 still consume a meaningful fraction of the target. Give it explicit request IDs,
 per-request budgets, cancellation, memory limits and deterministic recycling.
