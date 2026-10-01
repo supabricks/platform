@@ -3,6 +3,14 @@
 Status: implementation and qualification in progress. No measured improvement or
 release-readiness claim yet. SP09b table parallelism is a separate experiment.
 
+The initial candidate `a8384f0` passes 206 Rust tests (four ignored), 100 Python
+tests, 74 harness tests and a full-stack lifecycle screen. Three successive epochs
+used PID 1181; killing that assigned worker recovered correctly. Idle retirement,
+pause/resume, capture/daemon recovery, schema fencing and resync passed, with zero
+leaked descendants. This screen has no quiet-host performance qualification claim;
+[receipts and package proofs](sync-performance-evidence/2026-10-01-sp09a-screen/validation.json)
+are retained. The measured paired campaign remains pending.
+
 ## Why test reuse
 
 The [retained startup screen](sync-performance-evidence/2026-10-01-sp09a-screen/startup.json)
