@@ -1,69 +1,117 @@
 # SP08: observe durable capture before admission
 
-Status: all three lifecycle pairs pass; package verification corrected before fresh performance qualification. No performance decision.
-Tracked in [#131](https://github.com/supabricks/platform/issues/131); draft
-[PR #132](https://github.com/supabricks/platform/pull/132) is stacked on SP07.
-[Preflight receipts](sync-performance-evidence/2026-10-01-sp08-preflight/README.md):
-207 Rust tests and 71 accounting tests pass; native lifecycle and performance
-qualification remain pending.
+Status: **measurements reviewed; keep the latency improvement; release CI pending**,
+2026-10-01 UTC. [PR #132](https://github.com/supabricks/platform/pull/132) remains a
+draft stacked on SP07. The [reviewed evidence](sync-performance-evidence/2026-10-01-sp08-reviewed/README.md)
+contains 84 performance/control trials and six lifecycle fixtures. All final
+trials are correct and fresh with clean teardown; no contention replacements
+were needed. The older four-client overload workload still misses its offered
+input. This is a latency improvement, not a source throughput gain.
 
-The [first quiet component pair](sync-performance-evidence/2026-10-01-sp08-shutdown/README.md)
-passed on the predecessor and failed candidate daemon restart. Early observation
-was also running during source teardown, adopting a terminal stream error as a
-permanent resync requirement. Linux and macOS CI reproduced that failure.
-[#133](https://github.com/supabricks/platform/issues/133) tracks the correction:
-observe before admission during normal operation, but never ingest receipts
-while the native cell is stopping Postgres. Both fixtures cleaned up without
-leaks; no main performance trials ran. Retain this failed candidate unchanged
-and qualify the correction as a fresh package/campaign.
+## Measured results
 
-The [corrected candidate](sync-performance-evidence/2026-10-01-sp08-shutdown-fix/README.md)
-`54deabb` passes all ten native capture checks and 207 Rust tests. The capture
-gate explicitly verifies daemon/compute restart and worker SIGKILL recovery;
-cleanup reports no leaks. Fresh `campaign-02` retains the same controller, common
-predecessor and protocol. Continuous lifecycle qualification, performance matrices
-and updated CI remain pending.
+Three fresh matched pairs per cell, with identical workload, instrumentation,
+resources and packages except the native binary. Times below are medians of
+trial p95s. Percentage changes are medians of the three paired changes, which
+need not equal the percentage change between the two medians.
 
-Campaign-02 subsequently completed all three lifecycle pairs (six fixtures).
-Native-cell and installed release-sync CI pass on both platforms. Its first
-common-refactor comparison then stopped at `installation verify`: the overlay
-tool had added an unsupported manifest field. The accepted-runtime arm completed;
-the rebuilt common arm launched no daemon. [Recovery evidence](sync-performance-evidence/2026-10-01-sp08-package-recovery/README.md)
-retains both outcomes and the passed component pairs. Corrected manifests retain
-byte-identical frozen native binaries; provenance is external and actual installation
-verification is mandatory before any fixture. Issue #134 tracks this packaging fix.
-All 73 accounting/package tests pass. A fresh campaign repeats qualification.
-Release CI issues #135–#137 remain under investigation; they do not establish a
-new sync regression or permit release acceptance.
+| Logical CPUs | Offered rows/s; clients | Predecessor p95 | Candidate p95 | Paired p95 change | Paired CPU change |
+| --- | --- | --- | --- | --- | --- |
+| 4 | 50; 4 | 2.221 s | 1.871 s | −16.67% | −0.37% |
+| 16 | 50; 4 | 2.264 s | 1.894 s | −15.85% | +0.95% |
+| 8 | 1,000; 4 | 2.994 s | 2.727 s | −8.92% | +0.51% |
+| 16 | 1,000; 4 | 3.022 s | 2.722 s | −10.47% | −0.32% |
+| 8 | 1,250; 8 | 3.746 s | 3.434 s | −7.84% | +0.07% |
+| 16 | 1,250; 8 | 3.734 s | 3.451 s | −7.58% | +0.06% |
 
-The accepted SP04 runtime, retained through SP07, schedules continuous work before
-ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;
-capture reports progress every 250 ms and continuous policy admission retains a
-500 ms minimum interval. Selecting the previous receipt can exclude newly durable
-transactions from a batch, leaving them to wait for the next publication cycle.
+The four-client overload candidates achieve median 724/735 rows/s at 8/16 CPUs,
+not 1,000. The source-qualified candidates achieve 1,247.241–1,249.031 rows/s at
+8 CPUs and 1,249.558–1,249.824 at 16 CPUs. All twelve source-qualified main trials
+meet the offered-input tolerance. Candidate p95 ranges are 3.434–3.453 s and
+3.406–3.455 s respectively. Earlier SP06/SP07 source stalls remain unresolved
+in #127; these healthy trials do not erase those outcomes or establish universal
+8-core capacity. This is local same-host evidence, not EC2 qualification or an SLA.
 
-An accepted SP07 eight-core candidate trial (`01-attempt03-candidate`) recorded
-p95 commit-to-admission 2,115.464 ms, admission-to-worker-start 110 ms,
-worker-start-to-prepared 636 ms, prepared-to-publication 1,075 ms, and end-to-end
-3,705.219 ms. These distributions overlap and must not be added. The admission
-interval includes deliberate batching and the previous active run, not just
-scheduler delay. Capture observation's 112.112 ms p95 is an observer upper bound,
-not the daemon receipt age. These numbers motivate an experiment, not a claim
-that moving one phase removes two seconds of latency.
+At 1,250 rows/s, paired peak-memory changes are +0.04% / +1.22%; median CPU use is
+approximately 1.37 / 1.64 cores. All 36 main trials pass correctness and freshness.
+The 48 bridge/profiler-control trials also pass both gates; their historical
+four-client overload input limitation remains explicit in the raw results.
 
-## One runtime variant
+## Attribution and resource checks
 
-Move receipt ingestion ahead of sync admission within the same maintenance turn.
-Read and persist each capture status once; leave capture lifecycle dispatch after
-storage readiness checks. Retain the receipt identity, worker generation and
-timestamp checks. A read failure defers admission and native dispatch while
-cancellation/deadline/authority fencing still runs. The next periodic turn retries
-from durable state. No new notification transport or recovery dependency is added.
+Commit-to-admission p95 falls about 13% at source-qualified load: median
+2.140 → 1.852 s at 8 CPUs and 2.133 → 1.858 s at 16 CPUs. Admission-to-worker-start
+p95 falls 8–10%; apply preparation and publication p95 change by less than 0.5%
+there. Capture-observation upper bounds are effectively unchanged. The improvement
+is consistent with using fresher durable progress during admission, without changing
+capture reporting, deliberate micro-batching or worker lifetime. Stage percentiles
+are separate distributions and cannot be added or interpreted as exact causal shares.
 
-Keep the 200 ms timer, 250 ms capture reporting, 500 ms batch interval, one
-publication writer, admission ordering, source checks, budgets and worker lifetime.
-There is no batch-interval experiment in this variant. Worker reuse and table
-parallelism remain SP09 work.
+Successful apply-worker counts across whole source-qualified fixtures change from
+median 183/184 to 186/186. These counts include setup and warmup; they are only
+comparable within an unchanged profile. No empty-publication churn occurs in any
+of the six lifecycle fixtures. Their median idle CPU use is 0.0795 → 0.0802 cores.
+Status API p95 medians are 38.2 → 43.6 ms, with individual candidate p95s of
+35.0–48.2 ms; p99 medians are 53.8 → 49.8 ms. Fifty correlated API samples per
+fixture and three pairs do not establish a precise responsiveness effect. The
+small absolute change does not outweigh the measured pipeline benefit.
+
+The common refactor/profiler bridge passes its predefined screening bounds:
+paired median input −0.012%, p95 +0.312%, CPU +0.218%, peak memory −0.504%.
+At qualified load, enabling the final candidate profiler costs about 6.37% / 4.79%
+CPU and 6.15% / 3.72% peak memory at 8/16 CPUs. Paired p95 changes are +0.011% /
+−0.110%, and input changes −0.043% / −0.011%. The runtime comparison uses the
+same profiler in both arms; instrumentation is not free. Individual trials,
+ranges, stage distributions and all controls are in review-results.json.
+
+## Final change and identities
+
+The daemon ingests each capture receipt once before sync admission during normal
+operation. The former order scheduled work before ingesting the current receipt,
+so a newly admitted batch could omit already durable transactions and leave them
+for the next publication cycle. The 200 ms daemon timer, 250 ms capture reporting,
+500 ms minimum batch interval, one publication writer, fairness, authority and
+revision checks, backpressure, cancellation and worker lifetime remain unchanged.
+Read failures defer admission/dispatch but never suppress worker fencing. The
+unchanged periodic tick provides recovery; no notification transport was added.
+Early receipt ingestion does not run during native source teardown.
+
+- Common predecessor native source: `26e2c902a8ac4448266d19936e17924927ebec8f`.
+- Candidate native source: `54deabbf6ed105def5c3323b28a0df7b6e54bcc9`.
+- Frozen controller: `9d1aa80b042e69a8cac60373aa8a288544d466e3`.
+- Workload harness: `be4701cce5694ed00349ab3db9b577592965d7d7`.
+- Both packages share the accepted SP04 payload except the native binary. Package
+  identities, full inventory verification and actual installation-verifier receipts
+  are retained. The common predecessor has the same capture observation profiler
+  span and extracted phase, executed at the original point after admission.
+
+## Validation, retained failures and merge readiness
+
+207 local Rust tests and 73 accounting/package tests pass. The native capture
+regression gate passes all ten checks. All six final continuous fixtures pass
+bootstrap, atomicity, no-change idle behavior, pause/drain/resume, stale worker,
+SIGKILL/restart, delayed controller, schema fencing and deletion. Every performance
+receipt hash and reconstructed report/profile metric was checked during offline
+review; each archive retains its own checksum inventory.
+
+The [initial candidate failed shutdown/restart](sync-performance-evidence/2026-10-01-sp08-shutdown/README.md):
+observing during source teardown persisted a terminal stream error as a resync
+requirement (#133). The corrected candidate passes that boundary. A later
+[package-preflight failure](sync-performance-evidence/2026-10-01-sp08-package-recovery/README.md)
+revealed that diagnostic provenance had been added to a strict release manifest
+(#134). Provenance is now external; package creation and campaign startup require
+actual installation verification. Both stopped campaigns and their original
+packages remain preserved. The final campaign used new immutable packages and
+did not reset or relabel either failure.
+
+On measured/controller head `9d1aa80`, native-cell and installed release-sync CI
+pass on Linux and macOS, as do unit, portable and e2e checks. Two release checks
+still fail: Linux environment lifecycle [#135](https://github.com/supabricks/platform/issues/135)
+and governed data [#137](https://github.com/supabricks/platform/issues/137).
+The macOS notebook rerun passes, but the earlier intermittent failure remains
+tracked in [#136](https://github.com/supabricks/platform/issues/136). Their causes
+and relation to SP08 are not established. Performance acceptance does not confer
+complete release or merge readiness; the PR remains draft.
 
 ## Frozen comparison protocol
 
