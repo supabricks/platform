@@ -1,6 +1,6 @@
 # SP08: observe durable capture before admission
 
-Status: initial candidate failed shutdown/restart qualification; correction in progress. No performance decision.
+Status: shutdown correction passes native capture regression gate; fresh qualification in progress. No performance decision.
 Tracked in [#131](https://github.com/supabricks/platform/issues/131); draft
 [PR #132](https://github.com/supabricks/platform/pull/132) is stacked on SP07.
 [Preflight receipts](sync-performance-evidence/2026-10-01-sp08-preflight/README.md):
@@ -16,6 +16,13 @@ observe before admission during normal operation, but never ingest receipts
 while the native cell is stopping Postgres. Both fixtures cleaned up without
 leaks; no main performance trials ran. Retain this failed candidate unchanged
 and qualify the correction as a fresh package/campaign.
+
+The [corrected candidate](sync-performance-evidence/2026-10-01-sp08-shutdown-fix/README.md)
+`54deabb` passes all ten native capture checks and 207 Rust tests. The capture
+gate explicitly verifies daemon/compute restart and worker SIGKILL recovery;
+cleanup reports no leaks. Fresh `campaign-02` retains the same controller, common
+predecessor and protocol. Continuous lifecycle qualification, performance matrices
+and updated CI remain pending.
 
 The accepted SP04 runtime, retained through SP07, schedules continuous work before
 ingesting capture receipts. Its daemon sleeps 200 ms after each maintenance turn;
