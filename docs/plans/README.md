@@ -46,7 +46,8 @@ starts from the completed [workflow profile](../architecture/sync-workflow-profi
 [SP03a](../architecture/sync-performance-sp03a.md) and
 [SP03b](../architecture/sync-performance-sp03b.md) are merged and measured.
 [SP04](../architecture/sync-performance-sp04.md) is merged and measured.
-[SP05](../architecture/sync-performance-sp05.md) is assessed with runtime tuning deferred to evidence from SP11; SP06–SP12 remain planned.
+[SP05](../architecture/sync-performance-sp05.md) is merged with runtime tuning deferred to evidence from SP11.
+[SP06](../architecture/sync-performance-sp06.md) measurements and review are complete (102 accepted trials; pending merge), with an intermittent 8-core input limit retained; [SP07](../architecture/sync-performance-sp07.md) diagnostic is reviewed and a source patch deferred; SP08–SP12 remain planned.
 It targets sustained 1,000 changed rows/s and at most five-second p95 publication
 lag in a declared local profile. Every logical slice requires the same twelve
 candidate trials, fresh predecessor comparisons, and a recorded contribution or

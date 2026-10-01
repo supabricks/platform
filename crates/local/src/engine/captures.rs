@@ -34,13 +34,16 @@ impl Cell {
         }
         Ok(())
     }
-    pub(super) fn tick_captures(&mut self, store: &mut Store) -> Result<()> {
-        let _profile = crate::sync_profile::span("capture.dispatch");
+    /// Ingest durable worker receipts once per maintenance turn. Lifecycle dispatch
+    /// consumes the persisted state without polling a second time.
+    pub(crate) fn observe_captures(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("capture.observe");
         for mut c in store.captures()? {
-            let root = self.root.join("capture").join(c.id.to_string());
-            let status_path = root.join("status.json");
-            let role = format!("capture-{}", c.id);
-            let now = chrono::Utc::now().timestamp_millis();
+            let status_path = self
+                .root
+                .join("capture")
+                .join(c.id.to_string())
+                .join("status.json");
             if status_path.is_file() && status_path.metadata()?.len() <= 256 * 1024 {
                 let mut bytes = Vec::new();
                 fs::File::open(&status_path)?
@@ -122,6 +125,16 @@ impl Cell {
                     }
                 }
             }
+        }
+        Ok(())
+    }
+    pub(super) fn tick_captures(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("capture.dispatch");
+        for mut c in store.captures()? {
+            let root = self.root.join("capture").join(c.id.to_string());
+            let status_path = root.join("status.json");
+            let role = format!("capture-{}", c.id);
+            let now = chrono::Utc::now().timestamp_millis();
             let branch = store.branch(c.branch_id)?;
             if branch.endpoint.desired_state == DesiredState::Deleted
                 && branch.observed_revision == branch.revision

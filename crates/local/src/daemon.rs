@@ -470,10 +470,22 @@ impl Daemon {
                     self.consoles.tick(&mut self.store)
                 };
                 self.consoles.last_error = console_result.err().map(|e| e.to_string());
-                if !stopping {
+                // Observe each capture receipt once, before sampling admission targets.
+                // A read failure defers both admission and native dispatch this turn;
+                // the unchanged periodic tick retries it from durable state.
+                // Once shutdown begins, source teardown can produce a terminal
+                // worker receipt. Never adopt it while Cell::stop is draining
+                // Postgres: the next owner recovers the durable capture instead.
+                let capture_observation = match &mut self.cell {
+                    Some(cell) if !stopping => cell.observe_captures(&mut self.store),
+                    _ => Ok(()),
+                };
+                if !stopping && capture_observation.is_ok() {
                     self.sync_error = crate::sync::tick(&mut self.store, self.cell.as_ref())
                         .err()
                         .map(|e| e.to_string());
+                }
+                if !stopping {
                     self.sessions.last_error = self
                         .sessions
                         .tick(&mut self.store, &self.catalog)
@@ -526,7 +538,15 @@ impl Daemon {
                             }
                         }
                     } else if !stopping || !ingestion_stopped {
-                        match cell.tick(&mut self.store) {
+                        // During ingestion drain the native cell is still ticking;
+                        // source teardown has not begun. Preserve receipt handling
+                        // here, but never in the Cell::stop branch above.
+                        let capture_observation = if stopping {
+                            cell.observe_captures(&mut self.store)
+                        } else {
+                            capture_observation
+                        };
+                        match cell.tick(&mut self.store, capture_observation) {
                             Ok(()) => cell.last_error = None,
                             Err(e) => cell.last_error = Some(e.to_string()),
                         }

@@ -7,12 +7,15 @@ import json
 import os
 from pathlib import Path
 import random
+import resource
 import signal
+import shutil
 import subprocess
 import sys
 import time
 
 from comparison import compare_records, load_trial, read_json, require
+from host_io import HostIO
 from host_monitor import HostMonitor
 from matrix import affinity, cells, output, topology
 
@@ -82,6 +85,8 @@ def verify_identities(config):
     for arm in config['arms'].values():
         require(harness_identity(Path(arm['harness'])) == arm['harness_identity'], 'harness changed during experiment')
         require(package_identity(Path(arm['release']), arm['package']['runtime_revision']) == arm['package'], 'runtime changed during experiment')
+    if 'controller_identity' in config:
+        require(harness_identity(ROOT) == config['controller_identity'], 'diagnostic controller changed')
     require(output('docker', 'image', 'inspect', config['image_id'], '--format', '{{.Id}}') == config['image_id'], 'qualifier image changed')
     require(topology() == config['topology'], 'CPU topology changed')
 
@@ -159,6 +164,35 @@ def comparison_report(root, record):
 
 
 def run_trial(config, arm, pair, directory, monitor, quiet):
+    require(shutil.disk_usage(directory.parent).free >= config.get('minimum_free_gib', 0)*1024**3,
+            'insufficient free disk for trial admission')
+    enabled = config.get('host_io') == 'both' or (config.get('host_io') == 'candidate' and arm == 'candidate')
+    samples = [] if config.get('host_io', 'off') != 'off' else None
+    before_cpu = time.process_time()
+    before_wall = time.monotonic()
+    sampler = HostIO(directory/'host-io.json.gz').start() if enabled else None
+    try:
+        result = run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler, samples)
+    finally:
+        if sampler:
+            sampler.close()
+    if samples is not None:
+        # Includes controller work and the sampler thread, outside the 16-GiB
+        # fixture. Process CPU is separate from elapsed probe wall time.
+        report = dict(cpu_seconds=time.process_time()-before_cpu,
+            elapsed_seconds=time.monotonic()-before_wall,
+            sampled_peak_rss_bytes=max((s['rss_bytes'] for s in samples), default=None),
+            controller_lifetime_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
+            scope='Linux controller process including observer, identity checks and evidence export; separate from fixture cgroup. RSS is sampled; lifetime peak can include preceding trials.',
+            samples=samples)
+        save(directory/'observer-controller.json', report)
+        result['evidence_sha256']['observer-controller.json'] = sha(directory/'observer-controller.json')
+    if sampler:
+        result['evidence_sha256']['host-io.json.gz'] = sha(directory/'host-io.json.gz')
+    return result
+
+
+def run_measured_trial(config, arm, pair, directory, monitor, quiet, sampler=None, controller_samples=None):
     definition = config['arms'][arm]
     verify_identities(config)
     command = [sys.executable, str(Path(definition['harness'])/'e2e/native/performance/matrix.py'),
@@ -167,6 +201,9 @@ def run_trial(config, arm, pair, directory, monitor, quiet):
                '--repeats', '1', '--image', config['image_id'], '--memory-gib', str(config['memory_gib']),
                '--seconds', str(config['parameters']['seconds']), '--clients', str(config['parameters']['clients']),
                '--rows', str(config['parameters']['rows']), '--seed', str(config['seed'])]
+    # Keep the original runner's CLI valid for unchanged mandatory trials.
+    if config['parameters']['baseline'] != 5 or config['parameters']['warmup'] != 5:
+        command.extend(['--baseline-seconds',str(config['parameters']['baseline']),'--warmup-seconds',str(config['parameters']['warmup'])])
     if arm_profile(config, arm):
         command.append('--profile')
     # The predecessor may be the original runner, so invoke its existing one-cell
@@ -179,6 +216,12 @@ def run_trial(config, arm, pair, directory, monitor, quiet):
             deadline = time.monotonic()+720
             while child.poll() is None:
                 monitor.check()
+                if controller_samples is not None:
+                    resident = int(Path('/proc/self/statm').read_text().split()[1])*os.sysconf('SC_PAGE_SIZE')
+                    controller_samples.append(dict(at_ms=time.time()*1000, rss_bytes=resident, cpu_seconds=time.process_time()))
+                if sampler:
+                    sampler.bind_container('sb-scale-'+str(child.pid)+'-1')
+                    sampler.check()
                 if time.monotonic() >= deadline:
                     raise TimeoutError('matrix controller exceeded its declared deadline')
                 time.sleep(1)
@@ -223,17 +266,28 @@ def main(args):
                   host={"lscpu": [r for r in json.loads(output('lscpu','-J'))['lscpu'] if 'MHz' not in r['field']]},
                   filesystem=json.loads(output('findmnt','--json','-T',str(args.output),'-o','SOURCE,FSTYPE,OPTIONS')),
                   memory_gib=args.memory_gib, parameters=dict(profile=not args.no_profile, seconds=args.seconds,
-                  clients=args.clients, rows=args.rows, baseline=5, warmup=5),
+                  clients=args.clients, rows=args.rows, baseline=args.baseline_seconds, warmup=args.warmup_seconds),
                   seed=args.seed, order=pair_order(selected, args.repeats, args.seed),
                   quiet_seconds=args.quiet_seconds, sample_interval=5,
                   max_wait_seconds=args.max_wait_seconds, max_pair_attempts=args.max_pair_attempts,
                   baseline_identity=sha(args.baseline/'SHA256SUMS') if args.baseline else None)
+    if args.host_io != 'off':
+        require(not args.no_profile, 'host attribution requires the existing worker profiler')
+        require(arms['predecessor']['package'] == arms['candidate']['package'], 'host observer controls require identical runtime packages')
+        require(arms['predecessor']['harness_identity'] == arms['candidate']['harness_identity'], 'host observer controls require identical workload harnesses')
+        config.update(host_io=args.host_io, host_io_interval_seconds=1,
+                      host_io_max_bytes=64*1024**2,
+                      controller_identity=harness_identity(ROOT))
+    if args.minimum_free_gib:
+        config['minimum_free_gib'] = args.minimum_free_gib
     validate_activation(arms, args.activation_control, args.no_profile)
     if args.activation_control:
         config['activation_control'] = True
     config['standard_matched_protocol'] = (set(selected) == set(cells(DEFAULT_CELLS)) and args.repeats == 3
         and args.memory_gib == 16 and args.seconds == 45 and args.clients == 4 and args.rows == 10000
-        and args.quiet_seconds >= 300 and not args.no_profile and not args.activation_control)
+        and args.baseline_seconds == 5 and args.warmup_seconds == 5
+        and args.quiet_seconds >= 300 and not args.no_profile and not args.activation_control
+        and args.host_io == 'off')
     record = dict(config=config, historical=historical_rows(args.baseline), started_at_ms=time.time()*1000,
                   state='between_pairs', pairs=[], attempts=[])
     manifest = args.output/'experiment.json'
@@ -308,15 +362,19 @@ if __name__ == '__main__':
     parser.add_argument('--memory-gib', type=int, default=16)
     parser.add_argument('--seconds', type=int, default=45)
     parser.add_argument('--clients', type=int, default=4)
+    parser.add_argument('--baseline-seconds', type=int, default=5)
+    parser.add_argument('--warmup-seconds', type=int, default=5)
     parser.add_argument('--rows', type=int, default=10000)
     parser.add_argument('--quiet-seconds', type=int, default=300)
     parser.add_argument('--max-wait-seconds', type=int, default=21600)
     parser.add_argument('--max-pair-attempts', type=int, default=3)
     parser.add_argument('--image', default='supabricks-sy08-qualifier:latest')
+    parser.add_argument('--host-io', choices=('off','candidate','both'), default='off', help='separate SP07 host I/O observation; both arms keep the existing worker profiler')
+    parser.add_argument('--minimum-free-gib', type=int, default=0, help='free-space floor before each trial; not a continuous guard')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--activation-control', action='store_true', help='same immutable runtime: predecessor profiler off, candidate profiler on')
     parser.add_argument('--no-profile', action='store_true', help='separately labeled profiler activation control')
     args = parser.parse_args()
-    if min(args.repeats,args.memory_gib,args.seconds,args.clients,args.rows,args.quiet_seconds,args.max_wait_seconds,args.max_pair_attempts) < 1 or args.rows < args.clients:
+    if args.minimum_free_gib < 0 or min(args.repeats,args.memory_gib,args.seconds,args.clients,args.rows,args.baseline_seconds,args.warmup_seconds,args.quiet_seconds,args.max_wait_seconds,args.max_pair_attempts) < 1 or args.rows < args.clients:
         parser.error('positive dimensions and at least one row/client required')
     main(args)

@@ -970,12 +970,14 @@ impl Cell {
         }
         Ok(true)
     }
-    pub fn tick(&mut self, store: &mut Store) -> Result<()> {
+    pub fn tick(&mut self, store: &mut Store, capture_observation: Result<()>) -> Result<()> {
         let _profile = crate::sync_profile::span("engine.tick");
         // Cancellation and deadlines fence workers even while shared storage is down.
         self.control_incremental(store)?;
         self.control_captures(store)?;
         self.control_exports(store)?;
+        // Receipt read failures defer dispatch, but never suppress fencing above.
+        capture_observation?;
         self.storage_ready = false;
         if let Some(child) = &mut self.supervisor {
             let _ = child.try_wait()?;

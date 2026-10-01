@@ -289,3 +289,71 @@ more than 100 total omissions stop measurement, and missing spools/cgroup files,
 malformed status, missing transaction markers and cleanup errors still fail.
 Healthy-path SQL is unchanged; a capture-state lookup is added only when a policy
 fails or status disappears. Status omission never advances publication or feedback.
+
+## SP06 source-only capacity
+
+`source_capacity.py` runs fresh isolated source fixtures with no sync policy,
+using unchanged installed runtime and transaction SQL. The declared screen,
+activation controls, 4-CPU envelope and separate full-stack load profile are in
+[the SP06 protocol](../../../docs/architecture/sync-performance-sp06.md).
+
+```sh
+python3 e2e/native/performance/source_capacity.py \
+  --mode screen --release /absolute/path/to/accepted-diagnostic-package \
+  --runtime-revision FULL_ACCEPTED_RUNTIME_COMMIT \
+  --output /absolute/path/to/new-source-screen
+```
+
+Defaults are 4/8/16 clients at 8/16 logical CPUs, three repeats, 60-second warmup
+and 300-second measurement. Keep the new output directory outside the frozen
+harness checkout. Numeric sample archives omit row values and private connections.
+The controller stops on measurement or cleanup failure and retains whole contended
+blocks before replacement. Profiling off/on controls use `--mode controls --clients N`;
+the 4-CPU envelope uses `--mode envelope --cpus 4 --clients 4 N`.
+
+`matrix.py` and `compare.py` additionally accept `--baseline-seconds` and
+`--warmup-seconds`; both default to five and preserve the mandatory comparison.
+Longer warmup or different concurrency is a separately labeled profile.
+
+## SP06 campaign retention
+
+Keep runtime packages, frozen harnesses and raw campaigns in persistent storage
+(for example, ignored `build/sp06-CAMPAIGN/`), not `/tmp`. Before deferring a stopped
+source campaign, export its structured evidence even if contention, interruption
+or a measurement failure prevented completion:
+
+```sh
+python3 e2e/native/performance/archive_source.py \
+  /absolute/stopped-source-campaign /absolute/new-evidence-directory \
+  --allow-incomplete
+```
+
+The archiver refuses an active controller, preserves the original incomplete
+state and excludes private logs/scratch. An incomplete export is diagnostic
+evidence only; it establishes neither capacity nor cleanup. Investigate cleanup
+separately before restarting an interrupted fixture. Never reset a depleted retry
+budget or relabel a missing attempt as retained; record a fresh campaign and its
+reason explicitly.
+
+## SP06 host-controller preflight
+
+The host controller also needs Python dependencies: its post-trial accounting
+imports the native fixture modules even though database work runs in Docker.
+Container-only tests do not verify those host imports. Use a persistent venv and
+run preflight before a long source campaign:
+
+```sh
+python3 -m venv build/sp06-controller-venv
+build/sp06-controller-venv/bin/python -m pip install \
+  -r e2e/native/performance/controller-requirements.txt
+build/sp06-controller-venv/bin/python e2e/native/performance/controller_preflight.py \
+  --harness /absolute/frozen-harness --report /absolute/new-preflight.json
+```
+
+The requirements pin the host import dependencies to the existing SP06 qualifier
+image `sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec`.
+Use that venv's interpreter for both `source_capacity.py` and any continuation
+process, so child controllers inherit it. Optional `--trial /absolute/trial-dir`
+recomputes a retained trial's raw acknowledgments and checks cleanup; it does not
+admit an excluded trial or qualify capacity. A changed qualifier requires an
+explicit new dependency/provenance review, not an unrecorded package upgrade.

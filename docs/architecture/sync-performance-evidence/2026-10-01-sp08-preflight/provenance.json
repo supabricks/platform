@@ -1,0 +1,45 @@
+{
+  "status": "preflight_passed_measurements_pending",
+  "candidate_revision": "b94664853a5444532787739df9cb1a91b04a302e",
+  "common_revision": "26e2c902a8ac4448266d19936e17924927ebec8f",
+  "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.94.1\nLLVM version: 21.1.8\n",
+  "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+  "cargo_lock_sha256": "947cc348838828f6ad9a64cf63894ec8737f85192d4f2e9e569a88ce257f5f33",
+  "build_command": "cargo build --locked --release -p supabricks-local --features sync-profile",
+  "pr": "https://github.com/supabricks/platform/pull/132",
+  "issue": "https://github.com/supabricks/platform/issues/131",
+  "runtime_and_workload": {
+    "hypothesis": "Ingest the same durable capture receipt before admission rather than after it; unchanged reporting, batching, polling, durability and single publisher",
+    "arms": {
+      "accepted": {
+        "release": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/sp06-recovery-20260927/accepted-runtime",
+        "revision": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+        "identity": {
+          "runtime_revision": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+          "release_identity": "87e08c546e1316759457443b51f048f0cc7774e109b09d7176c7bf1e65cf7d40",
+          "binary_sha256": "0dbbea622656b48af2ec47d6e7e87ebc5448551934c55ac85ad14a9a906e1aa2"
+        }
+      },
+      "common": {
+        "release": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/sp08-20261001/common-runtime",
+        "revision": "26e2c902a8ac4448266d19936e17924927ebec8f",
+        "identity": {
+          "runtime_revision": "26e2c902a8ac4448266d19936e17924927ebec8f",
+          "release_identity": "eebc24dd4031a4c316a6a207c22f5e5278f5f049a54c9c5ebffdfe38c608dba1",
+          "binary_sha256": "d0df9b1150e15f25a178cec70c2dcc3a621f1855bf94589093fe1c4d8550262a"
+        }
+      },
+      "candidate": {
+        "release": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/sp08-20261001/candidate-runtime",
+        "revision": "b94664853a5444532787739df9cb1a91b04a302e",
+        "identity": {
+          "runtime_revision": "b94664853a5444532787739df9cb1a91b04a302e",
+          "release_identity": "97bddf5d0701e7a08285da39903a7732b877fef8aceb518a3476adab0d91595d",
+          "binary_sha256": "c497c997f10fb38f530363416507830aca822915aa12cfd524326bb15bcb723d"
+        }
+      }
+    },
+    "workload_harness": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/sp06-recovery-20260927/harness",
+    "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec"
+  }
+}

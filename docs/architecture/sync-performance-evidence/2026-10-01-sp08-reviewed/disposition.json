@@ -1,0 +1,25 @@
+{
+  "decision": "keep_latency_improvement",
+  "performance_trials": 84,
+  "lifecycle_fixtures": 6,
+  "contention_replacements": 0,
+  "runtime_failures_in_final_campaign": 0,
+  "all_final_trials_correct_and_fresh": true,
+  "merge_ready": false,
+  "remaining_ci_issues": [
+    135,
+    137
+  ],
+  "intermittent_ci_issue": 136,
+  "native_candidate": "54deabbf6ed105def5c3323b28a0df7b6e54bcc9",
+  "common_predecessor": "26e2c902a8ac4448266d19936e17924927ebec8f",
+  "frozen_controller": "9d1aa80b042e69a8cac60373aa8a288544d466e3",
+  "workload_harness": "be4701cce5694ed00349ab3db9b577592965d7d7",
+  "limitations": [
+    "Three matched pairs per cell; local same-host screening, not EC2 or an SLA",
+    "Historical four-client 1000-row/s offered load remains unmet",
+    "SP06/SP07 intermittent source stalls remain unresolved; successful fresh trials do not erase them",
+    "Original failed shutdown and installation-preflight campaigns retained separately",
+    "Complete release CI is not green"
+  ]
+}

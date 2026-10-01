@@ -1,0 +1,298 @@
+{
+  "measurements": "complete",
+  "accepted_trials_this_phase": 12,
+  "accepted_trials_all_phases": 102,
+  "decision": "Source capacity qualified; measurement-enabling slice complete with bounded full-stack evidence and unresolved intermittent 8-core input limit.",
+  "runtime_change": false,
+  "blanket_8core_throughput_qualification": false,
+  "summary": [
+    {
+      "cpus": 8,
+      "trials": 6,
+      "source_rows_s_range": [
+        1242.011,
+        1246.707
+      ],
+      "lag_p95_ms_range": [
+        3710.785,
+        3734.203
+      ],
+      "paired_percent_medians": {
+        "source_rows_s": -0.2938140236639408,
+        "lag_p95_ms": -0.10250654312817797,
+        "cpu_cores": 6.268882175226587,
+        "peak_memory_bytes": 6.573826989768916
+      }
+    },
+    {
+      "cpus": 16,
+      "trials": 6,
+      "source_rows_s_range": [
+        1245.437,
+        1248.978
+      ],
+      "lag_p95_ms_range": [
+        3712.429,
+        3771.13
+      ],
+      "paired_percent_medians": {
+        "source_rows_s": -0.14678467097171133,
+        "lag_p95_ms": 0.583472438126087,
+        "cpu_cores": 5.149396058486966,
+        "peak_memory_bytes": 5.347831761335264
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "cpus": 16,
+      "repeat": 1,
+      "percent": {
+        "source_rows_s": -0.2835117992470826,
+        "lag_p95_ms": 1.1090239977521454,
+        "cpu_cores": 4.955527318932651,
+        "peak_memory_bytes": -55.79505475447203
+      }
+    },
+    {
+      "cpus": 16,
+      "repeat": 3,
+      "percent": {
+        "source_rows_s": -0.025063700234928543,
+        "lag_p95_ms": 0.583472438126087,
+        "cpu_cores": 5.149396058486966,
+        "peak_memory_bytes": 5.347831761335264
+      }
+    },
+    {
+      "cpus": 8,
+      "repeat": 3,
+      "percent": {
+        "source_rows_s": -0.3366217142270145,
+        "lag_p95_ms": -0.013243784219274524,
+        "cpu_cores": 5.953278070836476,
+        "peak_memory_bytes": 6.573826989768916
+      }
+    },
+    {
+      "cpus": 8,
+      "repeat": 2,
+      "percent": {
+        "source_rows_s": -0.02521440272378328,
+        "lag_p95_ms": -0.627121771365946,
+        "cpu_cores": 6.510219530658601,
+        "peak_memory_bytes": 7.508102693461871
+      }
+    },
+    {
+      "cpus": 16,
+      "repeat": 2,
+      "percent": {
+        "source_rows_s": -0.14678467097171133,
+        "lag_p95_ms": -0.06535500647136816,
+        "cpu_cores": 5.350318471337578,
+        "peak_memory_bytes": 5.879079695114231
+      }
+    },
+    {
+      "cpus": 8,
+      "repeat": 1,
+      "percent": {
+        "source_rows_s": -0.2938140236639408,
+        "lag_p95_ms": -0.10250654312817797,
+        "cpu_cores": 6.268882175226587,
+        "peak_memory_bytes": 6.489794976278862
+      }
+    }
+  ],
+  "trials": [
+    {
+      "cpus": 16,
+      "repeat": 1,
+      "arm": "candidate",
+      "directory": "01-attempt01-candidate",
+      "source_rows_s": 1245.437,
+      "lag_p95_ms": 3771.13,
+      "cpu_cores": 1.652,
+      "peak_memory_bytes": 2082803712,
+      "peak_backlog_bytes": 349987,
+      "drain_seconds": 2.232,
+      "memory_current_before": 1382002688,
+      "memory_current_after": 1978814464,
+      "minimum_free_gib": 134.84576034545898
+    },
+    {
+      "cpus": 16,
+      "repeat": 1,
+      "arm": "predecessor",
+      "directory": "01-attempt01-predecessor",
+      "source_rows_s": 1248.978,
+      "lag_p95_ms": 3729.766,
+      "cpu_cores": 1.574,
+      "peak_memory_bytes": 4711698432,
+      "peak_backlog_bytes": 349503,
+      "drain_seconds": 3.024,
+      "memory_current_before": 4095229952,
+      "memory_current_after": 4650098688,
+      "minimum_free_gib": 134.9078483581543
+    },
+    {
+      "cpus": 16,
+      "repeat": 3,
+      "arm": "candidate",
+      "directory": "02-attempt02-candidate",
+      "source_rows_s": 1248.505,
+      "lag_p95_ms": 3734.09,
+      "cpu_cores": 1.654,
+      "peak_memory_bytes": 2082955264,
+      "peak_backlog_bytes": 354222,
+      "drain_seconds": 2.045,
+      "memory_current_before": 1348636672,
+      "memory_current_after": 1947574272,
+      "minimum_free_gib": 134.82827377319336
+    },
+    {
+      "cpus": 16,
+      "repeat": 3,
+      "arm": "predecessor",
+      "directory": "02-attempt02-predecessor",
+      "source_rows_s": 1248.818,
+      "lag_p95_ms": 3712.429,
+      "cpu_cores": 1.573,
+      "peak_memory_bytes": 1977217024,
+      "peak_backlog_bytes": 353271,
+      "drain_seconds": 3.484,
+      "memory_current_before": 1376198656,
+      "memory_current_after": 1865125888,
+      "minimum_free_gib": 134.84647369384766
+    },
+    {
+      "cpus": 8,
+      "repeat": 3,
+      "arm": "candidate",
+      "directory": "03-attempt03-candidate",
+      "source_rows_s": 1242.011,
+      "lag_p95_ms": 3722.008,
+      "cpu_cores": 1.406,
+      "peak_memory_bytes": 2020265984,
+      "peak_backlog_bytes": 353375,
+      "drain_seconds": 2.805,
+      "memory_current_before": 1321185280,
+      "memory_current_after": 2019639296,
+      "minimum_free_gib": 134.8217544555664
+    },
+    {
+      "cpus": 8,
+      "repeat": 3,
+      "arm": "predecessor",
+      "directory": "03-attempt03-predecessor",
+      "source_rows_s": 1246.206,
+      "lag_p95_ms": 3722.501,
+      "cpu_cores": 1.327,
+      "peak_memory_bytes": 1895649280,
+      "peak_backlog_bytes": 354706,
+      "drain_seconds": 3.498,
+      "memory_current_before": 1316773888,
+      "memory_current_after": 1787678720,
+      "minimum_free_gib": 134.8224639892578
+    },
+    {
+      "cpus": 8,
+      "repeat": 2,
+      "arm": "candidate",
+      "directory": "04-attempt04-candidate",
+      "source_rows_s": 1245.006,
+      "lag_p95_ms": 3710.785,
+      "cpu_cores": 1.407,
+      "peak_memory_bytes": 2052939776,
+      "peak_backlog_bytes": 358622,
+      "drain_seconds": 2.836,
+      "memory_current_before": 1320148992,
+      "memory_current_after": 2035171328,
+      "minimum_free_gib": 134.8001937866211
+    },
+    {
+      "cpus": 8,
+      "repeat": 2,
+      "arm": "predecessor",
+      "directory": "04-attempt04-predecessor",
+      "source_rows_s": 1245.32,
+      "lag_p95_ms": 3734.203,
+      "cpu_cores": 1.321,
+      "peak_memory_bytes": 1909567488,
+      "peak_backlog_bytes": 351923,
+      "drain_seconds": 2.573,
+      "memory_current_before": 1311350784,
+      "memory_current_after": 1794039808,
+      "minimum_free_gib": 134.81693649291992
+    },
+    {
+      "cpus": 16,
+      "repeat": 2,
+      "arm": "candidate",
+      "directory": "05-attempt05-candidate",
+      "source_rows_s": 1246.935,
+      "lag_p95_ms": 3740.19,
+      "cpu_cores": 1.654,
+      "peak_memory_bytes": 2088706048,
+      "peak_backlog_bytes": 352891,
+      "drain_seconds": 1.659,
+      "memory_current_before": 1363460096,
+      "memory_current_after": 1978331136,
+      "minimum_free_gib": 134.79394912719727
+    },
+    {
+      "cpus": 16,
+      "repeat": 2,
+      "arm": "predecessor",
+      "directory": "05-attempt05-predecessor",
+      "source_rows_s": 1248.768,
+      "lag_p95_ms": 3742.636,
+      "cpu_cores": 1.57,
+      "peak_memory_bytes": 1972727808,
+      "peak_backlog_bytes": 355069,
+      "drain_seconds": 3.637,
+      "memory_current_before": 1352671232,
+      "memory_current_after": 1865220096,
+      "minimum_free_gib": 134.7936019897461
+    },
+    {
+      "cpus": 8,
+      "repeat": 1,
+      "arm": "candidate",
+      "directory": "06-attempt06-candidate",
+      "source_rows_s": 1243.044,
+      "lag_p95_ms": 3714.975,
+      "cpu_cores": 1.407,
+      "peak_memory_bytes": 2078752768,
+      "peak_backlog_bytes": 351560,
+      "drain_seconds": 2.835,
+      "memory_current_before": 1355300864,
+      "memory_current_after": 2033143808,
+      "minimum_free_gib": 134.77943801879883
+    },
+    {
+      "cpus": 8,
+      "repeat": 1,
+      "arm": "predecessor",
+      "directory": "06-attempt06-predecessor",
+      "source_rows_s": 1246.707,
+      "lag_p95_ms": 3718.787,
+      "cpu_cores": 1.324,
+      "peak_memory_bytes": 1952067584,
+      "peak_backlog_bytes": 349459,
+      "drain_seconds": 2.122,
+      "memory_current_before": 1313497088,
+      "memory_current_after": 1848434688,
+      "minimum_free_gib": 134.7784309387207
+    }
+  ],
+  "reviewed_findings": [
+    "Small repeatable throughput cost in both CPU groups remains disclosed; no capacity or freshness threshold crossings. Profiler activation is the intervention; individual probe costs are not isolated.",
+    "CPU cost is about 0.08 average cores (5.1-6.3% paired median); memory paired median cost 5.3-6.6%, below the 10% resource investigation trigger.",
+    "16-core profiler-off repeat 1 has a 4.71-GB peak and starts load at 4.10 GB. Other off runs peak around 1.9-2.0 GB. Preserve this whole-fixture peak, including setup/warmup; its cause is not isolated and it is not evidence that profiling reduces memory.",
+    "All fresh controls exceed 1000 actual changed rows/s and pass exact final correctness, cleanup and five-second p95. They do not replace the earlier accepted 737/839-row/s pair.",
+    "No source runtime fix is proven necessary by these controls; scope further durable-commit/storage attribution under issue127 before selecting an SP07 intervention.",
+    "Five-minute trials do not qualify sustained maintenance/recovery (SP11), EC2 scaling or release promises (SP12)."
+  ]
+}

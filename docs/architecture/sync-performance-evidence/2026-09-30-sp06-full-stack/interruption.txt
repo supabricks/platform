@@ -1,0 +1,21 @@
+TRIAL_START {"arm": "predecessor", "pair": {"cpus": 16, "rate": 1250, "repeat": 1, "arms": ["predecessor", "candidate"]}, "directory": "01-attempt01-predecessor"}
+Traceback (most recent call last):
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/compare.py", line 273, in main
+    result = run_trial(config, arm, pair, directory, monitor, quiet)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/compare.py", line 184, in run_trial
+    monitor.check()
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/host_monitor.py", line 107, in check
+    raise RuntimeError('host monitor failed: ' + self.error)
+RuntimeError: host monitor failed: OSError: [Errno 28] No space left on device
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/compare.py", line 328, in <module>
+    main(args)
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/compare.py", line 291, in main
+    monitor.close()
+  File "<repo>/build/sp06-recovery-20260927/harness/e2e/native/performance/host_monitor.py", line 160, in close
+    raise RuntimeError('host monitor failed: ' + self.error)
+RuntimeError: host monitor failed: OSError: [Errno 28] No space left on device

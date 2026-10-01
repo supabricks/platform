@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 assessed, tuning deferred; SP06–SP12 planned**, 2026-09-26.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic reviewed, source patch deferred; SP08 measured/reviewed, release CI pending; SP09–SP12 planned**, 2026-10-01 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -236,6 +236,8 @@ Maintain a contribution ledger in the performance architecture report:
 | SP03b | Capture-only WAL/FULL, owned checkpoints and physical admission; SP02 grouping retained | SP03a `da548e7` (merged `43c046e`) / `5382e80`, common frozen harness | Overload native syncs/transaction −43.87% / −43.83%; COMMIT + checkpoint time/transaction −46.71% / −46.37% | All 24 main trials correct/fresh; achieved overload medians 742/746 rows/s (+8.12%/+9.08% paired); 1,000 input unmet. Grouping ablations: three DELETE timeouts, three WAL freshness misses without grouping; all grouped runs pass | Main paired CPU +6.71% to +9.11%, peak memory −4.80% to +5.31%; conservative DB/WAL headroom; bounded transient-reader WAL allocation tracked in #116 | [Keep — performance; retain grouping](../architecture/sync-performance-sp03b.md) |
 | SP04 | Two owned planning inventories with bounded per-batch checks; existing output/durability checks retained | SP03b `5382e80` (merged `f02dca8`) / `e10d515`, common frozen harness | Matched aged directory checks −98.27%/−98.96%; planning walks 206–800 → 2; fresh checks −79.38% to −82.49% | All 24 main + 36 controls correct/fresh and 24 component plans equal; main paired p95 −32.59% to −39.72%; achieved overload input −2.32%/−2.82%, 1,000 input unmet | CPU −12.56% to +9.47%, peak RSS −2.57% to +4.48%; faster worker frequency exposes startup/publication costs in #119 | [Keep — latency, with resource/input tradeoffs](../architecture/sync-performance-sp04.md) |
 | SP05 | Offline maintenance triage; no runtime/profiler/harness change | Accepted SP04 `e10d515` (merged `c8e23e2`); existing 24 main trials reused | Candidate checkpoint 0.73–1.10% and prune 0.23–2.21% of covered wall time; inclusive spans overlap; no compaction exercised | No new benchmark trials or speedup; source target remains unmet; sustained rotation/reader-pressure performance unqualified | Observed spool <1.12% of budget with no busy/backpressure increments in short main runs; #116/#119 remain open | [Defer tuning — assessment complete; sustained cases required in SP11](../architecture/sync-performance-sp05.md) |
+
+| SP08 | Ingest durable capture receipts before admission in the same daemon turn | Common `26e2c90` / native `54deabb`; controller `9d1aa80`, frozen SP06 workload | Qualified commit-to-admission p95 −13.29% / −12.97% at 8/16 CPUs | 36 main + 48 control trials correct/fresh; qualified paired p95 −7.84% / −7.58%, input ~1,247–1,250 rows/s; historical four-client target still unmet | Qualified paired CPU +0.07% / +0.06%; peak memory +0.04% / +1.22%; idle ~0.08 cores | [Keep — latency; release CI pending](../architecture/sync-performance-sp08.md) |
 
 No cumulative result may omit rejected attempts or credit all gains to the last
 change. No runtime slice is complete until its report and ledger row exist.
@@ -480,6 +482,14 @@ record a deferral and exercise these cases in SP11.
 
 ### SP06 — Source capacity and a separate target-load profile
 
+**Measurements and review complete; pending merge.** The [protocol and final disposition](../architecture/sync-performance-sp06.md)
+record 102 accepted trials. Eight clients independently supply the source floor;
+all 12 final controls supply 1,242–1,249 rows/s at 3.71–3.77-second p95. Two earlier
+accepted 8-core main trials remain below target as durable commit waits increase.
+Their root cause remains unresolved in #127. This is a measurement-enabling slice,
+not a runtime speedup or blanket throughput qualification. Investigate that limit
+before choosing any conditional SP07 intervention.
+
 Keep the mandatory four-client comparison unchanged. Add source-only runs with
 4, 8 and 16 clients, disjoint key ranges, unchanged two-row transactions and the
 same durable PG/Neon settings. Use 60-second warmup and at least five-minute
@@ -502,6 +512,12 @@ source supplied less than the claimed rate.
 
 ### SP07 — Fix a proven source bottleneck, conditionally
 
+**Diagnostic reviewed; source patch deferred.** The [SP07 disposition](../architecture/sync-performance-sp07.md)
+records six accepted host-observer control trials at 1,246–1,248 rows/s and
+3.70–3.76-second p95. The earlier severe slowdown did not recur; cause remains
+unresolved in #127. Keep diagnostic tooling with measured overhead and visibility
+limits; no source runtime patch or performance improvement is established.
+
 Proceed only with SP06 evidence. Map waits to the exact PG/Neon/safekeeper path
 before modifying it. If concurrency alone supplies sufficient input, record this
 slice as unnecessary. If a source change is required, open/link its repository
@@ -519,6 +535,14 @@ Exit: source-qualified input is available with quantified OLTP latency/resource
 cost. If not achieved, keep the overall target open and document the limit.
 
 ### SP08 — Remove measured scheduling delay, conditionally
+
+[Receipt-order experiment and frozen protocol](../architecture/sync-performance-sp08.md):
+**Keep — latency improvement; release CI pending.** All 84 final performance/control
+trials and six lifecycle fixtures pass correctness/freshness/cleanup. At qualified
+1,250 rows/s, paired p95 improves 7.84% / 7.58% at 8/16 CPUs with CPU +0.07% /
++0.06%; median p95 becomes 3.434 / 3.451 s. Historical four-client overload input
+remains unmet. Original shutdown/package failures are retained; #135/#137 still
+block complete release readiness.
 
 Primary code: continuous supervision and admission in
 `crates/local/src/store/{sync,incremental}.rs`, `crates/local/src/sync.rs`, daemon
