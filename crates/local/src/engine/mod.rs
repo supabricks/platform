@@ -1041,6 +1041,7 @@ impl Cell {
         if !self.storage_ready {
             return Ok(());
         }
+        self.observe_captures(store)?;
         self.tick_captures(store)?;
         self.tick_incremental(store)?;
         self.tick_exports(store)?;
