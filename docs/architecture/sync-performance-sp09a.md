@@ -110,3 +110,24 @@ catalog browser gate aborted with PermissionError during descendant census befor
 producing its report/cleanup receipt (#140); Linux catalog passed. This separate
 qualification failure remains unresolved. The previously observed #135/#137
 release gates passed on this head without a targeted fix here.
+
+## Controller interruption and evidence-preserving continuation
+
+Campaign 02 completed its six lifecycle fixtures, twelve instrumentation/control
+trials, all 24 historical main trials, and one qualified pair. Its controller and
+host monitor then disappeared without updating the last `running` checkpoint.
+The last host sample was 2026-10-01 21:24:01 UTC. An independently launched trial
+finished afterward with clean teardown, but lacked continuous host monitoring and
+was not accepted. The cause of controller loss is unconfirmed (#141). Status-file
+contents alone are insufficient evidence of a live campaign.
+
+Recovery preserves the original campaign and all its files. A separate
+continuation copies the qualified phase, verifies every retained accepted receipt
+and artifact hash, retains its first accepted pair, and repeats the interrupted
+pair after verifying cleanup. It uses the same frozen comparison controller,
+packages, workload, pairing order and limits. Completed phases are not rerun.
+The final historical and qualified profiler controls follow. The new outer
+supervisor records its own hash and a ten-second heartbeat and runs as a systemd
+user service; failures stop for investigation rather than automatically retrying.
+Future status checks must inspect service state and heartbeat age as well as the
+phase ledger. Runtime and instrumentation settings are unchanged.
