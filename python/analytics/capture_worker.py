@@ -12,6 +12,7 @@ import psycopg
 from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
 from capture.groups import Groups
+from capture.owner import Owner
 from capture.wal import SpoolBackpressure
 from capture.source import Source
 from capture.bootstrap import verify
@@ -25,7 +26,7 @@ def read(path):
 def run(path):
     config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
-    spool=source=wire=groups=None
+    spool=source=wire=groups=owner=None
     stopping=False;feedback_lsn=None
     def stop(signum, frame):
         nonlocal stopping
@@ -44,6 +45,7 @@ def run(path):
                 if result is not None and wire:feedback()
                 return
             except SpoolBackpressure:
+                if owner:owner.check()
                 control=read(path)
                 if control['identity']!=identity or control['worker_generation']!=generation:
                     raise CaptureError('worker_fenced')
@@ -79,9 +81,11 @@ def run(path):
             source=Source(config,None)
             source.cleanup();report('deleted');return
         spool=Spool(root/'spool',identity,config['spool_bytes'])
+        owner=Owner(path,spool.backend)
         source=Source(config,spool)
         profile=source.setup();groups=Groups(spool);report('established')
         while True:
+            owner.check()
             current=read(path)
             if current['identity']!=identity or current['worker_generation']!=generation:raise CaptureError('worker_fenced')
             if stopping:
@@ -155,7 +159,10 @@ def run(path):
         for sig,handler in previous_handlers.items():signal.signal(sig,handler)
         if wire:wire.close()
         if source:source.close()
-        if spool:spool.close()
+        try:
+            if owner:owner.close()
+        finally:
+            if spool:spool.close()
 
 if __name__=='__main__':
     sys.exit(run(Path(sys.argv[1])))

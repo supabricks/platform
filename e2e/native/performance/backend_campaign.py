@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SP10a sequential frozen campaign; execute under a supervised user service.
+"""SP10 sequential frozen campaign; execute under a supervised user service.
 
 A ten-second heartbeat reports liveness. Errors stop; completed evidence is never
 reset. Only bounded whole-pair build-contention replacement is automatic.
@@ -95,7 +95,7 @@ def run(config_path, root):
         state['completed'].append(name);checkpoint(status='between_phases')
     def compare(name,cells,clients,seconds,warmup,activation=False):
         command=[sys.executable,str(ROOT/'e2e/native/performance/compare.py'),
-            '--slice','SP10a-'+name,'--hypothesis',config['hypothesis'],'--output',str(root/name),
+            '--slice',config.get('slice','SP10a')+'-'+name,'--hypothesis',config['hypothesis'],'--output',str(root/name),
             '--cells',cells,'--clients',str(clients),'--seconds',str(seconds),'--warmup-seconds',str(warmup),
             '--repeats','3','--quiet-seconds','300','--minimum-free-gib','64','--image',config['image']]
         for label,key in [('predecessor','candidate' if activation else 'predecessor'),('candidate','candidate')]:
@@ -119,7 +119,7 @@ def run(config_path, root):
                     command=['python3','e2e/native/performance/reuse_component.py','--binary','/release/bin/supabricks',
                         '--bundle','/release/engine','--helpers','/release/helpers','--python','/release/python/analytics/python',
                         '--worker','/release/python/analytics/export.py','--report','/reports/result.json']
-                else:command=['/release/python/analytics/python','e2e/native/performance/backend_component.py',
+                else:command=['/release/python/analytics/python','e2e/native/performance/'+('owner_component.py' if config.get('journal_component')=='owner' else 'backend_component.py'),
                     '--analytics','/release/python/analytics','--scratch','/reports','--report','/reports/result.json']
                 plan.append(dict(label=arm,arm=arm,cpus=8,timeout=900,command=command))
             plans.append(plan)

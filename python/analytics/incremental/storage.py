@@ -96,7 +96,13 @@ def journal_backoff(seconds):
 
 def journal(config):
     # Freeze the request once. A retry must not follow a newer target or identity.
-    request=copy.deepcopy({k:config[k] for k in ('spool','identity','bootstrap_lsn','after_lsn','target_lsn')})
+    if 'journal_access' in config:
+        from capture.owner import request_for
+        request=copy.deepcopy(request_for(config))
+    else:
+        # Direct backend access is retained for isolated storage qualification.
+        # Daemon-issued production requests always carry journal_access.
+        request=copy.deepcopy({k:config[k] for k in ('spool','identity','bootstrap_lsn','after_lsn','target_lsn')})
     started=time.monotonic()
     remaining=(config['deadline_ms']-time.time()*1000)/1000
     if remaining<=0:raise CaptureError('apply_deadline')
@@ -110,7 +116,10 @@ def journal(config):
                 raise JournalBusyDeferred()
             stats['attempts']+=1
             try:
-                result=journal_attempt(request,deadline)
+                if 'journal_access' in request:
+                    from capture.owner import read_range as owner_read
+                    result=owner_read(request,deadline,stats)
+                else:result=journal_attempt(request,deadline)
                 stats['outcome']='complete'
                 return result
             except CaptureError as error:
@@ -142,22 +151,8 @@ def journal(config):
 
 def journal_attempt(config,deadline):
     with snapshot(config['spool'],deadline,JOURNAL_BUSY_SECONDS) as view:
-        meta=view.metadata()
-        if meta['identity']!=config['identity'] or meta['bootstrap']['lsn']!=config['bootstrap_lsn']:raise CaptureError('spool_identity_mismatch')
-        after=lsn(config['after_lsn']);target=lsn(config['target_lsn'])
-        prefix=checked_prefix(meta.get('pruned_prefix'),meta['identity'],meta['start'],meta['captured'])
-        if meta['captured']<target or prefix['lsn']>after:raise CaptureError('source_history_lost')
-        result=[];used=0;previous=None;end=after
-        cursor=view.records(f'{after:016x}',f'{target:016x}')
-        for cut,prior,commit,size,payload,checksum in cursor:
-            cut,prior,commit=int(cut,16),int(prior,16),int(commit,16)
-            if size>MAX_TRANSACTION or len(payload)!=size or hashlib.sha256(payload).hexdigest()!=checksum:raise CaptureError('spool_corrupt')
-            if not prior<=commit<cut or (previous is not None and prior!=previous) or (previous is None and (prior>after or (after!=lsn(config['bootstrap_lsn']) and prior!=after))):raise CaptureError('spool_history_gap')
-            if used+size>MAX_BATCH:break
-            used+=size;result.append((cut,payload));previous=end=cut
-        if not result and target>after:raise CaptureError('spool_history_gap')
-        if time.monotonic()>=deadline:raise CaptureError('journal_read_deadline')
-        return meta['schema'],result,end,used
+        from capture.ranges import read_range
+        return read_range(view,config,deadline)
 
 
 def initialize(config):

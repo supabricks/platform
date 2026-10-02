@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Immutable SP10a SQLite contract overlay; profiler and native binary unchanged."""
+"""Immutable SQLite contract/owner overlay; identical dependencies and profiler."""
 import argparse
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ import subprocess
 from native_package import sha
 
 
-def overlay(repo,base,destination,proof,candidate=False):
+def overlay(repo,base,destination,proof,candidate=False,native_binary=None):
     assert not destination.exists() and not proof.exists()
     manifest=json.loads((base/'release.json').read_text());original=sha(base/'release.json');changes={}
     for name,entry in manifest['files'].items():
@@ -23,6 +23,9 @@ def overlay(repo,base,destination,proof,candidate=False):
     assert candidate,'SP10a reuses the exact accepted predecessor package'
     sources={name:(repo/'python/analytics'/name).read_bytes() for name in
         ('capture/spool.py','capture/journal.py','capture/sqlite_journal.py','incremental/storage.py')}
+    if native_binary:
+        sources.update({name:(repo/'python/analytics'/name).read_bytes() for name in ('capture/owner.py','capture/ranges.py')})
+        replace('bin/supabricks',native_binary.read_bytes())
     source=(repo/'python/analytics/capture_worker.py').read_text().splitlines(keepends=True)
     source.insert(2,'import worker_profile\n');source=''.join(source)
     marker="if __name__=='__main__':";assert source.count(marker)==1
@@ -42,7 +45,7 @@ def overlay(repo,base,destination,proof,candidate=False):
     for name,entry in changes.items():assert (sha(base/name) if (base/name).exists() else None)==entry['before']
     verification=json.loads(subprocess.check_output([str(destination/'bin/supabricks'),'installation','verify'],text=True))
     assert verification['verified'] and verification['identity']==sha(path)
-    assert sha(destination/'bin/supabricks')==sha(base/'bin/supabricks')
+    assert sha(destination/'bin/supabricks')==sha(native_binary or base/'bin/supabricks')
     assert sha(destination/'python/analytics/worker_profile.py')==sha(base/'python/analytics/worker_profile.py')
     proof.write_text(json.dumps(dict(base_release_sha256=original,release_sha256=sha(path),candidate=candidate,
         revision=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip(),
@@ -51,5 +54,5 @@ def overlay(repo,base,destination,proof,candidate=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('repo','base','destination','proof'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--candidate',action='store_true');a=p.parse_args()
-    overlay(a.repo.resolve(),a.base.resolve(),a.destination.resolve(),a.proof.resolve(),a.candidate)
+    p.add_argument('--candidate',action='store_true');p.add_argument('--native-binary',type=Path);a=p.parse_args()
+    overlay(a.repo.resolve(),a.base.resolve(),a.destination.resolve(),a.proof.resolve(),a.candidate,a.native_binary.resolve() if a.native_binary else None)
