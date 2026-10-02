@@ -117,3 +117,21 @@ finding. Keep that failed smoke and immutable package; no measured trial was
 admitted. The correction separates benchmark transport counters from operational
 receipts and adds an exact-key regression test. A fresh installed screen must pass
 before freezing the measured candidate.
+
+
+## Corrected installed screening checkpoint
+
+Source `a37bf26` (native `b8ce4f2`) passes all four installed screens. The same
+lifecycle reuses one process across successive epochs, recovers an in-flight
+worker kill, retires idle workers, and passes pause/restart/schema and atomic/pinned
+checks. Observer off/on smokes converge to both frozen source tables. The exact
+predecessor also passes the read component. Every successful screen cleans up
+with zero leaked/remaining descendants.
+
+All 119 current analytics tests, 334 native tests (four ignored), and 76 harness
+tests pass. The new queue-pressure test exercises production retries after the
+socket backlog drains; expired queued clients open no snapshots. [Screen receipts,
+initial failure and package proofs](sync-performance-evidence/2026-10-02-sp10b-screen/README.md)
+are retained. These are functional screens, not measured performance results.
+`candidate-runtime-02`, `harness-02` and `config-02.json` are frozen for the new
+supervised `campaign-01`; its final measured review is pending.

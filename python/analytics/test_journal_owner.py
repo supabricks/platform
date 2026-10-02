@@ -175,6 +175,29 @@ class OwnerTests(unittest.TestCase):
             finally:connection.close()
         self.assertEqual(self.request()[2],300)
 
+    def test_queue_pressure_shares_deadline_and_expired_readers_open_no_snapshot(self):
+        from concurrent.futures import ThreadPoolExecutor
+        self.spool.append(380,400,b'x'*(4*1024*1024))
+        self.config['target_lsn']='0/190';atomic(self.input,self.config)
+        original=self.spool.backend.snapshot
+        with patch.object(self.spool.backend,'snapshot',wraps=original) as snapshots:
+            connection=self.connect()
+            try:
+                channel=owner.Channel(connection,time.monotonic()+3)
+                self.assertEqual(json.loads(channel.frame(owner.MAX_HEADER))['end'],400)
+                def queued(_):
+                    started=time.monotonic()
+                    with self.assertRaises(ReadBusy):self.request(seconds=.2)
+                    return time.monotonic()-started
+                with ThreadPoolExecutor(max_workers=8) as pool:elapsed=list(pool.map(queued,range(8)))
+                self.assertLess(max(elapsed),.6);self.assertEqual(snapshots.call_count,1)
+                self.assert_unpinned()
+            finally:connection.close()
+            # A just-closed backlog can still reject the first connect with
+            # EAGAIN. Exercise production's bounded read-only retry policy.
+            self.assertEqual(storage.journal(self.config)[2],400)
+            self.assertEqual(snapshots.call_count,2)
+
     def test_symlink_grant_and_non_socket_endpoint_are_rejected(self):
         original=self.input.read_bytes();self.input.unlink();self.input.symlink_to(self.control)
         with self.assertRaisesRegex(CaptureError,'journal_owner_fenced'):self.request()
