@@ -90,3 +90,24 @@ with tempfile.TemporaryDirectory() as root:
 """
         result=subprocess.run([sys.executable,'-c',script],env=dict(__import__('os').environ,PYTHONPATH=str(Path(__file__).parent.resolve())),capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_reused_process_profiles_each_request_and_keeps_errors_separate(self):
+        with tempfile.TemporaryDirectory() as directory, patch.multiple(p,
+                ENABLED=True,ROLE='incremental',PROFILE_ROOT=Path(directory),REQUEST_INDEX=0,
+                REQUEST_ACTIVE=False,WRITTEN=0,WRITE_ERRORS=0,NATIVE=None):
+            def run(config):
+                if config['id']=='bad':raise ValueError('private row')
+                return config['id']
+            measured=p.request_profile(p.wrap(run,'apply.run'))
+            self.assertEqual(measured(dict(id='first',attempt=1)),'first')
+            with self.assertRaises(ValueError):measured(dict(id='bad',attempt=2))
+            self.assertEqual(measured(dict(id='last',attempt=1)),'last')
+            rows=[json.loads(path.read_text().splitlines()[-1]) for path in Path(directory).glob('*.jsonl')]
+            self.assertEqual({r['context_id'] for r in rows},{'first','bad','last'})
+            for r in rows:
+                self.assertTrue(r['final']);self.assertEqual(r['metrics']['apply.run']['calls'],1)
+                self.assertEqual(r['metrics']['apply.run']['errors'],int(r['context_id']=='bad'))
+                self.assertGreaterEqual(r['request_cpu_s'],0)
+                self.assertNotIn('private row',json.dumps(r))
+            self.assertEqual({r['pid'] for r in rows},{__import__('os').getpid()})
+            self.assertEqual({r['worker_request_index'] for r in rows},{1,2,3})

@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic reviewed, source patch deferred; SP08 measured/reviewed, release CI pending; SP09–SP12 planned**, 2026-10-01 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a measured/reviewed, merge authorized; SP09b assessed, concurrency deferred; SP10–SP12 planned**, 2026-10-02 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -562,6 +562,11 @@ freshness regression from smaller, more expensive batches.
 
 ### SP09a — Worker reuse, only if startup remains material
 
+**Measured and reviewed; keep.** All 84 accepted trials and six lifecycle fixtures
+pass. At ~1,249 rows/s, paired p95 improves 11.96% / 11.33% and CPU decreases
+25.67% / 40.51% at 8/16 logical CPUs. Profiler costs are reported separately. See the
+[implementation and frozen measurement contract](../architecture/sync-performance-sp09a.md).
+
 Reuse a bounded worker for the same authorized generation only if imports/startup
 still consume a meaningful fraction of the target. Give it explicit request IDs,
 per-request budgets, cancellation, memory limits and deterministic recycling.
@@ -574,6 +579,13 @@ Exit: demonstrated net pipeline benefit, with no lifecycle/security regression.
 Otherwise retain short-lived workers.
 
 ### SP09b — Bounded table parallelism, only if apply becomes CPU-bound
+
+**Assessed; deferred for the current workload.** The post-SP09a screen covers 18
+accepted candidate trials and 1,908 warm requests. At qualified load, request CPU
+is 0.627–0.650 CPU-seconds per apply wall-second; Python fsync spans occupy
+47.4–49.3% of apply time and both Delta merges total 17–18 ms. The CPU-bound gate
+is not met; keep concurrency one. No concurrency-2/4 implementation or speedup
+claim. See the [assessment, evidence and reopening criteria](../architecture/sync-performance-sp09b.md).
 
 Keep source ordering and one in-flight publication per sync group. Parallelize
 independent table preparation/merge tasks within a batch only after profiling

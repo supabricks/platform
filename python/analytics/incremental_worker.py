@@ -194,16 +194,26 @@ def run_owned(config,root,journal_data,lease):
     fault('after_epoch_receipt')
 
 
-if __name__=='__main__':
-    config=read_json(sys.argv[1],4*1024*1024)
+def execute(config):
     try:run(config)
     except JournalBusyDeferred:
         atomic(Path(config['workspace'])/'result.json',dict(state='deferred',error='journal_read_busy_deferred',
             phase='journal_before_initialize',id=config['id'],worker_generation=config['worker_generation'],
             attempt=config['attempt'],identity=config['identity'],bootstrap_lsn=config['bootstrap_lsn'],
             after_lsn=config['after_lsn'],target_lsn=config['target_lsn'],journal_read=config['_journal_read']))
-        sys.exit(2)
+        return 2
     except Exception as error:
         code=error.code if isinstance(error,CaptureError) else 'incremental_worker_failed'
         atomic(Path(config['workspace'])/'result.json',dict(state='failed',id=config['id'],worker_generation=config['worker_generation'],error=code,journal_read=config.get('_journal_read')))
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__=='__main__':
+    config=read_json(sys.argv[1],4*1024*1024)
+    if config.get('reuse_worker',False):
+        from incremental.reuse import serve
+        del config
+        serve(sys.argv[1],execute)
+    else:
+        sys.exit(execute(config))
