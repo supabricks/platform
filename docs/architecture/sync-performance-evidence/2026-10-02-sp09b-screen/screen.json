@@ -1,0 +1,1555 @@
+{
+  "scope": "Successful warm requests starting in measurement window; tails can cross its end. CPU includes all process threads and small profiling wrapper overhead. Fsync is Python fsync wall time; native durability is not fully represented. Inclusive table/merge/fsync spans overlap and must not be added. Two-table reference workload only; this is a prerequisite screen, not a concurrency speedup measurement.",
+  "source_root": "docs/architecture/sync-performance-evidence/2026-10-02-sp09a-reviewed",
+  "script_sha256": "7ab3e5b7d53348ceb63dedfbe135d6bf7a63ff4444dc2517b72946dfc791ecce",
+  "trials": [
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 8,
+        "rate": 1000,
+        "repeat": 2
+      },
+      "profile": "historical-main/01-attempt01-candidate/01-cpu8-rate1000-r1/profile.json.gz",
+      "profile_sha256": "f08fd955818a295e42c9a5fcd9ad9f52a81ea5fc6b52fb5f0f008ce61efab9bc",
+      "excluded": {
+        "outside_window": 10,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 43,
+          "minimum": 246.65536,
+          "median": 299.961843,
+          "p95": 341.669309,
+          "maximum": 356.787584
+        },
+        "request_cpu_ms": {
+          "count": 43,
+          "minimum": 128.62899999999988,
+          "median": 180.99099999999967,
+          "p95": 225.25699999999915,
+          "maximum": 233.43900000000062
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.4741100046092434,
+          "median": 0.6013593326332562,
+          "p95": 0.673674930666445,
+          "maximum": 0.8745423050889103
+        },
+        "fsync_wall_ms": {
+          "count": 43,
+          "minimum": 80.078908,
+          "median": 163.737908,
+          "p95": 185.434096,
+          "maximum": 190.547889
+        },
+        "fsync_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.31369211828481997,
+          "median": 0.5468345625715834,
+          "p95": 0.6301697907978681,
+          "maximum": 0.6489835018032819
+        },
+        "table_wall_ms": {
+          "count": 43,
+          "minimum": 83.264392,
+          "median": 111.191683,
+          "p95": 135.648239,
+          "maximum": 138.665834
+        },
+        "merge_wall_ms": {
+          "count": 43,
+          "minimum": 15.088451,
+          "median": 16.410942,
+          "p95": 17.688326,
+          "maximum": 18.245785
+        },
+        "planning_wall_ms": {
+          "count": 43,
+          "minimum": 53.356714,
+          "median": 64.703681,
+          "p95": 72.958043,
+          "maximum": 73.639124
+        },
+        "table_calls": {
+          "count": 43,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.751,
+      "source_rows_s": 735.918
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 4,
+        "rate": 50,
+        "repeat": 2
+      },
+      "profile": "historical-main/02-attempt02-candidate/01-cpu4-rate50-r1/profile.json.gz",
+      "profile_sha256": "9bd7c460de9f8528aa2d48f1d4372cab93f895d73881bbdd39f66554a3ad5201",
+      "excluded": {
+        "outside_window": 12,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 54,
+          "minimum": 136.03267,
+          "median": 217.4103825,
+          "p95": 268.509023,
+          "maximum": 278.695191
+        },
+        "request_cpu_ms": {
+          "count": 54,
+          "minimum": 75.94799999999991,
+          "median": 153.69600000000005,
+          "p95": 209.85399999999998,
+          "maximum": 214.80400000000088
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 54,
+          "minimum": 0.48417866841134505,
+          "median": 0.7156744718758092,
+          "p95": 0.8614121084157095,
+          "maximum": 0.8717456120182614
+        },
+        "fsync_wall_ms": {
+          "count": 54,
+          "minimum": 57.235529,
+          "median": 90.189995,
+          "p95": 123.176203,
+          "maximum": 164.383865
+        },
+        "fsync_per_apply_wall": {
+          "count": 54,
+          "minimum": 0.3000610019910614,
+          "median": 0.4330157760305653,
+          "p95": 0.5751160793276263,
+          "maximum": 0.6253823495616363
+        },
+        "table_wall_ms": {
+          "count": 54,
+          "minimum": 60.272974,
+          "median": 91.9946085,
+          "p95": 122.795431,
+          "maximum": 126.656939
+        },
+        "merge_wall_ms": {
+          "count": 54,
+          "minimum": 14.257935,
+          "median": 15.6988445,
+          "p95": 17.238075,
+          "maximum": 17.765523
+        },
+        "planning_wall_ms": {
+          "count": 54,
+          "minimum": 19.964756,
+          "median": 44.868441000000004,
+          "p95": 53.371733,
+          "maximum": 53.678248
+        },
+        "table_calls": {
+          "count": 54,
+          "minimum": 2,
+          "median": 2.0,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.42,
+      "source_rows_s": 50.038
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 50,
+        "repeat": 3
+      },
+      "profile": "historical-main/03-attempt03-candidate/01-cpu16-rate50-r1/profile.json.gz",
+      "profile_sha256": "79ceb29d9e5458a6d035f79a614b5170924e577a2ccf7dc60339463d5a6c033a",
+      "excluded": {
+        "outside_window": 12,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 57,
+          "minimum": 122.519146,
+          "median": 192.97232,
+          "p95": 254.304495,
+          "maximum": 282.246519
+        },
+        "request_cpu_ms": {
+          "count": 57,
+          "minimum": 76.06099999999994,
+          "median": 148.32599999999996,
+          "p95": 201.84200000000095,
+          "maximum": 206.67799999999835
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 57,
+          "minimum": 0.5317238860854361,
+          "median": 0.7486189222314467,
+          "p95": 0.8677702978122526,
+          "maximum": 0.922522211639261
+        },
+        "fsync_wall_ms": {
+          "count": 57,
+          "minimum": 50.604525,
+          "median": 83.939084,
+          "p95": 119.618934,
+          "maximum": 146.230918
+        },
+        "fsync_per_apply_wall": {
+          "count": 57,
+          "minimum": 0.2656155847104471,
+          "median": 0.4081643290796587,
+          "p95": 0.5678772129740804,
+          "maximum": 0.5860133485548189
+        },
+        "table_wall_ms": {
+          "count": 57,
+          "minimum": 57.882318,
+          "median": 88.002316,
+          "p95": 117.148299,
+          "maximum": 127.082736
+        },
+        "merge_wall_ms": {
+          "count": 57,
+          "minimum": 15.488054,
+          "median": 16.650208,
+          "p95": 18.217389,
+          "maximum": 18.407793
+        },
+        "planning_wall_ms": {
+          "count": 57,
+          "minimum": 18.226459,
+          "median": 41.498315,
+          "p95": 48.546022,
+          "maximum": 49.504517
+        },
+        "table_calls": {
+          "count": 57,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.44,
+      "source_rows_s": 50.04
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 50,
+        "repeat": 2
+      },
+      "profile": "historical-main/04-attempt04-candidate/01-cpu16-rate50-r1/profile.json.gz",
+      "profile_sha256": "302e4981169873fb8969a1f86d876874d833b05a42e3ccc9a855f674e9cb6d5a",
+      "excluded": {
+        "outside_window": 12,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 57,
+          "minimum": 140.070449,
+          "median": 191.341172,
+          "p95": 265.780858,
+          "maximum": 286.470044
+        },
+        "request_cpu_ms": {
+          "count": 57,
+          "minimum": 80.20600000000022,
+          "median": 145.2,
+          "p95": 201.1389999999995,
+          "maximum": 206.8500000000011
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 57,
+          "minimum": 0.4877078692978534,
+          "median": 0.7353542813084993,
+          "p95": 0.9062022994083302,
+          "maximum": 0.9165602659668618
+        },
+        "fsync_wall_ms": {
+          "count": 57,
+          "minimum": 51.398202,
+          "median": 79.714369,
+          "p95": 127.322557,
+          "maximum": 173.00078
+        },
+        "fsync_per_apply_wall": {
+          "count": 57,
+          "minimum": 0.2638213701493601,
+          "median": 0.4234065840749061,
+          "p95": 0.5910186791127899,
+          "maximum": 0.6189940561131181
+        },
+        "table_wall_ms": {
+          "count": 57,
+          "minimum": 63.150927,
+          "median": 84.440549,
+          "p95": 122.511115,
+          "maximum": 180.018834
+        },
+        "merge_wall_ms": {
+          "count": 57,
+          "minimum": 15.331854,
+          "median": 16.641544,
+          "p95": 18.33581,
+          "maximum": 18.356258
+        },
+        "planning_wall_ms": {
+          "count": 57,
+          "minimum": 21.594041,
+          "median": 41.795045,
+          "p95": 49.887642,
+          "maximum": 49.975094
+        },
+        "table_calls": {
+          "count": 57,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.438,
+      "source_rows_s": 50.037
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1000,
+        "repeat": 1
+      },
+      "profile": "historical-main/05-attempt05-candidate/01-cpu16-rate1000-r1/profile.json.gz",
+      "profile_sha256": "d1e74c1c94460d1732d1f708b8cf59a4b1dca9f2a1d4fb82a97a933edc30fe92",
+      "excluded": {
+        "outside_window": 10,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 43,
+          "minimum": 211.60512,
+          "median": 301.097215,
+          "p95": 354.47888,
+          "maximum": 365.292112
+        },
+        "request_cpu_ms": {
+          "count": 43,
+          "minimum": 69.23199999999996,
+          "median": 176.68199999999956,
+          "p95": 224.91899999999987,
+          "maximum": 229.81300000000005
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.3271754483067326,
+          "median": 0.5843260955675776,
+          "p95": 0.6486516412756196,
+          "maximum": 0.7254217909896251
+        },
+        "fsync_wall_ms": {
+          "count": 43,
+          "minimum": 134.189291,
+          "median": 167.859433,
+          "p95": 189.982525,
+          "maximum": 199.735484
+        },
+        "fsync_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.4344458118383632,
+          "median": 0.5568683937950287,
+          "p95": 0.6454305382072367,
+          "maximum": 0.7425855622018975
+        },
+        "table_wall_ms": {
+          "count": 43,
+          "minimum": 82.243994,
+          "median": 115.918235,
+          "p95": 145.272602,
+          "maximum": 146.915904
+        },
+        "merge_wall_ms": {
+          "count": 43,
+          "minimum": 15.573507,
+          "median": 17.129318,
+          "p95": 18.292097,
+          "maximum": 18.706017
+        },
+        "planning_wall_ms": {
+          "count": 43,
+          "minimum": 16.145133,
+          "median": 61.401162,
+          "p95": 70.429795,
+          "maximum": 72.789001
+        },
+        "table_calls": {
+          "count": 43,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.721,
+      "source_rows_s": 748.801
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 50,
+        "repeat": 1
+      },
+      "profile": "historical-main/06-attempt06-candidate/01-cpu16-rate50-r1/profile.json.gz",
+      "profile_sha256": "9161e199fa082a2e3e0adb0879fae7c7d9a32a752be48ff82952b8ae945d9e5f",
+      "excluded": {
+        "outside_window": 13,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 54,
+          "minimum": 130.294587,
+          "median": 201.478309,
+          "p95": 270.280921,
+          "maximum": 285.084116
+        },
+        "request_cpu_ms": {
+          "count": 54,
+          "minimum": 74.78700000000016,
+          "median": 151.12550000000002,
+          "p95": 202.05200000000013,
+          "maximum": 209.02599999999794
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 54,
+          "minimum": 0.5370318498792838,
+          "median": 0.7144503477335773,
+          "p95": 0.8806194163633634,
+          "maximum": 0.9061798262067065
+        },
+        "fsync_wall_ms": {
+          "count": 54,
+          "minimum": 51.624574,
+          "median": 82.39067349999999,
+          "p95": 118.028029,
+          "maximum": 154.017403
+        },
+        "fsync_per_apply_wall": {
+          "count": 54,
+          "minimum": 0.2863929786790942,
+          "median": 0.4386411043316978,
+          "p95": 0.5617667893339164,
+          "maximum": 0.5819798814066931
+        },
+        "table_wall_ms": {
+          "count": 54,
+          "minimum": 60.12429,
+          "median": 91.0251025,
+          "p95": 120.062126,
+          "maximum": 123.723469
+        },
+        "merge_wall_ms": {
+          "count": 54,
+          "minimum": 15.583497,
+          "median": 16.843737,
+          "p95": 18.330911,
+          "maximum": 18.435586
+        },
+        "planning_wall_ms": {
+          "count": 54,
+          "minimum": 17.523123,
+          "median": 41.38851,
+          "p95": 47.812268,
+          "maximum": 49.598307
+        },
+        "table_calls": {
+          "count": 54,
+          "minimum": 2,
+          "median": 2.0,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.432,
+      "source_rows_s": 50.04
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1000,
+        "repeat": 1
+      },
+      "profile": "historical-main/07-attempt07-candidate/01-cpu8-rate1000-r1/profile.json.gz",
+      "profile_sha256": "7c2b87b0ff8f93aa59323367925106a7aeff1b16d5e73476869fc3a2bc2b1dc4",
+      "excluded": {
+        "outside_window": 10,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 43,
+          "minimum": 239.643774,
+          "median": 301.15925,
+          "p95": 352.592222,
+          "maximum": 366.345177
+        },
+        "request_cpu_ms": {
+          "count": 43,
+          "minimum": 130.811,
+          "median": 180.92299999999994,
+          "p95": 226.98399999999987,
+          "maximum": 233.6550000000006
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.47563916519445154,
+          "median": 0.60479779953853,
+          "p95": 0.6532685763563344,
+          "maximum": 0.9483993521150275
+        },
+        "fsync_wall_ms": {
+          "count": 43,
+          "minimum": 59.170326,
+          "median": 164.776097,
+          "p95": 184.97334,
+          "maximum": 189.921151
+        },
+        "fsync_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.24690950660792046,
+          "median": 0.5338569194629169,
+          "p95": 0.6149340915251653,
+          "maximum": 0.6556865750866532
+        },
+        "table_wall_ms": {
+          "count": 43,
+          "minimum": 82.123108,
+          "median": 110.782993,
+          "p95": 142.115713,
+          "maximum": 153.208264
+        },
+        "merge_wall_ms": {
+          "count": 43,
+          "minimum": 14.750299,
+          "median": 16.272806,
+          "p95": 17.5181,
+          "maximum": 20.605105
+        },
+        "planning_wall_ms": {
+          "count": 43,
+          "minimum": 55.996861,
+          "median": 64.77477,
+          "p95": 74.661265,
+          "maximum": 75.426062
+        },
+        "table_calls": {
+          "count": 43,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.751,
+      "source_rows_s": 736.703
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1000,
+        "repeat": 3
+      },
+      "profile": "historical-main/08-attempt08-candidate/01-cpu16-rate1000-r1/profile.json.gz",
+      "profile_sha256": "780da55b68989a07dd95e9d433f812b2b62541064e4237ad8b9d3210afc0ac36",
+      "excluded": {
+        "outside_window": 10,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 42,
+          "minimum": 256.323213,
+          "median": 296.5551925,
+          "p95": 349.795309,
+          "maximum": 370.278008
+        },
+        "request_cpu_ms": {
+          "count": 42,
+          "minimum": 128.62399999999985,
+          "median": 176.69850000000054,
+          "p95": 219.2160000000012,
+          "maximum": 228.30800000000016
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 42,
+          "minimum": 0.479531868608262,
+          "median": 0.5863624348560724,
+          "p95": 0.6433135862182179,
+          "maximum": 0.6592543654874052
+        },
+        "fsync_wall_ms": {
+          "count": 42,
+          "minimum": 150.92142,
+          "median": 169.794706,
+          "p95": 190.295504,
+          "maximum": 201.241559
+        },
+        "fsync_per_apply_wall": {
+          "count": 42,
+          "minimum": 0.4853670097704507,
+          "median": 0.55401063201763,
+          "p95": 0.6391805060589655,
+          "maximum": 0.6436118192300323
+        },
+        "table_wall_ms": {
+          "count": 42,
+          "minimum": 93.522124,
+          "median": 112.690223,
+          "p95": 138.41339,
+          "maximum": 147.409086
+        },
+        "merge_wall_ms": {
+          "count": 42,
+          "minimum": 15.580304,
+          "median": 17.051323,
+          "p95": 18.197006,
+          "maximum": 19.237266
+        },
+        "planning_wall_ms": {
+          "count": 42,
+          "minimum": 52.994476,
+          "median": 62.5306225,
+          "p95": 69.728818,
+          "maximum": 70.370896
+        },
+        "table_calls": {
+          "count": 42,
+          "minimum": 2,
+          "median": 2.0,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.72,
+      "source_rows_s": 745.691
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 4,
+        "rate": 50,
+        "repeat": 3
+      },
+      "profile": "historical-main/09-attempt09-candidate/01-cpu4-rate50-r1/profile.json.gz",
+      "profile_sha256": "29edacf69c3c22539ca26404b9fe0f284978ef9a487b5f3f8a25d4e96bebeaba",
+      "excluded": {
+        "outside_window": 13,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 55,
+          "minimum": 126.318392,
+          "median": 218.985284,
+          "p95": 265.565596,
+          "maximum": 293.747451
+        },
+        "request_cpu_ms": {
+          "count": 55,
+          "minimum": 62.51200000000012,
+          "median": 153.1039999999999,
+          "p95": 211.20799999999917,
+          "maximum": 211.8840000000013
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 55,
+          "minimum": 0.47606655315879565,
+          "median": 0.7160604442411104,
+          "p95": 0.8442576442716607,
+          "maximum": 0.8867628378810624
+        },
+        "fsync_wall_ms": {
+          "count": 55,
+          "minimum": 61.080228,
+          "median": 89.495581,
+          "p95": 122.720485,
+          "maximum": 128.344366
+        },
+        "fsync_per_apply_wall": {
+          "count": 55,
+          "minimum": 0.27578174263961996,
+          "median": 0.43575409050767,
+          "p95": 0.5796618911995016,
+          "maximum": 0.6136234646237838
+        },
+        "table_wall_ms": {
+          "count": 55,
+          "minimum": 58.023988,
+          "median": 92.740765,
+          "p95": 122.893601,
+          "maximum": 136.773808
+        },
+        "merge_wall_ms": {
+          "count": 55,
+          "minimum": 14.141785,
+          "median": 15.56482,
+          "p95": 17.046483,
+          "maximum": 17.112004
+        },
+        "planning_wall_ms": {
+          "count": 55,
+          "minimum": 12.464275,
+          "median": 44.837001,
+          "p95": 52.49213,
+          "maximum": 61.122355
+        },
+        "table_calls": {
+          "count": 55,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.416,
+      "source_rows_s": 50.035
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1000,
+        "repeat": 3
+      },
+      "profile": "historical-main/10-attempt10-candidate/01-cpu8-rate1000-r1/profile.json.gz",
+      "profile_sha256": "2b7e762727905408e7246b85cdd81a3d4ea635cfbde4b5cb6e23f32be441a611",
+      "excluded": {
+        "outside_window": 11,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 43,
+          "minimum": 201.614671,
+          "median": 302.303881,
+          "p95": 357.22099,
+          "maximum": 371.46617
+        },
+        "request_cpu_ms": {
+          "count": 43,
+          "minimum": 65.10100000000007,
+          "median": 181.02899999999877,
+          "p95": 225.59699999999873,
+          "maximum": 233.97700000000123
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.32289812877754354,
+          "median": 0.5848893494661604,
+          "p95": 0.6615860445117201,
+          "maximum": 0.6964920262022698
+        },
+        "fsync_wall_ms": {
+          "count": 43,
+          "minimum": 125.968066,
+          "median": 165.340429,
+          "p95": 187.673017,
+          "maximum": 213.800883
+        },
+        "fsync_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.4560505811549383,
+          "median": 0.5502571251154188,
+          "p95": 0.6242800787404847,
+          "maximum": 0.734475463841617
+        },
+        "table_wall_ms": {
+          "count": 43,
+          "minimum": 85.75449,
+          "median": 116.948626,
+          "p95": 137.809577,
+          "maximum": 140.620912
+        },
+        "merge_wall_ms": {
+          "count": 43,
+          "minimum": 15.049381,
+          "median": 16.446486,
+          "p95": 17.679857,
+          "maximum": 17.895359
+        },
+        "planning_wall_ms": {
+          "count": 43,
+          "minimum": 12.50803,
+          "median": 64.404409,
+          "p95": 73.455903,
+          "maximum": 74.68198
+        },
+        "table_calls": {
+          "count": 43,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.747,
+      "source_rows_s": 728.661
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 1000,
+        "repeat": 2
+      },
+      "profile": "historical-main/11-attempt11-candidate/01-cpu16-rate1000-r1/profile.json.gz",
+      "profile_sha256": "469c98eed607c6db8314f16fa17a78dfcb54d3d62199b976d2e3c6e1111bf1a8",
+      "excluded": {
+        "outside_window": 10,
+        "cold": 0,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 43,
+          "minimum": 230.808563,
+          "median": 300.289301,
+          "p95": 347.209137,
+          "maximum": 363.376212
+        },
+        "request_cpu_ms": {
+          "count": 43,
+          "minimum": 69.46400000000041,
+          "median": 177.1779999999996,
+          "p95": 222.31100000000126,
+          "maximum": 230.264
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.3009593712517521,
+          "median": 0.5925020015059231,
+          "p95": 0.6665689661885316,
+          "maximum": 0.7882092096000233
+        },
+        "fsync_wall_ms": {
+          "count": 43,
+          "minimum": 110.130859,
+          "median": 167.932047,
+          "p95": 187.685788,
+          "maximum": 189.144654
+        },
+        "fsync_per_apply_wall": {
+          "count": 43,
+          "minimum": 0.38445187307328077,
+          "median": 0.5434747517262597,
+          "p95": 0.638412118832642,
+          "maximum": 0.7628027864806732
+        },
+        "table_wall_ms": {
+          "count": 43,
+          "minimum": 92.91162,
+          "median": 115.181716,
+          "p95": 133.344435,
+          "maximum": 143.536894
+        },
+        "merge_wall_ms": {
+          "count": 43,
+          "minimum": 15.726752,
+          "median": 17.167791,
+          "p95": 18.03761,
+          "maximum": 18.147662
+        },
+        "planning_wall_ms": {
+          "count": 43,
+          "minimum": 15.92249,
+          "median": 62.551287,
+          "p95": 71.06697,
+          "maximum": 73.426525
+        },
+        "table_calls": {
+          "count": 43,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.719,
+      "source_rows_s": 748.802
+    },
+    {
+      "phase": "historical-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 4,
+        "rate": 50,
+        "repeat": 1
+      },
+      "profile": "historical-main/12-attempt12-candidate/01-cpu4-rate50-r1/profile.json.gz",
+      "profile_sha256": "31fd477b90ed6845eb776648e9495684f6fd4e9e3f6a6451d0c1ea2abca7e35f",
+      "excluded": {
+        "outside_window": 13,
+        "cold": 1,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 55,
+          "minimum": 133.937485,
+          "median": 213.169486,
+          "p95": 263.146212,
+          "maximum": 268.709656
+        },
+        "request_cpu_ms": {
+          "count": 55,
+          "minimum": 65.19900000000001,
+          "median": 151.74599999999927,
+          "p95": 207.83899999999988,
+          "maximum": 211.18599999999964
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 55,
+          "minimum": 0.4662184412915757,
+          "median": 0.7365406680196421,
+          "p95": 0.8877178603115233,
+          "maximum": 0.9008354890418449
+        },
+        "fsync_wall_ms": {
+          "count": 55,
+          "minimum": 57.929204,
+          "median": 84.953541,
+          "p95": 131.089929,
+          "maximum": 157.699832
+        },
+        "fsync_per_apply_wall": {
+          "count": 55,
+          "minimum": 0.26740196898700097,
+          "median": 0.41645191647642293,
+          "p95": 0.603102434893101,
+          "maximum": 0.6167672286989508
+        },
+        "table_wall_ms": {
+          "count": 55,
+          "minimum": 63.354857,
+          "median": 88.04658,
+          "p95": 120.208681,
+          "maximum": 127.197157
+        },
+        "merge_wall_ms": {
+          "count": 55,
+          "minimum": 14.034693,
+          "median": 15.932607,
+          "p95": 17.449098,
+          "maximum": 18.021616
+        },
+        "planning_wall_ms": {
+          "count": 55,
+          "minimum": 12.943898,
+          "median": 44.866073,
+          "p95": 52.612227,
+          "maximum": 56.675363
+        },
+        "table_calls": {
+          "count": 55,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.42,
+      "source_rows_s": 50.035
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "profile": "qualified-main/01-attempt01-candidate/01-cpu16-rate1250-r1/profile.json.gz",
+      "profile_sha256": "a5bb8bdfec25ba084bdfc6d59972a2405192081ae8375383f16c8cf8372badc0",
+      "excluded": {
+        "outside_window": 57,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 219,
+          "minimum": 269.19654,
+          "median": 360.215487,
+          "p95": 427.13139,
+          "maximum": 451.887862
+        },
+        "request_cpu_ms": {
+          "count": 219,
+          "minimum": 140.29800000000003,
+          "median": 224.8739999999998,
+          "p95": 298.2710000000002,
+          "maximum": 320.85900000000044
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.45844545053520597,
+          "median": 0.6287688124444151,
+          "p95": 0.7250053592461293,
+          "maximum": 0.7492700989982392
+        },
+        "fsync_wall_ms": {
+          "count": 219,
+          "minimum": 122.268577,
+          "median": 173.838109,
+          "p95": 195.787663,
+          "maximum": 245.804236
+        },
+        "fsync_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.3817739353809705,
+          "median": 0.4925060006149251,
+          "p95": 0.5923524759332264,
+          "maximum": 0.6382805374022389
+        },
+        "table_wall_ms": {
+          "count": 219,
+          "minimum": 99.154021,
+          "median": 138.118935,
+          "p95": 166.190102,
+          "maximum": 176.985016
+        },
+        "merge_wall_ms": {
+          "count": 219,
+          "minimum": 15.861616,
+          "median": 17.534358,
+          "p95": 19.387958,
+          "maximum": 20.90775
+        },
+        "planning_wall_ms": {
+          "count": 219,
+          "minimum": 41.470743,
+          "median": 68.869034,
+          "p95": 83.620948,
+          "maximum": 88.306795
+        },
+        "table_calls": {
+          "count": 219,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.986,
+      "source_rows_s": 1249.729
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "profile": "qualified-main/02-attempt03-candidate/01-cpu16-rate1250-r1/profile.json.gz",
+      "profile_sha256": "1f9de025dd4a092a05b46ad22b4f244bd40af1ebc00b4b4f1c0a866127c4ad57",
+      "excluded": {
+        "outside_window": 57,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 219,
+          "minimum": 270.054288,
+          "median": 356.646842,
+          "p95": 433.481613,
+          "maximum": 488.51446
+        },
+        "request_cpu_ms": {
+          "count": 219,
+          "minimum": 140.12199999999984,
+          "median": 227.9460000000011,
+          "p95": 301.39099999999974,
+          "maximum": 320.50700000000097
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.5022615349776217,
+          "median": 0.6329778985338128,
+          "p95": 0.717911171879874,
+          "maximum": 0.7879896384722505
+        },
+        "fsync_wall_ms": {
+          "count": 219,
+          "minimum": 106.64964,
+          "median": 173.429728,
+          "p95": 191.056126,
+          "maximum": 249.697741
+        },
+        "fsync_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.3425038973076781,
+          "median": 0.48347521293808815,
+          "p95": 0.5870486979644343,
+          "maximum": 0.61314302877929
+        },
+        "table_wall_ms": {
+          "count": 219,
+          "minimum": 89.072802,
+          "median": 137.262164,
+          "p95": 165.882736,
+          "maximum": 228.806171
+        },
+        "merge_wall_ms": {
+          "count": 219,
+          "minimum": 15.850254,
+          "median": 17.421506,
+          "p95": 19.528737,
+          "maximum": 21.211986
+        },
+        "planning_wall_ms": {
+          "count": 219,
+          "minimum": 55.00091,
+          "median": 68.682619,
+          "p95": 82.770485,
+          "maximum": 87.880057
+        },
+        "table_calls": {
+          "count": 219,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.984,
+      "source_rows_s": 1249.783
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "profile": "qualified-main/03-attempt04-candidate/01-cpu8-rate1250-r1/profile.json.gz",
+      "profile_sha256": "89e2cbdeb18987f18f71f22d9931a0763d6527fb5cc557efd5b02134258d8420",
+      "excluded": {
+        "outside_window": 56,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 221,
+          "minimum": 253.984689,
+          "median": 355.129826,
+          "p95": 426.484897,
+          "maximum": 443.169839
+        },
+        "request_cpu_ms": {
+          "count": 221,
+          "minimum": 152.1379999999999,
+          "median": 232.63999999999996,
+          "p95": 303.3220000000005,
+          "maximum": 325.8499999999991
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 221,
+          "minimum": 0.5012518068936632,
+          "median": 0.6498638547422045,
+          "p95": 0.7329655165183467,
+          "maximum": 0.903042623959118
+        },
+        "fsync_wall_ms": {
+          "count": 221,
+          "minimum": 62.135237,
+          "median": 168.352902,
+          "p95": 187.285373,
+          "maximum": 211.463949
+        },
+        "fsync_per_apply_wall": {
+          "count": 221,
+          "minimum": 0.24464166420677427,
+          "median": 0.47554947751129967,
+          "p95": 0.5622757406961411,
+          "maximum": 0.61939019832055
+        },
+        "table_wall_ms": {
+          "count": 221,
+          "minimum": 91.431546,
+          "median": 135.329665,
+          "p95": 164.870263,
+          "maximum": 180.323588
+        },
+        "merge_wall_ms": {
+          "count": 221,
+          "minimum": 14.453187,
+          "median": 16.832877,
+          "p95": 18.908411,
+          "maximum": 20.169523
+        },
+        "planning_wall_ms": {
+          "count": 221,
+          "minimum": 56.397169,
+          "median": 72.482862,
+          "p95": 88.198775,
+          "maximum": 92.51003
+        },
+        "table_calls": {
+          "count": 221,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 1.02,
+      "source_rows_s": 1248.97
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "profile": "qualified-main/04-attempt05-candidate/01-cpu8-rate1250-r1/profile.json.gz",
+      "profile_sha256": "ae9f7c8fe98bf8b5d0714908e5695831dc66ea864c8354291ccc56dc1afb1ebe",
+      "excluded": {
+        "outside_window": 56,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 221,
+          "minimum": 269.714271,
+          "median": 359.916005,
+          "p95": 426.686768,
+          "maximum": 458.508828
+        },
+        "request_cpu_ms": {
+          "count": 221,
+          "minimum": 149.02400000000026,
+          "median": 232.9030000000003,
+          "p95": 305.20500000000084,
+          "maximum": 326.26000000000045
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 221,
+          "minimum": 0.45182969044402876,
+          "median": 0.6467938263587297,
+          "p95": 0.7239925795745045,
+          "maximum": 0.7658877071637624
+        },
+        "fsync_wall_ms": {
+          "count": 221,
+          "minimum": 109.532802,
+          "median": 170.569926,
+          "p95": 188.25684,
+          "maximum": 284.91857
+        },
+        "fsync_per_apply_wall": {
+          "count": 221,
+          "minimum": 0.3687805317545904,
+          "median": 0.47542251977739475,
+          "p95": 0.5655099160808633,
+          "maximum": 0.6486354072900443
+        },
+        "table_wall_ms": {
+          "count": 221,
+          "minimum": 96.736955,
+          "median": 136.746451,
+          "p95": 165.481492,
+          "maximum": 183.522868
+        },
+        "merge_wall_ms": {
+          "count": 221,
+          "minimum": 14.378813,
+          "median": 16.928377,
+          "p95": 19.290335,
+          "maximum": 20.330654
+        },
+        "planning_wall_ms": {
+          "count": 221,
+          "minimum": 55.792336,
+          "median": 73.233961,
+          "p95": 88.486773,
+          "maximum": 91.918244
+        },
+        "table_calls": {
+          "count": 221,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 1.019,
+      "source_rows_s": 1249.478
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "profile": "qualified-main/05-attempt06-candidate/01-cpu16-rate1250-r1/profile.json.gz",
+      "profile_sha256": "a7606c8fa7eca40f3e13c4516c7d83380efe78e36ca998cb135ff568dd44c082",
+      "excluded": {
+        "outside_window": 56,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 219,
+          "minimum": 271.125015,
+          "median": 356.6103,
+          "p95": 427.249673,
+          "maximum": 480.288255
+        },
+        "request_cpu_ms": {
+          "count": 219,
+          "minimum": 139.54700000000008,
+          "median": 224.3819999999994,
+          "p95": 297.9320000000003,
+          "maximum": 315.7879999999995
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.48374904727438434,
+          "median": 0.6273595446915375,
+          "p95": 0.7150968720720393,
+          "maximum": 0.7453013173083504
+        },
+        "fsync_wall_ms": {
+          "count": 219,
+          "minimum": 142.452669,
+          "median": 173.299717,
+          "p95": 194.26928,
+          "maximum": 251.524851
+        },
+        "fsync_per_apply_wall": {
+          "count": 219,
+          "minimum": 0.3795066766457579,
+          "median": 0.4859081063084828,
+          "p95": 0.596232625353682,
+          "maximum": 0.6291977952718847
+        },
+        "table_wall_ms": {
+          "count": 219,
+          "minimum": 99.381637,
+          "median": 139.334594,
+          "p95": 164.884365,
+          "maximum": 227.033155
+        },
+        "merge_wall_ms": {
+          "count": 219,
+          "minimum": 15.791886,
+          "median": 17.396004,
+          "p95": 19.474029,
+          "maximum": 21.383693
+        },
+        "planning_wall_ms": {
+          "count": 219,
+          "minimum": 54.143411,
+          "median": 68.387645,
+          "p95": 82.203915,
+          "maximum": 88.201624
+        },
+        "table_calls": {
+          "count": 219,
+          "minimum": 2,
+          "median": 2,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 0.977,
+      "source_rows_s": 1249.801
+    },
+    {
+      "phase": "qualified-main",
+      "cell": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "profile": "qualified-main/06-attempt07-candidate/01-cpu8-rate1250-r1/profile.json.gz",
+      "profile_sha256": "9b754fbce64f7272f0c6c2cc6c2b0b7ebaf7a6129bf39df973f97775e0eb8138",
+      "excluded": {
+        "outside_window": 57,
+        "cold": 7,
+        "failed_or_incomplete": 0
+      },
+      "metrics": {
+        "apply_wall_ms": {
+          "count": 220,
+          "minimum": 253.115927,
+          "median": 358.786205,
+          "p95": 426.870589,
+          "maximum": 457.362591
+        },
+        "request_cpu_ms": {
+          "count": 220,
+          "minimum": 144.29500000000007,
+          "median": 231.4504999999998,
+          "p95": 303.39600000000024,
+          "maximum": 322.9550000000003
+        },
+        "request_cpu_per_apply_wall": {
+          "count": 220,
+          "minimum": 0.5209314032956506,
+          "median": 0.648522256847876,
+          "p95": 0.7260935936722487,
+          "maximum": 0.8521062758886769
+        },
+        "fsync_wall_ms": {
+          "count": 220,
+          "minimum": 95.160856,
+          "median": 170.571369,
+          "p95": 186.232687,
+          "maximum": 240.525804
+        },
+        "fsync_per_apply_wall": {
+          "count": 220,
+          "minimum": 0.31330405588798904,
+          "median": 0.4744308961114138,
+          "p95": 0.5669673448337472,
+          "maximum": 0.6026629517256672
+        },
+        "table_wall_ms": {
+          "count": 220,
+          "minimum": 77.541097,
+          "median": 134.362113,
+          "p95": 162.85754,
+          "maximum": 180.441954
+        },
+        "merge_wall_ms": {
+          "count": 220,
+          "minimum": 14.344828,
+          "median": 16.749055499999997,
+          "p95": 18.956887,
+          "maximum": 20.338587
+        },
+        "planning_wall_ms": {
+          "count": 220,
+          "minimum": 55.767149,
+          "median": 72.8879675,
+          "p95": 87.849285,
+          "maximum": 90.718933
+        },
+        "table_calls": {
+          "count": 220,
+          "minimum": 2,
+          "median": 2.0,
+          "p95": 2,
+          "maximum": 2
+        }
+      },
+      "whole_stack_cpu_cores": 1.022,
+      "source_rows_s": 1249.222
+    }
+  ]
+}
