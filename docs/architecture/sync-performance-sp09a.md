@@ -1,7 +1,8 @@
 # SP09a — Bounded incremental worker reuse
 
-Status: implementation and qualification in progress. No measured improvement or
-release-readiness claim yet. SP09b table parallelism is a separate experiment.
+Status: **reviewed; keep bounded worker reuse**, 2026-10-02 UTC. All 84 accepted
+performance/control trials, six lifecycle fixtures and latest CI passed.
+SP09b table parallelism remains a separately gated experiment.
 
 The initial candidate `a8384f0` passes 206 Rust tests (four ignored), 100 Python
 tests, 74 harness tests and a full-stack lifecycle screen. Three successive epochs
@@ -9,7 +10,7 @@ used PID 1181; killing that assigned worker recovered correctly. Idle retirement
 pause/resume, capture/daemon recovery, schema fencing and resync passed, with zero
 leaked descendants. This screen has no quiet-host performance qualification claim;
 [receipts and package proofs](sync-performance-evidence/2026-10-01-sp09a-screen/validation.json)
-are retained. The measured paired campaign remains pending.
+are retained. The measured paired campaign is now complete; see the review below.
 
 ## Why test reuse
 
@@ -131,3 +132,49 @@ supervisor records its own hash and a ten-second heartbeat and runs as a systemd
 user service; failures stop for investigation rather than automatically retrying.
 Future status checks must inspect service state and heartbeat age as well as the
 phase ledger. Runtime and instrumentation settings are unchanged.
+
+## Final review
+
+[Reviewed evidence](sync-performance-evidence/2026-10-02-sp09a-reviewed/README.md)
+contains all 84 accepted trials and six lifecycle fixtures, including the original
+completed phases and supervised continuation. Every retained raw receipt hash and
+metric was revalidated with the unchanged frozen controller. The continuation
+exited successfully at 2026-10-02 03:39:51 UTC. The unmonitored pair is excluded;
+its full replacement retained the original pairing protocol. No runtime failure
+or correctness/freshness failure occurred among the accepted trials.
+
+At 1,250 offered rows/s, eight clients, 16 GiB and 300-second measurement:
+
+| Logical CPUs | Actual candidate rows/s (median) | p95 lag predecessor → candidate | Paired p95 change | Paired CPU change | Paired peak memory change |
+| --- | ---: | --- | ---: | ---: | ---: |
+| 8 | 1,249.222 | 3,402.798 → 2,995.737 ms | −11.96% | −25.67% | +0.35% |
+| 16 | 1,249.783 | 3,411.920 → 3,031.190 ms | −11.33% | −40.51% | +1.58% |
+
+Three matched pairs per cell meet input and five-second p95 requirements. At
+historical offered 1,000 rows/s the lag gain is 17.72% / 17.32% at 8/16 CPUs,
+but four clients achieve only about 732–749 rows/s; this is not a 1,000 rows/s
+throughput qualification. At 50 rows/s p95 changes −1.97% / +0.37% at 4/16 CPUs;
+CPU decreases 47.63% / 72.40%, with paired peak memory increases below 5%.
+
+Instrumentation bridge drift is small: p95 +0.125%, CPU +0.146%, source +0.003%,
+peak memory −1.117%. Common profiler activation adds 5.29% CPU and 6.43% peak
+memory with +0.01% p95. Candidate qualified activation adds 7.86% / 9.13% CPU
+and 5.62% / 7.23% peak memory at 8/16 CPUs, with p95 +0.018% / −0.337%.
+The historical 16-CPU/50-row profiler control increases p95 5.27%; profiling is
+not free or universally neutral. These costs remain explicit and are not
+subtracted from the matched main comparisons. Unprofiled candidate qualified
+p95 medians are 3,013.525 / 3,024.294 ms at approximately 1,250 rows/s.
+
+All six lifecycle fixtures pass with clean teardown. Median whole-stack idle CPU
+is 0.08569 → 0.08720 cores; status API p95 is 45.020 → 36.013 ms, p99
+48.199 → 49.512 ms. Candidate fixtures verify actual same-process successive
+epochs, in-flight kill recovery and idle retirement, plus existing authority,
+pause/restart/schema fencing and pinned-reader behavior. Bounded recycling and
+these short runs do not establish long-soak memory behavior; SP11 remains required.
+
+Keep reuse for net latency and CPU benefit without an observed lifecycle regression.
+The latest implementation/recovery head 27270fe passed all 47 CI jobs, including
+both installed sync gates and the previously failing Linux probe/macOS catalog
+gates. Their prior intermittent failures remain tracked in #110/#140; a passing
+rerun does not establish a targeted fix. This is a local short-duration qualification,
+not a universal capacity promise or completion of SP11/SP12.

@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06 measurements/review complete, pending merge; SP07 diagnostic reviewed, source patch deferred; SP08 measured/reviewed, release CI pending; SP09–SP12 planned**, 2026-10-01 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a measured/reviewed, merge authorized; SP09b–SP12 planned**, 2026-10-02 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -562,9 +562,9 @@ freshness regression from smaller, more expensive batches.
 
 ### SP09a — Worker reuse, only if startup remains material
 
-**In progress.** The SP08 startup screen finds 201–219 ms median imports per
-request across 18 main candidate trials. A bounded reuse candidate and common
-per-request profiler are being qualified; no improvement claim yet. See the
+**Measured and reviewed; keep.** All 84 accepted trials and six lifecycle fixtures
+pass. At ~1,249 rows/s, paired p95 improves 11.96% / 11.33% and CPU decreases
+25.67% / 40.51% at 8/16 logical CPUs. Profiler costs are reported separately. See the
 [implementation and frozen measurement contract](../architecture/sync-performance-sp09a.md).
 
 Reuse a bounded worker for the same authorized generation only if imports/startup
