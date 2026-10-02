@@ -1,12 +1,11 @@
 """Private, bounded, single-writer transaction journal. No acknowledgment authority in RAM."""
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
-import sqlite3
 import stat
 import struct
+from .journal import CommitUncertain, Owner
 
 MAX_MESSAGE = 1024 * 1024
 MAX_TRANSACTION = 4 * 1024 * 1024
@@ -67,98 +66,50 @@ def atomic(path, value):
 
 class Spool:
     def __init__(self, directory, identity, limit=512*1024*1024, journal_mode='wal'):
-        self.lock = self.db = None
-        try: self.open(directory, identity, limit, journal_mode)
+        self.backend: Owner | None=None
+        try:self.open(directory,identity,limit,journal_mode)
         except BaseException:
-            self.close()
-            raise
+            self.close();raise
 
     def open(self, directory, identity, limit, journal_mode):
-        self.root = Path(directory)
-        self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
-        # Persist the directory entry before this journal can authorize feedback.
-        parent_fd = os.open(self.root.parent, os.O_RDONLY)
-        try: os.fsync(parent_fd)
-        finally: os.close(parent_fd)
-        meta = self.root.lstat()
-        if not stat.S_ISDIR(meta.st_mode) or meta.st_uid != os.getuid() or meta.st_mode & 0o077:
-            raise CaptureError('unsafe_spool_directory')
-        self.lock = private_file(self.root/'owner.lock')
-        try: fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            raise CaptureError('spool_already_owned') from None
-        self.identity = identity
-        self.last_data_lsn = 0
-        self.limit = limit
-        self.path = self.root/'spool.sqlite3'
-        existed = self.path.exists()
-        from .wal import Journal, private_sizes, fixed_sqlite
-        sizes = private_sizes(self.path)
-        if sum(sizes.values()) > limit:raise CaptureError('spool_budget')
-        if not fixed_sqlite():
-            raise CaptureError('sqlite_wal_unqualified')
-        self.journal = Journal(self, journal_mode)
-        os.close(private_file(self.path))
-        if self.path.stat().st_size > limit:raise CaptureError('spool_budget')
-        self.db = sqlite3.connect(self.path, isolation_level=None)
-        if not existed: self.db.execute('PRAGMA auto_vacuum=INCREMENTAL')
-        self.journal.configure()
-        if not existed:
-            self.journal.before_write()
-            self.db.executescript('BEGIN IMMEDIATE; CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL); '
-                'CREATE TABLE transactions(seq INTEGER PRIMARY KEY,end_lsn TEXT NOT NULL UNIQUE,previous_lsn TEXT NOT NULL,commit_lsn TEXT NOT NULL,payload BLOB NOT NULL,sha256 TEXT NOT NULL); COMMIT;')
-            self.set('identity', identity)
-            directory_fd=os.open(self.root,os.O_RDONLY)
-            try: os.fsync(directory_fd)
-            finally: os.close(directory_fd)
-        if self.get('identity') != identity:
-            raise CaptureError('spool_identity_mismatch')
-        self.verify()
-        self.journal.activate()
-        self.journal.after_write()
+        from .sqlite_journal import SQLiteJournal
+        self.identity=identity;self.last_data_lsn=0
+        self.backend=SQLiteJournal(directory,{'identity':identity},limit,journal_mode)
+        self.root=self.backend.root;self.path=self.backend.path
+        if self.get('identity')!=identity:raise CaptureError('spool_identity_mismatch')
+        self.verify();self.backend.activate();self.backend.after_write()
+
+    @property
+    def limit(self):return self.backend.limit
+
+    @limit.setter
+    def limit(self, value):self.backend.limit=value
 
     def close(self):
-        if self.db is not None:
-            self.db.close(); self.db = None
-        if self.lock is not None:
-            os.close(self.lock); self.lock = None
+        if self.backend is not None:self.backend.close()
 
-    def get(self, key):
-        row=self.db.execute('SELECT value FROM metadata WHERE key=?',(key,)).fetchone()
-        return json.loads(row[0]) if row else None
-
-    def set(self, key, value):
-        implicit = not self.db.in_transaction
-        if implicit:self.journal.before_write()
-        self.db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,canonical(value).decode()))
-        if implicit:self.journal.after_write()
+    def get(self, key):return self.backend.get(key)
+    def set(self, key, value):self.backend.set(key,value)
+    def storage_progress(self):return self.backend.progress()
+    def physical(self):return self.backend.physical()
 
     def establish(self, start, schema):
         previous=self.get('start')
         if previous is not None:
             if previous!=start or self.get('schema')!=schema: raise CaptureError('source_generation_changed')
             return
-        self.journal.before_write()
-        self.db.execute('BEGIN IMMEDIATE')
-        try:
-            self.set('start',start);self.set('captured',start);self.set('schema',schema);self.set('bytes',0)
-            self.db.execute('COMMIT')
-            self.journal.after_write()
-        except BaseException:
-            if self.db.in_transaction:self.db.execute('ROLLBACK')
-            raise
+        self.backend.establish(dict(start=start,captured=start,schema=schema,bytes=0))
 
     @property
     def captured(self):
         return self.get('captured')
 
     def verify(self):
-        if self.db.execute('PRAGMA quick_check').fetchone() != ('ok',): raise CaptureError('spool_corrupt')
+        self.backend.verify_storage()
         prefix=self.prefix()
         previous=prefix['lsn']
-        if self.db.execute('SELECT 1 FROM transactions WHERE length(payload)>? LIMIT 1',(MAX_TRANSACTION,)).fetchone():raise CaptureError('spool_corrupt')
         total=0;barrier=prefix['barrier'];self.last_data_lsn=prefix['last_data_lsn']
-        for end,prior,commit,payload,digest in self.db.execute('SELECT end_lsn,previous_lsn,commit_lsn,payload,sha256 FROM transactions ORDER BY seq'):
+        for end,prior,commit,payload,digest in self.backend.records():
             end,prior,commit=int(end,16),int(prior,16),int(commit,16)
             if previous is None or prior!=previous or not previous<end or not commit<end or len(payload)>MAX_TRANSACTION or hashlib.sha256(payload).hexdigest()!=digest:
                 raise CaptureError('spool_corrupt')
@@ -185,10 +136,10 @@ class Spool:
         if self.identity.get('decoder_version')!=2:return None
         after=lsn(published) if published else 0
         key=f'{after:016x}'
-        backlog=self.db.execute('SELECT coalesce(sum(length(payload)),0) FROM transactions WHERE end_lsn>?',(key,)).fetchone()[0]
+        backlog=self.backend.backlog_bytes(key)
         first=None
         if self.last_data_lsn>after:
-            for row in self.db.execute('SELECT payload FROM transactions WHERE end_lsn>? ORDER BY end_lsn',(key,)):
+            for row in self.backend.payloads(key):
                 if self.has_data(row[0]):first=row;break
         def stamp(row):
             if row is None:return None
@@ -196,7 +147,7 @@ class Spool:
             if len(tail)!=26 or tail[:1]!=b'C':raise CaptureError('invalid_commit')
             return 946684800000+struct.unpack('!q',tail[-8:])[0]//1000
         barrier=self.get('barrier')
-        receipt=self.db.execute('SELECT payload FROM transactions WHERE end_lsn=?',(f"{lsn(barrier['end_lsn']):016x}",)).fetchone() if barrier else None
+        receipt=self.backend.payload(f"{lsn(barrier['end_lsn']):016x}") if barrier else None
         return dict(published_lsn=published,backlog_bytes=backlog,oldest_commit_at_ms=stamp(first),
                     last_data_lsn=pg_lsn(self.last_data_lsn),barrier_commit_at_ms=self.get('barrier_at_ms') if receipt is None else stamp(receipt))
 
@@ -222,7 +173,7 @@ class Spool:
             if last is not None and end<=last:raise CaptureError('noncontiguous_commit_order')
             last=end;digest=hashlib.sha256(payload).hexdigest()
             if end<=previous:
-                row=self.db.execute('SELECT commit_lsn,sha256 FROM transactions WHERE end_lsn=?',(f'{end:016x}',)).fetchone()
+                row=self.backend.replay_anchor(f'{end:016x}')
                 if row!=(f'{commit:016x}',digest):raise CaptureError('replay_mismatch')
                 continue
             if not previous<=commit<end:raise CaptureError('noncontiguous_commit_order')
@@ -234,41 +185,22 @@ class Spool:
             previous=end;total+=len(payload)
         result=dict(transactions=len(records),payload_bytes=total,captured_lsn=previous)
         if not records:return result
-        self.journal.before_append(total + len(records)*16384 + 65536)
-        self.journal.before_write()
         total_bytes=(self.get('bytes') or 0)+total
-        fault('before_spool_group')
-        self.db.execute('BEGIN IMMEDIATE')
-        committing=False
-        try:
-            self.db.executemany('INSERT INTO transactions(end_lsn,previous_lsn,commit_lsn,payload,sha256) VALUES (?,?,?,?,?)',records)
-            self.set('captured',previous);self.set('bytes',total_bytes)
-            if barrier is not None:
-                self.set('barrier',barrier);self.set('barrier_at_ms',barrier_at)
-            fault('before_spool_commit')
-            committing=True
-            self.db.execute('COMMIT')
-        except BaseException as error:
-            if self.db.in_transaction:
-                self.db.execute('ROLLBACK')
-                raise
-            if not committing or not isinstance(error,sqlite3.Error):raise
-            # A failed COMMIT response can be ambiguous. Never infer success from
-            # RAM: close/reopen and verify the complete durable prefix first.
-            self.db.close()
-            self.db=sqlite3.connect(self.path,isolation_level=None)
-            self.journal.configure()
-            if self.db.execute('PRAGMA journal_mode').fetchone()[0] != self.journal.mode:
-                raise CaptureError('spool_journal_mode') from error
-            if self.get('identity')!=self.identity:raise CaptureError('spool_identity_mismatch') from error
+        metadata=dict(captured=previous,bytes=total_bytes)
+        if barrier is not None:metadata.update(barrier=barrier,barrier_at_ms=barrier_at)
+        try:self.backend.append_group(records,metadata)
+        except CommitUncertain as uncertain:
+            # Reopened storage is not acknowledgment authority until identity,
+            # complete durable chain and every proposed record verify again.
+            if self.get('identity')!=self.identity:raise CaptureError('spool_identity_mismatch') from uncertain
             self.verify()
-            if self.captured!=previous or self.get('bytes')!=total_bytes:raise error
+            if self.captured!=previous or self.get('bytes')!=total_bytes:raise uncertain.cause
             for end,prior,commit,payload,digest in records:
-                if self.db.execute('SELECT previous_lsn,commit_lsn,sha256 FROM transactions WHERE end_lsn=?',(end,)).fetchone()!=(prior,commit,digest):
-                    raise CaptureError('spool_corrupt') from error
+                if self.backend.record_anchor(end)!=(prior,commit,digest):
+                    raise CaptureError('spool_corrupt') from uncertain
         self.last_data_lsn=last_data
         fault('after_spool_commit')
-        self.journal.after_write()
+        self.backend.after_write()
         return result
 
     def prefix(self):
@@ -288,13 +220,8 @@ class Spool:
         if cut>self.captured and published!=(self.get('bootstrap') or {}).get('lsn'):
             raise CaptureError('published_cursor_ahead')
         if cut<self.prefix()['lsn']:raise CaptureError('published_cursor_regressed')
-        rows=[];reclaimed=0
-        # Exclude the reconnect anchor in SQL, and cap memory as well as rows.
-        cursor=self.db.execute('SELECT seq,end_lsn,previous_lsn,payload,sha256 FROM transactions WHERE end_lsn<(SELECT max(end_lsn) FROM transactions WHERE end_lsn<=?) ORDER BY seq LIMIT 256',(f'{cut:016x}',))
-        for row in cursor:
-            if reclaimed+len(row[3])>MAX_BATCH:break
-            rows.append(row);reclaimed+=len(row[3])
-        cursor.close()
+        rows=self.backend.prune_candidates(f'{cut:016x}')
+        reclaimed=sum(len(row[3]) for row in rows)
         if len(rows)<256 and reclaimed<1024*1024:return 0
         prefix=self.prefix();barrier=prefix['barrier'];last_data=prefix['last_data_lsn'];previous=prefix['lsn']
         for _,end,prior,payload,checksum in rows:
@@ -305,46 +232,17 @@ class Spool:
             previous=end
         value=dict(lsn=previous,barrier=barrier,last_data_lsn=last_data,identity_sha256=hashlib.sha256(canonical(self.identity)).hexdigest())
         value['sha256']=hashlib.sha256(canonical(value)).hexdigest()
-        timeout=self.db.execute('PRAGMA busy_timeout').fetchone()[0]
-        self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
-        try:
-            self.journal.before_write()
-            self.db.execute('BEGIN IMMEDIATE')
-            # Older spools did not save the barrier timestamp separately.
-            current=self.get('barrier')
-            if current and self.get('barrier_at_ms') is None:
-                row=self.db.execute('SELECT payload FROM transactions WHERE end_lsn=?',(f"{lsn(current['end_lsn']):016x}",)).fetchone()
-                if row:self.set('barrier_at_ms',commit_time(row[0]))
-            self.db.execute('DELETE FROM transactions WHERE seq<=?',(rows[-1][0],))
-            self.set('pruned_prefix',value);self.set('bytes',self.get('bytes')-reclaimed)
-            fault('before_spool_prune_commit')
-            self.db.execute('COMMIT')
-        except sqlite3.OperationalError as error:
-            if self.db.in_transaction:self.db.execute('ROLLBACK')
-            if getattr(error,'sqlite_errorcode',None) in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):return 0
-            raise
-        except BaseException:
-            if self.db.in_transaction:self.db.execute('ROLLBACK')
-            raise
-        finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')
-        fault('after_spool_prune_commit')
-        self.journal.after_write()
-        # Existing v1 spools reuse their free pages; new spools can also return
-        # free tail pages without a second full-size VACUUM copy.
-        self.db.execute(f'PRAGMA busy_timeout={min(timeout,50)}')
-        try:
-            self.journal.before_write()
-            self.db.execute('PRAGMA incremental_vacuum(64)').fetchall()
-            self.journal.after_write()
-        except sqlite3.OperationalError as error:
-            if getattr(error,'sqlite_errorcode',None) not in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED):raise
-        finally:self.db.execute(f'PRAGMA busy_timeout={timeout}')
-        fault('after_spool_prune_vacuum')
-        return reclaimed
+        # Older spools did not save the barrier timestamp separately. The
+        # exclusive owner preserves this state while the backend commits pruning.
+        current=self.get('barrier');barrier_at=None
+        if current and self.get('barrier_at_ms') is None:
+            row=self.backend.payload(f"{lsn(current['end_lsn']):016x}")
+            if row:barrier_at=commit_time(row[0])
+        return self.backend.prune_group(rows[-1][0],value,reclaimed,barrier_at)
 
     def transactions(self, after):
         # Streaming iterator for SY03; consumer is responsible for holding the generation lease.
-        for end,payload,digest in self.db.execute('SELECT end_lsn,payload,sha256 FROM transactions WHERE end_lsn>? ORDER BY seq',(f'{after:016x}',)):
+        for end,payload,digest in self.backend.transactions(f'{after:016x}'):
             if hashlib.sha256(payload).hexdigest()!=digest: raise CaptureError('spool_corrupt')
             yield int(end,16),payload
 

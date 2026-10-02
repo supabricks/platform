@@ -6,6 +6,8 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
+from capture import sqlite_journal as backend
+from capture.journal import ReadBusy
 from capture.spool import Spool, CaptureError
 from incremental import storage
 
@@ -65,7 +67,7 @@ class JournalRetryTests(unittest.TestCase):
                 def attempt(request,deadline):
                     deadlines.append(deadline)
                     clock[0]+=min(.1,max(0,deadline-clock[0]))
-                    raise sql_error(sqlite3.SQLITE_BUSY)
+                    raise ReadBusy()
                 def backoff(delay):clock[0]+=delay
                 with patch.object(storage.time,'monotonic',side_effect=lambda:clock[0]),patch.object(storage.time,'time',return_value=100),patch.object(storage,'journal_attempt',attempt),patch.object(storage,'journal_backoff',backoff),self.assertRaises(storage.JournalBusyDeferred):
                     storage.journal(self.config)
@@ -73,7 +75,7 @@ class JournalRetryTests(unittest.TestCase):
                 self.assertAlmostEqual(clock[0],100+budget)
                 self.assertLessEqual(len(deadlines),32)
     def test_deadline_crossed_inside_a_retry_remains_a_safe_deferral(self):
-        with patch.object(storage,'journal_attempt',side_effect=[sql_error(sqlite3.SQLITE_BUSY),CaptureError('journal_read_deadline')]),self.assertRaises(storage.JournalBusyDeferred):
+        with patch.object(storage,'journal_attempt',side_effect=[ReadBusy(),CaptureError('journal_read_deadline')]),self.assertRaises(storage.JournalBusyDeferred):
             storage.journal(self.config)
         self.assertEqual(self.config['_journal_read']['outcome'],'deferred')
         self.assertEqual(self.config['_journal_read']['busy'],1)
@@ -81,19 +83,16 @@ class JournalRetryTests(unittest.TestCase):
         with patch.object(storage,'journal_attempt',side_effect=CaptureError('journal_read_deadline')) as attempt,self.assertRaisesRegex(CaptureError,'journal_read_deadline'):
             storage.journal(self.config)
         self.assertEqual(attempt.call_count,1)
-    def test_only_recognized_busy_codes_are_retried(self):
+    def test_only_recognized_busy_codes_are_translated(self):
         for code in (sqlite3.SQLITE_BUSY,261,517,773,sqlite3.SQLITE_LOCKED,sqlite3.SQLITE_IOERR,sqlite3.SQLITE_CORRUPT):
-            with self.subTest(code=code),patch.object(storage,'journal_attempt',side_effect=[sql_error(code),('ok',)]) as attempt:
-                if code in storage.BUSY_CODES:
-                    self.assertEqual(storage.journal(self.config),('ok',));self.assertEqual(attempt.call_count,2)
-                else:
-                    with self.assertRaises(sqlite3.OperationalError):storage.journal(self.config)
-                    self.assertEqual(attempt.call_count,1)
+            expected=ReadBusy if code in backend.BUSY_CODES else sqlite3.OperationalError
+            with self.subTest(code=code),patch.object(backend,'SQLiteSnapshot',side_effect=sql_error(code)),self.assertRaises(expected):
+                with backend.snapshot(self.spool.path,time.monotonic()+3,.1):pass
     def test_retry_request_is_immutable(self):
         original=copy.deepcopy(self.config);seen=[]
         def attempt(request,deadline):
             seen.append(copy.deepcopy(request))
-            if len(seen)==1:raise sql_error(sqlite3.SQLITE_BUSY)
+            if len(seen)==1:raise ReadBusy()
             return ('ok',)
         def mutate(_):
             self.config['target_lsn']='0/999';self.config['identity']['generation']='other'
@@ -125,7 +124,7 @@ class JournalRetryTests(unittest.TestCase):
             with connect(self.spool.path,timeout=0) as writer:
                 writer.execute('BEGIN EXCLUSIVE')
             time.sleep(seconds)
-        with patch.object(storage.sqlite3,'connect',Connection),patch.object(storage,'journal_backoff',backoff):result=storage.journal(self.config)
+        with patch.object(backend.sqlite3,'connect',Connection),patch.object(storage,'journal_backoff',backoff):result=storage.journal(self.config)
         self.assertEqual(result[1],[(300,b'complete'),(400,b'second')])
         self.assertEqual(len(opened),2);self.assertTrue(all(db.closed for db in opened))
     def test_pruning_between_attempts_fails_history_validation(self):
@@ -134,7 +133,7 @@ class JournalRetryTests(unittest.TestCase):
         def first_busy(request,deadline):
             nonlocal count
             count+=1
-            if count==1:raise sql_error(sqlite3.SQLITE_BUSY)
+            if count==1:raise ReadBusy()
             return attempt(request,deadline)
         def prune(_):self.assertGreater(self.spool.prune('0/1F4'),0)
         with patch.object(storage,'journal_attempt',first_busy),patch.object(storage,'journal_backoff',prune),self.assertRaisesRegex(CaptureError,'source_history_lost'):

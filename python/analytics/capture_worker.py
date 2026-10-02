@@ -66,14 +66,14 @@ def run(path):
         progress=spool.progress(current.get('published_lsn')) if spool else None
         if spool:
             if progress is None:progress={}
-            progress['capture_journal']=spool.journal.progress()
+            progress['capture_journal']=spool.storage_progress()
             progress['stream_observed_at_ms']=stream_observed
             if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
             source_lsn=observed['source'] if observed else None,retained_wal_bytes=observed['retained_bytes'] if observed else None,
-            spool_bytes=spool.journal.physical() if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
+            spool_bytes=spool.physical() if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
     try:
         if config['desired']=='deleted':
             source=Source(config,None)
