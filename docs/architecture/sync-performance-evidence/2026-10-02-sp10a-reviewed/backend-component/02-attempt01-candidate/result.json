@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "groups": 128,
+  "transactions": 4096,
+  "payload_bytes": 4194304,
+  "elapsed_seconds": 0.9395660879963543,
+  "cpu_seconds": 0.07612622,
+  "transactions_per_second": 4359.459171983113,
+  "append_ms": {
+    "median": 6.412239003111608,
+    "p95": 6.624445006309543,
+    "maximum": 7.144283998059109
+  },
+  "prune_cycles": 8,
+  "reclaimed_payload_bytes": 2097152,
+  "peak_physical_bytes": 13772856,
+  "checks": [
+    "pinned_snapshot_stable",
+    "durable_group_cursor",
+    "bounded_pruning",
+    "reopen_and_replay"
+  ],
+  "scope": "Direct durable capture journal; fixed 1KiB opaque payloads, no PostgreSQL/Delta capacity claim"
+}

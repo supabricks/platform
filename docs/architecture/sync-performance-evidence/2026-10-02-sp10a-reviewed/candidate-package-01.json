@@ -1,0 +1,113 @@
+{
+  "base_release_sha256": "80d142922945b51ee9659ed2b57efbc435233c5be2213c070fb7f5378b12a269",
+  "release_sha256": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+  "candidate": true,
+  "revision": "37a523303232c8bc8b697c3c110305c7d1d14581",
+  "changes": {
+    "python/analytics/capture/spool.py": {
+      "before": "601bb323908079ce6b2881b1339ecb5cb0109d506e77878bd36055b414fb1870",
+      "after": "72104ade3b6e374208c9c3401e82adff406bea7e3ae9c337e89c30ec3dfab09e"
+    },
+    "python/analytics/capture/__pycache__/spool.cpython-312.pyc": {
+      "before": "3ac37b2cdf33fd3bff0588a4c29643c5693b89ea311c2c5769053e394f719d42",
+      "after": "d7d7d8f2f40afd889b58339a288fa644af7bd9cb896a4c0187787fe570a984a9"
+    },
+    "python/analytics/capture/journal.py": {
+      "before": null,
+      "after": "743cc4d1efec1fecc6f747c6c4d73fd40642943fd25afc3185e2872047aaebc5"
+    },
+    "python/analytics/capture/__pycache__/journal.cpython-312.pyc": {
+      "before": null,
+      "after": "c0b2be287a1bc9330371e4e7e033eb691d6c74247b11a232924e822c0acd7b9a"
+    },
+    "python/analytics/capture/sqlite_journal.py": {
+      "before": null,
+      "after": "e41f54c2c7484c39ca5741007f7f2b529fc7c60a96c2f3979f4e12a201508930"
+    },
+    "python/analytics/capture/__pycache__/sqlite_journal.cpython-312.pyc": {
+      "before": null,
+      "after": "51d72e9d67f5dbe4bfcbefe22b30edc88a46816aeb69240d4ad6dcac6001b433"
+    },
+    "python/analytics/incremental/storage.py": {
+      "before": "1cd6a8854c929a08a57c4d86733a4c41f6858adf83acadf82fa61b1a34ffc137",
+      "after": "e74008d8f671fdc599f9f6563a677664326481a61be7517b56e3e450dd5ad550"
+    },
+    "python/analytics/incremental/__pycache__/storage.cpython-312.pyc": {
+      "before": "5d1653b967dc9e71d84683218d17bdc6968c0a7ec0502647f1c9e827060166a0",
+      "after": "5760984e097aba5f9beec447f433a6516dd582b98ce1f523d10173037ffd612b"
+    },
+    "python/analytics/capture_worker.py": {
+      "before": "801717eca0295c852132add5553f9bc01e52a769622c3c1c0a8cf959b4534b20",
+      "after": "1b931bf61413d1ae23bf2c4ce1b7f9859d3644220a1dfc885e1499f0fe2ced5f"
+    },
+    "python/analytics/__pycache__/capture_worker.cpython-312.pyc": {
+      "before": "d543e7a613c0aa9f2d8ccdc27c8a282d7803524240916f80ef945c653c00c1bf",
+      "after": "ee309b491cfb2311a1b9a6d65e9a9dbf05af8255587c0688ec702a854f387742"
+    }
+  },
+  "installation_verification": {
+    "identity": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+    "root": "<sp10a>/candidate-runtime-01",
+    "sqlite": {
+      "binding": "rusqlite/bundled",
+      "compile_options": [
+        "ATOMIC_INTRINSICS=1",
+        "COMPILER=gcc-13.3.0",
+        "DEFAULT_AUTOVACUUM",
+        "DEFAULT_CACHE_SIZE=-2000",
+        "DEFAULT_FILE_FORMAT=4",
+        "DEFAULT_FOREIGN_KEYS",
+        "DEFAULT_JOURNAL_SIZE_LIMIT=-1",
+        "DEFAULT_MMAP_SIZE=0",
+        "DEFAULT_PAGE_SIZE=4096",
+        "DEFAULT_PCACHE_INITSZ=20",
+        "DEFAULT_RECURSIVE_TRIGGERS",
+        "DEFAULT_SECTOR_SIZE=4096",
+        "DEFAULT_SYNCHRONOUS=2",
+        "DEFAULT_WAL_AUTOCHECKPOINT=1000",
+        "DEFAULT_WAL_SYNCHRONOUS=2",
+        "DEFAULT_WORKER_THREADS=0",
+        "DIRECT_OVERFLOW_READ",
+        "ENABLE_API_ARMOR",
+        "ENABLE_COLUMN_METADATA",
+        "ENABLE_DBSTAT_VTAB",
+        "ENABLE_FTS3",
+        "ENABLE_FTS3_PARENTHESIS",
+        "ENABLE_FTS5",
+        "ENABLE_LOAD_EXTENSION",
+        "ENABLE_MEMORY_MANAGEMENT",
+        "ENABLE_RTREE",
+        "ENABLE_STAT4",
+        "HAVE_ISNAN",
+        "MALLOC_SOFT_LIMIT=1024",
+        "MAX_ATTACHED=10",
+        "MAX_COLUMN=2000",
+        "MAX_COMPOUND_SELECT=500",
+        "MAX_DEFAULT_PAGE_SIZE=8192",
+        "MAX_EXPR_DEPTH=1000",
+        "MAX_FUNCTION_ARG=1000",
+        "MAX_LENGTH=1000000000",
+        "MAX_LIKE_PATTERN_LENGTH=50000",
+        "MAX_MMAP_SIZE=0x7fff0000",
+        "MAX_PAGE_COUNT=0xfffffffe",
+        "MAX_PAGE_SIZE=65536",
+        "MAX_SQL_LENGTH=1000000000",
+        "MAX_TRIGGER_DEPTH=1000",
+        "MAX_VARIABLE_NUMBER=32766",
+        "MAX_VDBE_OP=250000000",
+        "MAX_WORKER_THREADS=8",
+        "MUTEX_PTHREADS",
+        "SOUNDEX",
+        "SYSTEM_MALLOC",
+        "TEMP_STORE=1",
+        "THREADSAFE=1",
+        "USE_URI"
+      ],
+      "source_id": "2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24",
+      "version": "3.53.2"
+    },
+    "verified": true,
+    "version": "v0.1.0-alpha.36"
+  },
+  "signed_release": false
+}

@@ -1,14 +1,15 @@
 """Versioned Delta roots, sealed epoch inventories, and bounded journal reads."""
 import copy
-from contextlib import ExitStack
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
-import sqlite3
 import time
 from capture.spool import CaptureError, canonical, atomic, fault, lsn, checked_prefix, MAX_TRANSACTION
+
+from capture.journal import ReadBusy
+from capture.sqlite_journal import snapshot
 
 MAX_FILES=4096
 MAX_BYTES=1024*1024*1024
@@ -82,7 +83,6 @@ def durable(root,sealed=frozenset()):
 JOURNAL_READ_SECONDS=3.0
 JOURNAL_BUSY_SECONDS=0.1
 JOURNAL_MAX_ATTEMPTS=32
-BUSY_CODES=frozenset((sqlite3.SQLITE_BUSY, 261, 517, 773))
 
 
 class JournalBusyDeferred(CaptureError):
@@ -121,9 +121,8 @@ def journal(config):
                     stats['outcome']='deferred'
                     raise JournalBusyDeferred() from None
                 raise
-            except sqlite3.OperationalError as error:
-                # LOCKED, I/O errors and corruption are not busy retries.
-                if getattr(error,'sqlite_errorcode',None) not in BUSY_CODES:raise
+            except ReadBusy:
+                # Only backend-classified read-only contention is retryable.
                 stats['busy']+=1
                 remaining=deadline-time.monotonic()
                 if remaining<=0 or stats['attempts']>=JOURNAL_MAX_ATTEMPTS:
@@ -142,35 +141,14 @@ def journal(config):
 
 
 def journal_attempt(config,deadline):
-    path=Path(config['spool'])
-    if path.is_symlink() or path.stat().st_size>512*1024*1024:raise CaptureError('spool_budget')
-    from capture.wal import reader_lease
-    lease=reader_lease(path)
-    cleanup=ExitStack();cleanup.callback(os.close,lease)
-    try:db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
-    except BaseException:
-        cleanup.close();raise
-    cleanup.callback(db.close)
-    def execute(sql,parameters=()):
-        remaining=deadline-time.monotonic()
-        if remaining<=0:raise CaptureError('journal_read_deadline')
-        timeout=db.execute('PRAGMA busy_timeout='+str(int(min(JOURNAL_BUSY_SECONDS,remaining)*1000)))
-        cleanup.callback(timeout.close)
-        cursor=db.execute(sql,parameters);cleanup.callback(cursor.close)
-        return cursor
-    db.set_progress_handler(lambda:int(time.monotonic()>=deadline),1000)
-    try:
-        execute('BEGIN')
-        meta={}
-        for k,v,size in execute('SELECT key,CASE WHEN length(value)<=2097152 THEN value ELSE NULL END,length(value) FROM metadata LIMIT 33'):
-            if len(meta)>=32 or size>2097152:raise CaptureError('spool_metadata_budget')
-            meta[k]=json.loads(v)
+    with snapshot(config['spool'],deadline,JOURNAL_BUSY_SECONDS) as view:
+        meta=view.metadata()
         if meta['identity']!=config['identity'] or meta['bootstrap']['lsn']!=config['bootstrap_lsn']:raise CaptureError('spool_identity_mismatch')
         after=lsn(config['after_lsn']);target=lsn(config['target_lsn'])
         prefix=checked_prefix(meta.get('pruned_prefix'),meta['identity'],meta['start'],meta['captured'])
         if meta['captured']<target or prefix['lsn']>after:raise CaptureError('source_history_lost')
         result=[];used=0;previous=None;end=after
-        cursor=execute('SELECT end_lsn,previous_lsn,commit_lsn,length(payload),CASE WHEN length(payload)<=4194304 THEN payload ELSE NULL END,sha256 FROM transactions WHERE end_lsn>? AND end_lsn<=? ORDER BY seq',(f'{after:016x}',f'{target:016x}'))
+        cursor=view.records(f'{after:016x}',f'{target:016x}')
         for cut,prior,commit,size,payload,checksum in cursor:
             cut,prior,commit=int(cut,16),int(prior,16),int(commit,16)
             if size>MAX_TRANSACTION or len(payload)!=size or hashlib.sha256(payload).hexdigest()!=checksum:raise CaptureError('spool_corrupt')
@@ -180,15 +158,6 @@ def journal_attempt(config,deadline):
         if not result and target>after:raise CaptureError('spool_history_gap')
         if time.monotonic()>=deadline:raise CaptureError('journal_read_deadline')
         return meta['schema'],result,end,used
-    except sqlite3.OperationalError as error:
-        if getattr(error,'sqlite_errorcode',None)==sqlite3.SQLITE_INTERRUPT and time.monotonic()>=deadline:
-            raise CaptureError('journal_read_deadline') from None
-        raise
-    finally:
-        # Finalize cursors before close: sqlite3_close_v2 alone leaves an active
-        # cursor's read lock alive when an exception traceback retains it.
-        # LIFO cleanup releases every statement, then rolls back/closes the DB.
-        cleanup.close()
 
 
 def initialize(config):

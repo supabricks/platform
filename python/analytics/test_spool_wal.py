@@ -32,10 +32,10 @@ class WalTests(unittest.TestCase):
 
     def test_checked_full_policy_and_read_only_snapshot_does_not_block_append(self):
         s=self.open();s.set('bootstrap',dict(lsn='0/64'))
-        self.assertEqual(s.db.execute('PRAGMA journal_mode').fetchone()[0],'wal')
-        self.assertEqual(s.db.execute('PRAGMA synchronous').fetchone()[0],2)
-        self.assertEqual(s.db.execute('PRAGMA wal_autocheckpoint').fetchone()[0],0)
-        self.assertEqual(s.db.execute('PRAGMA cache_spill').fetchone()[0],0)
+        self.assertEqual(s.backend.db.execute('PRAGMA journal_mode').fetchone()[0],'wal')
+        self.assertEqual(s.backend.db.execute('PRAGMA synchronous').fetchone()[0],2)
+        self.assertEqual(s.backend.db.execute('PRAGMA wal_autocheckpoint').fetchone()[0],0)
+        self.assertEqual(s.backend.db.execute('PRAGMA cache_spill').fetchone()[0],0)
         db=sqlite3.connect(s.path.as_uri()+'?mode=ro',uri=True)
         try:
             db.execute('BEGIN');self.assertEqual(db.execute('SELECT count(*) FROM transactions').fetchone()[0],0)
@@ -52,7 +52,7 @@ class WalTests(unittest.TestCase):
         lease=os.open(self.root/'readers.lock',os.O_RDWR)
         try:fcntl.flock(lease,fcntl.LOCK_EX|fcntl.LOCK_NB)
         finally:os.close(lease)
-        self.assertEqual(s.journal.checkpoint(force=True),(0,0,0))
+        self.assertEqual(s.backend.journal.checkpoint(force=True),(0,0,0))
 
     def test_pinned_reader_causes_bounded_backpressure_then_recovers_same_group(self):
         s=self.open();db=sqlite3.connect(s.path.as_uri()+'?mode=ro',uri=True)
@@ -68,14 +68,14 @@ class WalTests(unittest.TestCase):
             self.assertIsNotNone(blocked)
             self.assertEqual(s.captured,end)
             self.assertEqual(len(groups.pending),1)
-            self.assertLessEqual(s.journal.physical(),LIMIT)
-            self.assertGreater(s.journal.stats['busy'],0)
-            self.assertEqual(s.journal.checkpoint(force=True)[0],1)
+            self.assertLessEqual(s.backend.journal.physical(),LIMIT)
+            self.assertGreater(s.backend.journal.stats['busy'],0)
+            self.assertEqual(s.backend.journal.checkpoint(force=True)[0],1)
         finally:db.close()
         groups.flush()
         self.assertEqual(s.captured,blocked)
         self.assertFalse(groups.pending)
-        self.assertLessEqual(s.journal.physical(),LIMIT)
+        self.assertLessEqual(s.backend.journal.physical(),LIMIT)
         s.verify()
 
     def test_mode_changes_wait_for_reader_lease_and_preserve_committed_prefix(self):
@@ -89,7 +89,7 @@ class WalTests(unittest.TestCase):
         finally:os.close(lease)
         s=self.open('delete')
         self.assertEqual(s.captured,300);self.assertEqual(list(s.transactions(100)),[(200,b'first'),(300,b'wal-only')])
-        self.assertEqual(s.db.execute('PRAGMA journal_mode').fetchone()[0],'delete')
+        self.assertEqual(s.backend.db.execute('PRAGMA journal_mode').fetchone()[0],'delete')
         s.close();s=self.open();self.assertEqual(s.captured,300)
 
     def test_legacy_unleased_sqlite_reader_also_prevents_downgrade(self):
@@ -136,10 +136,10 @@ class WalTests(unittest.TestCase):
 
     def test_all_database_sidecars_are_counted_and_temp_spilling_disabled(self):
         s=self.open();s.append(180,200,b'payload')
-        sizes=private_sizes(s.path);progress=s.journal.progress()
+        sizes=private_sizes(s.path);progress=s.backend.journal.progress()
         self.assertEqual(progress['physical_bytes'],sum(sizes.values()))
         self.assertGreater(progress['physical_bytes'],s.path.stat().st_size)
-        self.assertEqual(s.db.execute('PRAGMA temp_store').fetchone()[0],2)
+        self.assertEqual(s.backend.db.execute('PRAGMA temp_store').fetchone()[0],2)
         with patch('capture.wal.os.statvfs') as disk:
             disk.return_value.f_bavail=0;disk.return_value.f_frsize=4096
             with self.assertRaises(SpoolBackpressure):s.append(280,300,b'not admitted')
@@ -155,7 +155,7 @@ class WalTests(unittest.TestCase):
                     s=Spool(root,IDENTITY,LIMIT,journal_mode=previous)
                     s.establish(100,{});s.append(180,200,b'committed');s.close()
                     # Checkpoint faults exercise a live WAL with a committed suffix.
-                    code="import sys;from capture.spool import Spool;s=Spool(sys.argv[1],"+repr(IDENTITY)+","+str(LIMIT)+",journal_mode="+repr(mode)+");s.journal.checkpoint(force=True)"
+                    code="import sys;from capture.spool import Spool;s=Spool(sys.argv[1],"+repr(IDENTITY)+","+str(LIMIT)+",journal_mode="+repr(mode)+");s.backend.journal.checkpoint(force=True)"
                     if 'checkpoint' in point and mode=='wal':
                         s=Spool(root,IDENTITY,LIMIT);s.close()
                     env=dict(os.environ,PYTHONPATH=str(Path(implementation.__file__).resolve().parents[1]),SUPABRICKS_CAPTURE_FAILPOINT=point)
@@ -165,7 +165,7 @@ class WalTests(unittest.TestCase):
                     try:
                         self.assertEqual(s.captured,200);s.verify()
                         self.assertEqual(list(s.transactions(100)),[(200,b'committed')])
-                        self.assertLessEqual(s.journal.physical(),LIMIT)
+                        self.assertLessEqual(s.backend.journal.physical(),LIMIT)
                     finally:s.close()
 
     def test_low_disk_migration_retains_original_mode_and_committed_prefix(self):
@@ -189,13 +189,13 @@ class WalTests(unittest.TestCase):
         s.close()
         wal=Path(str(s.path)+'-wal')
         with wal.open('ab') as stream:stream.truncate(LIMIT+1)
-        with patch('capture.spool.sqlite3.connect') as connect:
+        with patch('capture.sqlite_journal.sqlite3.connect') as connect:
             with self.assertRaisesRegex(CaptureError,'spool_budget'):Spool(self.root,IDENTITY,LIMIT)
         connect.assert_not_called()
 
     def test_unqualified_sqlite_is_rejected_before_a_wal_connection_opens(self):
         for mode in ('wal','delete'):
-            with patch('capture.wal.fixed_sqlite',return_value=False),patch('capture.spool.sqlite3.connect') as connect:
+            with patch('capture.wal.fixed_sqlite',return_value=False),patch('capture.sqlite_journal.sqlite3.connect') as connect:
                 with self.assertRaisesRegex(CaptureError,'sqlite_wal_unqualified'):self.open(mode)
             connect.assert_not_called()
 

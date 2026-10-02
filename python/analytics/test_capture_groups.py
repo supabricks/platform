@@ -27,7 +27,7 @@ class GroupTests(unittest.TestCase):
 
     def test_group_replay_and_new_suffix_are_atomic(self):
         txs=self.txs();self.spool.append_many(txs[:2])
-        statements=[];self.spool.db.set_trace_callback(statements.append)
+        statements=[];self.spool.backend.db.set_trace_callback(statements.append)
         result=self.spool.append_many(txs)
         self.assertEqual(result['transactions'],1);self.assertEqual(result['captured_lsn'],400)
         self.assertEqual(statements.count('COMMIT'),1)
@@ -57,8 +57,8 @@ class GroupTests(unittest.TestCase):
             space.return_value.f_bavail=0;space.return_value.f_frsize=4096
             with self.assertRaisesRegex(CaptureError,'spool_backpressure'):self.spool.append_many(self.txs())
         self.assertEqual(self.spool.captured,100)
-        pages=self.spool.db.execute('PRAGMA page_count').fetchone()[0]
-        self.spool.db.execute(f'PRAGMA max_page_count={pages+1}')
+        pages=self.spool.backend.db.execute('PRAGMA page_count').fetchone()[0]
+        self.spool.backend.db.execute(f'PRAGMA max_page_count={pages+1}')
         with self.assertRaises(sqlite3.OperationalError):
             self.spool.append_many([(180,200,b'a'),(280,300,b'x'*262144)])
         self.assertEqual(self.spool.captured,100);self.assertEqual(list(self.spool.transactions(100)),[])
@@ -73,10 +73,10 @@ class GroupTests(unittest.TestCase):
                     self.db.execute('COMMIT' if self.committed else 'ROLLBACK')
                     raise sqlite3.OperationalError('injected ambiguous I/O response')
                 return self.db.execute(sql,*args)
-        self.spool.db=Uncertain(self.spool.db,False)
+        self.spool.backend.db=Uncertain(self.spool.backend.db,False)
         with self.assertRaises(sqlite3.OperationalError):self.spool.append_many(self.txs())
         self.assertEqual(self.spool.captured,100)
-        self.spool.db=Uncertain(self.spool.db,True)
+        self.spool.backend.db=Uncertain(self.spool.backend.db,True)
         self.assertEqual(self.spool.append_many(self.txs())['captured_lsn'],400)
         self.spool.verify()
 
