@@ -1,0 +1,2127 @@
+{
+  "attempts": [
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 0,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "01-attempt01-candidate",
+          "ended_at_ms": 1790939703862.983,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "a1b15355b00607b54a9b65ef06a201ef1363dfa29923ebd5cdcd30b61f4e38cc",
+            "01-cpu16-rate1250-r1/profile.json.gz": "760b7d27b21c4dd2bd09ab478bae820f756ccb2297dcc63d332418c5dfeca2e4",
+            "01-cpu16-rate1250-r1/trial.json": "a345d640ef9b3fec41475603187e39e78f495777cd5f8baf73867db7acb2a4fc",
+            "matrix.json": "f72f5449262de7796181dc01430326f4334e84e845f1d2a176a2569ae5d30513"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.597444,
+            "apply_merge_ms": 17.460202,
+            "apply_run_ms": 361.437949,
+            "baseline_rows_s": 1248.526,
+            "capture_commit_ms": 7.7256963106469,
+            "capture_durable_ms_per_transaction": 0.6116718946733818,
+            "capture_syncs_per_commit": 1.0189353099730458,
+            "capture_syncs_per_transaction": 0.08067286967284833,
+            "capture_transactions_per_group": 12.887513751375138,
+            "capture_transactions_s": 624.6677566246583,
+            "capture_window": {
+              "commits": 14840,
+              "groups": 14544,
+              "seconds": 300.0571071777344,
+              "transactions": 187436
+            },
+            "cold_apply_ms": 513.840776,
+            "cold_imports_ms": 235.086417,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.981,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3022.674,
+            "lag_p99_ms": 3353.826,
+            "last_backlog_bytes": 152548,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 291984,
+            "peak_memory_bytes": 2130178048,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.746,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 360.444913,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "0e931c7662f5b9c6ac41065d4f91869bf4b781fdd03154de5dd93d4ad49eec20",
+            "01-cpu16-rate1250-r1/profile.json.gz": "760b7d27b21c4dd2bd09ab478bae820f756ccb2297dcc63d332418c5dfeca2e4",
+            "01-cpu16-rate1250-r1/trial.json": "dde93d4b5e4e8b415086591c9db847fa05b0b07def6e85e21f25211b7fa1aa77",
+            "matrix.json": "8e7430353c5e87d7705f1e063cd98b4184766ef12f24163b19451ac86c2d261f"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790939307749.005,
+            "quiet_seconds": 697.8614145309984,
+            "sample_count": 140
+          },
+          "started_at_ms": 1790939307833.857
+        },
+        "predecessor": {
+          "directory": "01-attempt01-predecessor",
+          "ended_at_ms": 1790939305015.4858,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "a2a8338399805498d4b1658a4dc4de98839d80ddc2d09ece74d10983fe7865fd",
+            "01-cpu16-rate1250-r1/trial.json": "8d9e88740bb8aae584351acc321c9165b1ac1d3e69017c6d67a20acd4b19d77f",
+            "matrix.json": "721c3f48009db85244b34829272ffc876ec6f8e143b445d58f3abdcee01a4ee6"
+          },
+          "metrics": {
+            "baseline_rows_s": 1247.194,
+            "cpu_cores": 0.9,
+            "lag_p95_ms": 3008.848,
+            "lag_p99_ms": 3378.039,
+            "last_backlog_bytes": 178805,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 296703,
+            "peak_memory_bytes": 2032558080,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.846,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "fa5f0b6443b32a9868174a89b609fa9bdfd509b01b6c5f868663f272529e79b9",
+            "01-cpu16-rate1250-r1/trial.json": "55c703cce2b2fd50ad28ef8c3189b1bc072ee52c90d67186b96d022e5f3fd675",
+            "matrix.json": "9c0ef81a05924b75a0cf1c5fe4d814993e62ed34ccc419b4d6976343935dee08"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790938909896.1216,
+            "quiet_seconds": 300.0085292619915,
+            "sample_count": 60
+          },
+          "started_at_ms": 1790938909985.9998
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 1,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "02-attempt02-candidate",
+          "ended_at_ms": 1790940502907.6746,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "1cc765a27110ec17e64c65325f2cbabea0badbb089b833f71abe52517ce9fb18",
+            "01-cpu16-rate1250-r1/profile.json.gz": "22f722e0c5147d29220bce521f286b237dd38e0d4b2ce872a98d6120b0c25a20",
+            "01-cpu16-rate1250-r1/trial.json": "53f83720bbe29ae74a11ac6e3ba0162f3127a6a25af632a3117e116cf4ac0d22",
+            "matrix.json": "a64997e4bb3469c1df84df0fc4bd087d645d5d8b009f5c353edb9fc3ccda2087"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.6799375,
+            "apply_merge_ms": 17.5394735,
+            "apply_run_ms": 359.5249295,
+            "baseline_rows_s": 1248.646,
+            "capture_commit_ms": 7.737358344834558,
+            "capture_durable_ms_per_transaction": 0.6115653139677957,
+            "capture_syncs_per_commit": 1.0188018060516206,
+            "capture_syncs_per_transaction": 0.08052668864753727,
+            "capture_transactions_per_group": 12.909234683352816,
+            "capture_transactions_s": 625.6801205055482,
+            "capture_window": {
+              "commits": 14839,
+              "groups": 14543,
+              "seconds": 300.0558813476562,
+              "transactions": 187739
+            },
+            "cold_apply_ms": 496.893926,
+            "cold_imports_ms": 218.795661,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.98,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3009.962,
+            "lag_p99_ms": 3356.063,
+            "last_backlog_bytes": 118503,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294041,
+            "peak_memory_bytes": 2124050432,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.867,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 357.953718,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "468a40dd75c0be9df35265998ef2b3480bf7dfd9f1ab2f60f2be22ce7736bcd4",
+            "01-cpu16-rate1250-r1/profile.json.gz": "22f722e0c5147d29220bce521f286b237dd38e0d4b2ce872a98d6120b0c25a20",
+            "01-cpu16-rate1250-r1/trial.json": "0bafe90d5ff2d1cde3feaa0ddc0a390564bdb335599fe0b747e8bd260f99f740",
+            "matrix.json": "e8b6cc779342f7f0315550b4bc97ab87a21d57054a204120fb782c8e999c9eff"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940105792.73,
+            "quiet_seconds": 1495.9051402109908,
+            "sample_count": 299
+          },
+          "started_at_ms": 1790940105877.6074
+        },
+        "predecessor": {
+          "directory": "02-attempt02-predecessor",
+          "ended_at_ms": 1790940100663.5037,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu16-rate1250-r1/trial.json": "e02d642fe4bc7b799fb13d3a9654a4e8b647c661e89476eaa57d66a705100bbf",
+            "matrix.json": "40863a8870ead21557b74f342fa11db85d70627f6fb15a146b223e8505f029a7"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.637,
+            "cpu_cores": 0.898,
+            "lag_p95_ms": 3028.228,
+            "lag_p99_ms": 3387.786,
+            "last_backlog_bytes": 194898,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 295053,
+            "peak_memory_bytes": 1994964992,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.958,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu16-rate1250-r1/trial.json": "d5d91150d0b792834a19c78e178317d892dfd6b82836b69f40e7c726e76862f2",
+            "matrix.json": "cc7ae8bcd12e4c28e1597453382e5ccb84c1e1eda07d570afd9cd0018ae3a40d"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790939704543.294,
+            "quiet_seconds": 1094.6557036869926,
+            "sample_count": 219
+          },
+          "started_at_ms": 1790939704634.2651
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 2,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "03-attempt03-candidate",
+          "ended_at_ms": 1790940899037.5708,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "d91e2b9c70615dc5e783645fc1170729548a6638060eb33cbd1bbea258906804",
+            "01-cpu8-rate1250-r1/profile.json.gz": "82cef93df448ea5d3f05da7d43761919431d1deeeac072710056ce3c89c1c262",
+            "01-cpu8-rate1250-r1/trial.json": "b62a8d92c15154e4792e0fdd19046b1da26fa7f4c2b8457338a52e35073068da",
+            "matrix.json": "efeb54e08d564feb80f1fb2ff54dcc10cb0a9b9990321ee52d9e6e0c75e69235"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.6841975,
+            "apply_merge_ms": 16.848075,
+            "apply_run_ms": 362.82750250000004,
+            "baseline_rows_s": 1247.498,
+            "capture_commit_ms": 7.590929008227975,
+            "capture_durable_ms_per_transaction": 0.6049127774318733,
+            "capture_syncs_per_commit": 1.0186634557495484,
+            "capture_syncs_per_transaction": 0.08117616955946949,
+            "capture_transactions_per_group": 12.803166803166803,
+            "capture_transactions_s": 625.185843193628,
+            "capture_window": {
+              "commits": 14949,
+              "groups": 14652,
+              "seconds": 300.0579780273437,
+              "transactions": 187592
+            },
+            "cold_apply_ms": 530.81886,
+            "cold_imports_ms": 220.041967,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.014,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 2992.488,
+            "lag_p99_ms": 3341.958,
+            "last_backlog_bytes": 164285,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 292236,
+            "peak_memory_bytes": 2063568896,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.573,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 361.260101,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 285
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "1c3d34528d640b075c67f71d55f8d7838096692b760306f8a7d4179a05b5e3b6",
+            "01-cpu8-rate1250-r1/profile.json.gz": "82cef93df448ea5d3f05da7d43761919431d1deeeac072710056ce3c89c1c262",
+            "01-cpu8-rate1250-r1/trial.json": "ebc54eee6e0a7d696ff408dc7e4f623a263265820c11fe8aa507ec3685b4ff28",
+            "matrix.json": "21f3e406393faa3444ca0f5eb4b1c5c86c8d314fd793d4d463663899673892ad"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940507919.2175,
+            "quiet_seconds": 1898.0316273079952,
+            "sample_count": 379
+          },
+          "started_at_ms": 1790940508007.2585
+        },
+        "predecessor": {
+          "directory": "03-attempt03-predecessor",
+          "ended_at_ms": 1790941300142.736,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "a1b15355b00607b54a9b65ef06a201ef1363dfa29923ebd5cdcd30b61f4e38cc",
+            "01-cpu8-rate1250-r1/trial.json": "1b07ffaecd1be2a0d5677755bd52ebafc00cdff3e5261d9588cab7f123b67fdf",
+            "matrix.json": "00b910f8437ce5a8e271086b8adde7e094f842060563113b768caf6d25247339"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.692,
+            "cpu_cores": 0.941,
+            "lag_p95_ms": 3018.765,
+            "lag_p99_ms": 3390.872,
+            "last_backlog_bytes": 138226,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 295580,
+            "peak_memory_bytes": 1940508672,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.752,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "0e931c7662f5b9c6ac41065d4f91869bf4b781fdd03154de5dd93d4ad49eec20",
+            "01-cpu8-rate1250-r1/trial.json": "521e61dccb30fe4d5ddb9e702beb3305765a065ace87b5e24c3d097f81f80fa6",
+            "matrix.json": "9356be99fb7e84ab08e9225a79d2c939d5e62f888c0c92d95dea97c11bad9f9f"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940904025.06,
+            "quiet_seconds": 2294.1374697759893,
+            "sample_count": 458
+          },
+          "started_at_ms": 1790940904112.2383
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 3,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "04-attempt04-candidate",
+          "ended_at_ms": 1790942093212.647,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu8-rate1250-r1/profile.json.gz": "32d6c5d93d0c8faace3789aae3178c7efdb1e562e3d6ddc13c5f4f9199759c51",
+            "01-cpu8-rate1250-r1/trial.json": "ba53bcd43b77cfbbe90184e180fe5cfd5954e5c93b8d79eeb5df426138b76d3c",
+            "matrix.json": "d129262206991675539fe13bc47cdedd3cc8e87cdd2003ebbff924e8fa059b31"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.601182000000001,
+            "apply_merge_ms": 16.9018955,
+            "apply_run_ms": 360.03821800000003,
+            "baseline_rows_s": 1247.53,
+            "capture_commit_ms": 7.63193289528971,
+            "capture_durable_ms_per_transaction": 0.6079318931999509,
+            "capture_syncs_per_commit": 1.0192693697310318,
+            "capture_syncs_per_transaction": 0.0811912743629784,
+            "capture_transactions_per_group": 12.807576791808874,
+            "capture_transactions_s": 625.3145008331123,
+            "capture_window": {
+              "commits": 14946,
+              "groups": 14650,
+              "seconds": 300.0586101074219,
+              "transactions": 187631
+            },
+            "cold_apply_ms": 512.065992,
+            "cold_imports_ms": 217.389186,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.013,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3024.996,
+            "lag_p99_ms": 3388.532,
+            "last_backlog_bytes": 143066,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 297550,
+            "peak_memory_bytes": 2030354432,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.716,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 358.234648,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 285
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu8-rate1250-r1/profile.json.gz": "32d6c5d93d0c8faace3789aae3178c7efdb1e562e3d6ddc13c5f4f9199759c51",
+            "01-cpu8-rate1250-r1/trial.json": "f7d47f2e513cc41573b0295a08036e48b2f699cb46a8b8e3e159747413b8df50",
+            "matrix.json": "845a5fc01a3d60c090f2d37ab431ece4916d837f8ec011568e82c4f1bdb031d9"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790941697098.0403,
+            "quiet_seconds": 3087.210450216997,
+            "sample_count": 616
+          },
+          "started_at_ms": 1790941697182.6777
+        },
+        "predecessor": {
+          "directory": "04-attempt04-predecessor",
+          "ended_at_ms": 1790941696175.0183,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "1a62cd35f922225a4539b68428f09602639601a66222b339ac4f223cd0938081",
+            "01-cpu8-rate1250-r1/trial.json": "82c90e33cd00564b4abb382acccd4b9fff59a6886223fa3d62a770efa44be430",
+            "matrix.json": "c2af22047727d706c39fe0a64bcd069c24c0101cbfd47ae0642fb5f5925668e0"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.351,
+            "cpu_cores": 0.938,
+            "lag_p95_ms": 2978.773,
+            "lag_p99_ms": 3317.134,
+            "last_backlog_bytes": 191631,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 290653,
+            "peak_memory_bytes": 1937260544,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.65,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "b6f9023518ad1d0bf2b216b4af2aec42816726bba19e20dcb95c1f877538679d",
+            "01-cpu8-rate1250-r1/trial.json": "6a544b9916a657753b98e6939e1b9edc25153174f33b6e826b59b2142bcf9914",
+            "matrix.json": "c4535d72f230ebc4daa7eafa56c3296e7c08d0c29bc9b69c64248adab92c5021"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790941301055.9302,
+            "quiet_seconds": 2691.1683399779868,
+            "sample_count": 537
+          },
+          "started_at_ms": 1790941301144.6157
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 4,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "05-attempt05-candidate",
+          "ended_at_ms": 1790942491676.6428,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "99cb10a86729e1d6269eaa3c4594232e062bbeda66b035f3030aab3afca5ad4b",
+            "01-cpu16-rate1250-r1/profile.json.gz": "a05f6a14caed2704d989519fddf0b7a9730688a0b8eeabe3ef3c5cbbc2b37fe2",
+            "01-cpu16-rate1250-r1/trial.json": "9b7efd4fad3e3fd5c9cd9756a064ecd98f733b0d18f5d1ad57d3bc86daee671c",
+            "matrix.json": "e429e3f3a46be9d2528cac41ba80d2594346f76ef12453f34bd947979635b5c7"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.419262,
+            "apply_merge_ms": 17.599897,
+            "apply_run_ms": 361.7725125,
+            "baseline_rows_s": 1248.608,
+            "capture_commit_ms": 7.765114081628519,
+            "capture_durable_ms_per_transaction": 0.6133262832863154,
+            "capture_syncs_per_commit": 1.0191749375464183,
+            "capture_syncs_per_transaction": 0.08049936805729614,
+            "capture_transactions_per_group": 12.91884257664485,
+            "capture_transactions_s": 624.9362550597683,
+            "capture_window": {
+              "commits": 14811,
+              "groups": 14515,
+              "seconds": 300.0578034667969,
+              "transactions": 187517
+            },
+            "cold_apply_ms": 548.171275,
+            "cold_imports_ms": 239.255265,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.982,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3022.302,
+            "lag_p99_ms": 3359.702,
+            "last_backlog_bytes": 130889,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 297550,
+            "peak_memory_bytes": 2143526912,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.906,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 359.206077,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "0ce8d129fa0c879af791f762a78dc40d3ef177415a3bb58ba2334e06dfc84b9a",
+            "01-cpu16-rate1250-r1/profile.json.gz": "a05f6a14caed2704d989519fddf0b7a9730688a0b8eeabe3ef3c5cbbc2b37fe2",
+            "01-cpu16-rate1250-r1/trial.json": "d2c029a148d2169cacb1921659e605f94b576e71a07a0d97b3004ab42cd6ad4c",
+            "matrix.json": "b73b8ddaba7839c11a131272f5612aba63a8f6fc2b4deb88e6ada00a407b16f2"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942094557.193,
+            "quiet_seconds": 3484.6696026289865,
+            "sample_count": 695
+          },
+          "started_at_ms": 1790942094646.835
+        },
+        "predecessor": {
+          "directory": "05-attempt05-predecessor",
+          "ended_at_ms": 1790942890474.6208,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu16-rate1250-r1/trial.json": "5b6f1eb74fb90ff9422a3b01255fd4bbf926a466fa61c506c3c8cbcfbe6a7dd1",
+            "matrix.json": "2e08f2e0fa4858818d6365982ca2254f341a0f3b30b3d3d07cd6aa80cecdb13f"
+          },
+          "metrics": {
+            "baseline_rows_s": 1247.978,
+            "cpu_cores": 0.902,
+            "lag_p95_ms": 3015.233,
+            "lag_p99_ms": 3367.864,
+            "last_backlog_bytes": 157025,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294283,
+            "peak_memory_bytes": 1995436032,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.886,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu16-rate1250-r1/trial.json": "71ad54fa46b19a24b9416529222620894127c7d862677ea44a7b7777d8a903b3",
+            "matrix.json": "eab81f1508db32acd454f4a3b5f96fad5ec9f525d56cff51bbf8c0f7975bcc9e"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942495357.398,
+            "quiet_seconds": 3885.469808059992,
+            "sample_count": 775
+          },
+          "started_at_ms": 1790942495445.4573
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 5,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "06-attempt06-candidate",
+          "ended_at_ms": 1790943289878.8762,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "c9625eca06732a082048ce6cb791f60f9e10504245220715fc26323c3379c01b",
+            "01-cpu8-rate1250-r1/profile.json.gz": "0bd6d728c49b9e680e42bd2dd72777e75fe7d48f45aa59b9b69e88b01060fe19",
+            "01-cpu8-rate1250-r1/trial.json": "28a5c5599155ef2826f35c3c6600c2c12bf54e0899bdcb9c6cf45c5cfc8e6175",
+            "matrix.json": "b65ec971c17d3bab4bcc8ae1b7b3dcae44d6c9a3d82be4b630bf5237ef657098"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.666408,
+            "apply_merge_ms": 16.931286,
+            "apply_run_ms": 357.429909,
+            "baseline_rows_s": 1248.874,
+            "capture_commit_ms": 7.621352472461042,
+            "capture_durable_ms_per_transaction": 0.6062971653833618,
+            "capture_syncs_per_commit": 1.0181354110693175,
+            "capture_syncs_per_transaction": 0.0809951535424025,
+            "capture_transactions_per_group": 12.824436373603783,
+            "capture_transactions_s": 625.7915577849893,
+            "capture_window": {
+              "commits": 14888,
+              "groups": 14593,
+              "seconds": 299.056447265625,
+              "transactions": 187147
+            },
+            "cold_apply_ms": 519.378968,
+            "cold_imports_ms": 233.776997,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.017,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3009.265,
+            "lag_p99_ms": 3344.781,
+            "last_backlog_bytes": 87043,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294646,
+            "peak_memory_bytes": 2034413568,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.713,
+            "status": "measured",
+            "successful_apply_requests": 227,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 356.8624185,
+            "warm_requests": 220,
+            "within_5s_p95": true,
+            "worker_streams": 287
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "cf26614507ac78d53b43f3bee11e5239302c7ccdab132f0b4f0517f050cdfcfb",
+            "01-cpu8-rate1250-r1/profile.json.gz": "0bd6d728c49b9e680e42bd2dd72777e75fe7d48f45aa59b9b69e88b01060fe19",
+            "01-cpu8-rate1250-r1/trial.json": "5bd187128153f3d09e44d6431d2d61a72cb525936cd4a2189254a6e187164815",
+            "matrix.json": "26c14bdbde9a6d89de1d935a8bcccda87f8384e31b8e6f3b097577dad00cda77"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942892760.0813,
+            "quiet_seconds": 4282.872490927999,
+            "sample_count": 854
+          },
+          "started_at_ms": 1790942892848.132
+        },
+        "predecessor": {
+          "directory": "06-attempt06-predecessor",
+          "ended_at_ms": 1790943688677.245,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "99cb10a86729e1d6269eaa3c4594232e062bbeda66b035f3030aab3afca5ad4b",
+            "01-cpu8-rate1250-r1/trial.json": "022d783bb84cd8ce6b95f54b0dc4425ae8e129088e25cc1e818584fa563ecdae",
+            "matrix.json": "581bdf30c7a2f99271a8cf9e0f9f22b54cd164183057d2fb2f7211dd6f27c568"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.32,
+            "cpu_cores": 0.938,
+            "lag_p95_ms": 3015.022,
+            "lag_p99_ms": 3360.086,
+            "last_backlog_bytes": 135080,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294283,
+            "peak_memory_bytes": 1930420224,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.887,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "0ce8d129fa0c879af791f762a78dc40d3ef177415a3bb58ba2334e06dfc84b9a",
+            "01-cpu8-rate1250-r1/trial.json": "75c650c2c80828da338985e5ba2fd4b75898f7261730f9a3b7e05a0e5107061d",
+            "matrix.json": "fa700e2e023468ba20dd905a883b2b9a284753de45daf4c3f4b5c372fb96d137"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790943293558.4424,
+            "quiet_seconds": 4683.670852380994,
+            "sample_count": 934
+          },
+          "started_at_ms": 1790943293646.0215
+        }
+      }
+    }
+  ],
+  "completed_at_ms": 1790943691134.9673,
+  "config": {
+    "activation_control": true,
+    "affinity": {
+      "16": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "8": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    "arms": {
+      "candidate": {
+        "harness": "<predecessor-harness>",
+        "harness_identity": {
+          "files": {
+            "e2e/native/branches.py": "061c66413cccb78aa0a86fb8e075700bc2002a6751ca15e41174e4fabc75cf2b",
+            "e2e/native/capture.py": "717d4ef3ea7051fc93c366a9d309ca35bca53d69d527c6861de942d3be9c83fd",
+            "e2e/native/catalog/console.py": "6e0c6f0735bec4d915f7f8afbb8c9a9c812abc77a517acb5920c0a227b0970ee",
+            "e2e/native/catalog/datasets.py": "604a25e02275439bcceab2e6606d70015d39da2c930c8f2e32d27bbd83742aba",
+            "e2e/native/catalog/metadata.py": "c795c7f836d508cdde320d6fd616dfbd73c7baa23341573704083ad4510facac",
+            "e2e/native/catalog/prepare.py": "693b535e618737916baf71c42475fb273896e774c33be96994421fd444712b5d",
+            "e2e/native/catalog/probe.py": "ecf9fd1f865aedaa03a9b6cdaffb7abc9ded66d0f38f59860a2f59a60b37afa9",
+            "e2e/native/catalog/publication.py": "8d666824b28a3bf9d55a62c605f6f119925cad115fa74c7cafa89c1696966a87",
+            "e2e/native/catalog/reads.py": "34c3dc690f265725317c5b9598847913b8c2fa1f5f05763bc31f5a5454d0d1b7",
+            "e2e/native/catalog/recovery.py": "3f593f3b6967cfa111856138d1c17e66f2fae3e88c2cf5dd55627c5c6af438f9",
+            "e2e/native/catalog/sail_worker.py": "80b629016a68eb46bf54b54d4dee5395997fc4e2fa82b536a2cdb297e3f28a99",
+            "e2e/native/catalog/server.py": "da508dae035472cd63c00fe7d15d58d033d498f48a886b054ccb70caa634f84e",
+            "e2e/native/catalog/service.py": "98bdbb0df3a9fb263f795bfd0f8e8cbcb795c8027e0c3a9785e8e44b3305ed1b",
+            "e2e/native/cell.py": "1a1d9676d5656596a1dfeabb7f832c24eb083724349c10a7059f54d2ba440553",
+            "e2e/native/connections.py": "3a92d879887321768fc7d1e4f4b092159b84e1aa429110079f7e5ccf8e78841b",
+            "e2e/native/console_health.py": "5e703ff1f7d4e382ec56ee0101a1b98bd2d1de87669a0c98230f1f9fd8bf71d5",
+            "e2e/native/continuous.py": "872e5b7854f68f0cea04b248cbd9bc78049485fd7b080479e427d74306dc915b",
+            "e2e/native/epochs.py": "5fc04165ef1c399155d739c38c8fe2614d5f7c6b59b639ecdb1cac803623b4fe",
+            "e2e/native/execution/kernel_checks.py": "0e0a53a4d16fd231fe94f20d26c6abdbbb7aaf97a12fa14a20f1c5b75f3563f1",
+            "e2e/native/execution/prepare.py": "31382d85f149e1e829b5a9ca3e4acd2806aa83c948386745616d5c3711b9b316",
+            "e2e/native/exports.py": "38dbbca6337e23ad1f8018d01b734ed471ef832f22cc9faa4e89c4b0c929a2a1",
+            "e2e/native/governed-console/qualify.py": "a05b388453c2dffd50ec0cce562def34a5f332bd09941e13ccfe36b38d7a9685",
+            "e2e/native/governed/qualify.py": "ffb29de3285007995108575812268fad2093a947c56acef592f1e29bd4e99bcc",
+            "e2e/native/iam/catalog_reader.py": "ea516789804d1a1a8bef594426aabd800cfdd8827a200d9f169d4b90469418d3",
+            "e2e/native/iam/common.py": "9fd4c8816a1136a6298cfcb01cc3dd6046f1eb9c702a06d08a771f7fa0b72e13",
+            "e2e/native/iam/controller.py": "88cb9dabc5a1c1eb3a9b3a68ddc5392221e09f069e0673e6eda41a94bce64b39",
+            "e2e/native/iam/identity.py": "d27c3864f4d55c645a0cc50d6f65f687cda65e3d2e687a774228c2248cca666c",
+            "e2e/native/iam/kernel_checks.py": "4298a00e0ee68133fcc4c94b7b5393409d9c05952043658c9258c9273d438edc",
+            "e2e/native/iam/lease_issuer.py": "5d23098d7db785a21c5f38a939189434836f901bfdef32ae9adefdb59dfb8a74",
+            "e2e/native/iam/open_file_query.py": "210f68164a8998b0573c59afa39e91f8f06f75d75ebff9b5f22ab67c0e9e9e1e",
+            "e2e/native/iam/postgres.py": "002700de51ef03424ebf58cdc7a5c31df8ef8901d6a7faa1d197a000c05b6d9d",
+            "e2e/native/iam/prepare.py": "9fa34890c472fdfe21d1732b357f6b681dc5f2aeca35fcc3bbf63f6f967381f1",
+            "e2e/native/iam/qualify.py": "b2459bc6ddc232a959240453ffe1f44874373dd107fff2484cdeb4e9071b0e5a",
+            "e2e/native/iam/run.py": "57d982d980d6aeffd3c6d2cdb3c29113c83993bdea7c8bf58a90ec171665058b",
+            "e2e/native/iam/sandbox.py": "ec310d111b9cc65b1d29b45e21fd4451a62eaf13ec4f3b4363e2d758d56044e1",
+            "e2e/native/iam/sandbox_sail.py": "ceeb82619c8586c02df0c5409bed8b1ce9daa862f9504307a72bd80fad7fcc44",
+            "e2e/native/iam/test_evidence.py": "fde222ad16103f756bf6414b833cebdc561c4f55955ecfa332f56aa115187d62",
+            "e2e/native/iam/workload.py": "b32dec57b7f23b1e61ca68c3ae834b5f9e53a6f94fa4ada9922c6550e7e56ae7",
+            "e2e/native/identity/qualify.py": "6ea0c041bc53705667f6dbd1803b5954bb67bcc2f14f143a710d4b2bee3771b0",
+            "e2e/native/incremental.py": "bdcb8c90d5200b1b8b7bac451b4dc05d077e7564486cd151f4ac71b6ec3585d8",
+            "e2e/native/installed_sync.py": "b3af66782708b91a0276fdf408b35d81302ac1374fab2932fc6a642a4e3572fe",
+            "e2e/native/notebook-environments/assemble.py": "e3fa7f7bd247bdffc6501140af4811bd57c63bfed58f17f584f54b01cba6a705",
+            "e2e/native/notebook-environments/client.py": "f1fe644a7def3b048a0da54ce3363e5a14b3bb692ef245425549895b781efae1",
+            "e2e/native/notebook-environments/index.py": "68dd07f6e50da5cc9f9240ce77c4096fc2b4f5ee966ad0bf0d4b5f2e6317190e",
+            "e2e/native/notebook-environments/kernels.py": "b6a0bd5c3765ef48f0b8b85e0d5861d3e4401186441780645ee4bac3a66ecf4c",
+            "e2e/native/notebook-environments/lifecycle.py": "a36452aa3ba52e526bec977c13ad9066bff0d292984e7fc4b955b75b9d048476",
+            "e2e/native/notebook-environments/manager.py": "d1c1c2ead87446ab5a02d278782650588bc4518e3c8e96df8281979c821a7f0b",
+            "e2e/native/notebook-environments/packages.py": "037982cd3fbc8173c3805fa6a9ed6075a783f06041d19a6a5a0afd84c2e5e88d",
+            "e2e/native/notebook-environments/prepare.py": "67679bb1b73db40d437e788ac4248d2b90bba73ee63d3278b4bd2960e46b6f7d",
+            "e2e/native/notebook-environments/run.py": "e42dab3d8dd0c2588910a26bc36866c4f19622bbe30ffbda8bb68da5ab9778b1",
+            "e2e/native/notebook-environments/test_client.py": "199d4f3594036663c40588485ad5085296adeef1ba1914a9fb8e75483a3d033a",
+            "e2e/native/notebooks/assemble.py": "71bef3219f93ccd08daaaa53e62b3aa6ce98b7f2a276b0a1f73c818afb1a927c",
+            "e2e/native/notebooks/bootstrap.py": "4d35e8f8864ff8fea4973ba198118ca8fede8b1a5283d350957e382af7a01f90",
+            "e2e/native/notebooks/bridge.py": "ca1d9aa8732cc43eba03c66423bf2db65384b5c2204da2b66e17fe982338e18f",
+            "e2e/native/notebooks/candidate.py": "f3529b05d28ec92f311951932fc712419d6ba1e7ff0998e87f14ad13a3edc53a",
+            "e2e/native/notebooks/kernel.py": "5529b5386ad8b517e763a90b2b900f93dca26f9645c49960ee024bbfa4409f2d",
+            "e2e/native/notebooks/prepare.py": "f291136d5d4543ee54bc76ad0b9a911d60f87c008d87ea7e09003d716650529d",
+            "e2e/native/notebooks/run.py": "b9abd190797cd9501f5ba212a3f8ceffc970e2eaf6e8a0c71d9f0d2d2c1e9a96",
+            "e2e/native/notebooks/runtime_fixture.py": "f405c9ef50a6672e2debb2823d63d05b01c569d180d66269bdb3897c27da4e3c",
+            "e2e/native/notebooks/server.py": "89e9185e8fb0c297f8bb5547f1e035e389382468fbf1d78039dfe66c83897013",
+            "e2e/native/performance/archive_comparison.py": "8e196e1b94647199e20517351bb27d5c298b08d3dfca6a5417e108783484f760",
+            "e2e/native/performance/capture_groups.py": "7b59e120b2668ce5d50e9a02359f25b4e3c891366d234d62bfcdb36c71ca7ff8",
+            "e2e/native/performance/capture_package.py": "0f27e5cb20f424736d4a0dfeff46e524afbaae89cb8fa32308eb15c0a37ad51d",
+            "e2e/native/performance/compare.py": "55d2a06693abfe60f647be631a044a74ae00a426672763344370f0f8aaa386d4",
+            "e2e/native/performance/comparison.py": "98ed6b77f42b48f5304e95e990de457a0d79d01c279e15e63f4f370a6c17f5ef",
+            "e2e/native/performance/host_monitor.py": "0f7b86d00a56997960ee62e35c14292d5d175903eead2b803db8391dc3dbc956",
+            "e2e/native/performance/matrix.py": "ec354a2c7e43e2e1522e3d9958a8c3a5597617c9c4b0375334024b7a34752e4e",
+            "e2e/native/performance/planning_analysis.py": "b2ee7477cebe8516cb7fd6669c2c357c7f403953592b9d02550822e82ed1d38b",
+            "e2e/native/performance/planning_component.py": "c7f105fdb0a8c267ffbc35fa0574cf1590cefcb8aa4f64d3b76ca394ded5af3c",
+            "e2e/native/performance/planning_package.py": "ecc571b04a06e9e5bcb7f68e71a4f26407bd9959574fea4f02fb5088264f88c5",
+            "e2e/native/performance/profile_package.py": "1edb194db59e215c478623f96a994c4e9eadbfce879222130af6a94ad8915645",
+            "e2e/native/performance/profile_trial.py": "5e2f1965025f26835d01a85b6fe5c2ece6990aaeacb8f442712dbc2349790f43",
+            "e2e/native/performance/report_comparison.py": "da38e775335964f9cdf3e1e98f70ca335900b08a19c938baefc07b8b637b5809",
+            "e2e/native/performance/source_capacity.py": "645eb36c04ac942b211aabf0f4e56dcf805025a2925e75c3473e75bd395a54c4",
+            "e2e/native/performance/source_trial.py": "bfe4c47515641638285180633db9ab9f22bc4dcc013598162ed40c0f065f9adc",
+            "e2e/native/performance/sqlite_package.py": "2f31a5f8a3dd075e3b91584aaf23929da8d0cde33c0dbc9a9ede6646e9199117",
+            "e2e/native/performance/summarize.py": "71ca4b12878682941b7fd8a371ab4b3f4db916b59c9aea087e0793e43d024e82",
+            "e2e/native/performance/test_comparison.py": "955a3dddde16d7ceda406e41cf72b6cfdb1a307bce2f6198691773ad9b1c4bfe",
+            "e2e/native/performance/test_matrix.py": "5f2910b6b05cc69b764b6f4f01ed90ebdf182a36c6e2506400d257ec5f54dcdc",
+            "e2e/native/performance/test_observer.py": "e2c830a29f32a1fafb048cb1db9bf219cf9c4e1f7d8ced2301baa31145085f3f",
+            "e2e/native/performance/test_profile.py": "b477cba6c823fd8528072ba42033395bb79a9217dc1fa9097d4ae43d09463f5f",
+            "e2e/native/performance/test_source_capacity.py": "55eff94f030031be6439ff1587eca7ee2986698c136cb80f1f1765b0ca845572",
+            "e2e/native/performance/test_timeout.py": "d474434652855cef32a74f9f17ea70173780976ad83601a932ba40f7e1888d95",
+            "e2e/native/performance/test_trial.py": "9cac60d18cf22eb30972797df96583242c665ccfa6ae0cb7e533ab1675841202",
+            "e2e/native/performance/trial.py": "7bff6a75528461ec45a3c324b68c03b351249445e2be65a3e5aad9a80300047d",
+            "e2e/native/performance/wal_package.py": "96987f2647ff7fbd523c717bb193b81a272de2a1e90e49f0340a757e79893a47",
+            "e2e/native/performance/worker_profile.py": "7ff1134ded7166a4c2660b466cc17a95abe7a49fd7a93ef09eafe915237d2be6",
+            "e2e/native/project_data.py": "a6b4c0f3f2358c6df29243fa596f3388294ed89a305985ca09f79893c69342d2",
+            "e2e/native/sessions.py": "ad8bb436d4ada9695fe0f75c140c37a9adb8172f8e625c183d47d83b735960c8",
+            "e2e/native/snapshot_policies.py": "7ee201069c7bc0fd1496c095fe1357be0c6a91f649a32e804f7b791dc442ffe1",
+            "e2e/native/sync/prepare.py": "fd354faaf12534c77eebbe21658b6735c8a7afa110a9f62cf9ef40fb52db4d47",
+            "e2e/native/sync/protocol.py": "92ef287e6729d9b9b8b8dc2895af1bcaa3feedf3d29725a4bebfb0ee56631515",
+            "e2e/native/sync/qualify.py": "c00252015fab5c1a42aab7357208f21a0620c885b382debe79aa1246cae4b698",
+            "e2e/native/sync/run.py": "4e631c1d1e98c263ce0eb2acef56d553b4f3aab4ee1c79c22602cb93decd23c9",
+            "e2e/native/sync/storage.py": "1c97e2d04b1413c09be07b05a9a14d9284a0fd86b1e6c376ec56c87f268800a1",
+            "e2e/native/sync/test_evidence.py": "4a4c09942c793a2133ecbdcd69a9e69ba8ac61270ab2d012ec6ced743ad8e1d6",
+            "e2e/native/sync/test_protocol.py": "493a206ef777e67f0d9988868a3f427552e0162af59ec78de2f9429c4bba498c",
+            "e2e/native/sync_maintenance.py": "31129ea91124264f801ef4041101947e457b37e433e0e43d64f8f1649b8b063e",
+            "e2e/native/sync_surfaces.py": "286b980658f5979ccd17f64ad427761b1da89c907d9bf5e4ad584bc9c188dd61",
+            "e2e/native/test_installed_sync.py": "d05ab471424edbccec151eff0f645a531f8e5b2fc050f3b0907a262f5f8ea00f",
+            "e2e/native/triggered.py": "eb4b823ea01a0995686af278507312ea3c93fc99a0dd91e2585e7763d61863c9",
+            "e2e/native/workflow.py": "2e447264546efb06aaa32d078552aa766a5c7b8a73a9242bc14083839f6140a6",
+            "install/native/analytics.py": "76165883b6c672921ca02b3239962282b011117db746766b06b0228ffa9ef14d",
+            "install/native/assemble.py": "104cd439c9ef6db21e5250ed32644768a64cdddce2646981fca9af92dbf432c7",
+            "install/native/capture_wal_qualification.py": "b429d6fd1f0b8b1af000ea0050886a0c833f90803f58a8b0593d0eed0d2d1d09",
+            "install/native/catalog_evidence.py": "c555d73d628453d7cbde41a26bad491798da54ecc098541abe30651ad3c0a117",
+            "install/native/catalog_gate.py": "05bad01c09d188807ba2ba319334e463013fa5acb674eeba2149923b667c690f",
+            "install/native/check_network.py": "35b1a112503a978405b26e42bbf3700016931a2d048db76bfc2bbd656b746bee",
+            "install/native/cleanup.py": "5cdf5014a6cd179798e01eaf3b1f77c4fe38f720067698bf069baf051b1b0921",
+            "install/native/compile_sync.py": "39f18cb78d19c13340417fabe75ec5bafcb0cb07e7adf324eeb8cfeb6ebdca99",
+            "install/native/demo.py": "a6d0dcc9a66f7e1a86efcb5d90b562c42f38f00ec8ed762dc3bee2f350872959",
+            "install/native/diagnostics.py": "adea9431e80f426e4f347971c46f653c2325667cbca062069694c9b8ce0a3331",
+            "install/native/environment_evidence.py": "1a2389d278b76f87668107fa86c55fb2662f0238b3e966704d2680409e67ed25",
+            "install/native/environments.py": "2435cf68fd53d59dd0f2f8b064e50396fdc65d73398851ff721d90fa6411757e",
+            "install/native/governed_evidence.py": "d0f5de4606cae9e26f8559176ed4b079a04059a7c2ee1ef87c0316289216b59c",
+            "install/native/governed_upgrade.py": "27227b9e9c1dd46dea20b2b3b82edde3dd3a4cd8c35412787dfb777bf842bdd3",
+            "install/native/macos_policy.py": "620815ed763d1d435909c6ba0a8de2b8a9dec57a9a29ab2bdeb20d989f5d3d7e",
+            "install/native/measure.py": "0b2d9c0755ceec816c4f5d864e7300e93a4529d5dab3e133dae54d2cd3e58692",
+            "install/native/notebooks.py": "71d71b8aa93b626a32fb5b3ef5c8ad674f9a05e85221b30d2c5ee806fb31e531",
+            "install/native/prepare_governed_runtime.py": "db83f853f74ea868193d3975dfd4daeb16ae7d53bb02b8ec1d00d4d8861ba830",
+            "install/native/project_apply.py": "22908aa115ec2b8190465d1d2a1840ee4add119a3761035672a5b202dcb60eb0",
+            "install/native/project_evidence.py": "77a78a2efcc72162ca9ab084f498a13dbc1d86dc08731289b2949cb1e525bfd8",
+            "install/native/project_offline.py": "2d44830dc45aa88b9832fef3edfe168fa1b0d47229ecfc9bdaa6c4a6aa4939d4",
+            "install/native/project_portability.py": "db37ccfa51c5abe9f364e826e976afa2673945bd0f4321b33529b462e64fe6b3",
+            "install/native/qualify.py": "7cf71457745beefc7bdf2462a8e84805171806aa925cb0d06485877c06879361",
+            "install/native/qualify_catalog.py": "bd5b23bae0270aab89229417e0c72d329ca930fa10eb9f8457bb6a32fd71c111",
+            "install/native/qualify_console.py": "f600355b1861be5969068b0a1f137e36cb1ea95fa4b01337db8cf28cf035f060",
+            "install/native/qualify_environments.py": "ce6fdd504ea3e59c3dfb79e90362327a58a94d303e51746c85a9303c7deda812",
+            "install/native/qualify_governed.py": "f14e45fd16f47ee8dd88125a3c9a27897d9d7c2302f6a4ff3ecf56c075ffcfa5",
+            "install/native/qualify_ingest.py": "7970593f08d221d4c09bc8676af1271b6ff20f5ceb40c259875b8fdba5825641",
+            "install/native/qualify_sync.py": "f66945cc86444c3758274b9e69e43a30a42b63adcd6fdd41859c993d93e9b3e1",
+            "install/native/receipt_fixture.py": "0dbfea398dbff4c59e816f11013896bf199c2c282b1cf6f138ee3de141b796b1",
+            "install/native/recovery.py": "3ed2808bf4d4d192c0b77cc34755439e04fa41f49cb2600554c4c35172087700",
+            "install/native/release_evidence.py": "02411d1c05ab802fcf7033f99dcb99d9a5d935229e220b4f7eb4756f7b732fb2",
+            "install/native/sail.py": "65edb4da3d5b5fe505ae8656bc572356a60f23f1996d6d74c1e8685531fe1852",
+            "install/native/serve.py": "cd1126dbb8a2d82a9b1dedfb5b55cb477af5f1594b02ebd30afd95b333faee42",
+            "install/native/sqlite_probe.py": "190d5241c20f59543caab4cf7b10b138e54e45d610b3683fc40af15a9eea9a87",
+            "install/native/sqlite_qualification.py": "84148027f92ab312e3186240e1ac4b63ea62b43a59577a9af34c4fecbbd12e68",
+            "install/native/stage.py": "5f1935cde854d5e1ff7573121021c40c2c75bf14433a64ba6c772779d045845e",
+            "install/native/sync_evidence.py": "3256e9a37b331b9af153b480ba34b3aa8c54c58a7544983fedb17297f96900d5",
+            "install/native/test_analytics.py": "bc37fc1af05f551b4d8d0b7634998c839006f978b5ec960b3bf105169bb96554",
+            "install/native/test_catalog_gate.py": "faf05e4dad0755c20c16572b91a4de4f98d22a5b300b2131eaf7e9bafa66f61b",
+            "install/native/test_cleanup.py": "5f74c4b0c319a2216de7c7304352ee9d6267c480920b44b52f0334c26390bca4",
+            "install/native/test_compile_sync.py": "197f6a829eb79876c734ef38746d2dad51d7ac318cd209bcca846fd36910c393",
+            "install/native/test_demo.py": "db6f30fc7e11da4c2b71647d4c0cac9d32bdd035e54c4682096fdb5a3b1294c9",
+            "install/native/test_diagnostics.py": "3f27f1e54f1f868fff64e71cf4d3e820deb91f91f2f47ef62320a1dad60e99b7",
+            "install/native/test_environment_evidence.py": "a9378ab82e528e6d143c0eee422accb4525a3f916afda69c867f7131866695f3",
+            "install/native/test_governed_evidence.py": "473c67f49bcb7453f21588a7cf6b8c00e0e239c9c325d194529190dc6eb56b6e",
+            "install/native/test_installer.py": "5cef1dd6a3c2fa32962d6226010aa2471c56c27314ce20ece051f25cbcc1fab0",
+            "install/native/test_project_evidence.py": "48b25fd77a7cbff7d28c84f0ba67d2cb1e6301031621001630278345ef647e63",
+            "install/native/test_project_portability.py": "f248a602e0b6b812998474936f0364fc793f4680fd96895c3c9e34a784aba984",
+            "install/native/test_release_evidence.py": "298bc551e26c1f224b06fe80c955db3a8ba29e62f30e54f97ca7b7780622619c",
+            "install/native/test_sail.py": "c23ecb082ef1a177febf29daafeee7d581baad4222e40c67f9de39c1dc437a03",
+            "install/native/test_sqlite_qualification.py": "fe26088dda4f10d5780497252da808b3923726c7170586d56fafcc99ca28579a",
+            "install/native/test_sync_evidence.py": "3295ef03a7707b3a4f3d82d5344eef01325a12bd0540269b0aedc5e1b259d329",
+            "install/native/test_unity_catalog.py": "72e8444af31d31414ee11de05a8b20b287b86fc31fbf6751df18f2883807b624",
+            "install/native/unity_catalog.py": "cbfa905cb0d30daab64d1e3415d81c1cc5b6581a4c1eec8fb45558af26c837b6"
+          },
+          "revision": "be4701cce5694ed00349ab3db9b577592965d7d7"
+        },
+        "package": {
+          "binary_sha256": "b6cc919d30c7780b96c632f08928e5a6d5793080258739c8cb06e38d6b143789",
+          "release_identity": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+          "runtime_revision": "37a523303232c8bc8b697c3c110305c7d1d14581"
+        },
+        "release": "<runtime-8b0aaff1f1e1>"
+      },
+      "predecessor": {
+        "harness": "<predecessor-harness>",
+        "harness_identity": {
+          "files": {
+            "e2e/native/branches.py": "061c66413cccb78aa0a86fb8e075700bc2002a6751ca15e41174e4fabc75cf2b",
+            "e2e/native/capture.py": "717d4ef3ea7051fc93c366a9d309ca35bca53d69d527c6861de942d3be9c83fd",
+            "e2e/native/catalog/console.py": "6e0c6f0735bec4d915f7f8afbb8c9a9c812abc77a517acb5920c0a227b0970ee",
+            "e2e/native/catalog/datasets.py": "604a25e02275439bcceab2e6606d70015d39da2c930c8f2e32d27bbd83742aba",
+            "e2e/native/catalog/metadata.py": "c795c7f836d508cdde320d6fd616dfbd73c7baa23341573704083ad4510facac",
+            "e2e/native/catalog/prepare.py": "693b535e618737916baf71c42475fb273896e774c33be96994421fd444712b5d",
+            "e2e/native/catalog/probe.py": "ecf9fd1f865aedaa03a9b6cdaffb7abc9ded66d0f38f59860a2f59a60b37afa9",
+            "e2e/native/catalog/publication.py": "8d666824b28a3bf9d55a62c605f6f119925cad115fa74c7cafa89c1696966a87",
+            "e2e/native/catalog/reads.py": "34c3dc690f265725317c5b9598847913b8c2fa1f5f05763bc31f5a5454d0d1b7",
+            "e2e/native/catalog/recovery.py": "3f593f3b6967cfa111856138d1c17e66f2fae3e88c2cf5dd55627c5c6af438f9",
+            "e2e/native/catalog/sail_worker.py": "80b629016a68eb46bf54b54d4dee5395997fc4e2fa82b536a2cdb297e3f28a99",
+            "e2e/native/catalog/server.py": "da508dae035472cd63c00fe7d15d58d033d498f48a886b054ccb70caa634f84e",
+            "e2e/native/catalog/service.py": "98bdbb0df3a9fb263f795bfd0f8e8cbcb795c8027e0c3a9785e8e44b3305ed1b",
+            "e2e/native/cell.py": "1a1d9676d5656596a1dfeabb7f832c24eb083724349c10a7059f54d2ba440553",
+            "e2e/native/connections.py": "3a92d879887321768fc7d1e4f4b092159b84e1aa429110079f7e5ccf8e78841b",
+            "e2e/native/console_health.py": "5e703ff1f7d4e382ec56ee0101a1b98bd2d1de87669a0c98230f1f9fd8bf71d5",
+            "e2e/native/continuous.py": "872e5b7854f68f0cea04b248cbd9bc78049485fd7b080479e427d74306dc915b",
+            "e2e/native/epochs.py": "5fc04165ef1c399155d739c38c8fe2614d5f7c6b59b639ecdb1cac803623b4fe",
+            "e2e/native/execution/kernel_checks.py": "0e0a53a4d16fd231fe94f20d26c6abdbbb7aaf97a12fa14a20f1c5b75f3563f1",
+            "e2e/native/execution/prepare.py": "31382d85f149e1e829b5a9ca3e4acd2806aa83c948386745616d5c3711b9b316",
+            "e2e/native/exports.py": "38dbbca6337e23ad1f8018d01b734ed471ef832f22cc9faa4e89c4b0c929a2a1",
+            "e2e/native/governed-console/qualify.py": "a05b388453c2dffd50ec0cce562def34a5f332bd09941e13ccfe36b38d7a9685",
+            "e2e/native/governed/qualify.py": "ffb29de3285007995108575812268fad2093a947c56acef592f1e29bd4e99bcc",
+            "e2e/native/iam/catalog_reader.py": "ea516789804d1a1a8bef594426aabd800cfdd8827a200d9f169d4b90469418d3",
+            "e2e/native/iam/common.py": "9fd4c8816a1136a6298cfcb01cc3dd6046f1eb9c702a06d08a771f7fa0b72e13",
+            "e2e/native/iam/controller.py": "88cb9dabc5a1c1eb3a9b3a68ddc5392221e09f069e0673e6eda41a94bce64b39",
+            "e2e/native/iam/identity.py": "d27c3864f4d55c645a0cc50d6f65f687cda65e3d2e687a774228c2248cca666c",
+            "e2e/native/iam/kernel_checks.py": "4298a00e0ee68133fcc4c94b7b5393409d9c05952043658c9258c9273d438edc",
+            "e2e/native/iam/lease_issuer.py": "5d23098d7db785a21c5f38a939189434836f901bfdef32ae9adefdb59dfb8a74",
+            "e2e/native/iam/open_file_query.py": "210f68164a8998b0573c59afa39e91f8f06f75d75ebff9b5f22ab67c0e9e9e1e",
+            "e2e/native/iam/postgres.py": "002700de51ef03424ebf58cdc7a5c31df8ef8901d6a7faa1d197a000c05b6d9d",
+            "e2e/native/iam/prepare.py": "9fa34890c472fdfe21d1732b357f6b681dc5f2aeca35fcc3bbf63f6f967381f1",
+            "e2e/native/iam/qualify.py": "b2459bc6ddc232a959240453ffe1f44874373dd107fff2484cdeb4e9071b0e5a",
+            "e2e/native/iam/run.py": "57d982d980d6aeffd3c6d2cdb3c29113c83993bdea7c8bf58a90ec171665058b",
+            "e2e/native/iam/sandbox.py": "ec310d111b9cc65b1d29b45e21fd4451a62eaf13ec4f3b4363e2d758d56044e1",
+            "e2e/native/iam/sandbox_sail.py": "ceeb82619c8586c02df0c5409bed8b1ce9daa862f9504307a72bd80fad7fcc44",
+            "e2e/native/iam/test_evidence.py": "fde222ad16103f756bf6414b833cebdc561c4f55955ecfa332f56aa115187d62",
+            "e2e/native/iam/workload.py": "b32dec57b7f23b1e61ca68c3ae834b5f9e53a6f94fa4ada9922c6550e7e56ae7",
+            "e2e/native/identity/qualify.py": "6ea0c041bc53705667f6dbd1803b5954bb67bcc2f14f143a710d4b2bee3771b0",
+            "e2e/native/incremental.py": "bdcb8c90d5200b1b8b7bac451b4dc05d077e7564486cd151f4ac71b6ec3585d8",
+            "e2e/native/installed_sync.py": "b3af66782708b91a0276fdf408b35d81302ac1374fab2932fc6a642a4e3572fe",
+            "e2e/native/notebook-environments/assemble.py": "e3fa7f7bd247bdffc6501140af4811bd57c63bfed58f17f584f54b01cba6a705",
+            "e2e/native/notebook-environments/client.py": "f1fe644a7def3b048a0da54ce3363e5a14b3bb692ef245425549895b781efae1",
+            "e2e/native/notebook-environments/index.py": "68dd07f6e50da5cc9f9240ce77c4096fc2b4f5ee966ad0bf0d4b5f2e6317190e",
+            "e2e/native/notebook-environments/kernels.py": "b6a0bd5c3765ef48f0b8b85e0d5861d3e4401186441780645ee4bac3a66ecf4c",
+            "e2e/native/notebook-environments/lifecycle.py": "a36452aa3ba52e526bec977c13ad9066bff0d292984e7fc4b955b75b9d048476",
+            "e2e/native/notebook-environments/manager.py": "d1c1c2ead87446ab5a02d278782650588bc4518e3c8e96df8281979c821a7f0b",
+            "e2e/native/notebook-environments/packages.py": "037982cd3fbc8173c3805fa6a9ed6075a783f06041d19a6a5a0afd84c2e5e88d",
+            "e2e/native/notebook-environments/prepare.py": "67679bb1b73db40d437e788ac4248d2b90bba73ee63d3278b4bd2960e46b6f7d",
+            "e2e/native/notebook-environments/run.py": "e42dab3d8dd0c2588910a26bc36866c4f19622bbe30ffbda8bb68da5ab9778b1",
+            "e2e/native/notebook-environments/test_client.py": "199d4f3594036663c40588485ad5085296adeef1ba1914a9fb8e75483a3d033a",
+            "e2e/native/notebooks/assemble.py": "71bef3219f93ccd08daaaa53e62b3aa6ce98b7f2a276b0a1f73c818afb1a927c",
+            "e2e/native/notebooks/bootstrap.py": "4d35e8f8864ff8fea4973ba198118ca8fede8b1a5283d350957e382af7a01f90",
+            "e2e/native/notebooks/bridge.py": "ca1d9aa8732cc43eba03c66423bf2db65384b5c2204da2b66e17fe982338e18f",
+            "e2e/native/notebooks/candidate.py": "f3529b05d28ec92f311951932fc712419d6ba1e7ff0998e87f14ad13a3edc53a",
+            "e2e/native/notebooks/kernel.py": "5529b5386ad8b517e763a90b2b900f93dca26f9645c49960ee024bbfa4409f2d",
+            "e2e/native/notebooks/prepare.py": "f291136d5d4543ee54bc76ad0b9a911d60f87c008d87ea7e09003d716650529d",
+            "e2e/native/notebooks/run.py": "b9abd190797cd9501f5ba212a3f8ceffc970e2eaf6e8a0c71d9f0d2d2c1e9a96",
+            "e2e/native/notebooks/runtime_fixture.py": "f405c9ef50a6672e2debb2823d63d05b01c569d180d66269bdb3897c27da4e3c",
+            "e2e/native/notebooks/server.py": "89e9185e8fb0c297f8bb5547f1e035e389382468fbf1d78039dfe66c83897013",
+            "e2e/native/performance/archive_comparison.py": "8e196e1b94647199e20517351bb27d5c298b08d3dfca6a5417e108783484f760",
+            "e2e/native/performance/capture_groups.py": "7b59e120b2668ce5d50e9a02359f25b4e3c891366d234d62bfcdb36c71ca7ff8",
+            "e2e/native/performance/capture_package.py": "0f27e5cb20f424736d4a0dfeff46e524afbaae89cb8fa32308eb15c0a37ad51d",
+            "e2e/native/performance/compare.py": "55d2a06693abfe60f647be631a044a74ae00a426672763344370f0f8aaa386d4",
+            "e2e/native/performance/comparison.py": "98ed6b77f42b48f5304e95e990de457a0d79d01c279e15e63f4f370a6c17f5ef",
+            "e2e/native/performance/host_monitor.py": "0f7b86d00a56997960ee62e35c14292d5d175903eead2b803db8391dc3dbc956",
+            "e2e/native/performance/matrix.py": "ec354a2c7e43e2e1522e3d9958a8c3a5597617c9c4b0375334024b7a34752e4e",
+            "e2e/native/performance/planning_analysis.py": "b2ee7477cebe8516cb7fd6669c2c357c7f403953592b9d02550822e82ed1d38b",
+            "e2e/native/performance/planning_component.py": "c7f105fdb0a8c267ffbc35fa0574cf1590cefcb8aa4f64d3b76ca394ded5af3c",
+            "e2e/native/performance/planning_package.py": "ecc571b04a06e9e5bcb7f68e71a4f26407bd9959574fea4f02fb5088264f88c5",
+            "e2e/native/performance/profile_package.py": "1edb194db59e215c478623f96a994c4e9eadbfce879222130af6a94ad8915645",
+            "e2e/native/performance/profile_trial.py": "5e2f1965025f26835d01a85b6fe5c2ece6990aaeacb8f442712dbc2349790f43",
+            "e2e/native/performance/report_comparison.py": "da38e775335964f9cdf3e1e98f70ca335900b08a19c938baefc07b8b637b5809",
+            "e2e/native/performance/source_capacity.py": "645eb36c04ac942b211aabf0f4e56dcf805025a2925e75c3473e75bd395a54c4",
+            "e2e/native/performance/source_trial.py": "bfe4c47515641638285180633db9ab9f22bc4dcc013598162ed40c0f065f9adc",
+            "e2e/native/performance/sqlite_package.py": "2f31a5f8a3dd075e3b91584aaf23929da8d0cde33c0dbc9a9ede6646e9199117",
+            "e2e/native/performance/summarize.py": "71ca4b12878682941b7fd8a371ab4b3f4db916b59c9aea087e0793e43d024e82",
+            "e2e/native/performance/test_comparison.py": "955a3dddde16d7ceda406e41cf72b6cfdb1a307bce2f6198691773ad9b1c4bfe",
+            "e2e/native/performance/test_matrix.py": "5f2910b6b05cc69b764b6f4f01ed90ebdf182a36c6e2506400d257ec5f54dcdc",
+            "e2e/native/performance/test_observer.py": "e2c830a29f32a1fafb048cb1db9bf219cf9c4e1f7d8ced2301baa31145085f3f",
+            "e2e/native/performance/test_profile.py": "b477cba6c823fd8528072ba42033395bb79a9217dc1fa9097d4ae43d09463f5f",
+            "e2e/native/performance/test_source_capacity.py": "55eff94f030031be6439ff1587eca7ee2986698c136cb80f1f1765b0ca845572",
+            "e2e/native/performance/test_timeout.py": "d474434652855cef32a74f9f17ea70173780976ad83601a932ba40f7e1888d95",
+            "e2e/native/performance/test_trial.py": "9cac60d18cf22eb30972797df96583242c665ccfa6ae0cb7e533ab1675841202",
+            "e2e/native/performance/trial.py": "7bff6a75528461ec45a3c324b68c03b351249445e2be65a3e5aad9a80300047d",
+            "e2e/native/performance/wal_package.py": "96987f2647ff7fbd523c717bb193b81a272de2a1e90e49f0340a757e79893a47",
+            "e2e/native/performance/worker_profile.py": "7ff1134ded7166a4c2660b466cc17a95abe7a49fd7a93ef09eafe915237d2be6",
+            "e2e/native/project_data.py": "a6b4c0f3f2358c6df29243fa596f3388294ed89a305985ca09f79893c69342d2",
+            "e2e/native/sessions.py": "ad8bb436d4ada9695fe0f75c140c37a9adb8172f8e625c183d47d83b735960c8",
+            "e2e/native/snapshot_policies.py": "7ee201069c7bc0fd1496c095fe1357be0c6a91f649a32e804f7b791dc442ffe1",
+            "e2e/native/sync/prepare.py": "fd354faaf12534c77eebbe21658b6735c8a7afa110a9f62cf9ef40fb52db4d47",
+            "e2e/native/sync/protocol.py": "92ef287e6729d9b9b8b8dc2895af1bcaa3feedf3d29725a4bebfb0ee56631515",
+            "e2e/native/sync/qualify.py": "c00252015fab5c1a42aab7357208f21a0620c885b382debe79aa1246cae4b698",
+            "e2e/native/sync/run.py": "4e631c1d1e98c263ce0eb2acef56d553b4f3aab4ee1c79c22602cb93decd23c9",
+            "e2e/native/sync/storage.py": "1c97e2d04b1413c09be07b05a9a14d9284a0fd86b1e6c376ec56c87f268800a1",
+            "e2e/native/sync/test_evidence.py": "4a4c09942c793a2133ecbdcd69a9e69ba8ac61270ab2d012ec6ced743ad8e1d6",
+            "e2e/native/sync/test_protocol.py": "493a206ef777e67f0d9988868a3f427552e0162af59ec78de2f9429c4bba498c",
+            "e2e/native/sync_maintenance.py": "31129ea91124264f801ef4041101947e457b37e433e0e43d64f8f1649b8b063e",
+            "e2e/native/sync_surfaces.py": "286b980658f5979ccd17f64ad427761b1da89c907d9bf5e4ad584bc9c188dd61",
+            "e2e/native/test_installed_sync.py": "d05ab471424edbccec151eff0f645a531f8e5b2fc050f3b0907a262f5f8ea00f",
+            "e2e/native/triggered.py": "eb4b823ea01a0995686af278507312ea3c93fc99a0dd91e2585e7763d61863c9",
+            "e2e/native/workflow.py": "2e447264546efb06aaa32d078552aa766a5c7b8a73a9242bc14083839f6140a6",
+            "install/native/analytics.py": "76165883b6c672921ca02b3239962282b011117db746766b06b0228ffa9ef14d",
+            "install/native/assemble.py": "104cd439c9ef6db21e5250ed32644768a64cdddce2646981fca9af92dbf432c7",
+            "install/native/capture_wal_qualification.py": "b429d6fd1f0b8b1af000ea0050886a0c833f90803f58a8b0593d0eed0d2d1d09",
+            "install/native/catalog_evidence.py": "c555d73d628453d7cbde41a26bad491798da54ecc098541abe30651ad3c0a117",
+            "install/native/catalog_gate.py": "05bad01c09d188807ba2ba319334e463013fa5acb674eeba2149923b667c690f",
+            "install/native/check_network.py": "35b1a112503a978405b26e42bbf3700016931a2d048db76bfc2bbd656b746bee",
+            "install/native/cleanup.py": "5cdf5014a6cd179798e01eaf3b1f77c4fe38f720067698bf069baf051b1b0921",
+            "install/native/compile_sync.py": "39f18cb78d19c13340417fabe75ec5bafcb0cb07e7adf324eeb8cfeb6ebdca99",
+            "install/native/demo.py": "a6d0dcc9a66f7e1a86efcb5d90b562c42f38f00ec8ed762dc3bee2f350872959",
+            "install/native/diagnostics.py": "adea9431e80f426e4f347971c46f653c2325667cbca062069694c9b8ce0a3331",
+            "install/native/environment_evidence.py": "1a2389d278b76f87668107fa86c55fb2662f0238b3e966704d2680409e67ed25",
+            "install/native/environments.py": "2435cf68fd53d59dd0f2f8b064e50396fdc65d73398851ff721d90fa6411757e",
+            "install/native/governed_evidence.py": "d0f5de4606cae9e26f8559176ed4b079a04059a7c2ee1ef87c0316289216b59c",
+            "install/native/governed_upgrade.py": "27227b9e9c1dd46dea20b2b3b82edde3dd3a4cd8c35412787dfb777bf842bdd3",
+            "install/native/macos_policy.py": "620815ed763d1d435909c6ba0a8de2b8a9dec57a9a29ab2bdeb20d989f5d3d7e",
+            "install/native/measure.py": "0b2d9c0755ceec816c4f5d864e7300e93a4529d5dab3e133dae54d2cd3e58692",
+            "install/native/notebooks.py": "71d71b8aa93b626a32fb5b3ef5c8ad674f9a05e85221b30d2c5ee806fb31e531",
+            "install/native/prepare_governed_runtime.py": "db83f853f74ea868193d3975dfd4daeb16ae7d53bb02b8ec1d00d4d8861ba830",
+            "install/native/project_apply.py": "22908aa115ec2b8190465d1d2a1840ee4add119a3761035672a5b202dcb60eb0",
+            "install/native/project_evidence.py": "77a78a2efcc72162ca9ab084f498a13dbc1d86dc08731289b2949cb1e525bfd8",
+            "install/native/project_offline.py": "2d44830dc45aa88b9832fef3edfe168fa1b0d47229ecfc9bdaa6c4a6aa4939d4",
+            "install/native/project_portability.py": "db37ccfa51c5abe9f364e826e976afa2673945bd0f4321b33529b462e64fe6b3",
+            "install/native/qualify.py": "7cf71457745beefc7bdf2462a8e84805171806aa925cb0d06485877c06879361",
+            "install/native/qualify_catalog.py": "bd5b23bae0270aab89229417e0c72d329ca930fa10eb9f8457bb6a32fd71c111",
+            "install/native/qualify_console.py": "f600355b1861be5969068b0a1f137e36cb1ea95fa4b01337db8cf28cf035f060",
+            "install/native/qualify_environments.py": "ce6fdd504ea3e59c3dfb79e90362327a58a94d303e51746c85a9303c7deda812",
+            "install/native/qualify_governed.py": "f14e45fd16f47ee8dd88125a3c9a27897d9d7c2302f6a4ff3ecf56c075ffcfa5",
+            "install/native/qualify_ingest.py": "7970593f08d221d4c09bc8676af1271b6ff20f5ceb40c259875b8fdba5825641",
+            "install/native/qualify_sync.py": "f66945cc86444c3758274b9e69e43a30a42b63adcd6fdd41859c993d93e9b3e1",
+            "install/native/receipt_fixture.py": "0dbfea398dbff4c59e816f11013896bf199c2c282b1cf6f138ee3de141b796b1",
+            "install/native/recovery.py": "3ed2808bf4d4d192c0b77cc34755439e04fa41f49cb2600554c4c35172087700",
+            "install/native/release_evidence.py": "02411d1c05ab802fcf7033f99dcb99d9a5d935229e220b4f7eb4756f7b732fb2",
+            "install/native/sail.py": "65edb4da3d5b5fe505ae8656bc572356a60f23f1996d6d74c1e8685531fe1852",
+            "install/native/serve.py": "cd1126dbb8a2d82a9b1dedfb5b55cb477af5f1594b02ebd30afd95b333faee42",
+            "install/native/sqlite_probe.py": "190d5241c20f59543caab4cf7b10b138e54e45d610b3683fc40af15a9eea9a87",
+            "install/native/sqlite_qualification.py": "84148027f92ab312e3186240e1ac4b63ea62b43a59577a9af34c4fecbbd12e68",
+            "install/native/stage.py": "5f1935cde854d5e1ff7573121021c40c2c75bf14433a64ba6c772779d045845e",
+            "install/native/sync_evidence.py": "3256e9a37b331b9af153b480ba34b3aa8c54c58a7544983fedb17297f96900d5",
+            "install/native/test_analytics.py": "bc37fc1af05f551b4d8d0b7634998c839006f978b5ec960b3bf105169bb96554",
+            "install/native/test_catalog_gate.py": "faf05e4dad0755c20c16572b91a4de4f98d22a5b300b2131eaf7e9bafa66f61b",
+            "install/native/test_cleanup.py": "5f74c4b0c319a2216de7c7304352ee9d6267c480920b44b52f0334c26390bca4",
+            "install/native/test_compile_sync.py": "197f6a829eb79876c734ef38746d2dad51d7ac318cd209bcca846fd36910c393",
+            "install/native/test_demo.py": "db6f30fc7e11da4c2b71647d4c0cac9d32bdd035e54c4682096fdb5a3b1294c9",
+            "install/native/test_diagnostics.py": "3f27f1e54f1f868fff64e71cf4d3e820deb91f91f2f47ef62320a1dad60e99b7",
+            "install/native/test_environment_evidence.py": "a9378ab82e528e6d143c0eee422accb4525a3f916afda69c867f7131866695f3",
+            "install/native/test_governed_evidence.py": "473c67f49bcb7453f21588a7cf6b8c00e0e239c9c325d194529190dc6eb56b6e",
+            "install/native/test_installer.py": "5cef1dd6a3c2fa32962d6226010aa2471c56c27314ce20ece051f25cbcc1fab0",
+            "install/native/test_project_evidence.py": "48b25fd77a7cbff7d28c84f0ba67d2cb1e6301031621001630278345ef647e63",
+            "install/native/test_project_portability.py": "f248a602e0b6b812998474936f0364fc793f4680fd96895c3c9e34a784aba984",
+            "install/native/test_release_evidence.py": "298bc551e26c1f224b06fe80c955db3a8ba29e62f30e54f97ca7b7780622619c",
+            "install/native/test_sail.py": "c23ecb082ef1a177febf29daafeee7d581baad4222e40c67f9de39c1dc437a03",
+            "install/native/test_sqlite_qualification.py": "fe26088dda4f10d5780497252da808b3923726c7170586d56fafcc99ca28579a",
+            "install/native/test_sync_evidence.py": "3295ef03a7707b3a4f3d82d5344eef01325a12bd0540269b0aedc5e1b259d329",
+            "install/native/test_unity_catalog.py": "72e8444af31d31414ee11de05a8b20b287b86fc31fbf6751df18f2883807b624",
+            "install/native/unity_catalog.py": "cbfa905cb0d30daab64d1e3415d81c1cc5b6581a4c1eec8fb45558af26c837b6"
+          },
+          "revision": "be4701cce5694ed00349ab3db9b577592965d7d7"
+        },
+        "package": {
+          "binary_sha256": "b6cc919d30c7780b96c632f08928e5a6d5793080258739c8cb06e38d6b143789",
+          "release_identity": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+          "runtime_revision": "37a523303232c8bc8b697c3c110305c7d1d14581"
+        },
+        "release": "<runtime-8b0aaff1f1e1>"
+      }
+    },
+    "baseline_identity": null,
+    "filesystem": {
+      "filesystems": [
+        {
+          "fstype": "ext4",
+          "options": "rw,relatime",
+          "source": "/dev/nvme0n1p5"
+        }
+      ]
+    },
+    "format_version": 1,
+    "host": {
+      "lscpu": [
+        {
+          "data": "x86_64",
+          "field": "Architecture:"
+        },
+        {
+          "data": "32-bit, 64-bit",
+          "field": "CPU op-mode(s):"
+        },
+        {
+          "data": "48 bits physical, 48 bits virtual",
+          "field": "Address sizes:"
+        },
+        {
+          "data": "Little Endian",
+          "field": "Byte Order:"
+        },
+        {
+          "data": "16",
+          "field": "CPU(s):"
+        },
+        {
+          "data": "0-15",
+          "field": "On-line CPU(s) list:"
+        },
+        {
+          "data": "AuthenticAMD",
+          "field": "Vendor ID:"
+        },
+        {
+          "data": "AMD Ryzen 7 7800X3D 8-Core Processor",
+          "field": "Model name:"
+        },
+        {
+          "data": "25",
+          "field": "CPU family:"
+        },
+        {
+          "data": "97",
+          "field": "Model:"
+        },
+        {
+          "data": "2",
+          "field": "Thread(s) per core:"
+        },
+        {
+          "data": "8",
+          "field": "Core(s) per socket:"
+        },
+        {
+          "data": "1",
+          "field": "Socket(s):"
+        },
+        {
+          "data": "2",
+          "field": "Stepping:"
+        },
+        {
+          "data": "enabled",
+          "field": "Frequency boost:"
+        },
+        {
+          "data": "8384.26",
+          "field": "BogoMIPS:"
+        },
+        {
+          "data": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good amd_lbr_v2 nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpuid_fault cpb cat_l3 cdp_l3 hw_pstate ssbd mba perfmon_v2 ibrs ibpb stibp ibrs_enhanced vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk avx512_bf16 clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic vgif x2avic v_spec_ctrl vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid overflow_recov succor smca fsrm flush_l1d amd_lbr_pmc_freeze",
+          "field": "Flags:"
+        },
+        {
+          "data": "AMD-V",
+          "field": "Virtualization:"
+        },
+        {
+          "data": "256 KiB (8 instances)",
+          "field": "L1d cache:"
+        },
+        {
+          "data": "256 KiB (8 instances)",
+          "field": "L1i cache:"
+        },
+        {
+          "data": "8 MiB (8 instances)",
+          "field": "L2 cache:"
+        },
+        {
+          "data": "96 MiB (1 instance)",
+          "field": "L3 cache:"
+        },
+        {
+          "data": "1",
+          "field": "NUMA node(s):"
+        },
+        {
+          "data": "0-15",
+          "field": "NUMA node0 CPU(s):"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Gather data sampling:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Ghostwrite:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Indirect target selection:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Itlb multihit:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability L1tf:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Mds:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Meltdown:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Mmio stale data:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Old microcode:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Reg file data sampling:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Retbleed:"
+        },
+        {
+          "data": "Mitigation; Safe RET",
+          "field": "Vulnerability Spec rstack overflow:"
+        },
+        {
+          "data": "Mitigation; Speculative Store Bypass disabled via prctl",
+          "field": "Vulnerability Spec store bypass:"
+        },
+        {
+          "data": "Mitigation; usercopy/swapgs barriers and __user pointer sanitization",
+          "field": "Vulnerability Spectre v1:"
+        },
+        {
+          "data": "Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always-on; PBRSB-eIBRS Not affected; BHI Not affected",
+          "field": "Vulnerability Spectre v2:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Srbds:"
+        },
+        {
+          "data": "Mitigation; Clear CPU buffers",
+          "field": "Vulnerability Tsa:"
+        },
+        {
+          "data": "Not affected",
+          "field": "Vulnerability Tsx async abort:"
+        },
+        {
+          "data": "Mitigation; IBPB before exit to userspace",
+          "field": "Vulnerability Vmscape:"
+        }
+      ]
+    },
+    "hypothesis": "Extract SQLite journal contract only; identical native binary, dependencies, profiler, durability, batching, direct process access and serial worker reuse",
+    "image_id": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+    "max_pair_attempts": 3,
+    "max_wait_seconds": 21600,
+    "memory_gib": 16,
+    "minimum_free_gib": 64,
+    "order": [
+      {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 1
+      },
+      {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 3
+      },
+      {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 3
+      },
+      {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 2
+      },
+      {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 2
+      },
+      {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 1
+      }
+    ],
+    "parameters": {
+      "baseline": 5,
+      "clients": 8,
+      "profile": true,
+      "rows": 10000,
+      "seconds": 300,
+      "warmup": 60
+    },
+    "quiet_seconds": 300,
+    "sample_interval": 5,
+    "seed": 20260924,
+    "slice": "SP10a-qualified-profiler-controls",
+    "standard_matched_protocol": false,
+    "topology": [
+      [
+        0,
+        8
+      ],
+      [
+        1,
+        9
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        3,
+        11
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        5,
+        13
+      ],
+      [
+        6,
+        14
+      ],
+      [
+        7,
+        15
+      ]
+    ]
+  },
+  "export": {
+    "original_experiment_sha256": "f364212c12b4ddb0198e3246bdade09721784863f614a6bc721b327792668d5b",
+    "redaction": "Local harness, runtime and experiment paths replaced by stable labels; original artifact hashes retained"
+  },
+  "historical": [],
+  "pairs": [
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 0,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "01-attempt01-candidate",
+          "ended_at_ms": 1790939703862.983,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "a1b15355b00607b54a9b65ef06a201ef1363dfa29923ebd5cdcd30b61f4e38cc",
+            "01-cpu16-rate1250-r1/profile.json.gz": "760b7d27b21c4dd2bd09ab478bae820f756ccb2297dcc63d332418c5dfeca2e4",
+            "01-cpu16-rate1250-r1/trial.json": "a345d640ef9b3fec41475603187e39e78f495777cd5f8baf73867db7acb2a4fc",
+            "matrix.json": "f72f5449262de7796181dc01430326f4334e84e845f1d2a176a2569ae5d30513"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.597444,
+            "apply_merge_ms": 17.460202,
+            "apply_run_ms": 361.437949,
+            "baseline_rows_s": 1248.526,
+            "capture_commit_ms": 7.7256963106469,
+            "capture_durable_ms_per_transaction": 0.6116718946733818,
+            "capture_syncs_per_commit": 1.0189353099730458,
+            "capture_syncs_per_transaction": 0.08067286967284833,
+            "capture_transactions_per_group": 12.887513751375138,
+            "capture_transactions_s": 624.6677566246583,
+            "capture_window": {
+              "commits": 14840,
+              "groups": 14544,
+              "seconds": 300.0571071777344,
+              "transactions": 187436
+            },
+            "cold_apply_ms": 513.840776,
+            "cold_imports_ms": 235.086417,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.981,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3022.674,
+            "lag_p99_ms": 3353.826,
+            "last_backlog_bytes": 152548,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 291984,
+            "peak_memory_bytes": 2130178048,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.746,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 360.444913,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "0e931c7662f5b9c6ac41065d4f91869bf4b781fdd03154de5dd93d4ad49eec20",
+            "01-cpu16-rate1250-r1/profile.json.gz": "760b7d27b21c4dd2bd09ab478bae820f756ccb2297dcc63d332418c5dfeca2e4",
+            "01-cpu16-rate1250-r1/trial.json": "dde93d4b5e4e8b415086591c9db847fa05b0b07def6e85e21f25211b7fa1aa77",
+            "matrix.json": "8e7430353c5e87d7705f1e063cd98b4184766ef12f24163b19451ac86c2d261f"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790939307749.005,
+            "quiet_seconds": 697.8614145309984,
+            "sample_count": 140
+          },
+          "started_at_ms": 1790939307833.857
+        },
+        "predecessor": {
+          "directory": "01-attempt01-predecessor",
+          "ended_at_ms": 1790939305015.4858,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "a2a8338399805498d4b1658a4dc4de98839d80ddc2d09ece74d10983fe7865fd",
+            "01-cpu16-rate1250-r1/trial.json": "8d9e88740bb8aae584351acc321c9165b1ac1d3e69017c6d67a20acd4b19d77f",
+            "matrix.json": "721c3f48009db85244b34829272ffc876ec6f8e143b445d58f3abdcee01a4ee6"
+          },
+          "metrics": {
+            "baseline_rows_s": 1247.194,
+            "cpu_cores": 0.9,
+            "lag_p95_ms": 3008.848,
+            "lag_p99_ms": 3378.039,
+            "last_backlog_bytes": 178805,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 296703,
+            "peak_memory_bytes": 2032558080,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.846,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "fa5f0b6443b32a9868174a89b609fa9bdfd509b01b6c5f868663f272529e79b9",
+            "01-cpu16-rate1250-r1/trial.json": "55c703cce2b2fd50ad28ef8c3189b1bc072ee52c90d67186b96d022e5f3fd675",
+            "matrix.json": "9c0ef81a05924b75a0cf1c5fe4d814993e62ed34ccc419b4d6976343935dee08"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790938909896.1216,
+            "quiet_seconds": 300.0085292619915,
+            "sample_count": 60
+          },
+          "started_at_ms": 1790938909985.9998
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 1,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "02-attempt02-candidate",
+          "ended_at_ms": 1790940502907.6746,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "1cc765a27110ec17e64c65325f2cbabea0badbb089b833f71abe52517ce9fb18",
+            "01-cpu16-rate1250-r1/profile.json.gz": "22f722e0c5147d29220bce521f286b237dd38e0d4b2ce872a98d6120b0c25a20",
+            "01-cpu16-rate1250-r1/trial.json": "53f83720bbe29ae74a11ac6e3ba0162f3127a6a25af632a3117e116cf4ac0d22",
+            "matrix.json": "a64997e4bb3469c1df84df0fc4bd087d645d5d8b009f5c353edb9fc3ccda2087"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.6799375,
+            "apply_merge_ms": 17.5394735,
+            "apply_run_ms": 359.5249295,
+            "baseline_rows_s": 1248.646,
+            "capture_commit_ms": 7.737358344834558,
+            "capture_durable_ms_per_transaction": 0.6115653139677957,
+            "capture_syncs_per_commit": 1.0188018060516206,
+            "capture_syncs_per_transaction": 0.08052668864753727,
+            "capture_transactions_per_group": 12.909234683352816,
+            "capture_transactions_s": 625.6801205055482,
+            "capture_window": {
+              "commits": 14839,
+              "groups": 14543,
+              "seconds": 300.0558813476562,
+              "transactions": 187739
+            },
+            "cold_apply_ms": 496.893926,
+            "cold_imports_ms": 218.795661,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.98,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3009.962,
+            "lag_p99_ms": 3356.063,
+            "last_backlog_bytes": 118503,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294041,
+            "peak_memory_bytes": 2124050432,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.867,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 357.953718,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "468a40dd75c0be9df35265998ef2b3480bf7dfd9f1ab2f60f2be22ce7736bcd4",
+            "01-cpu16-rate1250-r1/profile.json.gz": "22f722e0c5147d29220bce521f286b237dd38e0d4b2ce872a98d6120b0c25a20",
+            "01-cpu16-rate1250-r1/trial.json": "0bafe90d5ff2d1cde3feaa0ddc0a390564bdb335599fe0b747e8bd260f99f740",
+            "matrix.json": "e8b6cc779342f7f0315550b4bc97ab87a21d57054a204120fb782c8e999c9eff"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940105792.73,
+            "quiet_seconds": 1495.9051402109908,
+            "sample_count": 299
+          },
+          "started_at_ms": 1790940105877.6074
+        },
+        "predecessor": {
+          "directory": "02-attempt02-predecessor",
+          "ended_at_ms": 1790940100663.5037,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu16-rate1250-r1/trial.json": "e02d642fe4bc7b799fb13d3a9654a4e8b647c661e89476eaa57d66a705100bbf",
+            "matrix.json": "40863a8870ead21557b74f342fa11db85d70627f6fb15a146b223e8505f029a7"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.637,
+            "cpu_cores": 0.898,
+            "lag_p95_ms": 3028.228,
+            "lag_p99_ms": 3387.786,
+            "last_backlog_bytes": 194898,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 295053,
+            "peak_memory_bytes": 1994964992,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.958,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu16-rate1250-r1/trial.json": "d5d91150d0b792834a19c78e178317d892dfd6b82836b69f40e7c726e76862f2",
+            "matrix.json": "cc7ae8bcd12e4c28e1597453382e5ccb84c1e1eda07d570afd9cd0018ae3a40d"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790939704543.294,
+            "quiet_seconds": 1094.6557036869926,
+            "sample_count": 219
+          },
+          "started_at_ms": 1790939704634.2651
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 2,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 3
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "03-attempt03-candidate",
+          "ended_at_ms": 1790940899037.5708,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "d91e2b9c70615dc5e783645fc1170729548a6638060eb33cbd1bbea258906804",
+            "01-cpu8-rate1250-r1/profile.json.gz": "82cef93df448ea5d3f05da7d43761919431d1deeeac072710056ce3c89c1c262",
+            "01-cpu8-rate1250-r1/trial.json": "b62a8d92c15154e4792e0fdd19046b1da26fa7f4c2b8457338a52e35073068da",
+            "matrix.json": "efeb54e08d564feb80f1fb2ff54dcc10cb0a9b9990321ee52d9e6e0c75e69235"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.6841975,
+            "apply_merge_ms": 16.848075,
+            "apply_run_ms": 362.82750250000004,
+            "baseline_rows_s": 1247.498,
+            "capture_commit_ms": 7.590929008227975,
+            "capture_durable_ms_per_transaction": 0.6049127774318733,
+            "capture_syncs_per_commit": 1.0186634557495484,
+            "capture_syncs_per_transaction": 0.08117616955946949,
+            "capture_transactions_per_group": 12.803166803166803,
+            "capture_transactions_s": 625.185843193628,
+            "capture_window": {
+              "commits": 14949,
+              "groups": 14652,
+              "seconds": 300.0579780273437,
+              "transactions": 187592
+            },
+            "cold_apply_ms": 530.81886,
+            "cold_imports_ms": 220.041967,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.014,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 2992.488,
+            "lag_p99_ms": 3341.958,
+            "last_backlog_bytes": 164285,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 292236,
+            "peak_memory_bytes": 2063568896,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.573,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 361.260101,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 285
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "1c3d34528d640b075c67f71d55f8d7838096692b760306f8a7d4179a05b5e3b6",
+            "01-cpu8-rate1250-r1/profile.json.gz": "82cef93df448ea5d3f05da7d43761919431d1deeeac072710056ce3c89c1c262",
+            "01-cpu8-rate1250-r1/trial.json": "ebc54eee6e0a7d696ff408dc7e4f623a263265820c11fe8aa507ec3685b4ff28",
+            "matrix.json": "21f3e406393faa3444ca0f5eb4b1c5c86c8d314fd793d4d463663899673892ad"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940507919.2175,
+            "quiet_seconds": 1898.0316273079952,
+            "sample_count": 379
+          },
+          "started_at_ms": 1790940508007.2585
+        },
+        "predecessor": {
+          "directory": "03-attempt03-predecessor",
+          "ended_at_ms": 1790941300142.736,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "a1b15355b00607b54a9b65ef06a201ef1363dfa29923ebd5cdcd30b61f4e38cc",
+            "01-cpu8-rate1250-r1/trial.json": "1b07ffaecd1be2a0d5677755bd52ebafc00cdff3e5261d9588cab7f123b67fdf",
+            "matrix.json": "00b910f8437ce5a8e271086b8adde7e094f842060563113b768caf6d25247339"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.692,
+            "cpu_cores": 0.941,
+            "lag_p95_ms": 3018.765,
+            "lag_p99_ms": 3390.872,
+            "last_backlog_bytes": 138226,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 295580,
+            "peak_memory_bytes": 1940508672,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.752,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "0e931c7662f5b9c6ac41065d4f91869bf4b781fdd03154de5dd93d4ad49eec20",
+            "01-cpu8-rate1250-r1/trial.json": "521e61dccb30fe4d5ddb9e702beb3305765a065ace87b5e24c3d097f81f80fa6",
+            "matrix.json": "9356be99fb7e84ab08e9225a79d2c939d5e62f888c0c92d95dea97c11bad9f9f"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790940904025.06,
+            "quiet_seconds": 2294.1374697759893,
+            "sample_count": 458
+          },
+          "started_at_ms": 1790940904112.2383
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 3,
+      "pair": {
+        "arms": [
+          "predecessor",
+          "candidate"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "04-attempt04-candidate",
+          "ended_at_ms": 1790942093212.647,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu8-rate1250-r1/profile.json.gz": "32d6c5d93d0c8faace3789aae3178c7efdb1e562e3d6ddc13c5f4f9199759c51",
+            "01-cpu8-rate1250-r1/trial.json": "ba53bcd43b77cfbbe90184e180fe5cfd5954e5c93b8d79eeb5df426138b76d3c",
+            "matrix.json": "d129262206991675539fe13bc47cdedd3cc8e87cdd2003ebbff924e8fa059b31"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.601182000000001,
+            "apply_merge_ms": 16.9018955,
+            "apply_run_ms": 360.03821800000003,
+            "baseline_rows_s": 1247.53,
+            "capture_commit_ms": 7.63193289528971,
+            "capture_durable_ms_per_transaction": 0.6079318931999509,
+            "capture_syncs_per_commit": 1.0192693697310318,
+            "capture_syncs_per_transaction": 0.0811912743629784,
+            "capture_transactions_per_group": 12.807576791808874,
+            "capture_transactions_s": 625.3145008331123,
+            "capture_window": {
+              "commits": 14946,
+              "groups": 14650,
+              "seconds": 300.0586101074219,
+              "transactions": 187631
+            },
+            "cold_apply_ms": 512.065992,
+            "cold_imports_ms": 217.389186,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.013,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3024.996,
+            "lag_p99_ms": 3388.532,
+            "last_backlog_bytes": 143066,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 297550,
+            "peak_memory_bytes": 2030354432,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.716,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 358.234648,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 285
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu8-rate1250-r1/profile.json.gz": "32d6c5d93d0c8faace3789aae3178c7efdb1e562e3d6ddc13c5f4f9199759c51",
+            "01-cpu8-rate1250-r1/trial.json": "f7d47f2e513cc41573b0295a08036e48b2f699cb46a8b8e3e159747413b8df50",
+            "matrix.json": "845a5fc01a3d60c090f2d37ab431ece4916d837f8ec011568e82c4f1bdb031d9"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790941697098.0403,
+            "quiet_seconds": 3087.210450216997,
+            "sample_count": 616
+          },
+          "started_at_ms": 1790941697182.6777
+        },
+        "predecessor": {
+          "directory": "04-attempt04-predecessor",
+          "ended_at_ms": 1790941696175.0183,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "1a62cd35f922225a4539b68428f09602639601a66222b339ac4f223cd0938081",
+            "01-cpu8-rate1250-r1/trial.json": "82c90e33cd00564b4abb382acccd4b9fff59a6886223fa3d62a770efa44be430",
+            "matrix.json": "c2af22047727d706c39fe0a64bcd069c24c0101cbfd47ae0642fb5f5925668e0"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.351,
+            "cpu_cores": 0.938,
+            "lag_p95_ms": 2978.773,
+            "lag_p99_ms": 3317.134,
+            "last_backlog_bytes": 191631,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 290653,
+            "peak_memory_bytes": 1937260544,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.65,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "b6f9023518ad1d0bf2b216b4af2aec42816726bba19e20dcb95c1f877538679d",
+            "01-cpu8-rate1250-r1/trial.json": "6a544b9916a657753b98e6939e1b9edc25153174f33b6e826b59b2142bcf9914",
+            "matrix.json": "c4535d72f230ebc4daa7eafa56c3296e7c08d0c29bc9b69c64248adab92c5021"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790941301055.9302,
+            "quiet_seconds": 2691.1683399779868,
+            "sample_count": 537
+          },
+          "started_at_ms": 1790941301144.6157
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 4,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 16,
+        "rate": 1250,
+        "repeat": 2
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "05-attempt05-candidate",
+          "ended_at_ms": 1790942491676.6428,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "99cb10a86729e1d6269eaa3c4594232e062bbeda66b035f3030aab3afca5ad4b",
+            "01-cpu16-rate1250-r1/profile.json.gz": "a05f6a14caed2704d989519fddf0b7a9730688a0b8eeabe3ef3c5cbbc2b37fe2",
+            "01-cpu16-rate1250-r1/trial.json": "9b7efd4fad3e3fd5c9cd9756a064ecd98f733b0d18f5d1ad57d3bc86daee671c",
+            "matrix.json": "e429e3f3a46be9d2528cac41ba80d2594346f76ef12453f34bd947979635b5c7"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.419262,
+            "apply_merge_ms": 17.599897,
+            "apply_run_ms": 361.7725125,
+            "baseline_rows_s": 1248.608,
+            "capture_commit_ms": 7.765114081628519,
+            "capture_durable_ms_per_transaction": 0.6133262832863154,
+            "capture_syncs_per_commit": 1.0191749375464183,
+            "capture_syncs_per_transaction": 0.08049936805729614,
+            "capture_transactions_per_group": 12.91884257664485,
+            "capture_transactions_s": 624.9362550597683,
+            "capture_window": {
+              "commits": 14811,
+              "groups": 14515,
+              "seconds": 300.0578034667969,
+              "transactions": 187517
+            },
+            "cold_apply_ms": 548.171275,
+            "cold_imports_ms": 239.255265,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 0.982,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3022.302,
+            "lag_p99_ms": 3359.702,
+            "last_backlog_bytes": 130889,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 297550,
+            "peak_memory_bytes": 2143526912,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.906,
+            "status": "measured",
+            "successful_apply_requests": 226,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 359.206077,
+            "warm_requests": 219,
+            "within_5s_p95": true,
+            "worker_streams": 286
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "0ce8d129fa0c879af791f762a78dc40d3ef177415a3bb58ba2334e06dfc84b9a",
+            "01-cpu16-rate1250-r1/profile.json.gz": "a05f6a14caed2704d989519fddf0b7a9730688a0b8eeabe3ef3c5cbbc2b37fe2",
+            "01-cpu16-rate1250-r1/trial.json": "d2c029a148d2169cacb1921659e605f94b576e71a07a0d97b3004ab42cd6ad4c",
+            "matrix.json": "b73b8ddaba7839c11a131272f5612aba63a8f6fc2b4deb88e6ada00a407b16f2"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942094557.193,
+            "quiet_seconds": 3484.6696026289865,
+            "sample_count": 695
+          },
+          "started_at_ms": 1790942094646.835
+        },
+        "predecessor": {
+          "directory": "05-attempt05-predecessor",
+          "ended_at_ms": 1790942890474.6208,
+          "evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "6e9a0b9f09f4c837e05fae00ce623b42a9f49e86563222a60bea3c5c693ab203",
+            "01-cpu16-rate1250-r1/trial.json": "5b6f1eb74fb90ff9422a3b01255fd4bbf926a466fa61c506c3c8cbcfbe6a7dd1",
+            "matrix.json": "2e08f2e0fa4858818d6365982ca2254f341a0f3b30b3d3d07cd6aa80cecdb13f"
+          },
+          "metrics": {
+            "baseline_rows_s": 1247.978,
+            "cpu_cores": 0.902,
+            "lag_p95_ms": 3015.233,
+            "lag_p99_ms": 3367.864,
+            "last_backlog_bytes": 157025,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294283,
+            "peak_memory_bytes": 1995436032,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.886,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu16-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+            "01-cpu16-rate1250-r1/trial.json": "71ad54fa46b19a24b9416529222620894127c7d862677ea44a7b7777d8a903b3",
+            "matrix.json": "eab81f1508db32acd454f4a3b5f96fad5ec9f525d56cff51bbf8c0f7975bcc9e"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942495357.398,
+            "quiet_seconds": 3885.469808059992,
+            "sample_count": 775
+          },
+          "started_at_ms": 1790942495445.4573
+        }
+      }
+    },
+    {
+      "accepted": true,
+      "attempt": 1,
+      "index": 5,
+      "pair": {
+        "arms": [
+          "candidate",
+          "predecessor"
+        ],
+        "cpus": 8,
+        "rate": 1250,
+        "repeat": 1
+      },
+      "reason": "quiet_pair",
+      "results": {
+        "candidate": {
+          "directory": "06-attempt06-candidate",
+          "ended_at_ms": 1790943289878.8762,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "c9625eca06732a082048ce6cb791f60f9e10504245220715fc26323c3379c01b",
+            "01-cpu8-rate1250-r1/profile.json.gz": "0bd6d728c49b9e680e42bd2dd72777e75fe7d48f45aa59b9b69e88b01060fe19",
+            "01-cpu8-rate1250-r1/trial.json": "28a5c5599155ef2826f35c3c6600c2c12bf54e0899bdcb9c6cf45c5cfc8e6175",
+            "matrix.json": "b65ec971c17d3bab4bcc8ae1b7b3dcae44d6c9a3d82be4b630bf5237ef657098"
+          },
+          "metrics": {
+            "apply_directory_ms": 10.666408,
+            "apply_merge_ms": 16.931286,
+            "apply_run_ms": 357.429909,
+            "baseline_rows_s": 1248.874,
+            "capture_commit_ms": 7.621352472461042,
+            "capture_durable_ms_per_transaction": 0.6062971653833618,
+            "capture_syncs_per_commit": 1.0181354110693175,
+            "capture_syncs_per_transaction": 0.0809951535424025,
+            "capture_transactions_per_group": 12.824436373603783,
+            "capture_transactions_s": 625.7915577849893,
+            "capture_window": {
+              "commits": 14888,
+              "groups": 14593,
+              "seconds": 299.056447265625,
+              "transactions": 187147
+            },
+            "cold_apply_ms": 519.378968,
+            "cold_imports_ms": 233.776997,
+            "cold_requests": 7,
+            "counter_capabilities": {
+              "capture_groups": "durable append group and transaction counters; COMMIT totals also include metadata/pruning",
+              "checkpoints": "not separately instrumented in predecessor",
+              "journal_retries": "bounded operational counters in batches.journal_reads; all worker attempts retained"
+            },
+            "cpu_cores": 1.017,
+            "incomplete_worker_tails": [],
+            "lag_p95_ms": 3009.265,
+            "lag_p99_ms": 3344.781,
+            "last_backlog_bytes": 87043,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294646,
+            "peak_memory_bytes": 2034413568,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.713,
+            "status": "measured",
+            "successful_apply_requests": 227,
+            "successful_apply_workers": 8,
+            "warm_apply_ms": 356.8624185,
+            "warm_requests": 220,
+            "within_5s_p95": true,
+            "worker_streams": 287
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "cf26614507ac78d53b43f3bee11e5239302c7ccdab132f0b4f0517f050cdfcfb",
+            "01-cpu8-rate1250-r1/profile.json.gz": "0bd6d728c49b9e680e42bd2dd72777e75fe7d48f45aa59b9b69e88b01060fe19",
+            "01-cpu8-rate1250-r1/trial.json": "5bd187128153f3d09e44d6431d2d61a72cb525936cd4a2189254a6e187164815",
+            "matrix.json": "26c14bdbde9a6d89de1d935a8bcccda87f8384e31b8e6f3b097577dad00cda77"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790942892760.0813,
+            "quiet_seconds": 4282.872490927999,
+            "sample_count": 854
+          },
+          "started_at_ms": 1790942892848.132
+        },
+        "predecessor": {
+          "directory": "06-attempt06-predecessor",
+          "ended_at_ms": 1790943688677.245,
+          "evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "99cb10a86729e1d6269eaa3c4594232e062bbeda66b035f3030aab3afca5ad4b",
+            "01-cpu8-rate1250-r1/trial.json": "022d783bb84cd8ce6b95f54b0dc4425ae8e129088e25cc1e818584fa563ecdae",
+            "matrix.json": "581bdf30c7a2f99271a8cf9e0f9f22b54cd164183057d2fb2f7211dd6f27c568"
+          },
+          "metrics": {
+            "baseline_rows_s": 1248.32,
+            "cpu_cores": 0.938,
+            "lag_p95_ms": 3015.022,
+            "lag_p99_ms": 3360.086,
+            "last_backlog_bytes": 135080,
+            "offered_load_met": true,
+            "peak_backlog_bytes": 294283,
+            "peak_memory_bytes": 1930420224,
+            "phase": "complete",
+            "runtime_error": null,
+            "source_rows_s": 1249.887,
+            "status": "measured",
+            "within_5s_p95": true
+          },
+          "original_evidence_sha256": {
+            "01-cpu8-rate1250-r1/cleanup.json": "0ce8d129fa0c879af791f762a78dc40d3ef177415a3bb58ba2334e06dfc84b9a",
+            "01-cpu8-rate1250-r1/trial.json": "75c650c2c80828da338985e5ba2fd4b75898f7261730f9a3b7e05a0e5107061d",
+            "matrix.json": "fa700e2e023468ba20dd905a883b2b9a284753de45daf4c3f4b5c372fb96d137"
+          },
+          "overlap_samples": [],
+          "quiet": {
+            "at_ms": 1790943293558.4424,
+            "quiet_seconds": 4683.670852380994,
+            "sample_count": 934
+          },
+          "started_at_ms": 1790943293646.0215
+        }
+      }
+    }
+  ],
+  "started_at_ms": 1790938609886.931,
+  "state": "complete"
+}

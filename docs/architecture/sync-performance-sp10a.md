@@ -1,7 +1,7 @@
 # SP10a — Capture journal backend contract
 
-Status: implementation and qualification in progress, 2026-10-02 UTC. No measured
-performance improvement or neutrality claim yet. SQLite remains the only backend;
+Status: measured and accepted, 2026-10-02 UTC. Keep the backend contract; no
+performance improvement claimed. SQLite remains the only backend;
 writer and reader processes retain their existing direct database access.
 
 ## Boundary
@@ -109,4 +109,57 @@ leaked/remaining descendants. These are functional screens, not quiet-host
 performance qualification. [Receipts and package proofs](sync-performance-evidence/2026-10-02-sp10a-screen/README.md)
 are retained. The native binary and profiler match the accepted SP09a package.
 The supervised measured campaign uses new `campaign-01`, frozen `harness-01` and
-`config-01.json`; its final review remains pending.
+`config-01.json`; the final review is below.
+
+
+## Final measured review
+
+All 96 performance/control trials and 12 component/lifecycle fixtures completed,
+with no contention replacements or failed trials. Receipt hashes and metrics were
+recomputed using the frozen controller. Every fixture cleaned up with zero leaked
+or remaining descendants. [Reviewed evidence, individual results and reconstruction
+script](sync-performance-evidence/2026-10-02-sp10a-reviewed/README.md) are retained.
+
+| CPUs / offered rows/s | Actual source, predecessor → candidate | p95 lag, predecessor → candidate | Paired p95 change | Paired CPU change | Paired peak-memory change |
+| --- | --- | --- | --- | --- | --- |
+| 4 / 50 | 50.039 → 50.037 | 1.921 → 1.907 s | +0.33% | +0.24% | +1.01% |
+| 16 / 50 | 50.038 → 50.040 | 1.891 → 1.902 s | +1.00% | +0.23% | +3.68% |
+| 8 / 1,000 | 739.944 → 739.149 | 2.259 → 2.226 s | −1.16% | +0.13% | −1.26% |
+| 16 / 1,000 | 753.494 → 755.248 | 2.242 → 2.253 s | +0.50% | −0.41% | +2.38% |
+| 8 / 1,250 qualified | 1,249.542 → 1,249.744 | 3.000 → 3.020 s | +0.53% | +0.40% | +0.71% |
+| 16 / 1,250 qualified | 1,249.742 → 1,249.896 | 3.011 → 3.030 s | −0.25% | +0.41% | −1.56% |
+
+Values are medians of three fresh trials; changes are medians of matched changes,
+so they need not equal changes between the displayed medians. Every main trial
+passes correctness and five-second p95. All 12 qualified trials meet input;
+the historical four-client overload remains source-limited and does not qualify
+1,000 rows/s. No main cell crosses the predeclared regression screens. Three
+repeats do not prove statistical equivalence or sustained capacity.
+
+The direct journal component delivers 4,319 → 4,309 transactions/s median
+(−0.25% paired); component CPU rises 2.54% paired and physical peak stays
+13,772,856 bytes. Each fixture performs eight prunes, preserves its pinned snapshot
+and passes reopen/replay. These opaque 1 KiB records are not pipeline throughput.
+Lifecycle idle CPU changes 0.0853 → 0.0855 cores. API p95 medians are
+38.398 → 38.668 ms, with +8.44% paired change across noisy individual values
+(−11.19% to +12.81%); this is an auxiliary API metric, not the declared freshness
+screen. All worker reuse, kill, pause/restart, schema and atomicity checks pass.
+
+Profiler off/on controls on the same candidate show +7.90–10.59% paired CPU,
+including the >10% screen at 8 CPUs / 1,000 offered. Low-load p95 rises 4.59% at
+4 CPUs and 6.64% at 16 CPUs (the latter crosses the 5% screen). These are
+instrumentation activation effects: both main arms use the identical profiler,
+and the off/on control changes no runtime code. Qualified p95 changes −0.19% /
++0.23% at 8/16 CPUs, with +8.00% / +9.00% CPU and +5.39% / +6.47% peak memory.
+Record this measurement limitation rather than subtracting profiler costs or
+claiming an abstraction regression from the activation comparison.
+
+Observer off/on controls add 1.40% / 1.69% CPU on the predecessor and 1.84% /
+1.46% on the candidate at 8/16 CPUs. All 24 controls sustain approximately
+1,250 rows/s and independently converge to both frozen source tables. Final-drain
+medians span 1.66–2.66 seconds; timing depends on the final epoch phase and is not
+p95 freshness. No observer-cost subtraction is used.
+
+Decision: retain the contract and proceed to SP10b's separately measured private
+owner transport. No engine, storage-format, durability or concurrency change is
+accepted by this review. SP10c and SP11 gates remain outstanding.

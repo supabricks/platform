@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a implementation/qualification in progress; SP10b–SP12 planned**, 2026-10-02 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; SP10b–SP12 planned**, 2026-10-02 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -602,8 +602,8 @@ increase CPU usage when storage remains the constraint.
 
 ### SP10 — Controlled RocksDB experiment
 
-**SP10a in progress.** Extract the SQLite journal contract while preserving direct
-process access, persisted format and durability. See the [implementation and frozen
+**SP10a measured and accepted** in [#143](https://github.com/supabricks/platform/pull/143). The SQLite journal contract preserves direct
+process access, persisted format and durability. All 108 fixtures pass; no main comparison crosses regression screens. See the [implementation and frozen
 measurement contract](../architecture/sync-performance-sp10a.md). SP09a–SP09b merged
 in [#142](https://github.com/supabricks/platform/pull/142); SP09b keeps serial tables.
 
