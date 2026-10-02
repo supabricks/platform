@@ -105,3 +105,15 @@ measures the cost of ownership needed for a fair SP10c comparison; it does not
 justify RocksDB by itself. SP10c must compare identical owner interfaces and then
 total cost against accepted direct SQLite. SP11 sustained/rotation/reader-pressure
 and SP12 release gates remain outstanding.
+
+
+## Initial installed screen finding
+
+Candidate `b8ce4f2` passes the installed owner read component, but the first
+lifecycle apply is rejected with `invalid_journal_read_accounting`. Detailed IPC
+counters had been added to the native daemon's closed five-field journal receipt
+schema. [Issue #146](https://github.com/supabricks/platform/issues/146) tracks the
+finding. Keep that failed smoke and immutable package; no measured trial was
+admitted. The correction separates benchmark transport counters from operational
+receipts and adds an exact-key regression test. A fresh installed screen must pass
+before freezing the measured candidate.

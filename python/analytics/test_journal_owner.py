@@ -71,7 +71,10 @@ class OwnerTests(unittest.TestCase):
         self.assertEqual(actual,direct)
         stats=self.config['_journal_read']
         self.assertEqual(stats['outcome'],'complete');self.assertEqual(stats['attempts'],1)
-        self.assertGreater(stats['response_bytes'],actual[-1]);self.assertGreater(stats['owner_read_ms'],0)
+        self.assertEqual(set(stats),{'attempts','busy','wait_ms','elapsed_ms','outcome'})
+        transport={}
+        self.assertEqual(owner.read_range(owner.request_for(self.config),time.monotonic()+3,transport),actual)
+        self.assertGreater(transport['response_bytes'],actual[-1]);self.assertGreater(transport['owner_read_ms'],0)
         self.assert_unpinned()
 
     def test_exact_request_and_project_generation_authority_fences(self):

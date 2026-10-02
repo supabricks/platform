@@ -118,7 +118,9 @@ def journal(config):
             try:
                 if 'journal_access' in request:
                     from capture.owner import read_range as owner_read
-                    result=owner_read(request,deadline,stats)
+                    # Operational receipts deliberately have a closed schema.
+                    # Detailed transport counters belong to the component probe.
+                    result=owner_read(request,deadline)
                 else:result=journal_attempt(request,deadline)
                 stats['outcome']='complete'
                 return result
