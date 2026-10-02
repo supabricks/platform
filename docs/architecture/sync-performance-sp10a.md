@@ -98,3 +98,15 @@ SP10b will measure single-owner IPC separately with SQLite. SP10c will compare
 engines through that identical interface/ownership and against direct SQLite,
 including the required 30-minute engine comparison and repeated maintenance.
 SP11 retains full sustained-capacity/rotation/reader-pressure qualification.
+
+## Installed screening checkpoint
+
+Runtime/controller source `37a5233` and the immutable candidate package pass the
+installed durable journal and full lifecycle screens, including same-process
+reuse and kill recovery. Five-second observer-off/on smoke runs each converge to
+both frozen source tables. All four fixtures report successful cleanup and zero
+leaked/remaining descendants. These are functional screens, not quiet-host
+performance qualification. [Receipts and package proofs](sync-performance-evidence/2026-10-02-sp10a-screen/README.md)
+are retained. The native binary and profiler match the accepted SP09a package.
+The supervised measured campaign uses new `campaign-01`, frozen `harness-01` and
+`config-01.json`; its final review remains pending.
