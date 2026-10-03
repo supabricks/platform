@@ -123,6 +123,19 @@ def profile_metrics(profile, trial):
                   warm_apply_ms=median([r['apply_run_ms'] for r in apply if r['request_index']>1]),
                   **{key: median([r[key] for r in apply]) for key in ('apply_directory_ms', 'apply_merge_ms', 'apply_run_ms')})
     if groups_available:result['counter_capabilities']['capture_groups']='durable append group and transaction counters; COMMIT totals also include metadata/pruning'
+    storage=[r for r in trial.get('backlog_series',[]) if start<=r.get('at_ms',0)<=end
+             and (r.get('capture_journal') or {}).get('journal_mode')=='rocksdb']
+    if storage:
+        # SQLite-specific zero counters do not mean RocksDB durability is free.
+        for key in ('capture_commit_ms','capture_syncs_per_commit','capture_syncs_per_transaction','capture_durable_ms_per_transaction'):
+            result[key]=None
+        result['counter_capabilities']['durability']='RocksDB synchronous WriteBatch counters from operational samples; SQLite COMMIT metrics unavailable'
+        if len(storage)>=2:
+            first,last=storage[0]['capture_journal'],storage[-1]['capture_journal']
+            calls=last['sync_writes']-first['sync_writes'];ms=last['sync_ms']-first['sync_ms']
+            require(calls>=0 and ms>=0,'backend cumulative counters regressed')
+            result['rocksdb_write_batch']=dict(calls=calls,total_ms=ms,mean_ms=ms/calls if calls else None,
+                sample_window_ms=storage[-1]['at_ms']-storage[0]['at_ms'])
     return result
 
 

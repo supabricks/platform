@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched direct/owner read cost with the installed SQLite backend in both arms.
+"""Matched direct/owner read cost with the installed journal backend in both arms.
 
 The writer lives in a child in both arms. Only SP10b reads through its private
 owner thread. Opaque records isolate bounded journal reads from PostgreSQL/Delta;
@@ -106,7 +106,7 @@ def run(args):
         report=dict(status='PASS',mode=mode,cells=cells,
             checks=['separate_writer_process','identical_durable_records','all_bounded_ranges_exact','target_pinned_across_append','owner_closed'],
             source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            scope='Installed SQLite read component; three sizes and 16 correlated requests per fresh fixture. CPU includes client validation; no pipeline throughput claim.')
+            scope='Installed journal read component; three sizes and 16 correlated requests per fresh fixture. CPU includes client validation; no pipeline throughput claim.')
     args.report.write_text(json.dumps(report,indent=2)+'\n')
 
 
