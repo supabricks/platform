@@ -101,8 +101,12 @@ class Observer:
 
     def poll(self):
         # Read short SQLite snapshots, never retain a lease that prevents pruning.
-        with closing(sqlite3.connect(f'file:{self.spool}?mode=ro',uri=True,timeout=.05)) as db:
-            rows=db.execute('SELECT seq,end_lsn,substr(payload,22,4) FROM transactions WHERE seq>? ORDER BY seq',(self.seq,)).fetchall()
+        if (self.cell.root/'marker-observer/enabled').exists():
+            from marker_observer import rows as marker_rows
+            rows=marker_rows(self)
+        else:
+            with closing(sqlite3.connect(f'file:{self.spool}?mode=ro',uri=True,timeout=.05)) as db:
+                rows=db.execute('SELECT seq,end_lsn,substr(payload,22,4) FROM transactions WHERE seq>? ORDER BY seq',(self.seq,)).fetchall()
         stamp=time.time()*1000
         for seq,end,xid in rows:
             self.seq=seq;key=struct.unpack('!I',xid)[0]
@@ -219,6 +223,8 @@ def trial(args):
         report['phase']='baseline';print('baseline',flush=True)
         _,report['baseline']=load(cell,args.rate,args.baseline,args.clients,n)
         cell.sql(cell.parent,'UPDATE orders SET value=0; UPDATE payments SET value=0')
+        from marker_observer import enable
+        report['marker_observer']=enable(cell)
         p=cell.cli('sync','create','--branch','main','--mode','continuous','--key','policy');cell.policy_id=p['id']
         report['phase']='bootstrap'
         healthy(cell);observer=Observer(cell,p['capture_id'])
@@ -292,6 +298,10 @@ def trial(args):
         except Exception as error:report['status']='error';report['cleanup_error']=type(error).__name__
         if report['status']=='runtime_failed' and report.get('runtime_error')=='publication_drain_timeout':
             try:
+                if (cell.root/'marker-observer/enabled').exists():
+                    # Diagnostic markers are not an authoritative durable sequence.
+                    # Do not classify missing markers as a capacity result.
+                    raise RuntimeError('marker_drain_timeout_requires_investigation')
                 with closing(sqlite3.connect(f'file:{observer.spool}?mode=ro',uri=True,timeout=3)) as db:
                     sequence=db.execute('SELECT COALESCE(max(seq),0) FROM transactions').fetchone()[0]
                 report['drain_timeout_evidence']=drain_timeout_evidence(

@@ -1,0 +1,29 @@
+name: rocksdb-experiment
+on:
+  pull_request:
+    paths:
+      - 'e2e/native/performance/rocks*'
+      - 'e2e/native/performance/rocksdb/**'
+      - 'python/analytics/capture/**'
+      - '.github/workflows/rocksdb-experiment.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+      - name: Install the isolated experiment dependency
+        run: uv sync --project e2e/native/performance/rocksdb --locked --managed-python
+      - name: Qualify durable journal and consistent ranges
+        env:
+          PYTHONPATH: python/analytics:e2e/native/performance
+        run: e2e/native/performance/rocksdb/.venv/bin/python -m unittest discover -s e2e/native/performance/rocksdb -p 'test_*.py' -v

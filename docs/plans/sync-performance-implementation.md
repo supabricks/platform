@@ -602,6 +602,10 @@ increase CPU usage when storage remains the constraint.
 
 ### SP10 — Controlled RocksDB experiment
 
+**SP10c in progress:** experimental RocksDB owner backend, consistent iterator
+qualification and a backend-independent measurement observer. Production remains
+SQLite. [Implementation and measurement gates](../architecture/sync-performance-sp10c.md).
+
 **SP10b measured and reviewed** in [#145](https://github.com/supabricks/platform/pull/145): all 108 fixtures pass and no main regression screen is crossed. Qualified source remains about 1,250 rows/s at three-second p95 with +1.1–1.3% CPU; isolated read costs are material. [Full review and release CI limitations](../architecture/sync-performance-sp10b.md). SP10c is next.
 
 **SP10a measured and accepted** in [#143](https://github.com/supabricks/platform/pull/143). The SQLite journal contract preserves direct
