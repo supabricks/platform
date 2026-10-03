@@ -85,7 +85,7 @@ print(json.dumps(out))
 
 
 def run(args):
-    if args.seconds<1800:raise ValueError('sustained fixture requires at least 30 minutes')
+    if args.seconds<1800 and not args.screen:raise ValueError('sustained fixture requires at least 30 minutes')
     Sustained.resource_output=args.report.with_name('resources.jsonl')
     Sustained.reopen_output=args.report.with_name('reopen.json')
     trial.InstalledContinuous=Sustained
@@ -98,5 +98,6 @@ if __name__=='__main__':
     p.add_argument('--rate',type=int,default=1250);p.add_argument('--seconds',type=int,default=1800)
     p.add_argument('--baseline',type=int,default=5);p.add_argument('--warmup',type=int,default=60)
     p.add_argument('--clients',type=int,default=8);p.add_argument('--rows',type=int,default=10000)
+    p.add_argument('--screen',action='store_true',help='plumbing check only; excluded from sustained qualification')
     p.set_defaults(profile=False)
     raise SystemExit(run(p.parse_args()))

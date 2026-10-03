@@ -78,6 +78,7 @@ def run(path,output):
                 assert not receipts[-1]['overlaps'],'sustained host contention: retain and review, do not silently replace'
                 data=json.loads((report/'result.json').read_text());cleanup=json.loads((report/'cleanup.json').read_text())
                 assert data['status']=='measured' and data['offered_load_met'] and data['within_5s_p95']
+                assert data['parameters']['seconds']>=1800 and not data['parameters'].get('screen')
                 assert cleanup['exit_code']==cleanup['leaked_descendants']==cleanup['remaining_descendants']==0 and not cleanup['timed_out']
                 assert json.loads((report/'reopen.json').read_text())
                 state['completed'].append('sustained-'+arm_name);checkpoint(status='between_phases')
