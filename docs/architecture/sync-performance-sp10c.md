@@ -222,3 +222,28 @@ quiet intervals even on an uncontended host. Continuous evidence reduces that to
 one initial five-minute interval when monitoring stays healthy. It does not shorten
 the declared warmup/load windows or run competing fixtures concurrently. This is
 a future harness change, not a modification or reinterpretation of current results.
+
+## Retired SST accounting correction (#154)
+
+Native resource-cycle stress reproduced the rejected metadata: `000245.sst` was
+a regular file owned by the worker UID, with `st_nlink=0` and an observed size of
+542,778 bytes; a subsequent lookup returned `FileNotFoundError`. Compaction had
+unlinked the file during path lookup/stat. The old accounting check required
+exactly one link and falsely raised `unsafe_spool_path` after a durable write.
+
+Physical accounting now accepts zero or one link for an owned regular file. It
+conservatively counts the observed bytes for the current sample; it does not skip
+the entry, reopen contents, retry a write, or grant replay/feedback authority.
+Multiple hardlinks, symlinks, directories, foreign ownership and lookup permission
+errors still fail. A retired file's observed bytes still enforce `spool_budget`.
+Already-absent files retain the existing handling. This remains sampled physical
+accounting, not a hard filesystem quota or a guarantee that a directory scan sees
+every concurrently created file.
+
+Seven deterministic accounting cases include real unlinked-inode metadata from
+an open descriptor. The old implementation fails the retirement and budget cases;
+the corrected implementation passes all 42 native contract/marker/IPC cases.
+The focused stress harness repeats the existing native resource-cycle test with
+50 accounting scans per call, recording any naturally observed retired files.
+CI runs five repetitions independently on Linux and macOS. Qualification output
+and installed screens are retained before the new experimental package is used.

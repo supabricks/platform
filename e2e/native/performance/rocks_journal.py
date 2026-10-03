@@ -143,8 +143,12 @@ class RocksJournal:
             except FileNotFoundError:continue  # Background compaction retired this file.
             # Private parent is mandatory; RocksDB's native files are not chmodded
             # from the reader thread. Workers run under the established 077 umask.
-            if not stat.S_ISREG(meta.st_mode) or meta.st_uid!=os.getuid() or meta.st_nlink!=1:
+            if not stat.S_ISREG(meta.st_mode) or meta.st_uid!=os.getuid() or meta.st_nlink not in (0,1):
                 raise CaptureError('unsafe_spool_path')
+            # Native compaction can unlink an inode after path lookup but before
+            # stat returns. Zero links is a retired file, not a hardlink. Count
+            # its observed bytes conservatively for this sample; no file content
+            # is opened and this observation grants no replay/feedback authority.
             result[entry.name]=meta.st_size
         return result
 
