@@ -1,0 +1,211 @@
+{
+  "head": "aabbb168e0fe361673fb393f7aa6152908abb15e",
+  "run": 37019309252,
+  "passed_checks": 44,
+  "failed_checks": 2,
+  "required_checks_passed": [
+    "unit",
+    "e2e",
+    "portable (ubuntu-latest)",
+    "portable (macos-15)",
+    "components",
+    "analytical-probe"
+  ],
+  "installed_sync_passed": [
+    "linux-x86_64",
+    "macos-arm64"
+  ],
+  "full_release_qualified": false,
+  "failures": [
+    {
+      "job_url": "https://github.com/supabricks/platform/actions/runs/37019309252/job/110906388741",
+      "artifact_url": "https://github.com/supabricks/platform/actions/runs/37019309252/artifacts/11235743672",
+      "original_artifact_file_sha256": "1fb7ff0cff677f6c168c73046de1cbb85952a80b29f96926edf223beed039a01",
+      "issue": 148,
+      "receipt": {
+        "status": "failed",
+        "release_identity": "2af69164de1f3a957be9cee85cf31fc0c95b398d53c2a180357baa754f467bd7",
+        "checks": [
+          "localhost_curl_install_path_with_spaces_verified"
+        ],
+        "suites": {
+          "service": {
+            "status": "FAIL",
+            "checks": [],
+            "exit_code": 1,
+            "duration_seconds": 16.459436374999996,
+            "report_sha256": "08496873ae386482d1a0650323f8ca46e5f9002f14bd03bbc78be36d4d0d5395",
+            "cleanup": {
+              "exit_code": 1,
+              "timed_out": false,
+              "descendants_observed": 14,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            }
+          }
+        },
+        "failure": {
+          "type": "AssertionError",
+          "gate": "service"
+        },
+        "diagnostics": {
+          "service": {
+            "available": true,
+            "bytes": 1556,
+            "truncated": false,
+            "frames": [
+              {
+                "file": "runtime",
+                "line": 347,
+                "function": "runtime"
+              },
+              {
+                "file": "runtime",
+                "line": 405,
+                "function": "runtime"
+              },
+              {
+                "file": "service.py",
+                "line": 156,
+                "function": "main"
+              },
+              {
+                "file": "runtime",
+                "line": 748,
+                "function": "runtime"
+              },
+              {
+                "file": "runtime",
+                "line": 353,
+                "function": "runtime"
+              }
+            ],
+            "console_errors": [],
+            "native_errors": [],
+            "readiness_poll_503_observed": 0,
+            "failure_types": [
+              "PermissionError"
+            ]
+          },
+          "browser": {
+            "available": false
+          },
+          "recovery": {
+            "available": false
+          }
+        }
+      },
+      "cause": "Unestablished; preserve failure, no silent retry or qualification claim"
+    },
+    {
+      "job_url": "https://github.com/supabricks/platform/actions/runs/37019309252/job/110906388392",
+      "artifact_url": "https://github.com/supabricks/platform/actions/runs/37019309252/artifacts/11235909998",
+      "original_artifact_file_sha256": "217ba105df4ec4431dc2a4d1abcf06df48cf76cfaafe0d91144728961513a13f",
+      "issue": 110,
+      "receipt": {
+        "status": "failed",
+        "release_identity": "3d7bf7b31e93f0dfc93553baa5a598321968039f10a15f6c91eb5316dc1554ed",
+        "checks": [
+          "installed_payload_readable_by_distinct_guest_uid",
+          "signed_curl_install_and_verified_unchanged_candidate",
+          "installed_private_runtime_preparation_without_downloads",
+          "exact_installed_identity"
+        ],
+        "suites": {
+          "identity": {
+            "status": "passed",
+            "checks": [
+              "real TLS Keycloak PKCE logins and equal-email principal separation",
+              "two real users enforce conflicting roles, explicit execution, idempotency and stop ownership",
+              "service execution approval binds the exact immutable source and rejects edited code",
+              "real Keycloak users use distinct private UC mappings through the authenticated CLI and daemon; UC returns no ungranted metadata",
+              "real OIDC, CLI, daemon, project admission and UC broker launch isolated Jupyter/Sail SQL; another actor cannot read results",
+              "IdP disable blocks execution renewal and the independent watchdog removes the sandbox within 35 seconds",
+              "IdP disable refuses an unexpired platform session",
+              "provider outage fails closed while local logout remains available",
+              "scoped service credential and session rotation",
+              "audited identity transitions without provider credentials",
+              "disposable provider, login clients and daemon cleaned up"
+            ],
+            "exit_code": 0,
+            "cleanup": {
+              "exit_code": 0,
+              "timed_out": false,
+              "descendants_observed": 46,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            },
+            "report_sha256": "d6718717e943cc57ca00abd4484c3cd61f405de947140391976d07e440b46b60",
+            "release_identity": "3d7bf7b31e93f0dfc93553baa5a598321968039f10a15f6c91eb5316dc1554ed",
+            "binary_sha256": "bc5a707392a16656609692884da3e1819bb0aa475e38b79b4d76f2b87db940d4",
+            "duration_seconds": 71.11057921700001,
+            "measurements": {
+              "idp_disable": {
+                "last_success_monotonic": 940.46447359,
+                "acknowledged_deny_monotonic": 940.903314456,
+                "observed_closed_monotonic": 942.267000031,
+                "bound_seconds": 300
+              }
+            }
+          },
+          "data": {
+            "status": "failed",
+            "checks": [],
+            "exit_code": 1,
+            "cleanup": {
+              "exit_code": 1,
+              "timed_out": false,
+              "descendants_observed": 246,
+              "leaked_descendants": 0,
+              "remaining_descendants": 0
+            },
+            "report_sha256": null,
+            "release_identity": "3d7bf7b31e93f0dfc93553baa5a598321968039f10a15f6c91eb5316dc1554ed",
+            "binary_sha256": null,
+            "duration_seconds": 71.97530086900008,
+            "diagnostics": {
+              "available": true,
+              "bytes": 1365,
+              "truncated": false,
+              "frames": [
+                {
+                  "file": "qualify.py",
+                  "line": 260,
+                  "function": "main"
+                },
+                {
+                  "file": "qualify.py",
+                  "line": 58,
+                  "function": "request"
+                },
+                {
+                  "file": "cell.py",
+                  "line": 93,
+                  "function": "request"
+                }
+              ],
+              "console_errors": [],
+              "native_errors": [
+                {
+                  "code": "conflict"
+                }
+              ],
+              "readiness_poll_503_observed": 0,
+              "failure_types": [
+                "RuntimeError"
+              ]
+            }
+          }
+        },
+        "failure": {
+          "type": "AssertionError"
+        },
+        "cleanup": {
+          "leaked_containers": 0,
+          "remaining_containers": 0
+        }
+      },
+      "cause": "Unestablished; preserve failure, no silent retry or qualification claim"
+    }
+  ]
+}

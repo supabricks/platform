@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; SP10b–SP12 planned**, 2026-10-02 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c–SP12 planned**, 2026-10-03 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -601,6 +601,8 @@ that survives aggregate resource accounting. Do not add parallelism merely to
 increase CPU usage when storage remains the constraint.
 
 ### SP10 — Controlled RocksDB experiment
+
+**SP10b measured and reviewed** in [#145](https://github.com/supabricks/platform/pull/145): all 108 fixtures pass and no main regression screen is crossed. Qualified source remains about 1,250 rows/s at three-second p95 with +1.1–1.3% CPU; isolated read costs are material. [Full review and release CI limitations](../architecture/sync-performance-sp10b.md). SP10c is next.
 
 **SP10a measured and accepted** in [#143](https://github.com/supabricks/platform/pull/143). The SQLite journal contract preserves direct
 process access, persisted format and durability. All 108 fixtures pass; no main comparison crosses regression screens. See the [implementation and frozen

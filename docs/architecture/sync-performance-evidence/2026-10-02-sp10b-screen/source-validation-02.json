@@ -1,0 +1,72 @@
+{
+  "runtime_revision": "a37bf269bfbaea843da498aeda073ebcbc9f2ef8",
+  "analytics": {
+    "passed": 119,
+    "log": "analytics-04.log",
+    "test_file_sha256": "fc919d321a65f44515b892aebba9de5c0111af2fa281ca27fc09262a1224c820"
+  },
+  "owner": {
+    "passed": 15,
+    "log": "owner-04.log"
+  },
+  "harness": {
+    "passed": 76,
+    "log": "harness-01.log"
+  },
+  "native": {
+    "results": [
+      "test result: ok. 206 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 6.81s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.37s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s",
+      "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.61s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.76s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s",
+      "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.55s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.52s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.79s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.25s",
+      "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.48s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+      "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s",
+      "test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 175.55s",
+      "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    ],
+    "log": "native-tests-01.log"
+  },
+  "build": {
+    "features": [
+      "sync-profile"
+    ],
+    "profile": "release",
+    "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+  },
+  "status": "source_checks_and_installed_screens_passed",
+  "native_revision": "b8ce4f220cfe9d8057127e4caeb18eefa648da80",
+  "retained_findings": [
+    {
+      "issue": 146,
+      "fixture": "smoke-01/lifecycle",
+      "error": "invalid_journal_read_accounting",
+      "fixed_by": "a37bf26",
+      "verified_by": "smoke-02/lifecycle"
+    },
+    {
+      "log": "analytics-03.log",
+      "test": "test_queue_pressure_shares_deadline_and_expired_readers_open_no_snapshot",
+      "cause": "Test assumed immediate connection after backlog close; transient EAGAIN is expected. Corrected assertion uses the production bounded retry path.",
+      "verified_by": "analytics-04.log"
+    }
+  ],
+  "log_sha256": {
+    "analytics-02.log": "8e2172e9fe0c6589e71c8b01b5042482b1c2de44537a5b79afeff8c45bb7b996",
+    "analytics-03.log": "c36138cf8b47ecacd05c1a9eb80e1a02ebd6a3be61e14815a8b89cbf8753941b",
+    "analytics-04.log": "70504ee33f5c5375b6926bc89a5198aa2d14bfe55bde6491a89a031772086d7d",
+    "owner-03.log": "c5198b093f48ab0cd9ee997b7faaac63db0444f6ec94000496dfb3b7570dacb1",
+    "owner-04.log": "9cda47fc00e61dc39f874873c981c29532b56aeec54a26c7cc12ea6dae53e594",
+    "native-tests-01.log": "678b90ec5d60efcc3b1ed15067abcf4a676eecf5fd8993ef16cccc3eafdcb137",
+    "harness-01.log": "cf2c6d51e767c919ba728467ad063d139e8e39d964d3e8dc75914d94efeeee25"
+  }
+}

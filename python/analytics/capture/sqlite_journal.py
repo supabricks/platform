@@ -88,6 +88,11 @@ class SQLiteJournal:
             if self.db.in_transaction:self.db.execute('ROLLBACK')
             raise
 
+    def snapshot(self, deadline, busy_seconds, cancelled=lambda:False):
+        # Invoked only inside the owner process. A reader connection belongs to
+        # the one bounded service thread; the write connection stays on capture.
+        return snapshot(self.path,deadline,busy_seconds,cancelled)
+
     def activate(self):self.journal.activate()
     def after_write(self):self.journal.after_write()
     def progress(self):return self.journal.progress()
@@ -181,8 +186,8 @@ class SQLiteJournal:
 
 
 class SQLiteSnapshot:
-    def __init__(self, path, deadline, busy_seconds):
-        self.cleanup=ExitStack();self.deadline=deadline;self.busy_seconds=busy_seconds
+    def __init__(self, path, deadline, busy_seconds, cancelled=lambda:False):
+        self.cleanup=ExitStack();self.deadline=deadline;self.busy_seconds=busy_seconds;self.cancelled=cancelled
         try:
             path=Path(path)
             if path.is_symlink() or path.stat().st_size>512*1024*1024:raise CaptureError('spool_budget')
@@ -190,7 +195,7 @@ class SQLiteSnapshot:
             self.cleanup.callback(os.close,reader_lease(path))
             self.db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=0)
             self.cleanup.callback(self.db.close)
-            self.db.set_progress_handler(lambda:int(time.monotonic()>=deadline),1000)
+            self.db.set_progress_handler(lambda:int(time.monotonic()>=deadline or cancelled()),1000)
             self.execute('BEGIN')
         except BaseException:
             self.close();raise
@@ -198,6 +203,7 @@ class SQLiteSnapshot:
     def execute(self, sql, parameters=()):
         remaining=self.deadline-time.monotonic()
         if remaining<=0:raise CaptureError('journal_read_deadline')
+        if self.cancelled():raise CaptureError('journal_read_cancelled')
         timeout=self.db.execute('PRAGMA busy_timeout='+str(int(min(self.busy_seconds,remaining)*1000)))
         self.cleanup.callback(timeout.close)
         cursor=self.db.execute(sql,parameters);self.cleanup.callback(cursor.close)
@@ -217,14 +223,15 @@ class SQLiteSnapshot:
 
 
 @contextmanager
-def snapshot(path, deadline, busy_seconds):
+def snapshot(path, deadline, busy_seconds, cancelled=lambda:False):
     try:
-        view=SQLiteSnapshot(path,deadline,busy_seconds)
+        view=SQLiteSnapshot(path,deadline,busy_seconds,cancelled)
         try:yield view
         finally:view.close()
     except sqlite3.OperationalError as error:
         code=getattr(error,'sqlite_errorcode',None)
         if code in BUSY_CODES:raise ReadBusy() from error
+        if code==sqlite3.SQLITE_INTERRUPT and cancelled():raise CaptureError('journal_read_cancelled') from None
         if code==sqlite3.SQLITE_INTERRUPT and time.monotonic()>=deadline:
             raise CaptureError('journal_read_deadline') from None
         raise

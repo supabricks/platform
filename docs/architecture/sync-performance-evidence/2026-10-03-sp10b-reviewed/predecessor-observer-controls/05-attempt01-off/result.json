@@ -1,0 +1,152 @@
+{
+  "status": "measured",
+  "observer": "off",
+  "release_identity": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+  "binary_sha256": "b6cc919d30c7780b96c632f08928e5a6d5793080258739c8cb06e38d6b143789",
+  "affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "cgroup_limits": {
+    "cpu.stat": "usage_usec 232342\nuser_usec 178494\nsystem_usec 53847\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "io.stat": "",
+    "cpu.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=19\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=19\n",
+    "io.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+    "memory.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+    "cpu.max": "max 100000",
+    "cpuset.cpus.effective": "0-15",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "memory.current": "48263168",
+    "memory.peak": "48263168"
+  },
+  "parameters": {
+    "rate": 1250,
+    "seconds": 300,
+    "warmup": 60,
+    "clients": 8,
+    "rows": 10000
+  },
+  "scope": "Observer cost only; no p95 freshness qualification. Frozen-source equality checked independently in both arms.",
+  "checks": [
+    "both_published_tables_equal_frozen_postgres_source",
+    "owned_runtime_stopped"
+  ],
+  "baseline": {
+    "source_sql_ms": {},
+    "target_rows_per_second": 1250,
+    "target_transactions": 3125,
+    "completed_transactions": 3123,
+    "unsent_transactions": 2,
+    "achieved_rows_per_second": 1247.797,
+    "elapsed_seconds": 5.006,
+    "transaction_ms": {
+      "p50": 11.749,
+      "p95": 15.221,
+      "p99": 18.44
+    },
+    "submission_lateness_ms": {
+      "p50": 0.092,
+      "p95": 9.486,
+      "p99": 17.897
+    }
+  },
+  "warmup": {
+    "source_sql_ms": {},
+    "target_rows_per_second": 1250,
+    "target_transactions": 37500,
+    "completed_transactions": 35394,
+    "unsent_transactions": 2106,
+    "achieved_rows_per_second": 1179.584,
+    "elapsed_seconds": 60.011,
+    "transaction_ms": {
+      "p50": 13.387,
+      "p95": 20.629,
+      "p99": 23.643
+    },
+    "submission_lateness_ms": {
+      "p50": 3028.569,
+      "p95": 3672.41,
+      "p99": 3864.996
+    }
+  },
+  "measurement_start_ms": 1790956330000.976,
+  "source": {
+    "source_sql_ms": {},
+    "target_rows_per_second": 1250,
+    "target_transactions": 187500,
+    "completed_transactions": 187489,
+    "unsent_transactions": 11,
+    "achieved_rows_per_second": 1249.877,
+    "elapsed_seconds": 300.012,
+    "transaction_ms": {
+      "p50": 11.737,
+      "p95": 19.865,
+      "p99": 24.217
+    },
+    "submission_lateness_ms": {
+      "p50": 13.747,
+      "p95": 164.233,
+      "p99": 347.27
+    }
+  },
+  "measurement_end_ms": 1790956630386.321,
+  "cpu": {
+    "usage_usec": 267797609,
+    "user_usec": 172041525,
+    "system_usec": 95756083,
+    "nice_usec": 0,
+    "core_sched.force_idle_usec": 0,
+    "nr_periods": 0,
+    "nr_throttled": 0,
+    "throttled_usec": 0,
+    "nr_bursts": 0,
+    "burst_usec": 0,
+    "average_cpu_cores": 0.892
+  },
+  "cgroup_before": {
+    "cpu.stat": "usage_usec 70665033\nuser_usec 49271264\nsystem_usec 21393769\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "io.stat": "259:2 rbytes=0 wbytes=744001536 rios=0 wios=63251 dbytes=0 dios=0\n",
+    "cpu.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=215662\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=176901\n",
+    "io.pressure": "some avg10=6.62 avg60=4.45 avg300=1.37 total=4914923\nfull avg10=6.33 avg60=4.29 avg300=1.32 total=4755683\n",
+    "memory.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+    "cpu.max": "max 100000",
+    "cpuset.cpus.effective": "0-15",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "memory.current": "1448194048",
+    "memory.peak": "1510031360"
+  },
+  "cgroup_after": {
+    "cpu.stat": "usage_usec 338462642\nuser_usec 221312789\nsystem_usec 117149852\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "io.stat": "259:2 rbytes=0 wbytes=2878013440 rios=0 wios=367552 dbytes=0 dios=0\n",
+    "cpu.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=1129515\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=931697\n",
+    "io.pressure": "some avg10=7.86 avg60=8.16 avg300=5.98 total=32104104\nfull avg10=7.37 avg60=7.86 avg300=5.79 total=31082895\n",
+    "memory.pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+    "cpu.max": "max 100000",
+    "cpuset.cpus.effective": "0-15",
+    "memory.max": "17179869184",
+    "memory.swap.max": "0",
+    "memory.current": "1919459328",
+    "memory.peak": "1940623360"
+  },
+  "drain_seconds": 1.7223184500035131,
+  "offered_load_met": true
+}

@@ -142,7 +142,7 @@ The direct journal component delivers 4,319 → 4,309 transactions/s median
 and passes reopen/replay. These opaque 1 KiB records are not pipeline throughput.
 Lifecycle idle CPU changes 0.0853 → 0.0855 cores. API p95 medians are
 38.398 → 38.668 ms, with +8.44% paired change across noisy individual values
-(−11.19% to +12.81%); this is an auxiliary API metric, not the declared freshness
+(−11.18% to +12.81%); this is an auxiliary API metric, not the declared freshness
 screen. All worker reuse, kill, pause/restart, schema and atomicity checks pass.
 
 Profiler off/on controls on the same candidate show +7.90–10.59% paired CPU,

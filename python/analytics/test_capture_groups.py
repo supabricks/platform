@@ -178,7 +178,7 @@ class WorkerGroupTests(unittest.TestCase):
                     elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
                     else:control('paused')
                     return ('keepalive',999,1)
-            with patch.object(worker,'Groups',lambda spool:Groups(spool,clock=lambda:clock[0])),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
+            with patch.object(worker,'Owner'),patch.object(worker,'Groups',lambda spool:Groups(spool,clock=lambda:clock[0])),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
                 result=worker.run(path)
             s=Spool(root/'spool',config['identity']);captured=s.captured;s.verify();s.close()
             return result,captured,events,json.loads((root/'status.json').read_text())
@@ -235,7 +235,7 @@ class WorkerGroupTests(unittest.TestCase):
                     if action=='recover':pressure[0]=False
                     elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
                     else:config['desired']='paused';path.write_text(json.dumps(config))
-                with patch.object(worker,'Groups',lambda spool:Groups(spool,count=1)),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'sleep',release_or_control),patch.object(Spool,'append_many',append_or_pressure):
+                with patch.object(worker,'Owner'),patch.object(worker,'Groups',lambda spool:Groups(spool,count=1)),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'sleep',release_or_control),patch.object(Spool,'append_many',append_or_pressure):
                     result=worker.run(path)
                 self.assertNotIn('cleanup',events)
                 s=Spool(root/'spool',config['identity'])

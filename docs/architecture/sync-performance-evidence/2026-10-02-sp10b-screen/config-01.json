@@ -1,0 +1,27 @@
+{
+  "slice": "SP10b",
+  "journal_component": "owner",
+  "hypothesis": "Move validated bounded SQLite reads into capture-owned private IPC; identical dependencies, profiler, durability, append groups and serial worker reuse",
+  "arms": {
+    "predecessor": {
+      "release": "<repository>/build/sp10a-20261002/candidate-runtime-01",
+      "revision": "37a523303232c8bc8b697c3c110305c7d1d14581",
+      "identity": {
+        "runtime_revision": "37a523303232c8bc8b697c3c110305c7d1d14581",
+        "release_identity": "8b0aaff1f1e1fb5e7fad0b32145bd5fd198b0b50b21c48f6a78486332e3d8e51",
+        "binary_sha256": "b6cc919d30c7780b96c632f08928e5a6d5793080258739c8cb06e38d6b143789"
+      }
+    },
+    "candidate": {
+      "release": "<sp10b>/candidate-runtime-01",
+      "revision": "b8ce4f220cfe9d8057127e4caeb18eefa648da80",
+      "identity": {
+        "runtime_revision": "b8ce4f220cfe9d8057127e4caeb18eefa648da80",
+        "release_identity": "b33ab7b25ffc5cf46de0ab97aa270992622d378501787f3e66323b160bef20c5",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    }
+  },
+  "workload_harness": "<repository>/build/sp06-recovery-20260927/harness",
+  "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec"
+}
