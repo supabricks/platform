@@ -22,6 +22,10 @@ class RocksOwnerTests(unittest.TestCase):
 # subprocess bootstrap are covered separately by RocksDB replay/crash tests.
 for name in (
     'test_exact_request_and_project_generation_authority_fences',
+    'test_atomic_replacement_retries_current_authority_and_fences_revocations',
+    'test_replacement_churn_after_payload_defers_without_completion',
+    'test_replacement_churn_before_snapshot_is_retryable_and_owner_recovers',
+    'test_startup_retries_atomic_control_replacement',
     'test_current_control_revocation_and_retry_replacement_fence_before_response',
     'test_oversize_request_rejected_before_body_and_owner_remains_usable',
     'test_missing_owner_defers_without_direct_database_fallback',

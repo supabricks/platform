@@ -13,6 +13,7 @@ from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
 from capture.groups import Groups
 from capture.owner import Owner
+from capture.journal import ReadBusy
 from capture.wal import SpoolBackpressure
 from capture.source import Source
 from capture.bootstrap import verify
@@ -143,9 +144,11 @@ def run(path):
             elif data:
                 # A keepalive cannot acknowledge decoded or buffered progress.
                 feedback()
-    except (CaptureError,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
+    except (CaptureError,ReadBusy,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
         if wire:wire.close();wire=None
-        code=error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        code='source_unavailable' if isinstance(error,ReadBusy) else error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        # Bounded owner-startup authority churn is unavailable, not lost history.
+        # No source setup, feedback or cleanup has occurred at this point.
         # Resource/history/codec failures abandon this generation, never skip changes.
         # Source outages retain the slot under its server cap and can reconnect after restart.
         state='unavailable' if code in ('source_unavailable','spool_backpressure','spool_migration_busy','spool_migration_budget') else 'resync_required'

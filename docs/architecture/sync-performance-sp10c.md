@@ -155,3 +155,36 @@ remains provisional. Preserve the stopped campaign; qualify a fix separately bef
 creating new comparison packages. Both native contract CI targets pass. The Linux
 notebook environment lifecycle failure repeats the signature tracked in
 [#135](https://github.com/supabricks/platform/issues/135).
+
+## Owner replacement correction (#153)
+
+The correction discards unlinked or replaced JSON versions and rereads current
+authority, bounded to eight attempts and three seconds. Request reads also check
+the original channel deadline and cancellation on every attempt. Descriptor
+metadata is checked before and after reading and compared with the current path;
+unsafe permissions, foreign ownership, symlinks and multiple hardlinks remain
+fatal. No stale JSON supplies authority. Existing pre-snapshot, pre-response and
+pre-completion authorization fences remain in place.
+
+Exhaustion is read-only contention: requests defer within the existing apply
+budget, and incomplete responses cannot expose rows. Startup exhaustion reports
+`unavailable/source_unavailable`, preserving the journal without source setup,
+feedback or source cleanup. It does not declare a resync requirement. This fixes
+the reproduced mechanism for both storage engines; it does not establish that
+every observed campaign failure came from that check.
+
+Qualify this as a separate logical slice, using the accepted SP10b SQLite package
+against a package containing only this production correction, with identical SQL
+observation, profiler and workload harness. Run installed screens first, then the
+existing 108-fixture component/lifecycle, observer, historical, qualified-load and
+profiler-control campaign. Preserve any failing predecessor arm and stop for
+investigation. Do not combine these measurements with a RocksDB engine change or
+resume the stopped sequence in place. Only after reviewing this correction's
+measurements should new fixed-owner SQLite/RocksDB comparison packages be frozen.
+
+Validation also exposed an intermittent experimental RocksDB resource-cycle
+failure in physical-file accounting (`unsafe_spool_path`), tracked separately in
+[#154](https://github.com/supabricks/platform/issues/154). Ten diagnostic repeats
+did not reproduce it; the original failure remains retained and unresolved.
+The correction's RocksDB IPC tests pass, but this does not make the complete
+experimental backend contract suite green or unblock RocksDB adoption.

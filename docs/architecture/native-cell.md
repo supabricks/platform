@@ -75,6 +75,20 @@ single-owner fence; it must never be reused for a multi-owner/cloud deployment.
 
 ## Why this SeaweedFS configuration
 
+SQLite has three separate runtime responsibilities in the native cell:
+
+| Database | Responsibility | Scaling boundary |
+| --- | --- | --- |
+| `state.sqlite3` | Daemon control state: desired resources, ownership, operations, authorization, run receipts, and atomic publication/cursor commits | One daemon owns the local cell. A distributed control plane requires a separate ownership and metadata design. |
+| `capture/<id>/spool/spool.sqlite3` | Durable PostgreSQL change payloads, LSNs, hashes, and replay/pruning metadata before analytical publication | A separate journal per capture. This is the hot storage path under the [SP10c RocksDB experiment](sync-performance-sp10c.md). |
+| `objects/filer.db` | SeaweedFS filer names and file metadata | Local object-store metadata. Object contents are stored in SeaweedFS volumes. |
+
+User transactional tables are PostgreSQL data; analytical tables are Delta/Parquet.
+Replacing the capture journal does not replace the control database or filer store.
+SQLite permits one writer per database at a time; local single-owner usage and a
+distributed, concurrently writable metadata service are different requirements.
+See [SQLite's deployment guidance](https://www.sqlite.org/whentouse.html).
+
 Pinned upstream source: [SeaweedFS 4.45](https://github.com/seaweedfs/seaweedfs/tree/79b87202136cebdaaa7db4d94eaa5915ad381276).
 
 - The default [LevelDB2 store](https://github.com/seaweedfs/seaweedfs/blob/79b87202136cebdaaa7db4d94eaa5915ad381276/weed/filer/leveldb2/leveldb2_store.go)

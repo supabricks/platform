@@ -14,13 +14,94 @@ import tempfile
 import threading
 import time
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import uuid
 
 from capture import owner
 from capture.journal import ReadBusy
 from capture.spool import Spool, CaptureError, atomic, canonical, pg_lsn
 from incremental import storage
+
+
+class PrivateJsonTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.path=Path(self.temp.name)/'control.json';atomic(self.path,{'revision':1})
+
+    def test_replacement_before_or_after_read_uses_current_version(self):
+        for replace_at in (1,2):
+            with self.subTest(replace_at=replace_at):
+                atomic(self.path,{'revision':1});calls=[];original=os.fstat
+                def replace(fd):
+                    calls.append(fd)
+                    if len(calls)==replace_at:atomic(self.path,{'revision':2})
+                    return original(fd)
+                with patch.object(owner.os,'fstat',replace):
+                    self.assertEqual(owner.private_json(self.path,65536),{'revision':2})
+
+    def test_replacement_after_descriptor_check_revalidates_path_identity(self):
+        original=Path.lstat;changed=[]
+        def replace(path,*args,**kwargs):
+            if path==self.path and not changed:
+                changed.append(True);atomic(path,{'revision':2})
+            return original(path,*args,**kwargs)
+        with patch.object(Path,'lstat',replace):
+            self.assertEqual(owner.private_json(self.path,65536),{'revision':2})
+
+    def test_path_lookup_retired_before_stat_does_not_supply_authority(self):
+        original=Path.lstat;changed=[]
+        def replace(path,*args,**kwargs):
+            meta=original(path,*args,**kwargs)
+            if path==self.path and not changed:
+                changed.append(True);atomic(path,{'revision':2})
+                # A path lookup can race unlink before the kernel fills stat.
+                fields=list(meta);fields[3]=0;return os.stat_result(fields)
+            return meta
+        with patch.object(Path,'lstat',replace):
+            self.assertEqual(owner.private_json(self.path,65536),{'revision':2})
+
+    def test_continuous_replacement_exhausts_bounded_read_only_attempts(self):
+        original=os.fstat;calls=[]
+        def replace(fd):
+            if original(fd).st_ino==self.path.stat().st_ino:
+                calls.append(fd);atomic(self.path,{'revision':len(calls)+1})
+            return original(fd)
+        with patch.object(owner.os,'fstat',replace),self.assertRaises(ReadBusy):
+            owner.private_json(self.path,65536)
+        self.assertEqual(len(calls),owner.PRIVATE_READ_ATTEMPTS)
+        self.assertEqual(owner.private_json(self.path,65536),{'revision':len(calls)+1})
+
+    def test_retry_respects_original_request_check_and_startup_deadline(self):
+        original=os.fstat;calls=[]
+        def replace(fd):
+            if original(fd).st_ino==self.path.stat().st_ino:
+                calls.append(fd);atomic(self.path,{'revision':2})
+            return original(fd)
+        with patch.object(owner.os,'fstat',replace):
+            with self.assertRaisesRegex(CaptureError,'journal_read_cancelled'):
+                owner.private_json(self.path,65536,check=Mock(
+                    side_effect=[None,CaptureError('journal_read_cancelled')]))
+            self.assertEqual(len(calls),1)
+            with patch.object(owner.time,'monotonic',side_effect=[0,0,owner.READ_SECONDS]),self.assertRaises(ReadBusy):
+                owner.private_json(self.path,65536)
+            self.assertEqual(len(calls),2)
+
+    def test_unsafe_files_remain_fatal(self):
+        for kind in ('hardlink','symlink','public','foreign','oversize'):
+            with self.subTest(kind=kind):
+                self.path.unlink();atomic(self.path,{'revision':1})
+                if kind=='hardlink':os.link(self.path,self.path.with_suffix('.link'))
+                if kind=='symlink':
+                    target=self.path.with_suffix('.target');self.path.rename(target);self.path.symlink_to(target)
+                if kind=='public':self.path.chmod(0o644)
+                if kind=='foreign':
+                    with patch.object(owner.os,'getuid',return_value=os.getuid()+1),self.assertRaisesRegex(CaptureError,'unsafe_journal_owner_path'):
+                        owner.private_json(self.path,65536)
+                elif kind=='symlink':
+                    with self.assertRaises(OSError):owner.private_json(self.path,65536)
+                else:
+                    with self.assertRaisesRegex(CaptureError,'unsafe_journal_owner_path'):
+                        owner.private_json(self.path,1 if kind=='oversize' else 65536)
 
 
 class OwnerTests(unittest.TestCase):
@@ -88,6 +169,65 @@ class OwnerTests(unittest.TestCase):
                 config=copy.deepcopy(self.config);config[key]=value
                 with self.assertRaisesRegex(CaptureError,'journal_owner_fenced'):self.request(config)
         self.assertEqual(self.request()[2],300)
+
+    def test_atomic_replacement_retries_current_authority_and_fences_revocations(self):
+        original=os.fstat
+        for change in ('same','pause','generation','policy','source','grant'):
+            with self.subTest(change=change):
+                atomic(self.control,self.control_value);atomic(self.input,self.config)
+                target=self.input if change=='grant' else self.control
+                inode=target.stat().st_ino;replaced=[]
+                def replace(fd):
+                    if original(fd).st_ino==inode and not replaced:
+                        replaced.append(True);value=copy.deepcopy(self.control_value)
+                        if change=='pause':value['desired']='paused'
+                        if change=='generation':value['worker_generation']=2
+                        if change=='policy':value['journal_access']['policy_revision']=2
+                        if change=='source':value['journal_access']['source_revision']=2
+                        if change=='grant':value=dict(self.config,attempt=2)
+                        atomic(target,value)
+                    return original(fd)
+                with patch.object(owner.os,'fstat',replace):
+                    if change=='same':self.assertEqual(self.request()[2],300)
+                    else:
+                        with self.assertRaisesRegex(CaptureError,'journal_owner_fenced'):self.request()
+                self.assertTrue(replaced);self.assert_unpinned();self.server.check()
+
+    def test_replacement_churn_after_payload_defers_without_completion(self):
+        original=os.fstat;send=owner.Channel.send;churn=[];replacements=[]
+        def begin(channel,data):
+            send(channel,data)
+            if isinstance(data,bytearray):churn.append(True)
+        def replace(fd):
+            if churn and original(fd).st_ino==self.control.stat().st_ino:
+                replacements.append(fd);atomic(self.control,self.control_value)
+            return original(fd)
+        with patch.object(owner.Channel,'send',begin),patch.object(owner.os,'fstat',replace),self.assertRaises(ReadBusy):
+            self.request()
+        self.assertEqual(len(replacements),owner.PRIVATE_READ_ATTEMPTS)
+        self.assert_unpinned();self.server.check()
+        self.assertEqual(self.request()[2],300)
+
+    def test_replacement_churn_before_snapshot_is_retryable_and_owner_recovers(self):
+        original=os.fstat;replacements=[]
+        def replace(fd):
+            if original(fd).st_ino==self.control.stat().st_ino:
+                replacements.append(fd);atomic(self.control,self.control_value)
+            return original(fd)
+        with patch.object(owner.os,'fstat',replace),patch.object(self.spool.backend,'snapshot') as snapshot:
+            with self.assertRaises(ReadBusy):self.request()
+            snapshot.assert_not_called()
+        self.assertEqual(len(replacements),owner.PRIVATE_READ_ATTEMPTS)
+        self.assert_unpinned();self.server.check();self.assertEqual(self.request()[2],300)
+
+    def test_startup_retries_atomic_control_replacement(self):
+        self.server.close();self.server=None;original=os.fstat;replaced=[]
+        def replace(fd):
+            if not replaced:
+                replaced.append(True);atomic(self.control,self.control_value)
+            return original(fd)
+        with patch.object(owner.os,'fstat',replace):self.server=owner.Owner(self.control,self.spool.backend)
+        self.assertTrue(replaced);self.assertEqual(self.request()[2],300)
 
     def test_current_control_revocation_and_retry_replacement_fence_before_response(self):
         original=owner.materialize
