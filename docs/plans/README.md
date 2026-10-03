@@ -55,6 +55,15 @@ regression. Batching, reader retries, WAL, planning, source capacity and optiona
 RocksDB/parallelism experiments are measured separately. These targets are not
 current release guarantees.
 
+## End to end analytical qualification
+
+[TPC-DS qualification](tpcds-end-to-end-qualification.md), EQ00–EQ06, is planned
+after SP00–SP12: PostgreSQL loading with continuous sync already active, full
+analytical query coverage through Sail/Spark Connect, independent Apache Spark
+result verification, increasing dataset sizes and concurrent load/query scaling.
+Schema/type compatibility and capacity admission precede large runs. No execution
+or TPC-DS performance envelope is claimed yet.
+
 ## IAM00 and UC09 navigation
 
 IAM00 is **UC09.0**, the governance/identity/isolation probe. It is not a missing

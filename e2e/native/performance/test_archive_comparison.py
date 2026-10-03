@@ -65,6 +65,17 @@ class ComparisonArchive(unittest.TestCase):
             with self.assertRaises(BlockingIOError):archive(self.source,self.dest,True)
         self.assertFalse(self.dest.exists())
 
+    def test_quiet_continuity_evidence_is_exported_and_path_redacted(self):
+        self.record['config']['host_continuity']='/private/campaign/host/quiet-state.json';self.save()
+        evidence=dict(source=self.record['config']['host_continuity'],accepted=True,
+                      checkpoint=dict(last_active=600,last_sample=998))
+        (self.source/'host/quiet-continuity.json').write_text(json.dumps(evidence))
+        archive(self.source,self.dest,True)
+        copied=json.loads((self.dest/'host/quiet-continuity.json').read_text())
+        self.assertEqual(copied['source'],'<campaign-quiet-checkpoint>')
+        self.assertEqual(copied['checkpoint'],evidence['checkpoint'])
+        self.assertIn('host/quiet-continuity.json',(self.dest/'SHA256SUMS').read_text())
+
     def test_recorded_evidence_corruption_rejected(self):
         self.record['attempts'][0]['results']['predecessor']=dict(directory=self.folder.name,
             evidence_sha256={'matrix.json':'0'*64})

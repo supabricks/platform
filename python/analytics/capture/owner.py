@@ -28,6 +28,7 @@ MAX_HEADER=2*1024*1024+4096
 MAX_RESPONSE=24*1024*1024
 MAX_RECORDS=65536
 READ_SECONDS=3.0
+PRIVATE_READ_ATTEMPTS=8
 ERRORS=frozenset(('journal_read_busy','journal_read_deadline','journal_read_cancelled',
     'journal_owner_protocol','journal_owner_budget','journal_owner_fenced','spool_io',
     'unsafe_journal_owner_path','spool_identity_mismatch','source_history_lost',
@@ -47,15 +48,31 @@ def private_directory(path):
         raise CaptureError('unsafe_journal_owner_path')
 
 
-def private_json(path, limit):
-    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
-    with os.fdopen(fd,'rb') as source:
-        meta=os.fstat(source.fileno())
-        if not stat.S_ISREG(meta.st_mode) or meta.st_uid!=os.getuid() or meta.st_mode & 0o077 or meta.st_nlink!=1 or meta.st_size>limit:
+def private_json(path, limit, check=lambda:None):
+    deadline=time.monotonic()+READ_SECONDS
+    def validate(meta):
+        if (not stat.S_ISREG(meta.st_mode) or meta.st_uid!=os.getuid()
+            or meta.st_mode & 0o077 or meta.st_nlink not in (0,1)
+            or meta.st_size>limit):
             raise CaptureError('unsafe_journal_owner_path')
-        data=source.read(limit+1)
-    if len(data)>limit:raise CaptureError('journal_owner_budget')
-    return json.loads(data)
+    for _ in range(PRIVATE_READ_ATTEMPTS):
+        check()  # Request retries keep the original channel/cancellation budget.
+        if time.monotonic()>=deadline:raise ReadBusy()
+        fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
+        with os.fdopen(fd,'rb') as source:
+            meta=os.fstat(source.fileno());validate(meta)
+            # Atomic replacement unlinks the opened version. Discard it; it
+            # must never supply authority, even if its contents are identical.
+            if meta.st_nlink==0:continue
+            data=source.read(limit+1)
+            meta=os.fstat(source.fileno());validate(meta)
+            current=path.lstat();validate(current)
+            if meta.st_nlink==0 or current.st_nlink==0 or (meta.st_dev,meta.st_ino)!=(current.st_dev,current.st_ino):continue
+        check()
+        if time.monotonic()>=deadline:raise ReadBusy()
+        if len(data)>limit:raise CaptureError('journal_owner_budget')
+        return json.loads(data)
+    raise ReadBusy()
 
 
 class Channel:
@@ -141,11 +158,11 @@ class Owner:
         except BaseException:
             self.listener.close();raise
 
-    def authorize(self, request):
+    def authorize(self, request, check=lambda:None):
         if set(request)!=set(FIELDS):raise CaptureError('journal_owner_fenced')
         if str(uuid.UUID(request['id']))!=request['id'] or type(request['attempt']) is not int or not 1<=request['attempt']<=3:
             raise CaptureError('journal_owner_fenced')
-        config=private_json(self.control,65536)
+        config=private_json(self.control,65536,check)
         if (config['identity']!=self.identity or config['worker_generation']!=self.generation
             or config['desired']!='running' or request['identity']!=self.identity
             or request['worker_generation']!=self.generation
@@ -153,7 +170,7 @@ class Owner:
             raise CaptureError('journal_owner_fenced')
         work=self.root/'analytics'/'apply-work'/request['id']
         for directory in (work.parent.parent,work.parent,work):private_directory(directory)
-        issued=private_json(work/'input.json',4*1024*1024)
+        issued=private_json(work/'input.json',4*1024*1024,check)
         if canonical(request_for(issued))!=canonical(request):raise CaptureError('journal_owner_fenced')
         if time.time()*1000>=request['deadline_ms']:raise CaptureError('journal_read_deadline')
         after=lsn(request['after_lsn']);target=lsn(request['target_lsn'])
@@ -170,7 +187,7 @@ class Owner:
             if not isinstance(deadline,(int,float)) or not math.isfinite(deadline):
                 raise CaptureError('journal_owner_protocol')
             channel.deadline=min(channel.deadline,deadline)
-            request=envelope['request'];self.authorize(request);channel.reader_check()
+            request=envelope['request'];self.authorize(request,channel.reader_check);channel.reader_check()
             channel.deadline=min(channel.deadline,time.monotonic()+max(0,(request['deadline_ms']-time.time()*1000)/1000))
             start=time.monotonic()
             with self.backend.snapshot(channel.deadline,.1,channel.cancelled) as view:
@@ -188,9 +205,9 @@ class Owner:
                 schema=schema,count=len(records),end=end,used=used,owner_read_ms=read_ms,owner_encode_ms=encode_ms))
             if len(header)>MAX_HEADER or 8+len(header)+len(encoded)>MAX_RESPONSE:
                 raise CaptureError('journal_owner_budget')
-            self.authorize(request);channel.reader_check()
+            self.authorize(request,channel.reader_check);channel.reader_check()
             response_started=True;channel.send(struct.pack('!I',len(header))+header);channel.send(encoded)
-            self.authorize(request);channel.reader_check();channel.send(b'DONE')
+            self.authorize(request,channel.reader_check);channel.reader_check();channel.send(b'DONE')
         except (CaptureError,ReadBusy,OSError,sqlite3.Error,ValueError,KeyError,TypeError,OverflowError,RecursionError) as error:
             # Fixed diagnostics only; never serialize an exception with source
             # data, paths, SQL or credentials. Partial responses cannot succeed.

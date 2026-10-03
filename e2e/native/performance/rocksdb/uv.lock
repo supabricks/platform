@@ -1,0 +1,37 @@
+version = 1
+revision = 3
+requires-python = "==3.12.13"
+resolution-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
+supported-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
+required-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
+
+[[package]]
+name = "rocksdict"
+version = "0.3.29"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/28/0ce238fb4d91c969e91606e18b2165e7ee831d13fb7a6575990b0ac02c7c/rocksdict-0.3.29-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:d8c9a8f61d851f2f0c20452e321f3b999f85750119c91d41c09d6658d1caee97", size = 3678503, upload-time = "2025-12-01T02:22:37.664Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/70/a56e673403a7db157e51af4debc2ed356947206f40331cae09a2992625ab/rocksdict-0.3.29-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:988dd3e2449d126b992057e03705efbb7ec92bf37918667000b80faac5e01482", size = 4216617, upload-time = "2025-12-01T02:22:40.419Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/6c/18cf95bf489ecde55f722d7a8e92e7f38677813bfe67239e25271c071d48/rocksdict-0.3.29-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:36d336d9d796d08923badb2df778365676cd5a66b4762ffc2d0b952dfca8b276", size = 4206954, upload-time = "2025-12-01T02:22:43.361Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/42/c7eca5ca93b8cb2960b7ceb8a05f98771da55b1baf9eb7dced120470eabd/rocksdict-0.3.29-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:afa57cdd72a4b83ed17648c5d4965d9e2951d4acfebc6b5d228c951a500002be", size = 5312781, upload-time = "2025-12-01T02:22:45.969Z" },
+]
+
+[[package]]
+name = "supabricks-sp10c-rocksdb-experiment"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "rocksdict", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "rocksdict", specifier = "==0.3.29" }]

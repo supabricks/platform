@@ -1,0 +1,64 @@
+{
+  "slice": "SP10c",
+  "arms": {
+    "accepted-owner": {
+      "release": "<sp10c>/sqlite-owner-fix-runtime-01",
+      "revision": "04d0c3c3f2b453614e7f9623050b057ddc001a8e",
+      "identity": {
+        "runtime_revision": "04d0c3c3f2b453614e7f9623050b057ddc001a8e",
+        "release_identity": "1f714ceb01a31dcf2672b5e13aea5cc58813e7e2962958068b44b6ae1c82f4d5",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    },
+    "sqlite-owner": {
+      "release": "<sp10c>/sqlite-owner-runtime-02",
+      "revision": "993c0a2aafb7ec3ad4904820788703bd34d80ddf",
+      "identity": {
+        "runtime_revision": "993c0a2aafb7ec3ad4904820788703bd34d80ddf",
+        "release_identity": "b08cc52d6c31569e6f3a24eade9aff93e26aca8b63af28691f8e3df1b0d02021",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    },
+    "sqlite-direct": {
+      "release": "<sp10c>/sqlite-direct-runtime-01",
+      "revision": "91ad97d3cb28d97cd88b2dc5564a8efbf338d50f",
+      "identity": {
+        "runtime_revision": "91ad97d3cb28d97cd88b2dc5564a8efbf338d50f",
+        "release_identity": "be534aa3f772eeb46c7887e9522f5b67ce1fb476631bc46885930840f1d6d6e6",
+        "binary_sha256": "b6cc919d30c7780b96c632f08928e5a6d5793080258739c8cb06e38d6b143789"
+      }
+    },
+    "rocks-owner": {
+      "release": "<sp10c>/rocks-runtime-04",
+      "revision": "dcca9cfc80c4ef87d92a6eafa32be18a86b005dd",
+      "identity": {
+        "runtime_revision": "dcca9cfc80c4ef87d92a6eafa32be18a86b005dd",
+        "release_identity": "dbc0a4127d79b3009776df07556c189fa686529bf1c7ea84a5d78de9f7c8dbe6",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    }
+  },
+  "campaigns": [
+    {
+      "name": "observer-bridge",
+      "config": "<sp10c>/observer-bridge-config-02.json",
+      "sha256": "6b04d61a1a9581a6bc4e636cee5b5ecd91ccadb6c0e906122d67c07589243678"
+    },
+    {
+      "name": "engine-comparison",
+      "config": "<sp10c>/engine-comparison-config-02.json",
+      "sha256": "45c870a0b0dedb638c17194867ee815709c667b0ae9f518f01c49bcaab289f31"
+    },
+    {
+      "name": "product-comparison",
+      "config": "<sp10c>/product-comparison-config-02.json",
+      "sha256": "be87be4fd76261ce11ad598bc89d29a8fe5a34c38c1dd628d01120546334c018"
+    }
+  ],
+  "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+  "sustained_order": [
+    "sqlite-owner",
+    "rocks-owner",
+    "sqlite-direct"
+  ]
+}

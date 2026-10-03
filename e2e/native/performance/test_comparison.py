@@ -84,6 +84,19 @@ class Comparisons(unittest.TestCase):
         profile['workers'][name][0]['native_io']=None
         with self.assertRaisesRegex(ValueError,'native'):profile_metrics(profile,self.trial)
 
+    def test_rocksdb_never_reports_sqlite_zero_as_free_durability(self):
+        profile=json.loads(gzip.decompress((ARCHIVE/'profile.json.gz').read_bytes()))
+        self.trial['backlog_series']=[
+            dict(at_ms=self.trial['measurement_start_ms']+100,capture_journal=dict(journal_mode='rocksdb',sync_writes=10,sync_ms=20.)),
+            dict(at_ms=self.trial['measurement_end_ms']-100,capture_journal=dict(journal_mode='rocksdb',sync_writes=30,sync_ms=100.))]
+        result=profile_metrics(profile,self.trial)
+        self.assertIsNone(result['capture_durable_ms_per_transaction'])
+        self.assertIsNone(result['capture_syncs_per_transaction'])
+        self.assertEqual(result['rocksdb_write_batch']['calls'],20)
+        self.assertEqual(result['rocksdb_write_batch']['mean_ms'],4.)
+        self.trial['backlog_series'][-1]['capture_journal']['sync_writes']=9
+        with self.assertRaisesRegex(ValueError,'regressed'):profile_metrics(profile,self.trial)
+
     def test_grouped_capture_counts_transactions_separately_from_commits(self):
         profile=json.loads(gzip.decompress((ARCHIVE/'profile.json.gz').read_bytes()))
         baseline=profile_metrics(profile,self.trial)

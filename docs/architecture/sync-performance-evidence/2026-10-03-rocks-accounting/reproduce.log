@@ -1,0 +1,283 @@
+ATTEMPT 1
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.682s
+
+OK
+ATTEMPT 2
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.758s
+
+OK
+ATTEMPT 3
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.747s
+
+OK
+ATTEMPT 4
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.764s
+
+OK
+ATTEMPT 5
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.731s
+
+OK
+ATTEMPT 6
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.720s
+
+OK
+ATTEMPT 7
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.691s
+
+OK
+ATTEMPT 8
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.693s
+
+OK
+ATTEMPT 9
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.708s
+
+OK
+ATTEMPT 10
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.758s
+
+OK
+ATTEMPT 11
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.727s
+
+OK
+ATTEMPT 12
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.677s
+
+OK
+ATTEMPT 13
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.713s
+
+OK
+ATTEMPT 14
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.730s
+
+OK
+ATTEMPT 15
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.738s
+
+OK
+ATTEMPT 16
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.723s
+
+OK
+ATTEMPT 17
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.729s
+
+OK
+ATTEMPT 18
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.730s
+
+OK
+ATTEMPT 19
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.718s
+
+OK
+ATTEMPT 20
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.744s
+
+OK
+ATTEMPT 21
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.740s
+
+OK
+ATTEMPT 22
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.716s
+
+OK
+ATTEMPT 23
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.740s
+
+OK
+ATTEMPT 24
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.709s
+
+OK
+ATTEMPT 25
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.708s
+
+OK
+ATTEMPT 26
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.741s
+
+OK
+ATTEMPT 27
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.715s
+
+OK
+ATTEMPT 28
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.713s
+
+OK
+ATTEMPT 29
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.739s
+
+OK
+ATTEMPT 30
+.
+----------------------------------------------------------------------
+Ran 1 test in 5.071s
+
+OK
+ATTEMPT 31
+.
+----------------------------------------------------------------------
+Ran 1 test in 6.744s
+
+OK
+ATTEMPT 32
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.738s
+
+OK
+ATTEMPT 33
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.728s
+
+OK
+ATTEMPT 34
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.795s
+
+OK
+ATTEMPT 35
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.788s
+
+OK
+ATTEMPT 36
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.749s
+
+OK
+ATTEMPT 37
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.755s
+
+OK
+ATTEMPT 38
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.710s
+
+OK
+ATTEMPT 39
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.757s
+
+OK
+ATTEMPT 40
+.
+----------------------------------------------------------------------
+Ran 1 test in 4.680s
+
+OK
+ATTEMPT 41
+.
+----------------------------------------------------------------------
+Ran 1 test in 5.101s
+
+OK
+ATTEMPT 42
+.
+----------------------------------------------------------------------
+Ran 1 test in 7.523s
+
+OK
+ATTEMPT 43
+Traceback (most recent call last):
+  File "<stdin>", line 24, in <module>
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/runner.py", line 240, in run
+    test(result)
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/suite.py", line 84, in __call__
+    return self.run(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/suite.py", line 122, in run
+    test(result)
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/case.py", line 690, in __call__
+    return self.run(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/case.py", line 634, in run
+    self._callTestMethod(testMethod)
+  File "/home/anibjoshi/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/unittest/case.py", line 589, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocksdb/test_contract.py", line 110, in test_pinned_view_resource_cycles_release_and_resume
+    try:s.append_many(group)
+        ^^^^^^^^^^^^^^^^^^^^
+  File "<workspace>/python/analytics/capture/spool.py", line 191, in append_many
+    try:self.backend.append_group(records,metadata)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 238, in append_group
+    batch=WriteBatch(raw_mode=True)
+                                    
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 171, in write
+    def write(self,batch):
+        ^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

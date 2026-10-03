@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c–SP12 planned**, 2026-10-03 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11–SP12 planned**, 2026-10-03 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -151,7 +151,12 @@ For each slice:
   and repeat in seeded, balanced A/B or B/A order. Run sequentially, never two
   stacks at once. Keep the original archive as a separate historical reference;
   fresh predecessor runs control for host drift.
-- Require five quiet minutes before each trial. Retain CPU, memory, I/O pressure,
+- Establish five quiet minutes once per continuously monitored campaign, and
+  again after detected competing build activity or a gap in monitoring. Carry
+  fresh same-boot evidence across phase/controller boundaries; a new phase alone
+  must not restart the timer. Missing, stale or invalid evidence gets no quiet
+  credit. This policy applies to newly frozen campaigns; do not restart or change
+  an active measurement to adopt it. Retain CPU, memory, I/O pressure,
   filesystem/free-space, temperature/frequency where available, and external-build
   observations. If contention invalidates a trial, wait and rerun the affected
   pair; retain both attempts. Never stop another project's build or the user's stack.
@@ -602,6 +607,13 @@ increase CPU usage when storage remains the constraint.
 
 ### SP10 — Controlled RocksDB experiment
 
+**SP10c in progress:** experimental RocksDB owner backend, consistent iterator
+qualification and a backend-independent measurement observer. Production remains
+SQLite. The initial campaign stopped on owner replacement (#153); the correction
+completed its SQLite-only measurement slice with 108 accepted fixtures.
+Experimental file-retirement race #154 is fixed and passes native stress, platform
+CI and installed screens; engine/product comparison remains pending. [Implementation and measurement gates](../architecture/sync-performance-sp10c.md).
+
 **SP10b measured and reviewed** in [#145](https://github.com/supabricks/platform/pull/145): all 108 fixtures pass and no main regression screen is crossed. Qualified source remains about 1,250 rows/s at three-second p95 with +1.1–1.3% CPU; isolated read costs are material. [Full review and release CI limitations](../architecture/sync-performance-sp10b.md). SP10c is next.
 
 **SP10a measured and accepted** in [#143](https://github.com/supabricks/platform/pull/143). The SQLite journal contract preserves direct
@@ -760,3 +772,11 @@ Completion requires the contribution ledger, every accepted slice's comparisons,
 rejected/inconclusive experiments, final sustained/recovery evidence and exact
 installed qualification. A new engine, higher source input, or a single fast run
 alone does not complete this performance workstream.
+
+## Follow on end to end analytical qualification
+
+After SP12, execute the [TPC-DS qualification plan](tpcds-end-to-end-qualification.md)
+to test loading into PostgreSQL with sync active, full analytical queries, larger
+datasets and concurrent ingestion/query scaling. This has its own EQ00–EQ06
+slices, compatibility gates and measured envelope. SP's narrow-row results do not
+establish TPC-DS capacity, and the follow-on does not change the running SP trials.

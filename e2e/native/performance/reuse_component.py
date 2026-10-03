@@ -10,6 +10,17 @@ from cell import wait
 
 
 class ReuseProbe(DispatchProbe):
+    def commit_markers(self,cap):
+        if not self.marker_enabled:return super().commit_markers(cap)
+        from marker_observer import rows
+        from types import SimpleNamespace
+        reader=self.marker_readers.setdefault(cap['id'],SimpleNamespace(
+            spool=self.root/'capture'/cap['id']/'spool/spool.sqlite3',capture_id=cap['id'],seq=0))
+        import struct
+        result=rows(reader)
+        if result:reader.seq=result[-1][0]
+        return [(struct.unpack('!I',xid)[0],int(end,16)) for _,end,xid in result]
+
     def workload(self,cap):
         super().workload(cap)
         # The common predecessor intentionally has no reusable worker protocol.
@@ -39,6 +50,8 @@ class ReuseProbe(DispatchProbe):
         self.metrics['worker_reuse_component']=dict(reused_pids=pids,killed_pid=process['pid'],idle_retired=True)
 
     def run(self,python,worker):
+        from marker_observer import enable
+        self.marker_enabled=enable(self,Path(worker).parent);self.marker_readers={}
         self.worker_path=worker
         return super().run(python,worker)
 

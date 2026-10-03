@@ -25,6 +25,8 @@ def archive_stopped(source, destination, allow_incomplete):
         comparison_report(source, record)
     destination.mkdir(parents=True, exist_ok=False)
     replacements = {str(source.resolve()): '<experiment>'}
+    if record['config'].get('host_continuity'):
+        replacements[record['config']['host_continuity']]='<campaign-quiet-checkpoint>'
     for arm, definition in record['config']['arms'].items():
         replacements[definition['harness']] = '<'+arm+'-harness>'
         replacements[definition['release']] = '<runtime-'+definition['package']['release_identity'][:12]+'>'
@@ -96,6 +98,9 @@ def archive_stopped(source, destination, allow_incomplete):
     (destination/'host').mkdir()
     for path in sorted((source/'host').glob('*.jsonl')):
         (destination/'host'/(path.name+'.gz')).write_bytes(gzip.compress(path.read_bytes(), mtime=0))
+    continuity=source/'host'/'quiet-continuity.json'
+    if continuity.exists():
+        (destination/'host'/continuity.name).write_text(json.dumps(sanitize(read_json(continuity)),indent=2)+'\n')
     sources = {p.name: p.read_text() for p in Path(__file__).parent.glob('*.py')}
     (destination/'analysis-source.json.gz').write_bytes(gzip.compress(json.dumps(sources,sort_keys=True).encode(),mtime=0))
     if complete:
