@@ -1,0 +1,27 @@
+{
+  "slice": "SP10c-observer-bridge",
+  "journal_component": "owner",
+  "hypothesis": "Qualify backend-neutral diagnostic marker observation against the accepted SQLite SQL observer with identical SP10b runtime and source workload",
+  "arms": {
+    "predecessor": {
+      "release": "<repository>/build/sp10b-20261002/candidate-runtime-02",
+      "revision": "a37bf269bfbaea843da498aeda073ebcbc9f2ef8",
+      "identity": {
+        "runtime_revision": "a37bf269bfbaea843da498aeda073ebcbc9f2ef8",
+        "release_identity": "bce28d3149c546d7b8bc7dda48568324514c40ed9495d2f528a32ad9b95386b0",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    },
+    "candidate": {
+      "release": "<sp10c>/sqlite-owner-runtime-01",
+      "revision": "4ec1ee9cf2b7873593b75e0ad7debecb9add06ae",
+      "identity": {
+        "runtime_revision": "4ec1ee9cf2b7873593b75e0ad7debecb9add06ae",
+        "release_identity": "cff436b6d08ebde78c3273ea2ffce9b40cdd4da2500d58c6f027691df7df992e",
+        "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0"
+      }
+    }
+  },
+  "workload_harness": "<sp10c>/harness-06",
+  "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec"
+}

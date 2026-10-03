@@ -1,0 +1,29 @@
+{
+  "status": "implementation_screened_measurements_running",
+  "accepted_performance_trials": 0,
+  "production_backend": "sqlite",
+  "rocksdb_adopted": false,
+  "contract_tests": 31,
+  "performance_harness_tests": 77,
+  "corrected_rocks_release": "a4d08058a143b78e53ae2aff48c2a1d02d0aff07c16558331601125289dd0b35",
+  "issues": {
+    "snapshot_iterator": 149,
+    "environment_locks": 151,
+    "measurement_adapters": 152
+  },
+  "sustained_screen": {
+    "seconds": 10,
+    "qualified_sustained": false,
+    "offered_input_met": false,
+    "explanation": "Plumbing/observer/equality/reopen screen passed; achieved input below1250 target. Preserve and qualify with matched warmup, duration and quiet-host controls."
+  },
+  "failed_screens": [
+    "smoke-01 extra dependency omitted from locks",
+    "smoke-02 amended notebook lock not reflected in inventory hash; requirements formatting error",
+    "smoke-03 continuous lifecycle tried direct SQLite marker reads",
+    "smoke-04 copied-binary lifecycle could not find marker module"
+  ],
+  "failed_contract": "contract-03 incorrectly expected an empty snapshot to retain later-created SSTs; corrected test measures bounded prune/flush cycles and resume",
+  "frozen_harness": "0682839",
+  "planned_fixtures": 327
+}

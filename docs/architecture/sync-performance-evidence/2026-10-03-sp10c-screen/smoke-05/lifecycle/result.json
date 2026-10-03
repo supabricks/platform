@@ -1,0 +1,300 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "automatic_bootstrap_and_fresh_idle_observation_without_empty_epoch_churn",
+      "status": "PASS"
+    },
+    {
+      "name": "idle_cpu_and_status_latency_recorded_without_empty_publications",
+      "status": "PASS"
+    },
+    {
+      "name": "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups",
+      "status": "PASS"
+    },
+    {
+      "name": "successive_epochs_reuse_one_owned_process",
+      "status": "PASS"
+    },
+    {
+      "name": "inflight_reused_worker_sigkill_recovers_atomic_group",
+      "status": "PASS"
+    },
+    {
+      "name": "idle_workers_retire_without_empty_publications",
+      "status": "PASS"
+    },
+    {
+      "name": "long_transaction_is_invisible_until_complete_commit_and_old_reader_stays_pinned",
+      "status": "PASS"
+    },
+    {
+      "name": "held_batch_reports_lag_then_pause_drains_and_resume_reuses_checkpoint",
+      "status": "PASS"
+    },
+    {
+      "name": "stale_worker_is_unavailable_then_sigkill_and_full_restart_recover_without_resync",
+      "status": "PASS"
+    },
+    {
+      "name": "delayed_controller_tick_coalesces_catchup_without_losing_captured_commits",
+      "status": "PASS"
+    },
+    {
+      "name": "schema_failure_preserves_epoch_and_explicit_resync_builds_new_baseline",
+      "status": "PASS"
+    },
+    {
+      "name": "policy_delete_cleans_owned_continuous_capture",
+      "status": "PASS"
+    }
+  ],
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16
+  },
+  "scope": "Disposable source-level native test; no installed archive or production SLA claim.",
+  "provenance": {
+    "binary_sha256": "6baa961a2055f3ddb19d5c8436f92dcaecf89e482aeacc3af929990e60c219e0",
+    "engine_manifest_sha256": "4642ca7dcd863d088d733d0181b63c4bcd28a3a1e785a375a975c0bd5dae4579",
+    "source_files": {
+      "crates/local/src/sync.rs": "bdec17e8a6d83b201878686473d24aad0f8a90c0435f694ace4ced7380f412ce",
+      "crates/local/src/store/sync.rs": "e97d35e145334b4833876332e11f2b9ba00a7b098ccffae5f2783e20f5d3f66a",
+      "crates/local/src/store/sync/continuous.rs": "b16061c18a114aa0e1a284425981c5bb7138a6afdf429fb4137cbe421d01e3e4",
+      "crates/local/src/store/sync/governed.rs": "dee0764531adee4d02b24734d3e27298c898006d92267674e3e1e846e41f655f",
+      "crates/local/src/store/sync/surfaces.rs": "f7ac9e42edc901ecc3db87d77ef299f1be282382d598308fff05cd36f2f00beb",
+      "crates/local/src/store/sync/tests.rs": "96c9c1d1bd1db4005d8f2ffdb4d7714d37890f1421e4a9eda27a35f1fcbcaa24",
+      "crates/local/src/store/sync/triggered.rs": "98a3722a8847ba0556883578c8b0e5afcab592fad44bd445eaaaa2e940a12467",
+      "crates/local/src/engine/captures.rs": "fab87a0b6120aaf7126b08b9414338d6978e896f7f2ac3ccf02707014047ad53",
+      "crates/local/src/engine/incremental.rs": "b151f8b579f225a6f3bdb0ec3b71ca818cc894634074325e2736ad43c4c118c4",
+      "e2e/native/continuous.py": "0ce2ef81f4b0ddd87ee3a3e2ee8a966c61ce6f2a411e392148990b39c6447c94",
+      "python/analytics/capture_worker.py": "7218ab4ec1a10200d5ff08f1f1864b8cc76d3d1cd85e3c1f33eeb1c347e80fbd",
+      "python/analytics/export.py": "886c3714b36b05b7659277284b3d571f5a340c4db9582352eeb5f51aa2ffe88c",
+      "python/analytics/incremental_worker.py": "7350c9b6be2accc5ac52f7a158bae7cd074ad1d2e1f9e726cc90e8957e142e94",
+      "python/analytics/qualify.py": "f427e9fa5ac99b64067b21e7163190e3ebf49878a9cd4dbbf91da583fb816875",
+      "python/analytics/read_delta.py": "8a0b028ea09423ffd5ee838853cda0b9de7bd7bdb5b5231c70594e34d1c15947",
+      "python/analytics/runtime_environment.py": "9046a51cc7e7e0974de4f4ce8a8aa27e841295b03ee1af9339fe7aa99d2adf85",
+      "python/analytics/session.py": "41400f94b3bf32e550c24e782d56fe547ca5ea3fa5bc104dc5fc2f904c601e2b",
+      "python/analytics/shell.py": "a887de432185c7218f3750acd83335d1dbd851d8611666ad66e8f025861f8e53",
+      "python/analytics/test_capture.py": "108323ab0860ae367548298cb5cf062ca624e21ffec9171a7fd1b8ab9a2e90a5",
+      "python/analytics/test_capture_groups.py": "ececd8739c799dba7ab200969f7d835fd9319dbe39e2e0be19fb64aba8e602e7",
+      "python/analytics/test_continuous.py": "9ed9ed52c9454e5db8584f9c6c0194e5205ffc67ff4940f03537a34cb4c75227",
+      "python/analytics/test_export.py": "6beeb43482c14d1c9d50308516af2e23385044ff434743816f42a4fa68f7e57e",
+      "python/analytics/test_incremental.py": "f6d78a7cc9783f5aee08599c3b538ba74d98307078aac38f8125840165e8f15f",
+      "python/analytics/test_journal_backend.py": "b77c7ab640307a2ffd3351c9217b00be60a541c7fce902e269c6a3d7f5532369",
+      "python/analytics/test_journal_owner.py": "fc919d321a65f44515b892aebba9de5c0111af2fa281ca27fc09262a1224c820",
+      "python/analytics/test_journal_retry.py": "7e5d11c08a01a8ad3f6d15975b0ee3ffcb7d352028a20299c46d3bb635481789",
+      "python/analytics/test_maintenance.py": "337e0c913a7352e4eea7afbb994119994b772913cc9a8fcf7b636b08a46b8d8e",
+      "python/analytics/test_planning.py": "74c9591e6e3b9187dea86269d997f8174318df7d47281038afb860c5e3379282",
+      "python/analytics/test_session.py": "763a159fa3d6bdbd723e44c6e2b3a3c973075b09c23fba1dfd40cb2263cf7e4b",
+      "python/analytics/test_spool_wal.py": "08ef5147f1896bb5218185cddcabdff5a5ac974a05c2711173fd84b2f8796bbc",
+      "python/analytics/test_triggered.py": "4dd4f1e4eac45aac32c53598437c9ea0c42a50daa60f498d3a2d7c45738f463b",
+      "python/analytics/test_worker_reuse.py": "86cec1ef5df0a7b64b59e5c78c32e908ed1459944a99e4c88db1856ea801ef07",
+      "python/analytics/capture/__init__.py": "98e6bac22be4793def55d64044daf2f2723c479fea7c308381371ab27bc791c8",
+      "python/analytics/capture/bootstrap.py": "d4119c18ffbc88cf2100e7c219083c37f0f2d85401f003ac02af837fadf67293",
+      "python/analytics/capture/groups.py": "46a3b8e2c971ab5ba915f452e97ffded5e1737df971834049da05323de823abc",
+      "python/analytics/capture/journal.py": "b6daaaa75b1a0d5b78798dd77fcfdd594604d869055fc3bb3e37545b05800b18",
+      "python/analytics/capture/owner.py": "43a5b6512d517d6a1dc361efa783c893e19c604beae88e64054465f5ef085f2f",
+      "python/analytics/capture/protocol.py": "5e3dac8879aabfd90f7bfa616e589b9e97ee0e205539ffdccad9512e0befeea4",
+      "python/analytics/capture/ranges.py": "241915dc367f0da31dcf5ddad9ddef48cba9bf1f69a2c5f29a4362fe82f24e3e",
+      "python/analytics/capture/source.py": "e8c27f7bce75149e20086ca64ee1c718a8432aa3e778e9974436a52b9059e8b8",
+      "python/analytics/capture/spool.py": "72104ade3b6e374208c9c3401e82adff406bea7e3ae9c337e89c30ec3dfab09e",
+      "python/analytics/capture/sqlite_journal.py": "d89a3a4fc7343cbec766e48b5efdbbf29f47d5d9d0d1db9cec04b4bdbf545082",
+      "python/analytics/capture/wal.py": "5aa2d1a22fc522acd7c8d7d81ce07f7210904ebe1bbfd9b02f580e7a38fb2a4e",
+      "python/analytics/incremental/__init__.py": "b7b3bc30ec72bb7fd9e7f2ec530bf8bb7aaa83abf59c3987e54f0e6bf7e7d1b4",
+      "python/analytics/incremental/maintenance.py": "d9029e5357434ad5d5b5d53b9ddd60ece35e0575009db66bbd192e4c01aea9c6",
+      "python/analytics/incremental/planning.py": "dd5f33b0fb0ba1a7122a5c9e1328972085ff595691da33090d99d3bf9bc46184",
+      "python/analytics/incremental/reuse.py": "8db4a2816cbe4ee0fb1f65a4aeeb1905ad129e1c61654cdf2f928495caaacfff",
+      "python/analytics/incremental/rows.py": "b4f2d0abf4c0e03547e139ab4f010148c5fe8746acdd9b174be24274b2de1bd3",
+      "python/analytics/incremental/storage.py": "f25b6872f95ef71a1447fa8b3e5c47f96e7322b67c91961b8df67899448c0ea8"
+    }
+  },
+  "metrics": {
+    "source_table_bytes": 1277952,
+    "baseline_oltp_transaction_ms": {
+      "p50": 3.871,
+      "p95": 4.224,
+      "p99": 8.269
+    },
+    "dispatch_component": {
+      "scope": "One fresh fixture; idle cgroup CPU includes all services; API samples are correlated",
+      "script_sha256": "db51fab7451a9aeac25567279cb3e3dfda85d3059a05ecd372974d8cbc1ac321",
+      "idle_seconds": 20.000064886000473,
+      "idle_cpu_cores": 0.08316803017795776,
+      "status_latency_ms": {
+        "p50": 1.358,
+        "p95": 39.724,
+        "p99": 51.054
+      },
+      "status_samples_ms": [
+        0.7642880082130432,
+        19.431205990258604,
+        1.0547279962338507,
+        44.82890400686301,
+        1.1497479863464832,
+        11.060120014008135,
+        1.2182370119262487,
+        26.17658200324513,
+        1.1656680144369602,
+        25.849933008430526,
+        0.9008159977383912,
+        25.22333597880788,
+        0.9866489854175597,
+        35.14938699663617,
+        1.1170660145580769,
+        10.739802004536614,
+        1.283841993426904,
+        17.184639000333846,
+        1.0854759893845767,
+        19.18778198887594,
+        1.1452089820522815,
+        16.93985500605777,
+        1.1201919987797737,
+        39.72387901740149,
+        1.2036790139973164,
+        23.17366999341175,
+        0.9891529916785657,
+        32.25746500538662,
+        1.0344899783376604,
+        17.375678988173604,
+        1.1304309882689267,
+        11.340830009430647,
+        1.0659789841156453,
+        36.576451995642856,
+        0.9770900069270283,
+        10.207040992099792,
+        1.1034790077246726,
+        26.432460988871753,
+        1.3582920073531568,
+        19.954391987994313,
+        1.023178017931059,
+        26.777134014992043,
+        0.9558210149407387,
+        51.05375900166109,
+        0.9168560209218413,
+        33.39261098881252,
+        1.0554389737080783,
+        17.43622199865058,
+        0.8930620097089559,
+        19.280986016383395
+      ],
+      "idle_epoch_unchanged": true
+    },
+    "host_workload": {
+      "scope": "host-wide counters during workload, not per-process or container utilization",
+      "cpu_some_stall_us": 68577,
+      "cpu_full_stall_us": 0,
+      "io_some_stall_us": 5733619,
+      "io_full_stall_us": 5645616,
+      "memory_some_stall_us": 0,
+      "memory_full_stall_us": 0,
+      "cpu_percent": {
+        "user": 1.58,
+        "nice": 0.0,
+        "system": 1.038,
+        "idle": 92.54,
+        "iowait": 4.794,
+        "irq": 0.0,
+        "softirq": 0.049,
+        "steal": 0.0
+      }
+    },
+    "materialization_ms": {
+      "admission_to_worker_start": {
+        "p50": 62,
+        "p95": 93,
+        "p99": 95,
+        "maximum": 95,
+        "batches": 45
+      },
+      "worker_start_to_prepared": {
+        "p50": 178,
+        "p95": 255,
+        "p99": 451,
+        "maximum": 451,
+        "batches": 45
+      },
+      "prepared_to_publication": {
+        "p50": 185,
+        "p95": 395,
+        "p99": 447,
+        "maximum": 447,
+        "batches": 45
+      }
+    },
+    "storage": {
+      "input_bytes": 99299,
+      "new_parquet_bytes": 2303944,
+      "write_amplification_ratio": 23.202,
+      "peak_inventory_files": 192,
+      "peak_generation_bytes": 2566790,
+      "compaction_bytes": 0
+    },
+    "transaction_stages_ms": {
+      "commit_to_admission": {
+        "p50": 515.986,
+        "p95": 883.946,
+        "p99": 1045.832
+      },
+      "admission_to_worker_start": {
+        "p50": 62,
+        "p95": 94,
+        "p99": 95
+      },
+      "worker_start_to_prepared": {
+        "p50": 178,
+        "p95": 248,
+        "p99": 308
+      },
+      "prepared_to_publication": {
+        "p50": 186,
+        "p95": 422,
+        "p99": 447
+      },
+      "commit_to_capture_observed_upper_bound": {
+        "p50": 288.237,
+        "p95": 543.288,
+        "p99": 616.473
+      }
+    },
+    "workload": {
+      "tables": 2,
+      "rows_per_table": 10000,
+      "transactions": 750,
+      "changed_rows": 1500,
+      "target_rows_per_second": 50,
+      "achieved_rows_per_second": 50.05,
+      "elapsed_seconds": 29.967,
+      "commit_to_publication_ms": {
+        "p50": 961.754,
+        "p95": 1485.914,
+        "p99": 1805.832
+      },
+      "oltp_transaction_ms": {
+        "p50": 5.274,
+        "p95": 11.992,
+        "p99": 15.752
+      },
+      "burst_changed_rows": 200,
+      "burst_commit_to_publication_ms": 2053.996
+    },
+    "resources": {
+      "peak_owned_rss_bytes": 1694203904,
+      "peak_allocated_data_bytes": 162512896,
+      "spool_bytes": 348635,
+      "retained_wal_bytes": 207176,
+      "sampled_owned_cpu_seconds_lower_bound": 9.0
+    },
+    "worker_reuse_component": {
+      "reused_pids": [
+        1186,
+        1186,
+        1186
+      ],
+      "killed_pid": 1186,
+      "idle_retired": true
+    }
+  }
+}

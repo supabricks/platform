@@ -111,3 +111,27 @@ The Linux RocksDB wheel is 4,206,954 bytes compressed and adds approximately
 Package 03 assembly took 4.34 seconds on this host, reusing the accepted native
 binary and base runtime. This is incremental overlay assembly, not a complete
 source build or macOS package qualification.
+
+
+## Frozen campaign launch
+
+The corrected package passed installed range, lifecycle and observer on/off
+screens. The lifecycle includes worker reuse/kill, pause/resume, whole-stack
+restart, schema fencing and pinned historical epochs. All fixture cleanup reports
+show zero remaining or leaked descendants. A 10-second resource/reopen plumbing
+screen passed correctness but missed its offered input rate; it is explicitly
+excluded from source-capacity and sustained qualification.
+[Screen receipts, failures and package proofs](sync-performance-evidence/2026-10-03-sp10c-screen/README.md).
+
+The supervised sequence uses immutable harness `0682839` and three complete
+108-fixture campaigns: observer bridge, engine attribution, and product comparison.
+Three additional 30-minute runs cover SQLite owner, RocksDB owner and direct
+SQLite, for 327 planned accepted fixtures. The long-run profiler stays off to
+respect its short-trial output budget; each arm uses the same bounded independent
+CPU/RSS/I/O/disk sampler and exact transaction/publication latency observer, then
+reopens and verifies the retained journal after all owned processes stop.
+
+At launch there are **zero accepted performance trials**. The controller waits for
+quiet-host admission, preserves failures and stops for investigation rather than
+editing frozen artifacts. No adoption decision is automatic. Both the observer
+cost and the engine/product results require review before SP10c is complete.
