@@ -100,6 +100,24 @@ class RocksTests(unittest.TestCase):
         self.assertEqual(s.captured,400);s.verify()
         self.assertTrue(s.storage_progress()['wal_enabled'])
 
+    def test_pinned_view_resource_cycles_release_and_resume(self):
+        s=self.open();s.limit=32*MIB;s.establish(100,{})
+        end=100;blocked=False;peak=0
+        with s.backend.snapshot(time.monotonic()+30,0) as view:
+            self.assertEqual(view.metadata()['captured'],100)
+            for cycle in range(128):
+                group=[(end+i*2+1,end+i*2+2,b'x'*4096) for i in range(128)]
+                try:s.append_many(group)
+                except SpoolBackpressure:blocked=True;break
+                end+=256;s.prune(f'0/{end:X}');s.backend.db.flush(True)
+                peak=max(peak,s.physical());self.assertLess(peak,s.limit)
+            # An old empty view need not retain files written after its cut.
+            # Repeated prune/flush cycles must remain below the physical limit;
+            # pressure may occur, but forcing it is not a correctness condition.
+            self.assertGreater(cycle,16)
+            self.assertEqual(view.metadata()['captured'],100)
+        s.backend.compact();s.verify();s.append(end+1,end+2,b'resumed');s.verify()
+
     def test_unsafe_file_and_directory_rejected(self):
         s=self.seed();s.close();(self.root/'rocksdb'/'foreign').symlink_to('/etc/passwd')
         with self.assertRaisesRegex(CaptureError,'unsafe_spool_path'):self.open()

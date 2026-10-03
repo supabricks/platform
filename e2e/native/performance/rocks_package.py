@@ -53,6 +53,20 @@ def overlay(repo,base,destination,proof,wheel,rocks=True):
             if name.endswith('/'):continue
             assert name.startswith(('rocksdict/','rocksdict-0.3.29.dist-info/')) and '..' not in Path(name).parts
             replace('python/runtime/lib/python3.12/site-packages/'+name,archive.read(name))
+    if rocks:
+        # Declare the extra leaf dependency in both installed environment locks.
+        # Runtime environment verification remains exact; no missing/extra-package
+        # exception is introduced to make the experimental wheel importable.
+        experiment=(repo/'e2e/native/performance/rocksdb/uv.lock').read_text()
+        entry=next('[[package]]'+part for part in experiment.split('[[package]]')[1:] if '\nname = "rocksdict"\n' in part)
+        for folder in ('analytics','notebooks'):
+            name='python/'+folder+'/uv.lock'
+            value=(base/name).read_text()
+            assert 'name = "rocksdict"' not in value
+            replace(name,(value+'\n'+entry+'\n').encode())
+            name='python/'+folder+'/requirements.lock'
+            value=(base/name).read_text()
+            replace(name,(value+'\nrocksdict==0.3.29 --hash=sha256:'+wheel_sha+'\n').encode())
     replace('python/analytics/sp10c-experiment.json',json.dumps(dict(wheel_sha256=wheel_sha,wheel=allowed[wheel_sha],
         source_sha256=sha(repo/'e2e/native/performance/rocks_journal.py'),rocks=rocks,adopted=False),indent=2).encode())
     path=destination/'release.json';path.unlink();path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
