@@ -66,9 +66,10 @@ def overlay(repo,base,destination,proof,wheel,rocks=True):
             replace(name,(value+'\n'+entry+'\n').encode())
             name='python/'+folder+'/requirements.lock'
             value=(base/name).read_text()
-            replace(name,(value+'\nrocksdict==0.3.29 --hash=sha256:'+wheel_sha+'\n').encode())
+            replace(name,(value+'\nrocksdict==0.3.29 '+chr(92)+'\n    --hash=sha256:'+wheel_sha+'\n').encode())
     replace('python/analytics/sp10c-experiment.json',json.dumps(dict(wheel_sha256=wheel_sha,wheel=allowed[wheel_sha],
         source_sha256=sha(repo/'e2e/native/performance/rocks_journal.py'),rocks=rocks,adopted=False),indent=2).encode())
+    if rocks:manifest['provenance']['notebooks']['uv_lock_sha256']=sha(destination/'python/notebooks/uv.lock')
     path=destination/'release.json';path.unlink();path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
     assert sha(base/'release.json')==original
     for name,entry in changes.items():assert (sha(base/name) if (base/name).exists() else None)==entry['before']
