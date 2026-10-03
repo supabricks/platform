@@ -13,8 +13,9 @@ payloads, LSN ordering, hashes, group thresholds, replay checks and pruning poli
 Each append or prune stores its records and metadata together in a raw-mode
 WriteBatch with `sync=True` and WAL enabled. Native write errors stop capture;
 there is no in-process retry or acknowledgement from an uncertain result. Restart
-runs the existing identity and complete retained-chain verification. A persisted
-format marker and rejection of any SQLite file prevent accidental backend switching.
+runs the existing identity and complete retained-chain verification. The RocksDB opener uses a persisted
+format marker and rejects any SQLite file. Experimental data directories are
+disposable fixtures, never inputs to a production SQLite installation.
 This is not a migration mechanism.
 
 The separately locked experiment uses `rocksdict==0.3.29`, with Linux x86-64 and
@@ -85,9 +86,28 @@ license and inventory qualification. SP11 and SP12 remain separate.
 
 ## Current evidence
 
-The initial 15 Linux native contract tests passed: replay/restart, retained prune
+All 31 Linux native contract, marker and IPC tests pass: replay/restart, retained prune
 anchor, consistent view, cancellation/deadlines, exclusive ownership, format and
 identity fences, corruption, rejected group atomicity, physical accounting,
 backpressure, and process termination before/after append and prune commits.
-Additional marker, installed lifecycle and full-matrix qualification is underway.
+The existing 77 performance-harness tests also pass. Installed lifecycle and
+full-matrix qualification is underway. The unchanged SP10b IPC tests additionally
+cover authority revocation, queue pressure, cancellation, response budgets and
+slow readers against the RocksDB backend.
 No performance improvement or completed SP10c qualification is claimed yet.
+
+
+The first installed package omitted its extra wheel from the runtime locks;
+[#151](https://github.com/supabricks/platform/issues/151) is fixed by `91ad97d`.
+Package 01 and its failed lifecycle screen remain immutable. Package 02 also
+exposed the notebook inventory hash and requirements formatting dependencies;
+package 03 passes strict installation and environment verification. The lifecycle
+and profile-accounting adaptations are tracked in
+[#152](https://github.com/supabricks/platform/issues/152). No failed fixture is
+silently replaced in a matched comparison.
+
+The Linux RocksDB wheel is 4,206,954 bytes compressed and adds approximately
+11.05 MB of installed files including the backend and marker instrumentation.
+Package 03 assembly took 4.34 seconds on this host, reusing the accepted native
+binary and base runtime. This is incremental overlay assembly, not a complete
+source build or macOS package qualification.
