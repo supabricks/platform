@@ -1,7 +1,8 @@
 # SP10b — Private single-owner journal reads
 
-Status: implementation and qualification in progress. No performance claim or
-engine decision. SP10a's accepted SQLite package is the predecessor.
+Status: implementation and measurement reviewed, 2026-10-03 UTC. Keep the owner
+interface for the SP10c comparison; no speedup or engine-adoption claim. Two
+installed release CI failures remain unresolved. SP10a is the predecessor.
 
 ## Ownership and authority
 
@@ -134,4 +135,92 @@ socket backlog drains; expired queued clients open no snapshots. [Screen receipt
 initial failure and package proofs](sync-performance-evidence/2026-10-02-sp10b-screen/README.md)
 are retained. These are functional screens, not measured performance results.
 `candidate-runtime-02`, `harness-02` and `config-02.json` are frozen for the new
-supervised `campaign-01`; its final measured review is pending.
+supervised `campaign-01`; its final measured review follows.
+
+
+## Final measured review
+
+All 108 fixtures completed: six read components, six lifecycle, 24 observer
+controls, 36 main comparisons and 36 profiler controls. There were no failed
+trials, replacements or cleanup leaks. Raw hashes and metrics were reconstructed
+with the frozen controller; all main cells pass the predeclared regression screens.
+[Individual results, receipts, reconstruction script and decision](sync-performance-evidence/2026-10-03-sp10b-reviewed/README.md)
+are retained. The campaign finished 2026-10-02; review completed 2026-10-03 UTC.
+
+| Logical CPUs / offered rows/s | Actual source, direct → owner | p95 lag, direct → owner | Paired p95 change | Paired CPU change | Paired peak-memory change |
+| --- | --- | --- | --- | --- | --- |
+| 4 / 50 | 50.032 → 50.035 | 1.902 → 1.923 s | +1.70% | −0.94% | −0.57% |
+| 16 / 50 | 50.040 → 50.039 | 1.966 → 1.944 s | +1.20% | +0.92% | −0.59% |
+| 8 / 1,000 | 728.304 → 734.262 | 2.230 → 2.219 s | −0.72% | +1.62% | −0.63% |
+| 16 / 1,000 | 749.150 → 743.644 | 2.248 → 2.229 s | −1.13% | +1.24% | +0.67% |
+| 8 / 1,250 qualified | 1,249.391 → 1,249.474 | 3.002 → 3.002 s | +0.98% | +1.28% | −0.41% |
+| 16 / 1,250 qualified | 1,249.791 → 1,249.867 | 3.025 → 3.015 s | −0.15% | +1.12% | −0.02% |
+
+Values are medians of three fresh trials; changes are medians of paired changes,
+which can differ in sign from a change between medians. Every main trial is correct
+and below five-second p95. All 12 qualified trials attain input. The historical
+four-client overload is source-limited and does not qualify 1,000 rows/s. These
+short profiles establish neither statistical equivalence nor sustained capacity.
+
+### Read component cost
+
+| Range (1 KiB records) | Round trip, direct → owner | Paired change | Client + owner CPU for 16 reads, direct → owner |
+| --- | --- | --- | --- |
+| 32 / 32 KiB | 0.363 → 1.110 ms | +206.19% | 0.0060 → 0.0203 s |
+| 512 / 512 KiB | 1.503 → 7.996 ms | +431.96% | 0.0257 → 0.1333 s |
+| 4,096 / 4 MiB | 15.401 → 56.417 ms | +266.33% | 0.2570 → 0.9382 s |
+
+This is a material ownership/transport cost despite modest pipeline effects in
+the reference workload. At 4 MiB, separately measured owner read/validation and
+payload encoding/hash medians are 21.49 and 10.42 ms. Header processing, grants,
+framing, communication and client validation also contribute to the end-to-end
+measurement; independent timing distributions cannot be subtracted to isolate a
+causal transport share. All read ranges are exact, remain bounded and retain
+their target across append. No throughput gain is inferred from these opaque records.
+[Issue #147](https://github.com/supabricks/platform/issues/147) preserves the cost
+and potential buffering/framing/cancellation-check follow-ups. Any optimization
+must be a separately measured variant, not a replacement of this frozen evidence.
+
+### Lifecycle and instrumentation controls
+
+All six lifecycle fixtures pass reuse, kill recovery, idle retirement, pause/restart,
+schema fences and atomic/pinned epochs. Median idle CPU is 0.0893 → 0.0884 cores;
+API p95 is 43.791 → 38.272 ms. These auxiliary samples do not establish an API SLA.
+
+Profiler activation on the candidate adds 7.41–9.75% paired CPU across historical
+cells and 8.02% / 9.01% at qualified 8/16 CPUs. Qualified p95 changes +0.09% /
+−0.78%, and peak memory +6.67% / +5.41%. Historical profiler-control p95 changes
+span −0.91% to +1.94%. The unchanged instrumentation has a cost; these results do
+not close the earlier overhead findings in #144 or permit subtracting that cost
+from the runtime comparison.
+
+Observer off/on controls add 1.60% / 1.91% CPU on direct SQLite and 1.59% / 1.43%
+on the owner at 8/16 CPUs. All 24 controls attain approximately 1,250 rows/s and
+independently match both frozen source tables. Drain medians span 1.72–2.75 s;
+they depend on final epoch phase and cannot qualify p95 freshness.
+
+### CI and decision
+
+On source/evidence head `aabbb16`, all six protected checks and both installed
+sync gates pass; 44 checks pass overall. Two installed release jobs fail:
+
+- Linux governed data returns `conflict` at the post-restore fresh-token SQL
+  request (`qualify.py:260 → request:58 → cell.py:93`). Identity passes; cleanup
+  leaves zero descendants/containers. The signature recurs in [#110](https://github.com/supabricks/platform/issues/110);
+  the underlying conflict and relationship to SP10b remain unestablished.
+- macOS catalog service raises `PermissionError` while inspecting the private
+  JRE command line (`service.py:156`). Cleanup succeeds with zero descendants;
+  browser/recovery do not run. [#148](https://github.com/supabricks/platform/issues/148)
+  tracks this distinct call site, separate from #140's descendant census failure.
+
+The [CI evidence summary](sync-performance-evidence/2026-10-03-sp10b-reviewed/ci-review.json)
+retains exact jobs, original artifact hashes and sanitized diagnostics. No failure
+is discarded or declared fixed by a later rerun. Final documentation commits
+trigger fresh checks; this report identifies the tested source head explicitly.
+
+Decision: retain the measured owner interface for a fair SP10c engine experiment.
+The slice meets correctness/freshness/input and main regression screens while
+paying an explicit IPC cost; it delivers no performance improvement by itself.
+SP10c must use this same ownership/transport for both SQLite and RocksDB, then
+compare total cost against the best direct SQLite package. No RocksDB adoption,
+full release qualification, SP11 soak/pressure result or SP12 completion is implied.
