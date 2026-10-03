@@ -135,3 +135,23 @@ At launch there are **zero accepted performance trials**. The controller waits f
 quiet-host admission, preserves failures and stops for investigation rather than
 editing frozen artifacts. No adoption decision is automatic. Both the observer
 cost and the engine/product results require review before SP10c is complete.
+
+
+## Campaign stop, October 3
+
+The observer bridge stopped after 14 accepted fixtures (six range, six lifecycle,
+two observer controls). A further passing observer arm is unpaired and unaccepted.
+The next accepted-SP10b SQLite observer-off run delivered all 187,500 transactions
+at 1,249.958 changed rows/s but timed out waiting for final table equality.
+Retained state shows 177 successful incremental runs, then `unsafe_journal_owner_path`
+and a fenced capture. No build overlap was detected and descendant cleanup was clean.
+Engine/product matrices and 30-minute runs have not started.
+
+[#153](https://github.com/supabricks/platform/issues/153) records a deterministic
+matching race: atomic replacement after opening control JSON can leave its inode
+with zero links, which the owner incorrectly rejects as unsafe. The failure lacked
+a stack identifying the exact rejecting check, so attribution to this mechanism
+remains provisional. Preserve the stopped campaign; qualify a fix separately before
+creating new comparison packages. Both native contract CI targets pass. The Linux
+notebook environment lifecycle failure repeats the signature tracked in
+[#135](https://github.com/supabricks/platform/issues/135).
