@@ -7,11 +7,11 @@ RECORD=struct.Struct('!QQId')
 LIMIT=256*1024*1024
 
 
-def enable(cell):
+def enable(cell,analytics=None):
     # Accepted historical packages keep their original SQL observer. Diagnostic
     # overlays explicitly identify the new instrumentation for bridge controls.
-    release=cell.binary.parent.parent
-    if not (release/'python/analytics/marker_profile.py').is_file():return False
+    analytics=Path(analytics) if analytics is not None else cell.release/'python/analytics'
+    if not (analytics/'marker_profile.py').is_file():return False
     root=cell.root/'marker-observer';root.mkdir(mode=0o700)
     (root/'enabled').touch(mode=0o600);return True
 

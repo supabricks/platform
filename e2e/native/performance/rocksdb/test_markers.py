@@ -12,6 +12,15 @@ import marker_observer
 
 
 class MarkerTests(unittest.TestCase):
+    def test_activation_uses_worker_path_when_lifecycle_copies_binary(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);analytics=root/'package/python/analytics';analytics.mkdir(parents=True)
+            cell=SimpleNamespace(root=root,binary=root/'supabricks')
+            self.assertFalse(marker_observer.enable(cell,analytics))
+            (analytics/'marker_profile.py').touch()
+            self.assertTrue(marker_observer.enable(cell,analytics))
+            self.assertTrue((root/'marker-observer/enabled').exists())
+
     def test_only_successful_new_durable_records_are_observed(self):
         with tempfile.TemporaryDirectory() as temp:
             cell=Path(temp);(cell/'marker-observer').mkdir();(cell/'marker-observer/enabled').touch()

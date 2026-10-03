@@ -51,7 +51,7 @@ class ReuseProbe(DispatchProbe):
 
     def run(self,python,worker):
         from marker_observer import enable
-        self.marker_enabled=enable(self);self.marker_readers={}
+        self.marker_enabled=enable(self,Path(worker).parent);self.marker_readers={}
         self.worker_path=worker
         return super().run(python,worker)
 
