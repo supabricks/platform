@@ -201,3 +201,24 @@ The independent correction campaign is launched under
 immutable configuration `owner-fix-config-01.json`. Its 108 fixtures compare
 accepted SP10b with the corrected SQLite owner. At launch, no matched correction
 performance result is accepted; screens are not capacity or speedup evidence.
+
+## Quiet admission for future campaigns
+
+The user requested fewer repeated quiet waits and explicitly requested that the
+current correction measurement not restart. Its frozen harness `0682839`, package
+identities, configuration and running service therefore remain unchanged.
+
+New campaign controllers retain a continuous host monitor across phases. A phase
+inherits a bounded, atomic checkpoint only when it is from the same boot, has
+recent samples and valid monotonic timestamps. It records that checkpoint and
+its hash, takes its own current sample, and continues local contention monitoring.
+A phase boundary alone adds no five-minute wait. Competing build activity or a
+sampling gap resets quiet credit; missing or stale handoff evidence requires a
+fresh interval. Comparison archives retain the handoff evidence as well as their
+local host samples. Both measured arms use the same admission policy.
+
+The old eight-phase correction campaign spends about 40 minutes establishing
+quiet intervals even on an uncontended host. Continuous evidence reduces that to
+one initial five-minute interval when monitoring stays healthy. It does not shorten
+the declared warmup/load windows or run competing fixtures concurrently. This is
+a future harness change, not a modification or reinterpretation of current results.

@@ -25,8 +25,11 @@ def run(path,output):
     config=json.loads(path.read_text());fingerprint=sha(path);identity=harness_identity(ROOT)
     output.mkdir(exist_ok=False);lock=(output/'.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     state=dict(status='starting',pid=os.getpid(),config_sha256=fingerprint,controller=identity,completed=[])
+    campaign_monitor=HostMonitor(output,publish_quiet=True).start()
+    state['quiet_policy']='continuous_campaign_evidence; reset after activity or evidence gap'
     def checkpoint(**kwargs):state.update(kwargs,heartbeat_ms=time.time()*1000);save(output/'status.json',state)
     def verify():
+        campaign_monitor.check()
         assert sha(path)==fingerprint and harness_identity(ROOT)==identity
         for arm in config['arms'].values():assert package_identity(Path(arm['release']),arm['revision'])==arm['identity']
     def execute(name,command):
@@ -43,11 +46,12 @@ def run(path,output):
         for phase in config['campaigns']:
             phase_config=Path(phase['config']);assert sha(phase_config)==phase['sha256']
             execute(phase['name'],[sys.executable,str(ROOT/'e2e/native/performance/backend_campaign.py'),
-                '--config',str(phase_config),'--output',str(output/phase['name'])])
+                '--config',str(phase_config),'--output',str(output/phase['name']),
+                '--host-continuity',str(campaign_monitor.quiet_path)])
             result=json.loads((output/phase['name']/'status.json').read_text())
             assert result['status']=='measurements_complete_review_required'
             state['completed'].append(phase['name']);checkpoint(status='between_phases')
-        folder=output/'sustained';folder.mkdir();monitor=HostMonitor(folder).start()
+        folder=output/'sustained';folder.mkdir();monitor=HostMonitor(folder,continuity=campaign_monitor.quiet_path).start()
         receipts=[]
         try:
             for arm_name in config['sustained_order']:
@@ -86,6 +90,10 @@ def run(path,output):
         checkpoint(status='measurements_complete_review_required',phase='manual_review')
     except BaseException as error:
         checkpoint(status='stopped_for_investigation',error_type=type(error).__name__,error=str(error));raise
+    finally:
+        try:campaign_monitor.close()
+        except BaseException as error:
+            checkpoint(status='stopped_for_investigation',error_type=type(error).__name__,error=str(error));raise
 
 
 if __name__=='__main__':

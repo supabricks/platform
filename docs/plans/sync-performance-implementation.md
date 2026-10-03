@@ -151,7 +151,12 @@ For each slice:
   and repeat in seeded, balanced A/B or B/A order. Run sequentially, never two
   stacks at once. Keep the original archive as a separate historical reference;
   fresh predecessor runs control for host drift.
-- Require five quiet minutes before each trial. Retain CPU, memory, I/O pressure,
+- Establish five quiet minutes once per continuously monitored campaign, and
+  again after detected competing build activity or a gap in monitoring. Carry
+  fresh same-boot evidence across phase/controller boundaries; a new phase alone
+  must not restart the timer. Missing, stale or invalid evidence gets no quiet
+  credit. This policy applies to newly frozen campaigns; do not restart or change
+  an active measurement to adopt it. Retain CPU, memory, I/O pressure,
   filesystem/free-space, temperature/frequency where available, and external-build
   observations. If contention invalidates a trial, wait and rerun the affected
   pair; retain both attempts. Never stop another project's build or the user's stack.
