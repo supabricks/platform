@@ -196,11 +196,14 @@ reader returns the current version. The new SQLite package changes only
 installed read/lifecycle checks, and observer off/on screens pass with no leaked
 descendants. [Correction evidence](sync-performance-evidence/2026-10-03-owner-replacement/README.md).
 
-The independent correction campaign is launched under
+The independent correction campaign completed under
 `supabricks-sp10c-owner-fix-01.service`, using unchanged harness `0682839` and
 immutable configuration `owner-fix-config-01.json`. Its 108 fixtures compare
-accepted SP10b with the corrected SQLite owner. At launch, no matched correction
-performance result is accepted; screens are not capacity or speedup evidence.
+accepted SP10b with the corrected SQLite owner. All 108 passed without failures,
+contention replacements or leaks. Receipt reconstruction found no main regression
+screen flags. The review retains the correction for reliability, without a speedup
+claim. Isolated 32-record reads cost +4.78% latency and +6.64% CPU (paired medians).
+[Reviewed results and limitations](sync-performance-evidence/2026-10-03-owner-fix-reviewed/README.md).
 
 ## Quiet admission for future campaigns
 
