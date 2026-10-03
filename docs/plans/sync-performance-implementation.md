@@ -772,3 +772,11 @@ Completion requires the contribution ledger, every accepted slice's comparisons,
 rejected/inconclusive experiments, final sustained/recovery evidence and exact
 installed qualification. A new engine, higher source input, or a single fast run
 alone does not complete this performance workstream.
+
+## Follow on end to end analytical qualification
+
+After SP12, execute the [TPC-DS qualification plan](tpcds-end-to-end-qualification.md)
+to test loading into PostgreSQL with sync active, full analytical queries, larger
+datasets and concurrent ingestion/query scaling. This has its own EQ00–EQ06
+slices, compatibility gates and measured envelope. SP's narrow-row results do not
+establish TPC-DS capacity, and the follow-on does not change the running SP trials.
