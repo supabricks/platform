@@ -188,3 +188,16 @@ failure in physical-file accounting (`unsafe_spool_path`), tracked separately in
 did not reproduce it; the original failure remains retained and unresolved.
 The correction's RocksDB IPC tests pass, but this does not make the complete
 experimental backend contract suite green or unblock RocksDB adoption.
+
+Correction source `04d0c3c` passes 130 analytics tests and 16 RocksDB IPC tests.
+The accepted package fails the deterministic replacement reproduction; the fixed
+reader returns the current version. The new SQLite package changes only
+`owner.py`, `capture_worker.py`, and their bytecode. Strict installation verification,
+installed read/lifecycle checks, and observer off/on screens pass with no leaked
+descendants. [Correction evidence](sync-performance-evidence/2026-10-03-owner-replacement/README.md).
+
+The independent correction campaign is launched under
+`supabricks-sp10c-owner-fix-01.service`, using unchanged harness `0682839` and
+immutable configuration `owner-fix-config-01.json`. Its 108 fixtures compare
+accepted SP10b with the corrected SQLite owner. At launch, no matched correction
+performance result is accepted; screens are not capacity or speedup evidence.
