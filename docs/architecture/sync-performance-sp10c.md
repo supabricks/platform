@@ -185,9 +185,9 @@ measurements should new fixed-owner SQLite/RocksDB comparison packages be frozen
 Validation also exposed an intermittent experimental RocksDB resource-cycle
 failure in physical-file accounting (`unsafe_spool_path`), tracked separately in
 [#154](https://github.com/supabricks/platform/issues/154). Ten diagnostic repeats
-did not reproduce it; the original failure remains retained and unresolved.
-The correction's RocksDB IPC tests pass, but this does not make the complete
-experimental backend contract suite green or unblock RocksDB adoption.
+did not reproduce it at that stage. The later retired-SST investigation and
+correction below reproduce and resolve that mechanism while retaining the original
+failure. Backend adoption still requires engine/product and sustained measurements.
 
 Correction source `04d0c3c` passes 130 analytics tests and 16 RocksDB IPC tests.
 The accepted package fails the deterministic replacement reproduction; the fixed
@@ -247,3 +247,17 @@ The focused stress harness repeats the existing native resource-cycle test with
 50 accounting scans per call, recording any naturally observed retired files.
 CI runs five repetitions independently on Linux and macOS. Qualification output
 and installed screens are retained before the new experimental package is used.
+
+Correction `dcca9cf` passed 20 local stress fixtures (455,000 accounting scans),
+including 46 natural zero-link observations. Linux and macOS CI each passed the
+42-test contract suite and five stress fixtures, observing another 17 and four
+retired files respectively. The focused 32-file accounting comparison measured
+104.323 µs before versus 104.412 µs after (+0.086%, three alternating pairs); this
+does not establish pipeline speedup or statistical equivalence.
+
+Experimental package `rocks-runtime-04` passes strict installation verification,
+bounded reads, full lifecycle, and observer off/on screens with zero leaked or
+remaining descendants. It includes the separately qualified owner correction
+(108 accepted fixtures) as its base. Old packages and measurements are unchanged.
+[#154 correction evidence](sync-performance-evidence/2026-10-03-rocks-accounting/README.md).
+Engine/product comparisons and sustained qualification still precede adoption.

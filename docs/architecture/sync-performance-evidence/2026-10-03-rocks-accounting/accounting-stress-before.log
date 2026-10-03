@@ -1,0 +1,31 @@
+ATTEMPT 1
+OBSERVED {"error": "unsafe_spool_path", "entry": "000245.sst", "expected_uid": 1000, "rejected_metadata": {"st_mode": 33188, "st_uid": 1000, "st_nlink": 0, "st_size": 542778, "st_ino": 9699360, "st_dev": 66311}, "current_error": "FileNotFoundError"}
+E
+======================================================================
+ERROR: test_pinned_view_resource_cycles_release_and_resume (test_contract.RocksTests.test_pinned_view_resource_cycles_release_and_resume)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/e2e/native/performance/rocksdb/test_contract.py", line 112, in test_pinned_view_resource_cycles_release_and_resume
+    end+=256;s.prune(f'0/{end:X}');s.backend.db.flush(True)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "<workspace>/python/analytics/capture/spool.py", line 241, in prune
+    return self.backend.prune_group(rows[-1][0],value,reclaimed,barrier_at)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 263, in prune_group
+    fault('after_spool_prune_commit');self.after_write();return reclaimed
+                                      ^^^^^^^^^^^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 154, in after_write
+    if self.physical()>self.limit:raise CaptureError('spool_budget')
+       ^^^^^^^^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 151, in physical
+    def physical(self):return sum(self.sizes().values())
+                                  ^^^^^^^^^^^^
+  File "<stdin>", line 11, in scanned
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 147, in sizes
+    raise CaptureError('unsafe_spool_path')
+capture.spool.CaptureError: unsafe_spool_path
+
+----------------------------------------------------------------------
+Ran 1 test in 7.030s
+
+FAILED (errors=1)
