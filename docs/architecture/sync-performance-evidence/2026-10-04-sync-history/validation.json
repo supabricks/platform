@@ -1,0 +1,99 @@
+{
+  "issue": 156,
+  "source_revision": "9b4192d9ff230e230a66072b77c2fcb8883e31a0",
+  "status": "source_and_installed_checks_passed_performance_qualification_running",
+  "before": {
+    "status": "reproduced_failure",
+    "incremental_runs": 1024,
+    "error": "triggered_batch_admission_failed"
+  },
+  "after": {
+    "unit_passed": 215,
+    "unit_ignored": 4,
+    "recovery_passed": 31,
+    "package_passed": 3,
+    "evidence_passed": 26,
+    "history_rotation_publications": 11008
+  },
+  "local_evidence": "build/issue156-20261004",
+  "logs": {
+    "before.log": {
+      "sha256": "3e4bcbd6b1c076f757037bfc0d37fbd1f903ab53b7352c7142d772cea04537ec",
+      "bytes": 988
+    },
+    "local-unit-tests-final.log": {
+      "sha256": "2ec8622ca1b16f5852df76d84b57f72e87fc4aa723ceddd7fe6e6b7e28b0042a",
+      "bytes": 23023
+    },
+    "recovery-tests-02.log": {
+      "sha256": "7d6dcb952fb2fa5f061c9ec29195edd54db640a7aa8c2e53eee56900b7b91142",
+      "bytes": 5634
+    },
+    "package-tests.log": {
+      "sha256": "7d59a8fbca92ef540f42b6883247c3844892d23f501b6cf2621d0e535813fb81",
+      "bytes": 101
+    },
+    "evidence-tests.log": {
+      "sha256": "10a0c2afa22e90442aec6200272312c653dacd7116c58d74e85b234604056da1",
+      "bytes": 125
+    },
+    "release-build.log": {
+      "sha256": "81f89b1e491af82b48c48a413395dda7a7df49e3ec94b22e9fb9305e25d53634",
+      "bytes": 168
+    }
+  },
+  "installed_checks": {
+    "backend": {
+      "status": "PASS",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "878a032f170b8be045cc88517233db0b70b3453fb642d9f38510ce4e6cda5660",
+        "cleanup.json": "ccfcb5d5316270aa47a7312d48c2eb83a63120b5e783a760d0cf3f43d4e43769"
+      }
+    },
+    "lifecycle": {
+      "status": "PASS",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "38c89339c3e2db6b905268eee84b99c4d079ab032e44d1b751e2d51af34a5ffb",
+        "cleanup.json": "dc33587278e6ccdd36811516d83564319b0f671bfda60468cd549479a25ccacd"
+      }
+    },
+    "observer-off": {
+      "status": "measured",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "25802a925abbf74072fbacb0ffa3377647070912e30a6106ced36d23b82b940f",
+        "cleanup.json": "824f86db8b03c78c680d5ea67f90fa281274002e60ceb6a2ed99f99edebce915"
+      }
+    },
+    "observer-on": {
+      "status": "measured",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "201cbd1136512462caef4c2ef6ae935f973f4a142c59cd32a7981d4bf52f8211",
+        "cleanup.json": "b6f9023518ad1d0bf2b216b4af2aec42816726bba19e20dcb95c1f877538679d"
+      }
+    }
+  }
+}

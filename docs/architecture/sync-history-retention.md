@@ -73,6 +73,14 @@ reader pins, public retries and conflicts across restart; protected active/faile
 work and pending cleanup; transactional rollback; safe exhaustion; retained
 governance/audit and revocation; and explicit catalog 29 to 30 migration.
 
+Source validation passed 215 unit tests (four ignored), 31 recovery tests, three
+package tests and 26 evidence-validator tests. The [validation receipt and frozen
+qualification inputs](sync-performance-evidence/2026-10-04-sync-history/validation.json)
+identify the exact source and local evidence hashes. All four installed checks
+(backend, lifecycle, observer off/on) passed with clean descendant cleanup.
+The [supervised qualification](sync-performance-evidence/2026-10-04-sync-history/launch.json)
+is running; sustained and paired performance results remain pending.
+
 Installed qualification uses a new immutable SQLite owner package with only the
 native binary and its catalog declaration changed. Preserve the failed original
 run. First repeat the 30-minute workload with unchanged input, resources and
