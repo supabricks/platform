@@ -59,7 +59,7 @@ def collect(data,base,revision,target):
     capture_wal=validate_wal(data.get('capture_wal'),data['release_identity'])
     source=data.get('source',{})
     require(source.get('platform_commit')==revision and source.get('platform_dirty') is False,'unreviewed source')
-    require(source.get('data_formats',{}).get('local_catalog')==29,'unqualified storage format')
+    require(source.get('data_formats',{}).get('local_catalog')==30,'unqualified storage format')
     require(target in NETWORK and data.get('network_evidence')==NETWORK[target],'missing offline evidence')
     require(TOP_CHECKS<=set(data.get('checks',[])),'incomplete installed checks')
     require(data['archive'].get('target')==target,'mixed target')

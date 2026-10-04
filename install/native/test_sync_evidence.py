@@ -28,7 +28,7 @@ def fixture(target='linux-x86_64'):
             storage=dict(input_bytes=1000,new_parquet_bytes=2000,write_amplification_ratio=2,
                 peak_inventory_files=50,peak_generation_bytes=1000000,compaction_bytes=0)))
     data=dict(status='passed',checks=sorted(TOP_CHECKS),release_identity=HASH,archive=base['archive'],binary_sha256=HASH,
-        source=dict(platform_commit=REVISION,platform_dirty=False,data_formats=dict(local_catalog=29)),
+        source=dict(platform_commit=REVISION,platform_dirty=False,data_formats=dict(local_catalog=30)),
         network_evidence=NETWORK[target],worker_inventory={name:digest(ROOT/'python/analytics'/name) for name in WORKERS},suites=suites)
     policy=json.loads(POLICY.read_text())
     identities={role:dict(version=pin['version'],source_id=pin['source_id'],compile_options=['THREADSAFE=1'],

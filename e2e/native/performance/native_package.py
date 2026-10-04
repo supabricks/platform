@@ -13,7 +13,7 @@ def sha(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def overlay(base, binary, destination, revision, proof):
+def overlay(base, binary, destination, revision, proof, local_catalog=None):
     assert len(revision) == 40 and all(c in '0123456789abcdef' for c in revision)
     assert not destination.exists() and not proof.exists()
     original = sha(base/'release.json')
@@ -35,6 +35,11 @@ def overlay(base, binary, destination, revision, proof):
                    changed_payload_files=['bin/supabricks'],
                    verified_shared_payload_files=len(manifest['files'])-1,
                    signed_release=False)
+    if local_catalog is not None:
+        assert type(local_catalog) is int and local_catalog > 0
+        formats = manifest['provenance']['data_formats']
+        receipt['local_catalog'] = dict(before=formats['local_catalog'], after=local_catalog)
+        formats['local_catalog'] = local_catalog
     # The installation manifest rejects unknown fields. Overlay provenance lives
     # in the external proof, never in the runtime's release schema.
     path = destination/'release.json'
@@ -54,6 +59,7 @@ if __name__ == '__main__':
     for name in ('base', 'binary', 'destination', 'proof'):
         parser.add_argument('--'+name, type=Path, required=True)
     parser.add_argument('--revision', required=True)
+    parser.add_argument('--local-catalog', type=int)
     args = parser.parse_args()
     overlay(args.base.resolve(), args.binary.resolve(), args.destination.resolve(),
-            args.revision, args.proof.resolve())
+            args.revision, args.proof.resolve(), args.local_catalog)

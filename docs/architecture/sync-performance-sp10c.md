@@ -6,6 +6,13 @@ No RocksDB adoption or migration is authorized by this experiment. Production
 continues using SQLite; the experimental backend lives in the performance harness
 and is selected only by a hashed, disposable installed-package overlay.
 
+Sequence 02 completed all 324 comparison fixtures, then stopped on the first
+30-minute SQLite sustained run at the 1,024 incremental history limit
+([#156](https://github.com/supabricks/platform/issues/156)). The
+[execution-history correction](sync-history-retention.md) is a separate measured
+reliability slice. The two remaining sustained arms and final evidence review
+remain outstanding; the original failed campaign is retained.
+
 ## Implementation and dependency findings
 
 `rocks_journal.py` implements the existing capture owner contract with unchanged

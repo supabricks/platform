@@ -292,6 +292,16 @@ pub(crate) fn policy_for_artifact(
     db: &rusqlite::Connection,
     id: OperationId,
 ) -> Result<Option<Policy>> {
-    let record: Option<String> = db.query_row("SELECT p.record FROM sync_policies p JOIN sync_runs r ON r.policy_id=p.id JOIN operations o ON o.id=?1 WHERE r.refresh_id=o.id OR o.request_key='internal:sync:' || r.id UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN incremental_runs r ON r.capture_id=c.id WHERE r.id=?1 UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN operations o ON o.id=?1 WHERE c.bootstrap_id=o.id OR o.request_key='internal:capture-bootstrap:' || c.id LIMIT 1", [id.to_string()], |r|r.get(0)).optional()?;
+    // Published descriptors retain validated capture provenance after private
+    // execution history expires. Authorization must still resolve that policy.
+    let record: Option<String> = db.query_row("SELECT p.record FROM sync_policies p JOIN sync_runs r ON r.policy_id=p.id JOIN operations o ON o.id=?1 WHERE r.refresh_id=o.id OR o.request_key='internal:sync:' || r.id UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN incremental_runs r ON r.capture_id=c.id WHERE r.id=?1
+    UNION ALL SELECT p.record FROM sync_policies p
+      JOIN sync_captures c ON c.policy_id=p.id
+      JOIN publications pub ON json_extract(pub.descriptor,'$.manifest.capture_identity.generation')=c.id
+      JOIN analytical_artifacts a ON a.id=pub.export_id
+      WHERE pub.export_id=?1 AND pub.state='published' AND a.kind='incremental'
+        AND a.project_id=json_extract(c.record,'$.project_id')
+        AND a.branch_id=json_extract(c.record,'$.branch_id')
+    UNION ALL SELECT p.record FROM sync_policies p JOIN sync_captures c ON c.policy_id=p.id JOIN operations o ON o.id=?1 WHERE c.bootstrap_id=o.id OR o.request_key='internal:capture-bootstrap:' || c.id LIMIT 1", [id.to_string()], |r|r.get(0)).optional()?;
     record.map(|v| Ok(serde_json::from_str(&v)?)).transpose()
 }

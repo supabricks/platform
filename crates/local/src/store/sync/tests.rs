@@ -746,3 +746,5 @@ mod incremental;
 mod triggered;
 
 mod continuous;
+
+mod history;
