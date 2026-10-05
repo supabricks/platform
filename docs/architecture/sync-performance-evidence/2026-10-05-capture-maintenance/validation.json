@@ -1,6 +1,6 @@
 {
   "issue": 157,
-  "status": "source_checks_passed_installed_qualification_pending",
+  "status": "source_and_installed_checks_passed_performance_qualification_running",
   "cause": "At most 256 records reclaimed per one-second maintenance interval, below 625 source transactions/s; published history filled the SQLite page guard.",
   "original_failure": {
     "source_rows_per_second": 1249.979,
@@ -25,6 +25,92 @@
     "harness-tests-02.log": {
       "sha256": "f09f042a92552d88a490a16229d7779b345de131fffb6a1d4b3d9eae793b3675",
       "bytes": 112
+    }
+  },
+  "installed_checks": {
+    "backend": {
+      "status": "PASS",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "1557caae0c9f91138279507d9a41e411049535bc00335a7bcc02bce50633c323",
+        "cleanup.json": "ccfcb5d5316270aa47a7312d48c2eb83a63120b5e783a760d0cf3f43d4e43769"
+      }
+    },
+    "lifecycle": {
+      "status": "PASS",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "2476f90b81e61a3a50d810abbb52297565cdd05c778025b55f401f08fdf7d548",
+        "cleanup.json": "3c330a7703d1cd1abdd3bce0c2494b67f4781e38d7bbd0b348007d2b5d901da3"
+      }
+    },
+    "observer-off": {
+      "status": "measured",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "95ad582883383bd5e9d641e841e380a128b396f6fe936b63ab88f2b1f2a5799a",
+        "cleanup.json": "fa5f0b6443b32a9868174a89b609fa9bdfd509b01b6c5f868663f272529e79b9"
+      }
+    },
+    "observer-on": {
+      "status": "measured",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "1b43c99deefe8c6d2bd17a9da13d31c7c11cc923f0b3bc09d234fcf7ca308f74",
+        "cleanup.json": "d0e57110fd545af1eaef6919ca9c798dde0527aad4f23e3fd539541145d3cd63"
+      }
+    },
+    "sustained-smoke": {
+      "status": "measured",
+      "cleanup": {
+        "exit_code": 0,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0,
+        "timed_out": false
+      },
+      "sha256": {
+        "result.json": "9eb3ba3a4e766b18a73ac9c1beb967056aec07043e285b2e8493146e65b56d51",
+        "cleanup.json": "d0735aa35a3a8e2ba278f976bdf165c0e06acbdd4f1f25cf554a1d70d5817ce7"
+      },
+      "scope": "10-second plumbing/correctness screen; excluded from throughput qualification",
+      "checks": [
+        "both_published_tables_equal_frozen_postgres_source",
+        "owned_runtime_stopped"
+      ],
+      "history": {
+        "counts": {
+          "incremental_runs": 21,
+          "incremental_requests": 21,
+          "sync_runs": 20,
+          "publications": 21,
+          "snapshots": 21,
+          "published": 21
+        },
+        "foreign_keys": "passed"
+      },
+      "source_rows_per_second": 1096.502,
+      "offered_load_met": false,
+      "within_5s_p95": true
     }
   }
 }

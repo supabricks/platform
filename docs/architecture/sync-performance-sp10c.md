@@ -46,9 +46,14 @@ not end-to-end throughput or a release qualification.
 harness compatibility fixes: observe execution timings with publications before
 private history expires, and export stopped history counts before successful
 fixture deletion. Missing timing still invalidates a trial. Both comparison arms
-must use the same corrected frozen harness. Installed screens and fresh sustained
-qualification are pending. The history correction and maintenance correction
-require separate paired measurements to preserve per-slice attribution.
+must use the same corrected frozen harness. All five installed checks passed:
+backend, lifecycle, observer off/on and a ten-second sustained plumbing screen
+with final table equality, journal reopen, clean descendant cleanup and history
+export after private-fixture deletion. The short screen is not a capacity result.
+The [supervised qualification](sync-performance-evidence/2026-10-05-capture-maintenance/launch.json)
+is running: first a new 30-minute sustained fixture, then 12 paired trials each
+for the history and maintenance corrections, preserving per-slice attribution.
+No completed sustained qualification or new performance envelope is claimed.
 
 ## Implementation and dependency findings
 
