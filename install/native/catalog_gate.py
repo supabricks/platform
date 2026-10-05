@@ -6,6 +6,7 @@ import subprocess
 import time
 from pathlib import Path
 import psutil
+from process_probe import cmdline
 
 
 def run(args):
@@ -21,7 +22,7 @@ def run(args):
             for process in psutil.process_iter():
                 # macOS denies inspection of unrelated protected processes.
                 # Only inspectable commands can identify this fixture's daemon.
-                try:cmd=process.cmdline()
+                try:cmd=cmdline(process)
                 except (psutil.NoSuchProcess, psutil.AccessDenied, PermissionError):continue
                 if 'daemon' not in cmd or '--data-dir' not in cmd:continue
                 position=cmd.index('--data-dir')+1

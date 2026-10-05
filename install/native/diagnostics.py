@@ -24,7 +24,7 @@ def summarize(path):
     # Only recognize predefined failures. Unknown class names can contain data.
     known=('AssertionError','TimeoutError','RuntimeError','ConsoleHTTPError','CalledProcessError',
            'WebSocketTimeoutException','ConnectionRefusedError','FileNotFoundError',
-           'SparkConnectGrpcException','AnalysisException','PermissionError')
+           'SparkConnectGrpcException','AnalysisException','PermissionError','SystemError','AccessDenied','NoSuchProcess','StopIteration')
     api=[]
     codes=('invalid_input','not_found','conflict','unavailable','sql_error','io_error','internal')
     for status,raw in re.findall(r'console [a-z_/]+: HTTP (\d{3}): (\{[^\n]+\})',text):

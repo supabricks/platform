@@ -38,6 +38,23 @@ from cell import wait
 REPO=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(REPO/'install/native'))
 from unity_catalog import install
+from release_formats import LOCAL_CATALOG
+from process_probe import cmdline
+
+
+def ready_owner(cell, previous_pid=None):
+    status=cell.request(method='status')['catalog']
+    owner=next((r for r in cell.records() if r['role']=='unity-catalog'),None)
+    return status if status['ready'] and owner and owner['pid']!=previous_pid else None
+
+
+def private_jre_cmdline(process):
+    # A transient OS denial is not proof of the private resolver contract.
+    # Retry the same process identity, then fail if it remains uninspectable.
+    def inspect():
+        try:return cmdline(process)
+        except (psutil.AccessDenied, PermissionError):return None
+    return wait(inspect,timeout=10)
 
 
 def installed_fixture(baseline, binary, runtime, output, console_assets=None):
@@ -54,7 +71,7 @@ def installed_fixture(baseline, binary, runtime, output, console_assets=None):
         shutil.rmtree(output/'share/console')
         shutil.copytree(console_assets,output/'share/console')
     catalog=install(output,manifest['target'],runtime)
-    manifest['provenance']['data_formats']['local_catalog']=29
+    manifest['provenance']['data_formats']['local_catalog']=LOCAL_CATALOG
     manifest['provenance']['unity_catalog']=catalog
     manifest['provenance']['data_formats']['unity_catalog']=1
     manifest['provenance']['uc01_fixture']='current platform binary and UC closure over immutable alpha.24 engines; not full release qualification'
@@ -153,7 +170,8 @@ def main():
         assert len(listeners)>=2
         assert all((getattr(ipaddress.ip_address(c.laddr.ip),'ipv4_mapped',None) or ipaddress.ip_address(c.laddr.ip)).is_loopback for c in listeners)
         assert process.exe()==str((installed/'share/unity-catalog/java/bin/java').resolve())
-        assert '-Djdk.net.hosts.file='+str(cellroot/'catalog/etc/conf/hosts') in process.cmdline()
+        arguments=private_jre_cmdline(process)
+        assert '-Djdk.net.hosts.file='+str(cellroot/'catalog/etc/conf/hosts') in arguments
         assert (cellroot/'catalog/etc/conf/hosts').stat().st_mode&0o077==0
         assert first['readiness_seconds']<20
         assert process.memory_info().rss<512*1024*1024
@@ -161,7 +179,7 @@ def main():
         for name in ['public_key.der','private_key.der','key_id.txt','token.txt']:
             assert (cellroot/'catalog/etc/conf'/name).stat().st_mode&0o077==0
         assert token() not in json.dumps(cell.request(method='status'))
-        assert token() not in ' '.join(process.cmdline())
+        assert token() not in ' '.join(arguments)
         assert api(first['endpoint'],'invalid-token')[0]==401
         check('private_keys_and_credentials_absent_from_status_and_argv')
         code,entry=api(first['endpoint'],token(),method='POST',body=dict(name='uc01_recovery'))
@@ -201,14 +219,14 @@ def main():
         check('port_collision_retries_without_adopting_or_stopping_unrelated_listener')
         victim=owned()['pid'];os.kill(victim,signal.SIGKILL)
         wait(lambda:cell.sql(branch,'SELECT 42')=='42')
-        wait(lambda:(s if (s:=status())['ready'] and owned()['pid']!=victim else None))
+        wait(lambda:ready_owner(cell,previous_pid=victim))
         check('catalog_crash_leaves_postgres_usable')
-        command('restart');ready()
+        command('restart');wait(lambda:ready_owner(cell),timeout=65)
         for _ in range(3):
             current=owned()['pid'];os.kill(current,signal.SIGKILL)
             wait(lambda:status()['state'] in ('backoff','failed'))
             if status()['state']=='failed':break
-            ready()
+            wait(lambda:ready_owner(cell,previous_pid=current),timeout=65)
         assert status()['state']=='failed' and status()['start_attempts']==3
         time.sleep(2);assert status()['start_attempts']==3
         wait(lambda:cell.sql(branch,'SELECT 42')=='42')
