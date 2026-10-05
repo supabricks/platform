@@ -257,7 +257,21 @@ def main():
         fresh=identity(action='issue_service',principal=actor,scopes=['identity:self','project:control'],ttl_seconds=300)['token']
         admin(action='set_role',deployment=deployment,subject=dict(kind='principal',id=actor),role='viewer',expected_policy=policy(),key=str(uuid.uuid4()))
         grant('read')
-        value=request(as_token=fresh,action='sql',branch=bid,capability='read',sql='SELECT count(*) AS n FROM example',expected_policy=policy(),key=str(uuid.uuid4()))
+        restored_policy=policy();restored_key=str(uuid.uuid4());started=time.monotonic()
+        try:
+            value=request(as_token=fresh,action='sql',branch=bid,capability='read',sql='SELECT count(*) AS n FROM example',expected_policy=restored_policy,key=restored_key)
+        except RuntimeError:
+            # Preserve the admission/commit boundary without exporting tokens,
+            # SQL, IDs or row contents. A denial is never retried into success.
+            with sqlite3.connect(f'file:{cell.root}/state.sqlite3?mode=ro',uri=True) as db:
+                operation=db.execute('SELECT state FROM data_operations WHERE request_key=?',(restored_key,)).fetchone()
+                reconciled=db.execute('SELECT revision=observed_revision FROM branches WHERE id=?',(bid,)).fetchone()[0]
+                unchanged=db.execute('SELECT revision=? FROM authorization_policy WHERE deployment=?',(restored_policy,deployment)).fetchone()[0]
+            state=operation[0] if operation else 'not_admitted'
+            if state not in ('not_admitted','preparing','committing','complete','failed','interrupted','uncertain'):state='unknown'
+            print('GOVERNED_RESTORE_FAILURE '+json.dumps(dict(elapsed_ms=round((time.monotonic()-started)*1000),
+                operation_state=state,branch_reconciled=bool(reconciled),policy_unchanged=bool(unchanged))),flush=True)
+            raise
         assert value['result']['rows']==[dict(n=2)]
         audit=identity(action='audit_export',after=0)
         serialized=json.dumps(audit)
