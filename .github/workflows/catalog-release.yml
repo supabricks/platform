@@ -47,6 +47,9 @@ jobs:
       - name: Install qualification tools before isolating the host
         run: |
           python -m pip install -r e2e/native/catalog/requirements.txt
+          python install/native/test_process_probe.py
+          python -m unittest discover -s install/native -p test_catalog_gate.py
+          python -m unittest discover -s e2e/native/catalog -p test_lifecycle.py
           npm ci --prefix console --no-audit --no-fund
           npm exec --prefix console -- playwright install --with-deps chromium
       - name: Catalog through localhost curl on offline Linux without system Java
@@ -81,4 +84,3 @@ jobs:
           name: release-catalog-${{ matrix.target }}
           path: build/catalog-reports/*.json
           if-no-files-found: error
-

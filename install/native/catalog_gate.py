@@ -4,6 +4,7 @@ import argparse
 import json
 import subprocess
 import time
+import traceback
 from pathlib import Path
 import psutil
 from process_probe import cmdline
@@ -35,16 +36,29 @@ def run(args):
             except psutil.NoSuchProcess:pass
     deadline=time.monotonic()+args.timeout
     timed_out=False
-    while child.poll() is None:
-        census()
-        if time.monotonic()>deadline:
-            timed_out=True;child.kill();break
-        time.sleep(.1)
+    inspection_failed=False
+    try:
+        while child.poll() is None:
+            census()
+            if time.monotonic()>deadline:
+                timed_out=True;child.kill();break
+            time.sleep(.1)
+    except Exception:
+        # Inspection failure must still stop the fixture and account for every
+        # descendant already observed. Never turn incomplete census into PASS.
+        inspection_failed=True
+        traceback.print_exc()
+        if child.poll() is None:child.kill()
     code=child.wait()
-    census()
+    try:
+        census()
+    except Exception:
+        inspection_failed=True
+        traceback.print_exc()
     def alive(p):
         try:return p.is_running() and p.status()!=psutil.STATUS_ZOMBIE
         except psutil.NoSuchProcess:return False
+        except (psutil.AccessDenied,PermissionError):return True
     remaining=[p for p in owned.values() if alive(p)]
     # Give normal process exit/reparenting a bounded opportunity to settle.
     if remaining:psutil.wait_procs(remaining,timeout=3)
@@ -53,15 +67,17 @@ def run(args):
     for p in remaining:
         try:p.terminate()
         except psutil.NoSuchProcess:pass
+        except (psutil.AccessDenied,PermissionError):inspection_failed=True
     _,left=psutil.wait_procs(remaining,timeout=5)
     for p in left:
         try:p.kill()
         except psutil.NoSuchProcess:pass
+        except (psutil.AccessDenied,PermissionError):inspection_failed=True
     psutil.wait_procs(left,timeout=5)
-    report=dict(exit_code=code,timed_out=timed_out,descendants_observed=len(owned),
+    report=dict(exit_code=code,timed_out=timed_out,inspection_failed=inspection_failed,descendants_observed=len(owned),
                 leaked_descendants=leaked,remaining_descendants=sum(alive(p) for p in left))
     args.report.write_text(json.dumps(report)+'\n')
-    return 1 if code or timed_out or leaked else 0
+    return 1 if code or timed_out or leaked or inspection_failed else 0
 
 
 if __name__=='__main__':

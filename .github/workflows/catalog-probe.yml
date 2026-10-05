@@ -121,6 +121,7 @@ jobs:
           python -m pip install -r e2e/native/catalog/requirements.txt
           python install/native/test_release_formats.py
           python install/native/test_process_probe.py
+          python -m unittest discover -s install/native -p test_catalog_gate.py
           python -m unittest discover -s e2e/native/catalog -p test_lifecycle.py
       - uses: astral-sh/setup-uv@v6
         with:
