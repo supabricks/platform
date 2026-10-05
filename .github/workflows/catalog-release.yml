@@ -1,86 +1,62 @@
-name: catalog-release
+name: governed-data-diagnostic
 on:
-  workflow_call:
-    inputs:
-      archive_run_id:
-        description: Run containing the unchanged native release archives
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       archive_run_id:
-        description: Existing archive run to diagnose; this alone does not qualify a release
         required: true
         type: string
 permissions:
   contents: read
   actions: read
 jobs:
-  catalog:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            target: linux-x86_64
-          - runner: macos-15
-            target: macos-arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 50
+  data:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
       - uses: actions/download-artifact@v4
         with:
           repository: ${{ github.repository }}
           run-id: ${{ inputs.archive_run_id }}
           github-token: ${{ github.token }}
-          name: release-${{ matrix.target }}
-          path: build/releases
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install qualification tools before isolating the host
+          name: release-linux-x86_64
+          path: build/diagnostic/archive
+      - name: Verify and extract the unchanged archive
         run: |
-          python -m pip install -r e2e/native/catalog/requirements.txt
-          python install/native/test_process_probe.py
-          python -m unittest discover -s install/native -p test_catalog_gate.py
-          python -m unittest discover -s e2e/native/catalog -p test_lifecycle.py
-          npm ci --prefix console --no-audit --no-fund
-          npm exec --prefix console -- playwright install --with-deps chromium
-      - name: Catalog through localhost curl on offline Linux without system Java
-        if: runner.os == 'Linux'
+          cd build/diagnostic/archive
+          sha256sum -c supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz.sha256
+          tar -xzf supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz
+          supabricks/bin/supabricks installation verify
+      - name: Prepare the same offline qualification image
+        run: docker build -f install/native/Dockerfile.governed -t supabricks-ci-data .
+      - name: Qualify data with the CI resource limits
         run: |
-          python_path=$(command -v python)
-          node_path=$(command -v node)
-          sudo unshare --net --mount /bin/bash -c '
-            set -euo pipefail
-            ip link set lo up
-            mount --make-rprivate /
-            # Mask the host JDK; the candidate must execute its own JRE.
-            if test -d /usr/lib/jvm; then mount -t tmpfs tmpfs /usr/lib/jvm; fi
-            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-              "$2" install/native/qualify_catalog.py --directory build/releases \
-              --console console --node "$3" --target linux-x86_64 --disk-full \
-              --network-evidence "Linux loopback-only namespace; private JRE; all descendants isolated" \
-              --report build/catalog-reports/catalog.json
-          ' bash "$(id -un)" "$python_path" "$node_path"
-      - name: Catalog through localhost curl on offline macOS without system Java
-        if: runner.os == 'macOS'
+          mkdir -p build/diagnostic/reports
+          docker run --rm --network none --user "$(id -u):$(id -g)" \
+            --memory 16g --memory-swap 16g --cpus 4 --pids-limit 4096 \
+            --mount "type=bind,source=$PWD,target=/work,readonly" \
+            --mount "type=bind,source=$PWD/build/diagnostic/reports,target=/work/build/diagnostic/reports" \
+            --workdir /work --env HOME=/tmp supabricks-ci-data \
+            python3 install/native/catalog_gate.py --timeout 900 \
+            --report build/diagnostic/reports/cleanup.json -- \
+            python3 e2e/native/governed/qualify.py --exact-installed \
+            --binary build/diagnostic/archive/supabricks/bin/supabricks \
+            --release build/diagnostic/archive/supabricks \
+            --report build/diagnostic/reports/data.json \
+            > build/diagnostic/data.private.log 2>&1
+      - name: Export structural diagnostics only
+        if: always()
         run: |
-          sandbox-exec -f install/native/offline-macos.sb \
-            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            "$(command -v python)" install/native/qualify_catalog.py --directory build/releases \
-            --console console --node "$(command -v node)" --target macos-arm64 \
-            --network-evidence "macOS Seatbelt; external network, system Java and Homebrew denied for all descendants" \
-            --report build/catalog-reports/catalog.json
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'install/native')
+          from diagnostics import summarize
+          root=Path('build/diagnostic/reports');root.mkdir(parents=True,exist_ok=True)
+          (root/'diagnostics.json').write_text(json.dumps(summarize('build/diagnostic/data.private.log'),indent=2)+'\n')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: release-catalog-${{ matrix.target }}
-          path: build/catalog-reports/*.json
-          if-no-files-found: error
+          name: governed-data-diagnostic
+          path: build/diagnostic/reports/*.json
