@@ -1,32 +1,29 @@
-name: catalog-release
+name: console-recovery-diagnostic
 on:
-  workflow_call:
-    inputs:
-      archive_run_id:
-        description: Run containing the unchanged native release archives
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       archive_run_id:
-        description: Existing archive run to diagnose; this alone does not qualify a release
         required: true
         type: string
 permissions:
   contents: read
   actions: read
 jobs:
-  catalog:
+  release-console:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-24.04
-            target: linux-x86_64
           - runner: macos-15
             target: macos-arm64
+            attempt: 1
+          - runner: macos-15
+            target: macos-arm64
+            attempt: 2
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 50
+    timeout-minutes: 25
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/build/console-browsers
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,49 +35,55 @@ jobs:
           github-token: ${{ github.token }}
           name: release-${{ matrix.target }}
           path: build/releases
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install qualification tools before isolating the host
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Add read-only analytics failure diagnostics
         run: |
-          python -m pip install -r e2e/native/catalog/requirements.txt
-          python install/native/test_process_probe.py
-          python -m unittest discover -s install/native -p test_catalog_gate.py
-          python -m unittest discover -s e2e/native/catalog -p test_lifecycle.py
+          python3 - <<'PYDIAG'
+          from pathlib import Path
+          p=Path("console/scripts/analytics.mjs")
+          s=p.read_text()
+          old='    await area\n      .getByRole("button", { name: "Run Analytics SQL", exact: true })\n      .click();'
+          new='    try {\n      await area.getByRole("button", { name: "Run Analytics SQL", exact: true }).click();\n    } catch (error) {\n      const id = await area.getByRole("combobox", { name: "Analytical session", exact: true }).inputValue();\n      const current = await api({action: "status", id}).catch(() => ({state: "unavailable"}));\n      const facts = {\n        displayed_session_state: await area.locator(".analytics-binding strong").textContent().catch(() => null),\n        displayed_query_state: await area.locator(".sql-panel > .analytics-result p > strong").textContent().catch(() => null),\n        runtime_session_state: current.state,\n        runtime_query_state: current.query?.state,\n        runtime_session_error: current.error,\n        runtime_query_error: current.query?.error,\n      };\n      throw new Error("ANALYTICS_DISABLED_STATE " + JSON.stringify(facts) + "\\n" + error.message);\n    }'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new))
+          PYDIAG
+      - name: Install locked browser test machinery before network isolation
+        run: |
           npm ci --prefix console --no-audit --no-fund
           npm exec --prefix console -- playwright install --with-deps chromium
-      - name: Catalog through localhost curl on offline Linux without system Java
+          mkdir -p build/console-reports
+      - name: Installed browser workflow in an isolated Linux network namespace
         if: runner.os == 'Linux'
         run: |
-          python_path=$(command -v python)
           node_path=$(command -v node)
-          sudo unshare --net --mount /bin/bash -c '
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
             set -euo pipefail
             ip link set lo up
-            mount --make-rprivate /
-            # Mask the host JDK; the candidate must execute its own JRE.
-            if test -d /usr/lib/jvm; then mount -t tmpfs tmpfs /usr/lib/jvm; fi
             exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-              "$2" install/native/qualify_catalog.py --directory build/releases \
-              --console console --node "$3" --target linux-x86_64 --disk-full \
-              --network-evidence "Linux loopback-only namespace; private JRE; all descendants isolated" \
-              --report build/catalog-reports/catalog.json
-          ' bash "$(id -un)" "$python_path" "$node_path"
-      - name: Catalog through localhost curl on offline macOS without system Java
+              PLAYWRIGHT_BROWSERS_PATH="$2" \
+              SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="Ubuntu 24.04 unprivileged user; isolated network namespace with loopback only" \
+              "$3" install/native/qualify_console.py --directory build/releases \
+              --report build/console-reports/console.json --node "$4" \
+              --harness console/scripts/qualify.mjs
+          ' bash "$(id -un)" "$PLAYWRIGHT_BROWSERS_PATH" "$python_path" "$node_path"
+      - name: Installed browser workflow on macOS with external network denied
         if: runner.os == 'macOS'
         run: |
           sandbox-exec -f install/native/offline-macos.sb \
-            env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-            "$(command -v python)" install/native/qualify_catalog.py --directory build/releases \
-            --console console --node "$(command -v node)" --target macos-arm64 \
-            --network-evidence "macOS Seatbelt; external network, system Java and Homebrew denied for all descendants" \
-            --report build/catalog-reports/catalog.json
+            /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SUPABRICKS_CONSOLE_NETWORK_EVIDENCE="macOS 15 arm64; Seatbelt denies external networking and Homebrew" \
+            "$(command -v python)" install/native/qualify_console.py --directory build/releases \
+            --report build/console-reports/console.json --node "$(command -v node)" \
+            --harness console/scripts/qualify.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: release-catalog-${{ matrix.target }}
-          path: build/catalog-reports/*.json
-          if-no-files-found: error
+          name: release-console-${{ matrix.target }}-diagnostic-${{ matrix.attempt }}
+          path: build/console-reports/*
+
