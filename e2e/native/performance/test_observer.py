@@ -6,7 +6,7 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from trial import Observer
+from trial import Observer,attribute
 
 
 class ObserverTests(unittest.TestCase):
@@ -20,6 +20,7 @@ class ObserverTests(unittest.TestCase):
             db.execute('CREATE TABLE publications(ordinal INTEGER,published_at_ms INTEGER,descriptor TEXT,export_id TEXT,state TEXT)')
             db.execute('CREATE TABLE sync_policies(id TEXT,record TEXT)')
             db.execute('CREATE TABLE sync_captures(id TEXT,record TEXT)')
+            db.execute('CREATE TABLE incremental_runs(id TEXT PRIMARY KEY,record TEXT)')
             db.execute('INSERT INTO sync_policies VALUES (?,?)',('policy','{}'))
             db.execute('INSERT INTO sync_captures VALUES (?,?)',('capture','{}'))
         self.observer=Observer(SimpleNamespace(root=self.root,policy_id='policy'),'capture')
@@ -61,5 +62,21 @@ class ObserverTests(unittest.TestCase):
         self.observer.spool.unlink()
         with self.assertRaises(sqlite3.OperationalError):self.observer.poll()
         self.assertEqual(self.observer.missing_status_samples,0)
+
+    def test_attribution_survives_execution_history_expiry(self):
+        with sqlite3.connect(self.root/'state.sqlite3') as db:
+            db.execute('INSERT INTO incremental_runs VALUES (?,?)',('run',json.dumps(dict(created_at_ms=15,started_at_ms=20))))
+            descriptor=dict(manifest=dict(source=dict(lsn='0/64')),prepared_at_ms=25)
+            db.execute('INSERT INTO publications VALUES (1,30,?,?,?)',(json.dumps(descriptor),'run','published'))
+        self.observer.poll()
+        with sqlite3.connect(self.root/'state.sqlite3') as db:db.execute('DELETE FROM incremental_runs')
+        self.observer.poll()
+        result=attribute([dict(xid=1,ack_ms=10)],self.observer,self.observer.runs)
+        self.assertEqual(result['commit_to_publication']['p95'],20)
+        self.assertEqual(result['commit_to_admission']['p95'],5)
+        # Starting too late must still fail closed, never fabricate timing.
+        late=Observer(self.observer.cell,'capture');late.poll()
+        with self.assertRaisesRegex(AssertionError,'missed execution timing'):
+            attribute([dict(xid=1,ack_ms=10)],late,late.runs)
 
 if __name__=='__main__':unittest.main()

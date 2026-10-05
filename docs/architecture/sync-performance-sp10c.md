@@ -13,6 +13,43 @@ Sequence 02 completed all 324 comparison fixtures, then stopped on the first
 reliability slice. The two remaining sustained arms and final evidence review
 remain outstanding; the original failed campaign is retained.
 
+## Sustained capture maintenance correction (#157)
+
+The #156 rerun crossed the history limit (1,190 published artifacts; 679 retained
+incremental runs) but stopped on October 4 at 18:47 Chicago time with a publication
+drain timeout. Source writes achieved 1,249.979 changed rows/s for 30 minutes;
+there is no accepted freshness or table-equality result. The 12 paired correction
+trials did not start. Both failed runs remain immutable.
+
+The retained counters identify capture storage backpressure, not missing markers:
+1,122,374 transactions were captured against at least 1,159,880 source commits.
+The worker reclaimed at most 256 published transactions per one-second source
+check while the source committed approximately 625 transactions/s. It retained
+622,150 transactions despite a small unpublished backlog. The SQLite page guard
+then throttled capture to approximately the reclamation rate. Read-only query
+probes do not show a slow retained-history selection query.
+
+The correction allows at most eight existing atomic prune units per source check,
+with a 50 ms scheduling budget checked between units. It stops on no progress;
+existing publication authority, reconnect anchors, reader leases, rollback and
+storage limits remain intact. The same correction runs on the normal and
+backpressure maintenance paths. It does not enlarge the journal or drain timeout.
+
+[Validation and component measurements](sync-performance-evidence/2026-10-05-capture-maintenance/validation.json)
+cover 58 runtime and 13 harness tests. Three paired real-storage component runs
+at 24 logical intervals of 625 transactions retained 8,856 records with the old
+single-prune call and 152 with bounded maintenance. Measured maintenance calls
+peaked below 44 ms in these runs. This demonstrates reclaimed-history control,
+not end-to-end throughput or a release qualification.
+
+[#158](https://github.com/supabricks/platform/issues/158) tracks two additional
+harness compatibility fixes: observe execution timings with publications before
+private history expires, and export stopped history counts before successful
+fixture deletion. Missing timing still invalidates a trial. Both comparison arms
+must use the same corrected frozen harness. Installed screens and fresh sustained
+qualification are pending. The history correction and maintenance correction
+require separate paired measurements to preserve per-slice attribution.
+
 ## Implementation and dependency findings
 
 `rocks_journal.py` implements the existing capture owner contract with unchanged

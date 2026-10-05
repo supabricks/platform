@@ -79,7 +79,9 @@ qualification inputs](sync-performance-evidence/2026-10-04-sync-history/validati
 identify the exact source and local evidence hashes. All four installed checks
 (backend, lifecycle, observer off/on) passed with clean descendant cleanup.
 The [supervised qualification](sync-performance-evidence/2026-10-04-sync-history/launch.json)
-is running; sustained and paired performance results remain pending.
+stopped on publication drain after crossing the old limit; see the
+[#157 maintenance investigation](sync-performance-sp10c.md#sustained-capture-maintenance-correction-157).
+Paired performance results remain pending.
 
 Installed qualification uses a new immutable SQLite owner package with only the
 native binary and its catalog declaration changed. Preserve the failed original

@@ -1,0 +1,30 @@
+{
+  "issue": 157,
+  "status": "source_checks_passed_installed_qualification_pending",
+  "cause": "At most 256 records reclaimed per one-second maintenance interval, below 625 source transactions/s; published history filled the SQLite page guard.",
+  "original_failure": {
+    "source_rows_per_second": 1249.979,
+    "required_source_transactions": 1159880,
+    "captured_transactions": 1122374,
+    "retained_transactions": 622150,
+    "published": 1190,
+    "incremental_runs": 679,
+    "first_backpressure_seconds": 1616.5452993164063,
+    "first_backpressure_database_bytes": 177827840,
+    "error": "publication_drain_timeout"
+  },
+  "tests": {
+    "runtime": 58,
+    "harness": 13
+  },
+  "logs": {
+    "runtime-tests-02.log": {
+      "sha256": "44d6c4f302a12ca0e03f156ecb22ba4439f30b87cc6a1e0a4e0ca98c994bde28",
+      "bytes": 158
+    },
+    "harness-tests-02.log": {
+      "sha256": "f09f042a92552d88a490a16229d7779b345de131fffb6a1d4b3d9eae793b3675",
+      "bytes": 112
+    }
+  }
+}

@@ -55,7 +55,7 @@ def run(path):
                 if now-last_source_check>=1:
                     observed=source.check();last_source_check=now
                     if verified:
-                        try:spool.prune(control.get('published_lsn'))
+                        try:spool.maintain(control.get('published_lsn'))
                         except SpoolBackpressure:pass
                 if now-last_report>=.25:report('capturing','spool_backpressure')
                 if wire and now-last_ack>=1:feedback(request=True)
@@ -104,7 +104,7 @@ def run(path):
             if time.monotonic()-last_source_check>=1:
                 flush()
                 observed=source.check();last_source_check=time.monotonic()
-                if verified:spool.prune(current.get('published_lsn'))
+                if verified:spool.maintain(current.get('published_lsn'))
             if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
                 flush();report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':

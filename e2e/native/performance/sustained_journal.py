@@ -10,6 +10,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sqlite3
+from contextlib import closing
 import threading
 import time
 import psutil
@@ -82,6 +84,14 @@ print(json.dumps(out))
             str(self.release/'python/analytics'),str(self.root)],capture_output=True,text=True,timeout=60)
         assert result.returncode==0,result.stderr
         self.reopen_output.write_text(result.stdout)
+        # trial.py removes a successful private fixture. Export counts after
+        # shutdown, before that cleanup, instead of requiring the deleted DB.
+        with closing(sqlite3.connect(f'file:{self.root}/state.sqlite3?mode=ro',uri=True)) as db:
+            counts={table:db.execute('SELECT count(*) FROM '+table).fetchone()[0]
+                    for table in ('incremental_runs','incremental_requests','sync_runs','publications','snapshots')}
+            counts['published']=db.execute("SELECT count(*) FROM publications WHERE state='published'").fetchone()[0]
+            assert not db.execute('PRAGMA foreign_key_check').fetchall(),'catalog foreign-key violation'
+        self.reopen_output.with_name('history.json').write_text(json.dumps(dict(counts=counts,foreign_keys='passed'),indent=2)+'\n')
 
 
 def run(args):
