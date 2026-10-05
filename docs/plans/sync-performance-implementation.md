@@ -668,6 +668,14 @@ an acknowledged spool and attempt a new bootstrap. Package native bindings for
 Linux/macOS and qualify offline installs/licenses/inventories. FoundationDB remains
 out of this experiment because distributed durability is a separate requirement.
 
+The [October 5 SP10c evidence review](../architecture/sync-performance-evidence/2026-10-05-sp10c-review/README.md)
+verifies 324 comparison fixtures, 24 correction trials and the corrected
+SQLite-owner 30-minute run. **Retain SQLite; no RocksDB adoption.** The full
+RocksDB design adds 6.34%/5.04% paired p95 latency versus direct SQLite at 8/16
+CPUs without a material throughput benefit. Keep #156/#157 for reliability,
+without a speedup claim. Two planned sustained arms remain missing, so the
+original SP10c qualification is incomplete; this review does not waive them.
+
 ### SP11 — Sustained correctness, recovery and scaling
 
 Run on the selected implementation, with the matched matrix and source-qualified

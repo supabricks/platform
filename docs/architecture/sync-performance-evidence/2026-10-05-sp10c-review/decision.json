@@ -1,0 +1,65 @@
+{
+  "review_status": "available_evidence_reviewed",
+  "sp10c_complete": false,
+  "engine_decision": "retain_sqlite_no_rocksdb_adoption",
+  "reliability_decision": "retain_156_and_157_no_speedup_claim",
+  "accepted_comparison_fixtures": 324,
+  "comparison_executions": 326,
+  "accepted_correction_trials": 24,
+  "accepted_sustained_runs": 1,
+  "failed_sustained_attempts_retained": 2,
+  "main_investigation_screens": [
+    {
+      "comparison": "engine-comparison",
+      "phase": "qualified-main",
+      "cpus": 8,
+      "rate": 1250,
+      "metric": "lag_p95_ms",
+      "paired_median_percent": 6.845744703853929
+    },
+    {
+      "comparison": "product-comparison",
+      "phase": "qualified-main",
+      "cpus": 8,
+      "rate": 1250,
+      "metric": "lag_p95_ms",
+      "paired_median_percent": 6.339113584990774
+    },
+    {
+      "comparison": "product-comparison",
+      "phase": "qualified-main",
+      "cpus": 16,
+      "rate": 1250,
+      "metric": "lag_p95_ms",
+      "paired_median_percent": 5.036456873119732
+    }
+  ],
+  "remaining": [
+    "RocksDB-owner 30-minute arm",
+    "direct-SQLite 30-minute arm",
+    "SP11 sustained correctness, maintenance, pressure, recovery and scaling",
+    "SP12 installed qualification and scoped supported envelope"
+  ],
+  "ci": {
+    "run": 37354428991,
+    "head": "1aa3f3a65e2c3f4bbc977fefe31acc29bc9f7aaf",
+    "status_at_review": "pending",
+    "issues_not_cured_by_passing_rerun": [
+      137
+    ]
+  },
+  "limitations": [
+    "Three pairs per cell; no population confidence or maximum throughput claim",
+    "Historical four-client overload misses input",
+    "Instrumented main trials; profiler effects retained",
+    "One corrected SQLite-owner soak cannot qualify other backends",
+    "Per-trial latency summaries validated, raw per-transaction quantiles not independently reconstructed"
+  ],
+  "corrected_soak_provenance": {
+    "qualification_config_sha256": "7f0a1655ca223ca28d887e554f8b2b4ec9d4c1e94ced80883413f70abe6a2da4",
+    "package_matches_maintenance_candidate": true,
+    "allowed_logical_cpus": 8,
+    "memory_bytes": 17179869184,
+    "source_revision": "c3c771df5c37b43aa3d92686adb4499229c19f58"
+  }
+}
