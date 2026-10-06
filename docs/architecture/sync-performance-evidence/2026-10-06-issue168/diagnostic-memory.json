@@ -1,0 +1,54 @@
+{
+  "scope": "300-second original-storage diagnostic, first/last 60-second medians; not qualification",
+  "source": {
+    "source_sql_ms": {},
+    "target_rows_per_second": 1250,
+    "target_transactions": 187500,
+    "completed_transactions": 186493,
+    "unsent_transactions": 1007,
+    "achieved_rows_per_second": 1243.259,
+    "elapsed_seconds": 300.007,
+    "transaction_ms": {
+      "p50": 12.0,
+      "p95": 20.758,
+      "p99": 28.64
+    },
+    "submission_lateness_ms": {
+      "p50": 220.806,
+      "p95": 1685.098,
+      "p99": 1922.561
+    }
+  },
+  "memory": {
+    "early": {
+      "qualifier_rss_bytes": 111992832,
+      "cgroup_memory_bytes": 1503891456,
+      "working_memory_bytes": 1160081408,
+      "anon_bytes": 1084735488,
+      "file_bytes": 379428864,
+      "kernel_bytes": 38780928,
+      "inactive_file_bytes": 345133056,
+      "file_dirty_bytes": 1044480,
+      "file_writeback_bytes": 0
+    },
+    "late": {
+      "qualifier_rss_bytes": 205455360,
+      "cgroup_memory_bytes": 1856790528,
+      "working_memory_bytes": 1226342400,
+      "anon_bytes": 1138876416,
+      "file_bytes": 667824128,
+      "kernel_bytes": 50262016,
+      "inactive_file_bytes": 633409536,
+      "file_dirty_bytes": 1081344,
+      "file_writeback_bytes": 0
+    }
+  },
+  "cleanup": {
+    "exit_code": 0,
+    "timed_out": false,
+    "inspection_failed": false,
+    "descendants_observed": 89,
+    "leaked_descendants": 0,
+    "remaining_descendants": 0
+  }
+}

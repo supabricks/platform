@@ -27,7 +27,10 @@ class SteadyWindows(unittest.TestCase):
         series=[dict(at_ms=t,backlog_bytes=100,memory_bytes=1024**3) for t in range(0,600001,1000)]
         report=dict(status='measured',measurement_start_ms=0,measurement_end_ms=600000,
                     source=dict(completed_transactions=len(events)),backlog_series=series,drain_seconds=2)
-        resources=[dict(at_ms=t,spool_bytes=1024,processes=[]) for t in range(0,600001,1000)]
+        report['cgroup_before']=report['cgroup_after']={'memory.events':'high 0\nmax 0\noom 0\noom_kill 0\n'}
+        resources=[dict(at_ms=t,spool_bytes=1024,processes=[],qualifier_rss_bytes=1024,
+            cgroup_memory_bytes=1024**3,cgroup_memory_stat=dict(anon=1024**3,file=0,kernel=0,
+                inactive_file=0,file_dirty=0,file_writeback=0)) for t in range(0,600001,1000)]
         return report,events,resources
 
     def test_healthy_headroom_passes_all_windows(self):
@@ -54,6 +57,8 @@ class SteadyWindows(unittest.TestCase):
         r,e,s=self.fixture()
         for row in r['backlog_series']:
             if row['at_ms']>300000:row.update(backlog_bytes=4*1024**2,memory_bytes=3*1024**3)
+        for row in s:
+            if row['at_ms']>300000:row['cgroup_memory_bytes']=3*1024**3
         out=analyze(r,e,s)
         self.assertFalse(out['gates']['backlog_growth']);self.assertFalse(out['gates']['memory_growth'])
         with self.assertRaisesRegex(ValueError,'resource'):analyze(r,e,[])
@@ -67,6 +72,31 @@ class SteadyWindows(unittest.TestCase):
             p=Path(tmp)/'events.gz'
             with gzip.open(p,'wb') as f:f.write(EVENT.pack(1,2)+b'x')
             with self.assertRaisesRegex(ValueError,'size'):read_events(p)
+
+    def test_only_clean_inactive_cache_is_discounted(self):
+        r,e,s=self.fixture()
+        for row in r['backlog_series']:
+            if row['at_ms']>300000:row['memory_bytes']=3*1024**3
+        for row in s:
+            if row['at_ms']>300000:
+                row['cgroup_memory_bytes']=3*1024**3
+                row['cgroup_memory_stat'].update(file=2*1024**3,inactive_file=2*1024**3)
+        out=analyze(r,e,s)
+        self.assertTrue(out['gates']['memory_growth'])
+        self.assertFalse(out['raw_cgroup_memory_growth_screen'])
+        # Dirty or writeback cache cannot disguise retained working memory.
+        for field in ('file_dirty','file_writeback'):
+            for row in s:
+                if row['at_ms']>300000:row['cgroup_memory_stat'][field]=1024**3
+            self.assertFalse(analyze(r,e,s)['gates']['memory_growth'])
+            for row in s:row['cgroup_memory_stat'][field]=0
+
+    def test_pressure_and_missing_attribution_cannot_qualify(self):
+        r,e,s=self.fixture()
+        r['cgroup_after']={'memory.events':'high 0\nmax 1\noom 0\noom_kill 0\n'}
+        self.assertFalse(analyze(r,e,s)['gates']['no_memory_pressure'])
+        del s[-1]['cgroup_memory_stat']['inactive_file']
+        with self.assertRaises(KeyError):analyze(r,e,s)
 
 
 if __name__=='__main__':unittest.main()

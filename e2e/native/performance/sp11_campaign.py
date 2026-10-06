@@ -12,6 +12,7 @@ import time
 from compare import ROOT, harness_identity, package_identity, sha
 from host_monitor import HostMonitor
 from matrix import affinity, topology
+from sp11_analysis import POLICY
 
 
 def save(path,value):
@@ -28,6 +29,7 @@ def stop_interrupted(child,container,completed):
 
 def run(config_path,output):
     config=json.loads(config_path.read_text());fingerprint=sha(config_path)
+    if config['policy']!=POLICY:raise ValueError('frozen analysis policy differs')
     identity=harness_identity(ROOT);machine=topology()
     if identity!=config['harness_identity']:raise ValueError('frozen harness differs')
     if machine!=config['topology']:raise ValueError('host topology differs')
@@ -88,6 +90,7 @@ def run(config_path,output):
             if receipt['overlaps']:raise RuntimeError('host contention: preserve trial for review')
             report=json.loads((folder/'result.json').read_text());cleanup=json.loads((folder/'cleanup.json').read_text())
             windows=json.loads((folder/'windows.json').read_text())
+            if windows['policy']!=config['policy']:raise ValueError('trial analysis policy differs')
             if windows['status']!='passed' or not all(windows['gates'].values()):raise ValueError('window gate failed')
             if report['status']!='measured' or not report['within_5s_p95'] or not report['offered_load_met']:raise ValueError('whole-run gate failed')
             if report['release_identity']!=config['runtime']['identity']['release_identity']:raise ValueError('trial package differs')

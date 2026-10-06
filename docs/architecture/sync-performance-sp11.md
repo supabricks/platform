@@ -1,6 +1,7 @@
 # SP11 — sustained correctness, recovery and scaling
 
-Status: implementation and qualification started, October 5, 2026. SQLite is the
+Status: steady baseline stopped on memory screen [#168](https://github.com/supabricks/platform/issues/168);
+observer correction and fresh qualification in progress, October 6, 2026. SQLite is the
 selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
 This does not waive SP10c's missing experimental sustained arms. SP11 measures
 the selected SQLite path; it does not adopt RocksDB or expand the supported SLO.
@@ -36,8 +37,12 @@ fixes found here require a separately measured slice before a fresh affected run
 
 ## Predeclared steady analysis
 
-`sp11_trial.py` reuses the existing workload, observer, shutdown, resource sampler
-and retained-chain verifier. Profiling remains off. After the load/drain interval,
+`sp11_trial.py` reuses the existing workload, observer polling, shutdown, resource
+sampler and retained-chain verifier. After #168, source timings use packed 28-byte
+records (128 MiB budget) and markers use sparse xid pages (64 MiB per map).
+Missing markers, conflicting reused xids, unexpected timing fields and exhausted
+budgets invalidate a run; no transactions are dropped or approximated. Profiling
+remains off. After the load/drain interval,
 it exports a gzip stream of fixed 16-byte network-order records: two doubles for
 COMMIT acknowledgement and first observed covering publication, in milliseconds.
 No row payloads, SQL or credentials are recorded. The stream has a 128 MiB
@@ -58,10 +63,19 @@ investigation thresholds in `sp11_analysis.POLICY` and the campaign configuratio
 
 - Late backlog p95 <=1.25 × early p95 +1 MiB; fitted backlog slope <=1 MiB divided
   by measured duration. Report full series and maxima, not just this screen.
-- Late median cgroup memory <=1.25 × early median +256 MiB. Cgroup memory includes
-  cache and the benchmark observer, and is distinct from runtime RSS. A failed
-  growth screen stops for investigation; use the separately sampled owned-runtime
-  process RSS to attribute growth before calling it a product memory regression.
+- **Memory policy v2 (#168):** late median working memory <=1.25 × early median
+  +256 MiB. Working memory is cgroup `memory.current` minus
+  `max(0, inactive_file - file_dirty - file_writeback)`. This discounts only clean
+  inactive file cache; qualifier allocations, anonymous/kernel memory, active
+  file cache and dirty/writeback bytes remain charged. Require zero increases in
+  cgroup memory `high`, `max`, `oom` and `oom_kill` events during measurement.
+  Export one-second raw cgroup memory/stat and qualifier RSS alongside runtime
+  process RSS. Raw total-memory growth keeps its original formula as a diagnostic
+  screen, with its pass/fail result visible separately from qualification gates.
+  The original v1 failed result is retained and is **not** reclassified. The policy
+  change is explicit: inactive cache grows as retained files are written, even
+  when runtime allocations stay flat. It cannot establish bounded disk retention;
+  that remains part of the pending maintenance/GC phase.
 - Sampled capture spool <=512 MiB; no resource inspection errors or sample gap
   exceeding five seconds (including interval edges). Sampling is not a hard quota
   and capture spool size is not whole-stack storage. Physical high-water,
@@ -81,11 +95,16 @@ not restart or silently replace measurements. SIGTERM stops its owned container 
 ([#166](https://github.com/supabricks/platform/issues/166)); the service uses
 `KillMode=mixed` so the controller can finish this cleanup. Launch 01 was stopped
 during quiet admission before any fixture began. Its frozen inputs/status remain
-retained; launch 02 uses the corrected supervisor.
+retained; launch 02 uses the corrected supervisor. Launch 02 stopped after its
+first 15-minute fixture failed memory policy v1. Its original sources, thresholds
+and result remain preserved. The #168 correction must use a fresh campaign with
+policy v2, new frozen sources/config and the unchanged runtime package.
 
 Eight steady fixtures contain **210 minutes of measured load**, plus eight warmups,
 startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-`build/sp11-20261005/steady-02/status.json`; the [frozen manifest and launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md) are archived separately.
+the fresh campaign directory; the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
+and [#168 correction evidence](sync-performance-evidence/2026-10-06-issue168/README.md)
+identify each attempt separately.

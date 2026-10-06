@@ -19,6 +19,9 @@ import trial
 
 
 class Sustained(trial.InstalledContinuous):
+    def resource_details(self):
+        return {}
+
     def setup_source(self,*args,**kwargs):
         super().setup_source(*args,**kwargs)
         self.sample_stop=threading.Event();self.sample_errors=[];self.sample_denials={}
@@ -53,6 +56,7 @@ class Sustained(trial.InstalledContinuous):
                                 info=path.stat();physical+=info.st_size;allocated+=info.st_blocks*512
                         except FileNotFoundError:pass
                     row=dict(at_ms=time.time()*1000,processes=values,spool_bytes=physical,spool_allocated_bytes=allocated)
+                    row.update(self.resource_details())
                     data=json.dumps(row,separators=(',',':'))+'\n';total+=len(data)
                     if total>64*1024**2:raise RuntimeError('resource_sample_budget')
                     stream.write(data);stream.flush();self.sample_stop.wait(1)
