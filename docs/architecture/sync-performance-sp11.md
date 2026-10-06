@@ -1,20 +1,24 @@
 # SP11 — sustained correctness, recovery and scaling
 
-Status: steady baseline stopped on memory screen [#168](https://github.com/supabricks/platform/issues/168);
-observer correction and fresh qualification in progress, October 6, 2026. SQLite is the
+Status: six 15-minute fixtures passed after #168; the first one-hour fixture
+stopped on sustained slowdown [#169](https://github.com/supabricks/platform/issues/169).
+A catalog generation-index correction and fresh qualification are in progress,
+October 6, 2026. SQLite is the
 selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
 This does not waive SP10c's missing experimental sustained arms. SP11 measures
 the selected SQLite path; it does not adopt RocksDB or expand the supported SLO.
 
 ## Execution sequence and scope
 
-1. **Steady baseline (implemented; supervised campaign launched):** three fresh
-   15-minute fixtures at each of 8/16 allowed logical CPUs, followed by one fresh
-   60-minute fixture at each. Alternate CPU profiles between repeats. Offer 1,250
+1. **Steady baseline (implemented; rerun after #169):** start with the fresh
+   8-CPU 60-minute fixture that previously failed, then three fresh 15-minute
+   fixtures at each of 8/16 allowed logical CPUs, then the 16-CPU 60-minute fixture.
+   Alternate CPU profiles between short repeats. Offer 1,250
    changed rows/s with eight clients, 60 seconds warmup, 16 GiB cgroup memory and
-   no swap. Use the exact previously qualified #157 SQLite-owner package so a
-   runtime/package change cannot be mistaken for sustained behavior. Its identity
-   remains separate from the current harness and merged source. This is local
+   no swap. Use an immutable overlay of the previously qualified #157 SQLite-owner package,
+   changing only the native binary and catalog version for the #169 generation
+   lookup index. Verify every shared payload file. Its identity remains separate
+   from the harness and merged source. This is local
    Linux performance evidence, not an exact newly assembled release qualification.
 2. **Maintenance and readers (pending):** at least three observed successful
    checkpoint/reclamation cycles and an actual generation rotation. Exercise
@@ -97,14 +101,16 @@ not restart or silently replace measurements. SIGTERM stops its owned container 
 during quiet admission before any fixture began. Its frozen inputs/status remain
 retained; launch 02 uses the corrected supervisor. Launch 02 stopped after its
 first 15-minute fixture failed memory policy v1. Its original sources, thresholds
-and result remain preserved. The #168 correction must use a fresh campaign with
-policy v2, new frozen sources/config and the unchanged runtime package.
+and result remain preserved. Launch 03 used compact observers and memory policy v2 with the unchanged runtime:
+six short fixtures passed, but the first one-hour fixture failed throughput and
+freshness. Its memory/cleanup/correctness checks passed. The #169 rerun freezes
+the indexed runtime in a new campaign, preserving the original failures and gates.
 
 Eight steady fixtures contain **210 minutes of measured load**, plus eight warmups,
 startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-`build/issue168-20261006/steady-03/status.json`; the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
+the fresh campaign directory recorded in the [#169 evidence](sync-performance-evidence/2026-10-06-issue169/README.md); the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
 and [#168 correction evidence](sync-performance-evidence/2026-10-06-issue168/README.md)
 identify each attempt separately.
