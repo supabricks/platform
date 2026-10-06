@@ -70,9 +70,11 @@ def qualify(args):
 
     def cli(at, *parts, success=True):
         scope = [] if parts[:2] == ('installation', 'verify') else ['--data-dir', str(data), '--project', str(at)]
+        started = time.monotonic()
         result = subprocess.run([str(binary), *map(str, parts), *scope],
                                 env=env, capture_output=True, text=True, timeout=240)
         (root / 'private-command.log').write_text(result.stdout + result.stderr)
+        print('CLI_TIMING', json.dumps(dict(action=list(map(str,parts[:2])),seconds=round(time.monotonic()-started,3))),flush=True)
         assert (result.returncode == 0) == success, 'CLI ' + str(parts[:2]) + ': ' + result.stderr[-2000:]
         return json.loads(result.stdout.splitlines()[-1])
 
@@ -203,8 +205,19 @@ def qualify(args):
         assert rebuilt['id'] != old['id'] and rebuilt['installation'] == identity
         live = a.start(rebuilt['id'], epoch); ws = query(a, live, '4.13.0')
         assert live['epoch_id'] == epoch
+        # Diagnostic: enlarge only the retired, incompatible environment's tree.
+        stress = Path(old['path']) / 'owned-gc-diagnostic'; stress.mkdir()
+        for batch in range(1000):
+            folder = stress / str(batch); folder.mkdir()
+            for item in range(1000): (folder / str(item)).touch()
+        print('RETIRED_GC_STRESS_FILES',1000000,flush=True)
         prepared = prepare('fixture-b')
-        cli(project, 'env', 'gc')
+        gc_started = time.monotonic()
+        if os.environ.get('SB_NE06_GC_TRANSPORT') == 'console':
+            a.request('workspace', {'action':'environment','command':{'action':'collect'}})
+        else:
+            cli(project, 'env', 'gc')
+        print('COLLECTION_SECONDS',round(time.monotonic()-gc_started,3),flush=True)
         assert Path(rebuilt['path']).exists(), 'leased previous generation collected'
         assert not Path(old['path']).exists() and old_release.exists(), 'old release must remain retained'
         ws.close(); live = a.restart(live, prepared['id']); ws = query(a, live, '4.14.0')
