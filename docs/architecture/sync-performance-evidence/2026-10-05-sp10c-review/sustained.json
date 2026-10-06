@@ -1,0 +1,164 @@
+{
+  "affinity": [
+    0,
+    1,
+    2,
+    3,
+    8,
+    9,
+    10,
+    11
+  ],
+  "binary_sha256": "9a901b9f2f98e02b6d58bef2626e39e50a55464191cb21e311ec93d350e3ccd4",
+  "capture_backpressure_events": 0,
+  "cpu": {
+    "average_cpu_cores": 1.178,
+    "burst_usec": 0,
+    "core_sched.force_idle_usec": 0,
+    "nice_usec": 0,
+    "nr_bursts": 0,
+    "nr_periods": 0,
+    "nr_throttled": 0,
+    "system_usec": 725133352,
+    "throttled_usec": 0,
+    "usage_usec": 2121296841,
+    "user_usec": 1396163489
+  },
+  "drain_seconds": 2.827,
+  "evidence_sha256": {
+    "cleanup.json": "cb7d02e787a59f5d5787abfdac10113d739d11bde5710ff1f4cbe2645868ba85",
+    "history.json": "a44cf2536a3dac9162ed90a144f4a91a077cde758e8defec243d5d9529311418",
+    "reopen.json": "55953de88dde36cc6891884c6a3eecc44a5d6c1b653e7a822c22391d7ed97795",
+    "resources.jsonl": "aa15e2721bd17b01b3c7f210c8381acaf723d7810f8a7525fa20a658840930fa",
+    "result.json": "ca7bc0311228eee6979de1d78a0a0c621339e0f0f0087d2a303ee31b75ce0a64"
+  },
+  "final_capture_groups": {
+    "accumulation_ms": 854521.3894357348,
+    "commit_ms": 716521.9104085402,
+    "decoded_lsn": 324408600,
+    "durable_lsn": 324408600,
+    "feedback_lsn": 324408600,
+    "groups": 89012,
+    "limits": {
+      "accumulation_ms": 10.0,
+      "payload_bytes": 1048576,
+      "transactions": 32
+    },
+    "maximum_accumulation_ms": 13.753867999184877,
+    "maximum_bytes": 3916,
+    "maximum_transactions": 32,
+    "payload_bytes": 140073314,
+    "pending_bytes": 0,
+    "pending_transactions": 0,
+    "transactions": 1160518
+  },
+  "history": {
+    "counts": {
+      "incremental_requests": 742,
+      "incremental_runs": 742,
+      "publications": 1126,
+      "published": 1126,
+      "snapshots": 1126,
+      "sync_runs": 742
+    },
+    "foreign_keys": "passed"
+  },
+  "lag_ms": {
+    "maximum": 6069.955,
+    "p50": 2507.103,
+    "p95": 4269.021,
+    "p99": 5032.559
+  },
+  "memory_max": "17179869184",
+  "offered_load_met": true,
+  "parameters": {
+    "baseline": 5,
+    "clients": 8,
+    "profile": false,
+    "rate": 1250,
+    "release": "/release",
+    "report": "/reports/result.json",
+    "rows": 10000,
+    "scratch": "/reports",
+    "screen": false,
+    "seconds": 1800,
+    "warmup": 60
+  },
+  "peak_backlog_bytes": 491436,
+  "peak_memory_bytes": 3727273984,
+  "publications": 1126,
+  "receipt_sha256": "6523545ad8e1b2c0baa8455bfcab60be15da376092bc9968db72ef3a3a28e825",
+  "release_identity": "7200771ddbbb0354b2b3cf470d41042eb0338e2f5df6ea56b90bce56c1dc8a19",
+  "reopen": [
+    {
+      "captured": 324410920,
+      "physical_bytes": 4325552,
+      "prefix_lsn": 324392912,
+      "retained_bytes": 9097
+    }
+  ],
+  "resources": {
+    "inspection_denials": 0,
+    "largest_sample_gap_ms": 3556.12060546875,
+    "limitation": "One-second samples can miss short-lived processes and resource peaks; write_bytes is kernel accounting, not device write amplification.",
+    "measurement_samples": 1767,
+    "role_observed_cpu_seconds": {
+      "apply": 344.63999999999976,
+      "capture": 288.83000000000095,
+      "catalog": 9.359999999999333,
+      "daemon": 473.3299999999986,
+      "object_store": 16.549999999999688,
+      "other": 138.1699999999992,
+      "pageserver": 42.28999999999958,
+      "postgres": 125.68000000000067,
+      "safekeeper": 109.53999999999927
+    },
+    "role_observed_write_bytes": {
+      "apply": 331776000,
+      "capture": 4364914688,
+      "catalog": 966656,
+      "daemon": 920784896,
+      "object_store": 1045540864,
+      "other": 46703579136,
+      "pageserver": 977154048,
+      "postgres": 41086173184,
+      "safekeeper": 1761439744
+    },
+    "role_peak_rss_bytes": {
+      "apply": 288477184,
+      "capture": 49586176,
+      "catalog": 347566080,
+      "daemon": 43147264,
+      "object_store": 525529088,
+      "other": 383565824,
+      "pageserver": 201338880,
+      "postgres": 525651968,
+      "safekeeper": 46682112
+    },
+    "sampled_peak_spool_allocated_bytes": 5636096,
+    "sampled_peak_spool_bytes": 5623984,
+    "samples": 1845
+  },
+  "review_script_sha256": "76dc1fa89b0a70d725e03a555993976fbaed9e09f747d5b57b75e3d69a63777e",
+  "source": {
+    "achieved_rows_per_second": 1249.877,
+    "completed_transactions": 1124904,
+    "elapsed_seconds": 1800.024,
+    "source_sql_ms": {},
+    "submission_lateness_ms": {
+      "p50": 576.006,
+      "p95": 2447.276,
+      "p99": 3216.549
+    },
+    "target_rows_per_second": 1250,
+    "target_transactions": 1125000,
+    "transaction_ms": {
+      "p50": 11.719,
+      "p95": 21.738,
+      "p99": 33.458
+    },
+    "unsent_transactions": 96
+  },
+  "status": "verified",
+  "within_5s_p95": true
+}

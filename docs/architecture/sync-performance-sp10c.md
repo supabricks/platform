@@ -1,6 +1,14 @@
 # SP10c — controlled RocksDB comparison
 
-Status: implementation and qualification in progress. SP10b merged in
+Status: **available evidence reviewed; retain SQLite; qualification incomplete**,
+October 5, 2026. The [review and reproducible evidence](sync-performance-evidence/2026-10-05-sp10c-review/README.md)
+verify all 324 comparison fixtures, 24 separate correction trials, and the corrected
+SQLite-owner 30-minute run. RocksDB adds publication latency without a demonstrated
+end-to-end benefit ([#163](https://github.com/supabricks/platform/issues/163)).
+Keep the history and maintenance corrections for reliability, without a speedup
+claim. RocksDB-owner and direct-SQLite sustained arms, SP11/SP12, and final release
+qualification remain outstanding. Historical launch/stop records below are
+preserved; this is the current disposition. SP10b merged in
 [#145](https://github.com/supabricks/platform/pull/145), main commit `3a35d1a`.
 No RocksDB adoption or migration is authorized by this experiment. Production
 continues using SQLite; the experimental backend lives in the performance harness
@@ -10,8 +18,8 @@ Sequence 02 completed all 324 comparison fixtures, then stopped on the first
 30-minute SQLite sustained run at the 1,024 incremental history limit
 ([#156](https://github.com/supabricks/platform/issues/156)). The
 [execution-history correction](sync-history-retention.md) is a separate measured
-reliability slice. The two remaining sustained arms and final evidence review
-remain outstanding; the original failed campaign is retained.
+reliability slice. The two remaining sustained arms remain outstanding; the
+available evidence is now reviewed and the original failed campaign is retained.
 
 ## Sustained capture maintenance correction (#157)
 
@@ -51,9 +59,13 @@ backend, lifecycle, observer off/on and a ten-second sustained plumbing screen
 with final table equality, journal reopen, clean descendant cleanup and history
 export after private-fixture deletion. The short screen is not a capacity result.
 The [supervised qualification](sync-performance-evidence/2026-10-05-capture-maintenance/launch.json)
-is running: first a new 30-minute sustained fixture, then 12 paired trials each
-for the history and maintenance corrections, preserving per-slice attribution.
-No completed sustained qualification or new performance envelope is claimed.
+completed a new 30-minute SQLite-owner fixture and twelve trials (six pairs) each
+for the history and maintenance corrections. The reviewed soak delivered
+1,249.877 changed rows/s at 4,269.021 ms p95, with final equality, clean cleanup,
+zero recorded capture backpressure and 742 retained private execution records
+after 1,126 publications. Separate paired screens found no correction regression.
+This accepts the scoped reliability correction; it does not complete the other
+sustained arms or expand the supported product envelope.
 
 ## Implementation and dependency findings
 

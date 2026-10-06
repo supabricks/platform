@@ -81,14 +81,19 @@ identify the exact source and local evidence hashes. All four installed checks
 The [supervised qualification](sync-performance-evidence/2026-10-04-sync-history/launch.json)
 stopped on publication drain after crossing the old limit; see the
 [#157 maintenance investigation](sync-performance-sp10c.md#sustained-capture-maintenance-correction-157).
-Paired performance results remain pending.
+The [October 5 review](sync-performance-evidence/2026-10-05-sp10c-review/README.md)
+now verifies twelve separate history-correction trials with no regression-screen
+failures. The corrected #156+#157 SQLite-owner soak completes 1,126 publications,
+retains 742 incremental runs/requests/automatic parents, passes foreign-key and
+final table-equality checks, and reopens the journal cleanly. Keep this correction
+for reliability, without a short-trial speedup claim.
 
-Installed qualification uses a new immutable SQLite owner package with only the
+The original qualification protocol used a new immutable SQLite owner package with only the
 native binary and its catalog declaration changed. Preserve the failed original
 run. First repeat the 30-minute workload with unchanged input, resources and
 observer, verifying more than 1,024 publications, bounded execution history,
 complete table equality, journal reopen and descendant cleanup. Then compare
 predecessor/candidate at 8 and 16 CPUs and 1,250 offered rows/s with three fresh
 pairs per cell, unchanged five-minute measurement windows and the same profiler setting in both arms. No speedup or completed sustained qualification is
-claimed until those receipts are reviewed. Apply the same native correction to
+claimed before receipt review. Apply the same native correction to
 each experimental engine arm before any new engine comparison.
