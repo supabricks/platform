@@ -7,7 +7,7 @@ the selected SQLite path; it does not adopt RocksDB or expand the supported SLO.
 
 ## Execution sequence and scope
 
-1. **Steady baseline (implemented; first campaign being prepared):** three fresh
+1. **Steady baseline (implemented; supervised campaign launched):** three fresh
    15-minute fixtures at each of 8/16 allowed logical CPUs, followed by one fresh
    60-minute fixture at each. Alternate CPU profiles between repeats. Offer 1,250
    changed rows/s with eight clients, 60 seconds warmup, 16 GiB cgroup memory and
@@ -81,5 +81,5 @@ Eight steady fixtures contain **210 minutes of measured load**, plus eight warmu
 startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
-qualify throughput or SP11. Launch/status receipts are stored under
-`build/sp11-20261005/`; the frozen manifest and launch record are archived separately.
+qualify throughput or SP11. Live status is stored under
+`build/sp11-20261005/steady-01/status.json`; the [frozen manifest and launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md) are archived separately.
