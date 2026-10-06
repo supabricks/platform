@@ -68,3 +68,16 @@ All successful installed fixtures and all nine controls have zero leaked or
 remaining descendants. Reproduce with the [harness instructions](../../../../e2e/tpcds/README.md#eq01-datechar-qualification).
 Run `sha256sum -c SHA256SUMS` here to verify the retained evidence inventory.
 Raw artifacts and logs remain under `build/eq01-171/` locally.
+
+## CI fixture path correction
+
+The initial macOS analytical job ran all 142 tests but rejected five inherited
+composite fixtures and one DATE fixture because their temporary roots retained
+macOS's `/var` symlink. The installed fixtures already canonicalize their roots.
+The unit fixtures now do the same; composite fixtures also set/restore the
+production umask explicitly. The production path guard and measured runtime
+payloads are unchanged. All nine affected composite/DATE/CHAR tests pass with a
+symlinked TMPDIR on Linux (`linked-temp-tests.log.gz`). The original macOS failures
+and the parent PR's same native-cell failure are retained. The composite fixture
+correction was also applied to parent PR #173; both branches rerun CI. Final
+nightly Rust formatting and Python Ruff checks pass (`sail-final-format.log.gz`).
