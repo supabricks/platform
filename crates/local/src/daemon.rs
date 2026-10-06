@@ -19,6 +19,8 @@ use std::{
     time::Duration,
 };
 use supabricks_core::resource::{BranchId, OperationId, ProjectId};
+mod environment_gc;
+
 const LIMIT: u64 = 64 * 1024;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -186,6 +188,10 @@ pub struct Daemon {
         std::thread::JoinHandle<Result<crate::store::IdentityCommit>>,
         Option<(AuthorizedFollowup, String)>,
     )>,
+    environment_gc: Option<(
+        UnixStream,
+        std::thread::JoinHandle<Result<crate::store::IdentityCommit>>,
+    )>,
     ingest_error: Option<String>,
     sync_error: Option<String>,
     project_apply_error: Option<String>,
@@ -250,6 +256,7 @@ impl Daemon {
             queries: Vec::new(),
             identity_jobs: Vec::new(),
             isolated: Default::default(),
+            environment_gc: None,
             ingest_error: None,
             sync_error: None,
             project_apply_error: None,
@@ -283,6 +290,7 @@ impl Daemon {
         let mut next_tick = std::time::Instant::now();
         let mut stopping = false;
         loop {
+            self.finish_environment_gc();
             for index in (0..self.identity_jobs.len()).rev() {
                 if self.identity_jobs[index].1.is_finished() {
                     let (mut reply, worker, catalog) = self.identity_jobs.swap_remove(index);
@@ -515,6 +523,7 @@ impl Daemon {
                         && metadata_stopped
                         && publication_stopped
                         && environments_stopped
+                        && self.environment_gc.is_none()
                         && analytical_stopped
                         && notebooks_stopped
                         && self.isolated.idle()
@@ -556,6 +565,7 @@ impl Daemon {
                     && metadata_stopped
                     && publication_stopped
                     && environments_stopped
+                    && self.environment_gc.is_none()
                     && analytical_stopped
                     && notebooks_stopped
                     && self.isolated.idle()
@@ -631,6 +641,9 @@ impl Daemon {
                     return Err(conflict("daemon is stopping"));
                 }
                 self.store.authorize_operator_route(&envelope.request)?;
+                if self.defer_environment_gc(&envelope.request, &stream)? {
+                    return Ok(None);
+                }
                 if let Request::Authorized { envelope } = envelope.request {
                     if self.identity_jobs.len() >= 4 {
                         return Err(conflict("identity workers are busy"));
@@ -868,22 +881,7 @@ impl Daemon {
                 owner,
                 action,
             } => {
-                binding.validate(&mut self.store)?;
-                if generation != self.store.generation() {
-                    return Err(conflict(
-                        "console belongs to a prior daemon generation; query outcomes may be unknown",
-                    ));
-                }
-                let valid_owner = owner.split_once(':').is_some_and(|(instance, session)| {
-                    instance
-                        .strip_prefix("console-")
-                        .is_some_and(|id| id.parse::<OperationId>().is_ok())
-                        && session.len() == 64
-                        && session.bytes().all(|b| b.is_ascii_hexdigit())
-                });
-                if !valid_owner {
-                    return Err(invalid("invalid console session identity"));
-                }
+                self.validate_console_scope(&binding, generation, &owner)?;
                 self.workspace(binding, owner, action)?
             }
             Request::ConsoleOpen { binding, assets } => {
@@ -1038,6 +1036,31 @@ impl Daemon {
             }
         })
     }
+    fn validate_console_scope(
+        &mut self,
+        binding: &crate::api::Binding,
+        generation: i64,
+        owner: &str,
+    ) -> Result<()> {
+        binding.validate(&mut self.store)?;
+        if generation != self.store.generation() {
+            return Err(conflict(
+                "console belongs to a prior daemon generation; query outcomes may be unknown",
+            ));
+        }
+        let valid_owner = owner.split_once(':').is_some_and(|(instance, session)| {
+            instance
+                .strip_prefix("console-")
+                .is_some_and(|id| id.parse::<OperationId>().is_ok())
+                && session.len() == 64
+                && session.bytes().all(|b| b.is_ascii_hexdigit())
+        });
+        if !valid_owner {
+            return Err(invalid("invalid console session identity"));
+        }
+        Ok(())
+    }
+
     fn workspace(
         &mut self,
         binding: crate::api::Binding,
@@ -1353,6 +1376,9 @@ fn response(result: Result<Value>) -> Value {
 }
 impl Drop for Daemon {
     fn drop(&mut self) {
+        // Even an error exit must finish filesystem work before releasing Store
+        // ownership; otherwise a replacement daemon could collect the same tree.
+        self.join_environment_gc();
         // Close client sockets before releasing installation ownership.
         self.gateway.take();
         // Revoke generation validation before releasing installation ownership.
