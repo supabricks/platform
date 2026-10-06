@@ -40,3 +40,12 @@ including the three new collection/owner regressions. The initial CI compile
 exposed module visibility and job-type export omissions; those are corrected in
 the tested source. The hosted lifecycle candidate and negative stress control
 remain pending; the first failed CI result is retained.
+
+The one-million-file retired-tree control reproduces the exact missing-handle
+404 after **18.853 seconds** of synchronous collection:
+https://github.com/supabricks/platform/actions/runs/37512841876 .
+This demonstrates the heartbeat-starvation mechanism without changing the
+runtime or lease interval. The asynchronous candidate is being tested with the
+same stress. Console collection uses the existing 120-second long-operation
+response budget; notebook ownership still renews through the unchanged six-second
+lease, and other environment admission requests keep their existing deadline.
