@@ -102,3 +102,29 @@ failure. Every window reproduces with the frozen analyzer. The index's proven
 query-work reduction did not qualify sustained throughput. These unpaired runs
 do not establish a causal end-to-end speedup. Source COMMIT/storage diagnostics
 are required before another runtime intervention; no gates have been relaxed.
+
+### Source commit/storage diagnostic
+
+The fresh 25-minute [source diagnostic](source-probe/diagnostic-summary.json) uses
+the same indexed runtime, eight clients, 1,250 offered rows/s, and the production
+transaction/durability settings. It adds bounded minute SQL timing totals,
+PostgreSQL wait/table/WAL observations, safekeeper metrics, and host/device IO.
+It is diagnostic evidence, not qualification or an accepted profiler comparison.
+
+It reproduces the source slowdown after about 19 minutes: full minute source
+transaction counts fall from about 37,000 to 19,500 (about 1,230 to 650 changed
+rows/s), and mean COMMIT rises from about 12 to 23 ms. Safekeeper flush mean rises
+from about 4.1 to 7.9 ms, while flush completions fall from about 194/s to 99/s.
+Host NVMe flush completion counters similarly rise from about 2.8 to 5.4 ms per
+flush. These are concurrent observations, not proof of SSD hardware failure or
+of a specific competing process. Host write-time counters have discontinuities
+and remain excluded; many host processes are unreadable. Temperature and readable
+process IO observations start about eight minutes into the run.
+
+The full run averages 1,073.317 rows/s with 3,598.275 ms overall publication p95;
+its late throughput windows fail. Exact final equality, journal reopen, foreign
+keys and zero-leak cleanup pass. No build overlap was recorded. No source fix
+or speedup is claimed. The next controlled diagnostic changes only the mutable
+fixture's location from the system NVMe (`/`) to the second NVMe (`/data2`).
+It preserves the original device's failures and does not retroactively qualify
+that storage profile.

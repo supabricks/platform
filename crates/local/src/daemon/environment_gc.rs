@@ -2,7 +2,11 @@ use super::*;
 
 impl Daemon {
     /// Preserve each entry point's authorization before journaling any deletion.
-    fn defer_environment_gc(&mut self, request: &Request, stream: &UnixStream) -> Result<bool> {
+    pub(super) fn defer_environment_gc(
+        &mut self,
+        request: &Request,
+        stream: &UnixStream,
+    ) -> Result<bool> {
         use crate::environments::Command::Collect;
         let binding = match request {
             Request::Api {
@@ -46,7 +50,7 @@ impl Daemon {
         Ok(true)
     }
 
-    fn finish_environment_gc(&mut self) {
+    pub(super) fn finish_environment_gc(&mut self) {
         if !self
             .environment_gc
             .as_ref()

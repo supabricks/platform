@@ -16,7 +16,9 @@ the cause of every historical failure.
 A second diagnostic adds 100,000 empty files only to the retired incompatible
 fixture environment. It preserves the installed runtime and lease settings:
 https://github.com/supabricks/platform/actions/runs/37510956426 .
-Its result and candidate validation are pending.
+That run passed with 4.430 seconds in collection; it did not cross the six-second
+lease interval. A one-million-file retired-tree diagnostic is running to exercise
+that boundary. Neither passing run establishes resolution of the historical race.
 
 The correction journals deletion on the catalog owner, excluding active pointers
 and leases, then removes files on one background worker. The worker rechecks
@@ -32,3 +34,9 @@ worker-time directory substitution, retry after failure, continued control acces
 and completion before owner-lock release. Existing crash-after-tree-removal tests
 continue to exercise resumption. Source tests and hosted lifecycle validation
 must pass before this is considered complete.
+
+Local validation passes **219 unit tests**, with four existing ignored tests,
+including the three new collection/owner regressions. The initial CI compile
+exposed module visibility and job-type export omissions; those are corrected in
+the tested source. The hosted lifecycle candidate and negative stress control
+remain pending; the first failed CI result is retained.
