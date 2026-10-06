@@ -1,8 +1,23 @@
 import gzip
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
+from sp11_campaign import stop_interrupted
 from pathlib import Path
 from sp11_analysis import EVENT, analyze, read_events
+
+
+class InterruptedContainer(unittest.TestCase):
+    @patch('sp11_campaign.subprocess.run')
+    def test_exited_client_does_not_imply_container_stopped(self,run):
+        child=Mock();child.poll.return_value=-15
+        stop_interrupted(child,'owned-sp11-fixture',False)
+        run.assert_called_once_with(['docker','stop','--time','30','owned-sp11-fixture'],capture_output=True,timeout=45)
+        child.wait.assert_not_called()
+
+    @patch('sp11_campaign.subprocess.run')
+    def test_completed_fixture_needs_no_additional_stop(self,run):
+        stop_interrupted(Mock(),'completed',True);run.assert_not_called()
 
 
 class SteadyWindows(unittest.TestCase):

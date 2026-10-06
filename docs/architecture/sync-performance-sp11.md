@@ -75,11 +75,15 @@ image, host topology and free disk. One host monitor carries quiet credit across
 trials; only real competing activity or a sampling gap resets it. It emits
 10-second heartbeats while waiting/running, archives hashes/cleanup/contention
 for every attempt and stops on the first failed or contaminated fixture. It does
-not restart or silently replace measurements. SIGTERM stops its owned container.
+not restart or silently replace measurements. SIGTERM stops its owned container even if the Docker client has already exited
+([#166](https://github.com/supabricks/platform/issues/166)); the service uses
+`KillMode=mixed` so the controller can finish this cleanup. Launch 01 was stopped
+during quiet admission before any fixture began. Its frozen inputs/status remain
+retained; launch 02 uses the corrected supervisor.
 
 Eight steady fixtures contain **210 minutes of measured load**, plus eight warmups,
 startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-`build/sp11-20261005/steady-01/status.json`; the [frozen manifest and launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md) are archived separately.
+`build/sp11-20261005/steady-02/status.json`; the [frozen manifest and launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md) are archived separately.

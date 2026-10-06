@@ -18,6 +18,14 @@ def save(path,value):
     temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(value,indent=2)+'\n');temporary.replace(path)
 
 
+def stop_interrupted(child,container,completed):
+    # The Docker client can exit before its daemon-owned container. An interrupted
+    # wait must stop the named container even when poll() already reports exit.
+    if not completed:
+        subprocess.run(['docker','stop','--time','30',container],capture_output=True,timeout=45)
+        if child.poll() is None:child.wait(timeout=30)
+
+
 def run(config_path,output):
     config=json.loads(config_path.read_text());fingerprint=sha(config_path)
     identity=harness_identity(ROOT);machine=topology()
@@ -63,15 +71,13 @@ def run(config_path,output):
             started=time.time()*1000;checkpoint(status='running',container=container)
             with (output/(name+'.log')).open('x') as log:
                 child=subprocess.Popen(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
-                checkpoint(child_pid=child.pid)
+                checkpoint(child_pid=child.pid);completed=False
                 try:
                     while True:
-                        try:code=child.wait(timeout=10);break
+                        try:code=child.wait(timeout=10);completed=True;break
                         except subprocess.TimeoutExpired:checkpoint();monitor.check()
                 finally:
-                    if child.poll() is None:
-                        subprocess.run(['docker','stop','--time','30',container],capture_output=True,timeout=45)
-                        child.wait(timeout=30)
+                    stop_interrupted(child,container,completed)
                     ended=time.time()*1000
                     receipt=dict(step=step,quiet=quiet,started_at_ms=started,ended_at_ms=ended,
                         overlaps=monitor.overlap(started,ended),
