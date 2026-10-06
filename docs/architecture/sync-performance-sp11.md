@@ -59,7 +59,9 @@ investigation thresholds in `sp11_analysis.POLICY` and the campaign configuratio
 - Late backlog p95 <=1.25 × early p95 +1 MiB; fitted backlog slope <=1 MiB divided
   by measured duration. Report full series and maxima, not just this screen.
 - Late median cgroup memory <=1.25 × early median +256 MiB. Cgroup memory includes
-  cache and is distinct from RSS. A failed growth screen stops for investigation.
+  cache and the benchmark observer, and is distinct from runtime RSS. A failed
+  growth screen stops for investigation; use the separately sampled owned-runtime
+  process RSS to attribute growth before calling it a product memory regression.
 - Sampled capture spool <=512 MiB; no resource inspection errors or sample gap
   exceeding five seconds (including interval edges). Sampling is not a hard quota
   and capture spool size is not whole-stack storage. Physical high-water,
