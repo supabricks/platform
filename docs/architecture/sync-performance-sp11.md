@@ -2,7 +2,8 @@
 
 Status: six 15-minute fixtures passed after #168; the first one-hour fixture
 stopped on sustained slowdown [#169](https://github.com/supabricks/platform/issues/169).
-A catalog generation-index correction and fresh qualification are in progress,
+The catalog generation-index correction passes installed validation; fresh
+qualification is running,
 October 6, 2026. SQLite is the
 selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
 This does not waive SP10c's missing experimental sustained arms. SP11 measures
@@ -111,6 +112,6 @@ startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-the fresh campaign directory recorded in the [#169 evidence](sync-performance-evidence/2026-10-06-issue169/README.md); the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
+`build/issue169-20261006/steady-04/status.json`; see the [#169 evidence](sync-performance-evidence/2026-10-06-issue169/README.md); the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
 and [#168 correction evidence](sync-performance-evidence/2026-10-06-issue168/README.md)
 identify each attempt separately.

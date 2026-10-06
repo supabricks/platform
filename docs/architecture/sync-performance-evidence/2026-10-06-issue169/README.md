@@ -60,3 +60,29 @@ load, memory policy v2 and all other gates remain unchanged. The eight-trial
 campaign will start with the **8-CPU one-hour fixture**, then the six alternating
 15-minute repeats, then the 16-CPU one-hour fixture (210 measured minutes total).
 This order exercises the known failure first. Other SP11 phases remain pending.
+
+### Completed validation and active launch 04
+
+The corrected source-30 upgrade test passes, covering every upgrade boundary in
+its fixture; 31 existing recovery cases had passed the preceding run. The release
+build, 216 local unit tests, 100 performance harness tests, eight release-evidence
+checks, three sync-evidence checks and format-constant check pass. Exact test
+runs, retained failures and log hashes are recorded in `validation.json`.
+
+The 60-second installed screen (after 60-second warmup) passes all individual
+gates at **1,248.270 changed rows/s / 2,658.263 ms p95**, with exact equality,
+foreign keys, journal reopen and zero leaked/remaining descendants. Its windows
+reproduce exactly with the frozen analyzer. This is plumbing validation, not a
+sustained capacity result or a statistically qualified latency improvement.
+
+**Launch 04 is active**, using frozen source `2207494e053af74c57da863991dc1e9d76c93591`
+and runtime identity `d03e01db77563e1da1d4b1b0da992727e7cc89196212b1eb91173ff700421bb7`.
+The config, package proof and launch snapshot are archived here. All 26,038 shared
+payload files match the predecessor; only the native binary and catalog format
+change. This is an unsigned performance overlay, not a newly assembled full
+release. Live status: `build/issue169-20261006/steady-04/status.json`.
+
+The first fixture is the previously failing 8-CPU one-hour profile. Memory policy
+v2 and throughput/lag/correctness gates are unchanged; failures stop the campaign.
+Eight fixtures contain 210 minutes of load. Qualification and #169 confirmation
+remain pending. No original result is replaced or reclassified.
