@@ -33,7 +33,7 @@ class DateSync(unittest.TestCase):
 
     def test_typed_dates_and_nulls_survive_key_move_and_committed_plan_replay(self):
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp);base=root/'base';base.mkdir();identity=dict(generation=str(uuid.uuid4()),installation_id='i',project_id='p',branch_id='b',tenant_id='t',timeline_id='l',decoder_version=1)
+            root=Path(temp).resolve();base=root/'base';base.mkdir();identity=dict(generation=str(uuid.uuid4()),installation_id='i',project_id='p',branch_id='b',tenant_id='t',timeline_id='l',decoder_version=1)
             cols=[[1,'id',23,-1],[0,'d',1082,-1],[0,'amount',1700,((18<<16)|2)+4],[0,'note',25,-1]]
             schema=pa.schema([pa.field('id',pa.int32(),False),pa.field('d',pa.date32()),pa.field('amount',pa.decimal128(18,2)),pa.field('note',pa.string())])
             original=[dict(id=1,d=date(1,1,1),amount=Decimal('1234567890123456.78'),note='keep'),dict(id=2,d=date(9999,12,31),amount=None,note=None)]
@@ -75,7 +75,7 @@ class CharSync(unittest.TestCase):
         self.assertIn('octet_length("c")',query('public','t',[dict(name='c',type_oid=1042)]).as_string())
     def test_char_metadata_and_raw_bytes_survive_delta_replay(self):
         with tempfile.TemporaryDirectory() as temp:
-            root=Path(temp)/'generation';root.mkdir();path=root/'table'
+            root=Path(temp).resolve()/'generation';root.mkdir();path=root/'table'
             schema=pa.schema([pa.field('id',pa.int32(),False),pa.field('c',pa.string(),metadata=field_metadata(1042,8))])
             write_deltalake(str(path),pa.Table.from_pylist([dict(id=1,c='x   '),dict(id=2,c='    '),dict(id=3,c=None)],schema=schema))
             planned=dict(before=0,columns=[[1,'id',23,-1],[0,'c',1042,8]],rows=[[1,[1,'y   ']],[2,None],[4,[4,'🧱é  ']]])
