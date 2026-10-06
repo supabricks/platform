@@ -80,3 +80,38 @@ receipt. SQL acceptance is lexical only: no query or sync operation is executed.
 Do not replace rejected native columns or composite keys to report a passing
 TPC-DS run. Address tracked compatibility issues first, then load with sync active
 and verify full product/reference results.
+
+## EQ01 composite-key qualification
+
+`composite.py` runs the seven native TPC-DS composite schemas plus populated
+two-/three-key fixtures through installed continuous sync and Sail. It checks
+shared key prefixes, reordered index keys, INCLUDE payload, key moves, deletes,
+unchanged TOAST, exact decimals, capture SIGKILL and daemon restart. The TPC-DS
+tables here are empty schema probes, not a full dataset/query qualification.
+
+```sh
+python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.json -- \
+  python3 e2e/tpcds/composite.py --release /release --report /reports/composite.json
+```
+
+Omitting `--inputs` uses the hash-verified committed EQ00 inventory for offline
+release CI. The same checks are mandatory in the `composite` installed sync suite.
+`--control-only` runs an unchanged pair of 10,000-row single-key tables with twelve
+64-row transactions, reporting commit and acknowledgment-to-observed-publication
+latencies and final exact equality. Use fresh installations, alternate baseline/
+candidate order and keep raw repetitions. The observer polls at 200 ms; this is a
+short EQ regression screen, not sustained SP or TPC-DS performance qualification.
+
+For a local engineering candidate, `package.py` verifies the base payload and
+creates an unsigned Python-only overlay. It breaks hardlinks before replacing
+sources/checked-hash bytecode and records every changed hash. For #170:
+
+```sh
+python3 e2e/tpcds/package.py --base /baseline --destination /candidate --repo . \
+  --proof /reports/package.json --source capture/source.py \
+  --source incremental/rows.py --source incremental_worker.py
+```
+
+Production release qualification must use the unchanged built archive through
+`install/native/qualify_sync.py`, including Linux/macOS offline installation and
+the composite suite. An engineering overlay does not substitute for that gate.

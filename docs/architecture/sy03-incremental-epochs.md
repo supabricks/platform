@@ -27,7 +27,8 @@ row LSNs never become publication cursors. An idempotency key identifies one
 intent and returns its original admission receipt; `sync applied RUN_ID` reads
 current state. A no-change run can publish an identical map at the same boundary.
 
-The admitted schema remains SY02's single integer primary key and bounded
+The admitted schema uses SY02's integer primary key (including multi-column
+integer identity after [EQ01/#170](eq01-composite-keys.md)) and bounded
 integer/text/varchar/decimal profile. Application preserves transaction order,
 handles inserts, updates, deletes and primary-key moves, and resolves unchanged
 TOAST values from the previous selected Delta version. Decimal conversion never

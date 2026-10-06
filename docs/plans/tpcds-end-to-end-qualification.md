@@ -13,6 +13,12 @@ tables; [#170](https://github.com/supabricks/platform/issues/170) and
 [#171](https://github.com/supabricks/platform/issues/171) track composite keys and
 DATE/CHAR support. Product/reference execution remains pending; no scale claim.
 
+[EQ01/#170](../architecture/eq01-composite-keys.md) implements native composite
+integer identity and passes local installed correctness/restart/Sail checks. The
+full admission matrix is now 8/24; sixteen DATE/CHAR tables remain blocked on #171.
+Six scalar control trials pass equality and cleanup; mean observed publication
+latency increased 4.15% in the short screen. Exact release CI remains a merge gate.
+
 The initial engineering baseline is platform source
 `8b68cd206edd5de2b1f820c90c39e7a76aedf3aa`, whose full Linux/macOS release CI passed
 in run `37522400869`. Exact package identity must accompany each installed trial.
