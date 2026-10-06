@@ -70,9 +70,11 @@ def qualify(args):
 
     def cli(at, *parts, success=True):
         scope = [] if parts[:2] == ('installation', 'verify') else ['--data-dir', str(data), '--project', str(at)]
+        started = time.monotonic()
         result = subprocess.run([str(binary), *map(str, parts), *scope],
                                 env=env, capture_output=True, text=True, timeout=240)
         (root / 'private-command.log').write_text(result.stdout + result.stderr)
+        print('CLI_TIMING', json.dumps(dict(action=list(map(str,parts[:2])),seconds=round(time.monotonic()-started,3))),flush=True)
         assert (result.returncode == 0) == success, 'CLI ' + str(parts[:2]) + ': ' + result.stderr[-2000:]
         return json.loads(result.stdout.splitlines()[-1])
 
@@ -203,8 +205,11 @@ def qualify(args):
         assert rebuilt['id'] != old['id'] and rebuilt['installation'] == identity
         live = a.start(rebuilt['id'], epoch); ws = query(a, live, '4.13.0')
         assert live['epoch_id'] == epoch
+        print('HANDLE_BEFORE_PREPARE',json.dumps([{k:v for k,v in e.items() if k in ('id','state','error','generation')} for e in a.action('list')]),flush=True)
         prepared = prepare('fixture-b')
+        print('HANDLE_AFTER_PREPARE',json.dumps([{k:v for k,v in e.items() if k in ('id','state','error','generation')} for e in a.action('list')]),flush=True)
         cli(project, 'env', 'gc')
+        print('HANDLE_AFTER_GC',json.dumps([{k:v for k,v in e.items() if k in ('id','state','error','generation')} for e in a.action('list')]),flush=True)
         assert Path(rebuilt['path']).exists(), 'leased previous generation collected'
         assert not Path(old['path']).exists() and old_release.exists(), 'old release must remain retained'
         ws.close(); live = a.restart(live, prepared['id']); ws = query(a, live, '4.14.0')
