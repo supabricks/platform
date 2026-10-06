@@ -2,8 +2,10 @@
 
 Status: six 15-minute fixtures passed after #168; the first one-hour fixture
 stopped on sustained slowdown [#169](https://github.com/supabricks/platform/issues/169).
-The catalog generation-index correction passes installed validation; fresh
-qualification is running,
+The catalog generation-index correction passes installed validation, but launch 04
+stopped after its first one-hour trial: 800.951 rows/s fails throughput; worst-window
+p95 4.817 seconds passes freshness. Correctness, memory and cleanup pass.
+Source commit/storage diagnosis is in progress,
 October 6, 2026. SQLite is the
 selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
 This does not waive SP10c's missing experimental sustained arms. SP11 measures

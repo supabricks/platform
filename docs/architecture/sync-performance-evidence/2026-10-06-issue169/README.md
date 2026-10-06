@@ -61,7 +61,7 @@ campaign will start with the **8-CPU one-hour fixture**, then the six alternatin
 15-minute repeats, then the 16-CPU one-hour fixture (210 measured minutes total).
 This order exercises the known failure first. Other SP11 phases remain pending.
 
-### Completed validation and active launch 04
+### Completed validation and launch 04
 
 The corrected source-30 upgrade test passes, covering every upgrade boundary in
 its fixture; 31 existing recovery cases had passed the preceding run. The release
@@ -75,7 +75,7 @@ foreign keys, journal reopen and zero leaked/remaining descendants. Its windows
 reproduce exactly with the frozen analyzer. This is plumbing validation, not a
 sustained capacity result or a statistically qualified latency improvement.
 
-**Launch 04 is active**, using frozen source `2207494e053af74c57da863991dc1e9d76c93591`
+**Launch 04 stopped on throughput**, using frozen source `2207494e053af74c57da863991dc1e9d76c93591`
 and runtime identity `d03e01db77563e1da1d4b1b0da992727e7cc89196212b1eb91173ff700421bb7`.
 The config, package proof and launch snapshot are archived here. All 26,038 shared
 payload files match the predecessor; only the native binary and catalog format
@@ -86,3 +86,19 @@ The first fixture is the previously failing 8-CPU one-hour profile. Memory polic
 v2 and throughput/lag/correctness gates are unchanged; failures stop the campaign.
 Eight fixtures contain 210 minutes of load. Qualification and #169 confirmation
 remain pending. No original result is replaced or reclassified.
+
+### Launch 04 review
+
+The first 8-CPU one-hour fixture completed at **800.951 changed rows/s**. Its
+committed and published throughput windows fail the unchanged 1,000 rows/s gate;
+the first failing window spans minutes **13–18**. Overall freshness p95 is
+4,232.039 ms and worst-window p95 is 4,816.587 ms, so all freshness windows pass.
+Data equality, bounded drain (2.483 seconds), memory, backlog, spool, inspection
+and cleanup gates pass. Zero leaked or remaining descendants are recorded.
+**0/8 accepted; one executed; seven not run.** The controller stopped automatically.
+
+[Raw evidence and deterministic replay](launch04/review.json) preserve this
+failure. Every window reproduces with the frozen analyzer. The index's proven
+query-work reduction did not qualify sustained throughput. These unpaired runs
+do not establish a causal end-to-end speedup. Source COMMIT/storage diagnostics
+are required before another runtime intervention; no gates have been relaxed.

@@ -1,0 +1,97 @@
+{
+  "status": "failed",
+  "accepted": 0,
+  "executed": 1,
+  "remaining": 7,
+  "source": {
+    "source_sql_ms": {},
+    "target_rows_per_second": 1250,
+    "target_transactions": 2250000,
+    "completed_transactions": 1441729,
+    "unsent_transactions": 808271,
+    "achieved_rows_per_second": 800.951,
+    "elapsed_seconds": 3600.045,
+    "transaction_ms": {
+      "p50": 18.392,
+      "p95": 37.573,
+      "p99": 57.983
+    },
+    "submission_lateness_ms": {
+      "p50": 245297.354,
+      "p95": 1187648.169,
+      "p99": 1272013.207
+    }
+  },
+  "stages_ms": {
+    "commit_to_publication": {
+      "p50": 2565.207,
+      "p95": 4232.039,
+      "p99": 4841.677,
+      "maximum": 5854.323
+    },
+    "commit_to_admission": {
+      "p50": 1048.826,
+      "p95": 2212.314,
+      "p99": 2604.568,
+      "maximum": 3405.699
+    },
+    "admission_to_worker_start": {
+      "p50": 139,
+      "p95": 184,
+      "p99": 221,
+      "maximum": 317
+    },
+    "worker_start_to_prepared": {
+      "p50": 593,
+      "p95": 844,
+      "p99": 1289,
+      "maximum": 1657
+    },
+    "prepared_to_publication": {
+      "p50": 804,
+      "p95": 1353,
+      "p99": 1481,
+      "maximum": 1583
+    },
+    "capture_observed_upper_bound": {
+      "p50": 69.572,
+      "p95": 127.934,
+      "p99": 169.057,
+      "maximum": 424.609
+    }
+  },
+  "drain_seconds": 2.483,
+  "gates": {
+    "all_committed_windows": false,
+    "all_published_windows": false,
+    "all_fresh_windows": true,
+    "bounded_drain": true,
+    "backlog_growth": true,
+    "backlog_slope": true,
+    "memory_growth": true,
+    "no_memory_pressure": true,
+    "spool_budget": true,
+    "inspectable": true,
+    "continuous_resource_evidence": true
+  },
+  "first_failed_window_minutes": [
+    13.0,
+    18.0
+  ],
+  "first_failed_window": {
+    "start_ms": 1791300817197.8306,
+    "end_ms": 1791301117197.8306,
+    "transactions": 135106,
+    "committed_rows_s": 900.7066666666667,
+    "published_rows_s": 900.8466666666667,
+    "p95_ms": 3878.766357421875,
+    "p99_ms": 4407.191162109375,
+    "maximum_ms": 4931.12744140625
+  },
+  "exact_window_reproduction": true,
+  "harness_revision": "2207494e053af74c57da863991dc1e9d76c93591",
+  "checks": [
+    "both_published_tables_equal_frozen_postgres_source",
+    "owned_runtime_stopped"
+  ]
+}
