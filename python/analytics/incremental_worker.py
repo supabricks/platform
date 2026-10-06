@@ -2,6 +2,7 @@
 """Daemon-owned SY03 batch applier. SQLite publication remains the sole authority."""
 import copy
 from decimal import Decimal
+from datetime import date
 import hashlib
 import json
 import os
@@ -13,7 +14,7 @@ import pyarrow.dataset as ds
 import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
-from incremental.rows import changes, overlay, key_columns, row_key, key_values, MAX_ROWS, MAX_VALUES
+from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
@@ -88,8 +89,9 @@ def plan_rows(config,root,previous,journal_data,guard):
     for table in previous['manifest']['tables']:
         oid=str(table['oid'])
         if oid not in final:continue
-        # Decimal is serialized exactly as text, then restored under the pinned schema.
-        rows=[[key,None if row is None else [str(v) if isinstance(v,Decimal) else v for v in row]] for key,row in sorted(final[oid].items())]
+        # Dates and exact decimals use lossless JSON text only in the private plan;
+        # typed Arrow values are restored before writing Delta.
+        rows=[[key,None if row is None else [str(v) if isinstance(v,(Decimal,date)) else v for v in row]] for key,row in sorted(final[oid].items())]
         output.append(dict(oid=oid,before=table['version'],rows=rows,columns=schema[oid][3],row_delta=sum(int(row is not None)-int(existing[oid].get(key) is not None) for key,row in final[oid].items())))
     result=dict(run_id=config['id'],identity=config['identity'],previous_epoch=previous['epoch_id'],
                 after_lsn=config['after_lsn'],target_lsn=config['target_lsn'],end_lsn=pg_lsn(end),input_bytes=input_bytes,tables=output)
@@ -125,7 +127,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
     while delete in arrow.names:delete+='x'
     records=[]
     for key,values in planned['rows']:
-        row={c[1]:None for c in columns} if values is None else {c[1]:Decimal(v) if c[2]==1700 and v is not None else v for c,v in zip(columns,values)}
+        row={c[1]:None for c in columns} if values is None else {c[1]:value(v,c) if c[2] in (1700,1082) and v is not None else v for c,v in zip(columns,values)}
         for i,v in zip(pk,key_values(key,pk)):row[columns[i][1]]=v
         row[delete]=values is None;records.append(row)
     # Delete source rows may have NULL placeholders for non-key NOT NULL columns;

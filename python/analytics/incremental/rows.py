@@ -1,5 +1,6 @@
 """Strict pgoutput row conversion and transaction-ordered primary-key overlay."""
 from decimal import Decimal, InvalidOperation
+from datetime import date
 import struct
 from capture.spool import CaptureError, frames, MAX_MESSAGE
 from capture.protocol import Reader,barrier_message
@@ -46,6 +47,11 @@ def value(raw, column):
             if exponent < -scale or max(len(digits)+exponent,0)>precision-scale:raise ValueError()
             return n
         if typ in (25,1043):return raw
+        if typ==1082:
+            if len(raw)!=10 or raw[4]!='-' or raw[7]!='-':raise ValueError()
+            # Match bootstrap's finite Python/Arrow DATE profile (years 1–9999).
+            # Wire startup pins ISO/YMD independently of database DateStyle.
+            return date.fromisoformat(raw)
     except (ValueError,InvalidOperation):pass
     raise CaptureError('unsupported_incremental_value')
 
