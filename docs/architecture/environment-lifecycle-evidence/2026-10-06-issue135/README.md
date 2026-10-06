@@ -17,8 +17,8 @@ A second diagnostic adds 100,000 empty files only to the retired incompatible
 fixture environment. It preserves the installed runtime and lease settings:
 https://github.com/supabricks/platform/actions/runs/37510956426 .
 That run passed with 4.430 seconds in collection; it did not cross the six-second
-lease interval. A one-million-file retired-tree diagnostic is running to exercise
-that boundary. Neither passing run establishes resolution of the historical race.
+lease interval. The one-million-file diagnostic below exercises that boundary. Neither of the
+shorter passing runs establishes resolution of the historical race.
 
 The correction journals deletion on the catalog owner, excluding active pointers
 and leases, then removes files on one background worker. The worker rechecks
@@ -38,8 +38,7 @@ must pass before this is considered complete.
 Local validation passes **219 unit tests**, with four existing ignored tests,
 including the three new collection/owner regressions. The initial CI compile
 exposed module visibility and job-type export omissions; those are corrected in
-the tested source. The hosted lifecycle candidate and negative stress control
-remain pending; the first failed CI result is retained.
+the tested source. The first failed CI compile result is retained; hosted stress results follow.
 
 The one-million-file retired-tree control reproduces the exact missing-handle
 404 after **18.853 seconds** of synchronous collection:
@@ -49,3 +48,21 @@ runtime or lease interval. The asynchronous candidate is being tested with the
 same stress. Console collection uses the existing 120-second long-operation
 response budget; notebook ownership still renews through the unchanged six-second
 lease, and other environment admission requests keep their existing deadline.
+
+
+The corrected [hosted candidate](https://github.com/supabricks/platform/actions/runs/37515308921/job/112446606500)
+passes both transports against the same one-million-file retired tree: **21.703
+seconds through CLI**, **21.935 seconds through console**. Both retain the live
+notebook and successfully adopt the newly prepared environment. Each transport
+passes eight lifecycle checks and six controlled-index checks, including upgrade,
+cold restore, relocated project paths, crash recovery and offline resolution.
+The native source tree matches `08bca514392b67e9c43d3b5a51a659e8d702d897` exactly;
+the diagnostic branch adds only the workflow and stress harness. Package identity,
+shared-file verification, reports, harness and timings are [archived with hashes](slow-collection/review.json).
+
+This is a tested native-only overlay of the historical installed archive. Full
+source-release CI remains a separate pending gate. Two preceding candidate jobs
+failed before runtime execution because the diagnostic archive checksum sidecar
+used a path rather than the required basename; the corrected workflow and passing
+run above preserve the installer checksum contract. Those packaging failures are
+not runtime regressions or passing lifecycle results.

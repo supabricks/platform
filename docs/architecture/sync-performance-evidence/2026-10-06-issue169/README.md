@@ -124,7 +124,67 @@ process IO observations start about eight minutes into the run.
 The full run averages 1,073.317 rows/s with 3,598.275 ms overall publication p95;
 its late throughput windows fail. Exact final equality, journal reopen, foreign
 keys and zero-leak cleanup pass. No build overlap was recorded. No source fix
-or speedup is claimed. The next controlled diagnostic changes only the mutable
+or speedup is claimed. The next controlled diagnostic changed only the mutable
 fixture's location from the system NVMe (`/`) to the second NVMe (`/data2`).
 It preserves the original device's failures and does not retroactively qualify
 that storage profile.
+
+
+### Second-device diagnostic and flush methods
+
+The same 25-minute probe on the second NVMe completed at **1,178.853 rows/s**,
+with **3,457.075 ms overall publication p95**. All five-minute throughput and
+freshness screens pass: minimum published rate **1,163.447 rows/s**, worst-window
+p95 **3,613.371 ms**. The separate whole-run offered-load gate **fails**: the
+rate is below 95% of the 1,250 rows/s target (1,187.5 rows/s). Thus even this
+short result would not qualify as a complete steady fixture. Memory, backlog,
+drain, spool, sampling, final equality,
+foreign keys, journal reopen and zero-leak cleanup pass. Safekeeper mean flush
+latency stays around **4.23–4.44 ms** across five-minute intervals. The earlier
+late slowdown did not recur within this run's duration.
+
+[Raw diagnostic and replay inputs](storage-probe/windows.json), hashes, storage
+placement, original command, bounded observations and device temperatures are
+preserved under `storage-probe/`. This is a sequential, unpaired diagnostic, not
+a causal speedup estimate or a one-hour qualification. The primary device's
+failures remain failures; moving the fixture does not qualify that device.
+
+Three alternating, serial `pg_test_fsync` repeats on each device then compared
+flush methods on disposable files, with the installed PG17 utility and unchanged
+host settings. The existing `fdatasync` method outperformed `open_datasync` in
+these component tests. Raw logs and utility identity are under
+`storage-probe/fsync-methods/`. These short tests are not sustained workload
+measurements; no WAL sync method is changed. The pinned safekeeper source also
+uses `sync_data` for its steady WAL flushes, so changing PostgreSQL's local WAL
+method alone would not replace that safekeeper durability barrier.
+
+A further diagnostic retained the original disk and set only source-session
+`commit_delay=2000` microseconds, with default `commit_siblings=5`. Every source
+connection asserts `fsync=on` and `synchronous_commit=on`. This tests durable
+group commit without changing offered work, transaction size, client count,
+qualification thresholds or production defaults.
+
+That [group-commit diagnostic](group-commit-probe/review.json) **also fails** on
+the original disk: 1,133.311 rows/s overall (below the 1,187.5 whole-run gate),
+with a minimum published window of 760.613 rows/s. Overall publication p95 is
+3,548.239 ms; worst-window p95 is 4,093.067 ms. Freshness, memory, backlog, spool,
+correctness, reopen and cleanup pass; no build overlaps are detected. Mean COMMIT
+rises toward 20 ms after about 21 minutes. Safekeeper flush frequency in the
+10–15-minute interval is about 110/s, versus 194/s in the predecessor diagnostic,
+but that does not cure the original-device sustained limit. These unpaired
+observations do not establish an accepted whole-stack speedup.
+
+The [five-minute second-device screen](group-commit-storage-screen/review.json)
+passes at **1,249.923 rows/s / 2,920.146 ms overall publication p95**, including
+all window gates, the 95%-of-offered-load gate, exact equality, foreign keys,
+reopen and zero-leak cleanup. No build overlap was recorded. This supports
+building a runtime candidate; it does not establish sustained qualification.
+
+The Linux native compute candidate now sets `commit_delay=2000` microseconds
+and `commit_siblings=5`. PostgreSQL applies the delay only when at least five
+other transactions are active; fsync, synchronous commit and safekeeper durability
+remain enabled. macOS defaults are unchanged. This is a candidate tuning choice
+for the declared profile, not an EC2 or all-storage performance guarantee. The
+original disk's sustained limit remains unresolved. A fresh eight-fixture campaign
+will use the second NVMe, start with the one-hour 8-CPU fixture, and keep every
+throughput, freshness, correctness and resource gate unchanged.

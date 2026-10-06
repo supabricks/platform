@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11 steady qualification stopped on throughput after generation-reference index correction #169; source commit/storage diagnosis in progress; SP12 planned**, 2026-10-06 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11 steady qualification stopped on throughput after generation-reference index correction #169; original-disk durable-commit slowdown reproduced; second-NVMe group-commit screen passes at 1,249.923 rows/s / 2.920-second p95; fresh one-hour-first qualification prepared; SP12 planned**, 2026-10-06 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime

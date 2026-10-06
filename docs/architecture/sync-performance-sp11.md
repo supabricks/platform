@@ -5,7 +5,11 @@ stopped on sustained slowdown [#169](https://github.com/supabricks/platform/issu
 The catalog generation-index correction passes installed validation, but launch 04
 stopped after its first one-hour trial: 800.951 rows/s fails throughput; worst-window
 p95 4.817 seconds passes freshness. Correctness, memory and cleanup pass.
-Source commit/storage diagnosis is in progress,
+Source diagnostics reproduce the original disk's durable-commit slowdown even
+with group commit. A five-minute second-NVMe group-commit screen passes at
+1,249.923 rows/s / 2.920-second p95. Launch 05 is prepared with Linux native
+`commit_delay=2000` microseconds, `commit_siblings=5`, and the second NVMe.
+Original-device failures remain unresolved; full sustained qualification is pending,
 October 6, 2026. SQLite is the
 selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
 This does not waive SP10c's missing experimental sustained arms. SP11 measures
@@ -19,8 +23,9 @@ the selected SQLite path; it does not adopt RocksDB or expand the supported SLO.
    Alternate CPU profiles between short repeats. Offer 1,250
    changed rows/s with eight clients, 60 seconds warmup, 16 GiB cgroup memory and
    no swap. Use an immutable overlay of the previously qualified #157 SQLite-owner package,
-   changing only the native binary and catalog version for the #169 generation
-   lookup index. Verify every shared payload file. Its identity remains separate
+   retaining catalog 31 and changing only the native binary for the Linux group-commit
+   candidate and asynchronous environment collection. Verify every shared payload file.
+   Declare the second NVMe explicitly; do not reclassify the original disk failures. Its identity remains separate
    from the harness and merged source. This is local
    Linux performance evidence, not an exact newly assembled release qualification.
 2. **Maintenance and readers (pending):** at least three observed successful
@@ -110,10 +115,11 @@ freshness. Its memory/cleanup/correctness checks passed. The #169 rerun freezes
 the indexed runtime in a new campaign, preserving the original failures and gates.
 
 Eight steady fixtures contain **210 minutes of measured load**, plus eight warmups,
-startup/cleanup and one initial quiet admission (roughly four hours without
-contention). A stopped campaign is evidence requiring investigation, not a pass.
+startup/cleanup (roughly four hours without contention). Launch 05 uses no
+mandatory idle delay, following the user's idle-host instruction; continuous
+host observation and rejection of build overlap remain enabled. A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-`build/issue169-20261006/steady-04/status.json`; see the [#169 evidence](sync-performance-evidence/2026-10-06-issue169/README.md); the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
+`/data2/supabricks-performance/issue169-20261006/steady-05/status.json`; see the [#169 evidence](sync-performance-evidence/2026-10-06-issue169/README.md); the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
 and [#168 correction evidence](sync-performance-evidence/2026-10-06-issue168/README.md)
 identify each attempt separately.

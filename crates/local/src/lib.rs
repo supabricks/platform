@@ -133,11 +133,21 @@ pub fn plan_compute(
     }
     // The qualified E01 bundle ships Neon, but not the optional cloud
     // pg_stat_statements preload. Never trigger a cloud extension download.
-    for setting in cluster["settings"].as_array_mut().expect("settings array") {
+    let settings = cluster["settings"].as_array_mut().expect("settings array");
+    for setting in settings.iter_mut() {
         if setting["name"] == "shared_preload_libraries" {
             setting["value"] = serde_json::json!("neon");
         }
     }
+    // Linux sustained-load diagnostics favor batching durable source commits.
+    // PG waits only when at least five other transactions are active; fsync
+    // and synchronous replication acknowledgements remain enabled. This does
+    // not qualify slow storage: the declared device still needs sustained tests.
+    #[cfg(target_os = "linux")]
+    settings.extend([
+        serde_json::json!({"name":"commit_delay","value":"2000","vartype":"integer"}),
+        serde_json::json!({"name":"commit_siblings","value":"5","vartype":"integer"}),
+    ]);
     Ok(ComputePlan {
         pg_major: input.pg_major,
         config,
@@ -203,6 +213,12 @@ mod tests {
                 settings.iter().find(|s| s["name"] == name).unwrap()["value"],
                 value
             );
+        }
+        #[cfg(target_os = "linux")]
+        for (name, value) in [("commit_delay", "2000"), ("commit_siblings", "5")] {
+            let matching: Vec<_> = settings.iter().filter(|s| s["name"] == name).collect();
+            assert_eq!(matching.len(), 1);
+            assert_eq!(matching[0]["value"], value);
         }
     }
     #[test]
