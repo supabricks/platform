@@ -188,3 +188,35 @@ for the declared profile, not an EC2 or all-storage performance guarantee. The
 original disk's sustained limit remains unresolved. A fresh eight-fixture campaign
 will use the second NVMe, start with the one-hour 8-CPU fixture, and keep every
 throughput, freshness, correctness and resource gate unchanged.
+
+
+### Frozen launch 05
+
+The native-default [installed screen](native-default-screen/windows.json) passes
+at **1,247.278 rows/s / 2,633.927 ms publication p95**, with exact equality,
+foreign keys, reopen, all resource/window screens and zero-leak cleanup. Every
+source connection asserts the real runtime settings without overriding them:
+`commit_delay=2000`, `commit_siblings=5`, `fsync=on`, `synchronous_commit=on`,
+`wal_sync_method=fdatasync`. All four diagnostic window reports reproduce exactly
+from their archived timing/resource inputs; see [replay review](storage-diagnostic-review.json).
+
+[Launch 05](launch-05.json) freezes native source
+`b5b2ea74f197c44bca9afd6ad300fdf832bb5cf6`, harness
+`2207494e053af74c57da863991dc1e9d76c93591`, and runtime identity
+`99590cc04aafdee52350c41d008fe375db44373354f07883f587d9425d3ba2fa`.
+The [package proof](group-commit-package-01.json) verifies all 26,038 shared
+payload files; only `bin/supabricks` changes from the indexed predecessor.
+This remains an unsigned performance overlay, separate from full release CI.
+
+The [frozen configuration](steady-config-05.json) explicitly names the second
+NVMe (Samsung 990 PRO 2TB, `/dev/nvme1n1p1`) and the eight-fixture order. It starts
+with 8 CPUs/60 minutes, then six alternating 8/16-CPU 15-minute repeats, then
+16 CPUs/60 minutes. All qualification thresholds remain unchanged, including
+95% of offered input over the whole run. Mandatory idle waiting is zero under
+the user's idle-host instruction; continuous monitoring and rejection of detected
+build overlap remain enabled. Failure stops the campaign without replacement.
+
+The service `supabricks-sp11-steady-05.service` has started. Live status is
+`/data2/supabricks-performance/issue169-20261006/steady-05/status.json`.
+No long-run pass is claimed. The original disk is not qualified by this run;
+#169, other SP11 phases, and exact-release qualification remain open.

@@ -7,7 +7,7 @@ stopped after its first one-hour trial: 800.951 rows/s fails throughput; worst-w
 p95 4.817 seconds passes freshness. Correctness, memory and cleanup pass.
 Source diagnostics reproduce the original disk's durable-commit slowdown even
 with group commit. A five-minute second-NVMe group-commit screen passes at
-1,249.923 rows/s / 2.920-second p95. Launch 05 is prepared with Linux native
+1,249.923 rows/s / 2.920-second p95. Launch 05 has started with Linux native
 `commit_delay=2000` microseconds, `commit_siblings=5`, and the second NVMe.
 Original-device failures remain unresolved; full sustained qualification is pending,
 October 6, 2026. SQLite is the
