@@ -18,9 +18,13 @@ contaminated fixture. Runtime, workload and instrumentation remain frozen across
 repeats. Other SP11 maintenance, pressure, scaling, interference and recovery
 phases remain required; see the [protocol](../../sync-performance-sp11.md).
 
-The active launch is **02**, frozen at `142e4d0`; see `launch-02.json` and
+The second launch was **02**, frozen at `142e4d0`; see `launch-02.json` and
 `steady-config-02.json`. Launch 01 was stopped before any fixture/measurement
 while fixing supervisor cleanup #166. The nine SP11 tests and all 94 harness
 tests pass after that correction (`supervision-validation.json`). The existing
 installed screen remains valid because the correction changes only host-side
 interrupted-child cleanup, not workload, event capture or analysis.
+
+Launch 02 stopped after its first 15-minute fixture failed memory policy v1.
+No steady fixture was accepted. The original failed result remains preserved;
+see the [#168 correction and fresh campaign](../2026-10-06-issue168/README.md).

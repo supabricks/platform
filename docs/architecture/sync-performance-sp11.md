@@ -105,6 +105,6 @@ startup/cleanup and one initial quiet admission (roughly four hours without
 contention). A stopped campaign is evidence requiring investigation, not a pass.
 A ten-second installed screen checks plumbing and teardown only; its gates never
 qualify throughput or SP11. Live status is stored under
-the fresh campaign directory; the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
+`build/issue168-20261006/steady-03/status.json`; the [original launch record](sync-performance-evidence/2026-10-05-sp11-start/README.md)
 and [#168 correction evidence](sync-performance-evidence/2026-10-06-issue168/README.md)
 identify each attempt separately.

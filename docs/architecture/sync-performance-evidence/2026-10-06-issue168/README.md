@@ -51,3 +51,24 @@ inactive file cache 345.13 -> 633.41 MB. These counters demonstrate both
 observer allocation and cache growth; they do not retrospectively partition the
 original failed 15-minute run. See `diagnostic-memory.json` and raw compressed
 resource samples.
+
+## Corrected installed screen and launch 03
+
+The corrected 300-second screen passed all individual gates at **1,246.285
+changed rows/s / 3,073.364 ms p95**, with exact two-table equality, journal
+reopen, foreign-key checks and zero leaked/remaining descendants. It is still
+`screen_only`: one five-minute interval does not qualify sustained growth.
+The frozen analyzer independently reproduces its windows exactly.
+
+First/last 60-second qualifier RSS is 86.99 -> 103.76 MB (original-storage
+diagnostic: 111.99 -> 205.46 MB). Working memory is 1138.06 -> 1121.41 MB;
+raw cgroup memory and cache counters remain in the archived resource samples.
+The two sequential short diagnostics establish instrumentation behavior, not
+a statistically qualified runtime performance improvement.
+
+**Launch 03 is active**, using frozen harness `c05a70a1440482f1525f0f0ab9ca3b0512204c97`,
+policy v2 and the unchanged #157 runtime. The normalized config and original
+config hash are archived here. The supervised eight-fixture campaign writes
+live status to `build/issue168-20261006/steady-03/status.json`. It stops on failed
+gates or contention and does not replace prior attempts. Qualification and
+issue #168 sustained confirmation remain pending. Other SP11 phases are unchanged.
