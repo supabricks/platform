@@ -1,0 +1,31 @@
+{
+  "scope": "generator build and repeated generation provenance; no E2E qualification",
+  "generator_commit": "1b7fb7529edae091684201fab142d956d6afd881",
+  "command": "BISON_PKGDATADIR=build-deps/root/usr/share/bison make OS=LINUX CC='gcc -fcommon' YACC='<absolute build-deps>/root/usr/bin/bison -y' LEX='<absolute build-deps>/root/usr/bin/flex' -j4 (paths resolved absolute; cwd=tpcds-kit/tools)",
+  "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "kernel": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "build_log_sha256": "c5695ac0b1f7d8ffd0aac02556163be2dbe9a540a00d369d6c5f8cc0d5a5deba",
+  "build_dependencies": [
+    {
+      "file": "flex_2.6.4-8.2build1_amd64.deb",
+      "sha256": "c5604f55827b50e3f568b4731b7799f86b147454c867be02bc141d9d8ce561ff"
+    },
+    {
+      "file": "bison_2%3a3.8.2+dfsg-1ubuntu0.24.04.1_amd64.deb",
+      "sha256": "9d75084d1293f68f3c1a2ee677dea5baa4e010bac2d4c455d8e23177e97aa353"
+    }
+  ],
+  "business_tables_repeated_with_identical_sha256": 24,
+  "metadata": "dbgen_version is separately retained generator run metadata; timestamp makes it intentionally non-identical across repetitions. It is not a business table.",
+  "retained_data": "/data2/supabricks-eq/eq00-20261006/",
+  "failed_attempt": "sf1-01: upstream crashes in ReportError when absolute distribution path exceeds its 80-byte parameter limit; no rows generated during failed run. A later isolated income_band debug probe wrote 20 rows into that directory. GDB all-table reproduction used generator-debug-01. sf1-02/03 use the same unmodified binary with relative tpcds.idx; output paths are now length-checked.",
+  "overlap": "Generation pilot and compatibility probe may overlap; these are diagnostics, not accepted product or comparative timing trials.",
+  "compatibility_container": {
+    "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+    "cpus": "4-7",
+    "memory_gib": 8,
+    "swap": false,
+    "network": "none"
+  }
+}

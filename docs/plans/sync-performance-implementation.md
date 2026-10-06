@@ -4,7 +4,12 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11 steady qualification stopped on throughput after generation-reference index correction #169; original-disk durable-commit slowdown reproduced; second-NVMe group-commit screen passes at 1,249.923 rows/s / 2.920-second p95; fresh one-hour-first qualification running on the declared second NVMe; SP12 planned**, 2026-10-06 UTC.
+Status: **Frozen by user direction on 2026-10-06 while EQ00–EQ06 TPC-DS work proceeds.**
+See the [freeze record](../architecture/sync-performance-freeze.md). Launch 05
+stopped after one hour: 1,204.238 rows/s overall, but five late throughput windows
+failed (worst published rate 779.127 rows/s); #169 remains open. SP10c's missing
+arms, remaining SP11 gates and SP12 remain pending. No SP trial is running.
+
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -789,8 +794,10 @@ alone does not complete this performance workstream.
 
 ## Follow on end to end analytical qualification
 
-After SP12, execute the [TPC-DS qualification plan](tpcds-end-to-end-qualification.md)
+By user direction on 2026-10-06, execute the [TPC-DS qualification plan](tpcds-end-to-end-qualification.md)
+before resuming the frozen SP workstream
 to test loading into PostgreSQL with sync active, full analytical queries, larger
 datasets and concurrent ingestion/query scaling. This has its own EQ00–EQ06
 slices, compatibility gates and measured envelope. SP's narrow-row results do not
-establish TPC-DS capacity, and the follow-on does not change the running SP trials.
+establish TPC-DS capacity. Preserve the stopped SP trials and resume SP only
+after the end-to-end results have been reviewed.

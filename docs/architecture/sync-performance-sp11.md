@@ -1,19 +1,13 @@
 # SP11 — sustained correctness, recovery and scaling
 
-Status: six 15-minute fixtures passed after #168; the first one-hour fixture
-stopped on sustained slowdown [#169](https://github.com/supabricks/platform/issues/169).
-The catalog generation-index correction passes installed validation, but launch 04
-stopped after its first one-hour trial: 800.951 rows/s fails throughput; worst-window
-p95 4.817 seconds passes freshness. Correctness, memory and cleanup pass.
-Source diagnostics reproduce the original disk's durable-commit slowdown even
-with group commit. A five-minute second-NVMe group-commit screen passes at
-1,249.923 rows/s / 2.920-second p95. Launch 05 has started with Linux native
-`commit_delay=2000` microseconds, `commit_siblings=5`, and the second NVMe.
-Original-device failures remain unresolved; full sustained qualification is pending,
-October 6, 2026. SQLite is the
-selected implementation from the [SP10c review](sync-performance-evidence/2026-10-05-sp10c-review/README.md).
-This does not waive SP10c's missing experimental sustained arms. SP11 measures
-the selected SQLite path; it does not adopt RocksDB or expand the supported SLO.
+Status: **Frozen by user direction on 2026-10-06; EQ TPC-DS work takes priority.**
+[Freeze record](sync-performance-freeze.md). Launch 05 stopped after the first
+one-hour 8-CPU fixture: 1,204.238 rows/s overall, 3.754-second publication p95,
+but five late throughput windows failed, starting at minutes 52–57. Worst
+published-window throughput was 779.127 rows/s. All freshness, correctness,
+resource and cleanup checks passed; 0/8 accepted, seven not run. #169 stays open.
+No SP trial is active and no automatic replacement is authorized while frozen.
+Other SP11 phases and SP12 remain pending; no TPC-DS envelope is inferred.
 
 ## Execution sequence and scope
 
