@@ -10,6 +10,7 @@ use crate::{
 use rusqlite::{OptionalExtension, params};
 use serde_json::{Value, json};
 use supabricks_core::resource::{EpochId, OperationId, ProjectId};
+mod history;
 impl Store {
     pub fn incremental_run(&self, project: ProjectId, id: OperationId) -> Result<Run> {
         let text:String=self.db.query_row("SELECT r.record FROM incremental_runs r JOIN analytical_artifacts a ON a.id=r.id WHERE r.id=?1 AND a.project_id=?2",params![id.to_string(),project.to_string()],|r|r.get(0)).optional()?.ok_or_else(||missing("incremental run in project"))?;
@@ -114,6 +115,19 @@ impl Store {
         }
         self.db.execute_batch("SAVEPOINT incremental_command")?;
         let result = (|| {
+            if let Some(id) = owner {
+                // An expired private receipt must never re-admit work for a
+                // completed parent. Active-parent receipts remain replayable.
+                let parent = self.sync_run(project, id)?;
+                if !matches!(parent.state.as_str(), "queued" | "starting" | "running") {
+                    return Err(conflict("incremental owner is terminal"));
+                }
+            }
+            // Cancellation must first resolve and retain its target/receipt.
+            // Only admission needs space for another execution record.
+            if matches!(command, Command::Apply { .. }) {
+                self.retain_incremental_history()?;
+            }
             let count: i64 =
                 self.db
                     .query_row("SELECT count(*) FROM incremental_requests", [], |r| {

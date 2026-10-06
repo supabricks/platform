@@ -1,0 +1,53 @@
+{
+  "scope": "Hot local filesystem accounting component; not pipeline throughput or sustained-load qualification",
+  "files": 32,
+  "iterations": 3000,
+  "repeats": 3,
+  "arms": {
+    "before": "e325a18d00663d7fa42aecd0bb2ffd0ffce60b36a1026e8d3e34405e774f3fdf",
+    "after": "a26be02bf33df2228cd4b74a9a1d182d140f0723b200c010204c18f809825a0e"
+  },
+  "pairs": [
+    {
+      "before": {
+        "elapsed_seconds": 0.36278613199829124,
+        "cpu_seconds": 0.36276010599999997,
+        "microseconds_per_scan": 120.92871066609707
+      },
+      "after": {
+        "elapsed_seconds": 0.35459693102166057,
+        "cpu_seconds": 0.354554902,
+        "microseconds_per_scan": 118.1989770072202
+      }
+    },
+    {
+      "after": {
+        "elapsed_seconds": 0.31251309998333454,
+        "cpu_seconds": 0.312504027,
+        "microseconds_per_scan": 104.17103332777818
+      },
+      "before": {
+        "elapsed_seconds": 0.3129684269952122,
+        "cpu_seconds": 0.31296579999999996,
+        "microseconds_per_scan": 104.32280899840407
+      }
+    },
+    {
+      "before": {
+        "elapsed_seconds": 0.31214808000368066,
+        "cpu_seconds": 0.31212621900000004,
+        "microseconds_per_scan": 104.04936000122689
+      },
+      "after": {
+        "elapsed_seconds": 0.31323730800068006,
+        "cpu_seconds": 0.3132154679999999,
+        "microseconds_per_scan": 104.41243600022669
+      }
+    }
+  ],
+  "median_us": {
+    "before": 104.32280899840407,
+    "after": 104.41243600022669
+  },
+  "median_percent": 0.08591314083958856
+}

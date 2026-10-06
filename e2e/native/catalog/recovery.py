@@ -16,6 +16,22 @@ from probe import CatalogCell, sha
 from cell import wait
 
 
+def interrupt_restore(binary, backup, destination, log):
+    with log.open('w') as diagnostics:
+        process=subprocess.Popen([str(binary),'backup','restore',str(backup),'--data-dir',str(destination)],
+            stdout=diagnostics,stderr=subprocess.STDOUT)
+        try:
+            def started():
+                code=process.poll()
+                if code is not None:
+                    raise AssertionError(f'restore exited before interruption (exit {code}); inspect private restore log')
+                return (destination/'restore-incomplete').exists()
+            wait(started,timeout=30)
+        finally:
+            if process.poll() is None:process.kill()
+            process.wait(timeout=10)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ['release', 'binary', 'uc-runtime', 'report']:
@@ -132,9 +148,7 @@ requirement="sales.v1"
             assert db.execute('SELECT count(*) FROM catalog_publication_refs WHERE reference_key LIKE \'binding:%\'').fetchone()[0]==1
         check('stopped_checkpoint_includes_backend_journal_bindings_and_retention')
         interrupted=root/'interrupted'
-        process=subprocess.Popen([str(cell.binary),'backup','restore',str(backup),'--data-dir',str(interrupted)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        wait(lambda:(interrupted/'restore-incomplete').exists(),timeout=30)
-        process.kill();process.wait(timeout=10)
+        interrupt_restore(cell.binary,backup,interrupted,root/'interrupted-restore.private.log')
         cli('up',at=interrupted,success=False)
         cli('backup','verify',backup)
         check('interrupted_restore_remains_guarded_and_original_backup_verifies')

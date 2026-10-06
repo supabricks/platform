@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import stat
 import struct
+import time
 from .journal import CommitUncertain, Owner
 
 MAX_MESSAGE = 1024 * 1024
@@ -239,6 +240,24 @@ class Spool:
             row=self.backend.payload(f"{lsn(current['end_lsn']):016x}")
             if row:barrier_at=commit_time(row[0])
         return self.backend.prune_group(rows[-1][0],value,reclaimed,barrier_at)
+
+    def maintain(self, published):
+        """Catch up published history without monopolizing the capture loop.
+
+        A single 256-record prune per one-second source check caps reclamation
+        below normal capture throughput. Keep the existing atomic prune unit,
+        cursor authority and reader behavior, but allow up to eight units per
+        check. The 50 ms scheduling budget is checked between atomic units;
+        an in-progress storage operation is never interrupted or acknowledged.
+        Busy/no-progress exits immediately and retries on the next check.
+        """
+        deadline=time.monotonic()+.050;reclaimed=0
+        for _ in range(8):
+            if time.monotonic()>=deadline:break
+            size=self.prune(published)
+            reclaimed+=size
+            if not size:break
+        return reclaimed
 
     def transactions(self, after):
         # Streaming iterator for SY03; consumer is responsible for holding the generation lease.

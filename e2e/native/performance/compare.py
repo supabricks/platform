@@ -271,6 +271,8 @@ def main(args):
                   quiet_seconds=args.quiet_seconds, sample_interval=5,
                   max_wait_seconds=args.max_wait_seconds, max_pair_attempts=args.max_pair_attempts,
                   baseline_identity=sha(args.baseline/'SHA256SUMS') if args.baseline else None)
+    if getattr(args,'host_continuity',None):
+        config['host_continuity']=str(args.host_continuity.resolve())
     if args.host_io != 'off':
         require(not args.no_profile, 'host attribution requires the existing worker profiler')
         require(arms['predecessor']['package'] == arms['candidate']['package'], 'host observer controls require identical runtime packages')
@@ -304,7 +306,8 @@ def main(args):
         if record['state'] == 'complete':
             return
     save(manifest, record)
-    monitor = HostMonitor(args.output, quiet_seconds=args.quiet_seconds).start()
+    monitor = HostMonitor(args.output, quiet_seconds=args.quiet_seconds,
+                          continuity=getattr(args,'host_continuity',None)).start()
     try:
         for index, pair in enumerate(config['order']):
             if index < len(record['pairs']):
@@ -366,6 +369,7 @@ if __name__ == '__main__':
     parser.add_argument('--warmup-seconds', type=int, default=5)
     parser.add_argument('--rows', type=int, default=10000)
     parser.add_argument('--quiet-seconds', type=int, default=300)
+    parser.add_argument('--host-continuity', type=Path, help='fresh evidence from a continuous campaign monitor; archived at phase start')
     parser.add_argument('--max-wait-seconds', type=int, default=21600)
     parser.add_argument('--max-pair-attempts', type=int, default=3)
     parser.add_argument('--image', default='supabricks-sy08-qualifier:latest')

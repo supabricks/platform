@@ -68,7 +68,10 @@ supported. Installed runtime operation uses loopback and needs no external servi
 Application dependencies and your coding agent are supplied by the application
 developer; neither is installed as part of the database runtime.
 
-The current candidate uses version `v0.1.0-alpha.36` and catalog 29. Product notebook kernels
+The retained qualified release is `v0.1.0-alpha.36` with catalog 29. Current source
+assembles catalog 30 with indexed sync-history retention; existing catalog 29
+roots require the explicit stopped, backed-up upgrade. Catalog 30 release
+qualification is pending. Product notebook kernels
 run in offline managed environments with durable leases and saved provenance.
 Managed registry package transactions and offline wheel bundles are described in
 the [package workflow guide](../../docs/architecture/ne04-notebook-packages.md).

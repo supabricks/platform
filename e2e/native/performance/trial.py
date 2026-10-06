@@ -83,7 +83,7 @@ def load(cell,rate,seconds,clients,rows,offset=0):
 class Observer:
     def __init__(self,cell,capture):
         self.cell=cell;self.capture_id=capture;self.spool=cell.root/'capture'/capture/'spool/spool.sqlite3'
-        self.stop=threading.Event();self.ends={};self.captured={};self.publications=[]
+        self.stop=threading.Event();self.ends={};self.captured={};self.publications=[];self.runs={}
         self.series=[];self.errors=[];self.busy_samples=0;self.seq=0;self.ordinal=0;self.runtime_error=None
         self.missing_status_samples=0;self.missing_status_streak=0
         self.thread=threading.Thread(target=self.run)
@@ -101,17 +101,25 @@ class Observer:
 
     def poll(self):
         # Read short SQLite snapshots, never retain a lease that prevents pruning.
-        with closing(sqlite3.connect(f'file:{self.spool}?mode=ro',uri=True,timeout=.05)) as db:
-            rows=db.execute('SELECT seq,end_lsn,substr(payload,22,4) FROM transactions WHERE seq>? ORDER BY seq',(self.seq,)).fetchall()
+        if (self.cell.root/'marker-observer/enabled').exists():
+            from marker_observer import rows as marker_rows
+            rows=marker_rows(self)
+        else:
+            with closing(sqlite3.connect(f'file:{self.spool}?mode=ro',uri=True,timeout=.05)) as db:
+                rows=db.execute('SELECT seq,end_lsn,substr(payload,22,4) FROM transactions WHERE seq>? ORDER BY seq',(self.seq,)).fetchall()
         stamp=time.time()*1000
         for seq,end,xid in rows:
             self.seq=seq;key=struct.unpack('!I',xid)[0]
             self.ends[key]=int(end,16);self.captured.setdefault(key,stamp)
         with closing(sqlite3.connect(f'file:{self.cell.root}/state.sqlite3?mode=ro',uri=True,timeout=.05)) as db:
-            rows=db.execute("SELECT ordinal,published_at_ms,json_extract(descriptor,'$.manifest.source.lsn'),export_id,json_extract(descriptor,'$.prepared_at_ms') FROM publications WHERE state='published' AND ordinal>? ORDER BY ordinal",(self.ordinal,)).fetchall()
+            # Read timing and publication in one snapshot, before bounded private
+            # execution history expires. Keep only timing fields, never row data.
+            rows=db.execute("SELECT p.ordinal,p.published_at_ms,json_extract(p.descriptor,'$.manifest.source.lsn'),p.export_id,json_extract(p.descriptor,'$.prepared_at_ms'),json_extract(r.record,'$.created_at_ms'),json_extract(r.record,'$.started_at_ms') FROM publications p LEFT JOIN incremental_runs r ON r.id=p.export_id WHERE p.state='published' AND p.ordinal>? ORDER BY p.ordinal",(self.ordinal,)).fetchall()
             self.failure(db)
-        for ordinal,at,end,run,prepared in rows:
+        for ordinal,at,end,run,prepared,created,started in rows:
             self.ordinal=ordinal;self.publications.append(dict(at=at,end=lsn(end),run=run,prepared=prepared))
+            if created is not None and started is not None:
+                self.runs[run]=dict(created_at_ms=created,started_at_ms=started)
         # Status file avoids issuing benchmark monitoring RPCs to the single writer.
         if self.runtime_error:return  # Durable failure wins over transient worker files.
         try:status=json.loads((self.spool.parent.parent/'status.json').read_text())
@@ -166,7 +174,9 @@ def attribute(samples,observer,runs):
         assert s['xid'] in observer.ends,'observer missed a pruned transaction marker; trial invalid'
         at=bisect.bisect_left(cuts,observer.ends[s['xid']])
         assert at<len(cuts),'unpublished transaction'
-        p=observer.publications[at];r=runs[p['run']]
+        p=observer.publications[at]
+        assert p['run'] in runs,'observer missed execution timing before history expired; trial invalid'
+        r=runs[p['run']]
         stamps=(s['ack_ms'],r['created_at_ms'],r['started_at_ms'],p['prepared'],p['at'])
         stages['commit_to_publication'].append(max(0,p['at']-s['ack_ms']))
         for name,left,right in zip(list(stages)[1:5],stamps,stamps[1:]):stages[name].append(max(0,right-left))
@@ -219,6 +229,8 @@ def trial(args):
         report['phase']='baseline';print('baseline',flush=True)
         _,report['baseline']=load(cell,args.rate,args.baseline,args.clients,n)
         cell.sql(cell.parent,'UPDATE orders SET value=0; UPDATE payments SET value=0')
+        from marker_observer import enable
+        report['marker_observer']=enable(cell)
         p=cell.cli('sync','create','--branch','main','--mode','continuous','--key','policy');cell.policy_id=p['id']
         report['phase']='bootstrap'
         healthy(cell);observer=Observer(cell,p['capture_id'])
@@ -248,9 +260,7 @@ def trial(args):
         else:raise RuntimeFailure('publication_drain_timeout')
         report['drain_seconds']=round(time.perf_counter()-drain,3)
         observer.finish();report['backlog_series']=observer.series;report['observer_busy_samples']=observer.busy_samples;report['observer_missing_status_samples']=observer.missing_status_samples
-        with closing(sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro',uri=True)) as db:
-            runs={r['id']:r for (text,) in db.execute('SELECT record FROM incremental_runs') for r in [json.loads(text)]}
-        report['stages_ms']=attribute(samples,observer,runs)
+        report['stages_ms']=attribute(samples,observer,observer.runs)
         during=[x for x in observer.series if wall_start<=x['at_ms']<=wall_end]
         report['peak_memory_bytes']=max(x['memory_bytes'] for x in during)
         report['peak_backlog_bytes']=max((x['backlog_bytes'] or 0) for x in during)
@@ -292,6 +302,10 @@ def trial(args):
         except Exception as error:report['status']='error';report['cleanup_error']=type(error).__name__
         if report['status']=='runtime_failed' and report.get('runtime_error')=='publication_drain_timeout':
             try:
+                if (cell.root/'marker-observer/enabled').exists():
+                    # Diagnostic markers are not an authoritative durable sequence.
+                    # Do not classify missing markers as a capacity result.
+                    raise RuntimeError('marker_drain_timeout_requires_investigation')
                 with closing(sqlite3.connect(f'file:{observer.spool}?mode=ro',uri=True,timeout=3)) as db:
                     sequence=db.execute('SELECT COALESCE(max(seq),0) FROM transactions').fetchone()[0]
                 report['drain_timeout_evidence']=drain_timeout_evidence(

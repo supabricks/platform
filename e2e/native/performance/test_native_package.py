@@ -57,6 +57,21 @@ class NativePackageTests(unittest.TestCase):
                     overlay(base, binary, root/'overlay', 'a'*40, proof)
             self.assertFalse(proof.exists())
 
+    def test_catalog_upgrade_is_declared_without_mutating_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base, binary, manifest = self.fixture(root)
+            manifest['provenance']['data_formats'] = dict(local_catalog=29)
+            (base/'release.json').write_text(json.dumps(manifest))
+            identity = sha(base/'release.json')
+            destination, proof = root/'overlay', root/'proof.json'
+            with patch('native_package.subprocess.check_output', side_effect=lambda *a, **kw:
+                       json.dumps(dict(verified=True, identity=sha(destination/'release.json')))):
+                overlay(base, binary, destination, 'a'*40, proof, local_catalog=30)
+            self.assertEqual(sha(base/'release.json'), identity)
+            self.assertEqual(json.loads((destination/'release.json').read_text())['provenance']['data_formats']['local_catalog'], 30)
+            self.assertEqual(json.loads(proof.read_text())['local_catalog'], dict(before=29, after=30))
+
 
 if __name__ == '__main__':
     unittest.main()

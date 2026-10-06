@@ -144,6 +144,23 @@ w=Wire.__new__(Wire);w.socket=socket.socket(fileno=int(sys.argv[2]));w.feedback(
 
 
 class WorkerGroupTests(unittest.TestCase):
+    def test_owner_startup_churn_retains_history_without_source_effects(self):
+        import capture_worker as worker
+        from capture.journal import ReadBusy
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'config.json'
+            config=dict(identity={'id':1},worker_generation=1,desired='running',spool_bytes=16*1024*1024)
+            path.write_text(json.dumps(config))
+            spool=Spool(root/'spool',config['identity']);spool.establish(100,{})
+            spool.append(180,200,b'committed');spool.close()
+            with patch.object(worker,'Owner',side_effect=ReadBusy()),patch.object(worker,'Source') as source,patch.object(worker,'Wire') as wire:
+                self.assertEqual(worker.run(path),1);source.assert_not_called();wire.assert_not_called()
+            status=json.loads((root/'status.json').read_text())
+            self.assertEqual(status['state'],'unavailable');self.assertEqual(status['error'],'source_unavailable')
+            spool=Spool(root/'spool',config['identity'])
+            try:spool.verify();self.assertEqual(spool.captured,200)
+            finally:spool.close()
+
     def exercise(self, action):
         import capture_worker as worker
         import signal

@@ -13,6 +13,7 @@ from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
 from capture.groups import Groups
 from capture.owner import Owner
+from capture.journal import ReadBusy
 from capture.wal import SpoolBackpressure
 from capture.source import Source
 from capture.bootstrap import verify
@@ -54,7 +55,7 @@ def run(path):
                 if now-last_source_check>=1:
                     observed=source.check();last_source_check=now
                     if verified:
-                        try:spool.prune(control.get('published_lsn'))
+                        try:spool.maintain(control.get('published_lsn'))
                         except SpoolBackpressure:pass
                 if now-last_report>=.25:report('capturing','spool_backpressure')
                 if wire and now-last_ack>=1:feedback(request=True)
@@ -103,7 +104,7 @@ def run(path):
             if time.monotonic()-last_source_check>=1:
                 flush()
                 observed=source.check();last_source_check=time.monotonic()
-                if verified:spool.prune(current.get('published_lsn'))
+                if verified:spool.maintain(current.get('published_lsn'))
             if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
                 flush();report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':
@@ -143,9 +144,11 @@ def run(path):
             elif data:
                 # A keepalive cannot acknowledge decoded or buffered progress.
                 feedback()
-    except (CaptureError,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
+    except (CaptureError,ReadBusy,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
         if wire:wire.close();wire=None
-        code=error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        code='source_unavailable' if isinstance(error,ReadBusy) else error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        # Bounded owner-startup authority churn is unavailable, not lost history.
+        # No source setup, feedback or cleanup has occurred at this point.
         # Resource/history/codec failures abandon this generation, never skip changes.
         # Source outages retain the slot under its server cap and can reconnect after restart.
         state='unavailable' if code in ('source_unavailable','spool_backpressure','spool_migration_busy','spool_migration_budget') else 'resync_required'

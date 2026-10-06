@@ -28,6 +28,8 @@ def run(args):
             'CREATE TABLE orders(id int PRIMARY KEY,value int); CREATE TABLE payments(id int PRIMARY KEY,value int); INSERT INTO orders SELECT i,0 FROM generate_series(1,10000) i; INSERT INTO payments SELECT i,0 FROM generate_series(1,10000) i')
         _,report['baseline']=load(cell,args.rate,5,args.clients,10000)
         cell.sql(cell.parent,'UPDATE orders SET value=0; UPDATE payments SET value=0')
+        from marker_observer import enable
+        report['marker_observer']=enable(cell) if args.observer=='on' else False
         p=cell.cli('sync','create','--branch','main','--mode','continuous','--key','policy');cell.policy_id=p['id'];healthy(cell)
         if args.observer=='on':
             observer=Observer(cell,p['capture_id']);observer.thread.start()

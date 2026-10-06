@@ -26,15 +26,18 @@ def save(path,value):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(value,indent=2)+'\n');temp.replace(path)
 
 
-def run(config_path, root):
+def run(config_path, root, host_continuity=None):
     root.mkdir(parents=True,exist_ok=False)
     lock=(root/'.campaign.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     config=read(config_path)
     state=dict(status='preparing',pid=os.getpid(),config=config,config_sha256=sha(config_path),
         controller_identity=harness_identity(ROOT),driver_sha256=sha(Path(__file__)),completed=[])
+    campaign_monitor=HostMonitor(root,continuity=host_continuity,publish_quiet=True).start()
+    state['quiet_policy']='continuous_campaign_evidence; reset after activity or evidence gap'
     def checkpoint(**values):
         state.update(values,heartbeat_ms=time.time()*1000);save(root/'status.json',state)
     def verify():
+        campaign_monitor.check()
         assert sha(config_path)==state['config_sha256']
         assert harness_identity(ROOT)==state['controller_identity']
         assert shutil.disk_usage(root).free>=64*1024**3
@@ -58,7 +61,7 @@ def run(config_path, root):
                 try:return future.result(timeout=10)
                 except concurrent.futures.TimeoutError:checkpoint()
     def fixtures(name,plans):
-        folder=root/name;folder.mkdir();monitor=HostMonitor(folder).start();receipts=[]
+        folder=root/name;folder.mkdir();monitor=HostMonitor(folder,continuity=campaign_monitor.quiet_path).start();receipts=[]
         try:
             for index,plan in enumerate(plans):
                 for attempt in range(1,4):
@@ -97,7 +100,8 @@ def run(config_path, root):
         command=[sys.executable,str(ROOT/'e2e/native/performance/compare.py'),
             '--slice',config.get('slice','SP10a')+'-'+name,'--hypothesis',config['hypothesis'],'--output',str(root/name),
             '--cells',cells,'--clients',str(clients),'--seconds',str(seconds),'--warmup-seconds',str(warmup),
-            '--repeats','3','--quiet-seconds','300','--minimum-free-gib','64','--image',config['image']]
+            '--repeats','3','--quiet-seconds','300','--minimum-free-gib','64','--image',config['image'],
+            '--host-continuity',str(campaign_monitor.quiet_path)]
         for label,key in [('predecessor','candidate' if activation else 'predecessor'),('candidate','candidate')]:
             arm=config['arms'][key]
             command+=['--'+label+'-release',arm['release'],'--'+label+'-revision',arm['revision'],
@@ -151,8 +155,13 @@ def run(config_path, root):
         checkpoint(status='measurements_complete_review_required',phase='review',completed_at_ms=time.time()*1000)
     except BaseException as error:
         checkpoint(status='stopped_for_investigation',error_type=type(error).__name__,error=str(error));raise
+    finally:
+        try:campaign_monitor.close()
+        except BaseException as error:
+            checkpoint(status='stopped_for_investigation',error_type=type(error).__name__,error=str(error));raise
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--config',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();run(a.config.resolve(),a.output.resolve())
+    p.add_argument('--host-continuity',type=Path)
+    a=p.parse_args();run(a.config.resolve(),a.output.resolve(),a.host_continuity)
