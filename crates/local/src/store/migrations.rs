@@ -218,6 +218,7 @@ fn catalog_upgrade_inner(
                 | 27
                 | 28
                 | 29
+                | 30
         )
     {
         return Err(conflict(

@@ -161,6 +161,7 @@ pub(crate) fn run(root: &Path, prefix: &Path, previous: &Path, backup: &Path) ->
             | 27
             | 28
             | 29
+            | 30
     );
     let mut normalized = source_formats.clone();
     normalized["local_catalog"] = json!(SCHEMA_VERSION);

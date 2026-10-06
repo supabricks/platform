@@ -49,9 +49,10 @@ private fixture data and is deliberately not exported.
 
 All 53 targeted sync tests pass, including compaction/pin protection and the new
 query regression. The broader local unit run passes 216 tests (four pre-existing
-ignored). Recovery and installed validation are in progress. An initial recovery
-run exposed the explicit schema allowlist needing version 31; that was corrected
-before assembling a candidate. The rerun must pass before launch.
+ignored). Recovery validation checks the explicit backup/restore schema-31 and source-30
+upgrade allowlists. Initial failures exposed these required format declarations;
+the corrections must pass before assembling a candidate and launching trials.
+Installed validation is recorded below once complete.
 
 The new runtime will be a performance overlay changing only the native binary
 and declared local-catalog format, on the unchanged #157 package. The qualifier,
