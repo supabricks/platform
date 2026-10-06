@@ -678,6 +678,12 @@ original SP10c qualification is incomplete; this review does not waive them.
 
 ### SP11 — Sustained correctness, recovery and scaling
 
+**Started October 5:** the [SP11 execution protocol](../architecture/sync-performance-sp11.md)
+implements windowed steady-load qualification on the selected corrected SQLite
+package. The first campaign covers six 15-minute and two 60-minute fixtures.
+Maintenance/reader, capacity/catch-up, workload/interference and fault gates below
+remain required; a passing steady baseline does not complete SP11.
+
 Run on the selected implementation, with the matched matrix and source-qualified
 profile retained separately. If a failure needs a code fix, give that fix its own
 logical slice and full comparison before restarting the affected qualification.
