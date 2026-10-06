@@ -2,6 +2,7 @@
 from decimal import Decimal
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -28,7 +29,8 @@ PROFILE={'42':['public','pairs','d',COLUMNS],
 
 class CompositeKeys(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
+        previous=os.umask(0o077);self.addCleanup(os.umask,previous)
+        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name).resolve()
         self.identity=dict(generation=str(uuid.uuid4()),installation_id='install',project_id='p',branch_id='b',tenant_id='t',timeline_id='l',decoder_version=1)
         self.spool=Spool(self.root/'spool',self.identity);self.spool.establish(100,PROFILE)
         self.spool.set('bootstrap',dict(id='bootstrap',lsn='0/C8'))
