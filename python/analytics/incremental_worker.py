@@ -132,7 +132,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
         row[delete]=values is None;records.append(row)
     # Delete source rows may have NULL placeholders for non-key NOT NULL columns;
     # matched-delete removes them before any target insert/update.
-    input_schema=pa.schema([pa.field(f.name,f.type,nullable=True) for f in arrow]+[pa.field(delete,pa.bool_())])
+    input_schema=pa.schema([pa.field(f.name,f.type,nullable=True,metadata=f.metadata) for f in arrow]+[pa.field(delete,pa.bool_())])
     source=pa.Table.from_pylist(records,schema=input_schema)
     if source.nbytes>MAX_VALUES:raise CaptureError('apply_value_budget')
     table_bytes=sum(p.stat().st_size for p in path.rglob('*') if p.is_file())

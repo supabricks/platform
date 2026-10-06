@@ -15,8 +15,16 @@ DATE/CHAR support. Product/reference execution remains pending; no scale claim.
 
 [EQ01/#170](../architecture/eq01-composite-keys.md) implements native composite
 integer identity and passes local installed correctness/restart/Sail checks. The
-full admission matrix is now 8/24; sixteen DATE/CHAR tables remain blocked on #171.
-Six scalar control trials pass equality and cleanup; mean observed publication
+first admission matrix reached 8/24. [EQ01/#171](../architecture/eq01-date-char.md)
+now admits and bootstraps all 24 native schemas with finite DATE and padded CHAR
+payloads. Local installed restart, historical reads and typed query checks pass
+against PostgreSQL and independent Spark 4.2.0 results. The full SF1 load and
+103-statement analytical suite remain pending; Spark Connect DataFrame metadata
+round trips are tracked separately in #175. Nine separate-slice scalar controls
+pass equality/cleanup; source-commit stalls remain tracked in #176. The measured
+publication means are 857.82 → 881.88 → 843.77 ms (baseline → DATE → CHAR);
+this short screen is not a speedup or sustained performance qualification.
+The composite slice's six scalar control trials pass equality and cleanup; mean observed publication
 latency increased 4.15% in the short screen. Exact release CI remains a merge gate.
 
 The initial engineering baseline is platform source

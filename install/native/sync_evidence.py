@@ -14,9 +14,17 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite'))}
-WORKERS=('capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char'))}
+WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'date':{'date_native_bootstrap_types_nulls_bounds_and_sail_queries',
+        'date_insert_update_delete_key_move_and_old_epoch_immutability',
+        'date_capture_sigkill_and_daemon_restart_replay',
+        'infinite_date_fails_closed_without_publishing_or_losing_previous_epoch'},
+    'char':{'all_24_native_tpcds_schemas_bootstrap_with_date_char_and_composite_keys',
+        'char_native_bootstrap_types_nulls_bounds_and_sail_queries',
+        'char_insert_update_delete_key_move_and_old_epoch_immutability',
+        'char_capture_sigkill_and_daemon_restart_replay'},
     'composite':{'native_seven_tpcds_composite_schemas_and_reordered_include_keys_bootstrap',
         'continuous_iud_all_key_components_toast_decimal_bounds_duplicates_and_pinned_sail',
         'capture_sigkill_and_daemon_restart_preserve_composite_identity'},

@@ -22,6 +22,10 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [EQ01: native DATE/CHAR sync, analytical semantics and separate slice measurements](eq01-date-char.md)
+- [EQ01: native composite integer keys](eq01-composite-keys.md)
+- [EQ00: TPC-DS input and admission pilot](tpcds-eq00.md)
+
 - [SY08: exact installed sync qualification and operating envelope](sy08-installed-sync.md)
 - [Local synchronization CPU scaling: methodology and measured limits](sync-core-scaling.md)
 - [Bounded synchronization execution history and issue #156](sync-history-retention.md)

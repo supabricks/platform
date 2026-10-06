@@ -1,0 +1,129 @@
+{
+  "scope": "Python and verified source-built Sail engineering overlay; unsigned",
+  "base_identity": "78d3cad528db5e75cec90a602f1417880f1eff693ce88f87fcb49a878a4cd42a",
+  "identity": "1df5c77900ed85604f6c35821e0fc767d7ade968814daee0a80359c8485a13eb",
+  "sail_commit": "0ff69f29deb98da4784084100df6aca9a44059b5",
+  "changes": {
+    "python/analytics/capture/source.py": {
+      "before": "04e9c8e3cc6dab284fac5bc8073fdde3c25a37f1490554329fb84e221ef70c84",
+      "after": "4db650fb1c3b766336bba462f6b9cb2affa3a7747866e18fd2804aa354a0f378"
+    },
+    "python/analytics/capture/__pycache__/source.cpython-312.pyc": {
+      "before": "5962d867c4972bdd292162ba48bff70b01d0f6a007c80d46cb66adf149451cdd",
+      "after": "175a58fc57098f84e535c45de2e3e54b9645560d2c2b48631b0571b3f74ceec2"
+    },
+    "python/analytics/incremental/rows.py": {
+      "before": "9945673b7a13c7c9ba16dae4171644a7c071b83ea80a6f76fa84de662cd5e6d6",
+      "after": "83c7763490120d565053854698ef8ac2d6ba566f35ccd1655af91cc81b165799"
+    },
+    "python/analytics/incremental/__pycache__/rows.cpython-312.pyc": {
+      "before": "81c5c5b3751bdee5649d62361b0423d2967c5e3c576fccfb997b0d1daa8d3db4",
+      "after": "6d5b041bd5b86059cd8f3dedd7e5eb4df1734d87e683dcec853c8177f93ecb43"
+    },
+    "python/analytics/incremental_worker.py": {
+      "before": "95e9afef30d98ce8d73dfaaa30ad7e221a5ff362da08ed9ddcb4e8d181e475f9",
+      "after": "0546f53528c73869203b8a13e5c60b4cc02c2847d5daf0d139fae10d073c5bc5"
+    },
+    "python/analytics/__pycache__/incremental_worker.cpython-312.pyc": {
+      "before": "b1157e894c58f2449e43592daab8817738752070fbe80f6864daf81cc77e9a7a",
+      "after": "fb5d0a4518d7dbf83f6c417c98efc00d0caf31c7d067b30316a582ef316dd8a7"
+    },
+    "python/analytics/export.py": {
+      "before": "541f8a60f05cad65b57de16660c87f860600d06c2d36f488443454091a2d6f33",
+      "after": "8512947c7cccc44f7911bffe3482d992d7dafc4445673ad886b2a04243ac1c5a"
+    },
+    "python/analytics/__pycache__/export.cpython-312.pyc": {
+      "before": null,
+      "after": "94bb9cd8998241645964ae496e759ef434441e2b32d29ddd131af5c8f4622ff9"
+    },
+    "python/runtime/lib/python3.12/site-packages/pysail/_native.abi3.so": {
+      "before": "244a393262429d4fd06a54748aa894ab57f0d92ed164e183de954ecd65d18705",
+      "after": "8281abc388e61c095d21aa6d2dc9c22b0174874113a8abc50fc2120ef2763f0b"
+    },
+    "python/runtime/lib/python3.12/site-packages/pysail/tests/spark/test_imported_char.py": {
+      "before": null,
+      "after": "940ed447f7ab0c940375f6d065f8442bbaa0909761910b92236737f10e842b9f"
+    },
+    "python/runtime/lib/python3.12/site-packages/pysail-0.7.1.dist-info/sboms/sail-python.cyclonedx.json": {
+      "before": "bdf21e5c3dd41a80ac4f2db7b89f394e8dc23935d1564ed9d4950b19b8ffbb4a",
+      "after": "9ec114bc32e35e0ff53ef5a588660fc657f7432b4688575ae37d35127b5bee98"
+    },
+    "python/runtime/lib/python3.12/site-packages/pysail-0.7.1.dist-info/RECORD": {
+      "before": "f39308f1cc4f2ccd6f438e453783fe5016ae2744fdab578f2554aa81d18c4a30",
+      "after": "cacc9fb91d5165cbd4cd0e0f4a7387c841367b38657d476fbcbea13ec2795b4f"
+    },
+    "provenance/sail/sail-build.json": {
+      "before": "3e790fbda784b25724ae0b30a39296b4675f14a830fbe88b5fc6adea74e965e7",
+      "after": "96e270c46cb0a489c660f4f10178433ec7fad42b25875d99b70671f35c17dc4d"
+    },
+    "provenance/sail/source.lock.json": {
+      "before": "a6c89a02741398bd6fbd3ad7118b3aa0a76ffc466020959410791ecd6c78bfca",
+      "after": "47ef47c189bc1fd97002ab555d1ea0336c94206e89e3a60b709370d2665f62fd"
+    }
+  },
+  "verified_base_files": 26040,
+  "verification": {
+    "identity": "1df5c77900ed85604f6c35821e0fc767d7ade968814daee0a80359c8485a13eb",
+    "root": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq01-171/char-runtime-03",
+    "sqlite": {
+      "binding": "rusqlite/bundled",
+      "compile_options": [
+        "ATOMIC_INTRINSICS=1",
+        "COMPILER=gcc-13.3.0",
+        "DEFAULT_AUTOVACUUM",
+        "DEFAULT_CACHE_SIZE=-2000",
+        "DEFAULT_FILE_FORMAT=4",
+        "DEFAULT_FOREIGN_KEYS",
+        "DEFAULT_JOURNAL_SIZE_LIMIT=-1",
+        "DEFAULT_MMAP_SIZE=0",
+        "DEFAULT_PAGE_SIZE=4096",
+        "DEFAULT_PCACHE_INITSZ=20",
+        "DEFAULT_RECURSIVE_TRIGGERS",
+        "DEFAULT_SECTOR_SIZE=4096",
+        "DEFAULT_SYNCHRONOUS=2",
+        "DEFAULT_WAL_AUTOCHECKPOINT=1000",
+        "DEFAULT_WAL_SYNCHRONOUS=2",
+        "DEFAULT_WORKER_THREADS=0",
+        "DIRECT_OVERFLOW_READ",
+        "ENABLE_API_ARMOR",
+        "ENABLE_COLUMN_METADATA",
+        "ENABLE_DBSTAT_VTAB",
+        "ENABLE_FTS3",
+        "ENABLE_FTS3_PARENTHESIS",
+        "ENABLE_FTS5",
+        "ENABLE_LOAD_EXTENSION",
+        "ENABLE_MEMORY_MANAGEMENT",
+        "ENABLE_RTREE",
+        "ENABLE_STAT4",
+        "HAVE_ISNAN",
+        "MALLOC_SOFT_LIMIT=1024",
+        "MAX_ATTACHED=10",
+        "MAX_COLUMN=2000",
+        "MAX_COMPOUND_SELECT=500",
+        "MAX_DEFAULT_PAGE_SIZE=8192",
+        "MAX_EXPR_DEPTH=1000",
+        "MAX_FUNCTION_ARG=1000",
+        "MAX_LENGTH=1000000000",
+        "MAX_LIKE_PATTERN_LENGTH=50000",
+        "MAX_MMAP_SIZE=0x7fff0000",
+        "MAX_PAGE_COUNT=0xfffffffe",
+        "MAX_PAGE_SIZE=65536",
+        "MAX_SQL_LENGTH=1000000000",
+        "MAX_TRIGGER_DEPTH=1000",
+        "MAX_VARIABLE_NUMBER=32766",
+        "MAX_VDBE_OP=250000000",
+        "MAX_WORKER_THREADS=8",
+        "MUTEX_PTHREADS",
+        "SOUNDEX",
+        "SYSTEM_MALLOC",
+        "TEMP_STORE=1",
+        "THREADSAFE=1",
+        "USE_URI"
+      ],
+      "source_id": "2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24",
+      "version": "3.53.2"
+    },
+    "verified": true,
+    "version": "v0.1.0-alpha.36"
+  }
+}

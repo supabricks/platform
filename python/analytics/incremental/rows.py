@@ -47,6 +47,9 @@ def value(raw, column):
             if exponent < -scale or max(len(digits)+exponent,0)>precision-scale:raise ValueError()
             return n
         if typ in (25,1043):return raw
+        if typ==1042:
+            if not 5<=mod<=10_485_764 or len(raw)!=mod-4:raise ValueError()
+            return raw
         if typ==1082:
             if len(raw)!=10 or raw[4]!='-' or raw[7]!='-':raise ValueError()
             # Match bootstrap's finite Python/Arrow DATE profile (years 1–9999).

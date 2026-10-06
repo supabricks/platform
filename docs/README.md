@@ -22,6 +22,7 @@ build or operate the stack.
 | Understand synchronization CPU scaling | [Local benchmark methodology and results](architecture/sync-core-scaling.md) |
 | Compare measured synchronization performance | [SP02 comparison and contribution](architecture/sp02-durable-capture-groups.md); [SP03a SQLite qualification](architecture/sync-performance-sp03a.md); [SP03b capture WAL](architecture/sync-performance-sp03b.md); [SP04 planning inventories](architecture/sync-performance-sp04.md); [SP05 maintenance assessment](architecture/sync-performance-sp05.md) |
 | Find the plan to improve synchronization performance | [Measured performance plan (SP00–SP12)](plans/sync-performance-implementation.md) |
+| Understand native DATE/CHAR sync and SQL semantics | [EQ01 DATE and CHAR](architecture/eq01-date-char.md) |
 | See the planned end to end analytical scale tests | [TPC-DS loading, live sync and analytical qualification](plans/tpcds-end-to-end-qualification.md) |
 | Review source qualification and measured limits | [SP06 protocol and attribution limits](architecture/sync-performance-sp06.md) |
 | Understand the synchronization roadmap | [Managed synchronization plan](plans/analytical-sync-implementation.md) |

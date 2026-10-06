@@ -1,0 +1,1351 @@
+{
+  "engine": "Apache Spark JVM",
+  "version": "4.2.0",
+  "fixture_sha256": "6250c0c74289a058a494afc959addef1427c85d73406c96d012d02411ef08027",
+  "kinds": {
+    "date": {
+      "bootstrap": [
+        {
+          "sql": "SELECT id,d,amount FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "date",
+            "decimal(18,2)"
+          ],
+          "rows": [
+            [
+              "1",
+              "0001-01-01",
+              "1234567890123456.78"
+            ],
+            [
+              "2",
+              "9999-12-31",
+              null
+            ],
+            [
+              "3",
+              null,
+              "0.00"
+            ],
+            [
+              "4",
+              "2000-02-29",
+              "1.25"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,year(d),month(d),day(d) FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "int",
+            "int",
+            "int"
+          ],
+          "rows": [
+            [
+              "1",
+              "1",
+              "1",
+              "1"
+            ],
+            [
+              "2",
+              "9999",
+              "12",
+              "31"
+            ],
+            [
+              "3",
+              null,
+              null,
+              null
+            ],
+            [
+              "4",
+              "2000",
+              "2",
+              "29"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id FROM public.typed WHERE d BETWEEN DATE '1900-01-01' AND DATE '2024-12-31' ORDER BY id",
+          "types": [
+            "int"
+          ],
+          "rows": [
+            [
+              "4"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT count(d),min(d),max(d) FROM public.typed",
+          "types": [
+            "bigint",
+            "date",
+            "date"
+          ],
+          "rows": [
+            [
+              "3",
+              "0001-01-01",
+              "9999-12-31"
+            ]
+          ]
+        }
+      ],
+      "updated": [
+        {
+          "sql": "SELECT id,d,amount FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "date",
+            "decimal(18,2)"
+          ],
+          "rows": [
+            [
+              "3",
+              null,
+              "0.00"
+            ],
+            [
+              "4",
+              null,
+              "1.25"
+            ],
+            [
+              "5",
+              "1900-03-01",
+              "2.50"
+            ],
+            [
+              "10",
+              "2024-02-29",
+              "1234567890123456.79"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,year(d),month(d),day(d) FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "int",
+            "int",
+            "int"
+          ],
+          "rows": [
+            [
+              "3",
+              null,
+              null,
+              null
+            ],
+            [
+              "4",
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              "1900",
+              "3",
+              "1"
+            ],
+            [
+              "10",
+              "2024",
+              "2",
+              "29"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id FROM public.typed WHERE d BETWEEN DATE '1900-01-01' AND DATE '2024-12-31' ORDER BY id",
+          "types": [
+            "int"
+          ],
+          "rows": [
+            [
+              "5"
+            ],
+            [
+              "10"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT count(d),min(d),max(d) FROM public.typed",
+          "types": [
+            "bigint",
+            "date",
+            "date"
+          ],
+          "rows": [
+            [
+              "2",
+              "1900-03-01",
+              "2024-02-29"
+            ]
+          ]
+        }
+      ]
+    },
+    "char": {
+      "bootstrap": [
+        {
+          "sql": "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "string",
+            "string",
+            "string",
+            "decimal(18,2)"
+          ],
+          "rows": [
+            [
+              "1",
+              "x   ",
+              "x       ",
+              "x",
+              "1234567890123456.78"
+            ],
+            [
+              "2",
+              "x   ",
+              "x       ",
+              "x ",
+              null
+            ],
+            [
+              "3",
+              "    ",
+              "        ",
+              "",
+              "0.00"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              "1.25"
+            ],
+            [
+              "5",
+              "\ud83e\uddf1\u00e9  ",
+              "\ud83e\uddf1\u00e9      ",
+              "\ud83e\uddf1\u00e9",
+              "2.50"
+            ],
+            [
+              "6",
+              "a\t  ",
+              "a\t      ",
+              "a\t",
+              "3.75"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c='x',c='x ',c=d,c=s,c LIKE 'x',length(c),CAST(c AS STRING)='x' FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              "True",
+              "True",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "2",
+              "True",
+              "True",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "3",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c IN ('x','y',NULL),c NOT IN ('x','y',NULL),c BETWEEN 'x' AND 'y',c < 'x\\n' FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              null,
+              null,
+              "True",
+              "False"
+            ],
+            [
+              "2",
+              null,
+              null,
+              "True",
+              "False"
+            ],
+            [
+              "3",
+              null,
+              null,
+              "False",
+              "True"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              null,
+              null,
+              "False",
+              "False"
+            ],
+            [
+              "6",
+              null,
+              null,
+              "False",
+              "True"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+          "types": [
+            "int",
+            "int"
+          ],
+          "rows": [
+            [
+              "1",
+              "1"
+            ],
+            [
+              "1",
+              "2"
+            ],
+            [
+              "2",
+              "1"
+            ],
+            [
+              "2",
+              "2"
+            ],
+            [
+              "3",
+              "3"
+            ],
+            [
+              "5",
+              "5"
+            ],
+            [
+              "6",
+              "6"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id FROM public.typed WHERE c IN (SELECT d FROM public.typed) ORDER BY id",
+          "types": [
+            "int"
+          ],
+          "rows": []
+        },
+        {
+          "sql": "SELECT c,count(*) FROM public.typed GROUP BY c ORDER BY c",
+          "types": [
+            "string",
+            "bigint"
+          ],
+          "rows": [
+            [
+              null,
+              "1"
+            ],
+            [
+              "    ",
+              "1"
+            ],
+            [
+              "a\t  ",
+              "1"
+            ],
+            [
+              "x   ",
+              "2"
+            ],
+            [
+              "\ud83e\uddf1\u00e9  ",
+              "1"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c=concat('x',''),concat(c,'')='x',c IN (concat('x',''),NULL) FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              "True",
+              "False",
+              null
+            ],
+            [
+              "2",
+              "True",
+              "False",
+              null
+            ],
+            [
+              "3",
+              "False",
+              "False",
+              null
+            ],
+            [
+              "4",
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              "False",
+              "False",
+              null
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              null
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,x='x' FROM (SELECT id,c AS x FROM public.typed) ORDER BY id",
+          "types": [
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              "True"
+            ],
+            [
+              "2",
+              "True"
+            ],
+            [
+              "3",
+              "False"
+            ],
+            [
+              "4",
+              null
+            ],
+            [
+              "5",
+              "False"
+            ],
+            [
+              "6",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,x='x' FROM (SELECT id,CAST(c AS STRING) AS x FROM public.typed) ORDER BY id",
+          "types": [
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              "False"
+            ],
+            [
+              "2",
+              "False"
+            ],
+            [
+              "3",
+              "False"
+            ],
+            [
+              "4",
+              null
+            ],
+            [
+              "5",
+              "False"
+            ],
+            [
+              "6",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c='\ud83e\uddf1\u00e9',c='x     ',c <=> d,c IS NULL,c IN ('x','y'),c IN (concat('x',''),'y') FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "1",
+              "False",
+              "True",
+              "True",
+              "False",
+              "True",
+              "True"
+            ],
+            [
+              "2",
+              "False",
+              "True",
+              "True",
+              "False",
+              "True",
+              "True"
+            ],
+            [
+              "3",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ],
+            [
+              "4",
+              null,
+              null,
+              "True",
+              "True",
+              null,
+              null
+            ],
+            [
+              "5",
+              "True",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ]
+          ]
+        }
+      ],
+      "updated": [
+        {
+          "sql": "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "string",
+            "string",
+            "string",
+            "decimal(18,2)"
+          ],
+          "rows": [
+            [
+              "3",
+              "    ",
+              "        ",
+              "",
+              "0.00"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              "1.25"
+            ],
+            [
+              "5",
+              null,
+              "\ud83e\uddf1\u00e9      ",
+              "\ud83e\uddf1\u00e9",
+              "2.50"
+            ],
+            [
+              "6",
+              "a\t  ",
+              "a\t      ",
+              "a\t",
+              "3.75"
+            ],
+            [
+              "7",
+              "xy  ",
+              "xy      ",
+              "xy  ",
+              "2.50"
+            ],
+            [
+              "10",
+              "y   ",
+              "y       ",
+              "x",
+              "1234567890123456.79"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c='x',c='x ',c=d,c=s,c LIKE 'x',length(c),CAST(c AS STRING)='x' FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "7",
+              "False",
+              "False",
+              "True",
+              "True",
+              "False",
+              "4",
+              "False"
+            ],
+            [
+              "10",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "4",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c IN ('x','y',NULL),c NOT IN ('x','y',NULL),c BETWEEN 'x' AND 'y',c < 'x\\n' FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              null,
+              null,
+              "False",
+              "True"
+            ],
+            [
+              "4",
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "6",
+              null,
+              null,
+              "False",
+              "True"
+            ],
+            [
+              "7",
+              null,
+              null,
+              "True",
+              "False"
+            ],
+            [
+              "10",
+              null,
+              null,
+              "False",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+          "types": [
+            "int",
+            "int"
+          ],
+          "rows": [
+            [
+              "3",
+              "3"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "7",
+              "7"
+            ],
+            [
+              "10",
+              "10"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id FROM public.typed WHERE c IN (SELECT d FROM public.typed) ORDER BY id",
+          "types": [
+            "int"
+          ],
+          "rows": []
+        },
+        {
+          "sql": "SELECT c,count(*) FROM public.typed GROUP BY c ORDER BY c",
+          "types": [
+            "string",
+            "bigint"
+          ],
+          "rows": [
+            [
+              null,
+              "2"
+            ],
+            [
+              "    ",
+              "1"
+            ],
+            [
+              "a\t  ",
+              "1"
+            ],
+            [
+              "xy  ",
+              "1"
+            ],
+            [
+              "y   ",
+              "1"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c=concat('x',''),concat(c,'')='x',c IN (concat('x',''),NULL) FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              "False",
+              "False",
+              null
+            ],
+            [
+              "4",
+              null,
+              null,
+              null
+            ],
+            [
+              "5",
+              null,
+              null,
+              null
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              null
+            ],
+            [
+              "7",
+              "False",
+              "False",
+              null
+            ],
+            [
+              "10",
+              "False",
+              "False",
+              null
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,x='x' FROM (SELECT id,c AS x FROM public.typed) ORDER BY id",
+          "types": [
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              "False"
+            ],
+            [
+              "4",
+              null
+            ],
+            [
+              "5",
+              null
+            ],
+            [
+              "6",
+              "False"
+            ],
+            [
+              "7",
+              "False"
+            ],
+            [
+              "10",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,x='x' FROM (SELECT id,CAST(c AS STRING) AS x FROM public.typed) ORDER BY id",
+          "types": [
+            "int",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              "False"
+            ],
+            [
+              "4",
+              null
+            ],
+            [
+              "5",
+              null
+            ],
+            [
+              "6",
+              "False"
+            ],
+            [
+              "7",
+              "False"
+            ],
+            [
+              "10",
+              "False"
+            ]
+          ]
+        },
+        {
+          "sql": "SELECT id,c='\ud83e\uddf1\u00e9',c='x     ',c <=> d,c IS NULL,c IN ('x','y'),c IN (concat('x',''),'y') FROM public.typed ORDER BY id",
+          "types": [
+            "int",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean",
+            "boolean"
+          ],
+          "rows": [
+            [
+              "3",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ],
+            [
+              "4",
+              null,
+              null,
+              "True",
+              "True",
+              null,
+              null
+            ],
+            [
+              "5",
+              null,
+              null,
+              "False",
+              "True",
+              null,
+              null
+            ],
+            [
+              "6",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ],
+            [
+              "7",
+              "False",
+              "False",
+              "True",
+              "False",
+              "False",
+              "False"
+            ],
+            [
+              "10",
+              "False",
+              "False",
+              "True",
+              "False",
+              "True",
+              "True"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "runtime": {
+    "python": "3.12.13",
+    "java": "17.0.20.1+1",
+    "requirements_sha256": "db583fcab1a78fa784760fbf0fe472f8c88c623e4606f67ab2eee49aab5f0d8e",
+    "generator_sha256": "d00519fcc932016fd76c86caa37cb0939308e39f80d104563894c12b5403a3b9",
+    "jars": {
+      "HikariCP-2.5.1.jar": "3cf7bc5258414b77613e8d8ef0ce63b3ae1c53a441fd95b9ea335ec051c652b2",
+      "JLargeArrays-1.5.jar": "6dca5ab23e1fdb9190a257c04687a9ea19111c36b6ec9478bce6b2a128ca1aeb",
+      "JTransforms-3.1.jar": "d9dffa3e27793040dccb97b054d95267df46e669c396bf1ca4f3b085069bc2d5",
+      "RoaringBitmap-1.6.10.jar": "3cdaebcc97e82a86bc9b734c3a8d17c8316a0dfb24db76df33286c8819830902",
+      "ST4-4.0.4.jar": "17cc49dc535a0fbe58c3a8634e774572bed31eb73415e9ce9d2703b977bf356f",
+      "aircompressor-2.0.3.jar": "b86bb66f610079e0bf790d62e2ff68853eb0dc4748a6d68ae28bce92b68094aa",
+      "algebra_2.13-2.8.0.jar": "3eae539541fabfd50db5184b608c63aaefd2cc78f790102f5891178ead3f3c93",
+      "antlr-runtime-3.5.2.jar": "ce3fc8ecb10f39e9a3cddcbb2ce350d272d9cd3d0b1e18e6fe73c3b9389c8734",
+      "antlr4-runtime-4.13.1.jar": "54665d2838cc66458343468efc539e454fc95b46a8a04b13c6ac43fc9be63505",
+      "aopalliance-repackaged-3.0.6.jar": "a82b6d1a348324ef88dc807c7cd7aaf633985cbff7b30036fb61a1b86981d840",
+      "arpack-3.2.0.jar": "e654dd58128fd49539555d568a796ac34dcfedbdd8bca55aba33adccfe186c4c",
+      "arpack_combined_all-0.1.jar": "9964fb948ef213548a79b23dd480af9d72f1450824fa006bbfea211ac1ffa6dc",
+      "arrow-compression-19.0.0.jar": "bcdf40b618db41d2ef4b763937fb99c0673ca24b84188c0788a76b74e7f50ea2",
+      "arrow-format-19.0.0.jar": "e805ea51ba8b517ec6c18a96ea83bef5cda5172a2b74419d4b48fb3584ce4504",
+      "arrow-memory-core-19.0.0.jar": "0d3646cc2fa9ae94e95dc8b3e0ed5a51e1df15b59dc548f359e941023471884d",
+      "arrow-memory-netty-19.0.0.jar": "e882e201a9a8de25f450e697491a3fb4689fb7cba9883c3323a966087fcf8c84",
+      "arrow-memory-netty-buffer-patch-19.0.0.jar": "47a8d7d1c9df06b3b84a0e49815615dad86c8c91afddf5b9817ed3e777784557",
+      "arrow-vector-19.0.0.jar": "113e70317945e780050f13d17027d862d4c5d1cebe06c9fd8a5e922945bb2f8c",
+      "audience-annotations-0.12.0.jar": "ffb101fc066360ff3c77457c927fd7967fb096a6ee9e046ab7071447d8208efc",
+      "avro-1.12.1.jar": "72600f057bfbe2efe35fa55433e7756d45667dc938934be38a6e2be368aca237",
+      "avro-ipc-1.12.1.jar": "9f8c1921f055238fe22da2f806b838fec2b375c3408c6c768ae1238f50e27624",
+      "avro-mapred-1.12.1.jar": "85a6526b599b29f75a6200dbfd504149eeb188a7d7a19476d61862e42e612dee",
+      "blas-3.2.0.jar": "4cc05cf9ba3550b4f0d2cfbadf29b5fe10dfbe2ad7e5179dfb4adb782bb7e7fe",
+      "breeze-macros_2.13-2.1.0.jar": "fbc20705e9319113d9a664b31041f519d646bb21fefa9cce57a471553ef5d586",
+      "breeze_2.13-2.1.0.jar": "f31200270502b533d27867fb712b1deaea5f30a1ceb76c6156c26ea1d1a46148",
+      "cats-kernel_2.13-2.8.0.jar": "be38080c6af66465117db74804fb7dfcce3a7eac265c053332aa26f4e32175d2",
+      "chill-java-0.10.0.jar": "52afd3c1256d6f89293ba616c0c9ebf11191bb9e8159cd0c1cfdc99e5e0c5ffe",
+      "chill_2.13-0.10.0.jar": "b6507cab344bf8a86bf8bd3987cef15a35c096570eb31893f760d4754de4d8b1",
+      "commons-cli-1.11.0.jar": "8f7f8605d68e15bf32db61ec94eac6fdafc51b1bdbe1e0e0802b57d23f387792",
+      "commons-codec-1.22.0.jar": "d164fe79f262c32d9b18a0b5b2d317d1c27653d5e98fd2b998c24bf901c72ce4",
+      "commons-collections4-4.5.0.jar": "00f93263c267be201b8ae521b44a7137271b16688435340bf629db1bac0a5845",
+      "commons-compiler-3.1.9.jar": "d988a3ebc17188e9a1a3efadd8e958b90eb995c4fcc077292a5dfe5fe1109d25",
+      "commons-compress-1.28.0.jar": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca",
+      "commons-crypto-1.1.0.jar": "44dc28551cdba731658090d9b10d2eead9839c269d70cdcd7d56c0423df5227f",
+      "commons-dbcp-1.4.jar": "a6e2d83551d0e5b59aa942359f3010d35e79365e6552ad3dbaa6776e4851e4f6",
+      "commons-io-2.22.0.jar": "2b9a7b1f726fb86216dbd2c8321eabe0221dbd5b1be81c18e1cb53811b104758",
+      "commons-lang-2.6.jar": "50f11b09f877c294d56f24463f47d28f929cf5044f648661c0f0cfbae9a2f49c",
+      "commons-lang3-3.20.0.jar": "69e5c9fa35da7a51a5fd2099dfe56a2d8d32cf233e2f6d770e796146440263f4",
+      "commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+      "commons-pool-1.5.4.jar": "22095672ac3ad6503e42ec6d4cbc330cd1318040223f6c5d9605473b6d2aa0fd",
+      "commons-text-1.15.0.jar": "58d2da30f058512a1e7f914e39241deca4dff5c27a085b4ed2faa9e7208067f6",
+      "compress-lzf-1.2.0.jar": "b1db4258e6f017092e567b925a087281f49c392734fb369d7008d86acb0bc104",
+      "curator-client-5.9.0.jar": "9b1d65fa1940f77199ed097a8e586534efd1e9311227939a46a0e467a5f7991a",
+      "curator-framework-5.9.0.jar": "f8588d71d4b2d0b15ef5f911ceaac387563070cc328b91025047131d0c05733e",
+      "curator-recipes-5.9.0.jar": "2b384c256a8a30dfdff11763ec0fd56b6346e001afcb0c5ea972d5d0db1698bc",
+      "datanucleus-api-jdo-4.2.4.jar": "f30f1f09658329190811468e58a622f069d97a7284d67a88b8d01c809ab3d1f3",
+      "datanucleus-core-4.1.17.jar": "adb64b5ec1837821e289fc82b04c13f6b5a2f1c68a24628bcec6a7c43b5f5bca",
+      "datanucleus-rdbms-4.1.19.jar": "a189e10fb48dc0fa550721ee2206a1df8a2fd68d213149bf68793976b0ade687",
+      "datasketches-java-6.2.0.jar": "1b55103e1f7564150a0867eca4ce3bca13cd5935a32c199a5e738f8c5c24901a",
+      "datasketches-memory-3.0.2.jar": "a3dbdec4de16bf2b0a4c9b1b253bd4064d587675fc76063f8972cdfa104c66cb",
+      "derby-10.16.1.1.jar": "ede804cb04e871d7c52d2414e952ab939f9ef243abb7bd0ce7dbeb6e1e28bd0b",
+      "derbyshared-10.16.1.1.jar": "27d4be683a45f6c15940167277ce39bb7e26b9f6dc0bc05efbcf813cac5d2b8f",
+      "derbytools-10.16.1.1.jar": "db052f92508e966ee8b0c5c9eca84cb11cbf0b0d78e608dc89340d4bb6c07314",
+      "dropwizard-metrics-hadoop-metrics2-reporter-0.1.2.jar": "a22d6889790fa98d5f85de6e25f7dc89946b26964742e6deb9f91681946fa03a",
+      "failureaccess-1.0.3.jar": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+      "flatbuffers-java-25.2.10.jar": "587bd6c31cda747587493a113bec8602d3a0b0ca579b2b1b838ef71b19e6525d",
+      "gson-2.13.2.jar": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0",
+      "guava-33.6.0-jre.jar": "dc573e1fca4fd5454f4a5fd3d7da2df03002876a4175bafc14a95980dd7713b3",
+      "hadoop-client-api-3.5.0.jar": "cc59446ec9ebaceae56fdb8d8c21477766dc5d426325642151c796bec5c4e6b7",
+      "hadoop-client-runtime-3.5.0.jar": "b7db3e60c5df1cd37c2995b3e0142e57487260706834e5325bbe0a5e683eedf1",
+      "hive-beeline-2.3.10.jar": "569ec193ae8619c06479705ab0ad3b11c81c095c825c657ae389054cc027de16",
+      "hive-cli-2.3.10.jar": "a60c94060a08100dfb2cfefbb273373b16ab55540548a74e3f01075a97f5b043",
+      "hive-common-2.3.10.jar": "b6a26be6eaf7ead173edfb2a654f72bdbf5fd1d5bb5ab99144a21a2205593831",
+      "hive-exec-2.3.10-core.jar": "1699ff817dd73db685ff112f109ec7ae380e0a6fa1a204166e55f66268fcd801",
+      "hive-jdbc-2.3.10.jar": "d68b59a0c78faada79657af09cc8256b748963828a35d75881c25642a1ba0414",
+      "hive-metastore-2.3.10.jar": "20786e707c40793b5e23688c61dc1959b3c828a821945712a530983cb7ea6c24",
+      "hive-serde-2.3.10.jar": "d29877f0a83fbee1d43495520e6b186f157d3a0999b12a2a8b21840be6230206",
+      "hive-service-rpc-4.0.0.jar": "78b544d19579cec2ee4d07f9599cece6af9dc7f829d44f6070db5a7425eb6372",
+      "hive-shims-0.23-2.3.10.jar": "1eb002e63c6c165fa65b5b6b43d26fda5b8f04c3ac8e13d5a3625ba6bc79cd44",
+      "hive-shims-2.3.10.jar": "bafd52d8fc0a9c02c18f9771dc82d6ebc270e1331c31c668e2c4c02fc4bf1bfd",
+      "hive-shims-common-2.3.10.jar": "03e7dbde1aec45904b04f46910cbbadee800d5d88403fa646bb67ca0557d93d1",
+      "hive-shims-scheduler-2.3.10.jar": "cdb5f8866ae54b125fe88748cc7ffcd065de4603529b9ca1a756c8c550b2ade2",
+      "hive-storage-api-2.8.1.jar": "2bb77d246a9724a371301049239c6e53039efe4136b0ed34ee5a9c7b3cd861d8",
+      "hk2-api-3.0.6.jar": "c049a21a9fd9316c7e291a2bc28835f70d25affb623dc1599a83b6b84ec83a4f",
+      "hk2-locator-3.0.6.jar": "e2664d21b017c3aa1518b913264602bea604edc54d356103c10afba99abd04fc",
+      "hk2-utils-3.0.6.jar": "fc84d85a0744b576d9ec7db5845eeb998ed532a9450dd19c8c922c3ee6926206",
+      "httpclient-4.5.14.jar": "c8bc7e1c51a6d4ce72f40d2ebbabf1c4b68bfe76e732104b04381b493478e9d6",
+      "httpcore-4.4.16.jar": "6c9b3dd142a09dc468e23ad39aad6f75a0f2b85125104469f026e52a474e464f",
+      "icu4j-78.3.jar": "e962c1758d9659ea1e1fbab99c58683f654d304e1126ace19aaabfe39e0edb25",
+      "istack-commons-runtime-4.1.2.jar": "7fd6792361f4dd00f8c56af4a20cecc0066deea4a8f3dec38348af23fc2296ee",
+      "ivy-2.5.3.jar": "9502aa5aabf0b1484924a13ef4b5d24f121f7f91aab6768f11cc9d0906c0803b",
+      "jackson-annotations-2.21.jar": "53ca085f4a150f703f49e1aabd935bd03b43e1ea3d55d135438292af22cef56b",
+      "jackson-core-2.21.2.jar": "12e8655b100267b44d0f14d01b1f5082a5105e616174dc4307be1a761e92407b",
+      "jackson-databind-2.21.2.jar": "8c982f01f148d805f0aaac2339011244757e0df7c6ff8951f2fa3f433b8ed849",
+      "jackson-dataformat-yaml-2.21.2.jar": "d25551812fa0c14f37cabaa9401e63eadcea42ce36311183af5622d5bc8a1bc7",
+      "jackson-datatype-jsr310-2.21.2.jar": "a083d57cd1c4a28fefcc6bd071740779eb7fc1c22a3c1b40451b5477c443f02f",
+      "jackson-module-scala_2.13-2.21.2.jar": "24f56b094ae46ab4005ac703a1be14be72dd8f0d81111508fc6e35163f251452",
+      "jakarta.activation-api-2.1.4.jar": "c9db52100ce6c8aac95cc39075f95720d2e561b11f8051b81c121ad4effd7004",
+      "jakarta.annotation-api-2.1.1.jar": "5f65fdaf424eee2b55e1d882ba9bb376be93fb09b37b808be6e22e8851c909fe",
+      "jakarta.inject-api-2.0.1.jar": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c",
+      "jakarta.servlet-api-6.0.0.jar": "c034eb1afb158987dbb53a5fea0cadf611c8dae8daadd59c44d9d5ab70129cef",
+      "jakarta.validation-api-3.0.2.jar": "291c25e6910cc6a7ebd96d4c6baebf6d7c37676c5482c2d96146e901b62c1fc9",
+      "jakarta.ws.rs-api-3.1.0.jar": "6b3b3628b8b4aedda0d24c3354335e985497d8ef3c510b8f3028e920d5b8663d",
+      "jakarta.xml.bind-api-4.0.5.jar": "5e489b6c874c4119e003ff1403db523ee3a8959ec499f3de29e77245efccf216",
+      "janino-3.1.9.jar": "7df88d90aa165ab48bdebea425fa009eeef04918c82e98cdbea5e747e114508d",
+      "java-diff-utils-4.16.jar": "620403030d676a4a27f780a3acec7438dee1b1651a1c804fa6bb11bb07399a6f",
+      "javassist-3.30.2-GA.jar": "eba37290994b5e4868f3af98ff113f6244a6b099385d9ad46881307d3cb01aaf",
+      "javax.jdo-3.2.0-m3.jar": "b0e338881376e4588f7564ae2dcc91737148e7c950873f6b0b899cbf0feef80b",
+      "javax.servlet-api-4.0.1.jar": "83a03dd877d3674576f0da7b90755c8524af099ccf0607fc61aa971535ad7c60",
+      "javolution-5.5.1.jar": "6de167427fb5ad34fe533cb36a8b3427fa6052a2b99781874396ed5cca9f8ed1",
+      "jaxb-core-4.0.6.jar": "ebbd274207b4860d0dc6e2d44d6dbdb5945cede01222d2e50661d45f5d46c0f7",
+      "jaxb-runtime-4.0.6.jar": "1c0d57f8c25f9605d5a2f7ad0a87581893776ac85b00b101b2651258edaa9118",
+      "jcl-over-slf4j-2.0.17.jar": "affd06771589ebfe454bb11315a4f466ecaa135b95f3e7939534cf1d2fd7064c",
+      "jdo-api-3.0.1.jar": "2a2e63d44a4d7fe267650d08431218648adee14f725df3896d09db3084d7a2f2",
+      "jersey-client-3.1.11.jar": "9f0f532a6babb530f4c7d6fc4f452b996a97aa7c34248bf249eea8a2ce639758",
+      "jersey-common-3.1.11.jar": "ec516d7c2fdcfcd7eb7739eacf3cd6914e17a1595fd45826b33c8765965981b2",
+      "jersey-container-servlet-3.1.11.jar": "dfb7bd433c1648ae0dd037b4d21093225333564ed01d751b5eb6e2a099dec160",
+      "jersey-container-servlet-core-3.1.11.jar": "4c93b928d93037d7250ab1db9b9eb5e2bd12cf9e67cd48d25dcc835249d47e40",
+      "jersey-hk2-3.1.11.jar": "faeee985d70b8223a9eb22baabf579d9f860141716efcaf74b0a252a63959fc3",
+      "jersey-server-3.1.11.jar": "7dde2adf6600f3e8f723e37a8c96c31838a682f8db854fdcfcf4f00695d6f903",
+      "jjwt-api-0.13.0.jar": "5af8a971c7215acb6c3708794a3912c56eb7066ca3b1ee73f87988c9e0d6c067",
+      "jjwt-impl-0.13.0.jar": "b351baaa302889a416e83683f110948017cee671303262522d4ba477688ca89f",
+      "jjwt-jackson-0.13.0.jar": "e5ca43b49deca1ad818b2572f0af4d902370205089bdcd15d5dbb6095d17416b",
+      "jline-2.14.6.jar": "97d1acaac82409be42e622d7a54d3ae9d08517e8aefdea3d2ba9791150c2f02d",
+      "jline-3.29.0-jdk8.jar": "ed2680487642df95379f220c09c0f77e25095713387e2bc00c2d6581bb79c804",
+      "joda-time-2.14.1.jar": "656721d9456d5ec7e7bfcf02665202ea5a375ff22136b8f23473cf7eae8fa0c6",
+      "jpam-1.1.jar": "3db38287ef038b01b7e73f2c62c3e7107af24a6b0cf95fda904b4330edcf8b28",
+      "json-1.8.jar": "e0b487de3ccd3d1c288976677835e49880799c35507059039a18fa4ae1e7c59a",
+      "json4s-ast_2.13-4.0.7.jar": "3135eceb95b679ea228e3543267d12bea5f4bdb68e3e8fc55402824d85885e7e",
+      "json4s-core_2.13-4.0.7.jar": "e831e4a676964d3f38a408b464b3ba6d21b76730c01f13d2d0b9995945fa06ce",
+      "json4s-jackson-core_2.13-4.0.7.jar": "c189e11ddb2c8e15544386687d986108584934b06a025c09c334f24b11260528",
+      "json4s-jackson_2.13-4.0.7.jar": "3b76d426241ba14d0b5ed1a073a2e59fc4db1fc54ec55b79eb35efed19ed8d57",
+      "json4s-scalap_2.13-4.0.7.jar": "69bdf853f04379970939022247495f30f60a3ef7292d6af77ad7bec4cb83ff4b",
+      "jsr305-3.0.0.jar": "bec0b24dcb23f9670172724826584802b80ae6cbdaba03bdebdef9327b962f6a",
+      "jta-1.1.jar": "b8ec163b4a47bad16f9a0b7d03c3210c6b0a29216d768031073ac20817c0ba50",
+      "jts-core-1.20.0.jar": "6a783d8f9dba3d3cf7265435f134402f63c05838aa6cbcc4297ad3a5b2842baf",
+      "jul-to-slf4j-2.0.17.jar": "a7afcd23b9cfd1475e55c94f943b808c5922035e7e2c2a5c65a487a4106bc538",
+      "kryo-shaded-4.0.3.jar": "cb32b28ba586a96260d7d5016ffe7a2132c300644ddb68d78545ff31849c367d",
+      "kubernetes-client-7.6.1.jar": "2dfe170d25b56ae55165e435df2e1300ce7c193b9bba70fc5097c41c51546754",
+      "kubernetes-client-api-7.6.1.jar": "b14be8dd8b0962bee1e09a948c56c55f3c0aef0c7b1cb119e6c932c734517dcd",
+      "kubernetes-httpclient-vertx-7.6.1.jar": "1ab5909f840fba788b42c899f7930ed83d4845e3f3aefa88551020ef8040ceb2",
+      "kubernetes-model-admissionregistration-7.6.1.jar": "656b179c96bda7a727b3437c4aef419b6dd4e90ac5e433f59ea54a6e09c4f13e",
+      "kubernetes-model-apiextensions-7.6.1.jar": "34d0d1a6a79dcb5b41cfd89c3af115b669b8dfb2af1f7a7063127e7f2addbd0c",
+      "kubernetes-model-apps-7.6.1.jar": "8638f2a89283f42e9048186d516ddfa457751ae2030865470ad44daf1becc4cc",
+      "kubernetes-model-autoscaling-7.6.1.jar": "80de0e5b6db02da3890141750529eb52a0494663d5c8ad7f36562cbc43473550",
+      "kubernetes-model-batch-7.6.1.jar": "d2ffddb4e3f2aab1502f89bde7b7a61a1b0100d3df67ac15270191157b02501f",
+      "kubernetes-model-certificates-7.6.1.jar": "dd51a82457d7bddae1eec178c14993a303afe6facd153af948aa5c49c3831daa",
+      "kubernetes-model-common-7.6.1.jar": "1b0d9e90c449b4d97394097bc9393d56bbe745014e942ccc71277dd216fa9e1c",
+      "kubernetes-model-coordination-7.6.1.jar": "54c8e4466a75cd48f3186441b7b78f0b4173d36fef7b80fb12ee27d49f3d2a30",
+      "kubernetes-model-core-7.6.1.jar": "635a7cd9d0e2caf8469cdad404d9ff7b37fc0aceaa4371f5295c2f380b2b554a",
+      "kubernetes-model-discovery-7.6.1.jar": "b5f38b96df28c5fe6f33c0074e287e1fe36de815d0d11022f32266ca7df562cb",
+      "kubernetes-model-events-7.6.1.jar": "bed1926bf20b922e69b8966c8e3ed0a2deb5ed865351daf26852e82bf64a34a8",
+      "kubernetes-model-extensions-7.6.1.jar": "9a9d88d6c478dc3e0138086bff9f381836aaf54bc8b307561fa877e5489762ef",
+      "kubernetes-model-flowcontrol-7.6.1.jar": "2af44c89d785424b52e07367470c5fece75f11022e64f4339459d9032735246a",
+      "kubernetes-model-gatewayapi-7.6.1.jar": "25cc5250023d2358af6d7e0eb8afab0f3f9ebb703bb62a1e76b96b6fa261e10d",
+      "kubernetes-model-metrics-7.6.1.jar": "0ab71127997200808ae4973666653f54e484c29b59a616b27423115db77f18d0",
+      "kubernetes-model-networking-7.6.1.jar": "534f8286f0f0da39e98e8d58994ab58df5cf6a762532e1ccf50a836bac1f274c",
+      "kubernetes-model-node-7.6.1.jar": "c0fdf177b3e21f6e5be5bdad425c30158fb8df375e5b8a03aed945b1e8172f26",
+      "kubernetes-model-policy-7.6.1.jar": "a11a53ca788091f2d525be3975df1a9a709f2fe3d2683f1094f99fd75286d393",
+      "kubernetes-model-rbac-7.6.1.jar": "e8625fc65dd0813681e5cd0a48fdae03a7dc0bf3db147c871245b14f31275428",
+      "kubernetes-model-resource-7.6.1.jar": "8a30c73ad35c97202e9381bded6d3a0a5e28fcf7431ac279a74436e5e28bd149",
+      "kubernetes-model-scheduling-7.6.1.jar": "15a9ed0f725c9fa472ef586690cc99c676dd20807e48bfb482dab6c5bc96d8bb",
+      "kubernetes-model-storageclass-7.6.1.jar": "69d5bc6f78728b3afddd2f9a926d4d586a79a2e15920ad989de302bc75997d2e",
+      "lapack-3.2.0.jar": "7d3513b672673414b88f96b93dd21984033999530431d181ee97fb14ccbbe98c",
+      "leveldbjni-all-1.8.jar": "40eb0c4f8c8a4b819c5949b19c38333411c1a4620f6e960a3313854d4adc7c83",
+      "libfb303-0.9.3.jar": "23fc397a42181b17bb7d0fada2213735ed8db38cfbf038d12b9c00ea7419e11b",
+      "libthrift-0.16.0.jar": "b311ad08f7dc5ba90139910ec8619460914a4a2952f738603f1d7803ffdbe0a8",
+      "log4j-1.2-api-2.25.4.jar": "7b1a61507950ea67b3d6b11437ee37fad9db06f855c92c25c08aee074c757395",
+      "log4j-api-2.25.4.jar": "c4b642a7f047275215de117e0e3847eb2c7711d84a0aa7433e7b3c096daf341d",
+      "log4j-core-2.25.4.jar": "10fee2c0485d54fa44ee75d314f6295508f7b932281873db61a91b88073200e6",
+      "log4j-layout-template-json-2.25.4.jar": "a2f8d03f39ff62de75d4524c9ee085f167e201da91652141097a60643ce22e85",
+      "log4j-slf4j2-impl-2.25.4.jar": "dd897abc5eb3a6d965426c7937b92dd43e67c82d9819bea5d19f311516c68be3",
+      "lz4-java-1.11.0.jar": "535c5578cab5dcd0a438e202df80091632b873c0370c25d9b1c1ad1d73577207",
+      "metrics-core-4.2.37.jar": "3c70d19049d10f474ab803706b9c0677bcf5fd9e1afeb4f6c496f62e38b27678",
+      "metrics-graphite-4.2.37.jar": "75b93cbf33760173e7ab448326bd5bfc9334b054c4ce0348eb907d907db85218",
+      "metrics-jmx-4.2.37.jar": "26f96d12d14c18940778521454e08ddfc6022666557d8c6f06caf3a8a322603a",
+      "metrics-json-4.2.37.jar": "eb73cb82c3c03f207a87d924d325f043714e4805c62de0fe05edf89cf0b69e30",
+      "metrics-jvm-4.2.37.jar": "5428a69086194193fcde3a0efc51520f5cf6a0453c928d65fbe52f8325f57537",
+      "minlog-1.3.0.jar": "f7b399d3a5478a4f3e0d98bd1c9f47766119c66414bc33aa0f6cde0066f24cc2",
+      "netty-all-4.2.13.Final.jar": "1751e53349aaaa4f1c7bd8ebce01dd6eb19ffb10c7796f3219823e3619c856ab",
+      "netty-buffer-4.2.13.Final.jar": "39e9ab9ecaff178898a5eb37568096f1efd4f768a7bd162e0cde3eefa19137d5",
+      "netty-codec-4.2.13.Final.jar": "ead6e40832fac34be975b66d21bbdac005f6e83f643406b146655777fa767d2a",
+      "netty-codec-base-4.2.13.Final.jar": "a0407d1e9b77e9807aabf367e06602475faab567bfcb8e07ff5bd22c24cd923e",
+      "netty-codec-compression-4.2.13.Final.jar": "15a1cea261831a8b92c02aa5ca1a51a180a4c6ff873a01ecaaf53f0ebe1db6e3",
+      "netty-codec-dns-4.2.13.Final.jar": "703f11b6d1c5f8566aa237b749046fe9f201928f305f541e21d445299e3f49e5",
+      "netty-codec-http-4.2.13.Final.jar": "81b6c95341571c30cbdad977dfe140648fd3bf5fc13939f4d0be4d1929d544cb",
+      "netty-codec-http2-4.2.13.Final.jar": "2321f651bae1679ca1e646a1c1171b6a6cc21015bdfa2aee829ed9130f5b1da8",
+      "netty-codec-socks-4.2.13.Final.jar": "b45100145a3a093bb4b9fc572409c771e8e78339dd91a2909574faf44f6d7832",
+      "netty-common-4.2.13.Final.jar": "cccffbdd68586b5473c67d6ac37145625e7abbfae304e7a512616576b0187697",
+      "netty-handler-4.2.13.Final.jar": "50efc30aeca2ef21311f2502389e500bfc168c311edb1ae04a2db4d6bb5d7f7f",
+      "netty-handler-proxy-4.2.13.Final.jar": "7abd80166644f63b95dbe6fd9dd0e37402cd49067335d6af63ef1ce442430cf5",
+      "netty-resolver-4.2.13.Final.jar": "2cd68d6a746aeb2ec92923fa168d250526d7ad3dbe1877e7bcbe6e8acdb2c193",
+      "netty-resolver-dns-4.2.13.Final.jar": "f77815b3423b3513856ab7b43ac3f6c743a9c22ed23946f7c056ff6f0a238282",
+      "netty-tcnative-boringssl-static-2.0.76.Final-linux-aarch_64.jar": "5491a2eb403d7e2a71c1f3ecdfad8964a958b51308cb04732891c1e5e083bcda",
+      "netty-tcnative-boringssl-static-2.0.76.Final-linux-x86_64.jar": "63ad9ffd22b5756606f86a4692ff68ab5853d6ce442593a525d476fdebdcfa75",
+      "netty-tcnative-boringssl-static-2.0.76.Final-osx-aarch_64.jar": "9b26b2d02c27ae112f3f0eff42b28c846c03d4d015a98831e9ddb24761317990",
+      "netty-tcnative-boringssl-static-2.0.76.Final-osx-x86_64.jar": "e06101f8a4e5d2f593a2ded8bb8ff15d2996f6314262e79ff6c31d5f8ddbe4f7",
+      "netty-tcnative-boringssl-static-2.0.76.Final-windows-x86_64.jar": "18aaf0bd73baab1f42d6fe11b573b1f8ae1b816f3bb5dab420c79f6450490767",
+      "netty-tcnative-classes-2.0.76.Final.jar": "010aef51acb868c65166f9024cd4caa529af06d36b94c6abe2cfa7f3b11ca66c",
+      "netty-transport-4.2.13.Final.jar": "d9b2200bfe6e47c2dfa2f0952df6fbdfd42bf58bdd9007e9ac17c789274388c5",
+      "netty-transport-classes-epoll-4.2.13.Final.jar": "2ed9cf6ca8bee3ae80501938e5fa0b7c20947d704222a774a60ae65d38e0285e",
+      "netty-transport-classes-kqueue-4.2.13.Final.jar": "56baf57a0adae95291722e4adc2f01abdee59ac1d160877a9bf9e3f76be35131",
+      "netty-transport-native-epoll-4.2.13.Final-linux-aarch_64.jar": "1d98e1994c1d67cf6cd77a548eb5ac6decdf4991c0affad696bdc2b52f2ad7ff",
+      "netty-transport-native-epoll-4.2.13.Final-linux-riscv64.jar": "da37f50c976195c9667eacca99b72e9963b82e4277b24ef06359bb22da13e32b",
+      "netty-transport-native-epoll-4.2.13.Final-linux-x86_64.jar": "da03900523c0521e8d1d090258577bef003eecd65d9f00d7753be44043891490",
+      "netty-transport-native-kqueue-4.2.13.Final-osx-aarch_64.jar": "fced7b8ea179737f3cabf69742df069d64961ec08955cfa51f78ce46431c6105",
+      "netty-transport-native-kqueue-4.2.13.Final-osx-x86_64.jar": "0a0732e8caed5496ad93f5b57f4bd8ace0e8131a3a76b0465365a1590323c7b1",
+      "netty-transport-native-unix-common-4.2.13.Final.jar": "052b8429276ac96bd1f1067ce963b4e57c627ca331071f4df2e63f759234f6b1",
+      "objenesis-3.5.jar": "6f5abd42cf3ebc0f2bdae73dbc57820fc4a1cb8930492841e29e9a9f9dcc86e0",
+      "opencsv-2.3.jar": "dc0ba5bff6140dc92339973026a0ecbddc2a3b01bdd46ed9d16becc2f6d78de6",
+      "orc-core-2.3.0-shaded-protobuf.jar": "6f70ed3f491122f0b74e8cf09d8986970ce44b72ba22ff96c8f5622220495a15",
+      "orc-format-1.1.1-shaded-protobuf.jar": "8d7fee1fd60fe6e4589c8b46d58d118e45613aa416a14ac0835e12150f3ee2a9",
+      "orc-mapreduce-2.3.0-shaded-protobuf.jar": "41f0fb2f17fecc79b2549ae55debb9480582d1f850640be41fcdd10bba1fe0f8",
+      "orc-shims-2.3.0.jar": "f2da21a6b64f688a0ed2e73f88364db0b1d0691e9f4b3f6b89119e4cab54eae5",
+      "oro-2.0.8.jar": "e00ccdad5df7eb43fdee44232ef64602bf63807c2d133a7be83ba09fd49af26e",
+      "osgi-resource-locator-1.0.3.jar": "aab5d7849f7cfcda2cc7c541ba1bd365151d42276f151c825387245dfde3dd74",
+      "paranamer-2.8.3.jar": "a9df136f2e926b37a838a5b4e2227343c3a755d15724b3a8350b4aea4b158945",
+      "parquet-column-1.17.0.jar": "2fcd38628897c3b547b92d0abf7200ec84e9eb3fb9e8450b196142e4d5229044",
+      "parquet-common-1.17.0.jar": "697ef2603a427eb997837cec5d7a1290322425e63678f37257d8f2e8619f2c4e",
+      "parquet-encoding-1.17.0.jar": "affb09b7f468b6437afe78cdb229ed5631bbca5a578fb9cac22ead2187b9339a",
+      "parquet-format-structures-1.17.0.jar": "9b251f36df0bf61c80e23f07f76e3564d1b6566dea98210cc92a80e3075c0116",
+      "parquet-hadoop-1.17.0.jar": "c47b0a875951fa191fadf8c5d13742e8938bdda9779b2d8fec5c5345ac9e0184",
+      "parquet-jackson-1.17.0.jar": "7a4fe149acf7b2381e5c4d0677c075e11e4289ff944fb99be70c9f7d337027fe",
+      "pickle-1.5.jar": "ec762e69e4a699b544ac68b306d12f1f546d7581f165f3ffea819b703066424b",
+      "py4j-0.10.9.9.jar": "bc4c4b1e731ab18496cc6eab31e7353701b32fc5c3047764a0656acf5344a54b",
+      "rocksdbjni-9.8.4.jar": "b60144a306bf7dd3de2b6fea947681fe940ba1510b9bc36ece836484af7bb7fa",
+      "scala-compiler-2.13.18.jar": "2f15891fcae7aad30a3892194fb2abb6224cf7ce5d2bd90fba7f1c48682fca21",
+      "scala-library-2.13.18.jar": "4e85d96ff7bc7dc627985523c3541b9917aaa08e956391380c42db21a2c4e5a0",
+      "scala-parallel-collections_2.13-1.2.0.jar": "4eae6e68cf44e9f709970355590ae981883edf6484608d747376a56cbb285432",
+      "scala-parser-combinators_2.13-2.4.0.jar": "e36dccdc21fd4bc770907a9e126d7e3901e71a191eb9ea8e93a0227774e0945d",
+      "scala-reflect-2.13.18.jar": "6935ff1982b2ac93d695f15aa66921be2f602921277afe002f018fd8c7d6e29b",
+      "scala-xml_2.13-2.4.0.jar": "b549a1bf335bc4528cf26f005894c7c37220ac4e8450847973d8f4001b8f59ea",
+      "slf4j-api-2.0.17.jar": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
+      "snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd",
+      "snakeyaml-engine-3.0.1.jar": "0b638c8806112215e02e58e95cbd9e9a69d4bd540991f47553d053919994cc94",
+      "snappy-java-1.1.10.8.jar": "50485d06037fea3d6e40c968386feeca6338cc9872e25549593ff3eb352cefcc",
+      "spark-catalyst_2.13-4.2.0.jar": "aef4f68a687de8174d06c5cb451c48019847f90c0b0604ec1928ee313b2a6c40",
+      "spark-common-utils-java_2.13-4.2.0.jar": "4477fa046b03df1d565a1d8cf5812106003ba8c031ce3971af39b75d4f0e6b2b",
+      "spark-common-utils_2.13-4.2.0.jar": "7a24a46dd0a89dc66d3d7fee3c2192e1de4d6071e2e303c1a28796def04e0bb8",
+      "spark-connect_2.13-4.2.0.jar": "a5ab11bed0ebb6bf8e005b3f238dfa97f6ca3cbe0161201d676accfc1bc9f04c",
+      "spark-core_2.13-4.2.0.jar": "8e0a03b66338a4a38c9089d9f798ab6a6c6583aefe93f910311704a5ec90ffc4",
+      "spark-graphx_2.13-4.2.0.jar": "804e77a13aeeee6fd3ad8c896e0fadc22b606f7823ac5ac04f232500b59a5385",
+      "spark-hive-thriftserver_2.13-4.2.0.jar": "e4dc64503a7061e6fc2bf86996c95579168dc7c6281ddea5a3981b1972e51afa",
+      "spark-hive_2.13-4.2.0.jar": "6b0a90d90b9c0fd316a3b1bbe7f445e3631abde185a00308adb15f76b1594246",
+      "spark-kubernetes_2.13-4.2.0.jar": "1aef2207a78226ff8dd248e80e18c7700b82e25be0e4466eaef3b927269d3c7c",
+      "spark-kvstore_2.13-4.2.0.jar": "d264395f5bb7a1ada24a515881ceacc13029e9c7a1495a06f39ae8691bae8d6e",
+      "spark-launcher_2.13-4.2.0.jar": "2f2e9918abdad1c8fc05c6f8227c5d6d5f6c7cab6676b80df037f0cf19b848e1",
+      "spark-mllib-local_2.13-4.2.0.jar": "e4e2b8047199523f5b43ea7198389e84c10cca6375e163d733abed207ad5714b",
+      "spark-mllib_2.13-4.2.0.jar": "c3bbaa99fe5f50afef479599032b5c5b7d1834433dad54da6a4f7cbc410536d2",
+      "spark-network-common_2.13-4.2.0.jar": "b1387963be7cb8cf0b706ef2729dc3cab059e815e7b8afe945f1f6599e677c5c",
+      "spark-network-shuffle_2.13-4.2.0.jar": "ca84e3422effdeb6bb8e169ae69c5f0b3cb7c1d082c8eaf012d4d4794088b3d6",
+      "spark-pipelines_2.13-4.2.0.jar": "56c960df32c126424c64d286fa138e0c1ec372cf671211e3ab37ab6f40be36f0",
+      "spark-repl_2.13-4.2.0.jar": "4b0bfdfcde4b8cf2da90355da243dd7248059b920fd9d344cb518d43d32d62bd",
+      "spark-sketch_2.13-4.2.0.jar": "8721f0878f4bab0df6576842f82927ab959f4da1c124a8282fb8a25433b053ec",
+      "spark-sql-api_2.13-4.2.0.jar": "d789409a56db600c5160300fcd2c9651bf6f32dd8db1035a9bda17b67543b372",
+      "spark-sql_2.13-4.2.0.jar": "ec0a0d699c6c57300ee47ba5d54b4d1f71d3e5401fb90a2bcdcd83b942084dbf",
+      "spark-streaming_2.13-4.2.0.jar": "4a4a4a30d0b8687947b0379bd70e43375c391030c63a4acc35f4d5628d4afa25",
+      "spark-tags_2.13-4.2.0.jar": "496b66fcd75a892fce1f3c776729a006cdd3e5ce610a7d257735610b8bdc5339",
+      "spark-unsafe_2.13-4.2.0.jar": "8933245859525e6c02dc309890200bedfbc80f18e6b45bae726ab602afb347fd",
+      "spark-variant_2.13-4.2.0.jar": "33186ac3d641142a4a5d18bf004155a31e7de14e22187b3b4114a15eb7d21762",
+      "spark-yarn_2.13-4.2.0.jar": "4caa3a78a5f8d39b6e8397db9663fa7c98dac22ca9e056360cb7c928f8f58f1e",
+      "spire-macros_2.13-0.18.0.jar": "0b74f86163207e5ce23aca69ebc50cea5a0162dddb7d9f6829552c78012b36b3",
+      "spire-platform_2.13-0.18.0.jar": "bb2f5ff5d3180fc2f47df71133570c740acb9f9b3d917f3fa0c76727fac86240",
+      "spire-util_2.13-0.18.0.jar": "61d9aae682d7854597e23b01befea3db42af10bc5db033ddb0662afbeee1ecf0",
+      "spire_2.13-0.18.0.jar": "2b23c48f8ef13fde720dc0f276cf36abf42a3f069582d62cf208720c327a8a86",
+      "stax-api-1.0.1.jar": "d1968436fc216c901fb9b82c7e878b50fd1d30091676da95b2edd3a9c0ccf92e",
+      "stream-2.9.8.jar": "d18bf0abbc2f84f879172a50efd1e11b4fc0fa0b88e672c43fcc9e5501fd1c8b",
+      "super-csv-2.2.0.jar": "bf743e0c1f1c42d19df236d82fa0b34128cd5e82cde6e491e316ec274f94bfbe",
+      "threeten-extra-1.8.0.jar": "51e4d21edc4e9447f7760c050e0baee75d7d973f387ba605a17abdc4d24fd6d8",
+      "tink-1.20.0.jar": "a8147cea556a34291be1fbc96975dd3006228b653bdfffb8a82c959419ab151f",
+      "transaction-api-1.1.jar": "b8ec163b4a47bad16f9a0b7d03c3210c6b0a29216d768031073ac20817c0ba50",
+      "univocity-parsers-2.9.1.jar": "31685122d5e392e98672ed6009a95a4c1623ca1185567bd44ee94527d454e5c3",
+      "vertx-auth-common-4.5.26.jar": "d18e8c606f337083023fb954ca60ea5a06a4fe54196f683711469946e2540dce",
+      "vertx-core-4.5.26.jar": "409e5e5977cf8491ccf2500aeb054b24a543f4fa967fc1852d850dc1cf931e9f",
+      "vertx-uri-template-4.5.26.jar": "f35c63f032300c1598ec687c26bb27bb27e66b2a4cb5d564da6dd48e174baffb",
+      "vertx-web-client-4.5.26.jar": "17ab04c1a702b11814949e0393b3051b4b8dce81c66b8c79e6333333bc340688",
+      "vertx-web-common-4.5.26.jar": "382d78cefa8f5869d0448dcbb4b52dfeaa1ff9ed8e52b8995dd22e30c92a2ec7",
+      "volcano-client-7.6.1.jar": "8263078426f13ca93d8af053730cb8ed3874320b5e0cee4a0f8805c704763265",
+      "volcano-model-7.6.1.jar": "50e0287be4b58c578b4a00b2eba9c0e2630ca5568476f834223a472acebbc3d7",
+      "xbean-asm9-shaded-4.30.jar": "20585e381935ef9f6eefbe062fc584958d4f90147df3e45b2534eaa808d09c82",
+      "xmlschema-core-2.3.1.jar": "648f7f7e5228d89069cbc54c32404209f242581bc1c1e2e74229114f081071aa",
+      "xz-1.12.jar": "3e158a87bd73d8afb4b6e8239c013b7d049c48563f45860ce99cd2e448cf4a6b",
+      "zjsonpatch-7.6.1.jar": "86c0094b823fb49111d03b87d5874e120333adea8f1ded2a911b3f2f0d9d9c6d",
+      "zookeeper-3.9.5.jar": "936d025db1a85f085edea25048c3f5b3de5fc29329c371a10925e3b78b0b38a0",
+      "zookeeper-jute-3.9.5.jar": "abcbc7f9d6c493daa118da6fa3061a201e2c521217526e8535adfb56b629e52a",
+      "zstd-jni-1.5.7-7.jar": "d4725bce2c3e4f3df54cbea8bf5966e240872bb7ba7658572ededaef28a01d83"
+    }
+  },
+  "status": "PASS"
+}

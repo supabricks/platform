@@ -23,7 +23,8 @@ an installed analytical worker and a running native source.
 
 The source profile is ordinary logged `public` tables with a non-null integer
 primary key (one or multiple columns after [EQ01/#170](eq01-composite-keys.md)),
-integer/text/varchar/bounded-decimal columns, default replica identity
+integer/text/varchar/bounded-decimal columns, plus finite DATE and fixed-width
+CHAR payloads after [EQ01/#171](eq01-date-char.md), default replica identity
 and default collation. RLS, partitions, inheritance, foreign/materialized tables,
 generated columns and unsupported types are rejected as a whole group. The
 existing engine control tables are excluded only after owner/type checks; their

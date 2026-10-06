@@ -38,7 +38,8 @@ def inspect(conn,identity):
         if not 1<=len(columns)<=128:raise CaptureError('column_budget')
         profile=[]
         for num,column,typ,mod,notnull,generated,collation in columns:
-            if generated or collation not in (0,100) or typ not in (20,21,23,25,1043,1700,1082):raise CaptureError('unsupported_source_column')
+            if generated or collation not in (0,100) or typ not in (20,21,23,25,1042,1043,1700,1082):raise CaptureError('unsupported_source_column')
+            if typ==1042 and not 5<=mod<=10_485_764:raise CaptureError('unsupported_character')
             if typ==1700:
                 precision=((mod-4)>>16)&65535;scale=(mod-4)&2047;scale=scale-2048 if scale>=1024 else scale
                 if mod<4 or not 1<=precision<=38 or not 0<=scale<=precision:raise CaptureError('unsupported_decimal')

@@ -16,6 +16,7 @@ from deltalake import DeltaTable,write_deltalake
 from capture.spool import Spool,CaptureError,canonical
 from incremental.rows import value,UNCHANGED
 from incremental_worker import run,apply_table
+from export import arrow_type,field_metadata,Rejected,query
 from test_incremental import tx,change
 
 
@@ -57,6 +58,38 @@ class DateSync(unittest.TestCase):
             self.assertEqual(sorted(current.to_pylist(),key=lambda r:r['id']),[dict(id=3,d=date(2000,2,29),amount=Decimal('1234567890123456.79'),note='keep'),dict(id=4,d=None,amount=None,note='null'),dict(id=5,d=date(9999,12,31),amount=None,note='max')])
             self.assertEqual(DeltaTable(str(path),version=0).to_pyarrow_table(filesystem=filesystem).to_pylist(),original)
             spool.close()
+
+
+class CharSync(unittest.TestCase):
+    def setUp(self):
+        previous=os.umask(0o077);self.addCleanup(os.umask,previous)
+    def test_fixed_width_unicode_spaces_and_nulls_are_preserved(self):
+        column=[0,'c',1042,8]
+        for raw in ['x   ','    ','🧱é  ','a\t  ']:self.assertEqual(value(raw,column),raw)
+        self.assertIsNone(value(None,column))
+        for raw in ['x','abcde']:
+            with self.assertRaises(CaptureError):value(raw,column)
+        for mod in [-1,4,10_485_765]:
+            with self.assertRaises(Rejected):arrow_type(1042,mod)
+        self.assertEqual(field_metadata(1042,8),{b'__CHAR_VARCHAR_TYPE_STRING':b'char(4)'})
+        self.assertIn('octet_length("c")',query('public','t',[dict(name='c',type_oid=1042)]).as_string())
+    def test_char_metadata_and_raw_bytes_survive_delta_replay(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)/'generation';root.mkdir();path=root/'table'
+            schema=pa.schema([pa.field('id',pa.int32(),False),pa.field('c',pa.string(),metadata=field_metadata(1042,8))])
+            write_deltalake(str(path),pa.Table.from_pylist([dict(id=1,c='x   '),dict(id=2,c='    '),dict(id=3,c=None)],schema=schema))
+            planned=dict(before=0,columns=[[1,'id',23,-1],[0,'c',1042,8]],rows=[[1,[1,'y   ']],[2,None],[4,[4,'🧱é  ']]])
+            config=dict(id=str(uuid.uuid4()),deadline_ms=int(time.time()*1000)+60000)
+            def crash(point):
+                if point=='after_table_commit':raise SystemExit(86)
+            with patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):apply_table(config,root,dict(path='table'),planned,'a'*64,frozenset())
+            version,metrics=apply_table(config,root,dict(path='table'),json.loads(canonical(planned)),'a'*64,frozenset())
+            self.assertEqual(version,1);self.assertTrue(metrics['replayed'])
+            filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem())
+            current=DeltaTable(str(path)).to_pyarrow_table(filesystem=filesystem)
+            self.assertEqual(current.schema.field('c').metadata,field_metadata(1042,8))
+            self.assertEqual(sorted(current.to_pylist(),key=lambda r:r['id']),[dict(id=1,c='y   '),dict(id=3,c=None),dict(id=4,c='🧱é  ')])
+            self.assertEqual(DeltaTable(str(path),version=0).to_pyarrow_table(filesystem=filesystem).to_pylist(),[dict(id=1,c='x   '),dict(id=2,c='    '),dict(id=3,c=None)])
 
 
 if __name__=='__main__':unittest.main()

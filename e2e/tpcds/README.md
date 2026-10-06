@@ -115,3 +115,42 @@ python3 e2e/tpcds/package.py --base /baseline --destination /candidate --repo . 
 Production release qualification must use the unchanged built archive through
 `install/native/qualify_sync.py`, including Linux/macOS offline installation and
 the composite suite. An engineering overlay does not substitute for that gate.
+
+## EQ01 DATE/CHAR qualification
+
+See [the contract and SQL dialect differences](../../docs/architecture/eq01-date-char.md).
+Build the pinned Sail artifact with `components/build-sail.py` before packaging
+CHAR. DATE-only source is isolated in commit `f3c4f11` (four worker files plus
+DATE regression tests); use that revision when reproducing the DATE overlay.
+`package.py --sail-artifact DIRECTORY` verifies that source-built artifact
+and copies its wheel/provenance into an unsigned engineering overlay, checking
+all base file hashes and installation verification. It unlinks replaced hardlinks
+before writing. DATE-only overlays omit this argument and `export.py`, retaining
+the separate DATE slice sources. Preserve those immutable artifacts for controls.
+
+Run each typed fixture in a private installed environment under the descendant
+supervisor (the standard `installed_sync.py --suite date` / `--suite char`
+adapters also make them mandatory release gates):
+
+```sh
+python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.json -- \
+  python3 e2e/tpcds/sync_types.py --release /release --kind char --report /reports/result.json
+```
+
+Each result is compared with committed Apache Spark JVM goldens before a check
+passes. To reproduce those goldens, use a separate Python 3.12 environment with
+`uv pip install --require-hashes -r e2e/tpcds/reference-requirements.txt`, Java 21,
+and `type_reference.py --report FRESH_PATH`. The fixture creates typed Parquet
+reference tables; it does not use Sail or reuse product query results as expected
+values. Retain failed attempts and compare all rows/types, not generated column
+names, which legitimately vary between engines.
+
+After builds/correctness tests finish, run the nine sequential unchanged scalar
+controls with `type_controls.py --baseline BASE --date DATE_ONLY --char DATE_CHAR
+--output FRESH_DIRECTORY --image sha256:IMAGE_DIGEST`. All releases must be under
+the repository for its read-only Docker mount. The fixed order rotates all three
+arms over three repetitions; each cell has 8 CPUs, 16 GiB, no swap/network, two
+10,000-row tables and twelve 64-row transactions. There are no quiet-period sleeps
+or automatic replacements of failures. Raw commands, results, cleanup and timing
+samples are retained. Treat the summary as descriptive compatibility evidence,
+not a sustained throughput benchmark or an SP qualification.

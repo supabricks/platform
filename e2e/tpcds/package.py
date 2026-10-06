@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Verified Python-only engineering overlay; never a signed-release claim."""
+"""Verified Python/Sail engineering overlay; never a signed-release claim."""
 import argparse
 import json
 from pathlib import Path
 import subprocess
+import sys
+import zipfile
 from inputs import sha
 
 
-def overlay(base,destination,repo,proof,names):
+def overlay(base,destination,repo,proof,names,sail_artifact=None):
     if destination.exists() or proof.exists():raise ValueError('fresh paths required')
-    manifest=json.loads((base/'release.json').read_text());identity=sha(base/'release.json')
+    manifest=json.loads((base/'release.json').read_text());identity=sha(base/'release.json');base_files=len(manifest['files'])
     for name,entry in manifest['files'].items():
         p=base/name
         if sha(p)!=entry['sha256'] or bool(p.stat().st_mode&0o111)!=entry['executable']:
@@ -31,18 +33,49 @@ def overlay(base,destination,repo,proof,names):
         for path,old in [(p,before),(cache,old_cache)]:
             key=str(path.relative_to(destination));manifest['files'][key]=dict(sha256=sha(path),executable=bool(path.stat().st_mode&0o111))
             changes[key]=dict(before=old,after=sha(path))
+    engine=None
+    if sail_artifact is not None:
+        sys.path.insert(0,str(repo/'install/native'))
+        from sail import verify
+        wheel,engine=verify(sail_artifact,manifest['target'],root=repo)
+        site='python/runtime/lib/python3.12/site-packages/'
+        def replace(relative,data,executable=False):
+            path=destination/relative
+            if not path.resolve().is_relative_to(destination):raise ValueError('unsafe Sail artifact path')
+            before=sha(path) if path.exists() else None
+            import hashlib
+            after=hashlib.sha256(data).hexdigest()
+            if before==after:return
+            if path.exists():path.unlink()
+            path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data);path.chmod(0o755 if executable else 0o644)
+            changes[relative]=dict(before=before,after=after)
+            manifest['files'][relative]=dict(sha256=after,executable=executable)
+        with zipfile.ZipFile(wheel) as archive:
+            for item in archive.infolist():
+                if item.is_dir():continue
+                if not (item.filename.startswith('pysail/') or item.filename.startswith('pysail-0.7.1.dist-info/')):
+                    raise ValueError('unexpected Sail wheel layout')
+                replace(site+item.filename,archive.read(item),bool((item.external_attr>>16)&0o111))
+        for path in sorted(sail_artifact.rglob('*')):
+            if not path.is_file() or path.suffix=='.whl':continue
+            name=str(path.relative_to(sail_artifact))
+            relative=('licenses/sail/'+name[len('licenses/'):] if name.startswith('licenses/') else 'provenance/sail/'+name)
+            replace(relative,path.read_bytes())
+        replace('provenance/sail/source.lock.json',(repo/'components/sail-source.lock.json').read_bytes())
+        manifest['provenance']['sail']=engine
     p=destination/'release.json';p.unlink();p.write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
     if sha(base/'release.json')!=identity:raise ValueError('base changed')
     for name,entry in changes.items():
         if (sha(base/name) if (base/name).exists() else None)!=entry['before']:raise ValueError('base payload changed')
     verification=json.loads(subprocess.check_output([str(destination/'bin/supabricks'),'installation','verify'],text=True))
     assert verification['verified'] and verification['identity']==sha(p)
-    proof.write_text(json.dumps(dict(scope='Python-only engineering overlay; unsigned',base_identity=identity,
-        identity=sha(p),changes=changes,verified_base_files=len(manifest['files']),verification=verification),indent=2)+'\n')
+    proof.write_text(json.dumps(dict(scope='Python and verified source-built Sail engineering overlay; unsigned' if engine else 'Python-only engineering overlay; unsigned',base_identity=identity,
+        identity=sha(p),sail_commit=engine['commit'] if engine else None,changes=changes,verified_base_files=base_files,verification=verification),indent=2)+'\n')
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('base','destination','repo','proof'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--source',action='append',required=True)
-    a=p.parse_args();overlay(a.base.resolve(),a.destination.resolve(),a.repo.resolve(),a.proof.resolve(),a.source)
+    p.add_argument('--sail-artifact',type=Path)
+    a=p.parse_args();overlay(a.base.resolve(),a.destination.resolve(),a.repo.resolve(),a.proof.resolve(),a.source,a.sail_artifact.resolve() if a.sail_artifact else None)
