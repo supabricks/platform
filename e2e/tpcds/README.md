@@ -60,8 +60,9 @@ Ordering differences and LIMIT boundary ties require explicit review; floating
 point differences are not silently rounded. The reference is Apache Spark JVM;
 the installed product engine is Sail through Spark Connect. Their measurements
 must stay separately labeled. The full reference run has completed; product
-verification/query execution remains blocked on the post-compaction merge stall
-#184. The [#182 correction](../../docs/architecture/eq02-key-pruning.md) passes its
+verification/query execution remains blocked on full-load qualification;
+[compaction capacity and writer corrections](../../docs/architecture/eq02-compaction-capacity.md)
+address the latest #193/#194/#195 boundaries. The [#182 correction](../../docs/architecture/eq02-key-pruning.md) passes its
 worker/installed regressions and crosses the prior failure point; full SF1
 qualification is still incomplete.
 
@@ -239,3 +240,21 @@ python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.j
 `components/build-deltalake.py`, replacing the native wheel and recording its
 source, patch, lock and dependency notice inventory in an unsigned engineering
 overlay. Production qualification still requires both unchanged native archives.
+
+The Linux external apply-memory observer is maintained in `apply_memory.py`.
+Invoke it as `python3 e2e/tpcds/apply_memory.py OUTPUT SUPERVISOR_COMMAND...`
+with an existing private output directory and the usual descendant supervisor.
+It requires psutil from the native qualification environment. Negative process
+roles are rechecked after fork/exec; confirmed workers are tracked by PID and
+birth time. Sampling can still miss short-lived workers or their final peaks.
+The earlier build-local observer could cache a pre-exec negative role for an
+entire worker lifetime (#191); retain that limitation on its historical samples.
+
+## Installed compaction capacity regression
+
+The `capacity` suite exercises a >512 MiB wide-text live table, compaction plus
+new-key append under the original 1 GiB generation / 768 MiB worker limits,
+commit-before-receipt recovery, exact old/new values, and a 512-version append
+history. The installed source-built Delta wheel supplies bounded write settings;
+the upstream PyPI wheel does not implement that API. This synthetic suite is a
+required archive gate, not a PostgreSQL throughput measurement.

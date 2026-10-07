@@ -1,0 +1,136 @@
+{
+  "status": "PASS",
+  "suite": "merge",
+  "exact_installed": true,
+  "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+  "binary_sha256": "d8663d0cccb73499462a6f4d828d2ed1309aa6e4abc5739979369dc54240f5c5",
+  "checks": [
+    "bounded_merge_into_large_compacted_table_completes",
+    "bounded_merge_many_small_files_keeps_source_hash_build",
+    "old_delta_versions_remain_exact_after_bounded_merges",
+    "sparse_update_delete_key_move_and_saved_commit_replay_are_exact"
+  ],
+  "metrics": {
+    "compacted": {
+      "rows": 1888080,
+      "insert_rows": 16384,
+      "initial_parquet_bytes": 13223685,
+      "insert": {
+        "elapsed_seconds": 0.43748124601552263,
+        "highwater_bytes": 482205696,
+        "metrics": {
+          "num_source_rows": 16384,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_copied": 0,
+          "num_output_rows": 16384,
+          "num_target_files_scanned": 1,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "execution_time_ms": 371,
+          "scan_time_ms": 361,
+          "rewrite_time_ms": 0,
+          "apply_kind": "merge",
+          "new_parquet_bytes": 115174,
+          "retained_parquet_bytes": 13338859
+        }
+      },
+      "mutate": {
+        "elapsed_seconds": 0.35053635301301256,
+        "highwater_bytes": 296792064,
+        "metrics": {
+          "committed_before_receipt": true
+        }
+      },
+      "replay": {
+        "elapsed_seconds": 0.02871191396843642,
+        "highwater_bytes": 181325824,
+        "metrics": {
+          "num_source_rows": 5,
+          "num_target_rows_inserted": 1,
+          "num_target_rows_updated": 2,
+          "num_target_rows_deleted": 2,
+          "num_target_rows_copied": 1888076,
+          "num_output_rows": 1888079,
+          "num_target_files_scanned": 2,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 1,
+          "execution_time_ms": 341,
+          "scan_time_ms": 310,
+          "rewrite_time_ms": 21,
+          "replayed": true,
+          "apply_kind": "merge",
+          "new_parquet_bytes": 13258877,
+          "retained_parquet_bytes": 26597736
+        }
+      }
+    },
+    "fragmented": {
+      "rows": 131072,
+      "insert_rows": 16384,
+      "initial_parquet_bytes": 921683,
+      "insert": {
+        "elapsed_seconds": 0.16321441699983552,
+        "highwater_bytes": 277921792,
+        "metrics": {
+          "num_source_rows": 16384,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_copied": 0,
+          "num_output_rows": 16384,
+          "num_target_files_scanned": 11,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "execution_time_ms": 45,
+          "scan_time_ms": 33,
+          "rewrite_time_ms": 2,
+          "apply_kind": "merge",
+          "new_parquet_bytes": 115174,
+          "retained_parquet_bytes": 1036857
+        }
+      },
+      "mutate": {
+        "elapsed_seconds": 0.053248964017257094,
+        "highwater_bytes": 260870144,
+        "metrics": {
+          "committed_before_receipt": true
+        }
+      },
+      "replay": {
+        "elapsed_seconds": 0.031073954014573246,
+        "highwater_bytes": 181194752,
+        "metrics": {
+          "num_source_rows": 5,
+          "num_target_rows_inserted": 1,
+          "num_target_rows_updated": 2,
+          "num_target_rows_deleted": 2,
+          "num_target_rows_copied": 20476,
+          "num_output_rows": 20479,
+          "num_target_files_scanned": 12,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 2,
+          "execution_time_ms": 44,
+          "scan_time_ms": 34,
+          "rewrite_time_ms": 0,
+          "replayed": true,
+          "apply_kind": "merge",
+          "new_parquet_bytes": 143934,
+          "retained_parquet_bytes": 1180791
+        }
+      }
+    },
+    "scope": "Direct installed apply_table regression; synthetic compacted table; not end-to-end throughput"
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

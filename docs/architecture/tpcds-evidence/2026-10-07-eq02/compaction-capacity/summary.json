@@ -1,0 +1,73 @@
+{
+  "status": "Targeted capacity, append-history and bounded-write qualification; full SF1 rerun pending",
+  "issues": [
+    191,
+    192,
+    193,
+    194,
+    195
+  ],
+  "source_commits": {
+    "capacity": "dd455da",
+    "append_rollover": "a425278",
+    "sampler_adapter": "6940e6d",
+    "bounded_write": "c9f8723"
+  },
+  "full_sf1_pass": false,
+  "product_statements_completed": 0,
+  "product_statements_required": 103,
+  "worker_tests": 155,
+  "packaging_tests": 75,
+  "harness_tests": 11,
+  "installed_suites": [
+    {
+      "suite": "append",
+      "status": "PASS",
+      "checks": 2,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "bulk",
+      "status": "PASS",
+      "checks": 2,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "capacity",
+      "status": "PASS",
+      "checks": 3,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "date",
+      "status": "PASS",
+      "checks": 4,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "merge",
+      "status": "PASS",
+      "checks": 4,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    }
+  ],
+  "retained_capacity_replay": {
+    "predecessor": "incremental_disk_budget",
+    "candidate_seconds": 91.771645,
+    "candidate_highwater_bytes": 450891776,
+    "scope": "diagnostic; production bounds unchanged"
+  },
+  "limits": {
+    "worker_rss_bytes": 805306368,
+    "generation_bytes": 1073741824,
+    "retained_root_bytes": 4294967296,
+    "delta_versions": 1024
+  },
+  "limitations": [
+    "Attempt10 failed; original observer has fork/exec coverage gaps (#191).",
+    "Supplemental observer began mid-run and consumed181.27CPU seconds; peaks are observed lower bounds.",
+    "Replay/fixture process-owned high-water measurements are unaffected.",
+    "Native wheel and runtime are verified engineering overlays, not signed archive qualification.",
+    "No SP restart or general merge-buffer fix (#190)."
+  ]
+}

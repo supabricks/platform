@@ -1,7 +1,7 @@
 # EQ02 — native SF1 loading and analytical qualification
 
 Status, 2026-10-07: **resumed; full end-to-end qualification is not complete**.
-Nine completed installed load attempts are retained below. The fourth reached the apply-worker
+Ten completed installed load attempts are retained below. The fourth reached the apply-worker
 memory blocker (#182). The [bounded lookup correction](eq02-key-pruning.md) passes
 its regression gates; attempt 05 crosses that boundary but stops on a reproducible
 post-compaction Delta merge stall (#184). The [bounded Delta correction](eq02-bounded-merge.md)
@@ -15,7 +15,11 @@ committed rows but exhausts the two-hour deadline. The measured blocker is
 its correction passes matched daemon measurements and all 12 installed checks.
 Attempt 09 passes the old deadline boundary but stops at 13.63 million committed rows
 on a new merge memory limit (#189). A [proven-new-key append correction](eq02-new-key-append.md)
-passes retained-batch replay and large-table controls; its installed suites are running.
+passes retained-batch replay, large-table controls and all 31 installed checks.
+Attempt 10 reaches 17.19 million committed rows, then stops on conservative
+[compaction disk admission](eq02-compaction-capacity.md) (#193). Its retained replay passes the accounting
+correction; append-only rollover (#194) and wide-row compaction memory (#195)
+are being qualified before attempt 11.
 Full qualification remains incomplete.
 SP remains [frozen](sync-performance-freeze.md). This work does not merge its
 candidate or restart its performance campaign.
@@ -50,6 +54,7 @@ or automatic replacement trials are used.
 | 07 | Source-first bounded Delta merges | 5,380,385 | 5,314,849 observed | 1,682.333 s | Live compaction disk scan races temporary-file rename (#185) |
 | 08 | Bounded retry for live compaction inventory | 12,746,017 | 12,680,481 observed | 7,201.567 s | Two-hour deadline; publication verification scheduling dominates (#186) |
 | 09 | Faster active publication verification | 13,630,753 | 13,565,217 observed | 2,943.160 s | Merge buffers unchanged inventory rows; worker memory limit (#189) |
+| 10 | Proven-new-key append | 17,194,051 | 17,128,515 observed | 3,434.826 s | Compaction estimate rejects actual working set that fits disk limit (#193) |
 
 These are failure-discovery and harness pilots, **not comparative throughput
 qualification**. The completed attempts stop at different data boundaries; their
@@ -62,6 +67,10 @@ All nine completed attempts stopped with zero leaked/remaining descendants.
 Receipts, compressed logs, exact earlier loader sources and package proof are in
 [the evidence directory](tpcds-evidence/2026-10-07-eq02/README.md). These trials use
 verified **unsigned engineering overlays**, not exact signed-release archives.
+The external memory sampler has a subsequently discovered fork/exec coverage
+gap (#191); historical sampled peaks are lower bounds. Attempt 10 adds a
+separate observer partway through without restarting or changing the load.
+See the [measurement limitation](eq02-new-key-append.md#sf1-memory-observation-limitation).
 
 ## Separately identified issues
 
@@ -125,7 +134,7 @@ It used Spark 4.2.0, Python 3.12.13 and the captured bundled Java runtime
 17.0.20.1+1. Cleanup observed ten descendants with zero leaked/remaining. This is
 one reference execution, not a comparative performance result or a passing
 product/reference comparison. The full product verifier is blocked on the
-incomplete load (#189); #182 qualification remains open. Ten harness tests pass,
+incomplete load (#193; follow-ups #194/#195); #182 qualification remains open. Ten harness tests pass,
 including COPY framing, partitioned
 comparison, duplicate/null/padding preservation and conservative query verdicts.
 Implementing a runner does not qualify its full SF1 results.

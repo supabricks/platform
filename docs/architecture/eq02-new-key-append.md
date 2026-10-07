@@ -2,7 +2,9 @@
 
 Status: [#189](https://github.com/supabricks/platform/issues/189) correction passes
 153 worker tests, the retained failing batch, and the large installed regression.
-Additional installed sync suites are running.
+All 31 installed checks pass with zero leaked/remaining descendants. SF1 attempt 10 reaches 17,194,051 committed / 17,128,515 published rows in
+3,434.826 seconds, then fails compaction disk admission (#193). All 151 observed
+descendants are cleaned up. The original 768 MiB worker limit remains unchanged.
 [Retained evidence](tpcds-evidence/2026-10-07-eq02/new-key-append/summary.json). Complete SF1 qualification remains
 pending; SP stays frozen.
 
@@ -66,5 +68,28 @@ measurements above. Both attempts and the predecessor failure remain retained.
 
 All 153 worker tests pass, including a new-key transaction overlay with exact
 decimal data, a multi-table crash/replay, mixed existing-delete/new-insert merge,
-and missing-proof fallback. Installed-suite and full SF1 results will be added
-as each completes. No complete product query or release qualification is claimed.
+and missing-proof fallback. Installed merge (4), bulk (2), DATE (4), CHAR (4), composite (3), triggered (3),
+continuous (4), maintenance (5), and append (2) checks all pass, with zero leaked
+processes. The continuous fixture achieves 50.06 rows/s with 1,179.608 ms p95 lag.
+The subsequent SF1 load fails on disk admission; exact table and SQL
+qualification are still blocked. No complete product query or release qualification is claimed.
+
+## SF1 memory-observation limitation
+
+During attempt 10, [#191](https://github.com/supabricks/platform/issues/191)
+exposed a defect in the external build-local sampler: a negative role cached
+between fork and exec can hide an apply worker for its entire lifetime. Earlier
+SF1 sampled high-water values from that observer are lower bounds with this
+additional coverage gap. The phase replay and large-table fixture measurements
+above use process-owned `getrusage` and are unaffected.
+
+The load and its daemon memory enforcement were left unchanged. A
+separate read-only observer started about 1,050 seconds into attempt 10 and
+records its coverage, host PID/birth identities, high-water samples and own CPU
+cost. It cannot recover missed earlier workers. Its additional observation cost
+and partial coverage must accompany the final load measurements; no controlled
+whole-run speedup or complete kernel-peak coverage is claimed. The maintained sampler correction and real fork/exec regression pass; the
+full harness suite has 11 passing tests. Original and supplemental observers
+both report a sampled peak of 522,997,760 bytes. The supplemental observer
+consumed 181.27 CPU seconds and recorded eight process-exit sampling errors.
+These observations do not establish the complete run peak.
