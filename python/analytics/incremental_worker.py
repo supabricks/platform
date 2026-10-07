@@ -237,9 +237,15 @@ def run_owned(config,root,journal_data,lease):
     manifest['compaction']=compaction
     manifest['retained_bytes']=retained_boundary(root.parent)
     used=boundary(root,config['deadline_ms']);manifest['generation_bytes']=used
+    append_only=all(m['metrics'].get('apply_kind')=='append' for m in metrics)
     if config['previous'] is None or compaction is not None:
         # Keep this first-published size across later epochs in the same root.
         manifest['generation_base_bytes']=used
+        manifest['generation_append_only']=append_only
+    else:
+        # An absent legacy marker is conservative; a merge cannot be forgotten
+        # merely because a later batch appends. Compaction starts a new history.
+        manifest['generation_append_only']=manifest.get('generation_append_only') is True and append_only
     descriptor=dict(format_version=2,installation_id=config['identity']['installation_id'],epoch_id=config['epoch_id'],
         ordinal=config['ordinal'],export_id=config['id'],source_revision=config['source_revision'],
         generation='analytics/incremental/'+(config.get('storage_generation') or config['identity']['generation']),manifest=manifest,

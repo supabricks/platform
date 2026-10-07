@@ -194,11 +194,13 @@ class CompactionTests(unittest.TestCase):
         return config
     def result(self,config):return json.loads((Path(config['workspace'])/'result.json').read_bytes())['descriptor']
     def test_compaction_preserves_exact_old_epoch_and_next_batch_reuses_root(self):
+        self.first['manifest']['generation_append_only']=False
         config=self.config_compact();old=Path(self.config['generation'])
         before={str(p.relative_to(old)):hashlib.sha256(p.read_bytes()).hexdigest() for p in old.rglob('*') if p.is_file()}
         run(config);new=self.result(config)
         self.assertEqual(new['manifest']['storage_generation'],config['storage_generation'])
         self.assertEqual(new['manifest']['compaction']['rows'],3)
+        self.assertTrue(new['manifest']['generation_append_only'])
         self.assertEqual(self.rows(self.first,42)[0]['amount'],'12345678901234567890.12345678')
         self.assertEqual(len(self.rows(self.first,42)),1);self.assertEqual(len(self.rows(new,42)),2)
         self.assertEqual(before,{str(p.relative_to(old)):hashlib.sha256(p.read_bytes()).hexdigest() for p in old.rglob('*') if p.is_file()})

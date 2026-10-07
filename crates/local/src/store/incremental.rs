@@ -14,6 +14,13 @@ mod history;
 
 fn needs_compaction(manifest: &Value) -> bool {
     let bytes = manifest["generation_bytes"].as_u64().unwrap_or(0);
+    // Pure appends create no obsolete target files. Allow a longer bounded log
+    // before copying that live set; mixed and legacy histories keep 64 versions.
+    let versions = if manifest["generation_append_only"].as_bool() == Some(true) {
+        512
+    } else {
+        64
+    };
     // The first publication is the compacted/live baseline, not reclaimable
     // growth. Legacy receipts retain the original 512 MiB trigger. New roots
     // roll over after consuming half their remaining 1 GiB generation budget.
@@ -24,7 +31,7 @@ fn needs_compaction(manifest: &Value) -> bool {
     let threshold = baseline.saturating_add((1024_u64 * 1024 * 1024).saturating_sub(baseline) / 2);
     manifest["tables"].as_array().is_some_and(|ts| {
         ts.iter()
-            .any(|t| t["version"].as_u64().is_some_and(|v| v >= 64))
+            .any(|t| t["version"].as_u64().is_some_and(|v| v >= versions))
     }) || manifest["files"]
         .as_array()
         .is_some_and(|fs| fs.len() >= 2048)
@@ -616,6 +623,26 @@ mod compaction_tests {
         assert!(needs_compaction(&manifest));
         manifest["tables"][0]["version"] = json!(1);
         manifest["files"] = json!(vec![Value::Null; 2048]);
+        assert!(needs_compaction(&manifest));
+    }
+
+    #[test]
+    fn only_proven_append_histories_allow_512_versions() {
+        let mut manifest = json!({"generation_bytes":1,"generation_append_only":true,
+            "tables":[{"version":511}],"files":[]});
+        assert!(!needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(512);
+        assert!(needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(64);
+        manifest["generation_append_only"] = json!(false);
+        assert!(needs_compaction(&manifest));
+        manifest["generation_append_only"] = json!("true");
+        assert!(needs_compaction(&manifest));
+        manifest["generation_append_only"] = json!(true);
+        manifest["files"] = json!(vec![Value::Null; 2048]);
+        assert!(needs_compaction(&manifest));
+        manifest["files"] = json!([]);
+        manifest["generation_bytes"] = json!(512 * MIB);
         assert!(needs_compaction(&manifest));
     }
 

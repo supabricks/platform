@@ -114,6 +114,7 @@ class IncrementalTests(unittest.TestCase):
         self.assertEqual(metrics['42']['apply_kind'],'append')
         self.assertTrue(metrics['42']['replayed'])
         self.assertEqual(metrics['43']['apply_kind'],'append')
+        self.assertTrue(result['manifest']['generation_append_only'])
         self.assertEqual(sorted(self.rows(result,42),key=lambda r:r['id'])[1],
                          dict(id=2,amount='98.76543210',note='final'))
         self.assertEqual(len(self.rows(self.first,42)),1)
@@ -123,7 +124,15 @@ class IncrementalTests(unittest.TestCase):
         config=self.config_next('0/12C');run(config)
         result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
         self.assertEqual(result['manifest']['apply_metrics'][0]['metrics']['apply_kind'],'merge')
+        self.assertFalse(result['manifest']['generation_append_only'])
         self.assertEqual(self.rows(result,42),[dict(id=2,amount=None,note='new')])
+        self.spool.append(380,400,tx(380,400,change(b'I',42,new=[3,None,'later'])))
+        following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),previous=result,
+            after_lsn='0/12C',target_lsn='0/190',workspace=str(self.root/'following'))
+        Path(following['workspace']).mkdir();run(following)
+        later=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(later['manifest']['apply_metrics'][0]['metrics']['apply_kind'],'append')
+        self.assertFalse(later['manifest']['generation_append_only'])
     def test_missing_append_proof_keeps_merge(self):
         from incremental_worker import apply_table
         root=Path(self.config['generation']);table=self.first['manifest']['tables'][0]
