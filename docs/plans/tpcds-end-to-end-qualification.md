@@ -45,7 +45,7 @@ in compaction (#185); a bounded live-inventory retry passes 150 worker tests and
 installed recovery/continuous checks. Attempt 08 reaches 12.75M committed rows
 then exhausts its two-hour deadline. [Publication scheduling #186](../architecture/eq02-publication-verification.md)
 accounts for most of the measured delay; its correction passes matched daemon
-measurements and all 12 installed checks; attempt 09 is running.
+measurements and all 12 installed checks; attempt 09 reaches 13.63M committed rows then stops on merge memory blocker #189; [proven-new-key append](../architecture/eq02-new-key-append.md) passes retained replay and large-table controls, installed suites pending.
 Full qualification remains open.
 The independent Spark reference completes all 103 statements; full product
 table equality, product query execution and result comparisons remain pending.

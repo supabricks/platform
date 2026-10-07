@@ -2,7 +2,8 @@
 
 Status: the correction for [#186](https://github.com/supabricks/platform/issues/186)
 passes protocol/state-machine tests and matched daemon measurements. All 12 installed triggered/continuous/maintenance checks pass with zero leaked
-descendants. Fresh full SF1 attempt 09 is running. SP remains frozen.
+descendants. Fresh full SF1 attempt 09 passed the previous stopping point, then failed on
+[new merge memory blocker #189](eq02-new-key-append.md). SP remains frozen.
 [Evidence](tpcds-evidence/2026-10-07-eq02/publication-verification/summary.json).
 
 ## Retained failure and attribution
@@ -81,8 +82,11 @@ to attempt 08; its Python workers and reviewed Delta build are identical.
 
 Installed triggered (3), continuous (4), and maintenance (5) checks pass,
 including the existing 50-row/s freshness gate, pinned readers and crash/restart
-recovery. Attempt 09 is retrying all 24 SF1 tables with continuous sync healthy before the first COPY and the original
-8-CPU/16-GiB, 65,536-unpublished-row and two-hour bounds. A passing load must be
+recovery. Attempt 09 used all 24 SF1 tables with continuous sync healthy before the first
+COPY and the original 8-CPU/16-GiB, 65,536-unpublished-row and two-hour bounds.
+It stopped after 2,943.160 seconds at 13,630,753 committed / 13,565,217 published
+rows on #189. Cleanup observed 505 descendants and left zero. This passes the
+old load boundary but is not a complete throughput qualification. A passing load must be
 followed by exact PostgreSQL/Delta table comparison and all 103 analytical SQL
 statements compared against the retained independent Spark reference.
 

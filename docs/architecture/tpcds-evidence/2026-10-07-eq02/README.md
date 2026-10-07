@@ -99,3 +99,13 @@ Private input/plan files and databases are excluded. `live-stall-observation.jso
 is an observer's record, not an original compaction receipt; the separate
 reconstructed compaction receipt is explicitly labeled. Full qualification and
 product SQL coverage remain pending.
+
+`publication-verification/` retains the publication scheduling correction (#186),
+its matched daemon timings and failed SF1 attempt 08. `new-key-append/` retains
+failed attempt 09, phase-marked replay diagnostics, the new-key append overlay,
+worker tests and installed controls. Its predecessor large-table control exceeds
+768 MiB; the candidate checks every old/new row and saved-commit replay below
+that bound. Diagnostic full-worker replays disable the individual worker kill
+for attribution; production qualification keeps its original limits. Initial
+failed diagnostics and the first fixture's omitted metrics remain explicit.
+Neither directory establishes complete SF1 or analytical query qualification.
