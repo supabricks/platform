@@ -88,8 +88,10 @@ def main():
     server=None
     stage='preflight'; started=time.monotonic()
     try:
-        catalog_pin=json.loads((REPO/'components/unity-catalog-source.lock.json').read_text())
-        sail_pin=json.loads((REPO/'components/sail-source.lock.json').read_text())
+        # verify() already binds every file to the fixed alpha.34 inventory.
+        # Current component pins belong to the separate native-release gates.
+        catalog_pin=json.loads((release/'provenance/unity-catalog/unity-catalog-source.lock.json').read_text())
+        sail_pin=json.loads((release/'provenance/sail/source.lock.json').read_text())
         assert report['catalog']['source_commit']==catalog_pin['commit']
         assert report['sail']['commit']==sail_pin['commit']
         assert not report['sail']['source_dirty'] and not report['catalog']['source_dirty']
