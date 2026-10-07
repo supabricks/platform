@@ -13,7 +13,7 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
-from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
+from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
 from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
@@ -57,11 +57,17 @@ def plan(config,root,previous,journal_data=None,lease=None):
 
 
 def plan_rows(config,root,previous,journal_data,guard):
-    schema,transactions,end,input_bytes=journal(config) if journal_data is None else journal_data
-    operations=[]
-    for end,payload in transactions:
-        operations.extend(changes(payload,schema,end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None))
-        if len(operations)>MAX_ROWS:raise CaptureError('apply_row_budget')
+    schema,transactions,_,_=journal(config) if journal_data is None else journal_data
+    operations=[];end=lsn(config['after_lsn']);input_bytes=0
+    for candidate_end,payload in transactions:
+        guard.check()
+        selected=changes(payload,schema,candidate_end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None)
+        # The byte-bounded journal range may contain more small rows than one
+        # apply can materialize. Publish a complete-transaction prefix and leave
+        # the rest for the next run. changes() still rejects an oversized single
+        # transaction; never divide its atomic visibility across publications.
+        if len(operations)+len(selected)>MAX_ROWS:break
+        operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
     touched={}
     for oid,tag,old,new,row in operations:
         touched.setdefault(oid,set()).add(old)

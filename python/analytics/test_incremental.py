@@ -154,6 +154,44 @@ class IncrementalTests(unittest.TestCase):
         self.assertEqual(self.rows(result,42),[dict(id=3,amount=None,note='inserted')])
         self.assertEqual(self.rows(result,43),[])
         self.assertEqual([t['rows'] for t in result['manifest']['tables']],[1,0,1])
+    def test_row_bounded_prefix_replays_and_drains_without_splitting_transaction(self):
+        # Across tables and including a key move: byte admission alone fits both
+        # commits, but the second would exceed the aggregate row-work ceiling.
+        first=tx(280,300,change(b'I',42,new=[2,None,'two']),change(b'I',43,new=[2,None,'two']))
+        second=tx(380,400,change(b'U',42,new=[3,None,UNCHANGED],old=[2,None,None]),
+                  change(b'D',43,old=[2,None,None]))
+        self.spool.append(280,300,first);self.spool.append(380,400,second)
+        config=self.config_next('0/190')
+        def crash(point):
+            if point=='after_first_table':raise SystemExit(86)
+        with patch('incremental_worker.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
+            run(config)
+        prepared=json.loads((Path(config['workspace'])/'plan.json').read_text())
+        self.assertEqual(prepared['end_lsn'],'0/12C')
+        self.assertEqual(prepared['target_lsn'],'0/190')
+        self.assertEqual(prepared['input_bytes'],len(first))
+        with patch('incremental_worker.journal',side_effect=AssertionError('replay reread journal')):
+            run(config)
+        prefix=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(prefix['manifest']['source']['lsn'],'0/12C')
+        self.assertEqual([t['rows'] for t in prefix['manifest']['tables']],[2,2,1])
+        following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=3,
+                       workspace=str(self.root/'work3'),previous=prefix,after_lsn='0/12C')
+        Path(following['workspace']).mkdir()
+        with patch('incremental_worker.MAX_ROWS',3):run(following)
+        final=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(final['manifest']['source']['lsn'],'0/190')
+        self.assertEqual(final['manifest']['input_bytes'],len(second))
+        self.assertEqual(sorted(r['id'] for r in self.rows(final,42)),[1,3])
+        self.assertEqual([r['id'] for r in self.rows(final,43)],[1])
+        self.assertEqual(sorted(r['id'] for r in self.rows(prefix,42)),[1,2])
+    def test_oversized_source_transaction_still_fails_before_plan_or_mutation(self):
+        from incremental.rows import MAX_ROWS
+        payload=tx(280,300,*(change(b'I',43,new=[n,None,None]) for n in range(2,MAX_ROWS+3)))
+        self.spool.append(280,300,payload);config=self.config_next('0/12C')
+        with self.assertRaisesRegex(CaptureError,'apply_row_budget'):run(config)
+        self.assertFalse((Path(config['workspace'])/'plan.json').exists())
+        self.assertEqual(DeltaTable(str(Path(config['generation'])/'tables/43')).version(),0)
     def test_one_key_update_rewrites_only_affected_files(self):
         from incremental.storage import inventory
         root=Path(self.config['generation']);path=root/'tables/42'
