@@ -152,8 +152,11 @@ def main():
         uc_artifact=json.loads(runtime.with_suffix('.artifact.json').read_text()),
         sail_build=json.loads((release/'provenance/sail/sail-build.json').read_text()),
         platform_binary_sha256=sha(release/'bin/supabricks'), release_inventory_sha256=sha(release/'release.json'), checks=checks, queries=[])
-    pin = json.loads((REPO/'components/sail-source.lock.json').read_text())
-    assert report['sail_build']['commit'] == pin['commit']
+    # This probe consumes the hash-verified historical baseline, not the current
+    # release candidate. Candidate Sail is checked by native-release separately.
+    pin = json.loads((HERE/'baseline.lock.json').read_text())
+    assert report['sail_build']['commit'] == pin['sail_commit'], 'baseline Sail source mismatch'
+    report['baseline_pin_sha256'] = sha(HERE/'baseline.lock.json')
     uc_pin = json.loads((REPO/'components/unity-catalog-source.lock.json').read_text())
     assert report['uc_build']['source_commit'] == uc_pin['commit']
     assert report['uc_build']['source_pin_sha256'] == sha(REPO/'components/unity-catalog-source.lock.json')
