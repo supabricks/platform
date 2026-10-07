@@ -16,6 +16,11 @@ def fixture(target='linux-x86_64'):
         release_identity=HASH,binary_sha256=HASH,report_sha256=HASH,
         cleanup=dict(exit_code=0,timed_out=False,descendants_observed=10,leaked_descendants=0,remaining_descendants=0))
         for name,checks in REQUIRED.items()}
+    suites['append']['metrics']=dict(rows=16777216,insert_rows=16384,
+        append=dict(elapsed_seconds=1,planning_seconds=.9,apply_seconds=.1,highwater_bytes=400000000,
+                    metrics=dict(operation='WRITE',committed_before_receipt=True)),
+        replay=dict(elapsed_seconds=.1,planning_seconds=.01,apply_seconds=.09,highwater_bytes=200000000,
+                    metrics=dict(replayed=True,apply_kind='append')))
     suites['continuous'].update(host=dict(system='Linux' if target=='linux-x86_64' else 'Darwin',
         machine='x86_64' if target=='linux-x86_64' else 'arm64',cpu_count=4,memory_bytes=16*1024**3),
         metrics=dict(workload=dict(tables=2,rows_per_table=10000,transactions=750,changed_rows=1500,
@@ -50,6 +55,7 @@ class SyncEvidence(unittest.TestCase):
                 data['sqlite']['python']['private']='private-row-or-token'
                 data['suites']['continuous']['metrics']['private']='private-row-or-token'
                 data['suites']['continuous']['host']['private']='private-row-or-token'
+                data['suites']['append']['metrics']['append']['private']='private-row-or-token'
                 result=collect(data,base,REVISION,target)
                 self.assertEqual(result['status'],'passed')
                 self.assertEqual(result['oltp_p95_ratio'],2)
@@ -71,6 +77,13 @@ class SyncEvidence(unittest.TestCase):
             lambda d:d['worker_inventory'].update({'capture_worker.py':'c'*64}),
             lambda d:d['worker_inventory'].pop('incremental/planning.py'),
             lambda d:d['worker_inventory'].update({'incremental/planning.py':'c'*64}),
+            lambda d:d['suites'].pop('append'),lambda d:d['suites']['append']['checks'].pop(),
+            lambda d:d['suites']['append'].pop('metrics'),
+            lambda d:d['suites']['append']['metrics'].update(rows=100),
+            lambda d:d['suites']['append']['metrics']['append'].update(highwater_bytes=768*1024**2),
+            lambda d:d['suites']['append']['metrics']['append'].update(planning_seconds=None),
+            lambda d:d['suites']['append']['metrics']['append']['metrics'].update(operation='MERGE'),
+            lambda d:d['suites']['append']['metrics']['replay']['metrics'].update(replayed=False),
             lambda d:d['suites'].pop('merge'),lambda d:d['suites']['merge']['checks'].pop(),
             lambda d:d['suites'].pop('bulk'),lambda d:d['suites']['bulk']['checks'].pop(),
             lambda d:d['suites'].pop('date'),lambda d:d['suites']['char']['checks'].pop(),

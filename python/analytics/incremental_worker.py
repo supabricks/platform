@@ -12,7 +12,7 @@ import time
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
-from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
+from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
 from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
@@ -132,7 +132,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
         if any(record.get(k)!=v for k,v in marker.items()):raise CaptureError('foreign_delta_commit')
         # A committed Delta log after SIGKILL may precede the worker receipt.
         durable(path,sealed)
-        return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True))
+        return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True,apply_kind=record.get('sb_apply','merge')))
     if delta.version()!=before:raise CaptureError('foreign_delta_version')
     if before>=1023:raise CaptureError('delta_version_budget')
     columns=planned['columns'];pk=key_columns(columns)
@@ -152,16 +152,30 @@ def apply_table(config,root,table,planned,checksum,sealed):
     reservation=table_bytes+4*source.nbytes+4*1024*1024
     retained_boundary(root.parent,extra=reservation)
     boundary(root,config['deadline_ms'],extra=reservation)
-    expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
-    d='source.'+quote(delete)
-    predicate=' AND '.join('target.'+quote(columns[i][1])+' = source.'+quote(columns[i][1]) for i in pk)
-    metrics=delta.merge(source,predicate,source_alias='source',target_alias='target',
-        streamed_exec=False,max_spill_size=64*1024*1024,max_temp_directory_size=128*1024*1024,
-        writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
+    # Each planned key contributes at most +1 to row_delta. Equality proves
+    # every final row is new: planning looked up the exact keys in this pinned
+    # version before sealing the plan. Missing proof retains the merge path.
+    # Avoid buffering the entire unchanged target in Delta's merge barrier.
+    append=bool(records) and planned.get('row_delta')==len(records) and all(not row[delete] for row in records)
+    marker['sb_apply']='append' if append else 'merge'
+    options=dict(writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
         commit_properties=CommitProperties(custom_metadata=marker,max_commit_retries=0),
-        post_commithook_properties=PostCommitHookProperties(create_checkpoint=False,cleanup_expired_logs=False))\
-        .when_matched_delete(predicate=d).when_matched_update(expressions,predicate='NOT '+d)\
-        .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
+        post_commithook_properties=PostCommitHookProperties(create_checkpoint=False,cleanup_expired_logs=False))
+    if append:
+        # Restore the exact target nullability/metadata after the merge source's
+        # nullable tombstone placeholders and private delete column are removed.
+        write_deltalake(delta,source.select(arrow.names).cast(arrow),mode='append',**options)
+        delta.update_incremental()
+        metrics=dict(delta.history(1)[0].get('operationMetrics',{}))
+    else:
+        expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
+        d='source.'+quote(delete)
+        predicate=' AND '.join('target.'+quote(columns[i][1])+' = source.'+quote(columns[i][1]) for i in pk)
+        metrics=delta.merge(source,predicate,source_alias='source',target_alias='target',
+            streamed_exec=False,max_spill_size=64*1024*1024,max_temp_directory_size=128*1024*1024,**options)\
+            .when_matched_delete(predicate=d).when_matched_update(expressions,predicate='NOT '+d)\
+            .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
+    metrics['apply_kind']=marker['sb_apply']
     fault('after_table_commit')
     durable(path,sealed);boundary(root,config['deadline_ms'])
     return delta.version(),commit_metrics(path,delta.version(),metrics)

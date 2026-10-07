@@ -14,9 +14,11 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge'))}
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge','append'))}
 WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'append':{'proven_new_keys_append_without_target_sized_memory',
+        'append_commit_replay_and_old_versions_are_exact'},
     'merge':{'bounded_merge_into_large_compacted_table_completes',
         'bounded_merge_many_small_files_keeps_source_hash_build',
         'sparse_update_delete_key_move_and_saved_commit_replay_are_exact',
@@ -95,6 +97,20 @@ def collect(data,base,revision,target):
             and cleanup.get('descendants_observed',0)>0,'unclean '+name)
         require(sha(value.get('report_sha256')),'missing report '+name)
         reports[name]=dict(sha256=value['report_sha256'],checks=sorted(required))
+    append=suites['append'].get('metrics',{})
+    require(append.get('rows')==16777216 and append.get('insert_rows')==16384,'changed append workload')
+    append_phases={}
+    for phase in ('append','replay'):
+        value=append.get(phase,{})
+        require(number(value.get('highwater_bytes')) and 0<value['highwater_bytes']<768*1024**2,
+                'append worker memory limit or missing measurement')
+        keys=('elapsed_seconds','planning_seconds','apply_seconds','highwater_bytes')
+        require(all(number(value.get(k)) for k in keys),'missing append phase measurement')
+        append_phases[phase]={k:value[k] for k in keys}
+    require(append['append'].get('metrics',{}).get('operation')=='WRITE'
+        and append['append']['metrics'].get('committed_before_receipt') is True,'append commit fault not exercised')
+    require(append['replay'].get('metrics',{}).get('replayed') is True
+        and append['replay']['metrics'].get('apply_kind')=='append','append commit not replayed')
     continuous=suites['continuous'];metrics=continuous.get('metrics',{});work=metrics.get('workload',{})
     for key,expected_value in [('tables',2),('rows_per_table',10000),('transactions',750),('changed_rows',1500),('target_rows_per_second',50),('burst_changed_rows',200)]:
         require(work.get(key)==expected_value,'changed workload '+key)
@@ -125,7 +141,7 @@ def collect(data,base,revision,target):
     clean_work={k:work[k] for k in ('tables','rows_per_table','transactions','changed_rows','target_rows_per_second','achieved_rows_per_second','elapsed_seconds','burst_changed_rows','burst_commit_to_publication_ms')}
     clean_work.update({k:{p:work[k][p] for p in ('p50','p95','p99')} for k in ('commit_to_publication_ms','oltp_transaction_ms')})
     return dict(status='passed',release_identity=data['release_identity'],archive=data['archive'],reports=reports,sqlite=sqlite,capture_wal=capture_wal,
-        worker_inventory=expected,network=data['network_evidence'],
+        worker_inventory=expected,network=data['network_evidence'],append=append_phases,
         host={k:host[k] for k in ('system','machine','cpu_count','memory_bytes')},workload=clean_work,
         baseline_oltp_transaction_ms={p:baseline[p] for p in ('p50','p95','p99')},
         oltp_p95_ratio=round(work['oltp_transaction_ms']['p95']/baseline['p95'],3),
