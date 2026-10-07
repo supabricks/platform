@@ -30,11 +30,16 @@ def schema_for(table,path):
 
 def key_filter(columns,keys):
     pk=key_columns(columns)
-    if len(pk)==1:return ds.field(columns[pk[0]][1]).isin(sorted(keys))
+    if not keys:return ds.scalar(False)
     # Bounded expression depth: an OR of thousands of exact tuples can crash
     # Arrow's expression optimizer. These are pruning candidates, not identity.
     parts=[key_values(key,pk) for key in keys]
-    terms=[ds.field(columns[i][1]).isin(sorted({v[n] for v in parts})) for n,i in enumerate(pk)]
+    terms=[]
+    for n,i in enumerate(pk):
+        values=sorted({v[n] for v in parts});field=ds.field(columns[i][1])
+        # Large membership predicates alone need not prune Parquet row groups.
+        # These redundant bounds let statistics reject nonoverlapping ranges.
+        terms.append(field.isin(values) & (field>=values[0]) & (field<=values[-1]))
     predicate=terms[0]
     for term in terms[1:]:predicate=predicate & term
     return predicate
@@ -42,7 +47,9 @@ def key_filter(columns,keys):
 
 def key_batches(dataset,columns,keys):
     pk=key_columns(columns)
-    for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32).to_batches():
+    # Keep native read-ahead bounded even when statistics cannot prune a scan.
+    for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32,
+            batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
         if len(pk)>1:
             # Reject Cartesian neighbors before row/value budgets or overlay.
             # Materialize only the key vectors, and at most one 32-row batch.
