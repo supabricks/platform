@@ -33,7 +33,7 @@ def compact(config, temporary):
         def batches():
             for batch in dataset.scanner(batch_size=256,batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
                 if batch.nbytes>32*1024*1024:raise CaptureError('compaction_value_budget')
-                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024)
+                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024,live_writer=True)
                 count[0]+=batch.num_rows
                 yield batch
         reader=pa.RecordBatchReader.from_batches(dataset.schema,batches())

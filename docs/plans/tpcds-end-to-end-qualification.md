@@ -40,6 +40,9 @@ merge (#184), also reproduced with the pre-fix runtime. The
 retained replays, 147 worker tests and 26 installed checks; its complete
 single-partition/source-first implementation is undergoing SF1 attempt 07 after
 the first candidate exposed a target hash-build allocation failure in attempt 06.
+Attempt 07 crosses both merge failures but exposes a temporary-file rename race
+in compaction (#185); a bounded live-inventory retry passes 150 worker tests and
+installed recovery/continuous checks, and attempt 08 is running.
 Full qualification remains open.
 The independent Spark reference completes all 103 statements; full product
 table equality, product query execution and result comparisons remain pending.

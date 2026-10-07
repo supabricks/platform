@@ -1,13 +1,16 @@
 # EQ02 — native SF1 loading and analytical qualification
 
 Status, 2026-10-07: **resumed; full end-to-end qualification is not complete**.
-Six completed installed load attempts are retained below; attempt 07 is running. The fourth reached the apply-worker
+Seven completed installed load attempts are retained below; attempt 08 is running. The fourth reached the apply-worker
 memory blocker (#182). The [bounded lookup correction](eq02-key-pruning.md) passes
 its regression gates; attempt 05 crosses that boundary but stops on a reproducible
 post-compaction Delta merge stall (#184). The [bounded Delta correction](eq02-bounded-merge.md)
 passes retained failure replays, 147 worker tests and 26 installed checks. Its
 first candidate exposed a join-order allocation failure in attempt 06; the complete
-correction is undergoing attempt 07. Full qualification remains incomplete.
+correction passes the old boundaries in attempt 07, which then exposes a live
+compaction-file accounting race (#185). Its bounded retry correction passes
+150 worker tests and targeted installed checks; attempt 08 is running. Full
+qualification remains incomplete.
 SP remains [frozen](sync-performance-freeze.md). This work does not merge its
 candidate or restart its performance campaign.
 
@@ -38,6 +41,7 @@ or automatic replacement trials are used.
 | 04 | Publication-window flow control | 1,301,328 | 1,235,792 | 508.166 s | `incremental_memory_budget`, capture fenced |
 | 05 | Bounded key lookup | 1,953,616 | 1,888,080 | 539.224 s | Post-compaction merge stalls; request expires (#184) |
 | 06 | Single-partition-only Delta candidate | 221,008 | 155,472 observed | 38.340 s | Optimizer builds hash from target; unchanged pool exhausted |
+| 07 | Source-first bounded Delta merges | 5,380,385 | 5,314,849 observed | 1,682.333 s | Live compaction disk scan races temporary-file rename (#185) |
 
 These are failure-discovery and harness pilots, **not comparative throughput
 qualification**. The completed attempts stop at different data boundaries; their
@@ -45,7 +49,7 @@ elapsed times cannot establish a speedup. Commit ledgers retain every attempted
 and acknowledged batch, offsets, row/byte counts and COPY-plus-commit latency.
 Observed publications are distinct from source acknowledgment. Counts above do
 not assert source/Delta equality: source was ahead when these attempts stopped.
-All six completed attempts stopped with zero leaked/remaining descendants.
+All seven completed attempts stopped with zero leaked/remaining descendants.
 
 Receipts, compressed logs, exact earlier loader sources and package proof are in
 [the evidence directory](tpcds-evidence/2026-10-07-eq02/README.md). These trials use

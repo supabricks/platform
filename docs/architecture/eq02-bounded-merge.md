@@ -124,3 +124,34 @@ worker/installed test logs, retained failure replays, before/after physical plan
 and the failed SF1 attempt 06. Parent `SHA256SUMS` covers these files. Input/mailbox
 configuration and databases remain private. Attempt 07 is still running; no
 passing full-load or product-query claim is made by this evidence snapshot.
+
+
+## SF1 attempt 07 and compaction accounting (#185)
+
+Attempt 07 crosses the original merge stall and the first candidate's allocation
+failure, then stops at 5,380,385 committed / 5,314,849 observed published rows in
+1,682.333 s (1,585.089 s flow-control waiting). The 100-ms sampler observes 131
+apply workers, a highest kernel high-water of 541.48 MiB, and no sampling errors.
+Cleanup observes 209 descendants, zero leaked/remaining. This remains a partial
+load, not a throughput qualification or complete source/Delta equality result.
+
+The next failure occurs in compaction before an apply plan is saved. A live disk
+check lists a temporary Parquet file, then its `stat()` races Delta's final rename.
+A fresh candidate replay reproduces `FileNotFoundError` for a `.parquet#1` file
+in 3.938 s. One baseline-runtime replay passes in 18.657 s; the race is timing-
+dependent, not yet reproduced with that binary. [#185](https://github.com/supabricks/platform/issues/185)
+tracks this separately from the bounded-merge correction.
+
+The follow-up limits whole-inventory rescans to three immediate attempts only in
+the compaction reader's live-writer callback. It never drops a missing file from
+a discovered list and continues enforcing bytes/reserve and deadlines. Normal
+boundary calls and published-source checksum verification remain strict; persistent
+instability fails closed with `incremental_inventory_unstable`. Three deterministic
+tests cover a rename with complete byte accounting, exhausted retries, unchanged
+strict missing-file checks, deadline expiration and permission failures.
+
+The verified Python-only overlay of the complete Delta correction passes all
+150 worker tests. The retained 5,314,849-row compaction now completes in 18.864 s,
+with 390.84 MiB kernel high-water RSS. Targeted installed maintenance and continuous suites pass nine checks with zero
+leaked/remaining descendants. Fresh SF1 attempt 08 is now running. No existing measurement is
+resumed or rewritten as a pass.

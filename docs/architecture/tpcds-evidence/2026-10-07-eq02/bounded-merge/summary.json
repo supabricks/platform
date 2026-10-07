@@ -41,7 +41,7 @@
       "checks": 5
     }
   ],
-  "full_sf1_status": "attempt_07_in_progress_not_qualified",
+  "full_sf1_status": "attempt_07_failed_compaction_race_issue185; attempt08_in_progress_not_qualified",
   "product_sql_coverage": "0/103",
   "sp": "frozen",
   "negative_controls": {
@@ -112,6 +112,19 @@
       ],
       "elapsed_seconds": 0.4689871890004724,
       "highwater_bytes": 326156288
+    }
+  },
+  "compaction_fix": {
+    "issue": 185,
+    "release_identity": "14c15734adf6a1daf7014b70c7c06b0eb07d1adac69c19fa7a9692f04f94b3d0",
+    "worker_tests": 150,
+    "installed": {
+      "maintenance": 5,
+      "continuous": 4
+    },
+    "source_sha256": {
+      "incremental/storage.py": "0976c0609baaff1d49628e65349b7677b9d61649ee6f40ca938fa481e3029304",
+      "incremental/maintenance.py": "2905ca23ca24104e5c57ece97b8c49ffc88d08391dd6fb4e88728870135fc35a"
     }
   }
 }
