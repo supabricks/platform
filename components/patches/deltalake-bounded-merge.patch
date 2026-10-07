@@ -24,3 +24,155 @@ index 2c6bca2..0afb4d0 100644
  }
  
  pub(crate) trait DeltaSessionExt: DataFusionSession {
+diff --git a/python/deltalake/_internal.pyi b/python/deltalake/_internal.pyi
+index e36e35f..5a8d113 100644
+--- a/python/deltalake/_internal.pyi
++++ b/python/deltalake/_internal.pyi
+@@ -303,6 +303,8 @@ class RawDeltaTable:
+         writer_properties: WriterProperties | None,
+         commit_properties: CommitProperties | None,
+         post_commithook_properties: PostCommitHookProperties | None,
++        max_spill_size: int | None = None,
++        max_temp_directory_size: int | None = None,
+     ) -> None: ...
+ 
+ def rust_core_version() -> str: ...
+@@ -337,6 +339,8 @@ def write_to_deltalake(
+     writer_properties: WriterProperties | None,
+     commit_properties: CommitProperties | None,
+     post_commithook_properties: PostCommitHookProperties | None,
++    max_spill_size: int | None = None,
++    max_temp_directory_size: int | None = None,
+ ) -> None: ...
+ def convert_to_deltalake(
+     uri: str,
+diff --git a/python/deltalake/writer/writer.py b/python/deltalake/writer/writer.py
+index f60d522..16dbbd3 100644
+--- a/python/deltalake/writer/writer.py
++++ b/python/deltalake/writer/writer.py
+@@ -39,6 +39,8 @@ def write_deltalake(
+     writer_properties: WriterProperties = ...,
+     commit_properties: CommitProperties | None = ...,
+     post_commithook_properties: PostCommitHookProperties | None = ...,
++    max_spill_size: int | None = ...,
++    max_temp_directory_size: int | None = ...,
+ ) -> None: ...
+ 
+ 
+@@ -59,6 +61,8 @@ def write_deltalake(
+     writer_properties: WriterProperties = ...,
+     commit_properties: CommitProperties | None = ...,
+     post_commithook_properties: PostCommitHookProperties | None = ...,
++    max_spill_size: int | None = ...,
++    max_temp_directory_size: int | None = ...,
+ ) -> None: ...
+ 
+ 
+@@ -78,6 +82,8 @@ def write_deltalake(
+     writer_properties: WriterProperties | None = None,
+     commit_properties: CommitProperties | None = None,
+     post_commithook_properties: PostCommitHookProperties | None = None,
++    max_spill_size: int | None = None,
++    max_temp_directory_size: int | None = None,
+ ) -> None:
+     """Write to a Delta Lake table
+ 
+@@ -104,6 +110,10 @@ def write_deltalake(
+         writer_properties: Pass writer properties to the Rust parquet writer.
+         commit_properties: properties of the transaction commit. If None, default values are used.
+         post_commithook_properties: properties for the post commit hook. If None, default values are used.
++        max_spill_size: Optional DataFusion memory-pool limit in bytes. Bounded writes
++            use one execution partition and 256-row batches to limit queued data.
++            This does not bound all native allocations; the worker enforces its own RSS limit.
++        max_temp_directory_size: Optional spill-directory limit in bytes.
+     """
+     table, table_uri = try_get_table_and_table_uri(table_or_uri, storage_options)
+     if table is not None:
+@@ -144,6 +154,8 @@ def write_deltalake(
+             writer_properties=writer_properties,
+             commit_properties=commit_properties,
+             post_commithook_properties=post_commithook_properties,
++            max_spill_size=max_spill_size,
++            max_temp_directory_size=max_temp_directory_size,
+         )
+     else:
+         write_deltalake_rust(
+@@ -162,4 +174,6 @@ def write_deltalake(
+             writer_properties=writer_properties,
+             commit_properties=commit_properties,
+             post_commithook_properties=post_commithook_properties,
++            max_spill_size=max_spill_size,
++            max_temp_directory_size=max_temp_directory_size,
+         )
+diff --git a/python/src/lib.rs b/python/src/lib.rs
+index 0942a64..8743376 100644
+--- a/python/src/lib.rs
++++ b/python/src/lib.rs
+@@ -2105,7 +2105,9 @@ impl RawDeltaTable {
+         configuration=None,
+         writer_properties=None,
+         commit_properties=None,
+-        post_commithook_properties=None
++        post_commithook_properties=None,
++        max_spill_size=None,
++        max_temp_directory_size=None
+     ))]
+     fn write(
+         &self,
+@@ -2123,6 +2125,8 @@ impl RawDeltaTable {
+         writer_properties: Option<PyWriterProperties>,
+         commit_properties: Option<PyCommitProperties>,
+         post_commithook_properties: Option<PyPostCommitHookProperties>,
++        max_spill_size: Option<usize>,
++        max_temp_directory_size: Option<u64>,
+     ) -> PyResult<()> {
+         let table = py.detach(|| {
+             let save_mode = mode.parse().map_err(PythonError::from)?;
+@@ -2135,6 +2139,20 @@ impl RawDeltaTable {
+             )
+             .with_save_mode(save_mode);
+ 
++            if max_spill_size.is_some() || max_temp_directory_size.is_some() {
++                let mut session =
++                    create_session_state_with_spill_config(max_spill_size, max_temp_directory_size);
++                // Row-count queues and coalescing multiply wide-value buffers across
++                // partitions. Keep bounded compaction writes serial with small batches.
++                let config = session
++                    .config()
++                    .clone()
++                    .with_target_partitions(1)
++                    .with_batch_size(256);
++                *session.config_mut() = config;
++                builder = builder.with_session_state(Arc::new(session));
++            }
++
+             let table_provider = to_lazy_table(maybe_lazy_cast_reader(
+                 data.into_reader()?,
+                 batch_schema.into_inner(),
+@@ -2931,6 +2949,8 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PyCommitProperties {
+     writer_properties=None,
+     commit_properties=None,
+     post_commithook_properties=None,
++    max_spill_size=None,
++    max_temp_directory_size=None,
+ ))]
+ fn write_to_deltalake(
+     py: Python,
+@@ -2949,6 +2969,8 @@ fn write_to_deltalake(
+     writer_properties: Option<PyWriterProperties>,
+     commit_properties: Option<PyCommitProperties>,
+     post_commithook_properties: Option<PyPostCommitHookProperties>,
++    max_spill_size: Option<usize>,
++    max_temp_directory_size: Option<u64>,
+ ) -> PyResult<()> {
+     let raw_table: DeltaResult<RawDeltaTable> = py.detach(|| {
+         let options = storage_options.clone().unwrap_or_default();
+@@ -2983,6 +3005,8 @@ fn write_to_deltalake(
+         writer_properties,
+         commit_properties,
+         post_commithook_properties,
++        max_spill_size,
++        max_temp_directory_size,
+     )
+ }
+ 

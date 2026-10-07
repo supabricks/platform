@@ -172,6 +172,7 @@ from sync_types import TypeChecks
 from bulk import BulkChecks
 from merge import MergeChecks
 from append import AppendChecks
+from capacity import CapacityChecks
 
 
 class InstalledComposite(CompositeChecks,InstalledContinuous):pass
@@ -188,7 +189,7 @@ class InstalledChar(TypeChecks,InstalledContinuous):
 class InstalledBulk(BulkChecks,InstalledContinuous):pass
 
 
-SUITES={'append':AppendChecks,'merge':MergeChecks,'bulk':InstalledBulk,'date':InstalledDate,'char':InstalledChar,'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
+SUITES={'capacity':CapacityChecks,'append':AppendChecks,'merge':MergeChecks,'bulk':InstalledBulk,'date':InstalledDate,'char':InstalledChar,'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
 
 
 def main():

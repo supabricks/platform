@@ -14,9 +14,12 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge','append'))}
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge','append','capacity'))}
 WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'capacity':{'large_live_set_compaction_and_append_fit_original_capacity',
+        'capacity_replay_preserves_exact_source_and_old_versions',
+        'append_history_512_versions_keeps_pinned_rows_and_memory_budget'},
     'append':{'proven_new_keys_append_without_target_sized_memory',
         'append_commit_replay_and_old_versions_are_exact'},
     'merge':{'bounded_merge_into_large_compacted_table_completes',
@@ -111,6 +114,31 @@ def collect(data,base,revision,target):
         and append['append']['metrics'].get('committed_before_receipt') is True,'append commit fault not exercised')
     require(append['replay'].get('metrics',{}).get('replayed') is True
         and append['replay']['metrics'].get('apply_kind')=='append','append commit not replayed')
+    capacity=suites['capacity'].get('metrics',{})
+    require(capacity.get('rows')==65536 and capacity.get('insert_rows')==16384
+        and capacity.get('payload_width')==8192,'changed capacity workload')
+    require(number(capacity.get('source_bytes')) and 512*1024**2<capacity['source_bytes']<1024**3,
+        'capacity source does not cross old boundary')
+    capacity_phases={}
+    for phase in ('apply','replay'):
+        value=capacity.get(phase,{})
+        keys=('elapsed_seconds','initialization_seconds','source_estimate_bytes','generation_bytes','highwater_bytes')
+        require(all(number(value.get(k)) for k in keys),'missing capacity phase measurement')
+        require(value['source_estimate_bytes']>1024**3 and 512*1024**2<value['generation_bytes']<1024**3,
+            'capacity estimate or actual output not qualified')
+        require(0<value['highwater_bytes']<768*1024**2,'capacity worker memory limit')
+        capacity_phases[phase]={k:value[k] for k in keys}
+    history=capacity.get('history',{})
+    require(history.get('last_version')==512 and history.get('appended_rows')==511,
+        'incomplete append history')
+    require(number(history.get('highwater_bytes')) and 0<history['highwater_bytes']<768*1024**2,
+        'append history worker memory limit')
+    require(number(history.get('elapsed_seconds')) and history['elapsed_seconds']>0,
+        'missing append history duration')
+    commits=history.get('commit_seconds',[])
+    require(isinstance(commits,list) and len(commits)==511 and all(number(v) and v>=0 for v in commits),
+        'incomplete append history commit timings')
+    capacity_phases['history']=history
     continuous=suites['continuous'];metrics=continuous.get('metrics',{});work=metrics.get('workload',{})
     for key,expected_value in [('tables',2),('rows_per_table',10000),('transactions',750),('changed_rows',1500),('target_rows_per_second',50),('burst_changed_rows',200)]:
         require(work.get(key)==expected_value,'changed workload '+key)
@@ -141,7 +169,7 @@ def collect(data,base,revision,target):
     clean_work={k:work[k] for k in ('tables','rows_per_table','transactions','changed_rows','target_rows_per_second','achieved_rows_per_second','elapsed_seconds','burst_changed_rows','burst_commit_to_publication_ms')}
     clean_work.update({k:{p:work[k][p] for p in ('p50','p95','p99')} for k in ('commit_to_publication_ms','oltp_transaction_ms')})
     return dict(status='passed',release_identity=data['release_identity'],archive=data['archive'],reports=reports,sqlite=sqlite,capture_wal=capture_wal,
-        worker_inventory=expected,network=data['network_evidence'],append=append_phases,
+        worker_inventory=expected,network=data['network_evidence'],append=append_phases,capacity=capacity_phases,
         host={k:host[k] for k in ('system','machine','cpu_count','memory_bytes')},workload=clean_work,
         baseline_oltp_transaction_ms={p:baseline[p] for p in ('p50','p95','p99')},
         oltp_p95_ratio=round(work['oltp_transaction_ms']['p95']/baseline['p95'],3),

@@ -39,6 +39,7 @@ def compact(config, temporary):
         reader=pa.RecordBatchReader.from_batches(dataset.schema,batches())
         write_deltalake(str(temporary/table['path']),reader,
             target_file_size=16*1024*1024,
+            max_spill_size=64*1024*1024,max_temp_directory_size=64*1024*1024,
             writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
             configuration={'delta.dataSkippingNumIndexedCols':'0'})
         if count[0]!=table['rows']:raise CaptureError('compaction_row_count')

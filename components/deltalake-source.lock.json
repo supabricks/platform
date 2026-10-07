@@ -22,11 +22,23 @@
   },
   "patch": {
     "path": "components/patches/deltalake-bounded-merge.patch",
-    "sha256": "a60d265fd52026c8d71483a663bef105ed0b02d3b95aa680f55d53e71d75aa07",
+    "sha256": "a6dbc71f98a846e370f70fc4099680df6c941c8e9200156a6fdd613a39afc86e",
     "files": {
       "crates/core/src/delta_datafusion/session.rs": {
         "before": "3821eaf54bae4f1df119ad04aea4bbcd2a157171d7a0337550a31c9a7134c2e8",
         "after": "b719e2af86e06393b0b6534a0241aa0d938cbf552dae44c924ebe27328536216"
+      },
+      "python/deltalake/_internal.pyi": {
+        "before": "9fda4a7a1ec97d96d694402fd077a6dbf8c64494986f137aeabaac4e8a22595f",
+        "after": "c8ba36566397b38c9db847dbae23bf4bb57cf1189ebf5754088a60a5240146d3"
+      },
+      "python/deltalake/writer/writer.py": {
+        "before": "87eb955c8d95c79fe7c823161dfa1b89cbaf9dc506dfab68d927d9fb9bd52b7b",
+        "after": "8980240c53ad8c2df6c47e13c2995b11631a21cffebe8aecad5c085220717d30"
+      },
+      "python/src/lib.rs": {
+        "before": "483bf514e16a204b40b1ae671978a2590884cdb8b699da67b03991c02d6002da",
+        "after": "8b6cdd7534dfce095b1621da5a5d248a9e15aa92cd0ae40a5bb07fe6f1ec3a41"
       }
     }
   },
