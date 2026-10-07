@@ -1,8 +1,10 @@
 # EQ02 — native SF1 loading and analytical qualification
 
 Status, 2026-10-07: **resumed; full end-to-end qualification is not complete**.
-Four installed load attempts are retained below. The fourth used an explicit
-65,536-row publication window and reached a new apply-worker memory blocker (#182).
+Five installed load attempts are retained below. The fourth reached the apply-worker
+memory blocker (#182). The [bounded lookup correction](eq02-key-pruning.md) passes
+its regression gates; attempt 05 crosses that boundary but stops on a reproducible
+post-compaction Delta merge stall (#184). Full qualification remains incomplete.
 SP remains [frozen](sync-performance-freeze.md). This work does not merge its
 candidate or restart its performance campaign.
 
@@ -31,6 +33,7 @@ or automatic replacement trials are used.
 | 02 | Complete-transaction row prefix | 2,148,347 | 238,416 | 56.200 s | Generated Latin-1 country rejected as UTF-8 during COPY |
 | 03 | Explicit Latin-1 import | 3,322,145 | 319,312 | 74.347 s | `wal_budget`, capture fenced |
 | 04 | Publication-window flow control | 1,301,328 | 1,235,792 | 508.166 s | `incremental_memory_budget`, capture fenced |
+| 05 | Bounded key lookup | 1,953,616 | 1,888,080 | 539.224 s | Post-compaction merge stalls; request expires (#184) |
 
 These are failure-discovery and harness pilots, **not comparative throughput
 qualification**. The completed attempts stop at different data boundaries; their
@@ -38,7 +41,7 @@ elapsed times cannot establish a speedup. Commit ledgers retain every attempted
 and acknowledged batch, offsets, row/byte counts and COPY-plus-commit latency.
 Observed publications are distinct from source acknowledgment. Counts above do
 not assert source/Delta equality: source was ahead when these attempts stopped.
-All four completed attempts stopped with zero leaked/remaining descendants.
+All five completed attempts stopped with zero leaked/remaining descendants.
 
 Receipts, compressed logs, exact earlier loader sources and package proof are in
 [the evidence directory](tpcds-evidence/2026-10-07-eq02/README.md). These trials use
@@ -90,10 +93,11 @@ reproduces a fresh-process 785.8 MiB peak: the planner unnecessarily scans
 1,185,792 existing rows before Delta merge adds further memory. Explicit key
 bounds plus bounded scanner read-ahead reduce retained-range median plan/apply
 time from 8.208 s to 0.653 s, with 486.5–541.7 MiB peaks across three candidate
-runs and identical plans/added rows. These are diagnostic-only interventions,
-not production changes or full SF1 qualification. Worker limits are unchanged;
-#182 remains open pending regression coverage and an installed SF1 rerun. The
-original failed diagnostics and all new controls remain retained.
+runs and identical plans/added rows. The correction is now implemented in
+`e36f07c`; 147 worker tests and six installed suites pass. Attempt 05 passes the old failure point with observed apply peaks
+below 678 MiB, then stops on #184. Worker limits are unchanged, and #182 remains
+open pending complete qualification. The original diagnostics and all controls
+remain retained. See [implementation and rerun evidence](eq02-key-pruning.md).
 
 ## Exact data and analytical coverage gates
 
@@ -104,7 +108,9 @@ reference loading took 15.502 seconds and the full reference run 103.741 seconds
 It used Spark 4.2.0, Python 3.12.13 and the captured bundled Java runtime
 17.0.20.1+1. Cleanup observed ten descendants with zero leaked/remaining. This is
 one reference execution, not a comparative performance result or a passing
-product/reference comparison. The full product verifier is blocked on #182. Ten harness tests pass, including COPY framing, partitioned
+product/reference comparison. The full product verifier is blocked on the
+incomplete load (#184); #182 qualification remains open. Ten harness tests pass,
+including COPY framing, partitioned
 comparison, duplicate/null/padding preservation and conservative query verdicts.
 Implementing a runner does not qualify its full SF1 results.
 

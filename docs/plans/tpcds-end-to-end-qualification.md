@@ -31,7 +31,11 @@ latency increased 4.15% in the short screen. Exact release CI remains a merge ga
 with continuous sync already active. Separate retained attempts found and tracked
 aggregate apply row limits (#178), Latin-1 generator text (#179), and source WAL
 overrun under unrestricted COPY (#180). The publication-windowed load controls
-WAL but stops at the apply worker's 768 MiB memory limit (#182).
+WAL but initially stopped at the apply worker's 768 MiB memory limit (#182).
+The [bounded key-lookup correction](../architecture/eq02-key-pruning.md) passes
+147 worker tests and six installed suites. Attempt 05 crosses that failure point
+with observed apply peaks below 678 MiB, then stalls in post-compaction Delta
+merge (#184), also reproduced with the pre-fix runtime. Full qualification remains open.
 The independent Spark reference completes all 103 statements; full product
 table equality, product query execution and result comparisons remain pending.
 

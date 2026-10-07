@@ -1,5 +1,7 @@
 # EQ02 — apply memory investigation (#182)
 
+**Follow-up:** the correction is now implemented; see [packaged checks and SF1 attempt 05](eq02-key-pruning.md). The text below records the preceding diagnostic investigation.
+
 Investigated 2026-10-07 against the retained SF1 load-04 failure. **Unnecessary
 Parquet scanning and the memory retained into Delta merge are a demonstrated
 cause of excessive memory use.** A fresh-process replay crossed 768 MiB, so

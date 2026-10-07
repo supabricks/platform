@@ -85,3 +85,17 @@ file and text summary are retained. Predicate inspection and exact added-row
 verification ran after the timed work. The build download TLS failure from
 #177 is also retained here as a CI artifact, not a local workload measurement;
 only failed remote jobs were retried. See the runner's mounts for reproduction.
+
+
+`key-pruning/` retains the [implemented correction and attempt 05](../../eq02-key-pruning.md):
+147 worker tests, six passing installed suites, three unchanged packaged-worker
+replays, package proof, failed SF1 receipts/ledgers and external apply-memory
+samples. All installed suites and the failed load have zero leaked/remaining
+descendants. SF1 crosses the old memory failure but stalls after compaction (#184).
+Three isolated merge probes time out, including the pre-fix runtime; their
+external `termination.json` overrides any unfinished worker `RUNNING` receipt.
+The first probe's missing cleaned-up generation is retained as a setup failure.
+Private input/plan files and databases are excluded. `live-stall-observation.json`
+is an observer's record, not an original compaction receipt; the separate
+reconstructed compaction receipt is explicitly labeled. Full qualification and
+product SQL coverage remain pending.

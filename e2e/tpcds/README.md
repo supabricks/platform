@@ -60,7 +60,10 @@ Ordering differences and LIMIT boundary ties require explicit review; floating
 point differences are not silently rounded. The reference is Apache Spark JVM;
 the installed product engine is Sail through Spark Connect. Their measurements
 must stay separately labeled. The full reference run has completed; product
-verification/query execution remains blocked on the apply-worker memory issue #182.
+verification/query execution remains blocked on the post-compaction merge stall
+#184. The [#182 correction](../../docs/architecture/eq02-key-pruning.md) passes its
+worker/installed regressions and crosses the prior failure point; full SF1
+qualification is still incomplete.
 
 ## Pin and inspect inputs
 

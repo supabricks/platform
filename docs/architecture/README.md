@@ -24,6 +24,7 @@ remains beside its owning record in the existing evidence directories.
 
 - [EQ02: native SF1 load pilots and analytical coverage](eq02-sf1.md)
 - [EQ02: apply memory investigation (#182)](eq02-apply-memory-investigation.md)
+- [EQ02: bounded key lookup and post-compaction blocker (#184)](eq02-key-pruning.md)
 - [EQ01: native DATE/CHAR sync, analytical semantics and separate slice measurements](eq01-date-char.md)
 - [EQ01: native composite integer keys](eq01-composite-keys.md)
 - [EQ00: TPC-DS input and admission pilot](tpcds-eq00.md)
