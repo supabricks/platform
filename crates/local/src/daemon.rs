@@ -288,6 +288,7 @@ impl Daemon {
         let _profile_session = crate::sync_profile::init(self.store.root());
         self.listener.set_nonblocking(true)?;
         let mut next_tick = std::time::Instant::now();
+        let mut next_publication_tick = next_tick;
         let mut stopping = false;
         loop {
             self.finish_environment_gc();
@@ -576,17 +577,25 @@ impl Daemon {
                 {
                     return Ok(());
                 }
-                if !stopping {
-                    // Consume worker receipts accepted by cell.tick in this turn.
-                    // Publication still verifies the files and commits its own
-                    // durable state; an extra timer turn adds no ordering guarantee.
-                    self.publisher.last_error = self
-                        .publisher
-                        .tick(&mut self.store)
-                        .err()
-                        .map(|e| e.to_string());
-                }
+                // Consume receipts accepted by cell.tick in this turn too.
+                next_publication_tick = std::time::Instant::now();
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
+            }
+            if !stopping && std::time::Instant::now() >= next_publication_tick {
+                self.publisher.last_error = self
+                    .publisher
+                    .tick(&mut self.store)
+                    .err()
+                    .map(|e| e.to_string());
+                // Hashing remains bounded to 4 MiB per turn. Yield to IPC and
+                // other work between chunks without imposing the maintenance
+                // tick's 200 ms delay on every chunk of an active verification.
+                let delay = if self.publisher.verification_pending() {
+                    20
+                } else {
+                    200
+                };
+                next_publication_tick = std::time::Instant::now() + Duration::from_millis(delay);
             }
             let (mut stream, _) = match self.listener.accept() {
                 Ok(pair) => pair,
