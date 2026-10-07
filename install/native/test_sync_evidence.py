@@ -71,6 +71,7 @@ class SyncEvidence(unittest.TestCase):
             lambda d:d['worker_inventory'].update({'capture_worker.py':'c'*64}),
             lambda d:d['worker_inventory'].pop('incremental/planning.py'),
             lambda d:d['worker_inventory'].update({'incremental/planning.py':'c'*64}),
+            lambda d:d['suites'].pop('bulk'),lambda d:d['suites']['bulk']['checks'].pop(),
             lambda d:d['suites'].pop('date'),lambda d:d['suites']['char']['checks'].pop(),
             lambda d:d['suites'].pop('composite'),lambda d:d['suites']['composite']['checks'].pop(),
             lambda d:d['worker_inventory'].pop('capture/source.py'),lambda d:d['worker_inventory'].pop('incremental/rows.py'),

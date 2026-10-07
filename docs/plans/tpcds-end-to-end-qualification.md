@@ -1,6 +1,6 @@
 # TPC-DS end to end qualification
 
-Status: **EQ00 started 2026-10-06; prioritized ahead of further SP work by user
+Status: **EQ02 resumed 2026-10-07; EQ00 started 2026-10-06. Prioritized ahead of further SP work by user
 direction.** The [SP workstream is frozen](../architecture/sync-performance-freeze.md)
 at its retained results, including unresolved #169. SP11/SP12 completion is no
 longer a prerequisite for starting EQ. Return to SP after reviewing end-to-end
@@ -26,6 +26,14 @@ publication means are 857.82 → 881.88 → 843.77 ms (baseline → DATE → CHA
 this short screen is not a speedup or sustained performance qualification.
 The composite slice's six scalar control trials pass equality and cleanup; mean observed publication
 latency increased 4.15% in the short screen. Exact release CI remains a merge gate.
+
+[EQ02 SF1 attempts](../architecture/eq02-sf1.md) have now exercised native loading
+with continuous sync already active. Separate retained attempts found and tracked
+aggregate apply row limits (#178), Latin-1 generator text (#179), and source WAL
+overrun under unrestricted COPY (#180). The publication-windowed load controls
+WAL but stops at the apply worker's 768 MiB memory limit (#182).
+The independent Spark reference completes all 103 statements; full product
+table equality, product query execution and result comparisons remain pending.
 
 The initial engineering baseline is platform source
 `8b68cd206edd5de2b1f820c90c39e7a76aedf3aa`, whose full Linux/macOS release CI passed
@@ -84,9 +92,10 @@ inspect its complete inventory rather than inheriting its exclusions silently.
 
 ## Compatibility before scale
 
-The documented [capture profile](../architecture/sy02-durable-capture.md) admits
-one integer primary key and a bounded integer/text/varchar/decimal type set.
-TPC-DS cannot be assumed eligible unchanged. Inspect the selected release and
+The EQ00 baseline [capture profile](../architecture/sy02-durable-capture.md)
+admitted one integer primary key and a bounded integer/text/varchar/decimal type
+set. EQ01 adds qualified composite integer keys and finite DATE/padded CHAR.
+Schema admission alone does not establish full-load eligibility. Inspect the selected release and
 create a per-table compatibility report covering composite keys, dates, character
 semantics, numeric precision, nullability, schema size and transaction limits.
 

@@ -22,6 +22,7 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [EQ02: native SF1 load pilots and analytical coverage](eq02-sf1.md)
 - [EQ01: native DATE/CHAR sync, analytical semantics and separate slice measurements](eq01-date-char.md)
 - [EQ01: native composite integer keys](eq01-composite-keys.md)
 - [EQ00: TPC-DS input and admission pilot](tpcds-eq00.md)

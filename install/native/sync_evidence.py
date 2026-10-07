@@ -14,9 +14,11 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char'))}
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk'))}
 WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'bulk':{'complete_transaction_row_prefix_drains_with_exact_equality_and_pinned_reader',
+        'oversized_single_transaction_preserves_last_complete_publication'},
     'date':{'date_native_bootstrap_types_nulls_bounds_and_sail_queries',
         'date_insert_update_delete_key_move_and_old_epoch_immutability',
         'date_capture_sigkill_and_daemon_restart_replay',
