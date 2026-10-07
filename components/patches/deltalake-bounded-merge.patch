@@ -1,8 +1,8 @@
 diff --git a/crates/core/src/delta_datafusion/session.rs b/crates/core/src/delta_datafusion/session.rs
-index 2c6bca2..fa939ee 100644
+index 2c6bca2..0afb4d0 100644
 --- a/crates/core/src/delta_datafusion/session.rs
 +++ b/crates/core/src/delta_datafusion/session.rs
-@@ -51,7 +51,16 @@ pub fn create_session_state_with_spill_config(
+@@ -51,7 +51,20 @@ pub fn create_session_state_with_spill_config(
          builder = builder.with_max_temp_directory_size(directory_size);
      }
  
@@ -12,7 +12,11 @@ index 2c6bca2..fa939ee 100644
 +    // Keep the pool and disk limits, but avoid that repartition barrier.
 +    let config: SessionConfig = DeltaSessionConfig::default().into();
 +    let config = if max_spill_size.is_some() {
-+        config.with_target_partitions(1)
++        let mut config = config.with_target_partitions(1);
++        // Merge puts the bounded source on the left. File-size estimates can
++        // otherwise swap the growing target into the non-spilling hash build.
++        config.options_mut().optimizer.join_reordering = false;
++        config
 +    } else {
 +        config
 +    };

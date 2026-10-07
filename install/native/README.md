@@ -221,8 +221,9 @@ Native builds use Delta 1.6.3 at the exact commit in
 its published source-distribution Cargo lock and one hash-pinned patch. Bounded
 merge sessions use one DataFusion target partition to avoid the parallel
 repartition deadlock tracked in platform #184. The 64 MiB merge pool and 128 MiB
-temporary-disk limit remain in force. Unbounded sessions retain their upstream
-partition setting. This trades intra-merge parallelism for progress; it is not
+temporary-disk limit remain in force. Bounded sessions also disable statistics-driven join reordering so the bounded
+merge source remains the hash build side. Unbounded sessions retain their upstream
+partition and join-order settings. This trades intra-merge parallelism for progress; it is not
 an SP throughput qualification.
 
 On each native builder, check out the pinned Delta commit into a fresh directory,

@@ -14,7 +14,7 @@ from delta_runtime import ROOT, verify, verify_report
 def sample_report(target):
     pin = json.loads((ROOT / 'components/deltalake-source.lock.json').read_text())
     suffix = 'linux_x86_64' if target == 'linux-x86_64' else 'macosx_15_0_arm64'
-    return dict(schema_version=1, repository=pin['repository'], commit=pin['commit'], 
+    return dict(schema_version=1, repository=pin['repository'], commit=pin['commit'],
                 version=pin['version'], target=target, inputs=pin['inputs'], rustc='rustc ' + pin['rust'],
                 maturin=pin['maturin'], patch=pin['patch'], cargo_lock=pin['cargo_lock'], profile=pin['profile'],
                 source_lock_sha256=digest(ROOT / 'components/deltalake-source.lock.json'),

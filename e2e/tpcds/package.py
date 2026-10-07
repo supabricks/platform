@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verified Python/Sail engineering overlay; never a signed-release claim."""
+"""Verified Python/native engineering overlay; never a signed-release claim."""
 import argparse
 import json
 from pathlib import Path

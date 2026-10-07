@@ -18,6 +18,7 @@ TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundle
 WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
     'merge':{'bounded_merge_into_large_compacted_table_completes',
+        'bounded_merge_many_small_files_keeps_source_hash_build',
         'sparse_update_delete_key_move_and_saved_commit_replay_are_exact',
         'old_delta_versions_remain_exact_after_bounded_merges'},
     'bulk':{'complete_transaction_row_prefix_drains_with_exact_equality_and_pinned_reader',

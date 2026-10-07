@@ -218,8 +218,11 @@ not a sustained throughput benchmark or an SP qualification.
 
 ## Bounded post-compaction merge regression (#184)
 
-The mandatory installed `merge` suite uses 1,888,080 deterministic rows in a
-compacted Delta layout, then 16,384 inserts and sparse updates/deletes/key movement.
+The mandatory installed `merge` suite uses 1,888,080 mixed-width rows in one
+compacted file and a separate 131,072-row small-file layout. Both receive 16,384
+inserts and sparse updates/deletes/key movement. The old runtime hangs on the
+compacted fixture; a single-partition-only correction exhausts the bounded hash
+build pool on the small-file fixture. The complete patch must pass both.
 It verifies every field and key exactly at all three versions, including replay
 of a saved plan after a commit-before-receipt fault. Each generation/apply/read
 phase runs in a separate installed Python process with a 90-second external
