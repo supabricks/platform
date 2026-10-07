@@ -85,16 +85,15 @@ the fourth attempt crossed the daemon's 768 MiB limit for a busy reusable apply
 worker. It was not the 16 GiB container ceiling. Final retained WAL was just
 1,512 bytes and journal size approximately 12.96 MB. The loader recorded 464.290
 seconds of flow-control waiting. The previous successful apply read its journal
-in 23 ms; the root cause within planning, Arrow/Delta execution or worker reuse
-is not yet established. Separate diagnostics against copied state found
-37,056 empty scan batches and 37,084 planning-guard checks for 16,384 inserts,
-with no matching existing rows. Planning took about 8.19 seconds and sampled
-about 452 MiB RSS; a fresh full plan/apply completed in about 8.18 seconds with
-about 728 MiB sampled RSS during apply. The 50 ms sampler can miss peaks.
-Completing that diagnostic under a 2 GiB container does not establish compliance
-with the product's 768 MiB limit or prove a reuse leak. Retain both failed
-diagnostic setup attempts as well as the successful instrumented ones. Full product SF1
-qualification is blocked on this issue.
+in 23 ms. The [follow-up investigation](eq02-apply-memory-investigation.md)
+reproduces a fresh-process 785.8 MiB peak: the planner unnecessarily scans
+1,185,792 existing rows before Delta merge adds further memory. Explicit key
+bounds plus bounded scanner read-ahead reduce retained-range median plan/apply
+time from 8.208 s to 0.653 s, with 486.5–541.7 MiB peaks across three candidate
+runs and identical plans/added rows. These are diagnostic-only interventions,
+not production changes or full SF1 qualification. Worker limits are unchanged;
+#182 remains open pending regression coverage and an installed SF1 rerun. The
+original failed diagnostics and all new controls remain retained.
 
 ## Exact data and analytical coverage gates
 

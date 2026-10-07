@@ -67,3 +67,21 @@ attempt failed because PostgreSQL needed explicit integer parameter casts for
 `generate_series`; its receipt, failure and cleanup are retained. Both attempts
 have zero leaked/remaining descendants. This small correctness fixture is not
 TPC-DS query coverage or a performance measurement.
+
+
+`issue-182/` retains the [follow-up memory investigation](../../eq02-apply-memory-investigation.md):
+four initial diagnostic pilots (trial 01), a three-repeat/four-variant comparison
+(trials 02–04), and one separately profiled run. All 16 diagnostic plan/apply
+outputs have identical plans, added rows and unchanged original Parquet bytes.
+Candidate predicates and scanner controls are applied only by the diagnostic
+script; no product code or limits changed. The initial pilots were taken while
+adding experiment branches to that script; the final script was used for all
+12 comparison runs. The RSS sampler uses 5 ms intervals and records kernel
+high-water RSS as well as Arrow's default-pool counters. `summary.json` binds
+the final script and release identity and identifies the pilot/comparison cohorts.
+
+The separate profile is excluded from comparative timings. Its binary pstats
+file and text summary are retained. Predicate inspection and exact added-row
+verification ran after the timed work. The build download TLS failure from
+#177 is also retained here as a CI artifact, not a local workload measurement;
+only failed remote jobs were retried. See the runner's mounts for reproduction.
