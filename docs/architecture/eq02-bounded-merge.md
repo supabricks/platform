@@ -47,7 +47,10 @@ dependency graph.
 
 The tradeoff is reduced parallelism within a bounded merge. Measurements below
 must establish correctness and progress; SP throughput qualification remains a
-separate frozen workstream.
+separate frozen workstream. The controlled Linux build also increases the Delta
+native extension from 127.35 MiB to 190.84 MiB (63.49 MiB) with its explicit
+non-LTO build profile. These are extension bytes, not total installation or
+compressed archive sizes; package-size optimization is not claimed here.
 
 ## Qualification contract
 
@@ -105,3 +108,19 @@ the original stalled insert and sparse-update replays, and the expanded four-che
 regression. Its broader installed and full SF1 qualification is in progress. Exact Linux/macOS archive CI
 also remains required; the first CI run encountered a separate HTTP 502 fetching
 Unity Catalog build inputs.
+
+
+The revised installed runtime has identity
+`9f825f1381f660751f7815d4baf7b39d0d8e631049c4b31640e634651272b988`.
+All 147 worker tests and seven installed suites / 26 checks pass on it, with
+zero leaked/remaining descendants. The mixed-width compacted fixture takes
+0.435 s for insertion and 0.368 s for sparse mutation; the small-file fixture
+takes 0.162 s and 0.054 s respectively. These direct regression timings exclude
+fixture creation and full equality checks and are not ingestion throughput.
+
+[Public evidence](tpcds-evidence/2026-10-07-eq02/bounded-merge/summary.json) retains
+both source-build receipts, engineering package proofs, all fixture controls,
+worker/installed test logs, retained failure replays, before/after physical plans
+and the failed SF1 attempt 06. Parent `SHA256SUMS` covers these files. Input/mailbox
+configuration and databases remain private. Attempt 07 is still running; no
+passing full-load or product-query claim is made by this evidence snapshot.

@@ -1,0 +1,117 @@
+{
+  "correction_commit": "e49796ebd05654728a68a2d0cf1483df879d7c45",
+  "release_identity": "9f825f1381f660751f7815d4baf7b39d0d8e631049c4b31640e634651272b988",
+  "scope": "Verified unsigned engineering overlay; exact native archive CI separate",
+  "worker_tests": 147,
+  "packaging_tests": 75,
+  "installed": [
+    {
+      "suite": "merge",
+      "status": "PASS",
+      "checks": 4
+    },
+    {
+      "suite": "bulk",
+      "status": "PASS",
+      "checks": 2
+    },
+    {
+      "suite": "date",
+      "status": "PASS",
+      "checks": 4
+    },
+    {
+      "suite": "char",
+      "status": "PASS",
+      "checks": 4
+    },
+    {
+      "suite": "composite",
+      "status": "PASS",
+      "checks": 3
+    },
+    {
+      "suite": "continuous",
+      "status": "PASS",
+      "checks": 4
+    },
+    {
+      "suite": "maintenance",
+      "status": "PASS",
+      "checks": 5
+    }
+  ],
+  "full_sf1_status": "attempt_07_in_progress_not_qualified",
+  "product_sql_coverage": "0/103",
+  "sp": "frozen",
+  "negative_controls": {
+    "upstream_mixed_compacted": "insert child times out at 90 seconds; no leaked descendants",
+    "single_partition_mixed_fragmented": "HashJoinInput exhausts unchanged 64 MiB pool",
+    "integer_layouts": "pass on upstream; inadequate detector",
+    "first_fixture": "expected int32 widened to int64; corrected and retained"
+  },
+  "retained_replays": {
+    "original": {
+      "status": "PASS",
+      "scope": "copied post-compaction apply only; no installed-worker or throughput qualification",
+      "mode": "original",
+      "results": [
+        {
+          "version": 1,
+          "metrics": {
+            "num_source_rows": 16384,
+            "num_target_rows_inserted": 16384,
+            "num_target_rows_updated": 0,
+            "num_target_rows_deleted": 0,
+            "num_target_rows_copied": 0,
+            "num_output_rows": 16384,
+            "num_target_files_scanned": 1,
+            "num_target_files_skipped_during_scan": 0,
+            "num_target_files_added": 1,
+            "num_target_files_removed": 0,
+            "execution_time_ms": 377,
+            "scan_time_ms": 367,
+            "rewrite_time_ms": 0,
+            "new_parquet_bytes": 133931,
+            "retained_parquet_bytes": 15890228
+          },
+          "exact_planned_rows": true,
+          "total_rows": 1854464
+        }
+      ],
+      "elapsed_seconds": 0.5721898960182443,
+      "highwater_bytes": 517521408
+    },
+    "sparse": {
+      "status": "PASS",
+      "scope": "copied post-compaction apply only; no installed-worker or throughput qualification",
+      "mode": "sparse",
+      "results": [
+        {
+          "version": 1,
+          "metrics": {
+            "num_source_rows": 2,
+            "num_target_rows_inserted": 0,
+            "num_target_rows_updated": 2,
+            "num_target_rows_deleted": 0,
+            "num_target_rows_copied": 1838078,
+            "num_output_rows": 1838080,
+            "num_target_files_scanned": 1,
+            "num_target_files_skipped_during_scan": 0,
+            "num_target_files_added": 1,
+            "num_target_files_removed": 1,
+            "execution_time_ms": 360,
+            "scan_time_ms": 169,
+            "rewrite_time_ms": 180,
+            "new_parquet_bytes": 15789991,
+            "retained_parquet_bytes": 31546288
+          },
+          "exact_planned_rows": true,
+          "total_rows": 1838080
+        }
+      ],
+      "elapsed_seconds": 0.4689871890004724,
+      "highwater_bytes": 326156288
+    }
+  }
+}

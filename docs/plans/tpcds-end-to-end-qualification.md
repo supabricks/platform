@@ -35,7 +35,12 @@ WAL but initially stopped at the apply worker's 768 MiB memory limit (#182).
 The [bounded key-lookup correction](../architecture/eq02-key-pruning.md) passes
 147 worker tests and six installed suites. Attempt 05 crosses that failure point
 with observed apply peaks below 678 MiB, then stalls in post-compaction Delta
-merge (#184), also reproduced with the pre-fix runtime. Full qualification remains open.
+merge (#184), also reproduced with the pre-fix runtime. The
+[bounded Delta correction](../architecture/eq02-bounded-merge.md) now passes
+retained replays, 147 worker tests and 26 installed checks; its complete
+single-partition/source-first implementation is undergoing SF1 attempt 07 after
+the first candidate exposed a target hash-build allocation failure in attempt 06.
+Full qualification remains open.
 The independent Spark reference completes all 103 statements; full product
 table equality, product query execution and result comparisons remain pending.
 

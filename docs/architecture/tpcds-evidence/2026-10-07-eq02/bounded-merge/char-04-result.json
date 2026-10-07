@@ -1,0 +1,995 @@
+{
+  "status": "PASS",
+  "suite": "char",
+  "exact_installed": true,
+  "release_identity": "9f825f1381f660751f7815d4baf7b39d0d8e631049c4b31640e634651272b988",
+  "binary_sha256": "03b5f4d3c39fa5a8b6e86229fc2eacb3879cfa71f43b51a978779ddf539bc28c",
+  "checks": [
+    "all_24_native_tpcds_schemas_bootstrap_with_date_char_and_composite_keys",
+    "char_native_bootstrap_types_nulls_bounds_and_sail_queries",
+    "char_insert_update_delete_key_move_and_old_epoch_immutability",
+    "char_capture_sigkill_and_daemon_restart_replay"
+  ],
+  "metrics": {
+    "bootstrap_queries": [
+      {
+        "sql": "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "string",
+          "string",
+          "string",
+          "decimal(18,2)"
+        ],
+        "rows": [
+          [
+            "1",
+            "x   ",
+            "x       ",
+            "x",
+            "1234567890123456.78"
+          ],
+          [
+            "2",
+            "x   ",
+            "x       ",
+            "x ",
+            null
+          ],
+          [
+            "3",
+            "    ",
+            "        ",
+            "",
+            "0.00"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            "1.25"
+          ],
+          [
+            "5",
+            "\ud83e\uddf1\u00e9  ",
+            "\ud83e\uddf1\u00e9      ",
+            "\ud83e\uddf1\u00e9",
+            "2.50"
+          ],
+          [
+            "6",
+            "a\t  ",
+            "a\t      ",
+            "a\t",
+            "3.75"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c='x',c='x ',c=d,c=s,c LIKE 'x',length(c),CAST(c AS STRING)='x' FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            "True",
+            "True",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "2",
+            "True",
+            "True",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "3",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c IN ('x','y',NULL),c NOT IN ('x','y',NULL),c BETWEEN 'x' AND 'y',c < 'x\\n' FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            null,
+            null,
+            "True",
+            "False"
+          ],
+          [
+            "2",
+            null,
+            null,
+            "True",
+            "False"
+          ],
+          [
+            "3",
+            null,
+            null,
+            "False",
+            "True"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            "False",
+            "False"
+          ],
+          [
+            "6",
+            null,
+            null,
+            "False",
+            "True"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+        "types": [
+          "int",
+          "int"
+        ],
+        "rows": [
+          [
+            "1",
+            "1"
+          ],
+          [
+            "1",
+            "2"
+          ],
+          [
+            "2",
+            "1"
+          ],
+          [
+            "2",
+            "2"
+          ],
+          [
+            "3",
+            "3"
+          ],
+          [
+            "5",
+            "5"
+          ],
+          [
+            "6",
+            "6"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id FROM public.typed WHERE c IN (SELECT d FROM public.typed) ORDER BY id",
+        "types": [
+          "int"
+        ],
+        "rows": []
+      },
+      {
+        "sql": "SELECT c,count(*) FROM public.typed GROUP BY c ORDER BY c",
+        "types": [
+          "string",
+          "bigint"
+        ],
+        "rows": [
+          [
+            null,
+            "1"
+          ],
+          [
+            "    ",
+            "1"
+          ],
+          [
+            "a\t  ",
+            "1"
+          ],
+          [
+            "x   ",
+            "2"
+          ],
+          [
+            "\ud83e\uddf1\u00e9  ",
+            "1"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c=concat('x',''),concat(c,'')='x',c IN (concat('x',''),NULL) FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            "True",
+            "False",
+            null
+          ],
+          [
+            "2",
+            "True",
+            "False",
+            null
+          ],
+          [
+            "3",
+            "False",
+            "False",
+            null
+          ],
+          [
+            "4",
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            "False",
+            "False",
+            null
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            null
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,x='x' FROM (SELECT id,c AS x FROM public.typed) ORDER BY id",
+        "types": [
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            "True"
+          ],
+          [
+            "2",
+            "True"
+          ],
+          [
+            "3",
+            "False"
+          ],
+          [
+            "4",
+            null
+          ],
+          [
+            "5",
+            "False"
+          ],
+          [
+            "6",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,x='x' FROM (SELECT id,CAST(c AS STRING) AS x FROM public.typed) ORDER BY id",
+        "types": [
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            "False"
+          ],
+          [
+            "2",
+            "False"
+          ],
+          [
+            "3",
+            "False"
+          ],
+          [
+            "4",
+            null
+          ],
+          [
+            "5",
+            "False"
+          ],
+          [
+            "6",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c='\ud83e\uddf1\u00e9',c='x     ',c <=> d,c IS NULL,c IN ('x','y'),c IN (concat('x',''),'y') FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "1",
+            "False",
+            "True",
+            "True",
+            "False",
+            "True",
+            "True"
+          ],
+          [
+            "2",
+            "False",
+            "True",
+            "True",
+            "False",
+            "True",
+            "True"
+          ],
+          [
+            "3",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ],
+          [
+            "4",
+            null,
+            null,
+            "True",
+            "True",
+            null,
+            null
+          ],
+          [
+            "5",
+            "True",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ]
+        ]
+      }
+    ],
+    "postgres_dialect_results": [
+      {
+        "sql": "SELECT id,length(c),CAST(c AS TEXT)='x',c IN ('x',NULL),c IN (SELECT d FROM public.typed) FROM public.typed ORDER BY id",
+        "rows": [
+          [
+            "1",
+            "1",
+            "True",
+            "True",
+            "True"
+          ],
+          [
+            "2",
+            "1",
+            "True",
+            "True",
+            "True"
+          ],
+          [
+            "3",
+            "0",
+            "False",
+            null,
+            "True"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            "2",
+            "False",
+            null,
+            "True"
+          ],
+          [
+            "6",
+            "2",
+            "False",
+            null,
+            "True"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,length(c),CAST(c AS TEXT)='x',c IN ('x',NULL),c IN (SELECT d FROM public.typed) FROM public.typed ORDER BY id",
+        "rows": [
+          [
+            "3",
+            "0",
+            "False",
+            null,
+            "True"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "6",
+            "2",
+            "False",
+            null,
+            "True"
+          ],
+          [
+            "7",
+            "2",
+            "False",
+            null,
+            "True"
+          ],
+          [
+            "10",
+            "1",
+            "False",
+            null,
+            "True"
+          ]
+        ]
+      }
+    ],
+    "postgres_shared_queries": [
+      [
+        "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+        "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+        "SELECT id,c='x',c='x ',c=d,c IS NULL FROM public.typed ORDER BY id"
+      ],
+      [
+        "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+        "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+        "SELECT id,c='x',c='x ',c=d,c IS NULL FROM public.typed ORDER BY id"
+      ]
+    ],
+    "updated_queries": [
+      {
+        "sql": "SELECT id,c,d,s,amount FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "string",
+          "string",
+          "string",
+          "decimal(18,2)"
+        ],
+        "rows": [
+          [
+            "3",
+            "    ",
+            "        ",
+            "",
+            "0.00"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            "1.25"
+          ],
+          [
+            "5",
+            null,
+            "\ud83e\uddf1\u00e9      ",
+            "\ud83e\uddf1\u00e9",
+            "2.50"
+          ],
+          [
+            "6",
+            "a\t  ",
+            "a\t      ",
+            "a\t",
+            "3.75"
+          ],
+          [
+            "7",
+            "xy  ",
+            "xy      ",
+            "xy  ",
+            "2.50"
+          ],
+          [
+            "10",
+            "y   ",
+            "y       ",
+            "x",
+            "1234567890123456.79"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c='x',c='x ',c=d,c=s,c LIKE 'x',length(c),CAST(c AS STRING)='x' FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "7",
+            "False",
+            "False",
+            "True",
+            "True",
+            "False",
+            "4",
+            "False"
+          ],
+          [
+            "10",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "4",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c IN ('x','y',NULL),c NOT IN ('x','y',NULL),c BETWEEN 'x' AND 'y',c < 'x\\n' FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            null,
+            null,
+            "False",
+            "True"
+          ],
+          [
+            "4",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            "6",
+            null,
+            null,
+            "False",
+            "True"
+          ],
+          [
+            "7",
+            null,
+            null,
+            "True",
+            "False"
+          ],
+          [
+            "10",
+            null,
+            null,
+            "False",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT a.id,b.id FROM public.typed a JOIN public.typed b ON a.c=b.d ORDER BY a.id,b.id",
+        "types": [
+          "int",
+          "int"
+        ],
+        "rows": [
+          [
+            "3",
+            "3"
+          ],
+          [
+            "6",
+            "6"
+          ],
+          [
+            "7",
+            "7"
+          ],
+          [
+            "10",
+            "10"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id FROM public.typed WHERE c IN (SELECT d FROM public.typed) ORDER BY id",
+        "types": [
+          "int"
+        ],
+        "rows": []
+      },
+      {
+        "sql": "SELECT c,count(*) FROM public.typed GROUP BY c ORDER BY c",
+        "types": [
+          "string",
+          "bigint"
+        ],
+        "rows": [
+          [
+            null,
+            "2"
+          ],
+          [
+            "    ",
+            "1"
+          ],
+          [
+            "a\t  ",
+            "1"
+          ],
+          [
+            "xy  ",
+            "1"
+          ],
+          [
+            "y   ",
+            "1"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c=concat('x',''),concat(c,'')='x',c IN (concat('x',''),NULL) FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            "False",
+            "False",
+            null
+          ],
+          [
+            "4",
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            null
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            null
+          ],
+          [
+            "7",
+            "False",
+            "False",
+            null
+          ],
+          [
+            "10",
+            "False",
+            "False",
+            null
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,x='x' FROM (SELECT id,c AS x FROM public.typed) ORDER BY id",
+        "types": [
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            "False"
+          ],
+          [
+            "4",
+            null
+          ],
+          [
+            "5",
+            null
+          ],
+          [
+            "6",
+            "False"
+          ],
+          [
+            "7",
+            "False"
+          ],
+          [
+            "10",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,x='x' FROM (SELECT id,CAST(c AS STRING) AS x FROM public.typed) ORDER BY id",
+        "types": [
+          "int",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            "False"
+          ],
+          [
+            "4",
+            null
+          ],
+          [
+            "5",
+            null
+          ],
+          [
+            "6",
+            "False"
+          ],
+          [
+            "7",
+            "False"
+          ],
+          [
+            "10",
+            "False"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,c='\ud83e\uddf1\u00e9',c='x     ',c <=> d,c IS NULL,c IN ('x','y'),c IN (concat('x',''),'y') FROM public.typed ORDER BY id",
+        "types": [
+          "int",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean",
+          "boolean"
+        ],
+        "rows": [
+          [
+            "3",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ],
+          [
+            "4",
+            null,
+            null,
+            "True",
+            "True",
+            null,
+            null
+          ],
+          [
+            "5",
+            null,
+            null,
+            "False",
+            "True",
+            null,
+            null
+          ],
+          [
+            "6",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ],
+          [
+            "7",
+            "False",
+            "False",
+            "True",
+            "False",
+            "False",
+            "False"
+          ],
+          [
+            "10",
+            "False",
+            "False",
+            "True",
+            "False",
+            "True",
+            "True"
+          ]
+        ]
+      }
+    ]
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}
