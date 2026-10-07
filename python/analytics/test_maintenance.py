@@ -207,7 +207,42 @@ class CompactionTests(unittest.TestCase):
             previous_generation=config['generation'],after_lsn='0/12C',target_lsn='0/190',workspace=str(self.root/'work3'))
         Path(next_config['workspace']).mkdir();run(next_config);third=self.result(next_config)
         self.assertIsNone(third['manifest']['compaction'])
+        self.assertEqual(third['manifest']['generation_base_bytes'],new['manifest']['generation_base_bytes'])
         self.assertEqual(len(self.rows(third,42)),1);self.assertEqual(len(self.rows(new,42)),2)
+    def large_source(self,count,width,compression):
+        import pyarrow as pa
+        import incremental_worker as worker
+        from incremental.storage import inventory
+        root=Path(self.config['generation']);path=root/'tables/42'
+        delta=worker.DeltaTable(str(path));schema=worker.schema_for(delta,path)
+        rows=[dict(id=i,amount=None,note=str(i).ljust(width,'x')) for i in range(1000,1000+count)]
+        worker.write_deltalake(delta,pa.Table.from_pylist(rows,schema=schema),mode='append',
+            writer_properties=worker.WriterProperties(compression=compression,max_row_group_size=1024))
+        table=self.first['manifest']['tables'][0];table.update(version=1,rows=count+1)
+        self.first['manifest']['files']=inventory(root,self.first['manifest']['tables'])
+        return root,rows
+    def test_estimate_above_quota_can_compact_and_append_within_actual_quota(self):
+        from incremental.maintenance import estimate_bytes
+        from incremental.storage import boundary
+        root,rows=self.large_source(8192,320,'UNCOMPRESSED');config=self.config_compact()
+        budget=8*1024*1024
+        self.assertGreater(estimate_bytes(config),budget)
+        before={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()}
+        with patch('incremental.storage.MAX_BYTES',budget):run(config)
+        result=self.result(config)
+        self.assertLess(boundary(Path(config['generation']),config['deadline_ms']),budget)
+        self.assertEqual(result['manifest']['generation_base_bytes'],result['manifest']['generation_bytes'])
+        actual={r['id']:r for r in self.rows(result,42)}
+        self.assertEqual(len(actual),8194)
+        for row in rows:self.assertEqual(actual[row['id']],row)
+        self.assertEqual(actual[2]['note'],'two')
+        self.assertEqual(before,{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()})
+    def test_streaming_compaction_still_rejects_output_exceeding_actual_quota(self):
+        root,_=self.large_source(16000,1024,'ZSTD');config=self.config_compact()
+        before={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()}
+        with patch('incremental.storage.MAX_BYTES',8*1024*1024),self.assertRaisesRegex(Exception,'incremental_disk_budget'):run(config)
+        self.assertFalse((Path(config['workspace'])/'result.json').exists())
+        self.assertEqual(before,{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()})
     def test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation(self):
         config=self.config_compact();path=self.root/'config.json';path.write_bytes(canonical(config))
         for point in ('after_compaction_table','before_compaction_rename','after_compaction_rename','after_first_table'):

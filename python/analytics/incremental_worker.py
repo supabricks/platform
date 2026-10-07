@@ -148,15 +148,16 @@ def apply_table(config,root,table,planned,checksum,sealed):
     input_schema=pa.schema([pa.field(f.name,f.type,nullable=True,metadata=f.metadata) for f in arrow]+[pa.field(delete,pa.bool_())])
     source=pa.Table.from_pylist(records,schema=input_schema)
     if source.nbytes>MAX_VALUES:raise CaptureError('apply_value_budget')
-    table_bytes=sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
-    reservation=table_bytes+4*source.nbytes+4*1024*1024
-    retained_boundary(root.parent,extra=reservation)
-    boundary(root,config['deadline_ms'],extra=reservation)
     # Each planned key contributes at most +1 to row_delta. Equality proves
     # every final row is new: planning looked up the exact keys in this pinned
     # version before sealing the plan. Missing proof retains the merge path.
     # Avoid buffering the entire unchanged target in Delta's merge barrier.
     append=bool(records) and planned.get('row_delta')==len(records) and all(not row[delete] for row in records)
+    # Appends create new files; they cannot rewrite the unchanged target.
+    table_bytes=0 if append else sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
+    reservation=table_bytes+4*source.nbytes+4*1024*1024
+    retained_boundary(root.parent,extra=reservation)
+    boundary(root,config['deadline_ms'],extra=reservation)
     marker['sb_apply']='append' if append else 'merge'
     options=dict(writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
         commit_properties=CommitProperties(custom_metadata=marker,max_commit_retries=0),
@@ -236,6 +237,9 @@ def run_owned(config,root,journal_data,lease):
     manifest['compaction']=compaction
     manifest['retained_bytes']=retained_boundary(root.parent)
     used=boundary(root,config['deadline_ms']);manifest['generation_bytes']=used
+    if config['previous'] is None or compaction is not None:
+        # Keep this first-published size across later epochs in the same root.
+        manifest['generation_base_bytes']=used
     descriptor=dict(format_version=2,installation_id=config['identity']['installation_id'],epoch_id=config['epoch_id'],
         ordinal=config['ordinal'],export_id=config['id'],source_revision=config['source_revision'],
         generation='analytics/incremental/'+(config.get('storage_generation') or config['identity']['generation']),manifest=manifest,

@@ -186,7 +186,11 @@ def initialize(config):
             if not config.get('storage_generation') or not config.get('previous_generation') or Path(config['previous_generation'])==root:
                 raise CaptureError('incremental_history_lost')
             from .maintenance import compact, estimate_bytes
-            estimate=estimate_bytes(config)
+            # The size estimate is a reservation heuristic, not a minimum
+            # output size. A compacted live set can fit even when twice its
+            # source bytes exceeds the generation quota. Reserve no more than
+            # that quota; streaming and final boundaries still enforce it.
+            estimate=min(estimate_bytes(config),MAX_BYTES-boundary(temporary,config['deadline_ms']))
             retained_boundary(root.parent,extra=estimate)
             boundary(temporary,config['deadline_ms'],extra=estimate)
             compact(config,temporary)
