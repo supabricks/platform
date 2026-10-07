@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/delta-io/delta-rs",
+  "upstream_tag": "python-v1.6.3",
+  "commit": "cee6f9ea9d1deab2f70d23221abb5386b60f3a9a",
+  "version": "1.6.3",
+  "inputs": {
+    "Cargo.toml": "f5e5b475e2b7d36b3a53bbb912959bf444f52ae58a6eb5a77e42f93c3714a739",
+    "python/Cargo.toml": "536dd41ea36907d9ab97cef760dac196b703776e67018ea3f3c7a2c6d0b45cb4",
+    "python/pyproject.toml": "74d64f0d534e116114879acde566b94b5362ed6f65a757cff2bf9a3807683ef0",
+    "LICENSE.txt": "a25917a221b6184dcb9e0701f91dde42acc495f69958a84e2a5860a5c0f21ddd"
+  },
+  "cargo_lock": {
+    "path": "components/deltalake-Cargo.lock",
+    "sha256": "1fe3b1875d4fc6a09e622204f18ea060a52a0f8b42c1bca77bd00d24910e0bbb",
+    "sdist": {
+      "url": "https://files.pythonhosted.org/packages/08/ca/62354ebb384806b3496b25708ac605af54c5ed11cb2a8111ea1892aec9c9/deltalake-1.6.3.tar.gz",
+      "hash": "sha256:b7176c9d2a48b3ad339902e6216cdde813857b9628ef53e972889c71d2836fc4",
+      "size": 5556567,
+      "upload-time": "2026-08-21T19:07:33.7Z"
+    }
+  },
+  "patch": {
+    "path": "components/patches/deltalake-bounded-merge.patch",
+    "sha256": "011308cd4cd74bb9b25ce063745d3af9af33699e07aff7eb1dd313eb3e63094f",
+    "files": {
+      "crates/core/src/delta_datafusion/session.rs": {
+        "before": "3821eaf54bae4f1df119ad04aea4bbcd2a157171d7a0337550a31c9a7134c2e8",
+        "after": "e8ae85d28854e956e5a0b6f92d6f4aec9018b19ded8c0e5dc09ac3236c10b665"
+      }
+    }
+  },
+  "rust": "1.96.0",
+  "maturin": "1.15.0",
+  "profile": {
+    "CARGO_PROFILE_RELEASE_LTO": "false",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "16",
+    "CARGO_PROFILE_RELEASE_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  }
+}

@@ -239,6 +239,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
         provenance['data_formats']['unity_catalog'] = 1
         provenance['ingestion'] = dict(protocol_version=1, worker_sha256=digest(ROOT / 'python/ingest/worker.py'))
         provenance['sail'] = analytical_provenance['sail']
+        provenance['deltalake'] = analytical_provenance['deltalake']
         provenance['notebooks'] = notebook_provenance
         provenance['environments'] = environment_provenance
     files = {}

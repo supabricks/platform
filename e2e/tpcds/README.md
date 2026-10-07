@@ -215,3 +215,24 @@ arms over three repetitions; each cell has 8 CPUs, 16 GiB, no swap/network, two
 or automatic replacements of failures. Raw commands, results, cleanup and timing
 samples are retained. Treat the summary as descriptive compatibility evidence,
 not a sustained throughput benchmark or an SP qualification.
+
+## Bounded post-compaction merge regression (#184)
+
+The mandatory installed `merge` suite uses 1,888,080 deterministic rows in a
+compacted Delta layout, then 16,384 inserts and sparse updates/deletes/key movement.
+It verifies every field and key exactly at all three versions, including replay
+of a saved plan after a commit-before-receipt fault. Each generation/apply/read
+phase runs in a separate installed Python process with a 90-second external
+timeout; reported apply RSS excludes fixture generation and equality checking.
+This fixture is synthetic storage regression coverage, not a PostgreSQL/Sail
+throughput result or a replacement for the full SF1 run.
+
+```sh
+python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.json -- \
+  python3 e2e/native/installed_sync.py --release /release --suite merge --report /reports/result.json
+```
+
+`package.py --delta-artifact DIRECTORY` accepts only a verified artifact from
+`components/build-deltalake.py`, replacing the native wheel and recording its
+source, patch, lock and dependency notice inventory in an unsigned engineering
+overlay. Production qualification still requires both unchanged native archives.

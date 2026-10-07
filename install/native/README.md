@@ -9,7 +9,7 @@ an exact archive; a version label alone does not qualify a build. Historical
 alpha.35 evidence is retained separately. This guide covers full native assembly and
 the local-owner installer; [governed server setup](../../docs/handbook/governed-server.md)
 adds its explicit operator prerequisites and exact-archive qualification receipt.
-Native assembly consumes the pinned console, engine/helpers, source-built Sail
+Native assembly consumes the pinned console, engine/helpers, source-built Sail, Delta
 and Unity Catalog, and locked Python/notebook dependencies.
 
 The localhost preview uses the same bootstrap and signed archives intended for
@@ -213,3 +213,30 @@ activates only after database and offline environment preparation.
 PK05 ships `PROJECT-OFFLINE.md` and the sales-runnable template. Catalog 13 fences
 target dependency closures and initialization receipts. Exact archive qualification
 includes wheel-bundle transfer, migration/fixture replay, and explicit notebook execution.
+
+## Reviewed Delta merge runtime
+
+Native builds use Delta 1.6.3 at the exact commit in
+[`deltalake-source.lock.json`](../../components/deltalake-source.lock.json), with
+its published source-distribution Cargo lock and one hash-pinned patch. Bounded
+merge sessions use one DataFusion target partition to avoid the parallel
+repartition deadlock tracked in platform #184. The 64 MiB merge pool and 128 MiB
+temporary-disk limit remain in force. Unbounded sessions retain their upstream
+partition setting. This trades intra-merge parallelism for progress; it is not
+an SP throughput qualification.
+
+On each native builder, check out the pinned Delta commit into a fresh directory,
+install the hash-pinned `components/deltalake-build-requirements.txt`, and run:
+
+```sh
+python components/build-deltalake.py --source build/deltalake-source \
+  --target linux-x86_64 --output build/deltalake-artifacts/linux-x86_64
+```
+
+Use `macos-arm64` for both target and output on macOS. The builder applies only
+the reviewed patch and verifies the source before and after compilation. Native
+assembly requires the complete wheel, build receipt and dependency notices; an
+upstream wheel with the same version does not satisfy that contract. The installed
+`merge` sync suite exercises large compacted storage, inserts, sparse mutations,
+saved-commit replay and exact historical reads under external timeouts. It is a
+direct installed-worker regression, separate from full PostgreSQL/Sail loading.

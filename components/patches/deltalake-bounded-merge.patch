@@ -1,0 +1,22 @@
+diff --git a/crates/core/src/delta_datafusion/session.rs b/crates/core/src/delta_datafusion/session.rs
+index 2c6bca2..fa939ee 100644
+--- a/crates/core/src/delta_datafusion/session.rs
++++ b/crates/core/src/delta_datafusion/session.rs
+@@ -51,7 +51,16 @@ pub fn create_session_state_with_spill_config(
+         builder = builder.with_max_temp_directory_size(directory_size);
+     }
+ 
+-    DeltaSessionContext::with_runtime_env(builder.build()).state()
++    // A bounded FairSpillPool with a parallel full-outer hash join can park
++    // every RepartitionExec producer under backpressure (delta-rs #4614).
++    // Keep the pool and disk limits, but avoid that repartition barrier.
++    let config: SessionConfig = DeltaSessionConfig::default().into();
++    let config = if max_spill_size.is_some() {
++        config.with_target_partitions(1)
++    } else {
++        config
++    };
++    DeltaSessionContext::new_with_config_and_runtime(config, builder.build()).state()
+ }
+ 
+ pub(crate) trait DeltaSessionExt: DataFusionSession {

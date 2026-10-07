@@ -96,6 +96,21 @@ def validate(manifest, root=ROOT, require_qualified=False):
             or set(source.get("targets", {})) != set(manifest["targets"])):
         errors.append("pysail: controlled source build differs from component selection")
 
+    delta = components.get("deltalake", {})
+    delta_path = root / "components/deltalake-source.lock.json"
+    delta_source = read_json(delta_path) if delta_path.resolve().is_relative_to(root) and delta_path.is_file() else {}
+    if (delta.get("source_build") != {"lock": "components/deltalake-source.lock.json"}
+            or delta_source.get("repository") != delta.get("repository")
+            or delta_source.get("version") != delta.get("selection", {}).get("version")
+            or not re.fullmatch(r"[0-9a-f]{40}", delta_source.get("commit", ""))):
+        errors.append("deltalake: controlled source build differs from component selection")
+    for name in ("patch", "cargo_lock"):
+        entry = delta_source.get(name, {})
+        path = (root / entry.get("path", "")).resolve()
+        if (not path.is_relative_to(root) or not path.is_file()
+                or hashlib.sha256(path.read_bytes()).hexdigest() != entry.get("sha256")):
+            errors.append(f"deltalake: reviewed {name} differs from source lock")
+
     pair = manifest["engine_pair"]
     for field, expected in (("neon", "neon-engine"), ("postgres", "postgres17")):
         name = pair[field]

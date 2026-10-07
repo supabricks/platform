@@ -14,9 +14,12 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk'))}
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge'))}
 WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'merge':{'bounded_merge_into_large_compacted_table_completes',
+        'sparse_update_delete_key_move_and_saved_commit_replay_are_exact',
+        'old_delta_versions_remain_exact_after_bounded_merges'},
     'bulk':{'complete_transaction_row_prefix_drains_with_exact_equality_and_pinned_reader',
         'oversized_single_transaction_preserves_last_complete_publication'},
     'date':{'date_native_bootstrap_types_nulls_bounds_and_sail_queries',

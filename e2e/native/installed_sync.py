@@ -170,6 +170,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tpcds'))
 from composite import CompositeChecks
 from sync_types import TypeChecks
 from bulk import BulkChecks
+from merge import MergeChecks
 
 
 class InstalledComposite(CompositeChecks,InstalledContinuous):pass
@@ -186,7 +187,7 @@ class InstalledChar(TypeChecks,InstalledContinuous):
 class InstalledBulk(BulkChecks,InstalledContinuous):pass
 
 
-SUITES={'bulk':InstalledBulk,'date':InstalledDate,'char':InstalledChar,'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
+SUITES={'merge':MergeChecks,'bulk':InstalledBulk,'date':InstalledDate,'char':InstalledChar,'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
 
 
 def main():
