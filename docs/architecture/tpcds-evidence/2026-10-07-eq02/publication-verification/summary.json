@@ -1,0 +1,28 @@
+{
+  "status": "targeted and installed checks pass; SF1 attempt09 running",
+  "issue": 186,
+  "source_commit": "e945eae25c999eb48d6a5e5c7a3728ed24c29871",
+  "predecessor_median_seconds": 7.018086869,
+  "candidate_median_seconds": 0.877463065,
+  "speedup": 7.99815644547956,
+  "scope": "Three paired 128 MiB synthetic-inventory daemon publication runs; not full sync throughput",
+  "test_counts": {
+    "analytics": 13,
+    "daemon": 1,
+    "sync_state_machine": 53
+  },
+  "attempt08_status": "FAIL: unchanged two-hour deadline",
+  "measurements_notes": [
+    "Attempt01 diagnostic used installed binary in a bare Store fixture; first successful publication completed then fixture reopen correctly rejected installation identity. Excluded from comparison.",
+    "Attempt02 timing/corruption/IPC data complete, but resource samples absent due to renamed process-name filter. No CPU/RSS claim from attempt02.",
+    "Attempt03 additional paired run corrects process matching via executable path and records 20ms CPU/RSS samples.",
+    "Initial installed-check command failed before launch because fresh parent output directory did not exist; corrected before any fixture started."
+  ],
+  "installed_checks": {
+    "triggered": 3,
+    "continuous": 4,
+    "maintenance": 5,
+    "leaked_descendants": 0
+  },
+  "candidate_release_identity": "0a538933c15711ca2e55d0fa7022ac9e1db067ce29f6877dce53a53cf26e714d"
+}

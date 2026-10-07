@@ -38,11 +38,14 @@ with observed apply peaks below 678 MiB, then stalls in post-compaction Delta
 merge (#184), also reproduced with the pre-fix runtime. The
 [bounded Delta correction](../architecture/eq02-bounded-merge.md) now passes
 retained replays, 147 worker tests and 26 installed checks; its complete
-single-partition/source-first implementation is undergoing SF1 attempt 07 after
+single-partition/source-first implementation crosses the old failure boundaries after
 the first candidate exposed a target hash-build allocation failure in attempt 06.
 Attempt 07 crosses both merge failures but exposes a temporary-file rename race
 in compaction (#185); a bounded live-inventory retry passes 150 worker tests and
-installed recovery/continuous checks, and attempt 08 is running.
+installed recovery/continuous checks. Attempt 08 reaches 12.75M committed rows
+then exhausts its two-hour deadline. [Publication scheduling #186](../architecture/eq02-publication-verification.md)
+accounts for most of the measured delay; its correction passes matched daemon
+measurements and all 12 installed checks; attempt 09 is running.
 Full qualification remains open.
 The independent Spark reference completes all 103 statements; full product
 table equality, product query execution and result comparisons remain pending.

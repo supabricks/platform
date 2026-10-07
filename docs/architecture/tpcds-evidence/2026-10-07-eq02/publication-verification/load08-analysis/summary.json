@@ -1,0 +1,64 @@
+{
+  "scope": "Retained receipts; request-to-publication includes worker and publication, merge/compaction are nested worker costs. No component CPU attribution from wall-clock intervals.",
+  "status": "FAIL",
+  "release_identity": "14c15734adf6a1daf7014b70c7c06b0eb07d1adac69c19fa7a9692f04f94b3d0",
+  "committed_rows": 12746017,
+  "published_rows": 12680481,
+  "elapsed_seconds": 7201.566845063004,
+  "flow_control_wait_seconds": 6998.742268101778,
+  "published_epochs": 884,
+  "request_to_publication_ms": 6911514,
+  "prepared_to_publication_ms": 5152472,
+  "merge_metrics": {
+    "execution_time_ms": 466008,
+    "new_parquet_bytes": 160734302,
+    "num_output_rows": 12680481,
+    "num_source_rows": 12680481,
+    "num_target_files_added": 900,
+    "num_target_files_removed": 0,
+    "num_target_files_scanned": 28444,
+    "num_target_files_skipped_during_scan": 0,
+    "num_target_rows_copied": 0,
+    "num_target_rows_deleted": 0,
+    "num_target_rows_inserted": 12680481,
+    "num_target_rows_updated": 0,
+    "retained_parquet_bytes": 31793252989,
+    "rewrite_time_ms": 598,
+    "scan_time_ms": 456391
+  },
+  "compactions": 12,
+  "compaction_ms": 353558,
+  "last_publication": {
+    "requested_at_ms": 1791397191003,
+    "published_at_ms": 1791397203591,
+    "prepared_at_ms": 1791397193898,
+    "request_to_publication_ms": 12588,
+    "prepared_to_publication_ms": 9693,
+    "rows": 12680481,
+    "generation_bytes": 160858085,
+    "files": 176,
+    "apply_metrics": [
+      {
+        "metrics": {
+          "execution_time_ms": 1241,
+          "new_parquet_bytes": 133042,
+          "num_output_rows": 16384,
+          "num_source_rows": 16384,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "num_target_files_scanned": 68,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_rows_copied": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "retained_parquet_bytes": 86199672,
+          "rewrite_time_ms": 1,
+          "scan_time_ms": 1229
+        },
+        "oid": 16538
+      }
+    ],
+    "compaction": null
+  }
+}

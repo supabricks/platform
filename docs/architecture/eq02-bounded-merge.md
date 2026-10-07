@@ -153,5 +153,7 @@ strict missing-file checks, deadline expiration and permission failures.
 The verified Python-only overlay of the complete Delta correction passes all
 150 worker tests. The retained 5,314,849-row compaction now completes in 18.864 s,
 with 390.84 MiB kernel high-water RSS. Targeted installed maintenance and continuous suites pass nine checks with zero
-leaked/remaining descendants. Fresh SF1 attempt 08 is now running. No existing measurement is
-resumed or rewritten as a pass.
+leaked/remaining descendants. Fresh SF1 attempt 08 reaches 12.75 million committed rows, then exhausts its
+unchanged two-hour deadline. The next measured blocker is
+[publication verification scheduling](eq02-publication-verification.md) (#186).
+No failed measurement is rewritten as a pass.
