@@ -19,14 +19,15 @@ CHECKS={'proven_new_keys_append_without_target_sized_memory',
 class AppendChecks:
     def __init__(self,release,root):
         self.release=release;self.root=root;self.binary=release/'bin/supabricks';self.checks=[];self.metrics={}
+    def check(self,name):
+        self.checks.append(name);print('PASS',name,flush=True)
     def run(self,python,export):
         for phase in ('generate','append','replay','verify'):
             subprocess.run([str(python),str(Path(__file__).resolve()),'--root',str(self.root),
                             '--phase',phase],check=True,timeout=180)
         self.metrics.update(json.loads((self.root/'measurements.json').read_text()))
         self.metrics['scope']='Synthetic large composite-key target; production planner/apply and saved-commit replay; no PG throughput claim'
-        for name in sorted(CHECKS):
-            self.checks.append(name);print('PASS',name,flush=True)
+        for name in sorted(CHECKS):self.check(name)
 
 
 def run(root,phase):
