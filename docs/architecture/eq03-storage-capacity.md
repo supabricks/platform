@@ -72,5 +72,50 @@ a verified engineering release. It binds worker bytes to committed source,
 retains build/source/package hashes and verifies the original package remains
 unchanged. It is an unsigned engineering artifact, not a release signature.
 
-Installed capacity evidence is pending. Passing this slice will not qualify
-SF100 throughput, PostgreSQL loading, the 103 queries or the upper 128 GiB bound.
+The installed Linux slice passes. [Review and raw receipts](tpcds-evidence/2026-10-08-eq213/review.json)
+bind the baseline and candidate to the same 1,077,344,043-byte source descriptor.
+The original worker rejects it with `incremental_disk_budget`. The candidate
+compacts 131,072 rows into 17 files (841 ms for the measured compaction body),
+then commits the 1,024 inserts and successfully replays the interrupted commit.
+Fresh readers compare 131,072 source rows, 131,072 compacted-version rows and
+132,096 appended-version rows exactly. Apply, replay and exact verification take
+3.212, 1.545 and 1.571 seconds; peak worker RSS is 497.37 MiB, below 768 MiB.
+These are capacity measurements, not a speedup comparison against a failed run.
+
+`e2e/tpcds/storage_policy.py` also passes against the installed native binary:
+CLI selection, profile propagation through continuous capture/publication,
+exact Delta contents, pinned Sail reads, forbidden live downgrade, daemon
+restart and reopening historical readers. Its isolated 8-CPU/16-GiB container
+has networking disabled; cleanup observes 81 descendants and retains zero leaks.
+The native fixture uses a small PostgreSQL table; the >1-GiB fixture isolates
+incremental-worker capacity rather than loading that payload through PostgreSQL.
+
+Local validation: 228 Rust tests pass (four existing ignored) and all 161 Python
+analytical-worker tests pass. Strict Clippy is not clean: the unchanged base and
+candidate produce the identical 148 lib/test diagnostics under Rust 1.94, with
+zero additions/removals. [#217](https://github.com/supabricks/platform/issues/217)
+tracks that repository-wide baseline. Two failed fixture preparations remain in
+the evidence: the initial generator omitted bounded writer settings, and the
+initial direct-worker fixture omitted the production private umask. Both were
+corrected before the retained final baseline/candidate pair.
+
+Reproduction (each phase in a fresh installed Python process):
+
+```sh
+python3 e2e/tpcds/package_storage_candidate.py \
+  --base <verified-base-release> --destination <fresh-candidate-release> \
+  --proof <fresh-package-proof.json>
+<base>/python/analytics/python e2e/tpcds/storage_capacity.py \
+  --release <base> --root <fresh-seed> --phase generate
+```
+
+Clone the seed to distinct baseline/candidate workspaces. Run the baseline
+`apply` phase with `--expected reject`. Run candidate `apply`, `replay`, then
+`verify`, all with `--expected accept`. Use the candidate's installed Python for
+each phase. Run `storage_policy.py --release <candidate> --output <fresh-output>`
+under `install/native/catalog_gate.py` inside the pinned offline container to
+account for every native descendant. Fixture source hashes, package identities,
+raw receipts and `SHA256SUMS` are retained beside the review.
+
+This slice does not qualify SF100 throughput, the 103 queries or the upper
+128 GiB bound. Full release CI, including macOS, remains pending.
