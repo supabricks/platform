@@ -24,6 +24,8 @@ pass all 34 installed checks. Attempt 11 publishes all 19,557,335 rows in
 delayed by retained snapshot recovery (#196), before any table or SQL check.
 The corrected restart passes all 24 exact table comparisons and attempts all
 103 statements: [69 correct after review, 34 tracked failures/mismatches](eq02-sf1-results.md).
+The [subsequent decimal AVG candidate (#200)](eq02-decimal-avg.md) raises this
+to 78 correct, with 25 unresolved, on the same retained SF1 data.
 Full qualification remains incomplete.
 SP remains [frozen](sync-performance-freeze.md). This work does not merge its
 candidate or restart its performance campaign.

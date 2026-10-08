@@ -1,10 +1,13 @@
 # EQ02 merge-readiness corrections
 
-Head `50b0207` passes 46 CI checks but fails native-baseline analytics on both
+All 54 checks pass at `bf0d181`. PR #183 is merged into its existing
+`feat/eq01-date-char` base at `c8e5ef5`; the SP ancestors remain frozen.
+
+The original head `50b0207` passed 46 CI checks but failed native-baseline analytics on both
 platforms, Linux installed sync capacity, and Linux governed restore. Preserve
 those failures separately from the [SF1 data and SQL results](eq02-sf1-results.md).
-SP remains frozen. The next analytical slice is decimal AVG rounding (#200),
-after CI and the #183 merge into its existing EQ01 base.
+SP remains frozen. These passing checks unblock the separately qualified
+[decimal AVG correction (#200)](eq02-decimal-avg.md).
 
 ## Reviewed Delta wheel in every analytical test job (#201)
 
@@ -122,3 +125,21 @@ failure, valid-cache, and launcher environment tests.
 retains the hosted failure, successful baseline/governed checks, transport
 failure, exact archive identity, wrapper-only proof, six local runs, commands,
 measurements, tests, and cleanup. SP remains frozen; SF1 is not reloaded.
+
+
+## Final hosted qualification and merge
+
+The complete [final check inventory](tpcds-evidence/2026-10-07-eq02/ci-final/checks.json)
+records 54 passing checks at `bf0d181542e019b24b3ed7e47c69ef55487c3486`.
+The [Linux sync qualification](tpcds-evidence/2026-10-07-eq02/ci-final/linux-sync.json)
+passes all 11 suites with zero leaked descendants. On a runner reporting kernel
+THP policy `[always] madvise never`, history high-water is 401,739,776 bytes
+(383 MiB), with 301,072,384 bytes after appends. The original 768 MiB limit stays
+unchanged. This confirms that the allocator fix works on an always-THP host;
+the destroyed failing runner's setting remains unknown. Hosted elapsed times
+come from different machines and are not a controlled throughput comparison.
+
+The macOS sync, both baselines, all other release jobs, and governed qualification
+also pass. PR #183 merged on 2026-10-08 into the existing EQ01 feature base,
+without merging frozen SP work into main. Decimal AVG rounding (#200) proceeds
+as a separate analytical correction against the preserved SF1 data.
