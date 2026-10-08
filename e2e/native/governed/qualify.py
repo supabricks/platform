@@ -246,6 +246,12 @@ def main():
         assert hashlib.sha256((cell.root/'storage.pk8').read_bytes()).hexdigest()!=before_storage
         assert cell.config['s3_secret']!=before_s3
         wait(lambda:cell.sql(branch,'SELECT count(*) FROM example')=='2',60)
+        # PostgreSQL accepting the rotated control password does not establish
+        # that the new daemon generation has finished role sanitation. Wait on
+        # that separate readiness boundary before issuing the positive request.
+        role='compute-'+branch['endpoint']['id']
+        wait(lambda:any(p['role']==role and p.get('configured') is True
+                        for p in cell.request(method='status')['runtime']['processes']),60)
         try:
             with psycopg.connect(host='127.0.0.1',port=branch['ports']['sql'],dbname='postgres',user='cloud_admin',password=before_password,connect_timeout=2):pass
         except psycopg.OperationalError as error:assert 'password authentication failed' in str(error)

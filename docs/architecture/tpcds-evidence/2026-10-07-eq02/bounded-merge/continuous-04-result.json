@@ -1,0 +1,132 @@
+{
+  "status": "PASS",
+  "suite": "continuous",
+  "exact_installed": true,
+  "release_identity": "9f825f1381f660751f7815d4baf7b39d0d8e631049c4b31640e634651272b988",
+  "binary_sha256": "03b5f4d3c39fa5a8b6e86229fc2eacb3879cfa71f43b51a978779ddf539bc28c",
+  "checks": [
+    "sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups",
+    "continuous_idle_and_old_epoch_remain_stable_during_workload",
+    "continuous_pause_sigkill_and_daemon_restart_keep_durable_checkpoint",
+    "continuous_schema_drift_preserves_epoch_and_explicit_resync_recovers"
+  ],
+  "metrics": {
+    "source_table_bytes": 1277952,
+    "baseline_oltp_transaction_ms": {
+      "p50": 3.441,
+      "p95": 6.996,
+      "p99": 7.217
+    },
+    "host_workload": {
+      "scope": "host-wide counters during workload, not per-process or container utilization",
+      "cpu_some_stall_us": 70360,
+      "cpu_full_stall_us": 0,
+      "io_some_stall_us": 3991419,
+      "io_full_stall_us": 3921808,
+      "memory_some_stall_us": 0,
+      "memory_full_stall_us": 0,
+      "cpu_percent": {
+        "user": 4.071,
+        "nice": 0.0,
+        "system": 1.075,
+        "idle": 90.488,
+        "iowait": 4.319,
+        "irq": 0.0,
+        "softirq": 0.047,
+        "steal": 0.0
+      }
+    },
+    "materialization_ms": {
+      "admission_to_worker_start": {
+        "p50": 63,
+        "p95": 85,
+        "p99": 97,
+        "maximum": 97,
+        "batches": 48
+      },
+      "worker_start_to_prepared": {
+        "p50": 172,
+        "p95": 203,
+        "p99": 218,
+        "maximum": 218,
+        "batches": 48
+      },
+      "prepared_to_publication": {
+        "p50": 157,
+        "p95": 225,
+        "p99": 234,
+        "maximum": 234,
+        "batches": 48
+      }
+    },
+    "storage": {
+      "input_bytes": 95339,
+      "new_parquet_bytes": 2458140,
+      "write_amplification_ratio": 25.783,
+      "peak_inventory_files": 204,
+      "peak_generation_bytes": 2730520,
+      "compaction_bytes": 0
+    },
+    "transaction_stages_ms": {
+      "commit_to_admission": {
+        "p50": 487.012,
+        "p95": 820.908,
+        "p99": 901.395
+      },
+      "admission_to_worker_start": {
+        "p50": 64,
+        "p95": 95,
+        "p99": 97
+      },
+      "worker_start_to_prepared": {
+        "p50": 173,
+        "p95": 203,
+        "p99": 218
+      },
+      "prepared_to_publication": {
+        "p50": 158,
+        "p95": 225,
+        "p99": 234
+      },
+      "commit_to_capture_observed_upper_bound": {
+        "p50": 285.136,
+        "p95": 546.304,
+        "p99": 612.263
+      }
+    },
+    "workload": {
+      "tables": 2,
+      "rows_per_table": 10000,
+      "transactions": 750,
+      "changed_rows": 1500,
+      "target_rows_per_second": 50,
+      "achieved_rows_per_second": 50.06,
+      "elapsed_seconds": 29.966,
+      "commit_to_publication_ms": {
+        "p50": 888.385,
+        "p95": 1220.333,
+        "p99": 1327.453
+      },
+      "oltp_transaction_ms": {
+        "p50": 4.948,
+        "p95": 11.75,
+        "p99": 15.727
+      },
+      "burst_changed_rows": 200,
+      "burst_commit_to_publication_ms": 652.417
+    },
+    "resources": {
+      "peak_owned_rss_bytes": 2025627648,
+      "peak_allocated_data_bytes": 134742016,
+      "spool_bytes": 4354080,
+      "retained_wal_bytes": 317472,
+      "sampled_owned_cpu_seconds_lower_bound": 9.92
+    }
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

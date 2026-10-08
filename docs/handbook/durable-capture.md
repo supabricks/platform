@@ -27,7 +27,11 @@ Only one generation can be enrolled per installation.
 composite primary keys whose components are `smallint`, `integer` or `bigint`.
 Every component remains part of row identity through capture, key-changing updates,
 deletes and replay. A key's `INCLUDE` columns remain payload. Text, DATE and CHAR
-key components are not admitted; DATE/CHAR payload support is still tracked in #171.
+key components are not admitted. [EQ01/#171](../architecture/eq01-date-char.md)
+adds finite DATE (years 0001–9999) and fixed-width CHAR(n) payloads with matching
+workers and the pinned Sail engine. Infinite/out-of-range dates fail closed.
+CHAR padding and type metadata survive sync; analytical queries use Spark's CHAR
+semantics, with the documented PostgreSQL differences for casts, length and IN.
 Changing the key definition of an enrolled table remains schema drift and requires
 explicit re-enrollment. Existing single-key journals and saved apply plans retain
 their encoding. Do not downgrade a composite-key capture to older workers.

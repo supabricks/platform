@@ -1,0 +1,55 @@
+[
+  {
+    "sql": "CREATE TABLE t(c CHAR(4)) USING parquet LOCATION '/tmp/eq171-char-probe-rcjh7tjw/t'",
+    "rows": [
+      [
+        true
+      ]
+    ]
+  },
+  {
+    "sql": "INSERT INTO t VALUES ('x'),('x '),('')",
+    "error": "[UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION] uint64 is not supported in conversion to Arrow."
+  },
+  {
+    "sql": "SELECT c,length(c),c='x',c='x ',c LIKE 'x',CAST(c AS STRING) FROM t",
+    "rows": [
+      [
+        "x",
+        1,
+        true,
+        false,
+        true,
+        "x"
+      ],
+      [
+        "x ",
+        2,
+        false,
+        true,
+        false,
+        "x "
+      ],
+      [
+        "",
+        0,
+        false,
+        false,
+        false,
+        ""
+      ]
+    ]
+  },
+  {
+    "sql": "SELECT CAST('x' AS CHAR(4)) = CAST('x ' AS CHAR(4))",
+    "rows": [
+      [
+        false
+      ]
+    ]
+  },
+  {
+    "sql": "SELECT COLLATE('x ', 'UTF8_RTRIM') = 'x'",
+    "error": "function: collate"
+  }
+]

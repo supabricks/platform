@@ -1,0 +1,103 @@
+{
+  "mode": "baseline",
+  "status": "PASS",
+  "events": [
+    {
+      "seconds": 0.00018662700313143432,
+      "phase": "journal",
+      "rss": 159469568,
+      "highwater": 159158272,
+      "arrow_bytes": 0,
+      "arrow_peak": 128,
+      "threads": 11
+    },
+    {
+      "seconds": 0.011404799006413668,
+      "phase": "planning",
+      "rss": 164786176,
+      "highwater": 166584320,
+      "arrow_bytes": 0,
+      "arrow_peak": 128,
+      "threads": 11
+    },
+    {
+      "seconds": 0.6791075319924857,
+      "phase": "scan",
+      "rss": 207196160,
+      "highwater": 206721024,
+      "arrow_bytes": 0,
+      "arrow_peak": 3200,
+      "threads": 52
+    },
+    {
+      "seconds": 10.449273915000958,
+      "phase": "overlay",
+      "rss": 483508224,
+      "highwater": 490627072,
+      "arrow_bytes": 256,
+      "arrow_peak": 17527104,
+      "threads": 67
+    },
+    {
+      "seconds": 10.502632585004903,
+      "phase": "planned",
+      "rss": 488894464,
+      "highwater": 492732416,
+      "arrow_bytes": 0,
+      "arrow_peak": 17527104,
+      "threads": 67
+    },
+    {
+      "seconds": 10.510253632004606,
+      "phase": "apply",
+      "rss": 491220992,
+      "highwater": 492732416,
+      "arrow_bytes": 0,
+      "arrow_peak": 17527104,
+      "threads": 67
+    },
+    {
+      "seconds": 10.775486689002719,
+      "phase": "applied",
+      "rss": 814346240,
+      "highwater": 827518976,
+      "arrow_bytes": 0,
+      "arrow_peak": 17527104,
+      "threads": 75
+    },
+    {
+      "seconds": 10.784984153986443,
+      "phase": "collected",
+      "rss": 814346240,
+      "highwater": 827518976,
+      "arrow_bytes": 0,
+      "arrow_peak": 17527104,
+      "threads": 75
+    }
+  ],
+  "guard_checks": 37084,
+  "batches": 37056,
+  "matched_rows": 0,
+  "plan_sha256": "9877790a8fd5e7c4f1b4e2d816fa3ba810316cb90d360714c355d81de60b43ea",
+  "metrics": {
+    "num_source_rows": 16384,
+    "num_target_rows_inserted": 16384,
+    "num_target_rows_updated": 0,
+    "num_target_rows_deleted": 0,
+    "num_target_rows_copied": 0,
+    "num_output_rows": 16384,
+    "num_target_files_scanned": 20,
+    "num_target_files_skipped_during_scan": 0,
+    "num_target_files_added": 1,
+    "num_target_files_removed": 0,
+    "execution_time_ms": 174,
+    "scan_time_ms": 162,
+    "rewrite_time_ms": 1,
+    "new_parquet_bytes": 141907,
+    "retained_parquet_bytes": 10272680
+  },
+  "version": 20,
+  "planned_rows": 16384,
+  "end_lsn": "0/D6A8B00",
+  "elapsed_seconds": 10.785216175980167
+}

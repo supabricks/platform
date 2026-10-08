@@ -1,0 +1,122 @@
+{
+  "scope": "Verified source-built native/Python engineering overlay; unsigned",
+  "base_identity": "8c116654a8249f7c44ad810a3513b880d17a2039037202ced1c0076a2a6935ff",
+  "identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+  "sail_commit": null,
+  "delta_commit": "cee6f9ea9d1deab2f70d23221abb5386b60f3a9a",
+  "changes": {
+    "python/analytics/incremental_worker.py": {
+      "before": "b9d1aeb37e7b5adeb2f80bb3f7de28ef6346355a2c68957cbdfa52d97f17785c",
+      "after": "dcc5270731491b51f9cf2b341b32a1c59f31e81ce7191fc8c410496b095b75c1"
+    },
+    "python/analytics/__pycache__/incremental_worker.cpython-312.pyc": {
+      "before": "c69dd7c9365325281001c85137c9dbba27e993b7a96513c4364056679250827c",
+      "after": "727cd72153259de936408ac05466849a24176a6fbb2ec6d26c0e89ee3f503884"
+    },
+    "python/analytics/incremental/maintenance.py": {
+      "before": "2905ca23ca24104e5c57ece97b8c49ffc88d08391dd6fb4e88728870135fc35a",
+      "after": "94b2123675555e961b7d61636959c17f8d3de31044c3d98a93d2cdfddba0fadd"
+    },
+    "python/analytics/incremental/__pycache__/maintenance.cpython-312.pyc": {
+      "before": "a65c73442b57593a9affa6b4f140f77222a62b160c75dccdf01871f0586d9506",
+      "after": "223e8c7577284eb1f7cf37fa494ab71f478b7c94afc92d00676739cc444666fe"
+    },
+    "python/runtime/lib/python3.12/site-packages/deltalake/_internal.abi3.so": {
+      "before": "3ecee2bb945db803a9ca729295a1eabdf97050f2e673469269cb436b18d06c65",
+      "after": "14e3652574191b089008800f3c55e6778b713c3f78cdbba6ca55ec20509568f7"
+    },
+    "python/runtime/lib/python3.12/site-packages/deltalake/_internal.pyi": {
+      "before": "9fda4a7a1ec97d96d694402fd077a6dbf8c64494986f137aeabaac4e8a22595f",
+      "after": "c8ba36566397b38c9db847dbae23bf4bb57cf1189ebf5754088a60a5240146d3"
+    },
+    "python/runtime/lib/python3.12/site-packages/deltalake/writer/writer.py": {
+      "before": "87eb955c8d95c79fe7c823161dfa1b89cbaf9dc506dfab68d927d9fb9bd52b7b",
+      "after": "8980240c53ad8c2df6c47e13c2995b11631a21cffebe8aecad5c085220717d30"
+    },
+    "python/runtime/lib/python3.12/site-packages/deltalake-1.6.3.dist-info/sboms/deltalake-python.cyclonedx.json": {
+      "before": "10a506e28bf7c4633c5d253038a300497345a06750dc28f7106da4ecd2c8f662",
+      "after": "2f948d79362206e3764cd66a25a716289e3e2a27b90dcec9cf3ea6e5cf326d8f"
+    },
+    "python/runtime/lib/python3.12/site-packages/deltalake-1.6.3.dist-info/RECORD": {
+      "before": "9ff508eb295b8ad2fba906fc22787d1ca385847e152dda2545b0aa11e8ba0458",
+      "after": "34e8d13741f0b20c8ebbc49bb45269b89598c2db4f472698b8ba9d36de2264cf"
+    },
+    "provenance/deltalake/bounded-merge.patch": {
+      "before": "a60d265fd52026c8d71483a663bef105ed0b02d3b95aa680f55d53e71d75aa07",
+      "after": "a6dbc71f98a846e370f70fc4099680df6c941c8e9200156a6fdd613a39afc86e"
+    },
+    "provenance/deltalake/deltalake-build.json": {
+      "before": "b26fe71b4954c8c6e114c7b7679570b3693f2c7e005360c62283e607712b0ad2",
+      "after": "a19e79506cb3213dfcf3fc285bbd3ac317fa34ac275d12c0d50e36a5d3835c96"
+    },
+    "provenance/deltalake/source.lock.json": {
+      "before": "39acaf639a21d9896d7c597327fbe30888ad18be193fb24b8eb12ad6aff4e412",
+      "after": "d65748b550cb378eceb7de4e1e87acc6cf5f92c8cea39fa70e93e34304d73140"
+    }
+  },
+  "verified_base_files": 27381,
+  "verification": {
+    "identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+    "root": "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq03-capacity/runtime-02",
+    "sqlite": {
+      "binding": "rusqlite/bundled",
+      "compile_options": [
+        "ATOMIC_INTRINSICS=1",
+        "COMPILER=gcc-13.3.0",
+        "DEFAULT_AUTOVACUUM",
+        "DEFAULT_CACHE_SIZE=-2000",
+        "DEFAULT_FILE_FORMAT=4",
+        "DEFAULT_FOREIGN_KEYS",
+        "DEFAULT_JOURNAL_SIZE_LIMIT=-1",
+        "DEFAULT_MMAP_SIZE=0",
+        "DEFAULT_PAGE_SIZE=4096",
+        "DEFAULT_PCACHE_INITSZ=20",
+        "DEFAULT_RECURSIVE_TRIGGERS",
+        "DEFAULT_SECTOR_SIZE=4096",
+        "DEFAULT_SYNCHRONOUS=2",
+        "DEFAULT_WAL_AUTOCHECKPOINT=1000",
+        "DEFAULT_WAL_SYNCHRONOUS=2",
+        "DEFAULT_WORKER_THREADS=0",
+        "DIRECT_OVERFLOW_READ",
+        "ENABLE_API_ARMOR",
+        "ENABLE_COLUMN_METADATA",
+        "ENABLE_DBSTAT_VTAB",
+        "ENABLE_FTS3",
+        "ENABLE_FTS3_PARENTHESIS",
+        "ENABLE_FTS5",
+        "ENABLE_LOAD_EXTENSION",
+        "ENABLE_MEMORY_MANAGEMENT",
+        "ENABLE_RTREE",
+        "ENABLE_STAT4",
+        "HAVE_ISNAN",
+        "MALLOC_SOFT_LIMIT=1024",
+        "MAX_ATTACHED=10",
+        "MAX_COLUMN=2000",
+        "MAX_COMPOUND_SELECT=500",
+        "MAX_DEFAULT_PAGE_SIZE=8192",
+        "MAX_EXPR_DEPTH=1000",
+        "MAX_FUNCTION_ARG=1000",
+        "MAX_LENGTH=1000000000",
+        "MAX_LIKE_PATTERN_LENGTH=50000",
+        "MAX_MMAP_SIZE=0x7fff0000",
+        "MAX_PAGE_COUNT=0xfffffffe",
+        "MAX_PAGE_SIZE=65536",
+        "MAX_SQL_LENGTH=1000000000",
+        "MAX_TRIGGER_DEPTH=1000",
+        "MAX_VARIABLE_NUMBER=32766",
+        "MAX_VDBE_OP=250000000",
+        "MAX_WORKER_THREADS=8",
+        "MUTEX_PTHREADS",
+        "SOUNDEX",
+        "SYSTEM_MALLOC",
+        "TEMP_STORE=1",
+        "THREADSAFE=1",
+        "USE_URI"
+      ],
+      "source_id": "2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24",
+      "version": "3.53.2"
+    },
+    "verified": true,
+    "version": "v0.1.0-alpha.36"
+  }
+}

@@ -1,0 +1,84 @@
+[
+  {
+    "sql": "CREATE TABLE t(c CHAR(4), d CHAR(8), s STRING) USING parquet",
+    "rows": []
+  },
+  {
+    "sql": "INSERT INTO t VALUES ('x','x','x'),('x ','x ','x '),('','', ''),(NULL,NULL,NULL)",
+    "rows": []
+  },
+  {
+    "sql": "SELECT c,d,length(c),c='x',c='x ',c=d,c=s,c LIKE 'x',CAST(c AS STRING) FROM t",
+    "rows": [
+      [
+        "x   ",
+        "x       ",
+        4,
+        true,
+        true,
+        true,
+        false,
+        false,
+        "x   "
+      ],
+      [
+        "x   ",
+        "x       ",
+        4,
+        true,
+        true,
+        true,
+        false,
+        false,
+        "x   "
+      ],
+      [
+        "    ",
+        "        ",
+        4,
+        false,
+        false,
+        true,
+        false,
+        false,
+        "    "
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  {
+    "sql": "SELECT c, c < 'x\\n', c IN ('x','y') FROM t",
+    "rows": [
+      [
+        "x   ",
+        false,
+        true
+      ],
+      [
+        "x   ",
+        false,
+        true
+      ],
+      [
+        "    ",
+        true,
+        false
+      ],
+      [
+        null,
+        null,
+        null
+      ]
+    ]
+  }
+]

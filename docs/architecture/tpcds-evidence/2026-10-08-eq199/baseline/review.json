@@ -1,0 +1,352 @@
+{
+  "status": "INCOMPLETE",
+  "fixture_sha256": "9fde1cdf21bf1458652d0e1e87d4e38e08758cc398760ee5b6943c5eff79033d",
+  "comparison_sha256": "33f3dfbf30fcf4fbbd5b5d6004fa64a92086f75f5c022e0d870185c3633c1e53",
+  "raw_counts": {
+    "correct": 73,
+    "type_mismatch": 12,
+    "failed": 13,
+    "order_review_required": 5
+  },
+  "reviewed_counts": {
+    "correct": 78,
+    "type_mismatch": 12,
+    "decimal_value_mismatch": 0,
+    "execution_failed": 13
+  },
+  "order_reviews": [
+    {
+      "id": "q24a",
+      "sql_sha256": "b819a8b1944f128cf37d05ebb7344237cb2230b50c249a1d6f517b2e66480414",
+      "status": "correct_after_explicit_order_review",
+      "reason": "No ORDER BY or LIMIT; exact typed row multiset required.",
+      "product_sha256": "7820ca7e2b92e4891b5e627a786c0b9bb6c6225f16c5776ea8c3b1b628db77be",
+      "reference_sha256": "21447d943f256b4fa7592b6c6b401043244f0e33a69f2fa82179b4d8f1dae599",
+      "rows": 7
+    },
+    {
+      "id": "q56",
+      "sql_sha256": "547f7203e33ef78f3c91968e85adf6e79dcbb61c60f90e171fc43e79fd96d0ef",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY total_sales LIMIT 100; same selected rows and sorted sales; differences only within ties.",
+      "product_sha256": "1c5340427b1bf0a693f9c665e7612135fbe960fe475a272a1fc05f116ee95549",
+      "reference_sha256": "53230e178d9161bd25964cd8ed00a8c1e8d2e383b4b7ed196d302ac4a9fd1f34",
+      "rows": 100
+    },
+    {
+      "id": "q64",
+      "sql_sha256": "b52e8f499ee22ecec48b261ff8df29f3aa8a8c620cd1c50ef7bb93c65622ddf9",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY cs1.product_name, cs1.store_name, cs2.cnt; same rows and sort keys; differences only within ties.",
+      "product_sha256": "2b86fb504140be93bdfb287097f732ca0284addd50057f0fbfa52c797806445c",
+      "reference_sha256": "5399fce863d74ace5878c475367e53be240445ffec3f348066110e118a6f96c2",
+      "rows": 10
+    },
+    {
+      "id": "q77",
+      "sql_sha256": "c33390fc16bb8054deb65deec6fabebbf590259f982ce49ee228243cf72a9a9d",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY channel, id LIMIT 100; same selected rows and sort keys, NULLS FIRST; differences only within ties.",
+      "product_sha256": "4d24ef773a83ce8bcbea58f8193b082bc845f8ab82fbd5dbfff79125a7bffaa1",
+      "reference_sha256": "1986dd99afca82bff9e6facb19f3ac0323072db5e9bea8270734ea676ebf140f",
+      "rows": 44
+    },
+    {
+      "id": "q79",
+      "sql_sha256": "c0db1c460607e4e699abf2bbc4ac40f40dddd1c83b39a9c28439963cfe26d3f6",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY c_last_name, c_first_name, substr(s_city, 1, 30), profit LIMIT 100; same selected rows and all four sort keys; differences only within ties.",
+      "product_sha256": "9d4b03cd67de6430045e9cc725cb09f693e7fcb96505baa2da4ab29330b5466c",
+      "reference_sha256": "6e3d58645be2b50efc7f021834c77b90ef81a0547418405d81b970d950216f32",
+      "rows": 100
+    }
+  ],
+  "decimal_value_differences": [],
+  "type_differences": [
+    {
+      "id": "q12",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q2",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 1,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 2,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 3,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 7,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        }
+      ]
+    },
+    {
+      "id": "q20",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q31",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 3,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q36",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 0,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q49",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(23,8)",
+          "reference": "decimal(35,20)"
+        }
+      ]
+    },
+    {
+      "id": "q58",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q59",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 3,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 7,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 8,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 9,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q61",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(34,8)",
+          "reference": "decimal(38,19)"
+        }
+      ]
+    },
+    {
+      "id": "q83",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 7,
+          "product": "decimal(25,4)",
+          "reference": "decimal(27,6)"
+        }
+      ]
+    },
+    {
+      "id": "q90",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 0,
+          "product": "decimal(23,8)",
+          "reference": "decimal(35,20)"
+        }
+      ]
+    },
+    {
+      "id": "q98",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    }
+  ],
+  "execution_failures": [
+    {
+      "id": "q21",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 258.6 KB for HashJoinInput with 255.9 MB already allocated for this reservation - 118.0 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q30",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#169\", customer_address.\"#170\", customer_address.\"#171\", customer_address.\"#172\", customer_address.\"#173\", customer_address.\"#174\", customer_address.\"#175\", customer_address.\"#176\", customer_address.\"#177\", customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\"."
+    },
+    {
+      "id": "q39a",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 284.1 KB for HashJoinInput with 254.6 MB already allocated for this reservation - 50.6 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q39b",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 317.0 KB for HashJoinInput with 254.3 MB already allocated for this reservation - 257.9 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q41",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_manufact. Valid fields are item.\"#88\", item.\"#89\", item.\"#90\", item.\"#91\", item.\"#92\", item.\"#93\", item.\"#94\", item.\"#95\", item.\"#96\", item.\"#97\", item.\"#98\", item.\"#99\", item.\"#100\", item.\"#101\", item.\"#102\", item.\"#103\", item.\"#104\", item.\"#105\", item.\"#106\", item.\"#107\", item.\"#108\", item.\"#109\"."
+    },
+    {
+      "id": "q47",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 2.6 MB for GroupedHashAggregateStream[7] (sum(store_sales.#125)) with 64.0 B already allocated for this reservation - 2.3 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q6",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_category. Valid fields are item.\"#419\", item.\"#420\", item.\"#421\", item.\"#422\", item.\"#423\", item.\"#424\", item.\"#425\", item.\"#426\", item.\"#427\", item.\"#428\", item.\"#429\", item.\"#430\", item.\"#431\", item.\"#432\", item.\"#433\", item.\"#434\", item.\"#435\", item.\"#436\", item.\"#437\", item.\"#438\", item.\"#439\", item.\"#440\"."
+    },
+    {
+      "id": "q66",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1015.8 KB for HashJoinInput with 163.8 MB already allocated for this reservation - 917.9 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q67",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 7.1 MB for GroupedHashAggregateStream[1] (sum(CASE WHEN __common_expr_1 IS NOT NULL THEN __common_expr_1 ELSE Some(0),18,2 END) as sum(coalesce(store_sales.#59 * store_sales.#56,Int32(0)))) with 64.0 B already allocated for this reservation - 5.9 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q72",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 383.8 KB for HashJoinInput with 203.6 MB already allocated for this reservation - 303.0 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q75",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1282.0 KB for GroupedHashAggregateStream[13] () with 2.3 MB already allocated for this reservation - 2.5 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q78",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1676.5 KB for GroupedHashAggregateStream[3] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 2.6 MB already allocated for this reservation - 3.8 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q81",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\", customer_address.\"#182\", customer_address.\"#183\", customer_address.\"#184\", customer_address.\"#185\", customer_address.\"#186\", customer_address.\"#187\", customer_address.\"#188\", customer_address.\"#189\", customer_address.\"#190\"."
+    }
+  ],
+  "scope": "Strict comparator retained unchanged; only five named SQL ordering cases are explicitly reviewed. No type coercion, numeric tolerance, or rewritten query."
+}

@@ -22,6 +22,18 @@ remains beside its owning record in the existing evidence directories.
 
 ## Analytics, console and ingestion
 
+- [EQ02: native SF1 load pilots and analytical coverage](eq02-sf1.md)
+- [EQ02: decimal arithmetic correction and paired full-suite results (#199)](eq02-decimal-types.md)
+- [EQ02: decimal AVG correction and paired full-suite results (#200)](eq02-decimal-avg.md)
+- [EQ02: apply memory investigation (#182)](eq02-apply-memory-investigation.md)
+- [EQ02: bounded key lookup and post-compaction blocker (#184)](eq02-key-pruning.md)
+- [EQ02: bounded Delta merge and compaction accounting (#184–#185)](eq02-bounded-merge.md)
+- [EQ02: publication verification scheduling (#186)](eq02-publication-verification.md)
+- [EQ02: proven-new-key append and remaining merge memory limit (#189–#190)](eq02-new-key-append.md)
+- [EQ01: native DATE/CHAR sync, analytical semantics and separate slice measurements](eq01-date-char.md)
+- [EQ01: native composite integer keys](eq01-composite-keys.md)
+- [EQ00: TPC-DS input and admission pilot](tpcds-eq00.md)
+
 - [SY08: exact installed sync qualification and operating envelope](sy08-installed-sync.md)
 - [Local synchronization CPU scaling: methodology and measured limits](sync-core-scaling.md)
 - [Bounded synchronization execution history and issue #156](sync-history-retention.md)

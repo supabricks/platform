@@ -168,12 +168,28 @@ class InstalledSurfaces(Installed,Surfaces):pass
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tpcds'))
 from composite import CompositeChecks
+from sync_types import TypeChecks
+from bulk import BulkChecks
+from merge import MergeChecks
+from append import AppendChecks
+from capacity import CapacityChecks
 
 
 class InstalledComposite(CompositeChecks,InstalledContinuous):pass
 
 
-SUITES={'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
+class InstalledDate(TypeChecks,InstalledContinuous):
+    def run(self,python,export):self.run_type('date')
+
+
+class InstalledChar(TypeChecks,InstalledContinuous):
+    def run(self,python,export):self.run_type('char')
+
+
+class InstalledBulk(BulkChecks,InstalledContinuous):pass
+
+
+SUITES={'capacity':CapacityChecks,'append':AppendChecks,'merge':MergeChecks,'bulk':InstalledBulk,'date':InstalledDate,'char':InstalledChar,'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
 
 
 def main():

@@ -7,6 +7,7 @@ import unittest
 from demo import FILES
 from catalog_evidence import expected_build, REQUIRED, MINIMUM, digest, ROOT
 from test_sail import sample_report
+from test_delta_runtime import sample_report as delta_report
 from environment_evidence import SUITES, MACOS_NETWORK_TRANSITION
 from release_evidence import collect, markdown
 from test_project_evidence import fixture as project_fixture
@@ -30,7 +31,7 @@ class ReleaseEvidence(unittest.TestCase):
                     else:
                         data['checks'] = self.checks(minimum)
                     if suite == 'release-environment-lifecycle' and name == 'qualification.json':
-                        data.update(target=target, source=dict(sail=sample_report(target),platform_commit='reviewed',platform_dirty=False,
+                        data.update(target=target, source=dict(deltalake=delta_report(target),sail=sample_report(target),platform_commit='reviewed',platform_dirty=False,
                             console=dict(manifest_sha256=HASH,package_lock_sha256=HASH,source=dict(commit='console',dirty=False,manifest_sha256=HASH,package_lock_sha256=HASH)),
                             unity_catalog=dict(build_sha256=HASH,source_commit=expected_build(target)['source_commit'],metadata_backend='h2-2.2.224',profile='local-owner-files'),
                             ingestion=dict(worker_sha256=HASH),data_formats=dict(local_catalog=31,postgres_major=17)),
@@ -125,6 +126,7 @@ class ReleaseEvidence(unittest.TestCase):
                        lambda d:d['source']['console']['source'].update(dirty=True),
                        lambda d:d['source']['console']['source'].update(manifest_sha256=OTHER),
                        lambda d:d['source']['sail'].update(commit='stale'),
+                       lambda d:d['source']['deltalake'].update(patch={}),
                        lambda d:d['source']['ingestion'].update(worker_sha256=OTHER),
                        lambda d:d['archives']['new'].update(version='old')):
             self.change('release-environment-lifecycle','qualification.json',mutate)

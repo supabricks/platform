@@ -1,0 +1,30 @@
+{
+  "status": "Targeted correction validated; installed suites pending; no complete SF1 qualification",
+  "source_commit": "c748ab7727633d17e59404ff0cfd381cf47be5e3",
+  "issue": 189,
+  "related_general_merge_limit": 190,
+  "worker_tests": 153,
+  "evidence_tests": 3,
+  "candidate_release_identity": "2bf4cd0fa0ac41ef1baf6e843423e557d1027adba26258a7db3507881c627aa3",
+  "retained_replay": {
+    "predecessor_highwater_bytes": 827564032,
+    "candidate_highwater_bytes": 435208192,
+    "predecessor_seconds": 67.144,
+    "candidate_seconds": 66.958,
+    "scope": "Diagnostic full compaction/plan/apply; individual worker kill disabled for attribution; production limits unchanged"
+  },
+  "synthetic_append": {
+    "predecessor_highwater_bytes": 1029730304,
+    "candidate_highwater_bytes": 385003520,
+    "rows": 16777216,
+    "insert_rows": 16384,
+    "scope": "Installed planner/apply memory, exact old/new rows and saved commit replay; no PG throughput claim"
+  },
+  "limitations": [
+    "First candidate installed fixture passed but report lost metrics; retained and excluded from comparison.",
+    "Initial retained replay failed on a read-only spool lock; original output retained.",
+    "Full SF1 attempt09 failed at unchanged worker memory limit; no exact-table or product SQL verification run.",
+    "General merge barrier memory for existing-key mutations remains issue190.",
+    "Separate archive CI environment failures tracked on issues114 and136."
+  ]
+}

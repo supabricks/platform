@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import unittest
 from qualify import validate
+from common import HERE, digest
 
 EVIDENCE=Path(__file__).resolve().parents[3]/'docs/architecture/iam00-evidence/linux-x86_64.json'
 
@@ -14,7 +15,9 @@ class EvidenceTests(unittest.TestCase):
         cls.report=json.loads(EVIDENCE.read_text())
 
     def test_recorded_capabilities(self):
-        validate(self.report)
+        # The retained receipt describes its historical probe sources. Fresh CI
+        # reports are still required to match all current sources by qualify.py.
+        validate(self.report, False)
 
     def test_missing_security_check_rejected(self):
         report=copy.deepcopy(self.report)
@@ -44,7 +47,11 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaises(AssertionError): validate(report,False)
 
     def test_changed_source_rejected(self):
-        report=copy.deepcopy(self.report); report['source_sha256']['e2e/native/iam/controller.py']='0'*64
+        report=copy.deepcopy(self.report)
+        repo=HERE.parents[2]
+        report['source_sha256']={str(p.relative_to(repo)):digest(p) for p in HERE.glob('*') if p.is_file()}
+        validate(report)
+        report['source_sha256']['e2e/native/iam/controller.py']='0'*64
         with self.assertRaises(AssertionError): validate(report)
 
 

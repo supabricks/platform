@@ -1,6 +1,6 @@
 # TPC-DS end to end qualification
 
-Status: **EQ00 started 2026-10-06; prioritized ahead of further SP work by user
+Status: **EQ02 resumed 2026-10-07; EQ00 started 2026-10-06. Prioritized ahead of further SP work by user
 direction.** The [SP workstream is frozen](../architecture/sync-performance-freeze.md)
 at its retained results, including unresolved #169. SP11/SP12 completion is no
 longer a prerequisite for starting EQ. Return to SP after reviewing end-to-end
@@ -11,13 +11,43 @@ statements pinned; SF1 generates 19,557,335 business rows / 1.253 GB with matchi
 checksums across two invocations. Installed native-schema admission rejects 23/24
 tables; [#170](https://github.com/supabricks/platform/issues/170) and
 [#171](https://github.com/supabricks/platform/issues/171) track composite keys and
-DATE/CHAR support. Product/reference execution remains pending; no scale claim.
+DATE/CHAR support. Later EQ02 results are below; no larger-scale claim.
 
 [EQ01/#170](../architecture/eq01-composite-keys.md) implements native composite
 integer identity and passes local installed correctness/restart/Sail checks. The
-full admission matrix is now 8/24; sixteen DATE/CHAR tables remain blocked on #171.
-Six scalar control trials pass equality and cleanup; mean observed publication
+first admission matrix reached 8/24. [EQ01/#171](../architecture/eq01-date-char.md)
+now admits and bootstraps all 24 native schemas with finite DATE and padded CHAR
+payloads. Local installed restart, historical reads and typed query checks pass
+against PostgreSQL and independent Spark 4.2.0 results. The subsequent SF1 load
+and analytical suite results are below; Spark Connect DataFrame metadata
+round trips are tracked separately in #175. Nine separate-slice scalar controls
+pass equality/cleanup; source-commit stalls remain tracked in #176. The measured
+publication means are 857.82 → 881.88 → 843.77 ms (baseline → DATE → CHAR);
+this short screen is not a speedup or sustained performance qualification.
+The composite slice's six scalar control trials pass equality and cleanup; mean observed publication
 latency increased 4.15% in the short screen. Exact release CI remains a merge gate.
+
+[EQ02 SF1 attempts](../architecture/eq02-sf1.md) have now exercised native loading
+with continuous sync already active. Separate retained attempts found and tracked
+aggregate apply row limits (#178), Latin-1 generator text (#179), and source WAL
+overrun under unrestricted COPY (#180). The publication-windowed load controls
+WAL but initially stopped at the apply worker's 768 MiB memory limit (#182).
+The [bounded key-lookup correction](../architecture/eq02-key-pruning.md) passes
+147 worker tests and six installed suites. Attempt 05 crosses that failure point
+with observed apply peaks below 678 MiB, then stalls in post-compaction Delta
+merge (#184), also reproduced with the pre-fix runtime. The
+[bounded Delta correction](../architecture/eq02-bounded-merge.md) now passes
+retained replays, 147 worker tests and 26 installed checks; its complete
+single-partition/source-first implementation crosses the old failure boundaries after
+the first candidate exposed a target hash-build allocation failure in attempt 06.
+Attempt 07 crosses both merge failures but exposes a temporary-file rename race
+in compaction (#185); a bounded live-inventory retry passes 150 worker tests and
+installed recovery/continuous checks. Attempt 08 reaches 12.75M committed rows
+then exhausts its two-hour deadline. [Publication scheduling #186](../architecture/eq02-publication-verification.md)
+accounts for most of the measured delay; its correction passes matched daemon
+measurements and all 12 installed checks; attempt 09 reaches 13.63M committed rows then stops on merge memory blocker #189; [proven-new-key append](../architecture/eq02-new-key-append.md) passes retained replay, large-table controls and all 31 installed checks; attempt 10 reaches 17.19M committed / 17.13M published rows then fails compaction disk admission #193; its retained replay passes the capacity correction, then append-only rollover #194 and wide-row writer memory #195 pass all 34 installed checks. Attempt 11 completes all 19,557,335 rows in 4,431.262 seconds; recovery fix #196 enables exact equality for all 24 tables and the full SQL attempt ledger.
+Full qualification remains open.
+The independent Spark reference completes all 103 statements. [Product results](../architecture/eq02-sf1-results.md): 103 attempted, 90 executed, 69 correct after explicit ordering review; nine memory failures (#197), four alias failures (#198), 12 decimal type mismatches (#199), and nine decimal rounding mismatches (#200). The [subsequent decimal AVG candidate (#200)](../architecture/eq02-decimal-avg.md) resolves all nine value mismatches: 78/103 correct and 25 unresolved, with no previously correct query regressing; affected-query time is 11.601 → 11.618 seconds in the paired run. The [decimal arithmetic candidate (#199)](../architecture/eq02-decimal-types.md) then fixes all 12 type mismatches: 90/103 correct, 13 unresolved, no regression; affected-query time 12.747 → 12.655 seconds. The first candidate's three null-coercion regressions were rejected and fixed before the final full rerun. Continue fixing and measuring #198 and #197 against retained SF1 before broader size/resource/concurrency qualification; no reload for query-only changes.
 
 The initial engineering baseline is platform source
 `8b68cd206edd5de2b1f820c90c39e7a76aedf3aa`, whose full Linux/macOS release CI passed
@@ -76,9 +106,10 @@ inspect its complete inventory rather than inheriting its exclusions silently.
 
 ## Compatibility before scale
 
-The documented [capture profile](../architecture/sy02-durable-capture.md) admits
-one integer primary key and a bounded integer/text/varchar/decimal type set.
-TPC-DS cannot be assumed eligible unchanged. Inspect the selected release and
+The EQ00 baseline [capture profile](../architecture/sy02-durable-capture.md)
+admitted one integer primary key and a bounded integer/text/varchar/decimal type
+set. EQ01 adds qualified composite integer keys and finite DATE/padded CHAR.
+Schema admission alone does not establish full-load eligibility. Inspect the selected release and
 create a per-table compatibility report covering composite keys, dates, character
 semantics, numeric precision, nullability, schema size and transaction limits.
 

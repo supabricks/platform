@@ -1,0 +1,226 @@
+{
+  "status": "PASS_ISSUE_200",
+  "overall_sf1_status": "INCOMPLETE",
+  "scope": "EQ02 retained SF1 engineering correction; SP frozen",
+  "sail_commit": "968537980e77c52d397df9553db536a8fda50fc6",
+  "package_proof_sha256": "c56ac8fb36373c73e4dd3147e40165863fc497ab1f07d4b21d1adda77afbc9d2",
+  "profile": {
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "memory_bytes": 17179869184,
+    "swap": false,
+    "network": "none",
+    "query_timeout_seconds": 120
+  },
+  "load_receipt_sha256": "0db09445eb65d8957bc8dbb14490cef96bc7d14b3845a6ff2a40a98f8de4720f",
+  "epoch_id": "fed0899c-c267-4d8a-8432-3e5e920718af",
+  "reference_sha256": "5dd00ad8da206b099aafe354087fcd4ca959d8afec331a49e5491de820c206a1",
+  "releases": {
+    "baseline": "286d92c5ccbfe18689d61528ec092053a4815c20655b9b78ace706080190e12c",
+    "candidate": "6d365fc4d04dbe71b4447eb6c405e9fb1665d7472eec660a8d7cf35a964ec70e"
+  },
+  "raw_counts": {
+    "baseline": {
+      "correct": 65,
+      "type_mismatch": 12,
+      "result_mismatch_review_required": 9,
+      "failed": 13,
+      "order_review_required": 4
+    },
+    "candidate": {
+      "correct": 74,
+      "type_mismatch": 12,
+      "failed": 13,
+      "order_review_required": 4
+    }
+  },
+  "reviewed_counts": {
+    "baseline": {
+      "correct": 69,
+      "type_mismatch": 12,
+      "decimal_value_mismatch": 9,
+      "execution_failed": 13
+    },
+    "candidate": {
+      "correct": 78,
+      "type_mismatch": 12,
+      "decimal_value_mismatch": 0,
+      "execution_failed": 13
+    }
+  },
+  "changed_dispositions": [
+    {
+      "id": "q18",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q26",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q27",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q28",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q57",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q63",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q7",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q89",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    },
+    {
+      "id": "q9",
+      "before": "result_mismatch_review_required",
+      "after": "correct"
+    }
+  ],
+  "new_regressions": [],
+  "affected_queries": [
+    {
+      "id": "q7",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 1.083657076000236,
+      "candidate_seconds": 1.0727981529780664,
+      "baseline_session_start_seconds": 1.1947490609600209,
+      "candidate_session_start_seconds": 1.1933007530169562
+    },
+    {
+      "id": "q9",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 2.610706649022177,
+      "candidate_seconds": 2.5963049370329827,
+      "baseline_session_start_seconds": 1.1852980450494215,
+      "candidate_session_start_seconds": 1.1849006059928797
+    },
+    {
+      "id": "q18",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 1.002050383016467,
+      "candidate_seconds": 1.0098107189987786,
+      "baseline_session_start_seconds": 1.1037073110346682,
+      "candidate_session_start_seconds": 1.0798668889910914
+    },
+    {
+      "id": "q26",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 0.8788291409728117,
+      "candidate_seconds": 0.8582582980161533,
+      "baseline_session_start_seconds": 1.1133773520123214,
+      "candidate_session_start_seconds": 1.139677411003504
+    },
+    {
+      "id": "q27",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 1.1185968769714236,
+      "candidate_seconds": 1.1284818559652194,
+      "baseline_session_start_seconds": 1.1150175799848512,
+      "candidate_session_start_seconds": 1.133829717990011
+    },
+    {
+      "id": "q28",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 1.9520656460081227,
+      "candidate_seconds": 1.9402485589962453,
+      "baseline_session_start_seconds": 1.097213355009444,
+      "candidate_session_start_seconds": 1.0911777999717742
+    },
+    {
+      "id": "q57",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 0.996258269995451,
+      "candidate_seconds": 1.015749332960695,
+      "baseline_session_start_seconds": 1.2129778520320542,
+      "candidate_session_start_seconds": 1.2210434979642741
+    },
+    {
+      "id": "q63",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 0.966479821014218,
+      "candidate_seconds": 0.9711140270228498,
+      "baseline_session_start_seconds": 1.2178389489999972,
+      "candidate_session_start_seconds": 1.1954046890023164
+    },
+    {
+      "id": "q89",
+      "before": "result_mismatch_review_required",
+      "after": "correct",
+      "baseline_seconds": 0.9922606199979782,
+      "candidate_seconds": 1.025191052001901,
+      "baseline_session_start_seconds": 1.1266070850542746,
+      "candidate_session_start_seconds": 1.1273402840015478
+    }
+  ],
+  "affected_query_seconds": {
+    "baseline": 11.600904482998885,
+    "candidate": 11.617956933972891
+  },
+  "timing_scope": "One paired complete-suite run under identical declared limits; descriptive timings, not a statistical speedup or throughput claim; fixed run order and host/page-cache effects are not isolated.",
+  "reduced_cases": 17,
+  "pytest_cases_per_engine": 18,
+  "pytest_engines": [
+    "Spark 4.2.0 JVM",
+    "Sail local",
+    "Sail local-cluster"
+  ],
+  "rust_regressions": 5,
+  "cleanup": {
+    "baseline": {
+      "exit_code": 0,
+      "timed_out": false,
+      "inspection_failed": false,
+      "descendants_observed": 278,
+      "leaked_descendants": 0,
+      "remaining_descendants": 0
+    },
+    "candidate": {
+      "exit_code": 0,
+      "timed_out": false,
+      "inspection_failed": false,
+      "descendants_observed": 283,
+      "leaked_descendants": 0,
+      "remaining_descendants": 0
+    }
+  },
+  "remaining_issues": [
+    197,
+    198,
+    199
+  ]
+}

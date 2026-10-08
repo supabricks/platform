@@ -376,6 +376,10 @@ pub(crate) fn check_ready(root: &Path, d: &Value) -> Result<()> {
     Ok(())
 }
 impl Publisher {
+    pub(crate) fn verification_pending(&self) -> bool {
+        self.verifier.is_some()
+    }
+
     pub fn recover(store: &mut Store) -> Result<Self> {
         let (stage, generations) = roots(store)?;
         let mut untracked = 0;

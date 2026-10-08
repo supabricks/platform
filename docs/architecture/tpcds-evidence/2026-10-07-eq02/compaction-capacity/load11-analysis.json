@@ -1,0 +1,54 @@
+{
+  "scope": "Retained receipts; request-to-publication includes worker and publication, apply/compaction are nested worker costs. Sums cover retained published receipts only; bounded history may have pruned earlier epochs. No component CPU attribution from wall-clock intervals.",
+  "status": "PASS",
+  "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+  "committed_rows": 19557335,
+  "published_rows": 19557335,
+  "elapsed_seconds": 4431.261933261994,
+  "flow_control_wait_seconds": 4059.0978815356502,
+  "retained_published_epochs": 1373,
+  "first_retained_ordinal": 1,
+  "last_retained_ordinal": 1373,
+  "request_to_publication_ms": 4264727,
+  "prepared_to_publication_ms": 2478934,
+  "apply_metrics_by_kind": {
+    "append": {
+      "execution_time_ms": 6574,
+      "new_parquet_bytes": 761298893,
+      "num_added_files": 1390,
+      "num_added_rows": 19557335,
+      "num_partitions": 0,
+      "num_removed_files": 0,
+      "retained_parquet_bytes": 82415663503
+    }
+  },
+  "compactions": 2,
+  "compaction_ms": 161319,
+  "last_publication": {
+    "ordinal": 1373,
+    "requested_at_ms": 1791422285782,
+    "published_at_ms": 1791422293322,
+    "prepared_at_ms": 1791422287732,
+    "request_to_publication_ms": 7540,
+    "prepared_to_publication_ms": 5590,
+    "rows": 19557335,
+    "generation_bytes": 761416771,
+    "files": 310,
+    "apply_metrics": [
+      {
+        "metrics": {
+          "apply_kind": "append",
+          "execution_time_ms": 7,
+          "new_parquet_bytes": 525301,
+          "num_added_files": 1,
+          "num_added_rows": 6036,
+          "num_partitions": 0,
+          "num_removed_files": 0,
+          "retained_parquet_bytes": 267919354
+        },
+        "oid": 16563
+      }
+    ],
+    "compaction": null
+  }
+}
