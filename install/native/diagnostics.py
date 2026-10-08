@@ -24,7 +24,7 @@ def summarize(path):
     # Only recognize predefined failures. Unknown class names can contain data.
     known=('AssertionError','TimeoutError','RuntimeError','ConsoleHTTPError','CalledProcessError',
            'WebSocketTimeoutException','ConnectionRefusedError','FileNotFoundError',
-           'SparkConnectGrpcException','AnalysisException','PermissionError')
+           'SparkConnectGrpcException','AnalysisException','PermissionError','SystemError','AccessDenied','NoSuchProcess','StopIteration')
     api=[]
     codes=('invalid_input','not_found','conflict','unavailable','sql_error','io_error','internal')
     for status,raw in re.findall(r'console [a-z_/]+: HTTP (\d{3}): (\{[^\n]+\})',text):
@@ -58,6 +58,20 @@ def summarize(path):
             if match:value['postgres_state']=match[1] if match[1] in pg_states else 'other'
             if message=='governed data action is not authorized or its branch profile is unsupported':value['reason']='governed_denied'
         native.append(value)
+    restore=[]
+    for raw in re.findall(r'^GOVERNED_RESTORE_FAILURE (\{[^\n]+\})$',text,re.M):
+        try:value=json.loads(raw)
+        except ValueError:continue
+        if not isinstance(value,dict):continue
+        safe={}
+        elapsed=value.get('elapsed_ms')
+        if type(elapsed) is int and 0<=elapsed<=3600000:safe['elapsed_ms']=elapsed
+        for key in ('branch_reconciled','policy_unchanged'):
+            if type(value.get(key)) is bool:safe[key]=value[key]
+        if value.get('operation_state') in ('not_admitted','preparing','committing','complete','failed','interrupted','uncertain','unknown'):
+            safe['operation_state']=value['operation_state']
+        restore.append(safe)
     return dict(available=True,bytes=size,truncated=size>32768,frames=frames,console_errors=api[-4:],native_errors=native[-4:],
+                governed_restore_failures=restore[-2:],
                 readiness_poll_503_observed=len(re.findall(r'^NOTEBOOK_READINESS_TRANSIENT_503$',text,re.M)),
                 failure_types=[name for name in known if re.search(r'\b'+name+r'\b',text)])

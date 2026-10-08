@@ -23,6 +23,7 @@ ENABLED=False;OUTPUT=None;ROLE=None;CONTEXT_ID=None;START_MS=time.time()*1000;WR
 BUDGET=8*1024*1024
 NATIVE=None
 COUNT_FS=False
+REQUEST_ACTIVE=False;REQUEST_INDEX=0;REQUEST_CPU=None;PROFILE_ROOT=None
 CAPTURE_CURSORS=dict(decoded=None,durable=None,feedback=None)
 
 def native_io():
@@ -116,7 +117,7 @@ def wrap(function,name):
 
 def flush(final=False):
     global WRITTEN,WRITE_NS,WRITE_ERRORS
-    if not ENABLED:return
+    if not ENABLED or (ROLE=='incremental' and not REQUEST_ACTIVE):return
     start=time.perf_counter_ns()
     try:
         with LOCK:
@@ -125,6 +126,9 @@ def flush(final=False):
                 metrics=METRICS,work=WORK,native_io=native_io(),capture_cursors=dict(CAPTURE_CURSORS) if ROLE=='capture' else None,exceptions=ERRORS,cpu_user_s=usage.ru_utime,cpu_system_s=usage.ru_stime,
                 maxrss_kib=usage.ru_maxrss,voluntary_switches=usage.ru_nvcsw,involuntary_switches=usage.ru_nivcsw,
                 profile_write_ns=WRITE_NS,profile_write_errors=WRITE_ERRORS,budget_exceeded=WRITTEN>=BUDGET)
+            if ROLE=='incremental':
+                row.update(worker_request_index=REQUEST_INDEX, counter_scope='process_cumulative',
+                    request_cpu_s=usage.ru_utime+usage.ru_stime-REQUEST_CPU)
             data=(json.dumps(row,separators=(',',':'))+'\n').encode()
             if WRITTEN>=BUDGET:return
             fd=os.open(OUTPUT,os.O_CREAT|os.O_APPEND|os.O_WRONLY,0o600)
@@ -165,8 +169,30 @@ class Connection(sqlite3.Connection):
         with Span('sqlite.script'):return super().executescript(sql,*args,**kwargs)
 
 
+def request_profile(function):
+    @functools.wraps(function)
+    def measured(config):
+        global METRICS,WORK,ERRORS,CONTEXT_ID,OUTPUT,START_MS,REQUEST_ACTIVE,REQUEST_INDEX,REQUEST_CPU
+        with LOCK:
+            REQUEST_INDEX+=1
+            if REQUEST_INDEX>1:
+                METRICS={};WORK={};ERRORS=[];START_MS=time.time()*1000
+            CONTEXT_ID=config['id']
+            OUTPUT=PROFILE_ROOT/f"incremental-{os.getpid()}-{CONTEXT_ID}-{config.get('attempt',1)}.jsonl"
+            usage=resource.getrusage(resource.RUSAGE_SELF)
+            REQUEST_CPU=usage.ru_utime+usage.ru_stime
+            REQUEST_ACTIVE=True
+        flush()
+        try:return function(config)
+        finally:
+            with LOCK:
+                flush(final=True)
+                REQUEST_ACTIVE=False
+    return measured
+
+
 def install(namespace,role):
-    global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID,COUNT_FS
+    global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID,COUNT_FS,PROFILE_ROOT
     if len(sys.argv)<2:return
     path=Path(sys.argv[1])
     root=next((p for p in list(path.parents)[:6] if (p/'sync-profile/enabled').is_file()),None)
@@ -177,7 +203,8 @@ def install(namespace,role):
     except AttributeError:pass  # Unit tests can exercise Python hooks alone.
     context=path.parent.name
     CONTEXT_ID=context if re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',context) else None
-    ENABLED=True;ROLE=role;OUTPUT=root/'sync-profile'/f'{role}-{os.getpid()}.jsonl'
+    PROFILE_ROOT=root/'sync-profile'
+    ENABLED=True;ROLE=role;OUTPUT=PROFILE_ROOT/f'{role}-{os.getpid()}.jsonl'
     record('startup.imports',time.perf_counter_ns()-IMPORTED_NS)
     original_connect=sqlite3.connect
     def connect(*args,**kwargs):
@@ -232,6 +259,7 @@ def install(namespace,role):
             for mod in (storage,maintenance):
                 for key,value in list(vars(mod).items()):
                     if value is original:setattr(mod,key,wrapped)
+    if role=='incremental':namespace['run']=request_profile(namespace['run'])
     flush()
     def writer():
         while not STOP.wait(1):flush()

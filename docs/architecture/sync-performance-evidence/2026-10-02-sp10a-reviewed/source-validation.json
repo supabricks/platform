@@ -1,0 +1,50 @@
+{
+  "status": "source_checks_passed_installed_screen_running",
+  "runtime_revision": "37a523303232c8bc8b697c3c110305c7d1d14581",
+  "analytics_existing": {
+    "passed": 100,
+    "log": "analytics-tests-02.log"
+  },
+  "analytics_contract": {
+    "passed": 4,
+    "log": "backend-tests-01.log"
+  },
+  "harness": {
+    "passed": 76,
+    "log": "harness-tests-02.log",
+    "python": "build/sp06-controller-venv/bin/python"
+  },
+  "functional_component": {
+    "status": "PASS",
+    "groups": 128,
+    "transactions": 4096,
+    "payload_bytes": 4194304,
+    "elapsed_seconds": 0.9533985009984463,
+    "cpu_seconds": 0.082281669,
+    "transactions_per_second": 4296.209817521703,
+    "append_ms": {
+      "median": 6.486109497927828,
+      "p95": 6.780939998861868,
+      "maximum": 7.193568999355193
+    },
+    "prune_cycles": 8,
+    "reclaimed_payload_bytes": 2097152,
+    "peak_physical_bytes": 13772856,
+    "checks": [
+      "pinned_snapshot_stable",
+      "durable_group_cursor",
+      "bounded_pruning",
+      "reopen_and_replay"
+    ],
+    "scope": "Direct durable capture journal; fixed 1KiB opaque payloads, no PostgreSQL/Delta capacity claim"
+  },
+  "source_sha256": {
+    "python/analytics/capture/spool.py": "72104ade3b6e374208c9c3401e82adff406bea7e3ae9c337e89c30ec3dfab09e",
+    "python/analytics/capture/journal.py": "743cc4d1efec1fecc6f747c6c4d73fd40642943fd25afc3185e2872047aaebc5",
+    "python/analytics/capture/sqlite_journal.py": "e41f54c2c7484c39ca5741007f7f2b529fc7c60a96c2f3979f4e12a201508930",
+    "python/analytics/incremental/storage.py": "e74008d8f671fdc599f9f6563a677664326481a61be7517b56e3e450dd5ad550",
+    "e2e/native/performance/backend_campaign.py": "f0dd63ba98733a117312b7dd9e8d828e8eda73a66d66bc19086c1efe026a6a6d",
+    "e2e/native/performance/backend_observer_control.py": "7a209f3a510775da9fe626106dec9758c930833d320d6409a1dfd89dd7a38f53"
+  },
+  "scope": "Functional source validation only; no quiet-host performance comparison claim. Runtime, package, and full-stack measurement qualification remain pending."
+}

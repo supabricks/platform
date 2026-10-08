@@ -1,0 +1,57 @@
+{
+  "status": "screen_only",
+  "policy": {
+    "window_seconds": 300,
+    "stride_seconds": 60,
+    "minimum_rows_s": 1000,
+    "maximum_p95_ms": 5000,
+    "maximum_drain_seconds": 120,
+    "backlog_growth_ratio": 1.25,
+    "backlog_growth_allowance_bytes": 1048576,
+    "memory_growth_ratio": 1.25,
+    "memory_growth_allowance_bytes": 268435456,
+    "spool_physical_limit_bytes": 536870912,
+    "maximum_sample_gap_ms": 5000
+  },
+  "windows": [
+    {
+      "start_ms": 1791252452719.8545,
+      "end_ms": 1791252462988.7734,
+      "transactions": 5658,
+      "committed_rows_s": 1101.9660453319154,
+      "published_rows_s": 985.8876142577159,
+      "p95_ms": 1817.094970703125,
+      "p99_ms": 1900.254638671875,
+      "maximum_ms": 1946.95751953125
+    }
+  ],
+  "worst_window_p95_ms": 1817.094970703125,
+  "bounds": {
+    "early_backlog_p95_bytes": 142505,
+    "late_backlog_p95_bytes": 142505,
+    "backlog_slope_bytes_s": 5430.459132167406,
+    "early_memory_median_bytes": 1350848512,
+    "late_memory_median_bytes": 1350848512,
+    "peak_spool_bytes": 4751416,
+    "inspection_denials": 0,
+    "maximum_sample_gap_ms": 1022.004638671875
+  },
+  "gates": {
+    "all_committed_windows": true,
+    "all_published_windows": false,
+    "all_fresh_windows": true,
+    "bounded_drain": true,
+    "backlog_growth": true,
+    "backlog_slope": true,
+    "memory_growth": true,
+    "spool_budget": true,
+    "inspectable": true,
+    "continuous_resource_evidence": true
+  },
+  "limits": [
+    "Publication rates count only measured source transactions published within each wall-clock window.",
+    "Lag follows COMMIT cohorts, including subsequent bounded drain; cadence is 60 seconds, not every possible rolling window.",
+    "Cgroup memory includes cache; sampled spool size is not whole-stack storage or a hard quota.",
+    "Passing steady screens does not establish maintenance cycles, pinned-reader, pressure, scaling or recovery qualification."
+  ]
+}

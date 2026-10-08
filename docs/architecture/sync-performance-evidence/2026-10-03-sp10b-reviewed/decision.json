@@ -1,0 +1,24 @@
+{
+  "status": "measured_owner_interface_accepted_for_sp10c_comparison",
+  "reviewed_at_utc": "2026-10-03T02:51:04.300687+00:00",
+  "accepted_fixtures": 108,
+  "failed_trials": 0,
+  "contention_replacements": 0,
+  "main_regression_screen_flags": [],
+  "raw_hashes_and_metrics_reconstructed": true,
+  "performance_gain_claimed": false,
+  "full_release_qualified": false,
+  "limitations": [
+    "Three fresh pairs per cell, no statistical equivalence or sustained-capacity guarantee",
+    "Historical four-client overload source-limited",
+    "Isolated owner reads cost 3.1-5.3 times direct SQLite latency at tested range sizes",
+    "Two installed release CI failures retained; required and both sync checks passed on aabbb16",
+    "SP10c same-interface engine comparison plus best direct SQLite and SP11/SP12 gates remain"
+  ],
+  "followup_issues": [
+    110,
+    144,
+    147,
+    148
+  ]
+}

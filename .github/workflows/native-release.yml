@@ -17,6 +17,9 @@ on:
       - 'e2e/native/incremental.py'
       - 'e2e/native/triggered.py'
       - 'e2e/native/installed_sync.py'
+      - 'e2e/tpcds/**'
+      - 'docs/architecture/tpcds-evidence/2026-10-06/inventory.json'
+      - 'docs/architecture/tpcds-evidence/2026-10-06/SHA256SUMS'
       - 'e2e/native/test_installed_sync.py'
       - 'e2e/native/continuous.py'
       - 'e2e/native/sync_maintenance.py'
@@ -210,6 +213,7 @@ jobs:
           python install/native/test_demo.py
           python install/native/test_cleanup.py
           python install/native/test_diagnostics.py
+          python install/native/test_release_formats.py
           python e2e/native/notebook-environments/test_client.py
       - uses: actions/download-artifact@v4
         with:

@@ -77,6 +77,9 @@ class Continuous(Triggered):
             for part in clock.split(':'):seconds=seconds*60+float(part)
             if sep:seconds+=int(days)*86400
             yield pid,int(mem)*1024,seconds
+    def commit_markers(self,cap):
+        return [(struct.unpack('!I',payload[21:25])[0],end) for end,payload in self.journal(cap)]
+
     def workload(self,cap):
         samples=[];errors=[];duration=30;count=750;stop=threading.Event();resources=dict(peak_owned_rss_bytes=0,peak_allocated_data_bytes=0,spool_bytes=0,retained_wal_bytes=0)
         cpu_first={};cpu_last={};ends={};captured_at={}
@@ -84,8 +87,7 @@ class Continuous(Triggered):
             # SY07 removes published prefixes. Record the benchmark's markers
             # while they are present, without retaining a SQLite reader lease
             # or disabling the production pruning path during measurement.
-            for end,payload in self.journal(cap):
-                xid=struct.unpack('!I',payload[21:25])[0]
+            for xid,end in self.commit_markers(cap):
                 ends[xid]=end;captured_at.setdefault(xid,time.time()*1000)
         def observe():
             while not stop.is_set():

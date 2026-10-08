@@ -20,6 +20,25 @@ import tempfile
 import time
 
 
+def wait_for_expired_source(browser, source, wait):
+    transient=0
+    def observe():
+        nonlocal transient
+        code,rejection=browser(dict(action='source',source=source))
+        error=rejection.get('error',{})
+        if (code==503 and error.get('code')=='io_error' and error.get('message') in (
+                'Resource temporarily unavailable (os error 35)',
+                'Resource temporarily unavailable (os error 11)')):
+            # This is a read-only lookup after real filesystem pressure. A
+            # daemon control deadline says nothing about source validity.
+            transient+=1
+            return None
+        assert code==409 and 'expired' in error.get('message',''),rejection
+        return True
+    wait(observe,20)
+    return transient
+
+
 def qualify(args):
     workspace=Path(tempfile.mkdtemp(prefix='sb-i01-',dir='/tmp')).resolve()
     data=workspace/'data';project=workspace/"app ' with spaces";project.mkdir()
@@ -310,8 +329,7 @@ def qualify(args):
                 with closing(sqlite3.connect(pressure_data/'state.sqlite3')) as db:
                     with db:
                         db.execute('UPDATE ingest_sources SET expires_at_ms=0 WHERE id=?',(source,))
-                code,rejection=browser(dict(action='source',source=source))
-                assert code==409 and 'expired' in rejection['error']['message'],rejection
+                report['expiry_transient_control_timeouts']=wait_for_expired_source(browser,source,wait)
                 check('real browser upload admission rejects disk exhaustion and expired staging on the bounded volume')
 
             finally:

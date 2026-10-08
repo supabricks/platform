@@ -2,10 +2,38 @@
 use super::*;
 use crate::incremental::Run;
 use sha2::{Digest, Sha256};
+use std::time::{Duration, Instant};
+
+/// Ephemeral ownership only. Recovery fences every process before rebuilding it.
+pub(super) struct Worker {
+    role: String,
+    run: Run,
+    scope: Value,
+    busy: bool,
+    born: Instant,
+    idle: Instant,
+    requests: u32,
+}
 impl Cell {
     fn stop_incremental(&mut self, store: &mut Store, r: &Run) -> Result<()> {
+        if let Some(worker) = self.apply_workers.get(&r.capture_id) {
+            if worker.run.id == r.id
+                && (worker.busy || matches!(r.state.as_str(), "failed" | "cancelled"))
+            {
+                let role = worker.role.clone();
+                self.apply_workers.remove(&r.capture_id);
+                return self.stop_apply_role(store, &role);
+            }
+        }
         let role = format!("incremental-{}", r.id);
-        self.launches.remove(&role);
+        // Completed runs must not stop a process that has been retained/reassigned.
+        if self.apply_workers.values().any(|w| w.role == role) {
+            return Ok(());
+        }
+        self.stop_apply_role(store, &role)
+    }
+    fn stop_apply_role(&mut self, store: &mut Store, role: &str) -> Result<()> {
+        self.launches.remove(role);
         if let Some(p) = store
             .native_processes()?
             .into_iter()
@@ -14,12 +42,67 @@ impl Cell {
             supervisor::stop(&p)?;
             store.forget_native_process(&p)?;
         }
-        if self.processes.remove(&role).is_some() {
+        if self.processes.remove(role).is_some() {
             self.update()?;
+        }
+        let mailbox = self.root.join("analytics/apply-workers").join(role);
+        if mailbox.exists() {
+            fs::remove_dir_all(mailbox)?;
+        }
+        Ok(())
+    }
+    fn apply_scope(&self, store: &Store, r: &Run, c: &crate::capture::Capture) -> Result<Value> {
+        let (python, exporter) = crate::installation::analytical_worker(store.root())?;
+        Ok(
+            json!({"python":python,"worker":exporter.with_file_name("incremental_worker.py"),"identity":c.identity,"worker_generation":store.generation(),
+            "source_revision":r.source_revision,"storage_generation":r.storage_generation,
+            "policy_revision":store.sync_policy(c.project_id,c.policy_id)?.revision}),
+        )
+    }
+    fn control_apply_workers(&mut self, store: &mut Store) -> Result<()> {
+        let records = store.native_processes()?;
+        let mut stop = Vec::new();
+        for (id, worker) in &self.apply_workers {
+            let authorized = (|| -> Result<bool> {
+                let c = store.capture(worker.run.project_id, *id)?;
+                store.capture_live(&c)?;
+                let policy = store.sync_policy(c.project_id, c.policy_id)?;
+                Ok(c.desired == "running"
+                    && c.state != "resync_required"
+                    && c.state != "deleted"
+                    && policy.state == "active"
+                    && store.branch(worker.run.branch_id)?.revision == worker.run.source_revision
+                    && self.apply_scope(store, &worker.run, &c)? == worker.scope)
+            })()
+            .unwrap_or(false);
+            let rss = records
+                .iter()
+                .find(|p| p.role == worker.role)
+                .map(|p| supervisor::os::rss(p.pid))
+                .transpose()?
+                .unwrap_or(0);
+            if !authorized
+                || (!worker.busy
+                    && (worker.born.elapsed() >= Duration::from_secs(60)
+                        || worker.idle.elapsed() >= Duration::from_secs(5)
+                        || worker.requests >= 64
+                        || rss >= 512 * 1024 * 1024))
+            {
+                stop.push((*id, worker.role.clone()));
+            } else if worker.busy && rss > 768 * 1024 * 1024 {
+                let mut r = store.incremental_run(worker.run.project_id, worker.run.id)?;
+                store.fail_incremental(&mut r, "incremental_memory_budget", false)?;
+                stop.push((*id, worker.role.clone()));
+            }
+        }
+        for (id, role) in stop {
+            self.apply_workers.remove(&id);
+            self.stop_apply_role(store, &role)?;
         }
         Ok(())
     }
     pub(super) fn control_incremental(&mut self, store: &mut Store) -> Result<()> {
+        self.control_apply_workers(store)?;
         for mut r in store.incremental_runs()? {
             if matches!(r.state.as_str(), "requested" | "running" | "ready") {
                 if store.incremental_live(&r).is_err()
@@ -100,7 +183,47 @@ impl Cell {
                     && v["worker_generation"] == json!(store.generation())
                     && r.worker_generation == store.generation()
                 {
-                    self.stop_incremental(store, &r)?;
+                    let pooled = self
+                        .apply_workers
+                        .get(&r.capture_id)
+                        .filter(|w| w.busy && w.run.id == r.id);
+                    if let Some(worker) = pooled {
+                        let live = store.native_processes()?.iter().any(|p| {
+                            p.role == worker.role
+                                && supervisor::os::identity(p.pid)
+                                    .ok()
+                                    .flatten()
+                                    .is_some_and(|i| !i.zombie && i.start == p.start_identity)
+                        });
+                        let done = self
+                            .root
+                            .join("analytics/apply-workers")
+                            .join(&worker.role)
+                            .join("done.json");
+                        let mut reusable = false;
+                        let finished = if done.is_file() && done.metadata()?.len() <= 65536 {
+                            let receipt: Value = serde_json::from_slice(&fs::read(done)?)?;
+                            reusable = receipt["reusable"] == true;
+                            receipt["id"] == json!(r.id)
+                                && receipt["attempt"] == json!(r.attempts)
+                                && receipt["worker_generation"] == json!(store.generation())
+                        } else {
+                            false
+                        };
+                        // No publication/GC while a live worker still owns request handles.
+                        if live && !finished {
+                            continue;
+                        }
+                        if live && finished && reusable && v["state"] == "ready" {
+                            let worker = self.apply_workers.get_mut(&r.capture_id).unwrap();
+                            worker.busy = false;
+                            worker.idle = Instant::now();
+                        } else {
+                            self.stop_incremental(store, &r)?;
+                        }
+                    } else {
+                        self.stop_incremental(store, &r)?;
+                    }
                     if v["state"] == "deferred" {
                         if store
                             .defer_incremental(&mut r, &v, chrono::Utc::now().timestamp_millis())
@@ -206,7 +329,21 @@ impl Cell {
             {
                 continue;
             }
-            let role = format!("incremental-{}", r.id);
+            let scope = self.apply_scope(store, &r, &c)?;
+            if let Some(worker) = self.apply_workers.get(&r.capture_id) {
+                if worker.scope != scope {
+                    let role = worker.role.clone();
+                    self.apply_workers.remove(&r.capture_id);
+                    self.stop_apply_role(store, &role)?;
+                } else if worker.busy && worker.run.id != r.id {
+                    continue; // One in-flight request per capture, never a queue.
+                }
+            }
+            let role = self
+                .apply_workers
+                .get(&r.capture_id)
+                .map(|w| w.role.clone())
+                .unwrap_or_else(|| format!("incremental-{}", r.id));
             let process = store
                 .native_processes()?
                 .into_iter()
@@ -217,20 +354,26 @@ impl Cell {
                     .flatten()
                     .is_some_and(|i| !i.zombie && i.start == p.start_identity)
             });
-            if live {
+            let reuse = live
+                && self
+                    .apply_workers
+                    .get(&r.capture_id)
+                    .is_some_and(|w| !w.busy);
+            if live && !reuse {
                 if supervisor::os::rss(process.as_ref().unwrap().pid)? > 768 * 1024 * 1024 {
                     self.stop_incremental(store, &r)?;
                     store.fail_incremental(&mut r, "incremental_memory_budget", false)?;
                 }
                 continue;
             }
-            if self.launches.contains_key(&role) || process.is_some() {
+            if !reuse && (self.launches.contains_key(&role) || process.is_some()) {
                 if r.started_at_ms
                     .is_some_and(|at| chrono::Utc::now().timestamp_millis() - at < 3000)
                 {
                     continue;
                 }
-                self.stop_incremental(store, &r)?;
+                self.apply_workers.remove(&r.capture_id);
+                self.stop_apply_role(store, &role)?;
             }
             if r.attempts >= 3 {
                 store.fail_incremental(&mut r, "incremental_worker_retries_exhausted", false)?;
@@ -260,7 +403,13 @@ impl Cell {
             let bootstrap = c
                 .bootstrap_id
                 .ok_or_else(|| conflict("missing capture bootstrap"))?;
-            let config = json!({"id":r.id,"attempt":r.attempts+1,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
+            let mut config = json!({"id":r.id,"attempt":r.attempts+1,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
+            // Issued only after incremental_live validates the run and authority.
+            // Capture compares the exact request with this private input.json,
+            // and rechecks generation/source/policy before its completion marker.
+            config["journal_access"] = self.journal_access(store, &c, r.source_revision)?;
+            config["reuse_authority"] = scope.clone();
+            config["reuse_worker"] = json!(reuse || self.apply_workers.len() < 4);
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;
@@ -272,12 +421,47 @@ impl Cell {
             r.started_at_ms = Some(chrono::Utc::now().timestamp_millis());
             r.attempts += 1;
             store.save_incremental(&r)?;
+            if reuse {
+                // incremental_live above revalidates the current run/epoch/authority.
+                let slot = self.apply_workers.get_mut(&r.capture_id).unwrap();
+                write_json(
+                    &self
+                        .root
+                        .join("analytics/apply-workers")
+                        .join(&slot.role)
+                        .join("input.json"),
+                    &config,
+                )?;
+                slot.run = r.clone();
+                slot.busy = true;
+                slot.requests += 1;
+                continue;
+            }
+            let mut argv = vec![path(&python)?, "-B".into(), path(&worker)?, path(&input)?];
+            if self.apply_workers.len() < 4 {
+                let mailbox = self.root.join("analytics/apply-workers").join(&role);
+                dir(&mailbox)?;
+                write_json(&mailbox.join("input.json"), &config)?;
+                argv[3] = path(&mailbox.join("input.json"))?;
+                self.apply_workers.insert(
+                    r.capture_id,
+                    Worker {
+                        role: role.clone(),
+                        run: r.clone(),
+                        scope,
+                        busy: true,
+                        born: Instant::now(),
+                        idle: Instant::now(),
+                        requests: 1,
+                    },
+                );
+            }
             self.add(self.launch(
                 &role,
-                vec![path(&python)?, "-B".into(), path(&worker)?, path(&input)?],
+                argv,
                 Some((r.branch_id, r.source_revision)),
                 BTreeMap::new(),
-                work,
+                self.root.clone(),
             ))?;
             self.update()?;
         }

@@ -21,7 +21,11 @@ pub(super) fn directory(path: &Path) -> Result<(u64, u64)> {
     Ok((m.dev(), m.ino()))
 }
 pub(super) fn generation_path(store: &Store, g: &Generation, create: bool) -> Result<PathBuf> {
-    let parent = store.root().join("notebook-environments");
+    generation_path_at(store.root(), g, create)
+}
+
+pub(super) fn generation_path_at(root: &Path, g: &Generation, create: bool) -> Result<PathBuf> {
+    let parent = root.join("notebook-environments");
     let project = parent.join(&g.worktree_key);
     for p in [&parent, &project] {
         if !create && !p.exists() {

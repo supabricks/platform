@@ -1,0 +1,2626 @@
+{
+  "accepted_pairs": 6,
+  "attempts": 6,
+  "cells": [
+    {
+      "arms": {
+        "candidate": {
+          "fresh": 3,
+          "input_met": 3,
+          "measured": 3,
+          "metrics": {
+            "admission_to_worker_start_p95_ms": {
+              "individual": [
+                117,
+                123,
+                119
+              ],
+              "maximum": 123,
+              "median": 119,
+              "minimum": 117
+            },
+            "apply_directory_ms": {
+              "individual": [
+                10.743829999999999,
+                10.211903,
+                10.681621
+              ],
+              "maximum": 10.743829999999999,
+              "median": 10.681621,
+              "minimum": 10.211903
+            },
+            "apply_merge_ms": {
+              "individual": [
+                16.9934875,
+                16.950471,
+                17.0545575
+              ],
+              "maximum": 17.0545575,
+              "median": 16.9934875,
+              "minimum": 16.950471
+            },
+            "apply_run_ms": {
+              "individual": [
+                390.5905935,
+                384.80652150000003,
+                385.910985
+              ],
+              "maximum": 390.5905935,
+              "median": 385.910985,
+              "minimum": 384.80652150000003
+            },
+            "baseline_rows_s": {
+              "individual": [
+                1247.558,
+                1247.593,
+                1247.541
+              ],
+              "maximum": 1247.593,
+              "median": 1247.558,
+              "minimum": 1247.541
+            },
+            "capture_commit_ms": {
+              "individual": [
+                7.778072559981098,
+                7.810650207226138,
+                7.824616725756138
+              ],
+              "maximum": 7.824616725756138,
+              "median": 7.810650207226138,
+              "minimum": 7.778072559981098
+            },
+            "capture_durable_ms_per_transaction": {
+              "individual": [
+                0.6177998811281804,
+                0.6184428823687276,
+                0.61915053654584
+              ],
+              "maximum": 0.61915053654584,
+              "median": 0.6184428823687276,
+              "minimum": 0.6177998811281804
+            },
+            "capture_observed_upper_bound_p95_ms": {
+              "individual": [
+                115.97,
+                115.986,
+                117.218
+              ],
+              "maximum": 117.218,
+              "median": 115.986,
+              "minimum": 115.97
+            },
+            "capture_syncs_per_commit": {
+              "individual": [
+                1.0184972659150746,
+                1.0197939262472886,
+                1.0198019801980198
+              ],
+              "maximum": 1.0198019801980198,
+              "median": 1.0197939262472886,
+              "minimum": 1.0184972659150746
+            },
+            "capture_syncs_per_transaction": {
+              "individual": [
+                0.08089761119601062,
+                0.08074670846058472,
+                0.08069544686217166
+              ],
+              "maximum": 0.08089761119601062,
+              "median": 0.08074670846058472,
+              "minimum": 0.08069544686217166
+            },
+            "capture_transactions_per_group": {
+              "individual": [
+                13.237862010221464,
+                13.278526120732664,
+                13.293030886653828
+              ],
+              "maximum": 13.293030886653828,
+              "median": 13.278526120732664,
+              "minimum": 13.237862010221464
+            },
+            "capture_transactions_s": {
+              "individual": [
+                621.5255259580199,
+                620.9161862889573,
+                621.0650064998928
+              ],
+              "maximum": 621.5255259580199,
+              "median": 621.0650064998928,
+              "minimum": 620.9161862889573
+            },
+            "cold_apply_ms": {
+              "individual": [
+                573.476902,
+                535.981538,
+                539.097391
+              ],
+              "maximum": 573.476902,
+              "median": 539.097391,
+              "minimum": 535.981538
+            },
+            "cold_imports_ms": {
+              "individual": [
+                221.459259,
+                221.131152,
+                219.882083
+              ],
+              "maximum": 221.459259,
+              "median": 221.131152,
+              "minimum": 219.882083
+            },
+            "cold_requests": {
+              "individual": [
+                7,
+                7,
+                7
+              ],
+              "maximum": 7,
+              "median": 7,
+              "minimum": 7
+            },
+            "commit_to_admission_p95_ms": {
+              "individual": [
+                1631.186,
+                1657.897,
+                1647.489
+              ],
+              "maximum": 1657.897,
+              "median": 1647.489,
+              "minimum": 1631.186
+            },
+            "commit_to_publication_p95_ms": {
+              "individual": [
+                3031.675,
+                3058.82,
+                3030.447
+              ],
+              "maximum": 3058.82,
+              "median": 3031.675,
+              "minimum": 3030.447
+            },
+            "cpu_cores": {
+              "individual": [
+                1.037,
+                1.034,
+                1.036
+              ],
+              "maximum": 1.037,
+              "median": 1.036,
+              "minimum": 1.034
+            },
+            "lag_p95_ms": {
+              "individual": [
+                3031.675,
+                3058.82,
+                3030.447
+              ],
+              "maximum": 3058.82,
+              "median": 3031.675,
+              "minimum": 3030.447
+            },
+            "lag_p99_ms": {
+              "individual": [
+                3365.028,
+                3393.309,
+                3373.229
+              ],
+              "maximum": 3393.309,
+              "median": 3373.229,
+              "minimum": 3365.028
+            },
+            "last_backlog_bytes": {
+              "individual": [
+                103136,
+                106282,
+                188848
+              ],
+              "maximum": 188848,
+              "median": 106282,
+              "minimum": 103136
+            },
+            "peak_backlog_bytes": {
+              "individual": [
+                308682,
+                304326,
+                305415
+              ],
+              "maximum": 308682,
+              "median": 305415,
+              "minimum": 304326
+            },
+            "peak_memory_bytes": {
+              "individual": [
+                2024611840,
+                2025639936,
+                1975836672
+              ],
+              "maximum": 2025639936,
+              "median": 2024611840,
+              "minimum": 1975836672
+            },
+            "prepared_to_publication_p95_ms": {
+              "individual": [
+                1049,
+                1049,
+                1051
+              ],
+              "maximum": 1051,
+              "median": 1049,
+              "minimum": 1049
+            },
+            "source_rows_s": {
+              "individual": [
+                1241.88,
+                1240.82,
+                1242.234
+              ],
+              "maximum": 1242.234,
+              "median": 1241.88,
+              "minimum": 1240.82
+            },
+            "successful_apply_requests": {
+              "individual": [
+                224,
+                224,
+                224
+              ],
+              "maximum": 224,
+              "median": 224,
+              "minimum": 224
+            },
+            "successful_apply_workers": {
+              "individual": [
+                8,
+                8,
+                8
+              ],
+              "maximum": 8,
+              "median": 8,
+              "minimum": 8
+            },
+            "warm_apply_ms": {
+              "individual": [
+                388.865448,
+                382.515373,
+                383.979407
+              ],
+              "maximum": 388.865448,
+              "median": 383.979407,
+              "minimum": 382.515373
+            },
+            "warm_requests": {
+              "individual": [
+                217,
+                217,
+                217
+              ],
+              "maximum": 217,
+              "median": 217,
+              "minimum": 217
+            },
+            "worker_start_to_prepared_p95_ms": {
+              "individual": [
+                426,
+                437,
+                439
+              ],
+              "maximum": 439,
+              "median": 437,
+              "minimum": 426
+            },
+            "worker_streams": {
+              "individual": [
+                283,
+                284,
+                282
+              ],
+              "maximum": 284,
+              "median": 283,
+              "minimum": 282
+            }
+          },
+          "trials": 3
+        },
+        "predecessor": {
+          "fresh": 3,
+          "input_met": 3,
+          "measured": 3,
+          "metrics": {
+            "admission_to_worker_start_p95_ms": {
+              "individual": [
+                122,
+                133,
+                121
+              ],
+              "maximum": 133,
+              "median": 122,
+              "minimum": 121
+            },
+            "apply_directory_ms": {
+              "individual": [
+                10.58004,
+                10.335819,
+                10.6252335
+              ],
+              "maximum": 10.6252335,
+              "median": 10.58004,
+              "minimum": 10.335819
+            },
+            "apply_merge_ms": {
+              "individual": [
+                17.0705935,
+                16.917653,
+                16.879742999999998
+              ],
+              "maximum": 17.0705935,
+              "median": 16.917653,
+              "minimum": 16.879742999999998
+            },
+            "apply_run_ms": {
+              "individual": [
+                383.1917905,
+                384.585392,
+                388.212846
+              ],
+              "maximum": 388.212846,
+              "median": 384.585392,
+              "minimum": 383.1917905
+            },
+            "baseline_rows_s": {
+              "individual": [
+                1178.233,
+                1247.511,
+                1248.44
+              ],
+              "maximum": 1248.44,
+              "median": 1247.511,
+              "minimum": 1178.233
+            },
+            "capture_commit_ms": {
+              "individual": [
+                7.753887440029833,
+                7.866624210216378,
+                7.777464414577814
+              ],
+              "maximum": 7.866624210216378,
+              "median": 7.777464414577814,
+              "minimum": 7.753887440029833
+            },
+            "capture_durable_ms_per_transaction": {
+              "individual": [
+                0.6095800064656092,
+                0.616410803783749,
+                0.6102499994510033
+              ],
+              "maximum": 0.616410803783749,
+              "median": 0.6102499994510033,
+              "minimum": 0.6095800064656092
+            },
+            "capture_observed_upper_bound_p95_ms": {
+              "individual": [
+                113.288,
+                113.653,
+                113.542
+              ],
+              "maximum": 113.653,
+              "median": 113.542,
+              "minimum": 113.288
+            },
+            "capture_syncs_per_commit": {
+              "individual": [
+                1.0173571089565394,
+                1.0192413037523966,
+                1.0180014944636913
+              ],
+              "maximum": 1.0192413037523966,
+              "median": 1.0180014944636913,
+              "minimum": 1.0173571089565394
+            },
+            "capture_syncs_per_transaction": {
+              "individual": [
+                0.0799805978423095,
+                0.07986543331759453,
+                0.07987634250992724
+              ],
+              "maximum": 0.0799805978423095,
+              "median": 0.07987634250992724,
+              "minimum": 0.07986543331759453
+            },
+            "capture_transactions_per_group": {
+              "individual": [
+                12.980557669687954,
+                13.025999440872239,
+                13.006239168110918
+              ],
+              "maximum": 13.025999440872239,
+              "median": 13.006239168110918,
+              "minimum": 12.980557669687954
+            },
+            "capture_transactions_s": {
+              "individual": [
+                625.2426474300212,
+                621.1215183868812,
+                625.2566094703624
+              ],
+              "maximum": 625.2566094703624,
+              "median": 625.2426474300212,
+              "minimum": 621.1215183868812
+            },
+            "cold_apply_ms": {
+              "individual": [
+                543.891111,
+                530.784656,
+                589.889556
+              ],
+              "maximum": 589.889556,
+              "median": 543.891111,
+              "minimum": 530.784656
+            },
+            "cold_imports_ms": {
+              "individual": [
+                219.413752,
+                220.131824,
+                223.763797
+              ],
+              "maximum": 223.763797,
+              "median": 220.131824,
+              "minimum": 219.413752
+            },
+            "cold_requests": {
+              "individual": [
+                7,
+                7,
+                7
+              ],
+              "maximum": 7,
+              "median": 7,
+              "minimum": 7
+            },
+            "commit_to_admission_p95_ms": {
+              "individual": [
+                1634.389,
+                1638.481,
+                1661.796
+              ],
+              "maximum": 1661.796,
+              "median": 1638.481,
+              "minimum": 1634.389
+            },
+            "commit_to_publication_p95_ms": {
+              "individual": [
+                3036.825,
+                3047.28,
+                3076.16
+              ],
+              "maximum": 3076.16,
+              "median": 3047.28,
+              "minimum": 3036.825
+            },
+            "cpu_cores": {
+              "individual": [
+                1.039,
+                1.027,
+                1.036
+              ],
+              "maximum": 1.039,
+              "median": 1.036,
+              "minimum": 1.027
+            },
+            "lag_p95_ms": {
+              "individual": [
+                3036.825,
+                3047.28,
+                3076.16
+              ],
+              "maximum": 3076.16,
+              "median": 3047.28,
+              "minimum": 3036.825
+            },
+            "lag_p99_ms": {
+              "individual": [
+                3402.974,
+                3411.683,
+                3432.089
+              ],
+              "maximum": 3432.089,
+              "median": 3411.683,
+              "minimum": 3402.974
+            },
+            "last_backlog_bytes": {
+              "individual": [
+                143957,
+                89100,
+                152548
+              ],
+              "maximum": 152548,
+              "median": 143957,
+              "minimum": 89100
+            },
+            "peak_backlog_bytes": {
+              "individual": [
+                304326,
+                295019,
+                308329
+              ],
+              "maximum": 308329,
+              "median": 304326,
+              "minimum": 295019
+            },
+            "peak_memory_bytes": {
+              "individual": [
+                2060607488,
+                2050859008,
+                2037805056
+              ],
+              "maximum": 2060607488,
+              "median": 2050859008,
+              "minimum": 2037805056
+            },
+            "prepared_to_publication_p95_ms": {
+              "individual": [
+                1053,
+                1058,
+                1057
+              ],
+              "maximum": 1058,
+              "median": 1057,
+              "minimum": 1053
+            },
+            "source_rows_s": {
+              "individual": [
+                1249.286,
+                1241.298,
+                1249.827
+              ],
+              "maximum": 1249.827,
+              "median": 1249.286,
+              "minimum": 1241.298
+            },
+            "successful_apply_requests": {
+              "individual": [
+                224,
+                224,
+                224
+              ],
+              "maximum": 224,
+              "median": 224,
+              "minimum": 224
+            },
+            "successful_apply_workers": {
+              "individual": [
+                8,
+                8,
+                8
+              ],
+              "maximum": 8,
+              "median": 8,
+              "minimum": 8
+            },
+            "warm_apply_ms": {
+              "individual": [
+                380.016029,
+                382.11559,
+                384.695604
+              ],
+              "maximum": 384.695604,
+              "median": 382.11559,
+              "minimum": 380.016029
+            },
+            "warm_requests": {
+              "individual": [
+                217,
+                217,
+                217
+              ],
+              "maximum": 217,
+              "median": 217,
+              "minimum": 217
+            },
+            "worker_start_to_prepared_p95_ms": {
+              "individual": [
+                429,
+                453,
+                432
+              ],
+              "maximum": 453,
+              "median": 432,
+              "minimum": 429
+            },
+            "worker_streams": {
+              "individual": [
+                283,
+                283,
+                283
+              ],
+              "maximum": 283,
+              "median": 283,
+              "minimum": 283
+            }
+          },
+          "trials": 3
+        }
+      },
+      "cpus": 8,
+      "paired_percent": {
+        "admission_to_worker_start_p95_ms": {
+          "individual": [
+            -4.098360655737709,
+            -7.518796992481203,
+            -1.6528925619834656
+          ],
+          "maximum": -1.6528925619834656,
+          "median": -4.098360655737709,
+          "minimum": -7.518796992481203
+        },
+        "apply_directory_ms": {
+          "individual": [
+            1.5481037878873671,
+            -1.1988987036247511,
+            0.5306942195670405
+          ],
+          "maximum": 1.5481037878873671,
+          "median": 0.5306942195670405,
+          "minimum": -1.1988987036247511
+        },
+        "apply_merge_ms": {
+          "individual": [
+            -0.45168904057143466,
+            0.19398671907975285,
+            1.035646692014236
+          ],
+          "maximum": 1.035646692014236,
+          "median": 0.19398671907975285,
+          "minimum": -0.45168904057143466
+        },
+        "apply_run_ms": {
+          "individual": [
+            1.9308354676246697,
+            0.057498153752022496,
+            -0.592937875116073
+          ],
+          "maximum": 1.9308354676246697,
+          "median": 0.057498153752022496,
+          "minimum": -0.592937875116073
+        },
+        "baseline_rows_s": {
+          "individual": [
+            5.883810757295049,
+            0.006573088333494681,
+            -0.07200986831567002
+          ],
+          "maximum": 5.883810757295049,
+          "median": 0.006573088333494681,
+          "minimum": -0.07200986831567002
+        },
+        "capture_commit_ms": {
+          "individual": [
+            0.3119096084166495,
+            -0.711537776490534,
+            0.6062684271488594
+          ],
+          "maximum": 0.6062684271488594,
+          "median": 0.3119096084166495,
+          "minimum": -0.711537776490534
+        },
+        "capture_durable_ms_per_transaction": {
+          "individual": [
+            1.3484488623947355,
+            0.32966303843231515,
+            1.458506694443873
+          ],
+          "maximum": 1.458506694443873,
+          "median": 1.3484488623947355,
+          "minimum": 0.32966303843231515
+        },
+        "capture_observed_upper_bound_p95_ms": {
+          "individual": [
+            2.3674175552574006,
+            2.052739478940291,
+            3.237568476863184
+          ],
+          "maximum": 3.237568476863184,
+          "median": 2.3674175552574006,
+          "minimum": 2.052739478940291
+        },
+        "capture_syncs_per_commit": {
+          "individual": [
+            0.11207047638410739,
+            0.054219005142108756,
+            0.17686474372782257
+          ],
+          "maximum": 0.17686474372782257,
+          "median": 0.11207047638410739,
+          "minimum": 0.054219005142108756
+        },
+        "capture_syncs_per_transaction": {
+          "individual": [
+            1.1465447601543444,
+            1.1034500238491063,
+            1.0254655214622765
+          ],
+          "maximum": 1.1465447601543444,
+          "median": 1.1034500238491063,
+          "minimum": 1.0254655214622765
+        },
+        "capture_transactions_per_group": {
+          "individual": [
+            1.98222870758753,
+            1.9386357339158389,
+            2.2050318684441406
+          ],
+          "maximum": 2.2050318684441406,
+          "median": 1.98222870758753,
+          "minimum": 1.9386357339158389
+        },
+        "capture_transactions_s": {
+          "individual": [
+            -0.5945086259358745,
+            -0.03305828116488829,
+            -0.6703812333979431
+          ],
+          "maximum": -0.03305828116488829,
+          "median": -0.5945086259358745,
+          "minimum": -0.6703812333979431
+        },
+        "cold_apply_ms": {
+          "individual": [
+            5.439653342670647,
+            0.9790942411869397,
+            -8.610453343913749
+          ],
+          "maximum": 5.439653342670647,
+          "median": 0.9790942411869397,
+          "minimum": -8.610453343913749
+        },
+        "cold_imports_ms": {
+          "individual": [
+            0.9322601620704418,
+            0.45396798238495073,
+            -1.734737277451548
+          ],
+          "maximum": 0.9322601620704418,
+          "median": 0.45396798238495073,
+          "minimum": -1.734737277451548
+        },
+        "cold_requests": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "commit_to_admission_p95_ms": {
+          "individual": [
+            -0.19597537673099463,
+            1.185000009154824,
+            -0.8609359993645427
+          ],
+          "maximum": 1.185000009154824,
+          "median": -0.19597537673099463,
+          "minimum": -0.8609359993645427
+        },
+        "commit_to_publication_p95_ms": {
+          "individual": [
+            -0.1695850106607888,
+            0.3786983801947974,
+            -1.4860410381774547
+          ],
+          "maximum": 0.3786983801947974,
+          "median": -0.1695850106607888,
+          "minimum": -1.4860410381774547
+        },
+        "cpu_cores": {
+          "individual": [
+            -0.19249278152069227,
+            0.6815968841285436,
+            0.0
+          ],
+          "maximum": 0.6815968841285436,
+          "median": 0.0,
+          "minimum": -0.19249278152069227
+        },
+        "lag_p95_ms": {
+          "individual": [
+            -0.1695850106607888,
+            0.3786983801947974,
+            -1.4860410381774547
+          ],
+          "maximum": 0.3786983801947974,
+          "median": -0.1695850106607888,
+          "minimum": -1.4860410381774547
+        },
+        "lag_p99_ms": {
+          "individual": [
+            -1.1150834534733534,
+            -0.5385611734736173,
+            -1.7149904912139524
+          ],
+          "maximum": -0.5385611734736173,
+          "median": -1.1150834534733534,
+          "minimum": -1.7149904912139524
+        },
+        "last_backlog_bytes": {
+          "individual": [
+            -28.356384198059146,
+            19.283950617283942,
+            23.795788866455148
+          ],
+          "maximum": 23.795788866455148,
+          "median": 19.283950617283942,
+          "minimum": -28.356384198059146
+        },
+        "peak_backlog_bytes": {
+          "individual": [
+            1.4313597918022225,
+            3.1547120693921515,
+            -0.9450943634883524
+          ],
+          "maximum": 3.1547120693921515,
+          "median": 1.4313597918022225,
+          "minimum": -0.9450943634883524
+        },
+        "peak_memory_bytes": {
+          "individual": [
+            -1.746846413478631,
+            -1.2296833620266123,
+            -3.040937788310205
+          ],
+          "maximum": -1.2296833620266123,
+          "median": -1.746846413478631,
+          "minimum": -3.040937788310205
+        },
+        "prepared_to_publication_p95_ms": {
+          "individual": [
+            -0.3798670465337106,
+            -0.8506616257088817,
+            -0.5676442762535427
+          ],
+          "maximum": -0.3798670465337106,
+          "median": -0.5676442762535427,
+          "minimum": -0.8506616257088817
+        },
+        "source_rows_s": {
+          "individual": [
+            -0.5928186179945949,
+            -0.0385080778346536,
+            -0.6075240813328664
+          ],
+          "maximum": -0.0385080778346536,
+          "median": -0.5928186179945949,
+          "minimum": -0.6075240813328664
+        },
+        "successful_apply_requests": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "successful_apply_workers": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "warm_apply_ms": {
+          "individual": [
+            2.328696245599682,
+            0.10462357738401096,
+            -0.18617238995016772
+          ],
+          "maximum": 2.328696245599682,
+          "median": 0.10462357738401096,
+          "minimum": -0.18617238995016772
+        },
+        "warm_requests": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "worker_start_to_prepared_p95_ms": {
+          "individual": [
+            -0.6993006993006978,
+            -3.532008830022071,
+            1.620370370370372
+          ],
+          "maximum": 1.620370370370372,
+          "median": -0.6993006993006978,
+          "minimum": -3.532008830022071
+        },
+        "worker_streams": {
+          "individual": [
+            0.0,
+            0.35335689045936647,
+            -0.35335689045936647
+          ],
+          "maximum": 0.35335689045936647,
+          "median": 0.0,
+          "minimum": -0.35335689045936647
+        }
+      },
+      "rate": 1250
+    },
+    {
+      "arms": {
+        "candidate": {
+          "fresh": 3,
+          "input_met": 3,
+          "measured": 3,
+          "metrics": {
+            "admission_to_worker_start_p95_ms": {
+              "individual": [
+                121,
+                127,
+                122
+              ],
+              "maximum": 127,
+              "median": 122,
+              "minimum": 121
+            },
+            "apply_directory_ms": {
+              "individual": [
+                10.8899285,
+                10.5842965,
+                10.527428
+              ],
+              "maximum": 10.8899285,
+              "median": 10.5842965,
+              "minimum": 10.527428
+            },
+            "apply_merge_ms": {
+              "individual": [
+                17.491885,
+                17.4726615,
+                17.453028
+              ],
+              "maximum": 17.491885,
+              "median": 17.4726615,
+              "minimum": 17.453028
+            },
+            "apply_run_ms": {
+              "individual": [
+                389.62505050000004,
+                382.205651,
+                383.183267
+              ],
+              "maximum": 389.62505050000004,
+              "median": 383.183267,
+              "minimum": 382.205651
+            },
+            "baseline_rows_s": {
+              "individual": [
+                1245.118,
+                1247.608,
+                1248.537
+              ],
+              "maximum": 1248.537,
+              "median": 1247.608,
+              "minimum": 1245.118
+            },
+            "capture_commit_ms": {
+              "individual": [
+                7.909060149192724,
+                7.930480595837598,
+                7.895179833515358
+              ],
+              "maximum": 7.930480595837598,
+              "median": 7.909060149192724,
+              "minimum": 7.895179833515358
+            },
+            "capture_durable_ms_per_transaction": {
+              "individual": [
+                0.6206011264646767,
+                0.6213774373763621,
+                0.6180567940975302
+              ],
+              "maximum": 0.6213774373763621,
+              "median": 0.6206011264646767,
+              "minimum": 0.6180567940975302
+            },
+            "capture_observed_upper_bound_p95_ms": {
+              "individual": [
+                117.115,
+                116.761,
+                116.712
+              ],
+              "maximum": 117.115,
+              "median": 116.761,
+              "minimum": 116.712
+            },
+            "capture_syncs_per_commit": {
+              "individual": [
+                1.0186661216704136,
+                1.0184919822586147,
+                1.0201365187713312
+              ],
+              "maximum": 1.0201365187713312,
+              "median": 1.0186661216704136,
+              "minimum": 1.0184919822586147
+            },
+            "capture_syncs_per_transaction": {
+              "individual": [
+                0.07993179096818337,
+                0.07980196537601984,
+                0.07985914439302776
+              ],
+              "maximum": 0.07993179096818337,
+              "median": 0.07985914439302776,
+              "minimum": 0.07980196537601984
+            },
+            "capture_transactions_per_group": {
+              "individual": [
+                13.408256880733944,
+                13.426992103374014,
+                13.442177848010344
+              ],
+              "maximum": 13.442177848010344,
+              "median": 13.426992103374014,
+              "minimum": 13.408256880733944
+            },
+            "capture_transactions_s": {
+              "individual": [
+                623.455988342741,
+                623.3399598811145,
+                625.7733483476972
+              ],
+              "maximum": 625.7733483476972,
+              "median": 623.455988342741,
+              "minimum": 623.3399598811145
+            },
+            "cold_apply_ms": {
+              "individual": [
+                532.60447,
+                550.892768,
+                558.105243
+              ],
+              "maximum": 558.105243,
+              "median": 550.892768,
+              "minimum": 532.60447
+            },
+            "cold_imports_ms": {
+              "individual": [
+                238.221662,
+                242.379819,
+                218.631344
+              ],
+              "maximum": 242.379819,
+              "median": 238.221662,
+              "minimum": 218.631344
+            },
+            "cold_requests": {
+              "individual": [
+                7,
+                7,
+                7
+              ],
+              "maximum": 7,
+              "median": 7,
+              "minimum": 7
+            },
+            "commit_to_admission_p95_ms": {
+              "individual": [
+                1645.748,
+                1620.992,
+                1635.497
+              ],
+              "maximum": 1645.748,
+              "median": 1635.497,
+              "minimum": 1620.992
+            },
+            "commit_to_publication_p95_ms": {
+              "individual": [
+                3035.568,
+                3026.555,
+                3041.7
+              ],
+              "maximum": 3041.7,
+              "median": 3035.568,
+              "minimum": 3026.555
+            },
+            "cpu_cores": {
+              "individual": [
+                1.001,
+                1.0,
+                1.001
+              ],
+              "maximum": 1.001,
+              "median": 1.001,
+              "minimum": 1.0
+            },
+            "lag_p95_ms": {
+              "individual": [
+                3035.568,
+                3026.555,
+                3041.7
+              ],
+              "maximum": 3041.7,
+              "median": 3035.568,
+              "minimum": 3026.555
+            },
+            "lag_p99_ms": {
+              "individual": [
+                3350.808,
+                3369.831,
+                3387.267
+              ],
+              "maximum": 3387.267,
+              "median": 3369.831,
+              "minimum": 3350.808
+            },
+            "last_backlog_bytes": {
+              "individual": [
+                171061,
+                192357,
+                166221
+              ],
+              "maximum": 192357,
+              "median": 171061,
+              "minimum": 166221
+            },
+            "peak_backlog_bytes": {
+              "individual": [
+                297869,
+                295130,
+                306262
+              ],
+              "maximum": 306262,
+              "median": 297869,
+              "minimum": 295130
+            },
+            "peak_memory_bytes": {
+              "individual": [
+                2062708736,
+                2036518912,
+                2072801280
+              ],
+              "maximum": 2072801280,
+              "median": 2062708736,
+              "minimum": 2036518912
+            },
+            "prepared_to_publication_p95_ms": {
+              "individual": [
+                1059,
+                1071,
+                1056
+              ],
+              "maximum": 1071,
+              "median": 1059,
+              "minimum": 1056
+            },
+            "source_rows_s": {
+              "individual": [
+                1245.532,
+                1245.229,
+                1249.838
+              ],
+              "maximum": 1249.838,
+              "median": 1245.532,
+              "minimum": 1245.229
+            },
+            "successful_apply_requests": {
+              "individual": [
+                224,
+                224,
+                223
+              ],
+              "maximum": 224,
+              "median": 224,
+              "minimum": 223
+            },
+            "successful_apply_workers": {
+              "individual": [
+                8,
+                8,
+                8
+              ],
+              "maximum": 8,
+              "median": 8,
+              "minimum": 8
+            },
+            "warm_apply_ms": {
+              "individual": [
+                383.67926,
+                381.533829,
+                378.8177475
+              ],
+              "maximum": 383.67926,
+              "median": 381.533829,
+              "minimum": 378.8177475
+            },
+            "warm_requests": {
+              "individual": [
+                217,
+                217,
+                216
+              ],
+              "maximum": 217,
+              "median": 217,
+              "minimum": 216
+            },
+            "worker_start_to_prepared_p95_ms": {
+              "individual": [
+                424,
+                433,
+                416
+              ],
+              "maximum": 433,
+              "median": 424,
+              "minimum": 416
+            },
+            "worker_streams": {
+              "individual": [
+                283,
+                283,
+                282
+              ],
+              "maximum": 283,
+              "median": 283,
+              "minimum": 282
+            }
+          },
+          "trials": 3
+        },
+        "predecessor": {
+          "fresh": 3,
+          "input_met": 3,
+          "measured": 3,
+          "metrics": {
+            "admission_to_worker_start_p95_ms": {
+              "individual": [
+                126,
+                126,
+                128
+              ],
+              "maximum": 128,
+              "median": 126,
+              "minimum": 126
+            },
+            "apply_directory_ms": {
+              "individual": [
+                10.752908,
+                10.675328,
+                10.731391
+              ],
+              "maximum": 10.752908,
+              "median": 10.731391,
+              "minimum": 10.675328
+            },
+            "apply_merge_ms": {
+              "individual": [
+                17.539781,
+                17.5898405,
+                17.340525
+              ],
+              "maximum": 17.5898405,
+              "median": 17.539781,
+              "minimum": 17.340525
+            },
+            "apply_run_ms": {
+              "individual": [
+                381.606658,
+                380.69147150000003,
+                383.793744
+              ],
+              "maximum": 383.793744,
+              "median": 381.606658,
+              "minimum": 380.69147150000003
+            },
+            "baseline_rows_s": {
+              "individual": [
+                1247.189,
+                1248.075,
+                1248.547
+              ],
+              "maximum": 1248.547,
+              "median": 1248.075,
+              "minimum": 1247.189
+            },
+            "capture_commit_ms": {
+              "individual": [
+                7.937816754280998,
+                7.879947048208424,
+                7.958506010863586
+              ],
+              "maximum": 7.958506010863586,
+              "median": 7.937816754280998,
+              "minimum": 7.879947048208424
+            },
+            "capture_durable_ms_per_transaction": {
+              "individual": [
+                0.6187914792929861,
+                0.6157136212151166,
+                0.6196552981717927
+              ],
+              "maximum": 0.6196552981717927,
+              "median": 0.6187914792929861,
+              "minimum": 0.6157136212151166
+            },
+            "capture_observed_upper_bound_p95_ms": {
+              "individual": [
+                113.652,
+                113.947,
+                113.482
+              ],
+              "maximum": 113.947,
+              "median": 113.652,
+              "minimum": 113.482
+            },
+            "capture_syncs_per_commit": {
+              "individual": [
+                1.0187057286293928,
+                1.0188730853391685,
+                1.018976897689769
+              ],
+              "maximum": 1.018976897689769,
+              "median": 1.0188730853391685,
+              "minimum": 1.0187057286293928
+            },
+            "capture_syncs_per_transaction": {
+              "individual": [
+                0.0794130734301537,
+                0.07961145336318318,
+                0.07933831205332048
+              ],
+              "maximum": 0.07961145336318318,
+              "median": 0.0794130734301537,
+              "minimum": 0.07933831205332048
+            },
+            "capture_transactions_per_group": {
+              "individual": [
+                13.093570124947354,
+                13.061553492916463,
+                13.110261089275689
+              ],
+              "maximum": 13.110261089275689,
+              "median": 13.093570124947354,
+              "minimum": 13.061553492916463
+            },
+            "capture_transactions_s": {
+              "individual": [
+                623.7301394731484,
+                625.8294978125724,
+                622.5327578504601
+              ],
+              "maximum": 625.8294978125724,
+              "median": 623.7301394731484,
+              "minimum": 622.5327578504601
+            },
+            "cold_apply_ms": {
+              "individual": [
+                540.859336,
+                558.406199,
+                576.867133
+              ],
+              "maximum": 576.867133,
+              "median": 558.406199,
+              "minimum": 540.859336
+            },
+            "cold_imports_ms": {
+              "individual": [
+                217.223018,
+                216.085214,
+                215.890524
+              ],
+              "maximum": 217.223018,
+              "median": 216.085214,
+              "minimum": 215.890524
+            },
+            "cold_requests": {
+              "individual": [
+                7,
+                7,
+                7
+              ],
+              "maximum": 7,
+              "median": 7,
+              "minimum": 7
+            },
+            "commit_to_admission_p95_ms": {
+              "individual": [
+                1635.694,
+                1653.117,
+                1662.804
+              ],
+              "maximum": 1662.804,
+              "median": 1653.117,
+              "minimum": 1635.694
+            },
+            "commit_to_publication_p95_ms": {
+              "individual": [
+                3041.524,
+                3050.471,
+                3088.297
+              ],
+              "maximum": 3088.297,
+              "median": 3050.471,
+              "minimum": 3041.524
+            },
+            "cpu_cores": {
+              "individual": [
+                0.998,
+                1.0,
+                0.999
+              ],
+              "maximum": 1.0,
+              "median": 0.999,
+              "minimum": 0.998
+            },
+            "lag_p95_ms": {
+              "individual": [
+                3041.524,
+                3050.471,
+                3088.297
+              ],
+              "maximum": 3088.297,
+              "median": 3050.471,
+              "minimum": 3041.524
+            },
+            "lag_p99_ms": {
+              "individual": [
+                3399.918,
+                3425.528,
+                3496.3
+              ],
+              "maximum": 3496.3,
+              "median": 3425.528,
+              "minimum": 3399.918
+            },
+            "last_backlog_bytes": {
+              "individual": [
+                164769,
+                156541,
+                133507
+              ],
+              "maximum": 164769,
+              "median": 156541,
+              "minimum": 133507
+            },
+            "peak_backlog_bytes": {
+              "individual": [
+                296582,
+                325467,
+                328086
+              ],
+              "maximum": 328086,
+              "median": 325467,
+              "minimum": 296582
+            },
+            "peak_memory_bytes": {
+              "individual": [
+                2096713728,
+                2140270592,
+                2101014528
+              ],
+              "maximum": 2140270592,
+              "median": 2101014528,
+              "minimum": 2096713728
+            },
+            "prepared_to_publication_p95_ms": {
+              "individual": [
+                1066,
+                1067,
+                1074
+              ],
+              "maximum": 1074,
+              "median": 1067,
+              "minimum": 1066
+            },
+            "source_rows_s": {
+              "individual": [
+                1245.592,
+                1249.624,
+                1244.434
+              ],
+              "maximum": 1249.624,
+              "median": 1245.592,
+              "minimum": 1244.434
+            },
+            "successful_apply_requests": {
+              "individual": [
+                223,
+                224,
+                223
+              ],
+              "maximum": 224,
+              "median": 223,
+              "minimum": 223
+            },
+            "successful_apply_workers": {
+              "individual": [
+                8,
+                8,
+                8
+              ],
+              "maximum": 8,
+              "median": 8,
+              "minimum": 8
+            },
+            "warm_apply_ms": {
+              "individual": [
+                380.461786,
+                379.06781,
+                382.12135
+              ],
+              "maximum": 382.12135,
+              "median": 380.461786,
+              "minimum": 379.06781
+            },
+            "warm_requests": {
+              "individual": [
+                216,
+                217,
+                216
+              ],
+              "maximum": 217,
+              "median": 216,
+              "minimum": 216
+            },
+            "worker_start_to_prepared_p95_ms": {
+              "individual": [
+                429,
+                423,
+                423
+              ],
+              "maximum": 429,
+              "median": 423,
+              "minimum": 423
+            },
+            "worker_streams": {
+              "individual": [
+                282,
+                283,
+                282
+              ],
+              "maximum": 283,
+              "median": 282,
+              "minimum": 282
+            }
+          },
+          "trials": 3
+        }
+      },
+      "cpus": 16,
+      "paired_percent": {
+        "admission_to_worker_start_p95_ms": {
+          "individual": [
+            -3.9682539682539653,
+            0.7936507936507908,
+            -4.6875
+          ],
+          "maximum": 0.7936507936507908,
+          "median": -3.9682539682539653,
+          "minimum": -4.6875
+        },
+        "apply_directory_ms": {
+          "individual": [
+            1.274264598934538,
+            -0.8527278974472696,
+            -1.9006203389663079
+          ],
+          "maximum": 1.274264598934538,
+          "median": -0.8527278974472696,
+          "minimum": -1.9006203389663079
+        },
+        "apply_merge_ms": {
+          "individual": [
+            -0.2730706842919095,
+            -0.6661743180672919,
+            0.648786585181238
+          ],
+          "maximum": 0.648786585181238,
+          "median": -0.2730706842919095,
+          "minimum": -0.6661743180672919
+        },
+        "apply_run_ms": {
+          "individual": [
+            2.101219235016605,
+            0.39774452893146517,
+            -0.1590638225723695
+          ],
+          "maximum": 2.101219235016605,
+          "median": 0.39774452893146517,
+          "minimum": -0.1590638225723695
+        },
+        "baseline_rows_s": {
+          "individual": [
+            -0.16605342093301,
+            -0.03741762313964614,
+            -0.0008009310021983573
+          ],
+          "maximum": -0.0008009310021983573,
+          "median": -0.03741762313964614,
+          "minimum": -0.16605342093301
+        },
+        "capture_commit_ms": {
+          "individual": [
+            -0.3622734812159134,
+            0.6412929848388149,
+            -0.795704335233105
+          ],
+          "maximum": 0.6412929848388149,
+          "median": -0.3622734812159134,
+          "minimum": -0.795704335233105
+        },
+        "capture_durable_ms_per_transaction": {
+          "individual": [
+            0.292448624819186,
+            0.9198783275360833,
+            -0.2579666596862151
+          ],
+          "maximum": 0.9198783275360833,
+          "median": 0.292448624819186,
+          "minimum": -0.2579666596862151
+        },
+        "capture_observed_upper_bound_p95_ms": {
+          "individual": [
+            3.0470207299475582,
+            2.4695691856740254,
+            2.846266368234618
+          ],
+          "maximum": 3.0470207299475582,
+          "median": 2.846266368234618,
+          "minimum": 2.4695691856740254
+        },
+        "capture_syncs_per_commit": {
+          "individual": [
+            -0.0038879686121373602,
+            -0.0374043721477757,
+            0.1138024899476342
+          ],
+          "maximum": 0.1138024899476342,
+          "median": -0.0038879686121373602,
+          "minimum": -0.0374043721477757
+        },
+        "capture_syncs_per_transaction": {
+          "individual": [
+            0.6531890979964317,
+            0.23930226718453795,
+            0.6564701544913731
+          ],
+          "maximum": 0.6564701544913731,
+          "median": 0.6531890979964317,
+          "minimum": 0.23930226718453795
+        },
+        "capture_transactions_per_group": {
+          "individual": [
+            2.40336862126711,
+            2.7978188862123776,
+            2.5317326365541737
+          ],
+          "maximum": 2.7978188862123776,
+          "median": 2.5317326365541737,
+          "minimum": 2.40336862126711
+        },
+        "capture_transactions_s": {
+          "individual": [
+            -0.04395348453724024,
+            -0.39779811277024235,
+            0.5205493938064354
+          ],
+          "maximum": 0.5205493938064354,
+          "median": -0.04395348453724024,
+          "minimum": -0.39779811277024235
+        },
+        "cold_apply_ms": {
+          "individual": [
+            -1.526250071053592,
+            -1.345513537180476,
+            -3.252376314529948
+          ],
+          "maximum": -1.345513537180476,
+          "median": -1.526250071053592,
+          "minimum": -3.252376314529948
+        },
+        "cold_imports_ms": {
+          "individual": [
+            9.666859522226146,
+            12.1686276044783,
+            1.2695415941461174
+          ],
+          "maximum": 12.1686276044783,
+          "median": 9.666859522226146,
+          "minimum": 1.2695415941461174
+        },
+        "cold_requests": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "commit_to_admission_p95_ms": {
+          "individual": [
+            0.6146626447245174,
+            -1.9432986291956333,
+            -1.6422260230309793
+          ],
+          "maximum": 0.6146626447245174,
+          "median": -1.6422260230309793,
+          "minimum": -1.9432986291956333
+        },
+        "commit_to_publication_p95_ms": {
+          "individual": [
+            -0.19582288352811839,
+            -0.7840100758210844,
+            -1.5088250903329659
+          ],
+          "maximum": -0.19582288352811839,
+          "median": -0.7840100758210844,
+          "minimum": -1.5088250903329659
+        },
+        "cpu_cores": {
+          "individual": [
+            0.30060120240480437,
+            0.0,
+            0.2002002002001957
+          ],
+          "maximum": 0.30060120240480437,
+          "median": 0.2002002002001957,
+          "minimum": 0.0
+        },
+        "lag_p95_ms": {
+          "individual": [
+            -0.19582288352811839,
+            -0.7840100758210844,
+            -1.5088250903329659
+          ],
+          "maximum": -0.19582288352811839,
+          "median": -0.7840100758210844,
+          "minimum": -1.5088250903329659
+        },
+        "lag_p99_ms": {
+          "individual": [
+            -1.4444466013592172,
+            -1.6259391252968824,
+            -3.118525298172359
+          ],
+          "maximum": -1.4444466013592172,
+          "median": -1.6259391252968824,
+          "minimum": -3.118525298172359
+        },
+        "last_backlog_bytes": {
+          "individual": [
+            3.8186794846117866,
+            22.87962897898952,
+            24.503584081733543
+          ],
+          "maximum": 24.503584081733543,
+          "median": 22.87962897898952,
+          "minimum": 3.8186794846117866
+        },
+        "peak_backlog_bytes": {
+          "individual": [
+            0.433944069431047,
+            -9.321067880921873,
+            -6.65191443706833
+          ],
+          "maximum": 0.433944069431047,
+          "median": -6.65191443706833,
+          "minimum": -9.321067880921873
+        },
+        "peak_memory_bytes": {
+          "individual": [
+            -1.621823310730952,
+            -4.847596392148157,
+            -1.342839262842066
+          ],
+          "maximum": -1.342839262842066,
+          "median": -1.621823310730952,
+          "minimum": -4.847596392148157
+        },
+        "prepared_to_publication_p95_ms": {
+          "individual": [
+            -0.65666041275797,
+            0.37488284910964786,
+            -1.6759776536312887
+          ],
+          "maximum": 0.37488284910964786,
+          "median": -0.65666041275797,
+          "minimum": -1.6759776536312887
+        },
+        "source_rows_s": {
+          "individual": [
+            -0.004816986621636321,
+            -0.35170579310256356,
+            0.43425364462881255
+          ],
+          "maximum": 0.43425364462881255,
+          "median": -0.004816986621636321,
+          "minimum": -0.35170579310256356
+        },
+        "successful_apply_requests": {
+          "individual": [
+            0.4484304932735439,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.4484304932735439,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "successful_apply_workers": {
+          "individual": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "warm_apply_ms": {
+          "individual": [
+            0.8456759964849514,
+            0.6505482488740055,
+            -0.8645427689397689
+          ],
+          "maximum": 0.8456759964849514,
+          "median": 0.6505482488740055,
+          "minimum": -0.8645427689397689
+        },
+        "warm_requests": {
+          "individual": [
+            0.4629629629629539,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.4629629629629539,
+          "median": 0.0,
+          "minimum": 0.0
+        },
+        "worker_start_to_prepared_p95_ms": {
+          "individual": [
+            -1.1655011655011704,
+            2.3640661938534313,
+            -1.654846335697402
+          ],
+          "maximum": 2.3640661938534313,
+          "median": -1.1655011655011704,
+          "minimum": -1.654846335697402
+        },
+        "worker_streams": {
+          "individual": [
+            0.35460992907800915,
+            0.0,
+            0.0
+          ],
+          "maximum": 0.35460992907800915,
+          "median": 0.0,
+          "minimum": 0.0
+        }
+      },
+      "rate": 1250
+    }
+  ],
+  "experiment_sha256": "22b5b4e3c96095cf69aaeff477ec1d0456b898f72ef8928d378636a1b89eca25",
+  "review_script_sha256": "76dc1fa89b0a70d725e03a555993976fbaed9e09f747d5b57b75e3d69a63777e",
+  "trials": [
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 16,
+      "directory": "01-attempt01-candidate",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "1c3d34528d640b075c67f71d55f8d7838096692b760306f8a7d4179a05b5e3b6",
+        "01-cpu16-rate1250-r1/profile.json.gz": "540d8b3f91280ff209ae51324cd51271eba9a1610fbf5c45517c4dbb6b7629f6",
+        "01-cpu16-rate1250-r1/trial.json": "dfa13626d337538e2a609005ff6bcd274e24ad8374eda168ffdea54e50570c1d",
+        "matrix.json": "7b5b498b155a2e0ebcfa3ecc785ad52338888b348592e15fc57f207e08edbabc"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        0,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 1,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 121,
+        "apply_directory_ms": 10.8899285,
+        "apply_merge_ms": 17.491885,
+        "apply_run_ms": 389.62505050000004,
+        "baseline_rows_s": 1245.118,
+        "capture_commit_ms": 7.909060149192724,
+        "capture_durable_ms_per_transaction": 0.6206011264646767,
+        "capture_observed_upper_bound_p95_ms": 117.115,
+        "capture_syncs_per_commit": 1.0186661216704136,
+        "capture_syncs_per_transaction": 0.07993179096818337,
+        "capture_transactions_per_group": 13.408256880733944,
+        "capture_transactions_s": 623.455988342741,
+        "cold_apply_ms": 532.60447,
+        "cold_imports_ms": 238.221662,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1645.748,
+        "commit_to_publication_p95_ms": 3035.568,
+        "cpu_cores": 1.001,
+        "lag_p95_ms": 3035.568,
+        "lag_p99_ms": 3350.808,
+        "last_backlog_bytes": 171061,
+        "peak_backlog_bytes": 297869,
+        "peak_memory_bytes": 2062708736,
+        "prepared_to_publication_p95_ms": 1059,
+        "source_rows_s": 1245.532,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 383.67926,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 424,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 16,
+      "directory": "01-attempt01-predecessor",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "cf26614507ac78d53b43f3bee11e5239302c7ccdab132f0b4f0517f050cdfcfb",
+        "01-cpu16-rate1250-r1/profile.json.gz": "a997b3ef11e8c2d8372d358bbadf0f1423d9ffff62100ffc220ca3a91d37224a",
+        "01-cpu16-rate1250-r1/trial.json": "c3a86deb527ac3cd1e3c93871ae3625cd986a88ddbcc5c0081b343c61765314a",
+        "matrix.json": "e7a83a1f5c9f46c4a53217f5b36c75e876ae42dd9033cabd027f2b5861e4278e"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        0,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 1,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 126,
+        "apply_directory_ms": 10.752908,
+        "apply_merge_ms": 17.539781,
+        "apply_run_ms": 381.606658,
+        "baseline_rows_s": 1247.189,
+        "capture_commit_ms": 7.937816754280998,
+        "capture_durable_ms_per_transaction": 0.6187914792929861,
+        "capture_observed_upper_bound_p95_ms": 113.652,
+        "capture_syncs_per_commit": 1.0187057286293928,
+        "capture_syncs_per_transaction": 0.0794130734301537,
+        "capture_transactions_per_group": 13.093570124947354,
+        "capture_transactions_s": 623.7301394731484,
+        "cold_apply_ms": 540.859336,
+        "cold_imports_ms": 217.223018,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1635.694,
+        "commit_to_publication_p95_ms": 3041.524,
+        "cpu_cores": 0.998,
+        "lag_p95_ms": 3041.524,
+        "lag_p99_ms": 3399.918,
+        "last_backlog_bytes": 164769,
+        "peak_backlog_bytes": 296582,
+        "peak_memory_bytes": 2096713728,
+        "prepared_to_publication_p95_ms": 1066,
+        "source_rows_s": 1245.592,
+        "successful_apply_requests": 223,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 380.461786,
+        "warm_requests": 216,
+        "worker_start_to_prepared_p95_ms": 429,
+        "worker_streams": 282
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 16,
+      "directory": "02-attempt02-candidate",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "7f4a1484db977ba2a2c020a5e355b50fb16dae6c03fa420dcb69989b9d351c35",
+        "01-cpu16-rate1250-r1/profile.json.gz": "9790e5f7c604531c2329c3f7a363da947203157bdbacd25f8810d8ccb54d2c3e",
+        "01-cpu16-rate1250-r1/trial.json": "33640588655f19f0490b602b802b96fcc910d744429585ca60ff7c29f5099e41",
+        "matrix.json": "2b211c68d21b9822008062786a8ef6c7c59a055c910bc9c87bd7474c9966006a"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        1,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 3,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 127,
+        "apply_directory_ms": 10.5842965,
+        "apply_merge_ms": 17.4726615,
+        "apply_run_ms": 382.205651,
+        "baseline_rows_s": 1247.608,
+        "capture_commit_ms": 7.930480595837598,
+        "capture_durable_ms_per_transaction": 0.6213774373763621,
+        "capture_observed_upper_bound_p95_ms": 116.761,
+        "capture_syncs_per_commit": 1.0184919822586147,
+        "capture_syncs_per_transaction": 0.07980196537601984,
+        "capture_transactions_per_group": 13.426992103374014,
+        "capture_transactions_s": 623.3399598811145,
+        "cold_apply_ms": 550.892768,
+        "cold_imports_ms": 242.379819,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1620.992,
+        "commit_to_publication_p95_ms": 3026.555,
+        "cpu_cores": 1.0,
+        "lag_p95_ms": 3026.555,
+        "lag_p99_ms": 3369.831,
+        "last_backlog_bytes": 192357,
+        "peak_backlog_bytes": 295130,
+        "peak_memory_bytes": 2036518912,
+        "prepared_to_publication_p95_ms": 1071,
+        "source_rows_s": 1245.229,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 381.533829,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 433,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 16,
+      "directory": "02-attempt02-predecessor",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "0e931c7662f5b9c6ac41065d4f91869bf4b781fdd03154de5dd93d4ad49eec20",
+        "01-cpu16-rate1250-r1/profile.json.gz": "8c0975c159e54d7970726c1d7f4c82f15c55b855e2be737d9b9bc5059244deb9",
+        "01-cpu16-rate1250-r1/trial.json": "4c08e96dfd1d093b7159070b715a2f41ce25da9f1640c4131db94b0bdb5b2853",
+        "matrix.json": "213958408af7511f00fd76e981755c03c7a758fe5768e97a8c5f366fe9951a27"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        1,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 3,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 126,
+        "apply_directory_ms": 10.675328,
+        "apply_merge_ms": 17.5898405,
+        "apply_run_ms": 380.69147150000003,
+        "baseline_rows_s": 1248.075,
+        "capture_commit_ms": 7.879947048208424,
+        "capture_durable_ms_per_transaction": 0.6157136212151166,
+        "capture_observed_upper_bound_p95_ms": 113.947,
+        "capture_syncs_per_commit": 1.0188730853391685,
+        "capture_syncs_per_transaction": 0.07961145336318318,
+        "capture_transactions_per_group": 13.061553492916463,
+        "capture_transactions_s": 625.8294978125724,
+        "cold_apply_ms": 558.406199,
+        "cold_imports_ms": 216.085214,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1653.117,
+        "commit_to_publication_p95_ms": 3050.471,
+        "cpu_cores": 1.0,
+        "lag_p95_ms": 3050.471,
+        "lag_p99_ms": 3425.528,
+        "last_backlog_bytes": 156541,
+        "peak_backlog_bytes": 325467,
+        "peak_memory_bytes": 2140270592,
+        "prepared_to_publication_p95_ms": 1067,
+        "source_rows_s": 1249.624,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 379.06781,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 423,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 8,
+      "directory": "03-attempt03-candidate",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "1c3d34528d640b075c67f71d55f8d7838096692b760306f8a7d4179a05b5e3b6",
+        "01-cpu8-rate1250-r1/profile.json.gz": "53e440b02d4d07d87ee4a13a22586a04874f250cf8382feeed8892c55c028a5c",
+        "01-cpu8-rate1250-r1/trial.json": "5bfb15e2197a5eefcc12af4754981926768cdf4ad432848c49c49a9447e06998",
+        "matrix.json": "ab556d9be812d3ea219637ac6c96dcc893ec43655176bfb9fd5f6a5272c393ab"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        2,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 3,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 117,
+        "apply_directory_ms": 10.743829999999999,
+        "apply_merge_ms": 16.9934875,
+        "apply_run_ms": 390.5905935,
+        "baseline_rows_s": 1247.558,
+        "capture_commit_ms": 7.778072559981098,
+        "capture_durable_ms_per_transaction": 0.6177998811281804,
+        "capture_observed_upper_bound_p95_ms": 115.97,
+        "capture_syncs_per_commit": 1.0184972659150746,
+        "capture_syncs_per_transaction": 0.08089761119601062,
+        "capture_transactions_per_group": 13.237862010221464,
+        "capture_transactions_s": 621.5255259580199,
+        "cold_apply_ms": 573.476902,
+        "cold_imports_ms": 221.459259,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1631.186,
+        "commit_to_publication_p95_ms": 3031.675,
+        "cpu_cores": 1.037,
+        "lag_p95_ms": 3031.675,
+        "lag_p99_ms": 3365.028,
+        "last_backlog_bytes": 103136,
+        "peak_backlog_bytes": 308682,
+        "peak_memory_bytes": 2024611840,
+        "prepared_to_publication_p95_ms": 1049,
+        "source_rows_s": 1241.88,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 388.865448,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 426,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 8,
+      "directory": "03-attempt03-predecessor",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "0ce8d129fa0c879af791f762a78dc40d3ef177415a3bb58ba2334e06dfc84b9a",
+        "01-cpu8-rate1250-r1/profile.json.gz": "33256558a875f7ce4408ee8cb5dedda57d221034de260bbfc1c3498f7a0565f8",
+        "01-cpu8-rate1250-r1/trial.json": "ef1eb0c6bbdb7d370cb19ee62357aca305649335009e4dbb3c9548826e8318ea",
+        "matrix.json": "aee6fbc856df017e1f476ad0d90c52bfe7553805b8112d77f48011a81560f34a"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        2,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 3,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 122,
+        "apply_directory_ms": 10.58004,
+        "apply_merge_ms": 17.0705935,
+        "apply_run_ms": 383.1917905,
+        "baseline_rows_s": 1178.233,
+        "capture_commit_ms": 7.753887440029833,
+        "capture_durable_ms_per_transaction": 0.6095800064656092,
+        "capture_observed_upper_bound_p95_ms": 113.288,
+        "capture_syncs_per_commit": 1.0173571089565394,
+        "capture_syncs_per_transaction": 0.0799805978423095,
+        "capture_transactions_per_group": 12.980557669687954,
+        "capture_transactions_s": 625.2426474300212,
+        "cold_apply_ms": 543.891111,
+        "cold_imports_ms": 219.413752,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1634.389,
+        "commit_to_publication_p95_ms": 3036.825,
+        "cpu_cores": 1.039,
+        "lag_p95_ms": 3036.825,
+        "lag_p99_ms": 3402.974,
+        "last_backlog_bytes": 143957,
+        "peak_backlog_bytes": 304326,
+        "peak_memory_bytes": 2060607488,
+        "prepared_to_publication_p95_ms": 1053,
+        "source_rows_s": 1249.286,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 380.016029,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 429,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 8,
+      "directory": "04-attempt04-candidate",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "0a06be07c1c2795ed1487e12d1a718377cc6977dbdd8114c88f0a56a5dd39f2d",
+        "01-cpu8-rate1250-r1/profile.json.gz": "6bcf12ef184c48aa880e9994caa8d9af96054a8e48c3ebeae872022de9a70ea4",
+        "01-cpu8-rate1250-r1/trial.json": "763b0702be421485087372cc0a8f11801cfce59337800ff5f59356c1117e8b12",
+        "matrix.json": "accecba113abdb857bb6a5d69ad4a6b2d77ae468dbdd567cf0f916dcc60262b8"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        3,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 2,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 123,
+        "apply_directory_ms": 10.211903,
+        "apply_merge_ms": 16.950471,
+        "apply_run_ms": 384.80652150000003,
+        "baseline_rows_s": 1247.593,
+        "capture_commit_ms": 7.810650207226138,
+        "capture_durable_ms_per_transaction": 0.6184428823687276,
+        "capture_observed_upper_bound_p95_ms": 115.986,
+        "capture_syncs_per_commit": 1.0197939262472886,
+        "capture_syncs_per_transaction": 0.08074670846058472,
+        "capture_transactions_per_group": 13.278526120732664,
+        "capture_transactions_s": 620.9161862889573,
+        "cold_apply_ms": 535.981538,
+        "cold_imports_ms": 221.131152,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1657.897,
+        "commit_to_publication_p95_ms": 3058.82,
+        "cpu_cores": 1.034,
+        "lag_p95_ms": 3058.82,
+        "lag_p99_ms": 3393.309,
+        "last_backlog_bytes": 106282,
+        "peak_backlog_bytes": 304326,
+        "peak_memory_bytes": 2025639936,
+        "prepared_to_publication_p95_ms": 1049,
+        "source_rows_s": 1240.82,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 382.515373,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 437,
+        "worker_streams": 284
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "predecessor",
+        "candidate"
+      ],
+      "cpus": 8,
+      "directory": "04-attempt04-predecessor",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "eae31a7039f21f044187522a273e11905e9fb992e74543d7a01b0afacd6b5b63",
+        "01-cpu8-rate1250-r1/profile.json.gz": "7d23737760f0f4f53825558ae0f013c4d34b49691aa951165ba1b8474c6848c4",
+        "01-cpu8-rate1250-r1/trial.json": "a70b25327085c0355a5cbe9b5cc8e410b3e20ed4d0055815ef2feec20cdb5487",
+        "matrix.json": "67d8818bc1b7be99b7d23fb6f26b568177d8eb2f158e793a5dc7928f4c1435aa"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        3,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 2,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 133,
+        "apply_directory_ms": 10.335819,
+        "apply_merge_ms": 16.917653,
+        "apply_run_ms": 384.585392,
+        "baseline_rows_s": 1247.511,
+        "capture_commit_ms": 7.866624210216378,
+        "capture_durable_ms_per_transaction": 0.616410803783749,
+        "capture_observed_upper_bound_p95_ms": 113.653,
+        "capture_syncs_per_commit": 1.0192413037523966,
+        "capture_syncs_per_transaction": 0.07986543331759453,
+        "capture_transactions_per_group": 13.025999440872239,
+        "capture_transactions_s": 621.1215183868812,
+        "cold_apply_ms": 530.784656,
+        "cold_imports_ms": 220.131824,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1638.481,
+        "commit_to_publication_p95_ms": 3047.28,
+        "cpu_cores": 1.027,
+        "lag_p95_ms": 3047.28,
+        "lag_p99_ms": 3411.683,
+        "last_backlog_bytes": 89100,
+        "peak_backlog_bytes": 295019,
+        "peak_memory_bytes": 2050859008,
+        "prepared_to_publication_p95_ms": 1058,
+        "source_rows_s": 1241.298,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 382.11559,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 453,
+        "worker_streams": 283
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 16,
+      "directory": "05-attempt05-candidate",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "cf26614507ac78d53b43f3bee11e5239302c7ccdab132f0b4f0517f050cdfcfb",
+        "01-cpu16-rate1250-r1/profile.json.gz": "055c51b1b4349630b51969877e7f5fc709cc3c9f7e0abf218f64bbff02a0ebd5",
+        "01-cpu16-rate1250-r1/trial.json": "60a35945aaffdd92ad107a55447b38a5c24f081735082bdd6848c631ff8dc625",
+        "matrix.json": "b7aaf2c030b8ee4b65324bcbca47f6d28d6a1135b6e7b7b68c08758cea7d8dce"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        4,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 2,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 122,
+        "apply_directory_ms": 10.527428,
+        "apply_merge_ms": 17.453028,
+        "apply_run_ms": 383.183267,
+        "baseline_rows_s": 1248.537,
+        "capture_commit_ms": 7.895179833515358,
+        "capture_durable_ms_per_transaction": 0.6180567940975302,
+        "capture_observed_upper_bound_p95_ms": 116.712,
+        "capture_syncs_per_commit": 1.0201365187713312,
+        "capture_syncs_per_transaction": 0.07985914439302776,
+        "capture_transactions_per_group": 13.442177848010344,
+        "capture_transactions_s": 625.7733483476972,
+        "cold_apply_ms": 558.105243,
+        "cold_imports_ms": 218.631344,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1635.497,
+        "commit_to_publication_p95_ms": 3041.7,
+        "cpu_cores": 1.001,
+        "lag_p95_ms": 3041.7,
+        "lag_p99_ms": 3387.267,
+        "last_backlog_bytes": 166221,
+        "peak_backlog_bytes": 306262,
+        "peak_memory_bytes": 2072801280,
+        "prepared_to_publication_p95_ms": 1056,
+        "source_rows_s": 1249.838,
+        "successful_apply_requests": 223,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 378.8177475,
+        "warm_requests": 216,
+        "worker_start_to_prepared_p95_ms": 416,
+        "worker_streams": 282
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 16,
+      "directory": "05-attempt05-predecessor",
+      "evidence_sha256": {
+        "01-cpu16-rate1250-r1/cleanup.json": "1db7e41d9fc131c111bf96dcbbb6e36aba535b0a08ba0b8b75f5104ac9cc780d",
+        "01-cpu16-rate1250-r1/profile.json.gz": "1d3720ceb3b9ff2c4093c664c7770b84e57236580181fe9890baebe2daf5bfe6",
+        "01-cpu16-rate1250-r1/trial.json": "30f2f78175fb2a285e7689c79245c8f682609b6c3375a1ef9ef4b51b37d6c072",
+        "matrix.json": "28001fd78964e2acd84a58ac12e636d396630fae79de0f48841761150b36c478"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        4,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 2,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 128,
+        "apply_directory_ms": 10.731391,
+        "apply_merge_ms": 17.340525,
+        "apply_run_ms": 383.793744,
+        "baseline_rows_s": 1248.547,
+        "capture_commit_ms": 7.958506010863586,
+        "capture_durable_ms_per_transaction": 0.6196552981717927,
+        "capture_observed_upper_bound_p95_ms": 113.482,
+        "capture_syncs_per_commit": 1.018976897689769,
+        "capture_syncs_per_transaction": 0.07933831205332048,
+        "capture_transactions_per_group": 13.110261089275689,
+        "capture_transactions_s": 622.5327578504601,
+        "cold_apply_ms": 576.867133,
+        "cold_imports_ms": 215.890524,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1662.804,
+        "commit_to_publication_p95_ms": 3088.297,
+        "cpu_cores": 0.999,
+        "lag_p95_ms": 3088.297,
+        "lag_p99_ms": 3496.3,
+        "last_backlog_bytes": 133507,
+        "peak_backlog_bytes": 328086,
+        "peak_memory_bytes": 2101014528,
+        "prepared_to_publication_p95_ms": 1074,
+        "source_rows_s": 1244.434,
+        "successful_apply_requests": 223,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 382.12135,
+        "warm_requests": 216,
+        "worker_start_to_prepared_p95_ms": 423,
+        "worker_streams": 282
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "candidate",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 8,
+      "directory": "06-attempt06-candidate",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "1c3d34528d640b075c67f71d55f8d7838096692b760306f8a7d4179a05b5e3b6",
+        "01-cpu8-rate1250-r1/profile.json.gz": "77e5ea7089dbb1775bd0f95e7eb3407976a32a515b9d1a1d2b7f1b1f9d899fb6",
+        "01-cpu8-rate1250-r1/trial.json": "85ec2ef0469b4b4dd165bf2cde7ec6f58c4b357da1d457190f79afe1c8e169a2",
+        "matrix.json": "c2de2e02546c3038284b743bb218a15f511617fd7ce91d4eca46af028a08ca3e"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        5,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 1,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 119,
+        "apply_directory_ms": 10.681621,
+        "apply_merge_ms": 17.0545575,
+        "apply_run_ms": 385.910985,
+        "baseline_rows_s": 1247.541,
+        "capture_commit_ms": 7.824616725756138,
+        "capture_durable_ms_per_transaction": 0.61915053654584,
+        "capture_observed_upper_bound_p95_ms": 117.218,
+        "capture_syncs_per_commit": 1.0198019801980198,
+        "capture_syncs_per_transaction": 0.08069544686217166,
+        "capture_transactions_per_group": 13.293030886653828,
+        "capture_transactions_s": 621.0650064998928,
+        "cold_apply_ms": 539.097391,
+        "cold_imports_ms": 219.882083,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1647.489,
+        "commit_to_publication_p95_ms": 3030.447,
+        "cpu_cores": 1.036,
+        "lag_p95_ms": 3030.447,
+        "lag_p99_ms": 3373.229,
+        "last_backlog_bytes": 188848,
+        "peak_backlog_bytes": 305415,
+        "peak_memory_bytes": 1975836672,
+        "prepared_to_publication_p95_ms": 1051,
+        "source_rows_s": 1242.234,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 383.979407,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 439,
+        "worker_streams": 282
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "predecessor",
+      "arms": [
+        "candidate",
+        "predecessor"
+      ],
+      "cpus": 8,
+      "directory": "06-attempt06-predecessor",
+      "evidence_sha256": {
+        "01-cpu8-rate1250-r1/cleanup.json": "6dc8e45bb0f6fc1fcf0560131d609be0275bf961c9979d440db430798a4fcc9f",
+        "01-cpu8-rate1250-r1/profile.json.gz": "f4d7d21a2d303fb2ca1978e9d24119a2369b18ec68cea4aded39616457bbb76b",
+        "01-cpu8-rate1250-r1/trial.json": "0fc2e11e0d1fe5c36164e1b263a2e6f9c48babc2e5d6bc1d76b3b5af68a79f15",
+        "matrix.json": "f44586545257cf9d8173f00dacd465b30dacebe3b9cdf3ab7ef35bc0096383e2"
+      },
+      "fresh": true,
+      "input_met": true,
+      "pair_id": [
+        5,
+        1
+      ],
+      "rate": 1250,
+      "repeat": 1,
+      "rocksdb_write_batch": null,
+      "status": "measured",
+      "values": {
+        "admission_to_worker_start_p95_ms": 121,
+        "apply_directory_ms": 10.6252335,
+        "apply_merge_ms": 16.879742999999998,
+        "apply_run_ms": 388.212846,
+        "baseline_rows_s": 1248.44,
+        "capture_commit_ms": 7.777464414577814,
+        "capture_durable_ms_per_transaction": 0.6102499994510033,
+        "capture_observed_upper_bound_p95_ms": 113.542,
+        "capture_syncs_per_commit": 1.0180014944636913,
+        "capture_syncs_per_transaction": 0.07987634250992724,
+        "capture_transactions_per_group": 13.006239168110918,
+        "capture_transactions_s": 625.2566094703624,
+        "cold_apply_ms": 589.889556,
+        "cold_imports_ms": 223.763797,
+        "cold_requests": 7,
+        "commit_to_admission_p95_ms": 1661.796,
+        "commit_to_publication_p95_ms": 3076.16,
+        "cpu_cores": 1.036,
+        "lag_p95_ms": 3076.16,
+        "lag_p99_ms": 3432.089,
+        "last_backlog_bytes": 152548,
+        "peak_backlog_bytes": 308329,
+        "peak_memory_bytes": 2037805056,
+        "prepared_to_publication_p95_ms": 1057,
+        "source_rows_s": 1249.827,
+        "successful_apply_requests": 224,
+        "successful_apply_workers": 8,
+        "warm_apply_ms": 384.695604,
+        "warm_requests": 217,
+        "worker_start_to_prepared_p95_ms": 432,
+        "worker_streams": 283
+      }
+    }
+  ]
+}

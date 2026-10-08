@@ -410,12 +410,24 @@ fn catalog_seventeen_migration_preserves_roles_and_starts_catalog_access_closed(
 fn catalog_nineteen_migration_adds_no_data_grants_or_admitted_branches() {
     catalog_migration(19);
 }
+#[test]
+fn catalog_thirty_migration_adds_root_lookup_index() {
+    catalog_migration(30);
+}
+
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE sync_storage_roots;").unwrap();
+    db.execute_batch("DROP INDEX publication_storage_generation;")
+        .unwrap();
+    if source_schema < 30 {
+        db.execute_batch("DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run;").unwrap();
+    }
+    if source_schema < 29 {
+        db.execute_batch("DROP TABLE sync_storage_roots;").unwrap();
+    }
     if source_schema < 28 {
         db.execute_batch("DROP TRIGGER sync_service_revoke; DROP TRIGGER sync_source_policy_revoke; DROP TRIGGER sync_run_admission_audit; DROP TRIGGER sync_run_transition_audit; ALTER TABLE identity_principals DROP COLUMN sync_generation;").unwrap();
         db.execute_batch("ALTER TABLE data_grants RENAME TO data_grants_current; CREATE TABLE data_grants (deployment TEXT NOT NULL REFERENCES deployments(id),branch TEXT NOT NULL REFERENCES branches(id),subject TEXT NOT NULL,capability TEXT NOT NULL CHECK(capability IN ('read','write','ddl','copy_source','receive','share')),PRIMARY KEY(deployment,branch,subject,capability)); INSERT INTO data_grants SELECT * FROM data_grants_current; DROP TABLE data_grants_current;").unwrap();
@@ -628,8 +640,8 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=29",
-                [],
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=?1",
+                [supabricks_local::store::SCHEMA_VERSION],
                 |r| r.get::<_, String>(0)
             )
             .unwrap(),
@@ -975,4 +987,9 @@ fn schema_twenty_seven_upgrade_adds_scoped_sync_authority_without_grants() {
 #[test]
 fn catalog_twenty_eight_migration_gates_sync_maintenance_and_recovers_boundaries() {
     catalog_migration(28);
+}
+
+#[test]
+fn catalog_twenty_nine_migration_adds_history_indexes_and_recovers_boundaries() {
+    catalog_migration(29);
 }

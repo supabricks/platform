@@ -10,6 +10,14 @@ use crate::{
 use rusqlite::{OptionalExtension, params};
 use serde_json::{Value, json};
 use supabricks_core::resource::{EpochId, OperationId, ProjectId};
+mod history;
+
+// Shared with the regression test so it measures the production query.
+pub(super) const ROOT_REFERENCED: &str = "SELECT 1 FROM snapshots s JOIN publications p ON p.export_id=s.export_id
+            WHERE s.state IN ('available','unavailable','deleting') AND json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1
+            UNION ALL SELECT 1 FROM incremental_runs r LEFT JOIN publications p ON p.epoch_id=json_extract(r.record,'$.previous_epoch')
+            WHERE r.state IN ('requested','running','ready') AND
+            (coalesce(json_extract(r.record,'$.storage_generation'),r.capture_id)=?1 OR json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1)";
 impl Store {
     pub fn incremental_run(&self, project: ProjectId, id: OperationId) -> Result<Run> {
         let text:String=self.db.query_row("SELECT r.record FROM incremental_runs r JOIN analytical_artifacts a ON a.id=r.id WHERE r.id=?1 AND a.project_id=?2",params![id.to_string(),project.to_string()],|r|r.get(0)).optional()?.ok_or_else(||missing("incremental run in project"))?;
@@ -114,6 +122,19 @@ impl Store {
         }
         self.db.execute_batch("SAVEPOINT incremental_command")?;
         let result = (|| {
+            if let Some(id) = owner {
+                // An expired private receipt must never re-admit work for a
+                // completed parent. Active-parent receipts remain replayable.
+                let parent = self.sync_run(project, id)?;
+                if !matches!(parent.state.as_str(), "queued" | "starting" | "running") {
+                    return Err(conflict("incremental owner is terminal"));
+                }
+            }
+            // Cancellation must first resolve and retain its target/receipt.
+            // Only admission needs space for another execution record.
+            if matches!(command, Command::Apply { .. }) {
+                self.retain_incremental_history()?;
+            }
             let count: i64 =
                 self.db
                     .query_row("SELECT count(*) FROM incremental_requests", [], |r| {
@@ -543,11 +564,10 @@ impl Store {
     pub(crate) fn incremental_root_referenced(&self, root: OperationId) -> Result<bool> {
         // Retained history, leases and catalog bindings keep snapshots non-deleted.
         // The active writer also pins both its source and destination across crashes.
-        Ok(self.db.prepare("SELECT 1 FROM snapshots s JOIN publications p ON p.export_id=s.export_id
-            WHERE s.state IN ('available','unavailable','deleting') AND json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1
-            UNION ALL SELECT 1 FROM incremental_runs r LEFT JOIN publications p ON p.epoch_id=json_extract(r.record,'$.previous_epoch')
-            WHERE r.state IN ('requested','running','ready') AND
-            (coalesce(json_extract(r.record,'$.storage_generation'),r.capture_id)=?1 OR json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1)")?.exists([root.to_string()])?)
+        Ok(self
+            .db
+            .prepare(ROOT_REFERENCED)?
+            .exists([root.to_string()])?)
     }
 }
 pub(crate) fn restore(db: &rusqlite::Connection) -> Result<()> {

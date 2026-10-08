@@ -9,6 +9,27 @@ MAX_ROWS = 16384
 MAX_VALUES = 32*1024*1024
 
 
+def key_columns(columns):
+    keys=[i for i,c in enumerate(columns) if c[0]==1]
+    if not keys or any(columns[i][2] not in (20,21,23) for i in keys):
+        raise CaptureError('integer_primary_key_required')
+    return keys
+
+
+def row_key(row,keys):
+    values=tuple(row[i] for i in keys)
+    if any(type(v) is not int for v in values):raise CaptureError('invalid_primary_key')
+    # Retain scalar single-key plans so in-flight pre-upgrade plans still replay.
+    return values[0] if len(values)==1 else values
+
+
+def key_values(key,keys):
+    values=(key,) if len(keys)==1 else key
+    if not isinstance(values,(list,tuple)) or len(values)!=len(keys) or any(type(v) is not int for v in values):
+        raise CaptureError('invalid_primary_key')
+    return values
+
+
 def value(raw, column):
     if raw is None:return None
     typ,mod=column[2:]
@@ -60,9 +81,8 @@ def changes(payload,schema,end,barrier_prefix=None):
         elif tag in (b'I',b'U',b'D') and begun and not finished:
             oid=str(r.number('I'))
             if oid not in schema:raise CaptureError('schema_changed')
-            columns=schema[oid][3];pk=[i for i,c in enumerate(columns) if c[0]==1]
-            if len(pk)!=1:raise CaptureError('integer_primary_key_required')
-            pk=pk[0];marker=r.take(1);old=new=None
+            columns=schema[oid][3];pk=key_columns(columns)
+            marker=r.take(1);old=new=None
             if tag!=b'I' and marker in (b'K',b'O'):
                 old=tuple_values(r,columns)
                 if tag==b'U':marker=r.take(1)
@@ -70,8 +90,8 @@ def changes(payload,schema,end,barrier_prefix=None):
                 if marker!=b'N':raise CaptureError('invalid_tuple')
                 new=tuple_values(r,columns)
             elif old is None:raise CaptureError('missing_replica_identity')
-            oldkey=(old or new)[pk];newkey=new[pk] if new else None
-            if not isinstance(oldkey,int) or (new is not None and not isinstance(newkey,int)):raise CaptureError('invalid_primary_key')
+            oldkey=row_key(old if old is not None else new,pk)
+            newkey=row_key(new,pk) if new is not None else None
             if tag==b'I' and any(v is UNCHANGED for v in new):raise CaptureError('invalid_unchanged_column')
             result.append((oid,tag,oldkey,newkey,new))
             if len(result)>MAX_ROWS:raise CaptureError('apply_row_budget')

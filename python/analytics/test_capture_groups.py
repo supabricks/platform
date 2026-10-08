@@ -27,7 +27,7 @@ class GroupTests(unittest.TestCase):
 
     def test_group_replay_and_new_suffix_are_atomic(self):
         txs=self.txs();self.spool.append_many(txs[:2])
-        statements=[];self.spool.db.set_trace_callback(statements.append)
+        statements=[];self.spool.backend.db.set_trace_callback(statements.append)
         result=self.spool.append_many(txs)
         self.assertEqual(result['transactions'],1);self.assertEqual(result['captured_lsn'],400)
         self.assertEqual(statements.count('COMMIT'),1)
@@ -57,8 +57,8 @@ class GroupTests(unittest.TestCase):
             space.return_value.f_bavail=0;space.return_value.f_frsize=4096
             with self.assertRaisesRegex(CaptureError,'spool_backpressure'):self.spool.append_many(self.txs())
         self.assertEqual(self.spool.captured,100)
-        pages=self.spool.db.execute('PRAGMA page_count').fetchone()[0]
-        self.spool.db.execute(f'PRAGMA max_page_count={pages+1}')
+        pages=self.spool.backend.db.execute('PRAGMA page_count').fetchone()[0]
+        self.spool.backend.db.execute(f'PRAGMA max_page_count={pages+1}')
         with self.assertRaises(sqlite3.OperationalError):
             self.spool.append_many([(180,200,b'a'),(280,300,b'x'*262144)])
         self.assertEqual(self.spool.captured,100);self.assertEqual(list(self.spool.transactions(100)),[])
@@ -73,10 +73,10 @@ class GroupTests(unittest.TestCase):
                     self.db.execute('COMMIT' if self.committed else 'ROLLBACK')
                     raise sqlite3.OperationalError('injected ambiguous I/O response')
                 return self.db.execute(sql,*args)
-        self.spool.db=Uncertain(self.spool.db,False)
+        self.spool.backend.db=Uncertain(self.spool.backend.db,False)
         with self.assertRaises(sqlite3.OperationalError):self.spool.append_many(self.txs())
         self.assertEqual(self.spool.captured,100)
-        self.spool.db=Uncertain(self.spool.db,True)
+        self.spool.backend.db=Uncertain(self.spool.backend.db,True)
         self.assertEqual(self.spool.append_many(self.txs())['captured_lsn'],400)
         self.spool.verify()
 
@@ -144,6 +144,23 @@ w=Wire.__new__(Wire);w.socket=socket.socket(fileno=int(sys.argv[2]));w.feedback(
 
 
 class WorkerGroupTests(unittest.TestCase):
+    def test_owner_startup_churn_retains_history_without_source_effects(self):
+        import capture_worker as worker
+        from capture.journal import ReadBusy
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'config.json'
+            config=dict(identity={'id':1},worker_generation=1,desired='running',spool_bytes=16*1024*1024)
+            path.write_text(json.dumps(config))
+            spool=Spool(root/'spool',config['identity']);spool.establish(100,{})
+            spool.append(180,200,b'committed');spool.close()
+            with patch.object(worker,'Owner',side_effect=ReadBusy()),patch.object(worker,'Source') as source,patch.object(worker,'Wire') as wire:
+                self.assertEqual(worker.run(path),1);source.assert_not_called();wire.assert_not_called()
+            status=json.loads((root/'status.json').read_text())
+            self.assertEqual(status['state'],'unavailable');self.assertEqual(status['error'],'source_unavailable')
+            spool=Spool(root/'spool',config['identity'])
+            try:spool.verify();self.assertEqual(spool.captured,200)
+            finally:spool.close()
+
     def exercise(self, action):
         import capture_worker as worker
         import signal
@@ -178,7 +195,7 @@ class WorkerGroupTests(unittest.TestCase):
                     elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
                     else:control('paused')
                     return ('keepalive',999,1)
-            with patch.object(worker,'Groups',lambda spool:Groups(spool,clock=lambda:clock[0])),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
+            with patch.object(worker,'Owner'),patch.object(worker,'Groups',lambda spool:Groups(spool,clock=lambda:clock[0])),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'monotonic',lambda:clock[0]),patch.object(worker.time,'sleep',lambda _:None):
                 result=worker.run(path)
             s=Spool(root/'spool',config['identity']);captured=s.captured;s.verify();s.close()
             return result,captured,events,json.loads((root/'status.json').read_text())
@@ -235,7 +252,7 @@ class WorkerGroupTests(unittest.TestCase):
                     if action=='recover':pressure[0]=False
                     elif action=='stop':signal.getsignal(signal.SIGTERM)(signal.SIGTERM,None)
                     else:config['desired']='paused';path.write_text(json.dumps(config))
-                with patch.object(worker,'Groups',lambda spool:Groups(spool,count=1)),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'sleep',release_or_control),patch.object(Spool,'append_many',append_or_pressure):
+                with patch.object(worker,'Owner'),patch.object(worker,'Groups',lambda spool:Groups(spool,count=1)),patch.object(worker,'Source',Source),patch.object(worker,'Wire',Wire),patch.object(worker,'Decoder',Decoder),patch.object(worker.time,'sleep',release_or_control),patch.object(Spool,'append_many',append_or_pressure):
                     result=worker.run(path)
                 self.assertNotIn('cleanup',events)
                 s=Spool(root/'spool',config['identity'])

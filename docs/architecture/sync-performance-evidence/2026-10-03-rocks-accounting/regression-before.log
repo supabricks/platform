@@ -1,0 +1,36 @@
+test_file_gone_before_lookup_is_already_handled (test_accounting.AccountingTests.test_file_gone_before_lookup_is_already_handled) ... ok
+test_foreign_ownership_is_rejected_even_after_retirement (test_accounting.AccountingTests.test_foreign_ownership_is_rejected_even_after_retirement) ... ok
+test_lookup_permission_errors_are_not_hidden (test_accounting.AccountingTests.test_lookup_permission_errors_are_not_hidden) ... ok
+test_real_hardlink_is_still_rejected (test_accounting.AccountingTests.test_real_hardlink_is_still_rejected) ... ok
+test_retired_file_still_enforces_physical_budget (test_accounting.AccountingTests.test_retired_file_still_enforces_physical_budget) ... FAIL
+test_retired_regular_file_is_counted_in_current_sample (test_accounting.AccountingTests.test_retired_regular_file_is_counted_in_current_sample) ... ERROR
+test_symlink_and_directory_are_still_rejected (test_accounting.AccountingTests.test_symlink_and_directory_are_still_rejected) ... ok
+
+======================================================================
+ERROR: test_retired_regular_file_is_counted_in_current_sample (test_accounting.AccountingTests.test_retired_regular_file_is_counted_in_current_sample)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/e2e/native/performance/rocksdb/test_accounting.py", line 38, in test_retired_regular_file_is_counted_in_current_sample
+    self.assertEqual(self.journal.sizes(),{'000001.sst':4096})
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "<workspace>/e2e/native/performance/rocks_journal.py", line 147, in sizes
+    raise CaptureError('unsafe_spool_path')
+capture.spool.CaptureError: unsafe_spool_path
+
+======================================================================
+FAIL: test_retired_file_still_enforces_physical_budget (test_accounting.AccountingTests.test_retired_file_still_enforces_physical_budget)
+----------------------------------------------------------------------
+capture.spool.CaptureError: unsafe_spool_path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<workspace>/e2e/native/performance/rocksdb/test_accounting.py", line 43, in test_retired_file_still_enforces_physical_budget
+    with self.retire_during_stat(),self.assertRaisesRegex(CaptureError,'spool_budget'):
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "spool_budget" does not match "unsafe_spool_path"
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.003s
+
+FAILED (failures=1, errors=1)

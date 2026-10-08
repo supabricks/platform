@@ -12,6 +12,8 @@ import psycopg
 from capture.spool import Spool, CaptureError, atomic, lsn, pg_lsn
 from capture.protocol import Decoder, Wire
 from capture.groups import Groups
+from capture.owner import Owner
+from capture.journal import ReadBusy
 from capture.wal import SpoolBackpressure
 from capture.source import Source
 from capture.bootstrap import verify
@@ -25,7 +27,7 @@ def read(path):
 def run(path):
     config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
-    spool=source=wire=groups=None
+    spool=source=wire=groups=owner=None
     stopping=False;feedback_lsn=None
     def stop(signum, frame):
         nonlocal stopping
@@ -44,6 +46,7 @@ def run(path):
                 if result is not None and wire:feedback()
                 return
             except SpoolBackpressure:
+                if owner:owner.check()
                 control=read(path)
                 if control['identity']!=identity or control['worker_generation']!=generation:
                     raise CaptureError('worker_fenced')
@@ -52,7 +55,7 @@ def run(path):
                 if now-last_source_check>=1:
                     observed=source.check();last_source_check=now
                     if verified:
-                        try:spool.prune(control.get('published_lsn'))
+                        try:spool.maintain(control.get('published_lsn'))
                         except SpoolBackpressure:pass
                 if now-last_report>=.25:report('capturing','spool_backpressure')
                 if wire and now-last_ack>=1:feedback(request=True)
@@ -66,22 +69,24 @@ def run(path):
         progress=spool.progress(current.get('published_lsn')) if spool else None
         if spool:
             if progress is None:progress={}
-            progress['capture_journal']=spool.journal.progress()
+            progress['capture_journal']=spool.storage_progress()
             progress['stream_observed_at_ms']=stream_observed
             if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
             source_lsn=observed['source'] if observed else None,retained_wal_bytes=observed['retained_bytes'] if observed else None,
-            spool_bytes=spool.journal.physical() if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
+            spool_bytes=spool.physical() if spool else None,bootstrap_lsn=verified,barrier=spool.get('barrier') if spool else None,progress=progress))
     try:
         if config['desired']=='deleted':
             source=Source(config,None)
             source.cleanup();report('deleted');return
         spool=Spool(root/'spool',identity,config['spool_bytes'])
+        owner=Owner(path,spool.backend)
         source=Source(config,spool)
         profile=source.setup();groups=Groups(spool);report('established')
         while True:
+            owner.check()
             current=read(path)
             if current['identity']!=identity or current['worker_generation']!=generation:raise CaptureError('worker_fenced')
             if stopping:
@@ -99,7 +104,7 @@ def run(path):
             if time.monotonic()-last_source_check>=1:
                 flush()
                 observed=source.check();last_source_check=time.monotonic()
-                if verified:spool.prune(current.get('published_lsn'))
+                if verified:spool.maintain(current.get('published_lsn'))
             if time.monotonic()-last_report>=max(.25,current.get('report_interval_ms',1000)/1000):
                 flush();report('paused' if current['desired']=='paused' else 'capturing')
             if current['desired']=='paused':
@@ -139,9 +144,11 @@ def run(path):
             elif data:
                 # A keepalive cannot acknowledge decoded or buffered progress.
                 feedback()
-    except (CaptureError,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
+    except (CaptureError,ReadBusy,sqlite3.Error,OSError,psycopg.Error,ValueError,KeyError,TypeError) as error:
         if wire:wire.close();wire=None
-        code=error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        code='source_unavailable' if isinstance(error,ReadBusy) else error.code if isinstance(error,CaptureError) else 'spool_io' if isinstance(error,sqlite3.Error) else 'invalid_metadata' if isinstance(error,(ValueError,KeyError,TypeError)) else 'source_unavailable'
+        # Bounded owner-startup authority churn is unavailable, not lost history.
+        # No source setup, feedback or cleanup has occurred at this point.
         # Resource/history/codec failures abandon this generation, never skip changes.
         # Source outages retain the slot under its server cap and can reconnect after restart.
         state='unavailable' if code in ('source_unavailable','spool_backpressure','spool_migration_busy','spool_migration_budget') else 'resync_required'
@@ -155,7 +162,10 @@ def run(path):
         for sig,handler in previous_handlers.items():signal.signal(sig,handler)
         if wire:wire.close()
         if source:source.close()
-        if spool:spool.close()
+        try:
+            if owner:owner.close()
+        finally:
+            if spool:spool.close()
 
 if __name__=='__main__':
     sys.exit(run(Path(sys.argv[1])))

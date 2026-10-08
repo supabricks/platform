@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from continuous import Continuous
@@ -165,7 +166,14 @@ class InstalledMaintenance(Installed,Maintenance):
 class InstalledSurfaces(Installed,Surfaces):pass
 
 
-SUITES={'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces}
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tpcds'))
+from composite import CompositeChecks
+
+
+class InstalledComposite(CompositeChecks,InstalledContinuous):pass
+
+
+SUITES={'triggered':InstalledTriggered,'continuous':InstalledContinuous,'maintenance':InstalledMaintenance,'governed':InstalledSurfaces,'composite':InstalledComposite}
 
 
 def main():

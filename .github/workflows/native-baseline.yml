@@ -10,7 +10,8 @@ permissions:
 jobs:
   components:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Checkout includes qualification evidence and can exceed five minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

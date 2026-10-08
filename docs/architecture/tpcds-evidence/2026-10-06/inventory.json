@@ -1,0 +1,4037 @@
+{
+  "scope": "TPC-DS-derived engineering workload; no official score or execution claim",
+  "tables": [
+    {
+      "name": "customer_address",
+      "columns": [
+        {
+          "name": "ca_address_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ca_address_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "ca_street_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "ca_street_name",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "ca_street_type",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "ca_suite_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "ca_city",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "ca_county",
+          "type": "varchar(30)",
+          "nullable": true
+        },
+        {
+          "name": "ca_state",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "ca_zip",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "ca_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "ca_gmt_offset",
+          "type": "decimal(5,2)",
+          "nullable": true
+        },
+        {
+          "name": "ca_location_type",
+          "type": "char(20)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "ca_address_sk"
+      ],
+      "ddl": "create table customer_address\n(\n    ca_address_sk             integer               not null,\n    ca_address_id             char(16)              not null,\n    ca_street_number          char(10)                      ,\n    ca_street_name            varchar(60)                   ,\n    ca_street_type            char(15)                      ,\n    ca_suite_number           char(10)                      ,\n    ca_city                   varchar(60)                   ,\n    ca_county                 varchar(30)                   ,\n    ca_state                  char(2)                       ,\n    ca_zip                    char(10)                      ,\n    ca_country                varchar(20)                   ,\n    ca_gmt_offset             decimal(5,2)                  ,\n    ca_location_type          char(20)                      ,\n    primary key (ca_address_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "ca_address_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_street_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_street_type",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_suite_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_state",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_zip",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "ca_location_type",
+          "type": "char(20)"
+        }
+      ]
+    },
+    {
+      "name": "customer_demographics",
+      "columns": [
+        {
+          "name": "cd_demo_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cd_gender",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "cd_marital_status",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "cd_education_status",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "cd_purchase_estimate",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cd_credit_rating",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_employed_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_college_count",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "cd_demo_sk"
+      ],
+      "ddl": "create table customer_demographics\n(\n    cd_demo_sk                integer               not null,\n    cd_gender                 char(1)                       ,\n    cd_marital_status         char(1)                       ,\n    cd_education_status       char(20)                      ,\n    cd_purchase_estimate      integer                       ,\n    cd_credit_rating          char(10)                      ,\n    cd_dep_count              integer                       ,\n    cd_dep_employed_count     integer                       ,\n    cd_dep_college_count      integer                       ,\n    primary key (cd_demo_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "cd_gender",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "cd_marital_status",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "cd_education_status",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "cd_credit_rating",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "date_dim",
+      "columns": [
+        {
+          "name": "d_date_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "d_date_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "d_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "d_month_seq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_week_seq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_quarter_seq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_year",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_dow",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_moy",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_dom",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_qoy",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_year",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_quarter_seq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_week_seq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_day_name",
+          "type": "char(9)",
+          "nullable": true
+        },
+        {
+          "name": "d_quarter_name",
+          "type": "char(6)",
+          "nullable": true
+        },
+        {
+          "name": "d_holiday",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_weekend",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_following_holiday",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_first_dom",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_last_dom",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_same_day_ly",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_same_day_lq",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "d_current_day",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_current_week",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_current_month",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_current_quarter",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "d_current_year",
+          "type": "char(1)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "d_date_sk"
+      ],
+      "ddl": "create table date_dim\n(\n    d_date_sk                 integer               not null,\n    d_date_id                 char(16)              not null,\n    d_date                    date                          ,\n    d_month_seq               integer                       ,\n    d_week_seq                integer                       ,\n    d_quarter_seq             integer                       ,\n    d_year                    integer                       ,\n    d_dow                     integer                       ,\n    d_moy                     integer                       ,\n    d_dom                     integer                       ,\n    d_qoy                     integer                       ,\n    d_fy_year                 integer                       ,\n    d_fy_quarter_seq          integer                       ,\n    d_fy_week_seq             integer                       ,\n    d_day_name                char(9)                       ,\n    d_quarter_name            char(6)                       ,\n    d_holiday                 char(1)                       ,\n    d_weekend                 char(1)                       ,\n    d_following_holiday       char(1)                       ,\n    d_first_dom               integer                       ,\n    d_last_dom                integer                       ,\n    d_same_day_ly             integer                       ,\n    d_same_day_lq             integer                       ,\n    d_current_day             char(1)                       ,\n    d_current_week            char(1)                       ,\n    d_current_month           char(1)                       ,\n    d_current_quarter         char(1)                       ,\n    d_current_year            char(1)                       ,\n    primary key (d_date_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "d_date_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "d_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "d_day_name",
+          "type": "char(9)"
+        },
+        {
+          "issue": 171,
+          "column": "d_quarter_name",
+          "type": "char(6)"
+        },
+        {
+          "issue": 171,
+          "column": "d_holiday",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_weekend",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_following_holiday",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_current_day",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_current_week",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_current_month",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_current_quarter",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "d_current_year",
+          "type": "char(1)"
+        }
+      ]
+    },
+    {
+      "name": "warehouse",
+      "columns": [
+        {
+          "name": "w_warehouse_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "w_warehouse_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "w_warehouse_name",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "w_warehouse_sq_ft",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "w_street_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "w_street_name",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "w_street_type",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "w_suite_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "w_city",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "w_county",
+          "type": "varchar(30)",
+          "nullable": true
+        },
+        {
+          "name": "w_state",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "w_zip",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "w_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "w_gmt_offset",
+          "type": "decimal(5,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "w_warehouse_sk"
+      ],
+      "ddl": "create table warehouse\n(\n    w_warehouse_sk            integer               not null,\n    w_warehouse_id            char(16)              not null,\n    w_warehouse_name          varchar(20)                   ,\n    w_warehouse_sq_ft         integer                       ,\n    w_street_number           char(10)                      ,\n    w_street_name             varchar(60)                   ,\n    w_street_type             char(15)                      ,\n    w_suite_number            char(10)                      ,\n    w_city                    varchar(60)                   ,\n    w_county                  varchar(30)                   ,\n    w_state                   char(2)                       ,\n    w_zip                     char(10)                      ,\n    w_country                 varchar(20)                   ,\n    w_gmt_offset              decimal(5,2)                  ,\n    primary key (w_warehouse_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "w_warehouse_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "w_street_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "w_street_type",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "w_suite_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "w_state",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "w_zip",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "ship_mode",
+      "columns": [
+        {
+          "name": "sm_ship_mode_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "sm_ship_mode_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "sm_type",
+          "type": "char(30)",
+          "nullable": true
+        },
+        {
+          "name": "sm_code",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "sm_carrier",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "sm_contract",
+          "type": "char(20)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "sm_ship_mode_sk"
+      ],
+      "ddl": "create table ship_mode\n(\n    sm_ship_mode_sk           integer               not null,\n    sm_ship_mode_id           char(16)              not null,\n    sm_type                   char(30)                      ,\n    sm_code                   char(10)                      ,\n    sm_carrier                char(20)                      ,\n    sm_contract               char(20)                      ,\n    primary key (sm_ship_mode_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "sm_ship_mode_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "sm_type",
+          "type": "char(30)"
+        },
+        {
+          "issue": 171,
+          "column": "sm_code",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "sm_carrier",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "sm_contract",
+          "type": "char(20)"
+        }
+      ]
+    },
+    {
+      "name": "time_dim",
+      "columns": [
+        {
+          "name": "t_time_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "t_time_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "t_time",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "t_hour",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "t_minute",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "t_second",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "t_am_pm",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "t_shift",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "t_sub_shift",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "t_meal_time",
+          "type": "char(20)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "t_time_sk"
+      ],
+      "ddl": "create table time_dim\n(\n    t_time_sk                 integer               not null,\n    t_time_id                 char(16)              not null,\n    t_time                    integer                       ,\n    t_hour                    integer                       ,\n    t_minute                  integer                       ,\n    t_second                  integer                       ,\n    t_am_pm                   char(2)                       ,\n    t_shift                   char(20)                      ,\n    t_sub_shift               char(20)                      ,\n    t_meal_time               char(20)                      ,\n    primary key (t_time_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "t_time_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "t_am_pm",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "t_shift",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "t_sub_shift",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "t_meal_time",
+          "type": "char(20)"
+        }
+      ]
+    },
+    {
+      "name": "reason",
+      "columns": [
+        {
+          "name": "r_reason_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "r_reason_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "r_reason_desc",
+          "type": "char(100)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "r_reason_sk"
+      ],
+      "ddl": "create table reason\n(\n    r_reason_sk               integer               not null,\n    r_reason_id               char(16)              not null,\n    r_reason_desc             char(100)                     ,\n    primary key (r_reason_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "r_reason_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "r_reason_desc",
+          "type": "char(100)"
+        }
+      ]
+    },
+    {
+      "name": "income_band",
+      "columns": [
+        {
+          "name": "ib_income_band_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ib_lower_bound",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ib_upper_bound",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "ib_income_band_sk"
+      ],
+      "ddl": "create table income_band\n(\n    ib_income_band_sk         integer               not null,\n    ib_lower_bound            integer                       ,\n    ib_upper_bound            integer                       ,\n    primary key (ib_income_band_sk)\n);",
+      "capture_gaps": []
+    },
+    {
+      "name": "item",
+      "columns": [
+        {
+          "name": "i_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "i_item_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "i_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "i_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "i_item_desc",
+          "type": "varchar(200)",
+          "nullable": true
+        },
+        {
+          "name": "i_current_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "i_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "i_brand_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "i_brand",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "i_class_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "i_class",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "i_category_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "i_category",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "i_manufact_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "i_manufact",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "i_size",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "i_formulation",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "i_color",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "i_units",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "i_container",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "i_manager_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "i_product_name",
+          "type": "char(50)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "i_item_sk"
+      ],
+      "ddl": "create table item\n(\n    i_item_sk                 integer               not null,\n    i_item_id                 char(16)              not null,\n    i_rec_start_date          date                          ,\n    i_rec_end_date            date                          ,\n    i_item_desc               varchar(200)                  ,\n    i_current_price           decimal(7,2)                  ,\n    i_wholesale_cost          decimal(7,2)                  ,\n    i_brand_id                integer                       ,\n    i_brand                   char(50)                      ,\n    i_class_id                integer                       ,\n    i_class                   char(50)                      ,\n    i_category_id             integer                       ,\n    i_category                char(50)                      ,\n    i_manufact_id             integer                       ,\n    i_manufact                char(50)                      ,\n    i_size                    char(20)                      ,\n    i_formulation             char(20)                      ,\n    i_color                   char(20)                      ,\n    i_units                   char(10)                      ,\n    i_container               char(10)                      ,\n    i_manager_id              integer                       ,\n    i_product_name            char(50)                      ,\n    primary key (i_item_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "i_item_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "i_rec_start_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "i_rec_end_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "i_brand",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "i_class",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "i_category",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "i_manufact",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "i_size",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "i_formulation",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "i_color",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "i_units",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "i_container",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "i_product_name",
+          "type": "char(50)"
+        }
+      ]
+    },
+    {
+      "name": "store",
+      "columns": [
+        {
+          "name": "s_store_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "s_store_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "s_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "s_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "s_closed_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_store_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "s_number_employees",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_floor_space",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_hours",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "s_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "s_market_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_geography_class",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "s_market_desc",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "s_market_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "s_division_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_division_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "s_company_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "s_company_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "s_street_number",
+          "type": "varchar(10)",
+          "nullable": true
+        },
+        {
+          "name": "s_street_name",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "s_street_type",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "s_suite_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "s_city",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "s_county",
+          "type": "varchar(30)",
+          "nullable": true
+        },
+        {
+          "name": "s_state",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "s_zip",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "s_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "s_gmt_offset",
+          "type": "decimal(5,2)",
+          "nullable": true
+        },
+        {
+          "name": "s_tax_precentage",
+          "type": "decimal(5,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "s_store_sk"
+      ],
+      "ddl": "create table store\n(\n    s_store_sk                integer               not null,\n    s_store_id                char(16)              not null,\n    s_rec_start_date          date                          ,\n    s_rec_end_date            date                          ,\n    s_closed_date_sk          integer                       ,\n    s_store_name              varchar(50)                   ,\n    s_number_employees        integer                       ,\n    s_floor_space             integer                       ,\n    s_hours                   char(20)                      ,\n    s_manager                 varchar(40)                   ,\n    s_market_id               integer                       ,\n    s_geography_class         varchar(100)                  ,\n    s_market_desc             varchar(100)                  ,\n    s_market_manager          varchar(40)                   ,\n    s_division_id             integer                       ,\n    s_division_name           varchar(50)                   ,\n    s_company_id              integer                       ,\n    s_company_name            varchar(50)                   ,\n    s_street_number           varchar(10)                   ,\n    s_street_name             varchar(60)                   ,\n    s_street_type             char(15)                      ,\n    s_suite_number            char(10)                      ,\n    s_city                    varchar(60)                   ,\n    s_county                  varchar(30)                   ,\n    s_state                   char(2)                       ,\n    s_zip                     char(10)                      ,\n    s_country                 varchar(20)                   ,\n    s_gmt_offset              decimal(5,2)                  ,\n    s_tax_precentage          decimal(5,2)                  ,\n    primary key (s_store_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "s_store_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "s_rec_start_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "s_rec_end_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "s_hours",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "s_street_type",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "s_suite_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "s_state",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "s_zip",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "call_center",
+      "columns": [
+        {
+          "name": "cc_call_center_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cc_call_center_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "cc_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "cc_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "cc_closed_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_open_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_class",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_employees",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_sq_ft",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_hours",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "cc_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_class",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_desc",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "cc_market_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "cc_division",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_division_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_company",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cc_company_name",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_name",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_type",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "cc_suite_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "cc_city",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "cc_county",
+          "type": "varchar(30)",
+          "nullable": true
+        },
+        {
+          "name": "cc_state",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "cc_zip",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "cc_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "cc_gmt_offset",
+          "type": "decimal(5,2)",
+          "nullable": true
+        },
+        {
+          "name": "cc_tax_percentage",
+          "type": "decimal(5,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "cc_call_center_sk"
+      ],
+      "ddl": "create table call_center\n(\n    cc_call_center_sk         integer               not null,\n    cc_call_center_id         char(16)              not null,\n    cc_rec_start_date         date                          ,\n    cc_rec_end_date           date                          ,\n    cc_closed_date_sk         integer                       ,\n    cc_open_date_sk           integer                       ,\n    cc_name                   varchar(50)                   ,\n    cc_class                  varchar(50)                   ,\n    cc_employees              integer                       ,\n    cc_sq_ft                  integer                       ,\n    cc_hours                  char(20)                      ,\n    cc_manager                varchar(40)                   ,\n    cc_mkt_id                 integer                       ,\n    cc_mkt_class              char(50)                      ,\n    cc_mkt_desc               varchar(100)                  ,\n    cc_market_manager         varchar(40)                   ,\n    cc_division               integer                       ,\n    cc_division_name          varchar(50)                   ,\n    cc_company                integer                       ,\n    cc_company_name           char(50)                      ,\n    cc_street_number          char(10)                      ,\n    cc_street_name            varchar(60)                   ,\n    cc_street_type            char(15)                      ,\n    cc_suite_number           char(10)                      ,\n    cc_city                   varchar(60)                   ,\n    cc_county                 varchar(30)                   ,\n    cc_state                  char(2)                       ,\n    cc_zip                    char(10)                      ,\n    cc_country                varchar(20)                   ,\n    cc_gmt_offset             decimal(5,2)                  ,\n    cc_tax_percentage         decimal(5,2)                  ,\n    primary key (cc_call_center_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "cc_call_center_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_rec_start_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "cc_rec_end_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "cc_hours",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_mkt_class",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_company_name",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_street_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_street_type",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_suite_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_state",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "cc_zip",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "customer",
+      "columns": [
+        {
+          "name": "c_customer_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "c_customer_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "c_current_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_current_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_current_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_first_shipto_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_first_sales_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_salutation",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "c_first_name",
+          "type": "char(20)",
+          "nullable": true
+        },
+        {
+          "name": "c_last_name",
+          "type": "char(30)",
+          "nullable": true
+        },
+        {
+          "name": "c_preferred_cust_flag",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_day",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_month",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_year",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "c_login",
+          "type": "char(13)",
+          "nullable": true
+        },
+        {
+          "name": "c_email_address",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "c_last_review_date",
+          "type": "char(10)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "c_customer_sk"
+      ],
+      "ddl": "create table customer\n(\n    c_customer_sk             integer               not null,\n    c_customer_id             char(16)              not null,\n    c_current_cdemo_sk        integer                       ,\n    c_current_hdemo_sk        integer                       ,\n    c_current_addr_sk         integer                       ,\n    c_first_shipto_date_sk    integer                       ,\n    c_first_sales_date_sk     integer                       ,\n    c_salutation              char(10)                      ,\n    c_first_name              char(20)                      ,\n    c_last_name               char(30)                      ,\n    c_preferred_cust_flag     char(1)                       ,\n    c_birth_day               integer                       ,\n    c_birth_month             integer                       ,\n    c_birth_year              integer                       ,\n    c_birth_country           varchar(20)                   ,\n    c_login                   char(13)                      ,\n    c_email_address           char(50)                      ,\n    c_last_review_date        char(10)                      ,\n    primary key (c_customer_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "c_customer_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "c_salutation",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "c_first_name",
+          "type": "char(20)"
+        },
+        {
+          "issue": 171,
+          "column": "c_last_name",
+          "type": "char(30)"
+        },
+        {
+          "issue": 171,
+          "column": "c_preferred_cust_flag",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "c_login",
+          "type": "char(13)"
+        },
+        {
+          "issue": 171,
+          "column": "c_email_address",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "c_last_review_date",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "web_site",
+      "columns": [
+        {
+          "name": "web_site_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "web_site_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "web_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "web_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "web_name",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "web_open_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "web_close_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "web_class",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "web_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_class",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_desc",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "web_market_manager",
+          "type": "varchar(40)",
+          "nullable": true
+        },
+        {
+          "name": "web_company_id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "web_company_name",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "web_street_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "web_street_name",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "web_street_type",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "web_suite_number",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "web_city",
+          "type": "varchar(60)",
+          "nullable": true
+        },
+        {
+          "name": "web_county",
+          "type": "varchar(30)",
+          "nullable": true
+        },
+        {
+          "name": "web_state",
+          "type": "char(2)",
+          "nullable": true
+        },
+        {
+          "name": "web_zip",
+          "type": "char(10)",
+          "nullable": true
+        },
+        {
+          "name": "web_country",
+          "type": "varchar(20)",
+          "nullable": true
+        },
+        {
+          "name": "web_gmt_offset",
+          "type": "decimal(5,2)",
+          "nullable": true
+        },
+        {
+          "name": "web_tax_percentage",
+          "type": "decimal(5,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "web_site_sk"
+      ],
+      "ddl": "create table web_site\n(\n    web_site_sk               integer               not null,\n    web_site_id               char(16)              not null,\n    web_rec_start_date        date                          ,\n    web_rec_end_date          date                          ,\n    web_name                  varchar(50)                   ,\n    web_open_date_sk          integer                       ,\n    web_close_date_sk         integer                       ,\n    web_class                 varchar(50)                   ,\n    web_manager               varchar(40)                   ,\n    web_mkt_id                integer                       ,\n    web_mkt_class             varchar(50)                   ,\n    web_mkt_desc              varchar(100)                  ,\n    web_market_manager        varchar(40)                   ,\n    web_company_id            integer                       ,\n    web_company_name          char(50)                      ,\n    web_street_number         char(10)                      ,\n    web_street_name           varchar(60)                   ,\n    web_street_type           char(15)                      ,\n    web_suite_number          char(10)                      ,\n    web_city                  varchar(60)                   ,\n    web_county                varchar(30)                   ,\n    web_state                 char(2)                       ,\n    web_zip                   char(10)                      ,\n    web_country               varchar(20)                   ,\n    web_gmt_offset            decimal(5,2)                  ,\n    web_tax_percentage        decimal(5,2)                  ,\n    primary key (web_site_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "web_site_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "web_rec_start_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "web_rec_end_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "web_company_name",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "web_street_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "web_street_type",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "web_suite_number",
+          "type": "char(10)"
+        },
+        {
+          "issue": 171,
+          "column": "web_state",
+          "type": "char(2)"
+        },
+        {
+          "issue": 171,
+          "column": "web_zip",
+          "type": "char(10)"
+        }
+      ]
+    },
+    {
+      "name": "store_returns",
+      "columns": [
+        {
+          "name": "sr_returned_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "sr_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_store_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_reason_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_ticket_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "sr_return_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_amt_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_fee",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_ship_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_refunded_cash",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_reversed_charge",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_store_credit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "sr_net_loss",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "sr_item_sk",
+        "sr_ticket_number"
+      ],
+      "ddl": "create table store_returns\n(\n    sr_returned_date_sk       integer                       ,\n    sr_return_time_sk         integer                       ,\n    sr_item_sk                integer               not null,\n    sr_customer_sk            integer                       ,\n    sr_cdemo_sk               integer                       ,\n    sr_hdemo_sk               integer                       ,\n    sr_addr_sk                integer                       ,\n    sr_store_sk               integer                       ,\n    sr_reason_sk              integer                       ,\n    sr_ticket_number          integer               not null,\n    sr_return_quantity        integer                       ,\n    sr_return_amt             decimal(7,2)                  ,\n    sr_return_tax             decimal(7,2)                  ,\n    sr_return_amt_inc_tax     decimal(7,2)                  ,\n    sr_fee                    decimal(7,2)                  ,\n    sr_return_ship_cost       decimal(7,2)                  ,\n    sr_refunded_cash          decimal(7,2)                  ,\n    sr_reversed_charge        decimal(7,2)                  ,\n    sr_store_credit           decimal(7,2)                  ,\n    sr_net_loss               decimal(7,2)                  ,\n    primary key (sr_item_sk, sr_ticket_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "household_demographics",
+      "columns": [
+        {
+          "name": "hd_demo_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "hd_income_band_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "hd_buy_potential",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "hd_dep_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "hd_vehicle_count",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "hd_demo_sk"
+      ],
+      "ddl": "create table household_demographics\n(\n    hd_demo_sk                integer               not null,\n    hd_income_band_sk         integer                       ,\n    hd_buy_potential          char(15)                      ,\n    hd_dep_count              integer                       ,\n    hd_vehicle_count          integer                       ,\n    primary key (hd_demo_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "hd_buy_potential",
+          "type": "char(15)"
+        }
+      ]
+    },
+    {
+      "name": "web_page",
+      "columns": [
+        {
+          "name": "wp_web_page_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "wp_web_page_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "wp_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "wp_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "wp_creation_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_access_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_autogen_flag",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "wp_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_url",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "wp_type",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "wp_char_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_link_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_image_count",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wp_max_ad_count",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "wp_web_page_sk"
+      ],
+      "ddl": "create table web_page\n(\n    wp_web_page_sk            integer               not null,\n    wp_web_page_id            char(16)              not null,\n    wp_rec_start_date         date                          ,\n    wp_rec_end_date           date                          ,\n    wp_creation_date_sk       integer                       ,\n    wp_access_date_sk         integer                       ,\n    wp_autogen_flag           char(1)                       ,\n    wp_customer_sk            integer                       ,\n    wp_url                    varchar(100)                  ,\n    wp_type                   char(50)                      ,\n    wp_char_count             integer                       ,\n    wp_link_count             integer                       ,\n    wp_image_count            integer                       ,\n    wp_max_ad_count           integer                       ,\n    primary key (wp_web_page_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "wp_web_page_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "wp_rec_start_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "wp_rec_end_date",
+          "type": "date"
+        },
+        {
+          "issue": 171,
+          "column": "wp_autogen_flag",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "wp_type",
+          "type": "char(50)"
+        }
+      ]
+    },
+    {
+      "name": "promotion",
+      "columns": [
+        {
+          "name": "p_promo_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "p_promo_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "p_start_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "p_end_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "p_item_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "p_cost",
+          "type": "decimal(15,2)",
+          "nullable": true
+        },
+        {
+          "name": "p_response_target",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "p_promo_name",
+          "type": "char(50)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_dmail",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_email",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_catalog",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_tv",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_radio",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_press",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_event",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_demo",
+          "type": "char(1)",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_details",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "p_purpose",
+          "type": "char(15)",
+          "nullable": true
+        },
+        {
+          "name": "p_discount_active",
+          "type": "char(1)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "p_promo_sk"
+      ],
+      "ddl": "create table promotion\n(\n    p_promo_sk                integer               not null,\n    p_promo_id                char(16)              not null,\n    p_start_date_sk           integer                       ,\n    p_end_date_sk             integer                       ,\n    p_item_sk                 integer                       ,\n    p_cost                    decimal(15,2)                 ,\n    p_response_target         integer                       ,\n    p_promo_name              char(50)                      ,\n    p_channel_dmail           char(1)                       ,\n    p_channel_email           char(1)                       ,\n    p_channel_catalog         char(1)                       ,\n    p_channel_tv              char(1)                       ,\n    p_channel_radio           char(1)                       ,\n    p_channel_press           char(1)                       ,\n    p_channel_event           char(1)                       ,\n    p_channel_demo            char(1)                       ,\n    p_channel_details         varchar(100)                  ,\n    p_purpose                 char(15)                      ,\n    p_discount_active         char(1)                       ,\n    primary key (p_promo_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "p_promo_id",
+          "type": "char(16)"
+        },
+        {
+          "issue": 171,
+          "column": "p_promo_name",
+          "type": "char(50)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_dmail",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_email",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_catalog",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_tv",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_radio",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_press",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_event",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_channel_demo",
+          "type": "char(1)"
+        },
+        {
+          "issue": 171,
+          "column": "p_purpose",
+          "type": "char(15)"
+        },
+        {
+          "issue": 171,
+          "column": "p_discount_active",
+          "type": "char(1)"
+        }
+      ]
+    },
+    {
+      "name": "catalog_page",
+      "columns": [
+        {
+          "name": "cp_catalog_page_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cp_catalog_page_id",
+          "type": "char(16)",
+          "nullable": false
+        },
+        {
+          "name": "cp_start_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cp_end_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cp_department",
+          "type": "varchar(50)",
+          "nullable": true
+        },
+        {
+          "name": "cp_catalog_number",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cp_catalog_page_number",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cp_description",
+          "type": "varchar(100)",
+          "nullable": true
+        },
+        {
+          "name": "cp_type",
+          "type": "varchar(100)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "cp_catalog_page_sk"
+      ],
+      "ddl": "create table catalog_page\n(\n    cp_catalog_page_sk        integer               not null,\n    cp_catalog_page_id        char(16)              not null,\n    cp_start_date_sk          integer                       ,\n    cp_end_date_sk            integer                       ,\n    cp_department             varchar(50)                   ,\n    cp_catalog_number         integer                       ,\n    cp_catalog_page_number    integer                       ,\n    cp_description            varchar(100)                  ,\n    cp_type                   varchar(100)                  ,\n    primary key (cp_catalog_page_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 171,
+          "column": "cp_catalog_page_id",
+          "type": "char(16)"
+        }
+      ]
+    },
+    {
+      "name": "inventory",
+      "columns": [
+        {
+          "name": "inv_date_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "inv_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "inv_warehouse_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "inv_quantity_on_hand",
+          "type": "integer",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "inv_date_sk",
+        "inv_item_sk",
+        "inv_warehouse_sk"
+      ],
+      "ddl": "create table inventory\n(\n    inv_date_sk               integer               not null,\n    inv_item_sk               integer               not null,\n    inv_warehouse_sk          integer               not null,\n    inv_quantity_on_hand      integer                       ,\n    primary key (inv_date_sk, inv_item_sk, inv_warehouse_sk)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "catalog_returns",
+      "columns": [
+        {
+          "name": "cr_returned_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_returned_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cr_refunded_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_call_center_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_catalog_page_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_ship_mode_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_warehouse_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_reason_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_order_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cr_return_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_amount",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_amt_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_fee",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_ship_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_cash",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_reversed_charge",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_store_credit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cr_net_loss",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "cr_item_sk",
+        "cr_order_number"
+      ],
+      "ddl": "create table catalog_returns\n(\n    cr_returned_date_sk       integer                       ,\n    cr_returned_time_sk       integer                       ,\n    cr_item_sk                integer               not null,\n    cr_refunded_customer_sk   integer                       ,\n    cr_refunded_cdemo_sk      integer                       ,\n    cr_refunded_hdemo_sk      integer                       ,\n    cr_refunded_addr_sk       integer                       ,\n    cr_returning_customer_sk  integer                       ,\n    cr_returning_cdemo_sk     integer                       ,\n    cr_returning_hdemo_sk     integer                       ,\n    cr_returning_addr_sk      integer                       ,\n    cr_call_center_sk         integer                       ,\n    cr_catalog_page_sk        integer                       ,\n    cr_ship_mode_sk           integer                       ,\n    cr_warehouse_sk           integer                       ,\n    cr_reason_sk              integer                       ,\n    cr_order_number           integer               not null,\n    cr_return_quantity        integer                       ,\n    cr_return_amount          decimal(7,2)                  ,\n    cr_return_tax             decimal(7,2)                  ,\n    cr_return_amt_inc_tax     decimal(7,2)                  ,\n    cr_fee                    decimal(7,2)                  ,\n    cr_return_ship_cost       decimal(7,2)                  ,\n    cr_refunded_cash          decimal(7,2)                  ,\n    cr_reversed_charge        decimal(7,2)                  ,\n    cr_store_credit           decimal(7,2)                  ,\n    cr_net_loss               decimal(7,2)                  ,\n    primary key (cr_item_sk, cr_order_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "web_returns",
+      "columns": [
+        {
+          "name": "wr_returned_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_returned_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "wr_refunded_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_web_page_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_reason_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_order_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "wr_return_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_amt_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_fee",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_ship_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_cash",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_reversed_charge",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_account_credit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "wr_net_loss",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "wr_item_sk",
+        "wr_order_number"
+      ],
+      "ddl": "create table web_returns\n(\n    wr_returned_date_sk       integer                       ,\n    wr_returned_time_sk       integer                       ,\n    wr_item_sk                integer               not null,\n    wr_refunded_customer_sk   integer                       ,\n    wr_refunded_cdemo_sk      integer                       ,\n    wr_refunded_hdemo_sk      integer                       ,\n    wr_refunded_addr_sk       integer                       ,\n    wr_returning_customer_sk  integer                       ,\n    wr_returning_cdemo_sk     integer                       ,\n    wr_returning_hdemo_sk     integer                       ,\n    wr_returning_addr_sk      integer                       ,\n    wr_web_page_sk            integer                       ,\n    wr_reason_sk              integer                       ,\n    wr_order_number           integer               not null,\n    wr_return_quantity        integer                       ,\n    wr_return_amt             decimal(7,2)                  ,\n    wr_return_tax             decimal(7,2)                  ,\n    wr_return_amt_inc_tax     decimal(7,2)                  ,\n    wr_fee                    decimal(7,2)                  ,\n    wr_return_ship_cost       decimal(7,2)                  ,\n    wr_refunded_cash          decimal(7,2)                  ,\n    wr_reversed_charge        decimal(7,2)                  ,\n    wr_account_credit         decimal(7,2)                  ,\n    wr_net_loss               decimal(7,2)                  ,\n    primary key (wr_item_sk, wr_order_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "web_sales",
+      "columns": [
+        {
+          "name": "ws_sold_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_sold_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ws_bill_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_web_page_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_web_site_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_mode_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_warehouse_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_promo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_order_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ws_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ws_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_discount_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_coupon_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_ship_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_ship",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_ship_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_profit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "ws_item_sk",
+        "ws_order_number"
+      ],
+      "ddl": "create table web_sales\n(\n    ws_sold_date_sk           integer                       ,\n    ws_sold_time_sk           integer                       ,\n    ws_ship_date_sk           integer                       ,\n    ws_item_sk                integer               not null,\n    ws_bill_customer_sk       integer                       ,\n    ws_bill_cdemo_sk          integer                       ,\n    ws_bill_hdemo_sk          integer                       ,\n    ws_bill_addr_sk           integer                       ,\n    ws_ship_customer_sk       integer                       ,\n    ws_ship_cdemo_sk          integer                       ,\n    ws_ship_hdemo_sk          integer                       ,\n    ws_ship_addr_sk           integer                       ,\n    ws_web_page_sk            integer                       ,\n    ws_web_site_sk            integer                       ,\n    ws_ship_mode_sk           integer                       ,\n    ws_warehouse_sk           integer                       ,\n    ws_promo_sk               integer                       ,\n    ws_order_number           integer               not null,\n    ws_quantity               integer                       ,\n    ws_wholesale_cost         decimal(7,2)                  ,\n    ws_list_price             decimal(7,2)                  ,\n    ws_sales_price            decimal(7,2)                  ,\n    ws_ext_discount_amt       decimal(7,2)                  ,\n    ws_ext_sales_price        decimal(7,2)                  ,\n    ws_ext_wholesale_cost     decimal(7,2)                  ,\n    ws_ext_list_price         decimal(7,2)                  ,\n    ws_ext_tax                decimal(7,2)                  ,\n    ws_coupon_amt             decimal(7,2)                  ,\n    ws_ext_ship_cost          decimal(7,2)                  ,\n    ws_net_paid               decimal(7,2)                  ,\n    ws_net_paid_inc_tax       decimal(7,2)                  ,\n    ws_net_paid_inc_ship      decimal(7,2)                  ,\n    ws_net_paid_inc_ship_tax  decimal(7,2)                  ,\n    ws_net_profit             decimal(7,2)                  ,\n    primary key (ws_item_sk, ws_order_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "catalog_sales",
+      "columns": [
+        {
+          "name": "cs_sold_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_sold_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_call_center_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_catalog_page_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_mode_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_warehouse_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cs_promo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_order_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "cs_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "cs_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_discount_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_coupon_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_ship_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_ship",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_ship_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_profit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "cs_item_sk",
+        "cs_order_number"
+      ],
+      "ddl": "create table catalog_sales\n(\n    cs_sold_date_sk           integer                       ,\n    cs_sold_time_sk           integer                       ,\n    cs_ship_date_sk           integer                       ,\n    cs_bill_customer_sk       integer                       ,\n    cs_bill_cdemo_sk          integer                       ,\n    cs_bill_hdemo_sk          integer                       ,\n    cs_bill_addr_sk           integer                       ,\n    cs_ship_customer_sk       integer                       ,\n    cs_ship_cdemo_sk          integer                       ,\n    cs_ship_hdemo_sk          integer                       ,\n    cs_ship_addr_sk           integer                       ,\n    cs_call_center_sk         integer                       ,\n    cs_catalog_page_sk        integer                       ,\n    cs_ship_mode_sk           integer                       ,\n    cs_warehouse_sk           integer                       ,\n    cs_item_sk                integer               not null,\n    cs_promo_sk               integer                       ,\n    cs_order_number           integer               not null,\n    cs_quantity               integer                       ,\n    cs_wholesale_cost         decimal(7,2)                  ,\n    cs_list_price             decimal(7,2)                  ,\n    cs_sales_price            decimal(7,2)                  ,\n    cs_ext_discount_amt       decimal(7,2)                  ,\n    cs_ext_sales_price        decimal(7,2)                  ,\n    cs_ext_wholesale_cost     decimal(7,2)                  ,\n    cs_ext_list_price         decimal(7,2)                  ,\n    cs_ext_tax                decimal(7,2)                  ,\n    cs_coupon_amt             decimal(7,2)                  ,\n    cs_ext_ship_cost          decimal(7,2)                  ,\n    cs_net_paid               decimal(7,2)                  ,\n    cs_net_paid_inc_tax       decimal(7,2)                  ,\n    cs_net_paid_inc_ship      decimal(7,2)                  ,\n    cs_net_paid_inc_ship_tax  decimal(7,2)                  ,\n    cs_net_profit             decimal(7,2)                  ,\n    primary key (cs_item_sk, cs_order_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    },
+    {
+      "name": "store_sales",
+      "columns": [
+        {
+          "name": "ss_sold_date_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_sold_time_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_item_sk",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ss_customer_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_cdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_hdemo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_addr_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_store_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_promo_sk",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_ticket_number",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "ss_quantity",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "ss_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_discount_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_sales_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_wholesale_cost",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_list_price",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_coupon_amt",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_paid",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_paid_inc_tax",
+          "type": "decimal(7,2)",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_profit",
+          "type": "decimal(7,2)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "ss_item_sk",
+        "ss_ticket_number"
+      ],
+      "ddl": "create table store_sales\n(\n    ss_sold_date_sk           integer                       ,\n    ss_sold_time_sk           integer                       ,\n    ss_item_sk                integer               not null,\n    ss_customer_sk            integer                       ,\n    ss_cdemo_sk               integer                       ,\n    ss_hdemo_sk               integer                       ,\n    ss_addr_sk                integer                       ,\n    ss_store_sk               integer                       ,\n    ss_promo_sk               integer                       ,\n    ss_ticket_number          integer               not null,\n    ss_quantity               integer                       ,\n    ss_wholesale_cost         decimal(7,2)                  ,\n    ss_list_price             decimal(7,2)                  ,\n    ss_sales_price            decimal(7,2)                  ,\n    ss_ext_discount_amt       decimal(7,2)                  ,\n    ss_ext_sales_price        decimal(7,2)                  ,\n    ss_ext_wholesale_cost     decimal(7,2)                  ,\n    ss_ext_list_price         decimal(7,2)                  ,\n    ss_ext_tax                decimal(7,2)                  ,\n    ss_coupon_amt             decimal(7,2)                  ,\n    ss_net_paid               decimal(7,2)                  ,\n    ss_net_paid_inc_tax       decimal(7,2)                  ,\n    ss_net_profit             decimal(7,2)                  ,\n    primary key (ss_item_sk, ss_ticket_number)\n);",
+      "capture_gaps": [
+        {
+          "issue": 170,
+          "kind": "composite_primary_key"
+        }
+      ]
+    }
+  ],
+  "metadata_tables": [
+    {
+      "name": "dbgen_version",
+      "columns": [
+        {
+          "name": "dv_version",
+          "type": "varchar(16)",
+          "nullable": true
+        },
+        {
+          "name": "dv_create_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "dv_create_time",
+          "type": "time",
+          "nullable": true
+        },
+        {
+          "name": "dv_cmdline_args",
+          "type": "varchar(200)",
+          "nullable": true
+        }
+      ],
+      "primary_key": [],
+      "ddl": "create table dbgen_version\n(\n    dv_version                varchar(16)                   ,\n    dv_create_date            date                          ,\n    dv_create_time            time                          ,\n    dv_cmdline_args           varchar(200)                  \n);"
+    }
+  ],
+  "queries": [
+    {
+      "id": "q1",
+      "template": 1,
+      "variant": "",
+      "source_sha256": "2ea76e3a82a0f4fd62f43f51873ed19edb03cb5f7e457bde2c9060069a199774",
+      "sql_sha256": "dcc66866f0edb088b407f209c27621ecdc2ce61673e9a76b3981acd5787108c5",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q10",
+      "template": 10,
+      "variant": "",
+      "source_sha256": "e0a6724140dc0a70ead171a0372bbe97e6cbbf07b51763b2781c5852124620a5",
+      "sql_sha256": "d2b24b32af588e5655e9bc9c2a96fb5f804e950177156c97b6bda64acd6444a8",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q11",
+      "template": 11,
+      "variant": "",
+      "source_sha256": "b07b68bb24a0187148d307f630aabd2a219c394f0582d721e7d4b5abdc385fd8",
+      "sql_sha256": "9d5c233dd05b35801b3a3702bb76e5a3e7f80dbf9493ad985c3907facd8de592",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q12",
+      "template": 12,
+      "variant": "",
+      "source_sha256": "0ec0c7a7e38a8cb375bd2e78e6749a94a9e038a524b7eb3440beacb982a72c44",
+      "sql_sha256": "3c8c18e701ca77d36f247b05e02af41e6555443ffa9e764b8f5b0a897c3bcf62",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q13",
+      "template": 13,
+      "variant": "",
+      "source_sha256": "a4345546a85b1e21cc24a5697e0c566067e3e98ef2431763122ada7851ffa969",
+      "sql_sha256": "5bf10ec158f28e6258184d76e3e68331e867431899ebc9dcc01fae0dca588354",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q14a",
+      "template": 14,
+      "variant": "a",
+      "source_sha256": "b2556a03670619197c5b7ac1fa60534638e6a82a5a7d8f91d5f02dca4a1bb4d6",
+      "sql_sha256": "4be70220bab72b0749fc29fc165e04d92dd23c05fa9186107103b0f3fc80294a",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q14b",
+      "template": 14,
+      "variant": "b",
+      "source_sha256": "af29afad9a2a9df8de186a4a8ac6161f5b70f7a3815846dc4dd39cbf63c8af1e",
+      "sql_sha256": "e624468b958856a8c116bc0fc56e1d3e6e6d8071f956c53ed9a7b6b97690cc29",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q15",
+      "template": 15,
+      "variant": "",
+      "source_sha256": "9108913da7116a7e1a347c46e1a12cae927519849de2093d07ae1974c759f5c2",
+      "sql_sha256": "432485f3e208bbd94737c9cbe6553fdb98e4654a7a8e9e802de2d58be3798595",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q16",
+      "template": 16,
+      "variant": "",
+      "source_sha256": "b29a5f243280145b9231010cd0297c3d73caad9658fa8287168f5b1cbe423458",
+      "sql_sha256": "350498bc55b00b51f153b6c9903968d509180d941e22babef2e8ac8f78f108c0",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q17",
+      "template": 17,
+      "variant": "",
+      "source_sha256": "39e698d37e0551e4c42c1559eb660574ee1a18ec8d16cb7b444a7199493d3241",
+      "sql_sha256": "77c29b63e2f46e50b988f5cbbc2b5fea28a4abc27914a23600bffb9d9d8bf64f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q18",
+      "template": 18,
+      "variant": "",
+      "source_sha256": "7a2d9ce21118c1e4b791c7cd8f8681ed48e4cd63fe9ee145614ef04cbc6e1c7b",
+      "sql_sha256": "dc498971e206f5e0684fddeab61e1c530ca969eda04dd3221593f017332dd451",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q19",
+      "template": 19,
+      "variant": "",
+      "source_sha256": "210e3b91d3ccac7469427d14132d9de9ab9e24b365497ae205bae84bcc7d924d",
+      "sql_sha256": "48fb4494e8d3e5ae83f70abd9bfd78fbcb6639ffadef0eaf2f9281f2c674732e",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q2",
+      "template": 2,
+      "variant": "",
+      "source_sha256": "d25352423f7fc7e6e4ff292fea89019219fa42de1cdc871b0c89eab0f3918180",
+      "sql_sha256": "1f48606c9d967177220158c51c375753d5d1a19458f526d73bf5ad803be0e506",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q20",
+      "template": 20,
+      "variant": "",
+      "source_sha256": "147bc32735545df69dfecacbd866faae63ec9b89db21d8398474b4aac7a8ad7a",
+      "sql_sha256": "dd00cd2c8cf9cf397a00a25d3f07c7d441678dda8b4272b6bef7cdc3a4fcc1a8",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q21",
+      "template": 21,
+      "variant": "",
+      "source_sha256": "3986c1b15a138f387c829d126a3f512f5f941e0bd3af4a432b241db61ab39fe6",
+      "sql_sha256": "d99b186eec7a76068bd706ead196b41d47615d5931a2ae638fd8c62fdd8b6969",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q22",
+      "template": 22,
+      "variant": "",
+      "source_sha256": "fa8806f08acbed08a5ced3cbe9a1afdbfdcf9dc0f56a626b8c0038aadf6c453b",
+      "sql_sha256": "429b128aa5dcbb82cf99ae3c99e47f8e303134d48ede3c2b890062ba2ee48d4c",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q23a",
+      "template": 23,
+      "variant": "a",
+      "source_sha256": "9f3765b3b8cb48ee7d0d54af4d2d10bb51edff5e38d2c642b561364fb753af24",
+      "sql_sha256": "387bac72a958fd4ac2d7297ecca27f2f4aaf1497c24bfc0f54e75a27756f6564",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q23b",
+      "template": 23,
+      "variant": "b",
+      "source_sha256": "e97729404387637e56a4cce67875d2aec68fec1ace07f71b62faae8526269780",
+      "sql_sha256": "023199d5d7fbb611babbba6db80033e5dc91dbcefbd49d459f4b47fe631a2cf8",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q24a",
+      "template": 24,
+      "variant": "a",
+      "source_sha256": "86d78da37be30f34e920c721bc6d98f1967668449f7dbd707df63246f3831d7a",
+      "sql_sha256": "b819a8b1944f128cf37d05ebb7344237cb2230b50c249a1d6f517b2e66480414",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q24b",
+      "template": 24,
+      "variant": "b",
+      "source_sha256": "f24701f20572c63934fc8d2609d9a62e1b1a42dca06d2cb29f0feb4f1926aeb7",
+      "sql_sha256": "56f56903dedb17f1adb040184ca15e4a69db57406afd1a222f1ecf469fea177a",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q25",
+      "template": 25,
+      "variant": "",
+      "source_sha256": "411889da4a81a85e31ef0778d04bc807f9540985e9b295fba4905dc105b2c46a",
+      "sql_sha256": "411889da4a81a85e31ef0778d04bc807f9540985e9b295fba4905dc105b2c46a",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q26",
+      "template": 26,
+      "variant": "",
+      "source_sha256": "fcbcf0269cbfc44f14f727f281c7b04517c173bb629f85b07273e0a3c43158ae",
+      "sql_sha256": "aa9f67d16c92850a82fe40f708dba57fa28635c5ffbbdd14946ba355de72981f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q27",
+      "template": 27,
+      "variant": "",
+      "source_sha256": "465bef509f856456f7e16603b7ac05114c7d9aac38389b7a2026a49793425f7f",
+      "sql_sha256": "570669048f0ebf01567e89f63e922436eaee0988e9b5c928a104fc824995be54",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q28",
+      "template": 28,
+      "variant": "",
+      "source_sha256": "6bfc0487bcc98ca2ace91c9542e876c35eafee46dc3d3b072818da2a358ec9b0",
+      "sql_sha256": "e74edeabdfe79c039c5f6af1fb5382556c0e823a141ae909651b15eabbf823cb",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q29",
+      "template": 29,
+      "variant": "",
+      "source_sha256": "417b6fb37539f59faa0d1ed2c5f5e5279c676b37991b69e9a960ade91c411e50",
+      "sql_sha256": "5a1d2736551a832b914dc1b27f5eb1efeec59817891e50b1ad11adaed25eb32f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q3",
+      "template": 3,
+      "variant": "",
+      "source_sha256": "d1e439932c345b200bd7197b22c9c70a9e9d960717ca9d938df3c75632018516",
+      "sql_sha256": "3e3fcb7d87bc3a47746e6a3c0420b40d6f4263371309f1cd132067a61eb21204",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q30",
+      "template": 30,
+      "variant": "",
+      "source_sha256": "363c292512f8efe65f2e0f6dee6afec9f8c0870564f0905c0e78094cf1648be3",
+      "sql_sha256": "d4dcdab30d47af03254d085a1278b99b108b908c31b231204299307d06cadede",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q31",
+      "template": 31,
+      "variant": "",
+      "source_sha256": "74d886d6a128fc7ba0c8ceb2b2cc334e93f44efc21295a9830cd38e4f5af7bde",
+      "sql_sha256": "faa016d06ee51a2bcdc9e3117c2965d0eb46609b39d7401c30286f267bd583fa",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q32",
+      "template": 32,
+      "variant": "",
+      "source_sha256": "7b59729d93aab2d1ba7426fab35b7ad7d5e5e065273e3d88e326fdce4e0ceaef",
+      "sql_sha256": "ff3bfec4b3e5cfc9fec3ea0c9bae811460b7ffcae1874bd7c6c801aec617c8d5",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q33",
+      "template": 33,
+      "variant": "",
+      "source_sha256": "dc9081694f034c731a6cb9129889d4e14bbb0a5419ea387d08863749d85e4626",
+      "sql_sha256": "9099f21da3d74368a8c74f7686ff90069b765d4dae4fdb0b16981992be4db3bd",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q34",
+      "template": 34,
+      "variant": "",
+      "source_sha256": "4da54898926f17f330ba29c304ad5245136e456154ff14ecb06dbfeb9992e396",
+      "sql_sha256": "32d3a8779e2b67729dcf53e598dfb89cb6faf8114beed53e2284c0a079fdd58a",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q35",
+      "template": 35,
+      "variant": "",
+      "source_sha256": "b04188d2a5079d693481897c7f7d1bfc75dfd50e810454e3dc838a4a8d099925",
+      "sql_sha256": "3bdaea4ebb76c4b8806ec07bbf5cbb570ed706f69df3b8b0127abb4615b1ac70",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q36",
+      "template": 36,
+      "variant": "",
+      "source_sha256": "9919247afd2fded820d0121f1961c477705f11a67b8d27fa2fd325c6f6856ae8",
+      "sql_sha256": "efdf46d06caf36fb1ce201785e2ffa503fe956d8e3a7cfe18c53b510c8e1d92f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q37",
+      "template": 37,
+      "variant": "",
+      "source_sha256": "cff2cd457ea10d7f98d03eaaaaccf39df301da0ea43b45feb71c51c6dcaada29",
+      "sql_sha256": "41e988a4026057f6e78fa02c8da1e5e5b41dde664e31c183380745b586891bbd",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q38",
+      "template": 38,
+      "variant": "",
+      "source_sha256": "3b790e37fef1c6fec6c0e98ece0c39cb2bb6f309569f0de4975c9f60a347b95c",
+      "sql_sha256": "7b4cd15b9f792310dab2ebc04c4c152d5a66773114b4dc1e47f14d714c383d68",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q39a",
+      "template": 39,
+      "variant": "a",
+      "source_sha256": "bd6e88eebf2a4ae7bf976e1fe4e28b44dac13da43222c83563b001124569d309",
+      "sql_sha256": "79b28dadf9d75cb23df1015b30af808857abc25b351ebd70d17a1c7186454c7c",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q39b",
+      "template": 39,
+      "variant": "b",
+      "source_sha256": "d3100752db66b4b37190de659e674a28f719d9f3e75a402438db097c4d52b87e",
+      "sql_sha256": "9a41b3e99cd0075c68fa43f287d8f08ab872671b87df8ec58a00f396e455b5dc",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q4",
+      "template": 4,
+      "variant": "",
+      "source_sha256": "afef81f86d76638c71c2ecf0d26782851e07a5fc0f97393cfe136220ceeaa2bb",
+      "sql_sha256": "1cc4622f3c49646336db55838f4ce317868c18290e50d3553c5c2b12995c4da0",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q40",
+      "template": 40,
+      "variant": "",
+      "source_sha256": "7d4f3fc5a0ce30784d80f9b1d1bd38cda04f503a4551fb3d2a4eaab404224f16",
+      "sql_sha256": "4255bfa95a66f944a76be522c27eb768c798cff299648b514d7623fb4550b445",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q41",
+      "template": 41,
+      "variant": "",
+      "source_sha256": "6e6c8742e1994df8d08d996c05656902dbfdf2ba2180fc694b2623ce12eafaf4",
+      "sql_sha256": "1794ce5f840767b0e4f7725aaa0849dca848659740215b4f10eca9dbc3dc28f7",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q42",
+      "template": 42,
+      "variant": "",
+      "source_sha256": "9c7ac36f415fc4b2b54f6c2da4d9b7d30e88ea4cfd9a0e44fa25b127a18e9255",
+      "sql_sha256": "28d28561d053024aee3c134352b966558aff26961a438afe1cffa9864ebf93a4",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q43",
+      "template": 43,
+      "variant": "",
+      "source_sha256": "89fc87d9aceb582b7adb72b9a324255d52d55b6b05ca2f8ee6466d0e61d55b59",
+      "sql_sha256": "04c8999e5377558c3ff7bd51b5577357a0526fd278d9246b423774ae46217eb7",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q44",
+      "template": 44,
+      "variant": "",
+      "source_sha256": "c504acb479fc93b8c25c5941f4e2d955025319ead946c1e9b1df8087a3009824",
+      "sql_sha256": "73de84eed781d88b6bf77954c0637794e77322ab5381e103672654bd91dfa415",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q45",
+      "template": 45,
+      "variant": "",
+      "source_sha256": "869ed7f4b2239694b150b3b59649a1a92f0a95b4a008d23f3db8051da9447d61",
+      "sql_sha256": "1a1a114feabcbff27bf25b80339fd29ef903a3872511946447dc5e3c62281b36",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q46",
+      "template": 46,
+      "variant": "",
+      "source_sha256": "99c67538283437a0a157c543f947ba821c15aba5c13a6fbba32b0af32d7e18fb",
+      "sql_sha256": "51c88045470ed6029ce25c4eebc313324a822c5fff8f73f862fb745a689cfe9f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q47",
+      "template": 47,
+      "variant": "",
+      "source_sha256": "21b86e16ce6aa6b79b767372c84da4944b974a8168ce1a12e6fb55899886b063",
+      "sql_sha256": "f005597b610140f868ab67b95c612afd33e2bde9baf904ec527c5b4d53791aae",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q48",
+      "template": 48,
+      "variant": "",
+      "source_sha256": "fdc9147f1f4e539fcf1daf9726a8450a1bbb10e58a8dd442da2e9037e3c14426",
+      "sql_sha256": "af27e3fc8d22e13694883793d0a8f4473f9ec76ce72cb9139c4eeba15d30bce1",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q49",
+      "template": 49,
+      "variant": "",
+      "source_sha256": "cad2eb1757980e7edcd7ac3c278b9b4cdbc3b7838bd9884b9619338638d5fa3b",
+      "sql_sha256": "893584635cfa49cd35738b7226f95f89cc3ddfb2b4b88bbf7c1b3e88f45cfe18",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q5",
+      "template": 5,
+      "variant": "",
+      "source_sha256": "d694716a6ada3337a49768d0a2c7ba30ebccd227e97bef3d5f14b41a677eecc0",
+      "sql_sha256": "45683bb2cdb664745a8b619fea16af837decc212375565f47c952b77ba130a2f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q50",
+      "template": 50,
+      "variant": "",
+      "source_sha256": "e1867e6bbac5975b83341c0c78d3d6d1fe5d6c761add66d4058ba761eca418cf",
+      "sql_sha256": "420e073f6d55ef1d2a0fe035a4f1aafb25659b36f23e2b5820115658aa246f39",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q51",
+      "template": 51,
+      "variant": "",
+      "source_sha256": "56bddf50205d12fb37411d1d520cf15b22a039ca9f5c04381e4aa0cc1b059103",
+      "sql_sha256": "63fd752da069d04034eb5d64265ed401bde015a5f3bab591cff6b01fa9136ade",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q52",
+      "template": 52,
+      "variant": "",
+      "source_sha256": "6805af15deebad62fdc87218390375a81148930a33b273f8501227a72701a3dc",
+      "sql_sha256": "9b4aa36591f0dad573d06ef47b62b0589a45698e89ebeeade0de27a8af751c35",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q53",
+      "template": 53,
+      "variant": "",
+      "source_sha256": "0d87c24ab129b70e0516cf0415554bfa28660dbc07cdd598bb1823763fc83065",
+      "sql_sha256": "2015b137fa7daade102ac8acc2f225d7dc892b0af8b69d40b7a2b27ccd568431",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q54",
+      "template": 54,
+      "variant": "",
+      "source_sha256": "6edaac506c359d7e84f0d40634f2175ed1ca144fca45b8474e8ed6a7d6cf07f0",
+      "sql_sha256": "3e83042ac65ca3ea7195484887d7509cc58737875a8648a3d1a2fbd80aee8e9d",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q55",
+      "template": 55,
+      "variant": "",
+      "source_sha256": "7295265056a98e04c75559bdb7c4551072a5e37ecc88fc58e27aadff2015c968",
+      "sql_sha256": "9669fbb2a2c1be94ff8590d9c1bd9bd2e99e2b3138e933d13e126e0f473e8228",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q56",
+      "template": 56,
+      "variant": "",
+      "source_sha256": "84b4a9d6a45c334e632fc640a3754be5da4d93bb3d539ae56d4274d25bd25706",
+      "sql_sha256": "547f7203e33ef78f3c91968e85adf6e79dcbb61c60f90e171fc43e79fd96d0ef",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q57",
+      "template": 57,
+      "variant": "",
+      "source_sha256": "ba37ddd48eac2b04a1599b0c38ce043e13ff1e287f884fabd2dd0ffcf189b2d2",
+      "sql_sha256": "bbdaacd911effe7ac1e0659e32e0b414593bcc48399e9759c4a028ec319775d8",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q58",
+      "template": 58,
+      "variant": "",
+      "source_sha256": "14601b3a82b5e54aa0bfd8f0e10effbeb8e5a0c026fbb71b97b34ce73acac366",
+      "sql_sha256": "6c7bcd2a7cca555237b251069c4a1556d99a9e3089aeeac403ce47fc72643521",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q59",
+      "template": 59,
+      "variant": "",
+      "source_sha256": "b06df4ee3b30e0151ec409306ae992f8f7c89163eb4543c12dcc7c6a59ddac6d",
+      "sql_sha256": "4865290fd3045488f3ce904457da5081c9a14d83599fea80bbf63c3543d1e164",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q6",
+      "template": 6,
+      "variant": "",
+      "source_sha256": "4297a89eebc8e4b923ad2b80aeefcc33142cf88e663be33794187a535f7e544d",
+      "sql_sha256": "a8dd4377995ed37c90daf994f739dd516f374628dfc98a8806cdfc52e1d9f493",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q60",
+      "template": 60,
+      "variant": "",
+      "source_sha256": "57b9f1dd3656d82908c163dc62805ed32d77fd9edc294666237eb068fb17d6c2",
+      "sql_sha256": "282658d9ce570bbf2953118887beecd5011fb7a84c34682e0c9824ee1c1a8666",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q61",
+      "template": 61,
+      "variant": "",
+      "source_sha256": "d41a630609939a35f453591a2c62d8565dcecd778be6033cb15ab84ccb328c49",
+      "sql_sha256": "0dbcdce9d5e09550eb76ab03abdd00a7e667746ed235e82f399e4dfd2620b6cc",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q62",
+      "template": 62,
+      "variant": "",
+      "source_sha256": "57f1054db25a45d5af706627a1a37cbaaae0e9fa9dd231c56458eba18802baa7",
+      "sql_sha256": "52ce6c028c75e53cccdd62dc382e81c50f591049263aac79803a8a341ad78b2c",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q63",
+      "template": 63,
+      "variant": "",
+      "source_sha256": "be0c7159817c3f110080cbbe10b9b92a2dbf5863cf8f0771846708ce3039beaf",
+      "sql_sha256": "6282a2f376c68f778cdd67cd56620d26352460dc095bb4947f3eb6ea1d0a21fa",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q64",
+      "template": 64,
+      "variant": "",
+      "source_sha256": "babcdd57ec4e997e154a1841c58096732c5ecef7e4a5de6161101d348c963ce9",
+      "sql_sha256": "b52e8f499ee22ecec48b261ff8df29f3aa8a8c620cd1c50ef7bb93c65622ddf9",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q65",
+      "template": 65,
+      "variant": "",
+      "source_sha256": "a2137d05509595c07cfba2b5dc31b39731ba4edf0a03e1a7f24b9735e5fccfb9",
+      "sql_sha256": "6673b9db2c681fe3114f3a48a4b320969f25bf8a726de8ea526cf0aede0c1b7f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q66",
+      "template": 66,
+      "variant": "",
+      "source_sha256": "3714471085c88e8c278e5ca81ce59db31b29b541da3d917567e2bba25c6eb3ce",
+      "sql_sha256": "4434b91cfd79e5ced84d61476fcb59f53d8478ccbd691fa0f43b13aebf433682",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q67",
+      "template": 67,
+      "variant": "",
+      "source_sha256": "65beb2ef0a082da4ecc2147b03e5aad138f858df4a0d1bb3dc8ba0e653fa095c",
+      "sql_sha256": "8f79124145c5d674df18cd7c1df22b9e8a64257d762f1f8256088279133178f7",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q68",
+      "template": 68,
+      "variant": "",
+      "source_sha256": "2c2c7859ab0571b1dfd3e6ba6b82467114ac71e881b109e3145bc0c2f4333908",
+      "sql_sha256": "1cae8d08f90b10841d310e9afbe78a45f4e78e2b7b86e58b2b0bec649add8523",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q69",
+      "template": 69,
+      "variant": "",
+      "source_sha256": "292ca3e6f42313d53b7a1dae88d5fe3b7ec2c5adb9391eaf49eff2c566b1aebd",
+      "sql_sha256": "555154b2ad5a3633994e69b604f47bdb781fd0a062e6d56e883b506ffa594b6d",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q7",
+      "template": 7,
+      "variant": "",
+      "source_sha256": "7de4834cbfccb4e1faf84771e14ab177344919412a6138f546d8cffe648d3716",
+      "sql_sha256": "08237c7efc9ada6cf501cfb8e8bf938eacd970693940b25c6d91d48cc0475c18",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q70",
+      "template": 70,
+      "variant": "",
+      "source_sha256": "bfe88a509e49d11094542cfbbc2492e66f82ca022836e053ba676c7cede6e80b",
+      "sql_sha256": "28cba3f72acf6461b8ab5b47ced93b401d04e975acd5ad611fa0ea102314c878",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q71",
+      "template": 71,
+      "variant": "",
+      "source_sha256": "6b14f4f10b16ecbc0743adbb9d017ee885cd7698f93b83e0042ca54a6be0ea87",
+      "sql_sha256": "513e644ee8baeea3678211bd5396be73dfe00671f365263edcdac93e30f22a8f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q72",
+      "template": 72,
+      "variant": "",
+      "source_sha256": "dc1ae406f55d34870c3ebc53d25664d1fb15a8827ed0158f3c0d7649d3e0c31a",
+      "sql_sha256": "c85313677c36ee5f95260d1f8d6e65364a25cebb53627f6f97d1aa20723c4773",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q73",
+      "template": 73,
+      "variant": "",
+      "source_sha256": "bdb210e4f30202c06a5d365f5d34528bfaee1f9018a8c9733160d5c8f933b0bf",
+      "sql_sha256": "225645c8668533a594cabbe0b9261a47a0ed3ce5099e1b31dd310225c36969ef",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q74",
+      "template": 74,
+      "variant": "",
+      "source_sha256": "4593231ba66da2f7a17af6132ca6d857cc929d73a0475829de3da03224c65e59",
+      "sql_sha256": "09804ae507320f909ee403ed89af7ccabfbeed703b7beb1e64237ccae43e587b",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q75",
+      "template": 75,
+      "variant": "",
+      "source_sha256": "d611650badc3716c58a376b91453804270efe2abcaf3d540814bf2d2c4f6de04",
+      "sql_sha256": "290f252971607e74fe4af4e7a39a8b658364910cf511ca1c64038a8bf92860cd",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q76",
+      "template": 76,
+      "variant": "",
+      "source_sha256": "4abe7f4411b3738d2405e5537f307358bfc82d51a07281252d80ce1db31a2b81",
+      "sql_sha256": "bf6daa0f20678865549dfcb1bfd60c5679d7018b7c392a4b37bbd022d72dda94",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q77",
+      "template": 77,
+      "variant": "",
+      "source_sha256": "388cf2c5d66f38be758336f27132853393ec86168232fab313a5056a38e731b7",
+      "sql_sha256": "c33390fc16bb8054deb65deec6fabebbf590259f982ce49ee228243cf72a9a9d",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q78",
+      "template": 78,
+      "variant": "",
+      "source_sha256": "a8f37182d57de41989a3cb86ed0361ed1f30d874a1824e96469fa51f15085874",
+      "sql_sha256": "e27ca1497ac034d41abbcbaf5259037531d0cf53f1711b1c3933b5b02334d635",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q79",
+      "template": 79,
+      "variant": "",
+      "source_sha256": "d42ef6f7bb3aab8dcfee1ededeaaa6ec2b5326c6b46c9fa091ecc2a7b4df821c",
+      "sql_sha256": "c0db1c460607e4e699abf2bbc4ac40f40dddd1c83b39a9c28439963cfe26d3f6",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q8",
+      "template": 8,
+      "variant": "",
+      "source_sha256": "290be79b985dff56d75c633aa0b107677fd0db40ddbdd0fd4eb89497d4a2a69f",
+      "sql_sha256": "7349552634464cc0134c5feebca5d60f937bb6dc55c8baf9a1e1ffa122a259d0",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q80",
+      "template": 80,
+      "variant": "",
+      "source_sha256": "9340352ef6f57bb8f755048f5a1f2cd50a75c7d96f7a7fe07504073f7f5ad9ee",
+      "sql_sha256": "2a8cd2742d1803452b531ca0a7a372918c88d2a3186eddf90b74126485c37b49",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q81",
+      "template": 81,
+      "variant": "",
+      "source_sha256": "3d949e7f45d4c23923f5c6e40efc0235cb04c4583eed90589e7aefd1ab57a779",
+      "sql_sha256": "299bf7c8660184a6b0b213a4d32dd5ec9fe9a5c7baaef63544b22ceaf19ed9bb",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q82",
+      "template": 82,
+      "variant": "",
+      "source_sha256": "ca75ee0fb1ef990003f0db8c8661fa2e9efd35498094b3e083c8b35a4da66324",
+      "sql_sha256": "f98f16b5ca704dfb9a07c8bb134509f93334110c1ca54370913a025c68fe887f",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q83",
+      "template": 83,
+      "variant": "",
+      "source_sha256": "4d0bda97653d6486c6fcb11725b09cdd333fc61de7818996a849447287a57164",
+      "sql_sha256": "e2622fcb23fbea77b93906d095809eae83fed244319c14be93a7a93fcb8241eb",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q84",
+      "template": 84,
+      "variant": "",
+      "source_sha256": "ea84574bd34f8bb0ea46e240951282f224c810eba09373fa6fb186a2c417014b",
+      "sql_sha256": "350cce37908252b463cf7816f1d75e043adeb971f24095680842125e21820718",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q85",
+      "template": 85,
+      "variant": "",
+      "source_sha256": "d921da77e7763e421063ff5a3d5a4145840770edf1418f361a416d722fb48e6d",
+      "sql_sha256": "1ff56c4bb332ea7a8092a64ece30316eda09db5ec4517c0b5143e0ab1f809541",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q86",
+      "template": 86,
+      "variant": "",
+      "source_sha256": "8f26c02264ff5dd41761facb70972b641adcd852d8813bff88a5a39d90b0e8de",
+      "sql_sha256": "0581f3824296c7f4b15d5cc0ea5dbda35036abb28109f8cc5e00c9a68e8a940a",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q87",
+      "template": 87,
+      "variant": "",
+      "source_sha256": "c80377a668278b49c47cc8340f9eddfb2bce7f9d97e6b56a6f3e0269cca2c2df",
+      "sql_sha256": "63a8a4cd45a9c75193adc05a4c16d2adcbdc79b950781e515095f44d0ab6ba4c",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q88",
+      "template": 88,
+      "variant": "",
+      "source_sha256": "ef579ad3d5d5dc75c2bdeb9138d6c4e26ffcc241629346fa7dc2d3f1ddba5165",
+      "sql_sha256": "e8b22372ca5f0e613c6b5800c891ea331c8bcd05eebf17de463bae0fb921d2fd",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q89",
+      "template": 89,
+      "variant": "",
+      "source_sha256": "8a779bc2a1fcf3bc5a89504817775f70ad2ff5ee603ecc15bcfdee1b8d95291e",
+      "sql_sha256": "235f302b4483d68767f0934a6163bd841ef7b2732b80fbd72ef38dd5a47435d7",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q9",
+      "template": 9,
+      "variant": "",
+      "source_sha256": "972b2508787044cabd544e5dc0393526c318e373d8fa45a9f171b11c1281405e",
+      "sql_sha256": "11b086f5c37561ac68db81a09c3f57cd9c50aa11d892a29c6be9a5a4373a150d",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q90",
+      "template": 90,
+      "variant": "",
+      "source_sha256": "fbab8f1e9f9493b856bfb8d9de3d4d218b55da3f5b7df7489ebca02a1eaa3265",
+      "sql_sha256": "d505712af49c6b176b71c33ce34906403f06acef90af5079031607962346f315",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q91",
+      "template": 91,
+      "variant": "",
+      "source_sha256": "9fdf907b466dea997b633b316aeea178bd898a18a0839873a21db3f44c384a4d",
+      "sql_sha256": "06084f698ff2922e544e87e59888546a54382fbf74b55126e95d9ca9486ddcdb",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q92",
+      "template": 92,
+      "variant": "",
+      "source_sha256": "6dff77e65fa717ed587ee48b19cff552ef615a656564559d688c425c61d1f2c4",
+      "sql_sha256": "8df65a6c21ffdd6d469d332a4054ef5c118981a818fc4e80fcdc17bfb53f1d53",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q93",
+      "template": 93,
+      "variant": "",
+      "source_sha256": "8edb95bfdf9f8457304be20f2bb28c0d89f71b002d810441773289963a0ebbf6",
+      "sql_sha256": "a742666df2fe2e689ff1543afe288c3f623cf22993cc476bfbd21fdc393abebd",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q94",
+      "template": 94,
+      "variant": "",
+      "source_sha256": "4e19ae4610199254debdf77bee5cc3f21c8adfe11f35c4eba5e1b70bfda77e37",
+      "sql_sha256": "610b440c822a227f93a68cfcaab0a45224a1a095e1c6632a8c6ba2ee1a5b9148",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q95",
+      "template": 95,
+      "variant": "",
+      "source_sha256": "e8e30963446a0ce71d683f0dae41609dd9a6bc579ac2965a7fa46fb02fe18611",
+      "sql_sha256": "eb9f545a86b99d948949f6f92738255142076be8e5772ac877cb27cbd3e24121",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q96",
+      "template": 96,
+      "variant": "",
+      "source_sha256": "e6ee1de37c7fcd182689457d5216c384f333d25096b808ad555e12155e2b49cd",
+      "sql_sha256": "761eb5a54ef927b1526a6d671e950af5e8257f0ca038e32c42f0e72401036c80",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q97",
+      "template": 97,
+      "variant": "",
+      "source_sha256": "28f0102e020b272eccf1e8dabd40d5ef9568f9cd7dcd17f1d64dc0f95f7182a6",
+      "sql_sha256": "2f3733ad24807e544ae77adacc42138219efc5e0911e019e80816e18ca0e22da",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q98",
+      "template": 98,
+      "variant": "",
+      "source_sha256": "53397b7c56f06f763e130f3289e00eceafb124bf538fbbe9a31e006c52107725",
+      "sql_sha256": "ea50ad9301ebd6929cd6c920f4ec22151eef885cf2fc5f2b7bf5b28c674cc514",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    },
+    {
+      "id": "q99",
+      "template": 99,
+      "variant": "",
+      "source_sha256": "9d813e81f38278430ce33a8814aa0e412578f40491df2ae0c70005a2c3c7e303",
+      "sql_sha256": "2d2057b6cca9f3eefb07b9070076df2cad88661f1c1e5ea128e66a128ad203dc",
+      "status": "not_run",
+      "reason": "EQ00 inventory; native-schema/product/reference gates pending",
+      "adaptation": "Trim surrounding whitespace and remove terminal delimiter; retain SQL and literal substitutions"
+    }
+  ],
+  "template_count": 99,
+  "statement_count": 103
+}

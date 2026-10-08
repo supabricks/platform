@@ -1,0 +1,96 @@
+name: issue135-collection-candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  release-environment-lifecycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 37485850182
+          github-token: ${{ github.token }}
+          name: release-${{ matrix.target }}
+          path: build/base-releases
+      - uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 37485850182
+          github-token: ${{ github.token }}
+          name: environment-bundle-${{ matrix.target }}
+          path: build/package-fixture
+      - name: Download the exact qualified NE05 predecessor
+        uses: actions/download-artifact@v4
+        with:
+          repository: supabricks/platform
+          run-id: 34733919344
+          name: release-${{ matrix.target }}
+          path: build/previous
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and identify native-only diagnostic candidate
+        run: |
+          cargo build -p supabricks-local --release --features sync-profile
+          mkdir -p build/base-tree build/releases build/environment-lifecycle-reports
+          tar -xzf build/base-releases/supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz -C build/base-tree
+          python3 e2e/native/performance/native_package.py --base build/base-tree/supabricks \
+            --binary target/release/supabricks --destination build/diagnostic-runtime \
+            --revision "$(git rev-parse HEAD)" --proof build/environment-lifecycle-reports/package-proof.json
+          tar -czf build/releases/supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz \
+            --transform='s,^diagnostic-runtime,supabricks,' -C build diagnostic-runtime
+          (cd build/releases && sha256sum supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz > supabricks-v0.1.0-alpha.36-linux-x86_64.tar.gz.sha256)
+      - name: Upgrade, cold restore and controlled resolver on loopback-only Linux
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches" \
+              "$2" install/native/qualify_environments.py --lifecycle --directory build/releases \
+              --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+              --target linux-x86_64 --report build/environment-lifecycle-reports/qualification.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Repeat slow collection through the console
+        if: runner.os == 'Linux'
+        run: |
+          python_path=$(command -v python)
+          sudo unshare --net /bin/bash -c '
+            set -euo pipefail
+            ip link set lo up
+            exec runuser -u "$1" -- env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+              SB_NE06_GC_TRANSPORT=console SB_NE02_NETWORK_EVIDENCE="Ubuntu 24.04; unprivileged loopback-only namespace; cold private HOME and caches" \
+              "$2" install/native/qualify_environments.py --lifecycle --directory build/releases \
+              --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+              --target linux-x86_64 --report build/environment-lifecycle-reports/console-qualification.json
+          ' bash "$(id -un)" "$python_path"
+      - name: Upgrade, cold restore and controlled resolver on isolated macOS
+        if: runner.os == 'macOS'
+        run: |
+          /usr/bin/env PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+            SB_NE02_NETWORK_EVIDENCE="macOS 15 arm64; historical predecessor prepared before isolation; candidate upgrade/restore and resolver deny external networking and Homebrew; cold private HOME and caches" \
+            "$(command -v python)" install/native/qualify_environments.py --lifecycle --directory build/releases \
+            --macos-upgrade-policy install/native/offline-macos.sb \
+            --previous-directory build/previous --bundle-fixture build/package-fixture/environment.zip \
+            --target macos-arm64 --report build/environment-lifecycle-reports/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-environment-lifecycle-${{ matrix.target }}
+          path: build/environment-lifecycle-reports/*.json
+          if-no-files-found: error
+

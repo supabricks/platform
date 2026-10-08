@@ -1006,3 +1006,86 @@ fn project_bundle_target_and_kernel_mismatch_fail_during_read_only_plan() {
     assert!(f.store.branches().unwrap().is_empty());
     assert!(!f.store.root().join("project-revisions").exists());
 }
+
+#[test]
+fn collection_fences_targets_before_worker_io_and_commits_on_the_owner() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let retired = f.ready("retired");
+    let active = f.ready("active");
+    let job = f.manager.collection_job(&mut f.store, &f.binding).unwrap();
+    assert!(retired.path.exists());
+    assert!(
+        f.manager
+            .acquire(&mut f.store, &f.binding, retired.id, "late-kernel")
+            .is_err()
+    );
+    // The catalog remains available while the filesystem worker is pending.
+    let lease = f
+        .manager
+        .acquire(&mut f.store, &f.binding, active.id, "live-kernel")
+        .unwrap();
+    let commit = std::thread::spawn(job).join().unwrap().unwrap();
+    assert!(!retired.path.exists());
+    assert_eq!(
+        f.store
+            .environment_generations()
+            .unwrap()
+            .into_iter()
+            .find(|g| g.id == retired.id)
+            .unwrap()
+            .state,
+        "deleting"
+    );
+    assert_eq!(
+        commit(&mut f.store).unwrap()["collected"],
+        json!([retired.id])
+    );
+    assert_eq!(
+        f.store
+            .environment_generations()
+            .unwrap()
+            .into_iter()
+            .find(|g| g.id == retired.id)
+            .unwrap()
+            .state,
+        "removed"
+    );
+    assert!(active.path.exists());
+    f.manager.release(&f.store, lease).unwrap();
+}
+
+#[test]
+fn collection_worker_rechecks_identity_and_leaves_failed_deletion_retryable() {
+    let mut f = Fixture::new();
+    f.initialize();
+    let retired = f.ready("retired");
+    let active = f.ready("active");
+    let job = f.manager.collection_job(&mut f.store, &f.binding).unwrap();
+    let moved = retired.path.with_extension("moved");
+    fs::rename(&retired.path, &moved).unwrap();
+    let external = f._tmp.path().join("external");
+    fs::create_dir(&external).unwrap();
+    fs::write(external.join("keep"), b"external").unwrap();
+    symlink(&external, &retired.path).unwrap();
+    assert!(std::thread::spawn(job).join().unwrap().is_err());
+    assert_eq!(fs::read(external.join("keep")).unwrap(), b"external");
+    assert!(moved.join("package.py").exists());
+    assert_eq!(
+        f.store
+            .environment_generations()
+            .unwrap()
+            .into_iter()
+            .find(|g| g.id == retired.id)
+            .unwrap()
+            .state,
+        "deleting"
+    );
+    fs::remove_file(&retired.path).unwrap();
+    fs::rename(&moved, &retired.path).unwrap();
+    assert_eq!(
+        f.manager.collect(&mut f.store, None).unwrap(),
+        vec![retired.id]
+    );
+    assert!(active.path.exists());
+}

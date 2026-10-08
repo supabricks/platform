@@ -1,0 +1,39 @@
+{
+  "phase": "review",
+  "status": "measurements_complete_review_required",
+  "completed": [
+    "source-screen-02",
+    "source-controls",
+    "source-envelope",
+    "historical-main",
+    "historical-controls"
+  ],
+  "runtime_revision": "e10d5152f5681af7c233701e0fd75c100cbf4c6c",
+  "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+  "review_flags": [
+    {
+      "phase": "source-controls",
+      "cpu": 8,
+      "reason": "repeatable throughput loss; investigate",
+      "metric": "rows_s",
+      "median": -0.5583247148111665
+    },
+    {
+      "phase": "source-controls",
+      "cpu": 16,
+      "reason": "repeatable throughput loss; investigate",
+      "metric": "rows_s",
+      "median": -0.49921972953180305
+    },
+    {
+      "phase": "qualified-profile",
+      "reason": "not run until source capacity/observer concerns are resolved"
+    }
+  ],
+  "provisional_selection": {
+    "clients": 8,
+    "qualification_floor_rows_s": 1250,
+    "preferred_headroom": true
+  },
+  "source_controls_clear": false
+}

@@ -1,0 +1,105 @@
+{
+  "status": "screen_only",
+  "policy": {
+    "window_seconds": 300,
+    "stride_seconds": 60,
+    "minimum_rows_s": 1000,
+    "version": 2,
+    "memory_metric": "cgroup_current_minus_clean_inactive_file",
+    "maximum_p95_ms": 5000,
+    "maximum_drain_seconds": 120,
+    "backlog_growth_ratio": 1.25,
+    "backlog_growth_allowance_bytes": 1048576,
+    "memory_growth_ratio": 1.25,
+    "memory_growth_allowance_bytes": 268435456,
+    "spool_physical_limit_bytes": 536870912,
+    "maximum_sample_gap_ms": 5000
+  },
+  "windows": [
+    {
+      "start_ms": 1791315622915.0566,
+      "end_ms": 1791315922915.0566,
+      "transactions": 187321,
+      "committed_rows_s": 1248.8066666666666,
+      "published_rows_s": 1240.78,
+      "p95_ms": 2920.42822265625,
+      "p99_ms": 3257.43798828125,
+      "maximum_ms": 3663.814208984375
+    },
+    {
+      "start_ms": 1791315623482.7573,
+      "end_ms": 1791315923482.7573,
+      "transactions": 187306,
+      "committed_rows_s": 1248.7066666666667,
+      "published_rows_s": 1245.12,
+      "p95_ms": 2920.4326171875,
+      "p99_ms": 3257.43798828125,
+      "maximum_ms": 3663.814208984375
+    }
+  ],
+  "worst_window_p95_ms": 2920.4326171875,
+  "bounds": {
+    "early_backlog_p95_bytes": 245278,
+    "late_backlog_p95_bytes": 245278,
+    "backlog_slope_bytes_s": 26.52586949382192,
+    "early_memory_median_bytes": 1647169536.0,
+    "late_memory_median_bytes": 1647417344.0,
+    "early_working_memory_median_bytes": 1154519040,
+    "late_working_memory_median_bytes": 1154519040.0,
+    "memory_pressure_events": {
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0
+    },
+    "peak_spool_bytes": 5173328,
+    "inspection_denials": 0,
+    "maximum_sample_gap_ms": 1042.29052734375
+  },
+  "gates": {
+    "all_committed_windows": true,
+    "all_published_windows": true,
+    "all_fresh_windows": true,
+    "bounded_drain": true,
+    "backlog_growth": true,
+    "backlog_slope": true,
+    "memory_growth": true,
+    "no_memory_pressure": true,
+    "spool_budget": true,
+    "inspectable": true,
+    "continuous_resource_evidence": true
+  },
+  "memory_attribution": {
+    "early": {
+      "qualifier_rss_bytes": 97947648,
+      "cgroup_memory_bytes": 1646956544,
+      "working_memory_bytes": 1154519040,
+      "anon_bytes": 1070194688,
+      "file_bytes": 531898368,
+      "kernel_bytes": 45797376,
+      "inactive_file_bytes": 497381376,
+      "file_dirty_bytes": 1736704,
+      "file_writeback_bytes": 0
+    },
+    "late": {
+      "qualifier_rss_bytes": 97966080.0,
+      "cgroup_memory_bytes": 1647826944.0,
+      "working_memory_bytes": 1154519040.0,
+      "anon_bytes": 1070196736.0,
+      "file_bytes": 533235712.0,
+      "kernel_bytes": 45836288.0,
+      "inactive_file_bytes": 498720768.0,
+      "file_dirty_bytes": 1738752.0,
+      "file_writeback_bytes": 0.0
+    }
+  },
+  "raw_cgroup_memory_growth_screen": true,
+  "limits": [
+    "Publication rates count only measured source transactions published within each wall-clock window.",
+    "Lag follows COMMIT cohorts, including subsequent bounded drain; cadence is 60 seconds, not every possible rolling window.",
+    "Memory policy v2 discounts only clean inactive file cache; raw cgroup growth remains a diagnostic screen. Qualifier memory, dirty/writeback file bytes and kernel memory remain charged.",
+    "Sampled spool size is not whole-stack storage or a hard quota; file-cache growth does not establish bounded disk retention.",
+    "Passing steady screens does not establish maintenance cycles, pinned-reader, pressure, scaling or recovery qualification."
+  ],
+  "observer_storage": "packed source timings and sparse xid pages; fixed budgets; qualifier RSS remains charged"
+}

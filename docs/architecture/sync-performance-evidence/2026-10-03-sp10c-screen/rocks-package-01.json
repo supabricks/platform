@@ -1,0 +1,148 @@
+{
+  "base_release_sha256": "bce28d3149c546d7b8bc7dda48568324514c40ed9495d2f528a32ad9b95386b0",
+  "release_sha256": "f06b84cf68dd4ab5c029bfb9737056c90b98201146443bd2ed2c804149f39d89",
+  "wheel_sha256": "36d336d9d796d08923badb2df778365676cd5a66b4762ffc2d0b952dfca8b276",
+  "revision": "4ec1ee9cf2b7873593b75e0ad7debecb9add06ae",
+  "changes": {
+    "python/analytics/capture/rocks_journal.py": {
+      "before": null,
+      "after": "e325a18d00663d7fa42aecd0bb2ffd0ffce60b36a1026e8d3e34405e774f3fdf"
+    },
+    "python/analytics/capture/__pycache__/rocks_journal.cpython-312.pyc": {
+      "before": null,
+      "after": "bfc25fd8b96830e2f719f7d01e8bec77d10e6671b2ad3f36a388fd0f6e63538f"
+    },
+    "python/analytics/capture/sqlite_journal.py": {
+      "before": "d89a3a4fc7343cbec766e48b5efdbbf29f47d5d9d0d1db9cec04b4bdbf545082",
+      "after": "54104e439a67934e0beccebd3997528dfb55f5e0d50063af03e64cdea9f2586a"
+    },
+    "python/analytics/capture/__pycache__/sqlite_journal.cpython-312.pyc": {
+      "before": "64fb99a98749d3c20283e4c4492eec5e2544196f86068fd3b83203c5b46890f9",
+      "after": "66fa4dca0689463d84e00ca0a2cb436673d9dad381df0a501b4fd6677830bb63"
+    },
+    "python/analytics/marker_profile.py": {
+      "before": null,
+      "after": "d99b350396a2594353337162d151d5b34d8033c86b8dec27a7bc27118d65dd34"
+    },
+    "python/analytics/__pycache__/marker_profile.cpython-312.pyc": {
+      "before": null,
+      "after": "2813afa128497f33fce77b11239873252bcbd7f48dc1b814d5426901a1f372e9"
+    },
+    "python/analytics/capture_worker.py": {
+      "before": "0744a4e2b0474421a47efa1438348805d4c4898700c0ec6fa941374cca01ad8e",
+      "after": "7b46a22339741e5cd0d63c0c4883a40984d37563f5f59c414217f5f15f8b276a"
+    },
+    "python/analytics/__pycache__/capture_worker.cpython-312.pyc": {
+      "before": "bd5ac00f3aba3bcf809dd746047f3655854117c99493cf1532b9462ba0e7b02f",
+      "after": "0f066674fb0f6c3077147592e3722046ed5a62a3839e95eff38802bc8d240311"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict-0.3.29.dist-info/METADATA": {
+      "before": null,
+      "after": "b7c8904097da0fc8785fc07b2c18198cbae757c1db1c9d356fc8566c9b85d7c3"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict-0.3.29.dist-info/WHEEL": {
+      "before": null,
+      "after": "eabbf9ba0f1debb0b130958496460d87eab38aba5f15286eb19521a65301d565"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict-0.3.29.dist-info/licenses/LICENSE": {
+      "before": null,
+      "after": "0fb39240a82c5065eda974030574762733f55c85256fee8f80aa2e3245b475d4"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict/rocksdict.pyi": {
+      "before": null,
+      "after": "37d5725fef666ca504c64478943546ddf2adbeb4965e1c816f347661c3cf7235"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict/py.typed": {
+      "before": null,
+      "after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict/__init__.py": {
+      "before": null,
+      "after": "f806874438a8063d60063c4b7923c25d2f46ab3c1b96c51d5c5a46c70a287bfb"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict/rocksdict.cpython-312-x86_64-linux-gnu.so": {
+      "before": null,
+      "after": "0766a9ca9f32e59ff0f9878302b7f432b8331e1c2fcf742d2ae564b08db88a2a"
+    },
+    "python/runtime/lib/python3.12/site-packages/rocksdict-0.3.29.dist-info/RECORD": {
+      "before": null,
+      "after": "1ba603e443cab5db078736be092687fe3a95f2cad775f5876ad087081202e734"
+    },
+    "python/analytics/sp10c-experiment.json": {
+      "before": null,
+      "after": "931a696bd52fd47dffda8c90a07b615a2fb277ba981e2b532c5f68ce0b8ec25c"
+    }
+  },
+  "installation_verification": {
+    "identity": "f06b84cf68dd4ab5c029bfb9737056c90b98201146443bd2ed2c804149f39d89",
+    "root": "<sp10c>/rocks-runtime-01",
+    "sqlite": {
+      "binding": "rusqlite/bundled",
+      "compile_options": [
+        "ATOMIC_INTRINSICS=1",
+        "COMPILER=gcc-13.3.0",
+        "DEFAULT_AUTOVACUUM",
+        "DEFAULT_CACHE_SIZE=-2000",
+        "DEFAULT_FILE_FORMAT=4",
+        "DEFAULT_FOREIGN_KEYS",
+        "DEFAULT_JOURNAL_SIZE_LIMIT=-1",
+        "DEFAULT_MMAP_SIZE=0",
+        "DEFAULT_PAGE_SIZE=4096",
+        "DEFAULT_PCACHE_INITSZ=20",
+        "DEFAULT_RECURSIVE_TRIGGERS",
+        "DEFAULT_SECTOR_SIZE=4096",
+        "DEFAULT_SYNCHRONOUS=2",
+        "DEFAULT_WAL_AUTOCHECKPOINT=1000",
+        "DEFAULT_WAL_SYNCHRONOUS=2",
+        "DEFAULT_WORKER_THREADS=0",
+        "DIRECT_OVERFLOW_READ",
+        "ENABLE_API_ARMOR",
+        "ENABLE_COLUMN_METADATA",
+        "ENABLE_DBSTAT_VTAB",
+        "ENABLE_FTS3",
+        "ENABLE_FTS3_PARENTHESIS",
+        "ENABLE_FTS5",
+        "ENABLE_LOAD_EXTENSION",
+        "ENABLE_MEMORY_MANAGEMENT",
+        "ENABLE_RTREE",
+        "ENABLE_STAT4",
+        "HAVE_ISNAN",
+        "MALLOC_SOFT_LIMIT=1024",
+        "MAX_ATTACHED=10",
+        "MAX_COLUMN=2000",
+        "MAX_COMPOUND_SELECT=500",
+        "MAX_DEFAULT_PAGE_SIZE=8192",
+        "MAX_EXPR_DEPTH=1000",
+        "MAX_FUNCTION_ARG=1000",
+        "MAX_LENGTH=1000000000",
+        "MAX_LIKE_PATTERN_LENGTH=50000",
+        "MAX_MMAP_SIZE=0x7fff0000",
+        "MAX_PAGE_COUNT=0xfffffffe",
+        "MAX_PAGE_SIZE=65536",
+        "MAX_SQL_LENGTH=1000000000",
+        "MAX_TRIGGER_DEPTH=1000",
+        "MAX_VARIABLE_NUMBER=32766",
+        "MAX_VDBE_OP=250000000",
+        "MAX_WORKER_THREADS=8",
+        "MUTEX_PTHREADS",
+        "SOUNDEX",
+        "SYSTEM_MALLOC",
+        "TEMP_STORE=1",
+        "THREADSAFE=1",
+        "USE_URI"
+      ],
+      "source_id": "2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24",
+      "version": "3.53.2"
+    },
+    "verified": true,
+    "version": "v0.1.0-alpha.36"
+  },
+  "signed_release": false,
+  "adopted": false,
+  "rocks": true,
+  "overlay_seconds": 3.888762754999334,
+  "wheel_bytes": 4206954,
+  "added_file_bytes": 11045003,
+  "native_rebuild_required": false,
+  "source_build_time_measured": false
+}

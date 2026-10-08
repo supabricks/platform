@@ -392,9 +392,16 @@ impl State {
             // owned services on the single-writer daemon. Cold macOS filesystem
             // reads can exceed the general two-second control deadline. Allow
             // these commands six seconds for admission. Package commands have a
-            // separate 120-second bound for archive verification/publication;
+            // separate 120-second bound for archive verification/publication and
+            // asynchronous environment collection;
             // never resend a mutation after a transport timeout.
-            let deadline = if matches!(&action, super::workspace::Command::Project { .. }) {
+            let deadline = if matches!(
+                &action,
+                super::workspace::Command::Project { .. }
+                    | super::workspace::Command::Environment {
+                        command: crate::environments::Command::Collect
+                    }
+            ) {
                 Duration::from_secs(120)
             } else if matches!(
                 &action,

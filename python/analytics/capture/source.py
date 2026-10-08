@@ -28,9 +28,12 @@ def inspect(conn,identity):
             if not engine_owner or kind!='r' or rls:raise CaptureError('engine_object_identity')
             controls.append(oid);continue
         if namespace!='public' or kind!='r' or persistence!='p' or rls or partition or identity_mode!='d' or inherits or extension:raise CaptureError('unsupported_source_relation')
-        keys=conn.execute('SELECT indkey::smallint[] FROM pg_index WHERE indrelid=%s AND indisprimary AND indisvalid',(oid,)).fetchall()
-        if len(keys)!=1 or len(keys[0][0])!=1:raise CaptureError('integer_primary_key_required')
-        key=keys[0][0][0]
+        keys=conn.execute('SELECT indkey::smallint[],indnkeyatts FROM pg_index WHERE indrelid=%s AND indisprimary AND indisvalid',(oid,)).fetchall()
+        if len(keys)!=1:raise CaptureError('integer_primary_key_required')
+        # INCLUDE attributes are payload, not identity. pgoutput flags identity
+        # in physical column order, independently of the index's key order.
+        key=set(keys[0][0][:keys[0][1]])
+        if not key or 0 in key:raise CaptureError('integer_primary_key_required')
         columns=conn.execute('SELECT attnum,attname,atttypid,atttypmod,attnotnull,attgenerated,attcollation FROM pg_attribute WHERE attrelid=%s AND attnum>0 AND NOT attisdropped ORDER BY attnum LIMIT 129',(oid,)).fetchall()
         if not 1<=len(columns)<=128:raise CaptureError('column_budget')
         profile=[]
@@ -39,8 +42,8 @@ def inspect(conn,identity):
             if typ==1700:
                 precision=((mod-4)>>16)&65535;scale=(mod-4)&2047;scale=scale-2048 if scale>=1024 else scale
                 if mod<4 or not 1<=precision<=38 or not 0<=scale<=precision:raise CaptureError('unsupported_decimal')
-            if num==key and (typ not in (20,21,23) or not notnull):raise CaptureError('integer_primary_key_required')
-            profile.append([int(num==key),column,typ,mod])
+            if num in key and (typ not in (20,21,23) or not notnull):raise CaptureError('integer_primary_key_required')
+            profile.append([int(num in key),column,typ,mod])
         expected[str(oid)]=[namespace,name,identity_mode,profile]
     if not 1<=len(expected)<=128:raise CaptureError('table_budget')
     result=dict(database_oid=actual[2],relations=expected,engine_objects=controls)

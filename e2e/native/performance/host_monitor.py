@@ -1,6 +1,8 @@
 """Bounded, safe same-host observations; no unrelated process is modified."""
 import errno
 import json
+import hashlib
+import math
 import os
 from pathlib import Path
 import shutil
@@ -79,7 +81,7 @@ def observe(root, previous):
 class HostMonitor:
     """Five-second JSONL samples, bounded rotation and a fail-closed monitor."""
     def __init__(self, root, quiet_seconds=300, interval=5, segment_bytes=16*1024**2,
-                 total_bytes=256*1024**2):
+                 total_bytes=256*1024**2, continuity=None, publish_quiet=False):
         self.root = Path(root)
         self.directory = self.root / 'host'
         self.directory.mkdir(exist_ok=True)
@@ -93,14 +95,46 @@ class HostMonitor:
         self.previous = {}
         self.samples = 0
         self.events = []
+        self.continuity = Path(continuity) if continuity else None
+        self.publish_quiet = publish_quiet
+        self.quiet_path = self.directory / 'quiet-state.json'
+        self.boot_id = Path('/proc/sys/kernel/random/boot_id').read_text().strip() if continuity or publish_quiet else None
+        self.inherited = None
         self.part = len(list(self.directory.glob('*.jsonl')))
         self.written = sum(p.stat().st_size for p in self.directory.glob('*.jsonl'))
         self.segment_written = 0
         self.thread = threading.Thread(target=self.run, daemon=True)
 
     def start(self):
+        self.inherit_quiet()
         self.thread.start()
         return self
+
+    def inherit_quiet(self):
+        """Carry fresh evidence from the continuously running campaign monitor.
+
+        A stale/missing checkpoint earns no quiet credit. Local sampling still
+        runs throughout the phase and detects activity after the handoff.
+        """
+        if self.continuity is None:return
+        evidence = dict(source=str(self.continuity), accepted=False)
+        try:
+            with self.continuity.open('rb') as source:data=source.read(1024*1024+1)
+            if len(data)>1024*1024:raise ValueError('checkpoint budget')
+            value=json.loads(data);now=time.monotonic()
+            active,sampled=value['last_active'],value['last_sample']
+            if (value['version']!=1 or value['boot_id']!=self.boot_id
+                or not all(type(v) in (int,float) and math.isfinite(v) for v in (active,sampled))
+                or not 0<=active<=sampled<=now or now-sampled>max(20,self.interval*4)
+                or type(value['samples']) is not int or value['samples']<1
+                or not isinstance(value['previous'],dict)):
+                raise ValueError('checkpoint not continuous')
+            self.last_active=active;self.previous=value['previous']
+            self.inherited=dict(source=str(self.continuity),sha256=hashlib.sha256(data).hexdigest())
+            evidence.update(accepted=True,sha256=self.inherited['sha256'],checkpoint=value)
+        except (OSError,ValueError,KeyError,TypeError):
+            evidence['reason']='missing_invalid_or_stale_checkpoint; fresh quiet interval required'
+        (self.directory/'quiet-continuity.json').write_text(json.dumps(evidence,indent=2)+'\n')
 
     def check(self):
         if self.error:
@@ -123,12 +157,22 @@ class HostMonitor:
                         stream.write(encoded)
                     self.written += len(encoded)
                     self.segment_written += len(encoded)
+                    if sample['monotonic']-self.last_sample>max(20,self.interval*4):
+                        # Resumed sampling cannot certify the unobserved gap.
+                        self.last_active=sample['monotonic']
                     self.previous = sample['builds']
                     self.last_sample = sample['monotonic']
                     self.samples += 1
                     if sample['active_builds']:
                         self.last_active = sample['monotonic']
                         self.events.append(sample['at_ms'])
+                    if self.publish_quiet:
+                        checkpoint=dict(version=1,boot_id=self.boot_id,last_active=self.last_active,
+                            last_sample=self.last_sample,samples=self.samples,previous=self.previous)
+                        data=json.dumps(checkpoint).encode()
+                        if len(data)>1024*1024:raise RuntimeError('quiet checkpoint budget exhausted')
+                        temporary=self.quiet_path.with_suffix('.tmp')
+                        temporary.write_bytes(data);temporary.replace(self.quiet_path)
                 self.stop.wait(self.interval)
         except Exception as error:
             self.error = type(error).__name__ + ': ' + str(error)
@@ -141,7 +185,9 @@ class HostMonitor:
                 quiet = time.monotonic() - self.last_active
                 sampled = self.samples > 0
             if sampled and quiet >= self.quiet_seconds:
-                return dict(quiet_seconds=quiet, sample_count=self.samples, at_ms=time.time()*1000)
+                receipt=dict(quiet_seconds=quiet, sample_count=self.samples, at_ms=time.time()*1000)
+                if self.inherited is not None:receipt['continuity']=self.inherited
+                return receipt
             if time.monotonic() - start >= max_wait:
                 raise TimeoutError('host did not reach the declared quiet interval')
             self.stop.wait(min(self.interval, max_wait))

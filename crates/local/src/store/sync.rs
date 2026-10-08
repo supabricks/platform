@@ -98,6 +98,7 @@ impl Store {
         if self.db.prepare("SELECT 1 FROM sync_runs WHERE branch_id=?1 AND state IN ('queued','starting','running')")?.exists([p.branch_id.to_string()])? {
             return Err(conflict("snapshot policy already has an active run"));
         }
+        self.retain_incremental_history()?;
         let total: i64 = self
             .db
             .query_row("SELECT count(*) FROM sync_runs", [], |r| r.get(0))?;

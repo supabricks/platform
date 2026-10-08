@@ -263,10 +263,26 @@ impl Store {
             })();
             match result {
                 Ok(()) => self.db.execute_batch("RELEASE triggered_batch")?,
-                Err(_) => {
+                Err(error) => {
                     self.db
                         .execute_batch("ROLLBACK TO triggered_batch; RELEASE triggered_batch")?;
-                    self.fail_sync_run(r.id, "triggered_batch_admission_failed", now)?;
+                    // Keep bounded typed causes rather than exposing arbitrary
+                    // SQL/path details or masking a known exhausted budget.
+                    let reason = match &error {
+                        super::super::error::Error::Operation(
+                            supabricks_core::error::OperationError::Conflict(message),
+                        ) => match message.as_str() {
+                            "incremental run budget exhausted" => {
+                                "incremental_run_budget_exhausted"
+                            }
+                            "incremental receipt budget exhausted" => {
+                                "incremental_receipt_budget_exhausted"
+                            }
+                            _ => "triggered_batch_admission_failed",
+                        },
+                        _ => "triggered_batch_admission_failed",
+                    };
+                    self.fail_sync_run(r.id, reason, now)?;
                 }
             }
         }

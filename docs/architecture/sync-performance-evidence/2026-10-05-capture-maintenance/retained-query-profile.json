@@ -1,0 +1,62 @@
+{
+  "prune": {
+    "plan": [
+      [
+        4,
+        0,
+        0,
+        "SCAN transactions"
+      ],
+      [
+        9,
+        0,
+        0,
+        "SCALAR SUBQUERY 1"
+      ],
+      [
+        14,
+        9,
+        0,
+        "SEARCH transactions USING COVERING INDEX sqlite_autoindex_transactions_1 (end_lsn<?)"
+      ]
+    ],
+    "ms": [
+      0.2908769965870306,
+      0.2042380001512356,
+      0.14845399709884077
+    ],
+    "rows": 256
+  },
+  "backlog": {
+    "plan": [
+      [
+        4,
+        0,
+        0,
+        "SEARCH transactions USING INDEX sqlite_autoindex_transactions_1 (end_lsn>?)"
+      ]
+    ],
+    "ms": [
+      0.1292890010518022,
+      0.06432800000766292,
+      0.05548300396185368
+    ],
+    "rows": 1
+  },
+  "payloads": {
+    "plan": [
+      [
+        4,
+        0,
+        0,
+        "SEARCH transactions USING INDEX sqlite_autoindex_transactions_1 (end_lsn>?)"
+      ]
+    ],
+    "ms": [
+      0.20803400548174977,
+      0.26334699941799045,
+      0.189890997717157
+    ],
+    "rows": 789
+  }
+}

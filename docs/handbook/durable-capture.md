@@ -23,6 +23,15 @@ MiB); both default to 512 MiB. The entire admitted source must match the
 [supported profile](../architecture/sy02-durable-capture.md#contract-and-identity).
 Only one generation can be enrolled per installation.
 
+[EQ01/#170](../architecture/eq01-composite-keys.md) extends that profile to
+composite primary keys whose components are `smallint`, `integer` or `bigint`.
+Every component remains part of row identity through capture, key-changing updates,
+deletes and replay. A key's `INCLUDE` columns remain payload. Text, DATE and CHAR
+key components are not admitted; DATE/CHAR payload support is still tracked in #171.
+Changing the key definition of an enrolled table remains schema drift and requires
+explicit re-enrollment. Existing single-key journals and saved apply plans retain
+their encoding. Do not downgrade a composite-key capture to older workers.
+
 Status distinguishes requested/bootstrapping/capturing, paused, unavailable,
 resync-required, deleting and deleted states. It reports observation time, slot
 start, verified bootstrap boundary, captured commit boundary, observed source WAL,

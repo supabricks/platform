@@ -1,0 +1,30 @@
+name: tpcds-inputs
+on:
+  pull_request:
+    paths:
+      - 'e2e/tpcds/**'
+      - '.github/workflows/tpcds-inputs.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inputs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check fail-closed SQL, DDL and generated-data validation
+        timeout-minutes: 2
+        run: python3 -m unittest discover -s e2e/tpcds -v
+      - name: Fetch pinned sources and verify full query and schema inventory
+        timeout-minutes: 5
+        run: |
+          mkdir -p build/tpcds-inputs
+          python3 e2e/tpcds/inputs.py --fetch --inputs build/tpcds-inputs/sources --report build/tpcds-inputs/inventory.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tpcds-input-inventory
+          path: build/tpcds-inputs/inventory.json

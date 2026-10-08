@@ -1,0 +1,37 @@
+{
+  "runs": [
+    {
+      "label": "group-commit-unit",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "supabricks-local",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 33.99820923805237,
+      "log_sha256": "fc6dd4d14d321452f046d92b70625bd21fa8c49e236edcd4ed9b93cdb7317e61"
+    },
+    {
+      "label": "group-commit-release",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "supabricks-local",
+        "--release",
+        "--features",
+        "sync-profile"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 29.32893419265747,
+      "log_sha256": "06094b19bc6e1c35ce4f065e2639c9eaafc10a076cd80d334d35221d7214cfd0"
+    }
+  ],
+  "local_unit_passed": 219,
+  "local_unit_ignored": 4,
+  "component_unit_passed": 39,
+  "component_manifest": "passed",
+  "format": "passed"
+}

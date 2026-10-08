@@ -46,7 +46,8 @@ starts from the completed [workflow profile](../architecture/sync-workflow-profi
 [SP03a](../architecture/sync-performance-sp03a.md) and
 [SP03b](../architecture/sync-performance-sp03b.md) are merged and measured.
 [SP04](../architecture/sync-performance-sp04.md) is merged and measured.
-[SP05](../architecture/sync-performance-sp05.md) is assessed with runtime tuning deferred to evidence from SP11; SP06–SP12 remain planned.
+[SP05](../architecture/sync-performance-sp05.md) is merged with runtime tuning deferred to evidence from SP11.
+[SP06](../architecture/sync-performance-sp06.md) through SP08 are merged and reviewed; the intermittent 8-core source limit and deferred SP07 patch remain recorded. SP09a worker reuse is retained; SP09b table concurrency is deferred. SP10a/SP10b establish the measured backend/owner contracts. The [SP10c review](../architecture/sync-performance-evidence/2026-10-05-sp10c-review/README.md) retains SQLite and the measured reliability corrections: RocksDB shows no end-to-end benefit. Two sustained comparison arms remain missing; SP11/SP12 remain planned.
 It targets sustained 1,000 changed rows/s and at most five-second p95 publication
 lag in a declared local profile. Every logical slice requires the same twelve
 candidate trials, fresh predecessor comparisons, and a recorded contribution or
@@ -65,6 +66,15 @@ ownership supports the analytical track; PG migration can proceed independently
 using shared durable jobs, validation and recovery. The document includes
 user flows, source-specific transfer options, a delivery sequence and measurement
 criteria. These capabilities are proposed, not delivered or qualified.
+
+## End to end analytical qualification
+
+[TPC-DS qualification](tpcds-end-to-end-qualification.md), EQ00–EQ06, starts
+with EQ00 while SP is frozen by user direction (2026-10-06): PostgreSQL loading with continuous sync already active, full
+analytical query coverage through Sail/Spark Connect, independent Apache Spark
+result verification, increasing dataset sizes and concurrent load/query scaling.
+Schema/type compatibility and capacity admission precede large runs. No execution
+or TPC-DS performance envelope is claimed yet.
 
 ## IAM00 and UC09 navigation
 

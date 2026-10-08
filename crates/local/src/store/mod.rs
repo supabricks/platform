@@ -16,7 +16,7 @@ mod governed_console;
 mod identity;
 pub(crate) mod incremental;
 pub(crate) mod security;
-pub(crate) use identity::IdentityCommit;
+pub(crate) use identity::{IdentityCommit, IdentityJob};
 mod ingest;
 mod journal;
 pub(crate) mod migrations;

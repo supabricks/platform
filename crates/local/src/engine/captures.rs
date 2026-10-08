@@ -4,6 +4,18 @@ use crate::capture::Capture;
 use std::io::Read;
 
 impl Cell {
+    pub(super) fn journal_access(
+        &self,
+        store: &Store,
+        c: &Capture,
+        source_revision: i64,
+    ) -> Result<Value> {
+        Ok(
+            json!({"endpoint":self.root.join("tmp").join(c.id.to_string()).join("journal.sock"),
+            "source_revision":source_revision,"policy_revision":store.sync_policy(c.project_id,c.policy_id)?.revision}),
+        )
+    }
+
     fn stop_capture(&mut self, store: &mut Store, c: &Capture) -> Result<()> {
         let role = format!("capture-{}", c.id);
         self.launches.remove(&role);
@@ -34,13 +46,16 @@ impl Cell {
         }
         Ok(())
     }
-    pub(super) fn tick_captures(&mut self, store: &mut Store) -> Result<()> {
-        let _profile = crate::sync_profile::span("capture.dispatch");
+    /// Ingest durable worker receipts once per maintenance turn. Lifecycle dispatch
+    /// consumes the persisted state without polling a second time.
+    pub(crate) fn observe_captures(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("capture.observe");
         for mut c in store.captures()? {
-            let root = self.root.join("capture").join(c.id.to_string());
-            let status_path = root.join("status.json");
-            let role = format!("capture-{}", c.id);
-            let now = chrono::Utc::now().timestamp_millis();
+            let status_path = self
+                .root
+                .join("capture")
+                .join(c.id.to_string())
+                .join("status.json");
             if status_path.is_file() && status_path.metadata()?.len() <= 256 * 1024 {
                 let mut bytes = Vec::new();
                 fs::File::open(&status_path)?
@@ -122,6 +137,16 @@ impl Cell {
                     }
                 }
             }
+        }
+        Ok(())
+    }
+    pub(super) fn tick_captures(&mut self, store: &mut Store) -> Result<()> {
+        let _profile = crate::sync_profile::span("capture.dispatch");
+        for mut c in store.captures()? {
+            let root = self.root.join("capture").join(c.id.to_string());
+            let status_path = root.join("status.json");
+            let role = format!("capture-{}", c.id);
+            let now = chrono::Utc::now().timestamp_millis();
             let branch = store.branch(c.branch_id)?;
             if branch.endpoint.desired_state == DesiredState::Deleted
                 && branch.observed_revision == branch.revision
@@ -216,7 +241,7 @@ impl Cell {
             dir(&root)?;
             fs::File::open(root.parent().unwrap())?.sync_all()?;
             let input = root.join("control.json");
-            let config = json!({"identity":c.identity,"worker_generation":store.generation(),"desired":if c.desired=="fenced"{"deleted"}else{c.desired.as_str()},
+            let config = json!({"identity":c.identity,"worker_generation":store.generation(),"journal_access":self.journal_access(store,&c,branch.revision)?,"desired":if c.desired=="fenced"{"deleted"}else{c.desired.as_str()},
                 "socket_dir":self.root.join("tmp").join(branch.endpoint.id.to_string()),"port":branch.ports.ok_or_else(||conflict("source has no native ports"))?.sql,
                 "report_interval_ms":if store.sync_policy(c.project_id,c.policy_id)?.config.continuous(){250}else{1000},"barrier_request":store.triggered_barrier_request(c.id)?,"published_lsn":store.capture_published_lsn(c.id)?,"spool_bytes":c.limits.spool_bytes,"wal_bytes":c.limits.wal_bytes,"bootstrap":bootstrap});
             if !input.is_file()

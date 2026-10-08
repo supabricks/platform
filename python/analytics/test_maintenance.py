@@ -59,13 +59,13 @@ class PruningTests(unittest.TestCase):
         started=time.monotonic()
         self.assertEqual(self.spool.prune('0/2BC'),0)
         self.assertLess(time.monotonic()-started,1)
-        self.assertEqual(self.spool.db.execute('PRAGMA busy_timeout').fetchone()[0],50)
+        self.assertEqual(self.spool.backend.db.execute('PRAGMA busy_timeout').fetchone()[0],50)
         self.spool.verify();self.assertEqual(self.spool.get('bytes'),300*8192)
         reader.close()
         self.assertGreater(self.spool.prune('0/2BC'),0);self.spool.verify()
     def test_sqlite_full_rolls_back_without_acknowledging_partial_transaction(self):
-        pages=self.spool.db.execute('PRAGMA page_count').fetchone()[0]
-        self.spool.db.execute(f'PRAGMA max_page_count={pages+1}')
+        pages=self.spool.backend.db.execute('PRAGMA page_count').fetchone()[0]
+        self.spool.backend.db.execute(f'PRAGMA max_page_count={pages+1}')
         with self.assertRaises(sqlite3.OperationalError) as error:self.spool.append(701,702,b'x'*262144)
         self.assertEqual(error.exception.sqlite_errorcode,sqlite3.SQLITE_FULL)
         self.assertEqual(self.spool.captured,700);self.spool.verify()
@@ -97,7 +97,7 @@ class PruningTests(unittest.TestCase):
             spool.append(180,200,fixture.tx(180,200,message('supabricks.barrier.'+identity['generation'],str(uuid.uuid4()))))
             for end in range(300,2300,100):spool.append(end-20,end,fixture.tx(end-20,end,insert(b'x'*65536)))
             expected=spool.progress(pg_lsn(2200))
-            spool.db.execute("DELETE FROM metadata WHERE key='barrier_at_ms'") # Pre-SY07 spool.
+            spool.backend.db.execute("DELETE FROM metadata WHERE key='barrier_at_ms'") # Pre-SY07 spool.
             self.assertGreater(spool.prune(pg_lsn(2200)),0)
             self.assertEqual(spool.progress(pg_lsn(2200)),expected);spool.verify()
             config=dict(spool=str(spool.path),identity=identity,bootstrap_lsn='0/C8',after_lsn='0/C8',target_lsn=pg_lsn(2200),deadline_ms=int(time.time()*1000)+60000)
@@ -108,6 +108,74 @@ class PruningTests(unittest.TestCase):
             prefix=spool.get('pruned_prefix');prefix['sha256']='bad';spool.set('pruned_prefix',prefix)
             with self.assertRaisesRegex(CaptureError,'spool_corrupt'):journal(config)
         finally:spool.close()
+
+
+class MaintenanceBudgetTests(unittest.TestCase):
+    def test_normal_source_rate_no_longer_accumulates_published_history(self):
+        with tempfile.TemporaryDirectory() as temp:
+            retained={}
+            for mode in ('prune','maintain'):
+                spool=Spool(Path(temp)/mode,{'decoder_version':1})
+                try:
+                    spool.establish(100,{})
+                    # Twenty source-check intervals at 625 atomic transactions/s
+                    # (1250 changed rows/s). Freeze only the scheduling clock so
+                    # a slow test host cannot change the record-budget contract.
+                    for tick in range(20):
+                        for first in range(0,625,32):
+                            begin=spool.captured
+                            spool.append_many([(begin+2*i+1,begin+2*i+2,b'x'*128)
+                                               for i in range(min(32,625-first))])
+                        with patch('capture.spool.time.monotonic',return_value=0):
+                            getattr(spool,mode)(pg_lsn(spool.captured))
+                    retained[mode]=len(list(spool.transactions(0)))
+                    self.assertEqual(spool.captured,25100)
+                    self.assertFalse(spool.append(25099,25100,b'x'*128))
+                    spool.verify()
+                finally:spool.close()
+                reopened=Spool(Path(temp)/mode,{'decoder_version':1})
+                try:reopened.verify();self.assertEqual(reopened.captured,25100)
+                finally:reopened.close()
+            self.assertEqual(retained['prune'],7380)
+            self.assertLessEqual(retained['maintain'],256)
+
+    def test_record_time_and_no_progress_budgets_are_independent(self):
+        spool=object.__new__(Spool)
+        with patch.object(spool,'prune',return_value=10) as prune:
+            with patch('capture.spool.time.monotonic',return_value=0):
+                self.assertEqual(spool.maintain('0/64'),80)
+            self.assertEqual(prune.call_count,8)
+            prune.reset_mock()
+            with patch('capture.spool.time.monotonic',side_effect=[0,0,.051]):
+                self.assertEqual(spool.maintain('0/64'),10)
+            self.assertEqual(prune.call_count,1)
+            prune.reset_mock();prune.return_value=0
+            with patch('capture.spool.time.monotonic',return_value=0):
+                self.assertEqual(spool.maintain('0/64'),0)
+            self.assertEqual(prune.call_count,1)
+            prune.side_effect=CaptureError('spool_corrupt')
+            with self.assertRaisesRegex(CaptureError,'spool_corrupt'):spool.maintain('0/64')
+
+    def test_multiple_units_preserve_unpublished_rows_and_reader_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp:
+            spool=Spool(Path(temp)/'spool',{'decoder_version':1})
+            reader=None
+            try:
+                spool.establish(100,{})
+                for chunk in range(40):
+                    begin=spool.captured
+                    spool.append_many([(begin+2*i+1,begin+2*i+2,b'x'*128) for i in range(32)])
+                reader=sqlite3.connect(spool.path);reader.execute('BEGIN')
+                self.assertEqual(reader.execute('SELECT count(*) FROM transactions').fetchone()[0],1280)
+                with patch('capture.spool.time.monotonic',return_value=0):spool.maintain(pg_lsn(2100))
+                self.assertEqual(reader.execute('SELECT count(*) FROM transactions').fetchone()[0],1280)
+                self.assertEqual(len(list(spool.transactions(2100))),280)
+                self.assertEqual(spool.captured,2660)
+                self.assertFalse(spool.append(2099,2100,b'x'*128))
+                spool.verify()
+            finally:
+                if reader:reader.close()
+                spool.close()
 
 
 class CompactionTests(unittest.TestCase):

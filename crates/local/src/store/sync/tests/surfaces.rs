@@ -407,3 +407,93 @@ fn incremental_capture_binds_service_identity_and_is_fenced_on_revocation() {
         .is_err()
     );
 }
+
+#[test]
+fn retained_publication_authority_and_audit_survive_execution_expiry() {
+    let (_dir, mut s, p, d, b) = setup();
+    let manager = principal(&s, "user");
+    let service = principal(&s, "service");
+    grant(
+        &s,
+        d,
+        b,
+        &manager,
+        &[
+            Capability::Read,
+            Capability::ReadSync,
+            Capability::ManageSync,
+        ],
+    );
+    grant(
+        &s,
+        d,
+        b,
+        &service,
+        &[Capability::Read, Capability::ExecuteSync],
+    );
+    let policy: Policy = serde_json::from_value(
+        s.governed_sync(
+            &manager,
+            &d.to_string(),
+            request(
+                Command::Create {
+                    branch: b.to_string(),
+                    key: "history-service".into(),
+                    config: Config::default(),
+                },
+                Some(&service),
+            ),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let policy: Policy = serde_json::from_value(
+        s.sync_command(
+            p,
+            d,
+            Command::Update {
+                id: policy.id,
+                expected_revision: policy.revision,
+                key: "continuous-history".into(),
+                config: Config {
+                    mode: "continuous".into(),
+                    strategy: "incremental".into(),
+                    ..Default::default()
+                },
+            },
+            super::super::super::now_ms().unwrap(),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let rows = super::history::history(&mut s, &policy, 1024);
+    let old = rows[0].1.id;
+    let audit: i64 =
+        s.db.query_row("SELECT count(*) FROM security_audit", [], |r| r.get(0))
+            .unwrap();
+    assert!(audit >= 1024);
+    assert!(
+        s.governed_sync_export(&manager, &d.to_string(), old)
+            .unwrap()
+    );
+    s.retain_incremental_history().unwrap();
+    assert!(s.incremental_run(p, old).is_err());
+    assert!(
+        s.governed_sync_export(&manager, &d.to_string(), old)
+            .unwrap()
+    );
+    assert_eq!(
+        s.db.query_row("SELECT count(*) FROM security_audit", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        audit
+    );
+    s.identity_admin(crate::identity::AdminCommand::Revoke {
+        principal: service.actor_id,
+    })
+    .unwrap();
+    assert!(
+        s.governed_sync_export(&manager, &d.to_string(), old)
+            .is_err()
+    );
+}

@@ -1,0 +1,63 @@
+diff --git a/e2e/native/performance/sp11_trial.py b/e2e/native/performance/sp11_trial.py
+index 28a3752..b690377 100644
+--- a/e2e/native/performance/sp11_trial.py
++++ b/e2e/native/performance/sp11_trial.py
+@@ -4,12 +4,23 @@ import argparse
+ import bisect
+ import gzip
+ import json
++import os
+ from pathlib import Path
++import psutil
+ import trial
+ from sustained_journal import Sustained
+ from sp11_analysis import EVENT, analyze, read_events
+ 
+ 
++class Steady(Sustained):
++    def resource_details(self):
++        root=Path('/sys/fs/cgroup')
++        return dict(qualifier_rss_bytes=psutil.Process(os.getpid()).memory_info().rss,
++            cgroup_memory_bytes=int((root/'memory.current').read_text()),
++            cgroup_memory_stat={k:int(v) for k,v in
++                (line.split() for line in (root/'memory.stat').read_text().splitlines())})
++
++
+ def run(args):
+     if not args.screen and args.seconds<900:raise ValueError('SP11 steady fixture requires at least 15 minutes')
+     original=trial.attribute
+@@ -23,9 +34,9 @@ def run(args):
+                 out.write(EVENT.pack(sample['ack_ms'],p['at']))
+         return result
+     trial.attribute=attribute
+-    Sustained.resource_output=args.report.with_name('resources.jsonl')
+-    Sustained.reopen_output=args.report.with_name('reopen.json')
+-    trial.InstalledContinuous=Sustained
++    Steady.resource_output=args.report.with_name('resources.jsonl')
++    Steady.reopen_output=args.report.with_name('reopen.json')
++    trial.InstalledContinuous=Steady
+     try:code=trial.trial(args)
+     finally:trial.attribute=original
+     if code:return code
+diff --git a/e2e/native/performance/sustained_journal.py b/e2e/native/performance/sustained_journal.py
+index 52122dc..e221093 100644
+--- a/e2e/native/performance/sustained_journal.py
++++ b/e2e/native/performance/sustained_journal.py
+@@ -19,6 +19,9 @@ import trial
+ 
+ 
+ class Sustained(trial.InstalledContinuous):
++    def resource_details(self):
++        return {}
++
+     def setup_source(self,*args,**kwargs):
+         super().setup_source(*args,**kwargs)
+         self.sample_stop=threading.Event();self.sample_errors=[];self.sample_denials={}
+@@ -53,6 +56,7 @@ class Sustained(trial.InstalledContinuous):
+                                 info=path.stat();physical+=info.st_size;allocated+=info.st_blocks*512
+                         except FileNotFoundError:pass
+                     row=dict(at_ms=time.time()*1000,processes=values,spool_bytes=physical,spool_allocated_bytes=allocated)
++                    row.update(self.resource_details())
+                     data=json.dumps(row,separators=(',',':'))+'\n';total+=len(data)
+                     if total>64*1024**2:raise RuntimeError('resource_sample_budget')
+                     stream.write(data);stream.flush();self.sample_stop.wait(1)

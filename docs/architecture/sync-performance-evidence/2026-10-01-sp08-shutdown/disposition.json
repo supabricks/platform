@@ -1,0 +1,14 @@
+{
+  "status": "candidate_failed_lifecycle_gate",
+  "issue": "https://github.com/supabricks/platform/issues/133",
+  "runtime_revision": "b94664853a5444532787739df9cb1a91b04a302e",
+  "host_build_overlap": false,
+  "cleanup": "Both fixtures stopped with zero leaked or remaining descendants",
+  "performance_acceptance": false,
+  "main_trials_started": 0,
+  "reason": "Early observation ran during source teardown and persisted a replication_stream_failed terminal receipt; daemon restart consequently requires resync.",
+  "ci_failures": [
+    "https://github.com/supabricks/platform/actions/runs/36798358657/job/110166879089",
+    "https://github.com/supabricks/platform/actions/runs/36798358657/job/110166879230"
+  ]
+}

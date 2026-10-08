@@ -1,4 +1,5 @@
 //! Owned, reproducible notebook environments and package transactions.
+mod collection;
 mod files;
 mod selection;
 mod status;
@@ -887,42 +888,5 @@ impl Manager {
     }
     pub fn release(&self, store: &Store, lease: OperationId) -> Result<()> {
         store.release_environment_lease(lease)
-    }
-    fn collect(
-        &self,
-        store: &mut Store,
-        scope: Option<(ProjectId, &Path)>,
-    ) -> Result<Vec<OperationId>> {
-        let mut collected = Vec::new();
-        for mut g in store.environment_generations()? {
-            if scope.is_some_and(|(p, w)| p != g.project || w != g.worktree)
-                || !["ready", "invalid", "deleting"].contains(&g.state.as_str())
-            {
-                continue;
-            }
-            if g.state == "deleting" && files::deletion_finished(store, &g).unwrap_or(false) {
-                g.state = "removed".into();
-                store.save_environment_generation(&g)?;
-                collected.push(g.id);
-                continue;
-            }
-            // Validate before committing deletion and again before touching the
-            // tree. Substituted roots are quarantined for inspection, not erased.
-            let path = match files::generation_path(store, &g, false) {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
-            g.state = "deleting".into();
-            if !store.collect_environment(&g)? {
-                continue;
-            }
-            files::generation_path(store, &g, false)?;
-            fs::remove_dir_all(&path)?;
-            fs::File::open(path.parent().unwrap())?.sync_all()?;
-            g.state = "removed".into();
-            store.save_environment_generation(&g)?;
-            collected.push(g.id);
-        }
-        Ok(collected)
     }
 }

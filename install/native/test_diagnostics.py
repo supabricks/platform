@@ -4,6 +4,17 @@ import unittest
 from diagnostics import summarize
 
 class Diagnostics(unittest.TestCase):
+    def test_restore_diagnostics_only_export_typed_allowlisted_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'private.log'
+            path.write_text('GOVERNED_RESTORE_FAILURE {"elapsed_ms":3010,"operation_state":"failed","branch_reconciled":true,"policy_unchanged":true,"token":"secret"}\nSystemError: private process\nPermissionError: private path\n')
+            result=summarize(path)
+            self.assertEqual(result['governed_restore_failures'],[dict(elapsed_ms=3010,operation_state='failed',branch_reconciled=True,policy_unchanged=True)])
+            self.assertIn('SystemError',result['failure_types'])
+            self.assertNotIn('secret',str(result))
+            path.write_text('GOVERNED_RESTORE_FAILURE {"elapsed_ms":true,"operation_state":"secret","branch_reconciled":"secret","policy_unchanged":1}\n')
+            self.assertEqual(summarize(path)['governed_restore_failures'],[{}])
+
     def test_failure_structure_survives_without_user_values(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'private.log'

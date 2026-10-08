@@ -13,7 +13,7 @@ import pyarrow.dataset as ds
 import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
-from incremental.rows import changes, overlay, MAX_ROWS, MAX_VALUES
+from incremental.rows import changes, overlay, key_columns, row_key, key_values, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
@@ -25,6 +25,29 @@ def quote(name):return '"'+name.replace('"','""')+'"'
 def schema_for(table,path):
     # Reuse the exact existing Arrow schema, including nullability and decimals.
     return table.to_pyarrow_dataset(filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem())).schema
+
+
+def key_filter(columns,keys):
+    pk=key_columns(columns)
+    if len(pk)==1:return ds.field(columns[pk[0]][1]).isin(sorted(keys))
+    # Bounded expression depth: an OR of thousands of exact tuples can crash
+    # Arrow's expression optimizer. These are pruning candidates, not identity.
+    parts=[key_values(key,pk) for key in keys]
+    terms=[ds.field(columns[i][1]).isin(sorted({v[n] for v in parts})) for n,i in enumerate(pk)]
+    predicate=terms[0]
+    for term in terms[1:]:predicate=predicate & term
+    return predicate
+
+
+def key_batches(dataset,columns,keys):
+    pk=key_columns(columns)
+    for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32).to_batches():
+        if len(pk)>1:
+            # Reject Cartesian neighbors before row/value budgets or overlay.
+            # Materialize only the key vectors, and at most one 32-row batch.
+            parts=[batch.column(columns[i][1]).to_pylist() for i in pk]
+            batch=batch.filter(pa.array([tuple(v) in keys for v in zip(*parts)],type=pa.bool_()))
+        yield batch
 
 
 def plan(config,root,previous,journal_data=None,lease=None):
@@ -46,18 +69,18 @@ def plan_rows(config,root,previous,journal_data,guard):
     for table in previous['manifest']['tables']:
         oid=str(table['oid'])
         if oid not in touched:continue
-        profile=schema[oid];columns=profile[3];pk=next(c[1] for c in columns if c[0]==1)
+        profile=schema[oid];columns=profile[3];pk=key_columns(columns)
         path=root/table['path'];delta=DeltaTable(str(path),version=table['version'])
         dataset=delta.to_pyarrow_dataset(filesystem=fs.SubTreeFileSystem(str(path),fs.LocalFileSystem()))
         rows={}
-        for batch in dataset.scanner(filter=ds.field(pk).isin(sorted(touched[oid])),batch_size=32).to_batches():
+        for batch in key_batches(dataset,columns,touched[oid]):
             guard.check()
             size+=batch.nbytes
             if size>MAX_VALUES:raise CaptureError('apply_value_budget')
             for row in batch.to_pylist():
-                key=row[pk]
+                values=[row[c[1]] for c in columns];key=row_key(values,pk)
                 if key in rows:raise CaptureError('duplicate_source_key')
-                rows[key]=[row[c[1]] for c in columns]
+                rows[key]=values
                 if len(rows)>MAX_ROWS:raise CaptureError('apply_row_budget')
         existing[oid]=rows
     final=overlay(operations,existing,schema)
@@ -97,13 +120,14 @@ def apply_table(config,root,table,planned,checksum,sealed):
         return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True))
     if delta.version()!=before:raise CaptureError('foreign_delta_version')
     if before>=1023:raise CaptureError('delta_version_budget')
-    columns=planned['columns'];pk=next(c[1] for c in columns if c[0]==1)
+    columns=planned['columns'];pk=key_columns(columns)
     arrow=schema_for(delta,path);delete='__supabricks_delete'
     while delete in arrow.names:delete+='x'
     records=[]
     for key,values in planned['rows']:
         row={c[1]:None for c in columns} if values is None else {c[1]:Decimal(v) if c[2]==1700 and v is not None else v for c,v in zip(columns,values)}
-        row[pk]=key;row[delete]=values is None;records.append(row)
+        for i,v in zip(pk,key_values(key,pk)):row[columns[i][1]]=v
+        row[delete]=values is None;records.append(row)
     # Delete source rows may have NULL placeholders for non-key NOT NULL columns;
     # matched-delete removes them before any target insert/update.
     input_schema=pa.schema([pa.field(f.name,f.type,nullable=True) for f in arrow]+[pa.field(delete,pa.bool_())])
@@ -115,7 +139,8 @@ def apply_table(config,root,table,planned,checksum,sealed):
     boundary(root,config['deadline_ms'],extra=reservation)
     expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
     d='source.'+quote(delete)
-    metrics=delta.merge(source,'target.'+quote(pk)+' = source.'+quote(pk),source_alias='source',target_alias='target',
+    predicate=' AND '.join('target.'+quote(columns[i][1])+' = source.'+quote(columns[i][1]) for i in pk)
+    metrics=delta.merge(source,predicate,source_alias='source',target_alias='target',
         streamed_exec=False,max_spill_size=64*1024*1024,max_temp_directory_size=128*1024*1024,
         writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
         commit_properties=CommitProperties(custom_metadata=marker,max_commit_retries=0),
@@ -194,16 +219,26 @@ def run_owned(config,root,journal_data,lease):
     fault('after_epoch_receipt')
 
 
-if __name__=='__main__':
-    config=read_json(sys.argv[1],4*1024*1024)
+def execute(config):
     try:run(config)
     except JournalBusyDeferred:
         atomic(Path(config['workspace'])/'result.json',dict(state='deferred',error='journal_read_busy_deferred',
             phase='journal_before_initialize',id=config['id'],worker_generation=config['worker_generation'],
             attempt=config['attempt'],identity=config['identity'],bootstrap_lsn=config['bootstrap_lsn'],
             after_lsn=config['after_lsn'],target_lsn=config['target_lsn'],journal_read=config['_journal_read']))
-        sys.exit(2)
+        return 2
     except Exception as error:
         code=error.code if isinstance(error,CaptureError) else 'incremental_worker_failed'
         atomic(Path(config['workspace'])/'result.json',dict(state='failed',id=config['id'],worker_generation=config['worker_generation'],error=code,journal_read=config.get('_journal_read')))
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__=='__main__':
+    config=read_json(sys.argv[1],4*1024*1024)
+    if config.get('reuse_worker',False):
+        from incremental.reuse import serve
+        del config
+        serve(sys.argv[1],execute)
+    else:
+        sys.exit(execute(config))

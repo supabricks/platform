@@ -24,6 +24,7 @@ remains beside its owning record in the existing evidence directories.
 
 - [SY08: exact installed sync qualification and operating envelope](sy08-installed-sync.md)
 - [Local synchronization CPU scaling: methodology and measured limits](sync-core-scaling.md)
+- [Bounded synchronization execution history and issue #156](sync-history-retention.md)
 - [Synchronization workflow profile: capture I/O, reader contention and apply planning](sync-workflow-profile.md)
 - [SY07: recovery, compaction and published-spool retention](sy07-sync-hardening.md)
 - [SY06: shared controls and governed service authority](sy06-sync-surfaces.md)
@@ -108,3 +109,6 @@ remains beside its owning record in the existing evidence directories.
 - [SP04: bounded planning inventories and measurement](sync-performance-sp04.md)
 - [Measurement and long-run profiling contract](sync-performance-comparisons.md)
 - [SP05: maintenance assessment and conditional deferral](sync-performance-sp05.md)
+- [SP06: source qualification, completed measurements and attribution limits](sync-performance-sp06.md)
+
+- [SP07: source commit attribution and diagnostic controls](sync-performance-sp07.md)
