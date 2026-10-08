@@ -19,7 +19,7 @@ def workload(name):
                     load_bounds=dict(timeout_seconds=7200, minimum_free_gib=80,
                                      maximum_cell_gib=64, minimum_remaining_free_gib=16,
                                      storage_sample_seconds=10, default_max_unpublished_rows=0))
-    if name not in ('sf100', 'sf100-prefix'):
+    if name not in ('sf100', 'sf100-prefix', 'sf100-growing-prefix'):
         raise ValueError('unknown workload')
     path = Path(__file__).with_name('workload-'+name+'.json')
     result = json.loads(path.read_text())

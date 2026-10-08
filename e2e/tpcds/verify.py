@@ -148,7 +148,7 @@ def open_qualified_session(cell, epoch, profile):
 
 def validate_loaded(loaded, name):
     selected=workload(name)
-    prefix=name=='sf100-prefix'
+    prefix='load_rows' in selected
     assert loaded['status']==('PREFIX_PASS' if prefix else 'PASS')
     assert loaded['committed_rows']==selected.get('load_rows',selected['business_rows'])
     if prefix:
@@ -268,7 +268,7 @@ def run(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker',choices=['table','query'])
-    parser.add_argument('--workload',choices=['sf1','sf100-prefix'],default='sf1')
+    parser.add_argument('--workload',choices=['sf1','sf100-prefix','sf100-growing-prefix'],default='sf1')
     for name in ('release','inputs','load','output'):parser.add_argument('--'+name,type=Path)
     parser.add_argument('--load-release',type=Path,
                         help='Original release, only after an explicit stopped native-only upgrade')

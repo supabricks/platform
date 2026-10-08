@@ -97,7 +97,7 @@ fixed barriers, complete-transaction admission, pause/resume, capture SIGKILL,
 daemon restart, schema drift/resync and independent pinned historical readers.
 The `d1` prefix passed in 512.155 s loading plus 5.223 s draining: 14,274 rows/s
 overall (1.187× decoder), with 9,815 rows/s over the degraded-scale cohort
-(1.157× decoder). No compilers were observed. Exact verification is in progress;
+(1.157× decoder). No compilers were observed. Exact verification passed all 24 tables;
 this still falls short of the target. The sampled observation ledger missed the
 last drain publication between two reads; its final descriptor and SQL ledger
 agree. The summary uses the final checkpoint as a conservative lag bound for
@@ -122,7 +122,32 @@ not yet a performance result. All 173 Python tests pass, including a full
 65,536-operation prefix interrupted after its first table commit, replay without
 rereading the journal, subsequent cross-table key move/delete, exact historical
 versions, oversized-transaction rejection and duplicate-key rejection. Installed
-RSS and throughput measurements against the handoff candidate remain pending.
+`eq220e` (source `05f54e1`) applied 57,344 paused-journal rows at 507,432,960-byte
+peak RSS in the diagnostic probe. Its >1-GiB compaction/interrupted-commit/replay
+fixture passed exact old/new versions and peaked at 510,029,824 bytes. Both are
+below 768 MiB. The `e1` prefix passed at 17,575 rows/s overall (1.231× handoff),
+and 15,497 rows/s over the degraded-scale cohort (1.579× handoff), with no observed
+compilers and the same 65,536-row backlog window. Exact prefix verification is
+in progress. Neither throughput target is qualified yet.
+
+### Scalar allocation slice (prepared, not yet measured)
+
+The large-batch profile still allocates many Decimal digit tuples while checking
+precision/scale and rebuilds key metadata for every row. A follow-up caches only
+bounded, immutable numeric type shapes, uses exact exponent/adjusted predicates
+for the common declared-scale case, and retains the original tuple-based fallback
+for other exponents. It also reuses primary-key metadata within one transaction,
+validates unchanged-TOAST markers during insert tuple decoding, and avoids
+constructing the same key twice when no old-key tuple exists. All 175 Python tests passed, including low-context-precision and signed-zero/
+exponent boundaries; all 38 harness tests passed. This candidate must still
+produce identical sealed plans in matched planning probes and have a separate
+installed prefix measurement. No decimal rounding or float conversion is introduced.
+
+The additional `sf100-growing-prefix` profile admits 14,770,127 source rows,
+rounded to a complete COPY boundary: more than twice the paused prefix. It uses
+the same 8-core/16-GiB/no-swap container, COPY size, backlog, worker and storage
+bounds. Its receipt/hash cannot substitute for the shorter prefix or full SF100.
+This larger qualification has not started; the original SF100 cell remains paused.
 
 ## Preserved baseline
 

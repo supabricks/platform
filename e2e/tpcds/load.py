@@ -258,7 +258,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('release', 'inputs', 'dataset', 'output'):
         p.add_argument('--'+name, type=Path, required=True)
-    p.add_argument('--workload', choices=('sf1', 'sf100', 'sf100-prefix'), default='sf1')
+    p.add_argument('--workload', choices=('sf1', 'sf100', 'sf100-prefix', 'sf100-growing-prefix'), default='sf1')
     p.add_argument('--timeout', type=int)
     p.add_argument('--max-unpublished-rows',type=int,
                    help='0: unrestricted pilot; otherwise pause COPY outside transactions at this row window')
