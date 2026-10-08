@@ -410,12 +410,21 @@ fn catalog_seventeen_migration_preserves_roles_and_starts_catalog_access_closed(
 fn catalog_nineteen_migration_adds_no_data_grants_or_admitted_branches() {
     catalog_migration(19);
 }
+#[test]
+fn catalog_thirty_migration_adds_root_lookup_index() {
+    catalog_migration(30);
+}
+
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run;").unwrap();
+    db.execute_batch("DROP INDEX publication_storage_generation;")
+        .unwrap();
+    if source_schema < 30 {
+        db.execute_batch("DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run;").unwrap();
+    }
     if source_schema < 29 {
         db.execute_batch("DROP TABLE sync_storage_roots;").unwrap();
     }
@@ -631,8 +640,8 @@ fn catalog_migration(source_schema: u32) {
 
         assert_eq!(
             db.query_row(
-                "SELECT source_sha256 FROM catalog_migrations WHERE version=30",
-                [],
+                "SELECT source_sha256 FROM catalog_migrations WHERE version=?1",
+                [supabricks_local::store::SCHEMA_VERSION],
                 |r| r.get::<_, String>(0)
             )
             .unwrap(),

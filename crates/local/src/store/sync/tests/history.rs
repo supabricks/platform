@@ -380,7 +380,7 @@ fn catalog_29_upgrade_preserves_receipts_and_adds_lookup_indexes() {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap();
-    s.db.execute_batch("DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run; PRAGMA user_version=29;").unwrap();
+    s.db.execute_batch("DROP INDEX publication_storage_generation; DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run; PRAGMA user_version=29;").unwrap();
     drop(s);
     assert!(Store::open(dir.path()).is_err(), "upgrade must be explicit");
     let mut db = rusqlite::Connection::open(dir.path().join("state.sqlite3")).unwrap();
@@ -391,7 +391,7 @@ fn catalog_29_upgrade_preserves_receipts_and_adds_lookup_indexes() {
     assert_eq!(
         s.db.query_row("PRAGMA user_version", [], |r| r.get::<_, u32>(0))
             .unwrap(),
-        30
+        crate::store::SCHEMA_VERSION
     );
     assert!(s.incremental_run(p, rows[0].1.id).is_ok());
     let restored: Vec<(String, String)> =
@@ -403,4 +403,53 @@ fn catalog_29_upgrade_preserves_receipts_and_adds_lookup_indexes() {
             .unwrap();
     assert_eq!(restored, original);
     assert_eq!(s.db.query_row("SELECT count(*) FROM sqlite_master WHERE type='index' AND name IN ('incremental_receipt_run','incremental_receipt_owner','sync_receipt_run','sync_request_run')",[],|r|r.get::<_,i64>(0)).unwrap(),4);
+}
+
+#[test]
+fn retained_root_lookup_does_not_scan_unrelated_publication_history() {
+    let (_dir, mut s, p, d, b) = setup();
+    let policy = policy(&mut s, p, d, b);
+    let rows = history(&mut s, &policy, 2048);
+    let root = captured(&s, &policy).id;
+    let absent = OperationId::new();
+    let steps = |s: &Store| {
+        let mut q =
+            s.db.prepare(crate::store::incremental::ROOT_REFERENCED)
+                .unwrap();
+        assert!(!q.exists([absent.to_string()]).unwrap());
+        q.get_status(rusqlite::StatementStatus::VmStep)
+    };
+    let indexed = steps(&s);
+    assert!(s.incremental_root_referenced(root).unwrap());
+    // A descriptor update must move its index entry atomically. Unavailable and
+    // deleting snapshots remain roots; only completed deletion releases them.
+    let moved = OperationId::new();
+    let a = &rows.last().unwrap().1;
+    s.db.execute("UPDATE publications SET descriptor=json_set(descriptor,'$.generation',?2) WHERE export_id=?1",
+        params![a.id.to_string(), format!("analytics/incremental/{moved}")]).unwrap();
+    for state in ["available", "unavailable", "deleting", "deleted"] {
+        s.db.execute(
+            "UPDATE snapshots SET state=?2 WHERE epoch_id=?1",
+            params![a.epoch_id.to_string(), state],
+        )
+        .unwrap();
+        assert_eq!(
+            s.incremental_root_referenced(moved).unwrap(),
+            state != "deleted"
+        );
+    }
+    s.db.execute_batch("DROP INDEX publication_storage_generation")
+        .unwrap();
+    let scanned = steps(&s);
+    println!(
+        "root lookup on 2048 retained publications: scan={scanned} VM steps, indexed={indexed}"
+    );
+    assert!(
+        indexed < 100,
+        "indexed absent-root lookup must stay bounded: {indexed}"
+    );
+    assert!(
+        scanned > indexed * 100,
+        "regression fixture must expose the historical scan"
+    );
 }

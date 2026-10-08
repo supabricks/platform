@@ -44,9 +44,10 @@ def cpu_delta(before,after,elapsed):
 def load(cell,rate,seconds,clients,rows,offset=0):
     """Paced independent connections; report unsent work instead of hiding saturation."""
     start=time.perf_counter()+.25;total=int(rate*seconds/2)
-    samples=[];errors=[];lock=threading.Lock()
+    sample_factory=getattr(cell,'sample_factory',list)
+    samples=sample_factory();errors=[];lock=threading.Lock()
     def writer(client):
-        local=[]
+        local=sample_factory()
         try:
             with cell.source() as db:
                 db.execute("SET statement_timeout='10s'")
@@ -64,7 +65,9 @@ def load(cell,rate,seconds,clients,rows,offset=0):
                     result['late_ms']=max(0,(submitted-due)*1000)
                     local.append(result)
         except Exception as error:errors.append(type(error).__name__)
-        with lock:samples.extend(local)
+        try:
+            with lock:samples.extend(local)
+        except Exception as error:errors.append(type(error).__name__)
     threads=[threading.Thread(target=writer,args=(client,)) for client in range(clients)]
     for t in threads:t.start()
     for t in threads:t.join()
@@ -73,7 +76,8 @@ def load(cell,rate,seconds,clients,rows,offset=0):
     sql_stats={}
     if samples and 'sql_ms' in samples[0]:
         sql_stats={k:dict(percentiles([x['sql_ms'][k] for x in samples]),total_ms=round(sum(x['sql_ms'][k] for x in samples),3)) for k in samples[0]['sql_ms']}
-    return sorted(samples,key=lambda x:x['ack_ms']),dict(source_sql_ms=sql_stats,target_rows_per_second=rate,
+    ordered=samples.sort_by_ack() if hasattr(samples,'sort_by_ack') else sorted(samples,key=lambda x:x['ack_ms'])
+    return ordered,dict(source_sql_ms=sql_stats,target_rows_per_second=rate,
         target_transactions=total,completed_transactions=len(samples),unsent_transactions=total-len(samples),
         achieved_rows_per_second=round(2*len(samples)/elapsed,3),elapsed_seconds=round(elapsed,3),
         transaction_ms=percentiles([s['latency_ms'] for s in samples]),
@@ -84,6 +88,8 @@ class Observer:
     def __init__(self,cell,capture):
         self.cell=cell;self.capture_id=capture;self.spool=cell.root/'capture'/capture/'spool/spool.sqlite3'
         self.stop=threading.Event();self.ends={};self.captured={};self.publications=[];self.runs={}
+        if hasattr(cell,'marker_map_factory'):
+            self.ends=cell.marker_map_factory('Q');self.captured=cell.marker_map_factory('d')
         self.series=[];self.errors=[];self.busy_samples=0;self.seq=0;self.ordinal=0;self.runtime_error=None
         self.missing_status_samples=0;self.missing_status_streak=0
         self.thread=threading.Thread(target=self.run)

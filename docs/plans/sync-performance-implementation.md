@@ -4,7 +4,7 @@
 [Workflow profile](../architecture/sync-workflow-profile.md) ·
 [CPU scaling history](../architecture/sync-core-scaling.md)
 
-Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11–SP12 planned**, 2026-10-03 UTC.
+Status: **SP00–SP04 merged and measured; SP05 merged, tuning deferred; SP06–SP08 merged; SP07 source patch deferred; SP09a merged; SP09b assessed/merged, concurrency deferred; SP10a measured and accepted; [SP10b](../architecture/sync-performance-sp10b.md) measured and reviewed (108 fixtures; IPC cost retained; release CI limitations open); SP10c in progress; SP11 steady qualification stopped on throughput after generation-reference index correction #169; original-disk durable-commit slowdown reproduced; second-NVMe group-commit screen passes at 1,249.923 rows/s / 2.920-second p95; fresh one-hour-first qualification running on the declared second NVMe; SP12 planned**, 2026-10-06 UTC.
 [SP00 report](../architecture/sp00-reproducible-comparisons.md) and
 [PR #95](https://github.com/supabricks/platform/pull/95) retain 24 mandatory trials
 and six follow-up trials; decision: keep for reliability/enabling, no runtime
@@ -677,6 +677,12 @@ without a speedup claim. Two planned sustained arms remain missing, so the
 original SP10c qualification is incomplete; this review does not waive them.
 
 ### SP11 — Sustained correctness, recovery and scaling
+
+**Started October 5:** the [SP11 execution protocol](../architecture/sync-performance-sp11.md)
+implements windowed steady-load qualification on the selected corrected SQLite
+package. The first campaign covers six 15-minute and two 60-minute fixtures.
+Maintenance/reader, capacity/catch-up, workload/interference and fault gates below
+remain required; a passing steady baseline does not complete SP11.
 
 Run on the selected implementation, with the matched matrix and source-qualified
 profile retained separately. If a failure needs a code fix, give that fix its own
