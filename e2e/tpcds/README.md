@@ -263,7 +263,7 @@ required archive gate, not a PostgreSQL throughput measurement.
 [The full SF1 results](../../docs/architecture/eq02-sf1-results.md) retain the
 successful 19,557,335-row load, exact 24-table comparison, and all 103 query
 attempts. Sixty-nine statements are correct after explicit order review; 34 have
-tracked failures/mismatches. Larger-scale qualification remains open.
+tracked failures/mismatches in that baseline. The [decimal AVG candidate](../../docs/architecture/eq02-decimal-avg.md) raises correctness to 78/103 on retained SF1, with 25 remaining issues. Larger-scale qualification remains open.
 
 `verify.py` defaults to the original load release. After a supported stopped
 **native-only** installation upgrade, pass `--load-release ORIGINAL_RELEASE`
@@ -274,3 +274,32 @@ both releases; it never rewrites the load result. A copied worktree must be
 explicitly attached to its existing deployment through `project attach` before
 its project API calls can succeed. Retained query-only experiments do not need
 another SF1 load.
+
+
+### Qualifying a Sail correction without reloading SF1
+
+Build a clean, reviewed Sail commit with `components/build-sail.py` and the
+updated source lock. `package_sail_candidate.py` creates an unsigned engineering
+package from a verified existing release, replacing only the same-version Sail
+wheel and its source/build provenance. It checks all installed artifact bytes
+and preserves every unrelated payload. New packaged tests must also come from
+the verified wheel. The base package is unchanged.
+
+Apply that candidate to a **copy of the stopped successful cell** using
+`supabricks installation upgrade`, with an explicit stopped backup and original
+release. Then run `verify.py --load-release ORIGINAL_RELEASE --sail-artifact
+ARTIFACT_DIRECTORY` with the candidate release. The verifier checks the original
+load identity, exact artifact-bound payload changes, completed upgrade journal,
+backup identity, and applied runtime identity. It still verifies all 24 tables,
+the original publication epoch, and all 103 original SQL statements. The source
+load receipt and independent Spark reference are never rewritten.
+
+A copied worktree can explicitly attach to its existing deployment using
+`--attach-deployment DEPLOYMENT_ID`. This invokes the supported project attach
+command, records its receipt, and verifies the original runtime project before
+waiting for sync health. It does not create a replacement dataset or deployment.
+
+This path qualifies an analytical correction against retained data; it does not
+claim a signed release or broad binary-upgrade compatibility. Keep baseline and
+candidate results in separate fresh output directories and preserve both exact
+comparison ledgers, timings, and descendant-cleanup reports.
