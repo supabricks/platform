@@ -11,7 +11,10 @@ statements and preserves every previously correct result: **97/103 statements
 are correct after explicit ordering review, up from 90**. Four alias failures
 remain under #198. The diagnostic results below establish the profile choice;
 they are not a claim that every statement is correct. Newly exposed q39 DOUBLE
-result differences are tracked in [#206](https://github.com/supabricks/platform/issues/206). SP stays frozen.
+result differences are tracked in [#206](https://github.com/supabricks/platform/issues/206). SP stays frozen. The subsequent
+[correlated CHAR slice (#198)](eq02-correlated-char.md) raises correctness to
+101/103 with this same resource profile; the measurements below remain the
+#197 slice results.
 
 ## Isolating the limits
 
