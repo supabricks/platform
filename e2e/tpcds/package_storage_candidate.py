@@ -22,6 +22,7 @@ def package(base,destination,proof):
     with log.open('x') as stream:subprocess.run(command,cwd=repo,stdout=stream,stderr=subprocess.STDOUT,check=True)
     if git('status','--porcelain') or git('rev-parse','HEAD')!=revision:raise ValueError('source changed during build')
     python_proof=proof.with_suffix('.python.json')
+    destination.parent.mkdir(parents=True,exist_ok=True)
     overlay(base,destination,repo,python_proof,WORKERS)
     manifest=json.loads((destination/'release.json').read_text())
     original=json.loads((base/'release.json').read_text())

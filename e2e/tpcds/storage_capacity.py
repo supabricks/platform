@@ -51,6 +51,7 @@ def run(release,root,phase,expected):
                 for lo in range(0,ROWS,256):
                     yield pa.RecordBatch.from_arrays([pa.array(range(lo,lo+256),pa.int32()),pa.array([payload(i) for i in range(lo,lo+256)])],schema=schema)
             w.write_deltalake(str(source/'tables/42'),pa.RecordBatchReader.from_batches(schema,batches()),target_file_size=16*1024**2,
+                max_spill_size=64*1024**2,max_temp_directory_size=64*1024**2,
                 configuration={'delta.dataSkippingNumIndexedCols':'0'},
                 writer_properties=w.WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024))
             tables=[dict(oid=42,name='wide',path='tables/42',rows=ROWS,version=0)]
