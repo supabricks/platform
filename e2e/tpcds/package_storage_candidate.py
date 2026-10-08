@@ -7,7 +7,8 @@ from inputs import sha
 from package import overlay
 
 WORKERS=['incremental_worker.py','incremental/storage.py','incremental/planning.py',
-         'incremental/maintenance.py','incremental/reuse.py']
+         'incremental/maintenance.py','incremental/reuse.py','incremental/rows.py',
+         'capture/protocol.py']
 
 
 def package(base,destination,proof):

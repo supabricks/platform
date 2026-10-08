@@ -8,6 +8,8 @@ from capture.protocol import Reader,barrier_message
 UNCHANGED = object()
 MAX_ROWS = 16384
 MAX_VALUES = 32*1024*1024
+_INT_LIMITS={typ:(-(1<<(bits-1)),1<<(bits-1)) for typ,bits in ((20,64),(21,16),(23,32))}
+_LENGTH=struct.Struct('!I')
 
 
 def key_columns(columns):
@@ -33,11 +35,11 @@ def key_values(key,keys):
 
 def value(raw, column):
     if raw is None:return None
-    typ,mod=column[2:]
+    typ=column[2];mod=column[3]
     try:
-        if typ in (20,21,23):
-            n=int(raw);bits={20:64,21:16,23:32}[typ]
-            if not -(1<<(bits-1))<=n<(1<<(bits-1)):raise ValueError()
+        if typ in _INT_LIMITS:
+            n=int(raw);low,high=_INT_LIMITS[typ]
+            if not low<=n<high:raise ValueError()
             return n
         if typ==1700:
             n=Decimal(raw);precision=((mod-4)>>16)&65535;scale=(mod-4)&2047
@@ -61,17 +63,23 @@ def value(raw, column):
 
 def tuple_values(reader,columns):
     if reader.number('H')!=len(columns):raise CaptureError('schema_changed')
-    result=[];size=0
+    result=[];size=0;data=reader.data;position=reader.offset;limit=len(data)
     for column in columns:
-        kind=reader.take(1)
-        if kind==b'u':result.append(UNCHANGED)
-        elif kind==b'n':result.append(None)
-        elif kind==b't':
-            raw=reader.take(reader.number('I'));size+=len(raw)
+        if position>=limit:raise CaptureError('invalid_pgoutput')
+        kind=data[position];position+=1
+        if kind==117:result.append(UNCHANGED)  # u: unchanged TOAST
+        elif kind==110:result.append(None)  # n: NULL
+        elif kind==116:  # t: length-prefixed UTF-8 text
+            if position+4>limit:raise CaptureError('invalid_pgoutput')
+            length=_LENGTH.unpack_from(data,position)[0];position+=4
+            end=position+length
+            if end>limit:raise CaptureError('invalid_pgoutput')
+            raw=data[position:end];position=end;size+=length
             try:result.append(value(raw.decode('utf8'),column))
             except UnicodeError:raise CaptureError('invalid_pgoutput') from None
         else:raise CaptureError('unsupported_tuple')
     if size>256*1024:raise CaptureError('row_budget')
+    reader.offset=position
     return result
 
 

@@ -5,6 +5,8 @@ import struct
 import time
 from .spool import CaptureError, MAX_MESSAGE, MAX_TRANSACTION, fault, pg_lsn
 
+_NUMBERS={fmt:struct.Struct('!'+fmt) for fmt in ('B','H','I','Q','q')}
+
 
 class Reader:
     def __init__(self, data):
@@ -13,7 +15,13 @@ class Reader:
     def take(self,n):
         if n<0 or self.offset+n>len(self.data): raise CaptureError('invalid_pgoutput')
         value=self.data[self.offset:self.offset+n];self.offset+=n;return value
-    def number(self,fmt): return struct.unpack('!'+fmt,self.take(struct.calcsize('!'+fmt)))[0]
+    def number(self,fmt):
+        layout=_NUMBERS.get(fmt)
+        if layout is None:layout=struct.Struct('!'+fmt)
+        end=self.offset+layout.size
+        if end>len(self.data):raise CaptureError('invalid_pgoutput')
+        value=layout.unpack_from(self.data,self.offset)[0];self.offset=end
+        return value
     def string(self):
         end=self.data.find(b'\0',self.offset)
         if end<0: raise CaptureError('invalid_pgoutput')
