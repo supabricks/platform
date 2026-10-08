@@ -336,7 +336,20 @@ impl Daemon {
                                         )
                                     }
                                     AuthorizedFollowup::Data(deployment, command) => {
-                                        self.store.data_job(ctx, token_hash, deployment, command)
+                                        let cell = self.cell.as_ref();
+                                        self.store.data_job(
+                                            ctx,
+                                            token_hash,
+                                            deployment,
+                                            command,
+                                            |store, branch| {
+                                                cell.map(|cell| {
+                                                    cell.connection_ready(store, branch)
+                                                })
+                                                .transpose()
+                                                .map(|ready| ready.unwrap_or(false))
+                                            },
+                                        )
                                     }
                                     AuthorizedFollowup::Catalog(command) => {
                                         let broker = crate::catalog::governance::Broker::managed(
