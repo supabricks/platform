@@ -1,8 +1,69 @@
 # SF100 sync scaling
 
-Status: SF100 load-01 paused by the user; diagnosis recorded in
-[#220](https://github.com/supabricks/platform/issues/220). No 10× improvement has
-been implemented or qualified. SP remains frozen.
+Status: SF100 load-01 remains paused. Scheduling and verified-file reuse are
+implemented for [#220](https://github.com/supabricks/platform/issues/220), with
+local correctness checks passing. The installed, matched-prefix performance
+qualification is in progress; **10× end-to-end improvement is not yet qualified**.
+SP remains frozen.
+
+## Implemented slices and current qualification
+
+Scheduling candidate `9b81fd2` retains a maximum of 4 MiB of hashing per daemon
+turn, serves IPC between turns, and immediately continues runnable verification.
+A verifier parked on capture freshness uses the idle cadence instead of spinning.
+Across nine paired real-daemon protocol fixtures (128/640/896 MiB, three pairs
+each), median successful-publication times changed as follows:
+
+| Inventory | Predecessor | Scheduling slice | Phase speedup |
+| --- | ---: | ---: | ---: |
+| 128 MiB | 0.872 s | 0.268 s | 3.25× |
+| 640 MiB | 3.752 s | 0.472 s | 7.96× |
+| 896 MiB | 5.205 s | 0.665 s | 7.83× |
+
+All 36 success/corrupt-tail cases passed. Maximum observed status-request time
+was 65.3 ms. These are publication protocol fixtures, not PostgreSQL-to-Delta
+throughput results. [Raw measurements and package proof](tpcds-evidence/2026-10-08-eq220/scheduling-summary.json)
+retain every paired attempt. Fixture setup is outside the timed publication.
+
+Candidate `409dbd4` adds bounded process-local checksum evidence. Worker reuse
+requires a live mutation lease in the same generation/identity scope; the
+controller additionally requires membership in the published, durable prefix.
+Each hit opens the file without following a final symlink and checks device,
+inode, size, ownership, permissions, link count, mtime and ctime. Full hashing
+checks metadata again after reading. An expected manifest hash must still match;
+new files still receive full hashing and required fsync. Cache size is bounded
+at 4,096 files and no cache is persisted. Restart, scope change, mutation,
+replacement and failed requests discard or invalidate evidence. Controller
+turns also limit file completions to 64 to bound metadata-only work.
+
+This assumes the managed local filesystem reports change metadata for ordinary
+writes. It is not a background bit-rot scrub: corruption that changes underlying
+storage without changing any filesystem metadata is outside this cache's
+detection contract. Independent reader/integrity checks and cold verification
+remain available; checksum strings or filenames alone never authorize reuse.
+
+Regression coverage includes same-size corruption with restored mtime, inode
+replacement, symlinks, in-flight writes to already-read bytes, failed requests,
+restart, cache bounds and required durability for new files. Installed tests
+passed CLI-to-Delta-to-Sail, historical-reader restart, and >1-GiB compaction,
+commit interruption/replay and exact old/new versions. The latter peaked at
+483,454,976 bytes (461.06 MiB), below the unchanged 768-MiB worker ceiling.
+
+`workload-sf100-prefix.json` freezes the first 7,385,039 generated business rows,
+ending on the original COPY boundary. All 24 tables are enrolled before COPY;
+the remainder stays empty. It preserves 1,024-row/4-MiB commits, the 65,536-row
+publication window, large storage profile, worker bounds, eight CPUs and 16 GiB
+without swap. This smaller qualification cell has explicit 80-GiB admission,
+64-GiB sampled storage and 16-GiB reserve bounds. Its distinct `PREFIX_PASS` and
+`PREFIX_EXACT_PASS` receipts cannot qualify the full SF100 dataset or SQL suite.
+Compare both the complete prefix and the degraded-size tail; report differences
+between those scopes rather than treating their speedups as interchangeable.
+
+The first prefix fixture failed before COPY because its path exceeded the native
+private-socket limit. It remains preserved as a setup failure. A short-path
+attempt is running in `/data2/supabricks-eq/eq220/b1`, against installed candidate
+`v0.1.0-alpha.36.eq220b`. The resulting terminal-error reporting problem is tracked
+separately in [#221](https://github.com/supabricks/platform/issues/221).
 
 ## Preserved baseline
 

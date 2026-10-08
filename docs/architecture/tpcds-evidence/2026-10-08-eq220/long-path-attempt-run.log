@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/tpcds/load.py", line 274, in <module>
+    run(args)
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/tpcds/load.py", line 158, in run
+    cell.setup_source(str(cell.release/'python/analytics/python'), cell.release/'python/analytics/export.py',
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/native/installed_sync.py", line 87, in setup_source
+    self.parent=self.create('main');self.configure(worker);self.sql(self.parent,ddl)
+                ^^^^^^^^^^^^^^^^^^^
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/native/cell.py", line 151, in create
+    self.operation(op)
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/native/cell.py", line 157, in operation
+    return wait(lambda: self.request(method='operation', id=op['id'])['status'] == 'succeeded')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data2/supabricks-eq/eq220/prefix-cache-01-control/harness/e2e/native/cell.py", line 44, in wait
+    raise RuntimeError(f"deadline exceeded: {last}")
+RuntimeError: deadline exceeded: None
