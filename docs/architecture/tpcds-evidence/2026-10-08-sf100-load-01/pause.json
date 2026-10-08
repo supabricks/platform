@@ -1,0 +1,32 @@
+{
+  "status": "PAUSED_BY_USER",
+  "observed_utc": "2026-10-08T21:40:37.859766+00:00",
+  "container_state": {
+    "Status": "paused",
+    "Running": true,
+    "Paused": true,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 2884528,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-10-08T21:05:45.826403372Z",
+    "FinishedAt": "0001-01-01T00:00:00Z"
+  },
+  "load_checkpoint": {
+    "status": "RUNNING",
+    "elapsed_seconds": 1883.1124936469714,
+    "committed_rows": 7385039,
+    "published_rows": 7319503,
+    "flow_control_wait_seconds": 1642.2482015674468,
+    "peak_sampled_cell_bytes": 11741130752
+  },
+  "reason": "User paused SF100 to pursue at least 10x sync throughput improvement",
+  "resume_disposition": "Do not automatically unpause or restart. Docker freezes processes, not wall-clock deadlines; reconcile outstanding COPY acknowledgments, worker/capture deadlines and the supervisor timeout before selecting recovery or a fresh measured attempt. Original attempt is not qualified.",
+  "evidence": {
+    "result.json": "acf0e45bf6b37edd1821c9e21f9985f8a73a5de10b49e971c3a3e700946958ad",
+    "commits.jsonl": "f217e13a472bd76457cf305980a38c6ad0152e411d0184ee349fba0b77eb2b08",
+    "observations.jsonl": "3847e6909c043391e38b43430e081508a5407a02fd82fa5a016852890a599222"
+  }
+}
