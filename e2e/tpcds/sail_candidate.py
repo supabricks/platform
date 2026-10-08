@@ -41,9 +41,14 @@ def replacement_files(artifact, target):
     return files, report
 
 
-def validate(before, after, release, artifact):
+def validate(before, after, release, artifact, platform_artifact=None):
     """Return an exact changed-file inventory; reject unrelated payload changes."""
     expected, report = replacement_files(artifact, after['target'])
+    platform = None
+    if platform_artifact is not None:
+        from platform_candidate import replacement_files as platform_files
+        additions, platform = platform_files(platform_artifact)
+        expected.update(additions)
     assert before['provenance']['sail']['version'] == report['version'], 'same-version Sail patch required'
     assert after['provenance']['sail'] == report, 'manifest Sail provenance differs from artifact'
     old, new = json.loads(json.dumps(before)), json.loads(json.dumps(after))
@@ -56,7 +61,7 @@ def validate(before, after, release, artifact):
     changed = sorted(name for name in new_files if old_files.get(name) != new_files[name])
     assert any(name.startswith('python/') and name.endswith('.so') for name in changed), 'Sail binary unchanged'
     for name in changed:
-        if name == 'bin/supabricks':
+        if name == 'bin/supabricks' and platform is None:
             continue  # existing native recovery exception, verified by installation verify
         assert name in expected, 'unrelated payload changed: ' + name
         assert new_files[name]['sha256'] == digest(expected[name]), name
@@ -67,6 +72,8 @@ def validate(before, after, release, artifact):
         assert name in new_files, 'candidate artifact added a payload: ' + name
         assert new_files[name]['sha256'] == digest(data), name
         assert (release / name).read_bytes() == data, name
-    return dict(changed_payload_files=changed, sail_commit=report['commit'],
+    provenance = {} if platform is None else dict(platform_commit=platform['commit'],
+        platform_build_sha256=digest((platform_artifact / 'platform-build.json').read_bytes()))
+    return dict(**provenance, changed_payload_files=changed, sail_commit=report['commit'],
                 sail_wheel_sha256=report['wheel']['sha256'],
                 sail_source_lock_sha256=report['source_lock_sha256'])

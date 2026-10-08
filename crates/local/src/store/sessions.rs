@@ -8,6 +8,23 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use supabricks_core::resource::{BranchId, EpochId, OperationId, ProjectId};
 
+/// A large session owns both local slots until its worker is confirmed stopped.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnalyticalResourceProfile {
+    #[default]
+    Compact,
+    Analytical,
+}
+impl AnalyticalResourceProfile {
+    pub fn slots(self) -> usize {
+        match self {
+            Self::Compact => 1,
+            Self::Analytical => 2,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyticalSession {
     pub id: OperationId,
@@ -21,6 +38,8 @@ pub struct AnalyticalSession {
     pub datasets: std::collections::BTreeMap<String, crate::catalog::datasets::Dataset>,
     #[serde(default)]
     pub datasets_validated: bool,
+    #[serde(default)]
+    pub resource_profile: AnalyticalResourceProfile,
     pub state: String,
     pub created_at_ms: i64,
     pub expires_at_ms: i64,
@@ -77,6 +96,22 @@ impl Store {
         let rows=self.db.prepare("SELECT record FROM analytical_sessions WHERE state IN ('waiting','starting','ready','closing') ORDER BY created_at_ms")?.query_map([],|r|r.get::<_,String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
         rows.iter().map(|s| Ok(serde_json::from_str(s)?)).collect()
     }
+    pub(crate) fn check_analytical_capacity(
+        &self,
+        profile: AnalyticalResourceProfile,
+    ) -> Result<()> {
+        let reserved: usize = self
+            .active_analytical_sessions()?
+            .iter()
+            .map(|session| session.resource_profile.slots())
+            .sum();
+        if reserved + profile.slots() > 2 {
+            return Err(conflict(
+                "analytical resource capacity is occupied; close active sessions first",
+            ));
+        }
+        Ok(())
+    }
     pub fn admit_analytical_session(
         &mut self,
         project: ProjectId,
@@ -94,11 +129,12 @@ impl Store {
             return Err(invalid("session lifetime requires 10–3600 seconds"));
         }
         self.branch_in_project(project, branch)?;
-        if self.active_analytical_sessions()?.len() >= 2 {
-            return Err(conflict(
-                "both analytical session slots are occupied; close a session first",
-            ));
-        }
+        let resource_profile = match request.get("resource_profile") {
+            Some(value) => serde_json::from_value(value.clone())
+                .map_err(|_| invalid("unknown analytical resource profile"))?,
+            None => AnalyticalResourceProfile::default(),
+        };
+        self.check_analytical_capacity(resource_profile)?;
         if let Some(id) = epoch {
             let snapshot = self.snapshot(project, id)?;
             if snapshot.state != "available" || snapshot.publication.branch_id != branch {
@@ -123,6 +159,7 @@ impl Store {
             catalog: None,
             datasets: Default::default(),
             datasets_validated: false,
+            resource_profile,
             state: if epoch.is_some() {
                 "starting"
             } else {

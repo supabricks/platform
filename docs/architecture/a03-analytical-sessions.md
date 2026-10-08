@@ -94,15 +94,31 @@ or full Spark distribution is required for these qualified entry points.
 
 | Resource | Initial bound |
 | --- | --- |
-| Active sessions | 2 per installation, including waiting/cleanup |
+| Active sessions | Two compact sessions or one analytical session per installation, including waiting/cleanup |
 | Session lifetime | 15 minutes default; 10 seconds–1 hour configurable |
 | Worker bootstrap | 120 seconds after launch |
 | Managed SQL | One active request/session; 32 KiB SQL; one read query |
 | Managed result | 200 rows default, at most 1000; 256 KiB default/max |
 | Managed query deadline | 10 seconds default; 100 ms–30 seconds configurable |
-| Sail query memory pool | 256 MiB fair pool per worker |
-| Sail spill | 256 MiB total per worker; individual files at most 16 MiB |
-| Worker RSS | 1 GiB sampled watchdog, checked every 100 ms |
+| Sail query memory pool | Compact: 256 MiB; analytical: 1 GiB fair pool |
+| Sail spill | Compact: 256 MiB total / 16 MiB per file; analytical: 4 GiB total / 1 GiB per file |
+| Worker RSS | Compact: 1 GiB; analytical: 4 GiB sampled watchdog, checked every 100 ms |
+
+Select `--resource-profile analytical` when opening a session through `analytics open`,
+`analytics sql`, or `spark shell`. The API field is `resource_profile`; omitted values
+retain `compact`. A profile is fixed for the lifetime of its session and is part of
+idempotency validation. The analytical profile also enables Sail's cost-based join
+reordering: a larger pool alone does not resolve SF1 q72's oversized intermediate
+hash-join inputs. Thread settings and automatic execution parallelism are unchanged.
+Session status exposes the selected profile and the worker's resolved limits.
+
+The analytical profile reserves both local session slots. Waiting, starting, ready,
+and closing sessions retain reservations until supervised cleanup proves their
+workers stopped. This admission bound survives daemon recovery; it is not a dynamic
+host RAM allocator. Allow at least the declared worker RSS and spill budgets plus
+Postgres, runtime, client, and OS overhead. RSS is sampled, so brief overshoot is
+possible; the qualification container supplies an independent 16 GiB hard ceiling.
+The console and notebook entry points retain the compact default in this slice.
 
 Managed SQL accepts a conservative subset beginning with SELECT, WITH or
 EXPLAIN. Mutating statements, multiple statements and script transforms are

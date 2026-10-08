@@ -1055,3 +1055,151 @@ fn daemon_streams_large_publication_and_rejects_tail_corruption() {
         assert_eq!(store.current_snapshot(project, branch).is_ok(), !corrupt);
     }
 }
+
+#[test]
+fn analytical_resource_reservations_survive_closing_and_recovery() {
+    use supabricks_local::{sessions::Sessions, store::AnalyticalResourceProfile};
+    let root = root();
+    let path = root.path().join("state");
+    let mut store = Store::open(&path).unwrap();
+    let (project, branch) = parent(&mut store);
+    let mut publisher = Publisher::recover(&mut store).unwrap();
+    let export = complete_export(&mut store, project, branch, 81);
+    let epoch = publish(&mut store, &mut publisher, project, export);
+    let request = json!({"resource_profile":"analytical"});
+    let large = store
+        .admit_analytical_session(
+            project,
+            branch,
+            "large",
+            request.clone(),
+            Some(epoch),
+            None,
+            10000,
+        )
+        .unwrap();
+    assert_eq!(
+        large.resource_profile,
+        AnalyticalResourceProfile::Analytical
+    );
+    assert_eq!(
+        store
+            .admit_analytical_session(project, branch, "large", request, Some(epoch), None, 10000)
+            .unwrap()
+            .id,
+        large.id
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "large",
+                json!({}),
+                Some(epoch),
+                None,
+                10000
+            )
+            .is_err()
+    );
+    for profile in [
+        json!({}),
+        json!({"resource_profile":"analytical"}),
+        json!({"resource_profile":"unlimited"}),
+    ] {
+        assert!(
+            store
+                .admit_analytical_session(
+                    project,
+                    branch,
+                    "blocked",
+                    profile,
+                    Some(epoch),
+                    None,
+                    10000
+                )
+                .is_err()
+        );
+    }
+    store
+        .close_analytical_session(project, large.id, "closed")
+        .unwrap();
+    drop(store);
+    let mut store = Store::open(&path).unwrap();
+    assert_eq!(
+        store
+            .analytical_session(project, large.id)
+            .unwrap()
+            .resource_profile,
+        AnalyticalResourceProfile::Analytical
+    );
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "still-blocked",
+                json!({}),
+                Some(epoch),
+                None,
+                10000
+            )
+            .is_err()
+    );
+    // Recovery proves the never-launched worker dead before freeing capacity.
+    Sessions::recover(&mut store).unwrap();
+    let compact = store
+        .admit_analytical_session(
+            project,
+            branch,
+            "compact",
+            json!({}),
+            Some(epoch),
+            None,
+            10000,
+        )
+        .unwrap();
+    assert_eq!(compact.resource_profile, AnalyticalResourceProfile::Compact);
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "large-again",
+                json!({"resource_profile":"analytical"}),
+                Some(epoch),
+                None,
+                10000
+            )
+            .is_err()
+    );
+    store
+        .admit_analytical_session(
+            project,
+            branch,
+            "compact-two",
+            json!({}),
+            Some(epoch),
+            None,
+            10000,
+        )
+        .unwrap();
+    assert!(
+        store
+            .admit_analytical_session(
+                project,
+                branch,
+                "compact-three",
+                json!({}),
+                Some(epoch),
+                None,
+                10000
+            )
+            .is_err()
+    );
+    let mut legacy = serde_json::to_value(compact).unwrap();
+    legacy.as_object_mut().unwrap().remove("resource_profile");
+    let legacy: supabricks_local::store::AnalyticalSession =
+        serde_json::from_value(legacy).unwrap();
+    assert_eq!(legacy.resource_profile, AnalyticalResourceProfile::Compact);
+}

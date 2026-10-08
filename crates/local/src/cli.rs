@@ -73,11 +73,11 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   analytics export --branch NAME [--key KEY] [--max-bytes N] [--timeout-ms N]
   analytics status ID | cancel ID
   analytics refresh --branch NAME [--key KEY] [--wait]
-  analytics open [--catalog] [--branch NAME] [--epoch ID] [--ttl-ms 900000] [--wait]
+  analytics open [--resource-profile compact|analytical] [--catalog] [--branch NAME] [--epoch ID] [--ttl-ms 900000] [--wait]
   analytics session ID | close ID | cancel-session ID
-  analytics sql --sql SQL [--catalog] [--session ID | --branch NAME] [--max-rows 200]
+  analytics sql --sql SQL [--resource-profile compact|analytical] [--catalog] [--session ID | --branch NAME] [--max-rows 200]
   analytics query SESSION_ID QUERY_ID
-  spark shell [--catalog] [--branch NAME] [--epoch ID] [--file SCRIPT.py]
+  spark shell [--resource-profile compact|analytical] [--catalog] [--branch NAME] [--epoch ID] [--file SCRIPT.py]
   env init [--template base] [--key KEY] [--wait]
   env status | prepare [--key KEY] [--wait] | operation ID | cancel ID | gc
   env add REQUIREMENT | remove PACKAGE | lock | sync [--offline] [--wait]
@@ -1030,9 +1030,11 @@ pub fn run() -> Result<u8> {
             .map_err(|_| invalid("invalid epoch ID"))?;
         let catalog = a.flag("--catalog");
         let ttl_ms = a.number("--ttl-ms", 900000)?;
+        let resource_profile = analytical_resource_profile(a.take("--resource-profile"))?;
         let file = a.take("--file");
         a.finish(2)?;
         let session = c.call(Action::AnalyticsOpen {
+            resource_profile,
             catalog,
             branch,
             epoch,
@@ -1087,6 +1089,11 @@ pub fn run() -> Result<u8> {
         if catalog && session.is_some() {
             return Err(invalid("--catalog applies when opening a session"));
         }
+        let profile = a.take("--resource-profile");
+        if session.is_some() && profile.is_some() {
+            return Err(invalid("--resource-profile applies when opening a session"));
+        }
+        let resource_profile = analytical_resource_profile(profile)?;
         let max_rows = a.number("--max-rows", 200)?;
         let max_bytes = a.number("--max-bytes", 262144)?;
         let timeout_ms = a.number("--timeout-ms", 10000)?;
@@ -1096,6 +1103,7 @@ pub fn run() -> Result<u8> {
             Some(id) => id,
             None => serde_json::from_value(
                 c.call(Action::AnalyticsOpen {
+                    resource_profile,
                     catalog,
                     branch,
                     epoch: None,
@@ -1168,8 +1176,10 @@ pub fn run() -> Result<u8> {
                     .unwrap_or_else(|| OperationId::new().to_string());
                 let catalog = a.flag("--catalog");
                 let ttl_ms = a.number("--ttl-ms", 900000)?;
+                let resource_profile = analytical_resource_profile(a.take("--resource-profile"))?;
                 a.finish(2)?;
                 Action::AnalyticsOpen {
+                    resource_profile,
                     catalog,
                     branch,
                     epoch,
@@ -2320,4 +2330,15 @@ fn sync_revision(a: &mut Args) -> Result<i64> {
         return Err(invalid("snapshot policy revision must be positive"));
     }
     Ok(n)
+}
+
+fn analytical_resource_profile(
+    value: Option<String>,
+) -> Result<crate::store::AnalyticalResourceProfile> {
+    use crate::store::AnalyticalResourceProfile;
+    match value.as_deref().unwrap_or("compact") {
+        "compact" => Ok(AnalyticalResourceProfile::Compact),
+        "analytical" => Ok(AnalyticalResourceProfile::Analytical),
+        _ => Err(invalid("resource profile requires compact or analytical")),
+    }
 }

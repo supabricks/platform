@@ -212,6 +212,7 @@ impl Workspace {
                     key(scope, &k)?,
                     900_000,
                     catalog,
+                    Default::default(),
                 )?;
                 let s: AnalyticalSession = serde_json::from_value(v)?;
                 self.sessions.insert(
@@ -401,6 +402,7 @@ mod tests {
             catalog: None,
             datasets: Default::default(),
             datasets_validated: false,
+            resource_profile: Default::default(),
             state: "failed".into(),
             created_at_ms: 0,
             expires_at_ms: 1,

@@ -102,8 +102,9 @@ def query_worker(config):
     # Parent closes the product-owned session, including failed/cancelled work.
 
 
-def release_provenance(loaded, release, load_root, load_release=None, sail_artifact=None):
+def release_provenance(loaded, release, load_root, load_release=None, sail_artifact=None, platform_artifact=None):
     """Admit an explicit stopped upgrade, preserving the original load receipt."""
+    assert platform_artifact is None or sail_artifact is not None, 'platform overlay requires full Sail artifact binding'
     identity=sha(release/'release.json')
     original=loaded['release_identity']
     if load_release is None:
@@ -116,7 +117,7 @@ def release_provenance(loaded, release, load_root, load_release=None, sail_artif
     assert before['version']!=after['version'],'upgrade must have a distinct version'
     if sail_artifact is not None:
         from sail_candidate import validate
-        changes=validate(before,after,release,sail_artifact)
+        changes=validate(before,after,release,sail_artifact,platform_artifact)
     else:
         before.pop('version');after.pop('version')
         old_binary=before['files'].pop('bin/supabricks')
@@ -142,7 +143,7 @@ def run(args):
     loaded=json.loads((args.load/'result.json').read_text())
     assert loaded['status']=='PASS' and loaded['committed_rows']==19557335
     assert loaded['stopped']
-    provenance=release_provenance(loaded,args.release,args.load,args.load_release,args.sail_artifact)
+    provenance=release_provenance(loaded,args.release,args.load,args.load_release,args.sail_artifact,args.platform_artifact)
     assert loaded['input_lock_sha256']==sha(LOCK)
     manifest=inventory(json.loads(LOCK.read_text()),args.inputs)
     args.output.mkdir(parents=True,exist_ok=False)
@@ -154,7 +155,7 @@ def run(args):
                 input_lock_sha256=sha(LOCK),**provenance,
                 generation_receipt_sha256=loaded['generation_receipt_sha256'],
                 load_profile_sha256=loaded['load_profile_sha256'],
-                epoch_id=loaded['publication']['epoch_id'],tables=[],
+                epoch_id=loaded['publication']['epoch_id'],resource_profile=args.resource_profile,tables=[],
                 comparison='exact typed values; order differences require review; no floating-point tolerance',
                 queries=[dict(q,status='not_run',reason='exact table verification pending') for q in manifest['queries']])
     started=time.monotonic();reader=None
@@ -187,9 +188,19 @@ def run(args):
             print('VERIFIED',table['name'],report['tables'][-1]['rows'],flush=True)
         query_root=args.output/'queries';query_root.mkdir()
         for entry in report['queries']:
-            identifier=entry['id'];start=time.monotonic();entry.pop('reason',None)
+            identifier=entry['id'];start=time.monotonic();entry.pop('reason',None);metrics=None
             try:
-                reader=cell.opened(epoch=report['epoch_id'],ttl_ms=600000)
+                reader=cell.opened(epoch=report['epoch_id'],ttl_ms=600000,resource_profile=args.resource_profile)
+                assert reader.get('resource_profile','compact')==args.resource_profile
+                entry['resource_profile']=reader.get('resource_profile','compact')
+                entry['resource_limits']=(reader.get('metadata') or {}).get('resource_limits')
+                if args.sample_resources:
+                    from session_metrics import SessionMetrics
+                    metrics=SessionMetrics(cell.root/'session-work'/reader['id'])
+                if args.resource_profile=='analytical' and 'profile_admission' not in report:
+                    cell.failed_api('analytics_open',branch='main',epoch=report['epoch_id'],
+                                    key='eq-profile-capacity-check',ttl_ms=600000,resource_profile='compact')
+                    report['profile_admission']='active analytical session rejects additional compact session'
                 entry['session_start_seconds']=time.monotonic()-start
                 config=dict(endpoint=reader['endpoint'],epoch_id=reader['epoch_id'],
                             sql=statements((args.inputs/'spark'/(identifier+'.sql')).read_text())[0],
@@ -207,6 +218,8 @@ def run(args):
                 entry.update(status='failed',reason=str(error))
             finally:
                 entry['elapsed_seconds']=time.monotonic()-start
+                if metrics is not None:
+                    entry['sampled_resources']=metrics.finish()
                 if reader is not None:
                     cell.close(reader);reader=None
                 cell.cli('analytics','renew',lease['id'],'--ttl-ms','3600000')
@@ -230,6 +243,10 @@ if __name__=='__main__':
                         help='Original release, only after an explicit stopped native-only upgrade')
     parser.add_argument('--sail-artifact',type=Path,
                         help='Verified same-version Sail source artifact for an explicit analytical candidate upgrade')
+    parser.add_argument('--platform-artifact',type=Path,
+                        help='Exact clean-source native/session-worker artifact, used with --sail-artifact')
+    parser.add_argument('--resource-profile',choices=['compact','analytical'],default='compact')
+    parser.add_argument('--sample-resources',action='store_true',help='Sample owned worker RSS and spill on Linux')
     parser.add_argument('--attach-deployment',
                         help='Explicit existing deployment to attach after copying the stopped qualification worktree')
     args=parser.parse_args()

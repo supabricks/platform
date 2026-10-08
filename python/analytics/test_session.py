@@ -3,12 +3,30 @@ import json
 import unittest
 import os
 from unittest.mock import patch
-from session import read_sql, query, validate_decimal_statistics, configure_catalog, frozen_aliases
+from session import read_sql, query, validate_decimal_statistics, configure_catalog, frozen_aliases, resource_limits
 from pathlib import Path
 import tempfile
 
 
 class SessionTests(unittest.TestCase):
+    def test_resource_profiles_are_explicit_bounded_and_reject_arbitrary_limits(self):
+        compact = resource_limits('compact')
+        self.assertEqual(compact['query_pool_bytes'], 256 * 1024**2)
+        self.assertEqual(compact['rss_bytes'], 1024**3)
+        self.assertEqual(compact['file_bytes'], 16 * 1024**2)
+        self.assertFalse(compact['join_reorder'])
+        analytical = resource_limits('analytical')
+        self.assertEqual(analytical['query_pool_bytes'], 1024**3)
+        self.assertEqual(analytical['rss_bytes'], 4 * 1024**3)
+        self.assertEqual(analytical['spill_bytes'], 4 * 1024**3)
+        self.assertEqual(analytical['file_bytes'], 1024**3)
+        self.assertTrue(analytical['join_reorder'])
+        for invalid in (None, {}, 'unlimited', 'ANALYTICAL', 1):
+            with self.subTest(profile=invalid), self.assertRaisesRegex(ValueError, 'resource profile'):
+                resource_limits(invalid)
+        with patch.dict(os.environ, {'SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE': '99999999999'}):
+            self.assertEqual(resource_limits('compact'), compact)
+
     def test_frozen_catalog_rejects_mixed_sets_versions_and_collisions(self):
         tables=[dict(oid=1,schema='public',name='orders',version=0)]
         record=dict(schema='public',name='orders',uc_schema='analytics',uc_name='e_one',delta_version=0)

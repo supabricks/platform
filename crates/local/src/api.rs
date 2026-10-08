@@ -109,6 +109,8 @@ pub enum Action {
     },
     AnalyticsOpen {
         #[serde(default)]
+        resource_profile: crate::store::AnalyticalResourceProfile,
+        #[serde(default)]
         catalog: bool,
         branch: Option<String>,
         epoch: Option<EpochId>,
@@ -451,6 +453,7 @@ pub(crate) fn handle(
             return crate::sessions::Sessions::cancel_refresh(store, project, id);
         }
         Action::AnalyticsOpen {
+            resource_profile,
             catalog,
             branch,
             epoch,
@@ -458,7 +461,15 @@ pub(crate) fn handle(
             ttl_ms,
         } => {
             return crate::sessions::Sessions::open(
-                store, cell, binding, branch, epoch, key, ttl_ms, catalog,
+                store,
+                cell,
+                binding,
+                branch,
+                epoch,
+                key,
+                ttl_ms,
+                catalog,
+                resource_profile,
             );
         }
         Action::AnalyticsSession { id } => {

@@ -184,7 +184,21 @@ def frozen_aliases(catalog, tables):
     return aliases
 
 
+def resource_limits(profile):
+    # Versioned by the installed runtime; no ambient or caller-supplied limits.
+    profiles = {
+        'compact': dict(query_pool_bytes=256 * 1024**2, spill_bytes=256 * 1024**2,
+                        rss_bytes=1024**3, file_bytes=16 * 1024**2, join_reorder=False),
+        'analytical': dict(query_pool_bytes=1024**3, spill_bytes=4 * 1024**3,
+                           rss_bytes=4 * 1024**3, file_bytes=1024**3, join_reorder=True),
+    }
+    if not isinstance(profile, str) or profile not in profiles:
+        raise ValueError('unknown analytical resource profile')
+    return profiles[profile]
+
+
 def run(config):
+    limits = resource_limits(config.get("resource_profile", "compact"))
     configure_catalog(config.get("catalog"), config.get("datasets", []))
     os.environ['TZ'] = 'UTC'
     time.tzset()
@@ -194,10 +208,11 @@ def run(config):
     os.environ.update({
         'SAIL_MODE': 'local',
         'SAIL_RUNTIME__MEMORY_POOL__TYPE': 'fair',
-        'SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE': str(256 * 1024**2),
-        'SAIL_RUNTIME__TEMPORARY_FILES__MAX_SIZE': str(256 * 1024**2),
+        'SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE': str(limits['query_pool_bytes']),
+        'SAIL_RUNTIME__TEMPORARY_FILES__MAX_SIZE': str(limits['spill_bytes']),
         'SAIL_RUNTIME__TEMPORARY_FILES__PATHS': json.dumps([str(workspace / 'spill')]),
         'SAIL_SPARK__SESSION_TIMEOUT_SECS': '3600',
+        'SAIL_OPTIMIZER__ENABLE_JOIN_REORDER': str(limits['join_reorder']).lower(),
         'TOKIO_WORKER_THREADS': '2', 'RAYON_NUM_THREADS': '2',
         'OPENBLAS_NUM_THREADS': '1', 'OMP_NUM_THREADS': '1',
         'RUST_LOG': 'error',
@@ -210,15 +225,15 @@ def run(config):
             raise ValueError(f'{package} must match the qualified version {expected}; restore the locked environment')
     import resource
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024**2, 16 * 1024**2))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (limits['file_bytes'], limits['file_bytes']))
     import psutil
     process = psutil.Process()
     def watchdog():
         while True:
-            if time.monotonic() >= monotonic_deadline or time.time() * 1000 >= deadline or process.memory_info().rss > 1024**3:
+            if time.monotonic() >= monotonic_deadline or time.time() * 1000 >= deadline or process.memory_info().rss > limits['rss_bytes']:
                 # A nonzero exit is visible to the owner. The daemon stops the
                 # verified entire group before releasing the durable reference.
-                atomic_json(workspace / 'failure.json', {'error': 'session lifetime or 1 GiB sampled RSS limit exceeded'})
+                atomic_json(workspace / 'failure.json', {'error': f"session lifetime or {limits['rss_bytes']} byte sampled RSS limit exceeded"})
                 os._exit(75)
             time.sleep(.1)
     threading.Thread(target=watchdog, daemon=True).start()
@@ -231,7 +246,7 @@ def run(config):
     server = SparkConnectServer(ip=host, port=0)
     server.start()
     _, port = server.listening_address
-    metadata = config['metadata']
+    metadata = dict(config['metadata'], resource_limits=limits)
     endpoint = f"sc://{authority}:{port}/;user_id=supabricks;session_id={metadata['session_id']}"
     spark = SparkSession.builder.remote(endpoint).getOrCreate()
     descriptor = config['descriptor']
@@ -314,7 +329,7 @@ def run(config):
     spark.sql('USE DATABASE public').collect()
     spark.conf.set('supabricks.epoch_id', metadata['epoch_id'])
     spark.sql('SELECT * FROM _supabricks.epoch').first()
-    atomic_json(workspace / 'ready.json', {'session_id': metadata['session_id'], 'port': port})
+    atomic_json(workspace / 'ready.json', {'session_id': metadata['session_id'], 'port': port, 'resource_limits': limits})
     last = None
     while True:
         path = workspace / 'query.json'

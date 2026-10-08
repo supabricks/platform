@@ -115,9 +115,19 @@ impl Sessions {
         key: String,
         ttl_ms: u64,
         catalog: bool,
+        resource_profile: crate::store::AnalyticalResourceProfile,
     ) -> Result<Value> {
         Self::open_context(
-            store, cell, binding, branch, epoch, key, ttl_ms, false, catalog,
+            store,
+            cell,
+            binding,
+            branch,
+            epoch,
+            key,
+            ttl_ms,
+            false,
+            catalog,
+            resource_profile,
         )
     }
     pub(crate) fn open_notebook(
@@ -140,6 +150,7 @@ impl Sessions {
             ttl_ms,
             true,
             catalog,
+            crate::store::AnalyticalResourceProfile::default(),
         )
     }
     #[allow(clippy::too_many_arguments)]
@@ -153,8 +164,13 @@ impl Sessions {
         ttl_ms: u64,
         notebook: bool,
         catalog: bool,
+        resource_profile: crate::store::AnalyticalResourceProfile,
     ) -> Result<Value> {
         let mut request = json!({"branch":branch,"epoch":epoch,"ttl_ms":ttl_ms});
+        // Omitted and explicit compact remain identical to historical requests.
+        if resource_profile != crate::store::AnalyticalResourceProfile::Compact {
+            request["resource_profile"] = json!(resource_profile);
+        }
         if catalog {
             request["catalog"] = json!(true);
         }
@@ -168,9 +184,7 @@ impl Sessions {
             return Err(invalid("session lifetime requires 10–3600 seconds"));
         }
         worker_config(store)?;
-        if store.active_analytical_sessions()?.len() >= 2 {
-            return Err(conflict("both analytical session slots are occupied"));
-        }
+        store.check_analytical_capacity(resource_profile)?;
         let branch_id = if let Some(id) = epoch.filter(|_| branch.is_none()) {
             store
                 .snapshot(binding.project_id, id)?
@@ -454,6 +468,7 @@ impl Sessions {
                 descriptor
             };
             let mut metadata = json!({"installation_id":descriptor["installation_id"],"project_id":s.project_id,"branch_id":s.branch_id,"epoch_id":s.epoch_id,"ordinal":snapshot.publication.ordinal,"source":descriptor["manifest"]["source"],"observed_at_ms":descriptor["manifest"]["observed_at_ms"],"published_at_ms":snapshot.publication.published_at_ms,"session_id":s.id,"expires_at_ms":s.expires_at_ms,"worker_started_at_ms":now()});
+            metadata["resource_profile"] = json!(s.resource_profile);
             let catalog = crate::catalog::reads::frozen(store, s)?;
             let datasets = crate::catalog::reads::frozen_datasets(store, s)?;
             if !datasets.is_empty() {
@@ -473,7 +488,7 @@ impl Sessions {
             let sail_workspace = paths::create(&dir, s.id)?;
             supervisor::write_json(
                 &dir.join("input.json"),
-                &json!({"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"catalog":catalog,"datasets":datasets,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
+                &json!({"resource_profile":s.resource_profile,"root":store.root(),"workspace":dir,"sail_workspace":sail_workspace,"descriptor":descriptor,"catalog":catalog,"datasets":datasets,"metadata":metadata,"expires_at_ms":s.expires_at_ms}),
             )?;
             let env = BTreeMap::from([
                 ("PATH".into(), "/usr/bin:/bin".into()),
@@ -543,6 +558,9 @@ impl Sessions {
                     "sc://{host}:{port}/;user_id=supabricks;session_id={}",
                     s.id
                 ));
+                if let Some(metadata) = s.metadata.as_mut() {
+                    metadata["resource_limits"] = ready["resource_limits"].clone();
+                }
                 s.state = "ready".into();
                 store.save_analytical_session(s)?;
             } else if now()
