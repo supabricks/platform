@@ -14,6 +14,7 @@ import time
 
 from inputs import LOCK, inventory, sha, statements
 from load import save
+from workload import workload
 
 
 def canonical(row):
@@ -145,13 +146,25 @@ def open_qualified_session(cell, epoch, profile):
     return cell.opened(epoch=epoch, ttl_ms=600000, **options)
 
 
+def validate_loaded(loaded, name):
+    selected=workload(name)
+    prefix=name=='sf100-prefix'
+    assert loaded['status']==('PREFIX_PASS' if prefix else 'PASS')
+    assert loaded['committed_rows']==selected.get('load_rows',selected['business_rows'])
+    if prefix:
+        assert loaded['workload_profile_sha256']==selected['profile_sha256']
+        assert loaded['generation_receipt_sha256']==selected['generation_receipt_sha256']
+        assert loaded['scale']==selected['scale']
+    assert loaded['stopped']
+    return selected,prefix
+
+
 def run(args):
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'native'))
     from installed_sync import InstalledContinuous
     from cell import wait
     loaded=json.loads((args.load/'result.json').read_text())
-    assert loaded['status']=='PASS' and loaded['committed_rows']==19557335
-    assert loaded['stopped']
+    selected,prefix=validate_loaded(loaded,args.workload)
     provenance=release_provenance(loaded,args.release,args.load,args.load_release,args.sail_artifact,args.platform_artifact)
     assert loaded['input_lock_sha256']==sha(LOCK)
     manifest=inventory(json.loads(LOCK.read_text()),args.inputs)
@@ -160,6 +173,7 @@ def run(args):
     cell.project=loaded['final_capture']['project_id'];cell.work=cell.root/'work'
     cell.python=str(cell.release/'python/analytics/python');cell.policy_id=loaded['final_policy']['id']
     report=dict(status='RUNNING',scope='EQ02 engineering installed product; no exact release claim',
+                workload=args.workload,scale=selected['scale'],
                 fixture_sha256=sha(Path(__file__)),load_receipt_sha256=sha(args.load/'result.json'),
                 input_lock_sha256=sha(LOCK),**provenance,
                 generation_receipt_sha256=loaded['generation_receipt_sha256'],
@@ -193,8 +207,15 @@ def run(args):
             child=subprocess.run(command,input=json.dumps(config),text=True,capture_output=True,timeout=900)
             if child.returncode:raise RuntimeError(child.stderr)
             report['tables'].append(json.loads(child.stdout));checkpoint()
+            assert report['tables'][-1]['status']=='PASS', 'exact table mismatch'
             cell.cli('analytics','renew',lease['id'],'--ttl-ms','3600000')
             print('VERIFIED',table['name'],report['tables'][-1]['rows'],flush=True)
+        if prefix:
+            for entry in report['queries']:
+                entry['reason']='bounded performance prefix; not full TPC-DS query qualification'
+            cell.cli('analytics','unpin',lease['id'])
+            report['status']='PREFIX_EXACT_PASS'
+            return
         query_root=args.output/'queries';query_root.mkdir()
         for entry in report['queries']:
             identifier=entry['id'];start=time.monotonic();entry.pop('reason',None);metrics=None
@@ -247,6 +268,7 @@ def run(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker',choices=['table','query'])
+    parser.add_argument('--workload',choices=['sf1','sf100-prefix'],default='sf1')
     for name in ('release','inputs','load','output'):parser.add_argument('--'+name,type=Path)
     parser.add_argument('--load-release',type=Path,
                         help='Original release, only after an explicit stopped native-only upgrade')

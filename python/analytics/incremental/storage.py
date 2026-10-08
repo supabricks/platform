@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 import shutil
 import time
+import stat
+from collections import OrderedDict
+from contextlib import contextmanager
 from capture.spool import CaptureError, canonical, atomic, fault, lsn, checked_prefix, MAX_TRANSACTION
 
 from capture.journal import ReadBusy
@@ -17,6 +20,46 @@ MAX_BATCH=16*1024*1024
 RESERVE=128*1024*1024
 MAX_RETAINED_BYTES=4*1024*1024*1024
 MAX_RETAINED_FILES=32768
+
+# Process-local content evidence, never publication or durability authority.
+# Every lookup opens the file and checks inode/change metadata. Nothing survives
+# worker restart, a scope change, loss of the mutation lease or a failed request.
+_hashes=OrderedDict()
+_hash_scope=None
+_hash_lease=None
+
+
+@contextmanager
+def verified_digests(lease,config):
+    global _hash_scope,_hash_lease
+    scope=(str(lease.root),lease.identity,canonical(config['identity']),
+           config.get('source_revision'),config.get('worker_generation'))
+    if _hash_scope!=scope:
+        _hashes.clear();_hash_scope=scope
+    if _hash_lease is not None:raise CaptureError('nested_digest_scope')
+    lease.check();_hash_lease=lease
+    try:
+        yield
+        lease.check()
+    except BaseException:
+        _hashes.clear();_hash_scope=None
+        raise
+    finally:_hash_lease=None
+
+
+def _file_stamp(meta):
+    return (meta.st_dev,meta.st_ino,meta.st_mode,meta.st_uid,meta.st_gid,
+            meta.st_nlink,meta.st_size,meta.st_mtime_ns,meta.st_ctime_ns)
+
+
+def _owned_parents(path,root):
+    current=path.parent
+    while True:
+        meta=current.lstat()
+        if not stat.S_ISDIR(meta.st_mode) or meta.st_uid!=os.getuid() or meta.st_mode&0o022:
+            raise CaptureError('unsafe_incremental_path')
+        if current==root:return
+        current=current.parent
 
 
 def storage_limits(profile='compact'):
@@ -61,10 +104,31 @@ def read_json(path,limit=2*1024*1024):
 
 
 def digest(path):
-    h=hashlib.sha256()
-    with path.open('rb') as stream:
+    path=Path(path)
+    # Bootstrap and unleased callers retain full hashing. Only a live, fenced
+    # generation can reuse content evidence; mtime alone is never sufficient.
+    cached=_hash_lease is not None and path.is_absolute() and path.is_relative_to(_hash_lease.root) and '..' not in path.parts
+    if cached:_owned_parents(path,_hash_lease.root)
+    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW)
+    with os.fdopen(fd,'rb') as stream:
+        meta=os.fstat(stream.fileno());before=_file_stamp(meta)
+        if not stat.S_ISREG(meta.st_mode):raise CaptureError('unsafe_incremental_path')
+        if cached:
+            if meta.st_uid!=os.getuid() or meta.st_mode&0o022:raise CaptureError('unsafe_incremental_path')
+            old=_hashes.get(path)
+            if old is not None and old[0]==before:
+                if _file_stamp(path.lstat())!=before:raise CaptureError('incremental_checksum')
+                _hashes.move_to_end(path)
+                return old[1]
+        h=hashlib.sha256()
         while chunk:=stream.read(1024*1024):h.update(chunk)
-    return h.hexdigest()
+        if _file_stamp(os.fstat(stream.fileno()))!=before or _file_stamp(path.lstat())!=before:
+            raise CaptureError('incremental_checksum')
+    result=h.hexdigest()
+    if cached:
+        _hashes[path]=(before,result);_hashes.move_to_end(path)
+        while len(_hashes)>MAX_FILES:_hashes.popitem(last=False)
+    return result
 
 
 def files(root):

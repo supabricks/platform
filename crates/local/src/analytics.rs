@@ -7,10 +7,10 @@ use crate::store::{
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
     io::{Read, Write},
-    os::unix::fs::OpenOptionsExt,
+    os::unix::fs::{MetadataExt, OpenOptionsExt},
     path::{Component, Path, PathBuf},
 };
 use supabricks_core::resource::OperationId;
@@ -22,6 +22,7 @@ const PER_TICK: usize = 4 * CHUNK;
 pub struct Publisher {
     verifier: Option<Verifier>,
     verification_progress: bool,
+    verified_files: BTreeMap<PathBuf, (FileStamp, String)>,
     pub last_error: Option<String>,
     pub recovery: Value,
 }
@@ -32,7 +33,36 @@ struct Verifier {
     manifest_hash: String,
     files: Vec<FileCheck>,
     index: usize,
-    current: Option<(File, u64, Sha256)>,
+    current: Option<(File, u64, Sha256, FileStamp)>,
+    reuse_verified: bool,
+}
+
+// Content evidence only: never a persisted ownership or durability token.
+// Replacement, in-place writes (including restored mtime), permissions and
+// hardlink changes invalidate it. New daemons always start with an empty cache.
+#[derive(Clone, PartialEq, Eq)]
+struct FileStamp {
+    values: [u64; 7],
+    times: [i64; 4],
+}
+impl FileStamp {
+    fn cacheable(&self) -> bool {
+        self.values[3] & 0o022 == 0 && self.values[4] == u64::from(unsafe { libc::geteuid() })
+    }
+    fn of(m: &fs::Metadata) -> Self {
+        Self {
+            values: [
+                m.dev(),
+                m.ino(),
+                m.len(),
+                u64::from(m.mode()),
+                u64::from(m.uid()),
+                u64::from(m.gid()),
+                m.nlink(),
+            ],
+            times: [m.mtime(), m.mtime_nsec(), m.ctime(), m.ctime_nsec()],
+        }
+    }
 }
 struct FileCheck {
     path: String,
@@ -271,27 +301,58 @@ impl Verifier {
             files: checks,
             index: 0,
             current: None,
+            reuse_verified: false,
         })
     }
-    fn advance(&mut self, hook: &mut impl FnMut(&str) -> Result<()>) -> Result<bool> {
+    fn advance(
+        &mut self,
+        cache: &mut BTreeMap<PathBuf, (FileStamp, String)>,
+        hook: &mut impl FnMut(&str) -> Result<()>,
+    ) -> Result<bool> {
         let _profile = crate::sync_profile::span("publication.verify");
         let mut budget = PER_TICK;
         let mut buffer = vec![0; CHUNK];
-        while self.index < self.files.len() && budget > 0 {
+        let mut entries = 64;
+        while self.index < self.files.len() && budget > 0 && entries > 0 {
             let check = &self.files[self.index];
+            let path = self.root.join(&check.path);
             if self.current.is_none() {
                 let f = OpenOptions::new()
                     .read(true)
                     .custom_flags(libc::O_NOFOLLOW)
-                    .open(self.root.join(&check.path))?;
-                self.current = Some((f, 0, Sha256::new()));
+                    .open(&path)?;
+                let metadata = f.metadata()?;
+                require(metadata.is_file(), "generation file is not regular")?;
+                let stamp = FileStamp::of(&metadata);
+                if self.reuse_verified
+                    && stamp.cacheable()
+                    && !check.needs_sync
+                    && cache
+                        .get(&path)
+                        .is_some_and(|(old, hash)| old == &stamp && hash == &check.hash)
+                {
+                    require(
+                        FileStamp::of(&fs::symlink_metadata(&path)?) == stamp,
+                        "generation changed during verification",
+                    )?;
+                    self.index += 1;
+                    entries -= 1;
+                    hook(&format!("verified_file:{}", self.index))?;
+                    continue;
+                }
+                self.current = Some((f, 0, Sha256::new(), stamp));
             }
-            let (file, read, digest) = self.current.as_mut().unwrap();
+            let (file, read, digest, stamp) = self.current.as_mut().unwrap();
             let n = file.read(&mut buffer[..budget.min(CHUNK)])?;
             if n == 0 {
                 require(
                     *read == check.bytes && hex::encode(digest.clone().finalize()) == check.hash,
                     "generation checksum mismatch",
+                )?;
+                require(
+                    FileStamp::of(&file.metadata()?) == *stamp
+                        && FileStamp::of(&fs::symlink_metadata(&path)?) == *stamp,
+                    "generation changed during verification",
                 )?;
                 if check.needs_sync {
                     {
@@ -300,8 +361,15 @@ impl Verifier {
                     }
                     hook(&format!("synced_file:{}", self.index + 1))?;
                 }
+                if self.reuse_verified && stamp.cacheable() {
+                    if cache.len() >= 4096 && !cache.contains_key(&path) {
+                        cache.clear();
+                    }
+                    cache.insert(path, (stamp.clone(), check.hash.clone()));
+                }
                 self.current = None;
                 self.index += 1;
+                entries -= 1;
                 hook(&format!("verified_file:{}", self.index))?;
                 // Empty files must also consume this tick's bounded budget.
                 budget = budget.saturating_sub(1);
@@ -462,7 +530,7 @@ impl Publisher {
                     }
                     let v = self.verifier.as_mut().unwrap();
                     self.verification_progress = true;
-                    if v.advance(hook)? {
+                    if v.advance(&mut self.verified_files, hook)? {
                         let descriptor = json!({"format_version":1,"installation_id":store.installation_id()?,"epoch_id":p.epoch_id,"ordinal":p.ordinal,"export_id":p.export_id,"source_revision":p.source_revision,"prepared_at_ms":chrono::Utc::now().timestamp_millis(),"generation":format!("analytics/generations/{}",p.export_id),"manifest_sha256":v.manifest_hash,"manifest":v.manifest});
                         atomic_descriptor(&v.root, &descriptor, hook)?;
                         store.publication_ready(p, &descriptor)?;
@@ -496,6 +564,7 @@ impl Publisher {
             })();
             if let Err(e) = result {
                 self.verifier = None;
+                self.verified_files.clear();
                 // If commit succeeded, an injected post-commit error cannot
                 // undo publication or authorize deletion of the live epoch.
                 if store.publication(p.export_id)?.state != "published" {
@@ -561,8 +630,8 @@ impl Publisher {
         if p.state == "requested" {
             if self.verifier.is_none() {
                 // Published files in this storage generation are immutable and
-                // already durable. Still hash every byte; only avoid redundant
-                // fsync when path, size and checksum match the published prefix.
+                // already durable. Reuse only this daemon's verified file identity
+                // and change metadata; a descriptor checksum alone never suffices.
                 let mut durable = BTreeSet::new();
                 if let Some(epoch) = run.previous_epoch {
                     let old = store.snapshot(project, epoch)?;
@@ -596,10 +665,16 @@ impl Publisher {
                     files,
                     index: 0,
                     current: None,
+                    reuse_verified: true,
                 });
             }
             self.verification_progress = true;
-            if self.verifier.as_mut().unwrap().advance(hook)? {
+            if self
+                .verifier
+                .as_mut()
+                .unwrap()
+                .advance(&mut self.verified_files, hook)?
+            {
                 atomic_descriptor(&stage.join(p.export_id.to_string()), d, hook)?;
                 store.publication_ready(p, d)?;
                 self.verifier = None;
@@ -629,5 +704,105 @@ impl Publisher {
         store.commit_incremental(&mut run, d)?;
         hook("after_commit")?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod verification_cache_tests {
+    use super::*;
+    use std::fs::FileTimes;
+    use std::os::unix::fs::PermissionsExt;
+
+    fn verifier(root: &Path, bytes: &[u8], needs_sync: bool) -> Verifier {
+        Verifier {
+            id: OperationId::new(),
+            root: root.to_owned(),
+            manifest: json!({}),
+            manifest_hash: String::new(),
+            files: vec![FileCheck {
+                path: "data".into(),
+                bytes: bytes.len() as u64,
+                hash: hash(bytes),
+                needs_sync,
+            }],
+            index: 0,
+            current: None,
+            reuse_verified: true,
+        }
+    }
+    fn finish(
+        v: &mut Verifier,
+        cache: &mut BTreeMap<PathBuf, (FileStamp, String)>,
+    ) -> Result<usize> {
+        for turn in 1..=10 {
+            if v.advance(cache, &mut |_| Ok(()))? {
+                return Ok(turn);
+            }
+        }
+        panic!("verification failed to make bounded progress")
+    }
+    #[test]
+    fn unchanged_published_bytes_reuse_but_new_files_and_restart_hash_fully() {
+        let root = tempfile::tempdir().unwrap();
+        let bytes = vec![42; PER_TICK + 1];
+        fs::write(root.path().join("data"), &bytes).unwrap();
+        fs::set_permissions(root.path().join("data"), fs::Permissions::from_mode(0o600)).unwrap();
+        let mut cache = BTreeMap::new();
+        assert_eq!(
+            finish(&mut verifier(root.path(), &bytes, true), &mut cache).unwrap(),
+            2
+        );
+        assert_eq!(
+            finish(&mut verifier(root.path(), &bytes, false), &mut cache).unwrap(),
+            1
+        );
+        // A newly staged file has no durability authority from a content hit.
+        assert_eq!(
+            finish(&mut verifier(root.path(), &bytes, true), &mut cache).unwrap(),
+            2
+        );
+        cache.clear();
+        assert_eq!(
+            finish(&mut verifier(root.path(), &bytes, false), &mut cache).unwrap(),
+            2
+        );
+    }
+    #[test]
+    fn same_length_corruption_with_restored_mtime_and_replacement_are_rejected() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("data");
+        let mut cache = BTreeMap::new();
+        fs::write(&path, b"original").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        finish(&mut verifier(root.path(), b"original", true), &mut cache).unwrap();
+        let before = fs::metadata(&path).unwrap().modified().unwrap();
+        fs::write(&path, b"modified").unwrap();
+        File::open(&path)
+            .unwrap()
+            .set_times(FileTimes::new().set_modified(before))
+            .unwrap();
+        assert!(finish(&mut verifier(root.path(), b"original", false), &mut cache).is_err());
+        fs::write(root.path().join("replacement"), b"replaced").unwrap();
+        fs::rename(root.path().join("replacement"), &path).unwrap();
+        assert!(finish(&mut verifier(root.path(), b"original", false), &mut cache).is_err());
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink("/dev/null", &path).unwrap();
+        assert!(finish(&mut verifier(root.path(), b"original", false), &mut cache).is_err());
+    }
+    #[test]
+    fn modification_to_an_already_read_chunk_invalidates_inflight_verification() {
+        use std::io::{Seek, SeekFrom};
+        let root = tempfile::tempdir().unwrap();
+        let bytes = vec![42; PER_TICK + 1];
+        let path = root.path().join("data");
+        fs::write(&path, &bytes).unwrap();
+        let mut cache = BTreeMap::new();
+        let mut v = verifier(root.path(), &bytes, true);
+        assert!(!v.advance(&mut cache, &mut |_| Ok(())).unwrap());
+        let mut file = OpenOptions::new().write(true).open(&path).unwrap();
+        file.seek(SeekFrom::Start(0)).unwrap();
+        file.write_all(b"!").unwrap();
+        assert!(finish(&mut v, &mut cache).is_err());
+        assert!(cache.is_empty());
     }
 }

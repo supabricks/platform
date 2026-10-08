@@ -5,9 +5,23 @@ import unittest
 
 from inputs import LOCK, sha
 from workload import workload, validate_generation, require_storage
+from verify import validate_loaded
 
 
 class WorkloadAdmission(unittest.TestCase):
+    def test_prefix_requires_exact_identity_count_and_distinct_pass_status(self):
+        profile=workload('sf100-prefix')
+        receipt=dict(status='PREFIX_PASS',committed_rows=profile['load_rows'],stopped=True,
+                     workload_profile_sha256=profile['profile_sha256'],
+                     generation_receipt_sha256=profile['generation_receipt_sha256'],scale=100)
+        self.assertTrue(validate_loaded(receipt,'sf100-prefix')[1])
+        for key,value in [('status','PASS'),('committed_rows',959037905),('scale',1),
+                          ('stopped',False),('workload_profile_sha256','wrong'),
+                          ('generation_receipt_sha256','wrong')]:
+            with self.subTest(key=key),self.assertRaises(AssertionError):
+                validate_loaded(dict(receipt,**{key:value}),'sf100-prefix')
+        with self.assertRaises(AssertionError):validate_loaded(receipt,'sf1')
+
     def setUp(self):
         self.profile = workload('sf100')
         self.receipt = Path(__file__).resolve().parents[2] / 'docs/architecture/tpcds-evidence/2026-10-08-sf100-generation/generation.json'

@@ -15,7 +15,7 @@ import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
 from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
-from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile
+from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile, verified_digests
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
 
@@ -199,6 +199,11 @@ def run(config):
 
 
 def run_owned(config,root,journal_data,lease):
+    with verified_digests(lease,config):
+        return run_verified(config,root,journal_data,lease)
+
+
+def run_verified(config,root,journal_data,lease):
     profile=validate_storage_profile(config)
     work=Path(config['workspace']);plan_path=work/'plan.json'
     previous,compaction=base(config,root)
