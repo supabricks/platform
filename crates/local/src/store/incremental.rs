@@ -12,7 +12,8 @@ use serde_json::{Value, json};
 use supabricks_core::resource::{EpochId, OperationId, ProjectId};
 mod history;
 
-fn needs_compaction(manifest: &Value) -> bool {
+fn needs_compaction(manifest: &Value) -> Result<bool> {
+    let profile = crate::incremental::StorageProfile::from_manifest(manifest)?;
     let bytes = manifest["generation_bytes"].as_u64().unwrap_or(0);
     // Pure appends create no obsolete target files. Allow a longer bounded log
     // before copying that live set; mixed and legacy histories keep 64 versions.
@@ -23,19 +24,20 @@ fn needs_compaction(manifest: &Value) -> bool {
     };
     // The first publication is the compacted/live baseline, not reclaimable
     // growth. Legacy receipts retain the original 512 MiB trigger. New roots
-    // roll over after consuming half their remaining 1 GiB generation budget.
+    // roll over after consuming half their remaining admitted generation budget.
     let baseline = manifest["generation_base_bytes"]
         .as_u64()
         .unwrap_or(0)
         .min(bytes);
-    let threshold = baseline.saturating_add((1024_u64 * 1024 * 1024).saturating_sub(baseline) / 2);
-    manifest["tables"].as_array().is_some_and(|ts| {
+    let threshold =
+        baseline.saturating_add(profile.generation_bytes().saturating_sub(baseline) / 2);
+    Ok(manifest["tables"].as_array().is_some_and(|ts| {
         ts.iter()
             .any(|t| t["version"].as_u64().is_some_and(|v| v >= versions))
     }) || manifest["files"]
         .as_array()
         .is_some_and(|fs| fs.len() >= 2048)
-        || bytes >= threshold
+        || bytes >= threshold)
 }
 
 // Shared with the regression test so it measures the production query.
@@ -263,7 +265,7 @@ impl Store {
                             .publication
                             .descriptor
                             .ok_or_else(|| conflict("missing previous epoch descriptor"))?;
-                        let compact = needs_compaction(&old["manifest"]);
+                        let compact = needs_compaction(&old["manifest"])?;
                         storage_generation = if compact {
                             Some(id)
                         } else {
@@ -283,6 +285,10 @@ impl Store {
                     let r = Run {
                         id,
                         storage_generation,
+                        storage_profile: self
+                            .sync_policy(project, c.policy_id)?
+                            .config
+                            .storage_profile,
                         capture_id: c.id,
                         sync_run_id: owner,
                         project_id: project,
@@ -481,6 +487,8 @@ impl Store {
         }
         let c = self.incremental_live(r)?;
         if descriptor["manifest"]["storage_generation"] != json!(live.storage_generation)
+            || crate::incremental::StorageProfile::from_manifest(&descriptor["manifest"])?
+                != live.storage_profile
             || descriptor["manifest"]["capture_identity"] != c.identity
             || descriptor["generation"]
                 != format!(
@@ -596,7 +604,21 @@ pub(crate) fn restore(db: &rusqlite::Connection) -> Result<()> {
 #[cfg(test)]
 mod compaction_tests {
     use super::*;
+    fn needs_compaction(manifest: &Value) -> bool {
+        super::needs_compaction(manifest).unwrap()
+    }
     const MIB: u64 = 1024 * 1024;
+
+    #[test]
+    fn large_storage_profile_rollover_uses_its_admitted_budget() {
+        let mut manifest = json!({"storage_profile":"large","generation_bytes":2*1024*MIB,
+            "generation_base_bytes":1024*MIB,"tables":[{"version":1}],"files":[]});
+        assert!(!needs_compaction(&manifest));
+        manifest["generation_bytes"] = json!((1024 + (128 * 1024 - 1024) / 2) * MIB);
+        assert!(needs_compaction(&manifest));
+        manifest["storage_profile"] = json!("unknown");
+        assert!(super::needs_compaction(&manifest).is_err());
+    }
 
     #[test]
     fn large_compacted_baseline_does_not_roll_over_every_batch() {

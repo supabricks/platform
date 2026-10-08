@@ -21,7 +21,7 @@ RECYCLE_BYTES=512*1024*1024
 
 def scope(config):
     return canonical({key:config.get(key) for key in (
-        'identity','worker_generation','source_revision','storage_generation',
+        'identity','worker_generation','source_revision','storage_generation','storage_profile',
         'generation','spool','bootstrap_id','bootstrap_manifest','bootstrap_lsn',
         'reuse_authority')})
 

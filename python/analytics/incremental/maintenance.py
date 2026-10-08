@@ -7,7 +7,7 @@ import pyarrow as pa
 import pyarrow.fs as fs
 from deltalake import DeltaTable, write_deltalake, WriterProperties
 from capture.spool import CaptureError, atomic, canonical, fault
-from .storage import boundary, inventory, read_json, verify_previous
+from .storage import boundary, inventory, read_json, verify_previous, storage_limits
 
 
 def estimate_bytes(config):
@@ -22,6 +22,7 @@ def estimate_bytes(config):
 
 def compact(config, temporary):
     previous=config['previous'];source=Path(config['previous_generation'])
+    profile=config.get('storage_profile','compact')
     verify_previous(source,previous)
     tables=copy.deepcopy(previous['manifest']['tables'])
     started=time.monotonic();rows=0
@@ -33,18 +34,18 @@ def compact(config, temporary):
         def batches():
             for batch in dataset.scanner(batch_size=256,batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
                 if batch.nbytes>32*1024*1024:raise CaptureError('compaction_value_budget')
-                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024,live_writer=True)
+                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024,live_writer=True,profile=profile)
                 count[0]+=batch.num_rows
                 yield batch
         reader=pa.RecordBatchReader.from_batches(dataset.schema,batches())
         write_deltalake(str(temporary/table['path']),reader,
-            target_file_size=16*1024*1024,
+            target_file_size=storage_limits(profile)[2],
             max_spill_size=64*1024*1024,max_temp_directory_size=64*1024*1024,
             writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
             configuration={'delta.dataSkippingNumIndexedCols':'0'})
         if count[0]!=table['rows']:raise CaptureError('compaction_row_count')
         rows+=count[0];table['version']=0
-        boundary(temporary,config['deadline_ms'])
+        boundary(temporary,config['deadline_ms'],profile=profile)
         fault('after_compaction_table')
     entries=inventory(temporary,tables)
     receipt=dict(source_sha256=hashlib.sha256(canonical(previous)).hexdigest(),tables=tables,files=entries,

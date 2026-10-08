@@ -28,6 +28,7 @@ remains beside its owning record in the existing evidence directories.
 - [EQ02: correlated CHAR aggregate keys and SF1 qualification (#198)](eq02-correlated-char.md)
 - [EQ02: Spark variance and explicit q39 numerical review (#206)](eq02-variance.md)
 - [EQ03: SF100 preparation, capacity admission and qualification](eq03-sf100.md)
+- [EQ03: explicit incremental storage capacity (#213)](eq03-storage-capacity.md)
 - [EQ02: decimal AVG correction and paired full-suite results (#200)](eq02-decimal-avg.md)
 - [EQ02: apply memory investigation (#182)](eq02-apply-memory-investigation.md)
 - [EQ02: bounded key lookup and post-compaction blocker (#184)](eq02-key-pruning.md)

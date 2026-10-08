@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "scope": "Explicit storage-profile admission above 1 GiB; no SF100 load or throughput qualification",
+  "source_descriptor_sha256": "8a2dbb923e101e94e823e2f9c6913dbd48631da0bb44c01024c1c5a83e9112b6",
+  "baseline_error": "incremental_disk_budget",
+  "candidate_release_identity": "cde145bc84704ea8d6cc82fb98e5d51d3db05e4875b93bbfee64ab5351079c08",
+  "candidate_elapsed_seconds": {
+    "apply": 3.212012346019037,
+    "replay": 1.5446343410294503,
+    "verify": 1.571495281998068
+  },
+  "candidate_peak_worker_rss_bytes": 521527296,
+  "generation_bytes": 1077336319,
+  "retained_bytes": 2154680362,
+  "compaction": {
+    "elapsed_ms": 841,
+    "output_bytes": 1077310267,
+    "output_files": 17,
+    "rows": 131072,
+    "source_bytes": 1077344043,
+    "source_files": 65
+  },
+  "exact_versions": [
+    131072,
+    131072,
+    132096
+  ],
+  "native_policy_checks": [
+    "large_profile_cli_capture_publication_exact_delta_and_pinned_sail",
+    "live_capture_profile_change_rejected",
+    "profile_and_historical_reader_survive_daemon_restart"
+  ],
+  "cleanup": {
+    "exit_code": 0,
+    "timed_out": false,
+    "inspection_failed": false,
+    "descendants_observed": 81,
+    "leaked_descendants": 0,
+    "remaining_descendants": 0
+  },
+  "local_tests": {
+    "rust_passed": 228,
+    "rust_ignored": 4,
+    "python_passed": 161,
+    "harness_passed": 29
+  },
+  "strict_clippy": "fails with the same 148 diagnostics as unchanged base; #217",
+  "failed_fixture_attempts": [
+    "generation without production writer limits exceeded 768 MiB; bounded writer added",
+    "direct owned-phase fixture omitted production umask; private permissions restored"
+  ],
+  "performance_disposition": "capacity failure becomes successful compaction/replay; rejection and success durations are not a throughput speedup comparison"
+}

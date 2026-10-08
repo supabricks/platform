@@ -55,7 +55,7 @@ impl Cell {
         let (python, exporter) = crate::installation::analytical_worker(store.root())?;
         Ok(
             json!({"python":python,"worker":exporter.with_file_name("incremental_worker.py"),"identity":c.identity,"worker_generation":store.generation(),
-            "source_revision":r.source_revision,"storage_generation":r.storage_generation,
+            "source_revision":r.source_revision,"storage_generation":r.storage_generation,"storage_profile":r.storage_profile,
             "policy_revision":store.sync_policy(c.project_id,c.policy_id)?.revision}),
         )
     }
@@ -268,6 +268,9 @@ impl Cell {
                                 || d["manifest"]["capture_identity"] != c.identity
                                 || d["manifest"]["storage_generation"]
                                     != json!(r.storage_generation)
+                                || crate::incremental::StorageProfile::from_manifest(
+                                    &d["manifest"],
+                                )? != r.storage_profile
                             {
                                 return Err(invalid("worker epoch identity mismatch"));
                             }
@@ -404,6 +407,7 @@ impl Cell {
                 .bootstrap_id
                 .ok_or_else(|| conflict("missing capture bootstrap"))?;
             let mut config = json!({"id":r.id,"attempt":r.attempts+1,"epoch_id":r.epoch_id,"ordinal":p.ordinal,"source_revision":r.source_revision,"identity":c.identity,"worker_generation":store.generation(),"workspace":work,"generation":self.root.join("analytics/incremental").join(r.storage_generation.unwrap_or(c.id).to_string()),"storage_generation":r.storage_generation,"previous_generation":previous.as_ref().map(|d|crate::analytics_v2::data_root(&self.root,d)).transpose()?,"spool":self.root.join("capture").join(c.id.to_string()).join("spool/spool.sqlite3"),"bootstrap_id":bootstrap,"bootstrap_manifest":self.root.join("analytics/staging").join(bootstrap.to_string()).join("manifest.json"),"bootstrap_lsn":c.bootstrap_lsn,"after_lsn":r.after_lsn,"target_lsn":r.target_lsn,"previous":previous,"deadline_ms":r.deadline_ms});
+            config["storage_profile"] = json!(r.storage_profile);
             // Issued only after incremental_live validates the run and authority.
             // Capture compares the exact request with this private input.json,
             // and rechecks generation/source/policy before its completion marker.

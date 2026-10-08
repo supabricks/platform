@@ -19,9 +19,27 @@ MAX_RETAINED_BYTES=4*1024*1024*1024
 MAX_RETAINED_FILES=32768
 
 
-def retained_boundary(parent,extra=0):
+def storage_limits(profile='compact'):
+    # Resolve per operation, never mutate module globals: reused workers may
+    # serve multiple policies, and legacy callers retain their original bounds.
+    if profile=='compact':return MAX_BYTES,MAX_RETAINED_BYTES,16*1024*1024
+    if profile=='large':return 128*1024**3,384*1024**3,64*1024*1024
+    raise CaptureError('invalid_storage_profile')
+
+
+def validate_storage_profile(config):
+    profile=config.get('storage_profile','compact')
+    storage_limits(profile)
+    if config.get('previous') and config['previous']['manifest'].get('storage_profile','compact')!=profile:
+        raise CaptureError('incremental_storage_profile_changed')
+    return profile
+
+
+def retained_boundary(parent,extra=0,*,profile='compact'):
     # Retained epochs are never an eviction candidate for a worker. Explicit GC
     # must release their pins before another generation can consume this budget.
+    maximum=storage_limits(profile)[1]
+    if extra<0 or extra>maximum:raise CaptureError('incremental_retention_budget')
     used=0;count=0;roots=0
     if not parent.exists():return 0
     for root in parent.iterdir():
@@ -32,7 +50,7 @@ def retained_boundary(parent,extra=0):
             if path.is_symlink():raise CaptureError('unsafe_incremental_path')
             if path.is_file():
                 used+=path.stat().st_size;count+=1
-                if used+extra>MAX_RETAINED_BYTES or count>MAX_RETAINED_FILES:raise CaptureError('incremental_retention_budget')
+                if used+extra>maximum or count>MAX_RETAINED_FILES:raise CaptureError('incremental_retention_budget')
     return used
 
 
@@ -59,7 +77,9 @@ def files(root):
     return result
 
 
-def boundary(root,deadline,extra=0,*,live_writer=False):
+def boundary(root,deadline,extra=0,*,live_writer=False,profile='compact'):
+    maximum=storage_limits(profile)[0]
+    if extra<0:raise CaptureError('incremental_disk_budget')
     # Only the compaction reader samples a directory while Delta's writer is
     # finalizing files. Re-scan after a rename instead of dropping missing bytes.
     # Immutable inventories and ordinary boundary calls remain strict.
@@ -72,7 +92,7 @@ def boundary(root,deadline,extra=0,*,live_writer=False):
             if not live_writer:raise
             if attempt==2:raise CaptureError('incremental_inventory_unstable') from None
     space=os.statvfs(root)
-    if used+extra>MAX_BYTES or space.f_bavail*space.f_frsize<RESERVE+extra:raise CaptureError('incremental_disk_budget')
+    if used+extra>maximum or space.f_bavail*space.f_frsize<RESERVE+extra:raise CaptureError('incremental_disk_budget')
     return used
 
 
@@ -168,9 +188,12 @@ def journal_attempt(config,deadline):
 
 def initialize(config):
     root=Path(config['generation']);identity=config['identity']
+    profile=validate_storage_profile(config)
+    maximum=storage_limits(profile)[0]
     marker=dict(identity=identity,bootstrap_id=config['bootstrap_id'],bootstrap_lsn=config['bootstrap_lsn'])
+    if profile!='compact':marker['storage_profile']=profile
     if config.get('storage_generation'):marker['storage_generation']=config['storage_generation']
-    retained_boundary(root.parent)
+    retained_boundary(root.parent,profile=profile)
     if root.exists():
         if root.is_symlink():raise CaptureError('unsafe_incremental_path')
         if read_json(root/'owner.json')!=marker:raise CaptureError('incremental_identity_mismatch')
@@ -190,9 +213,9 @@ def initialize(config):
             # output size. A compacted live set can fit even when twice its
             # source bytes exceeds the generation quota. Reserve no more than
             # that quota; streaming and final boundaries still enforce it.
-            estimate=min(estimate_bytes(config),MAX_BYTES-boundary(temporary,config['deadline_ms']))
-            retained_boundary(root.parent,extra=estimate)
-            boundary(temporary,config['deadline_ms'],extra=estimate)
+            estimate=min(estimate_bytes(config),maximum-boundary(temporary,config['deadline_ms'],profile=profile))
+            retained_boundary(root.parent,extra=estimate,profile=profile)
+            boundary(temporary,config['deadline_ms'],extra=estimate,profile=profile)
             compact(config,temporary)
         else:
             source=Path(config['bootstrap_manifest']);manifest=read_json(source)
@@ -205,7 +228,7 @@ def initialize(config):
                 if src.is_symlink() or src.stat().st_size!=entry['bytes'] or digest(src)!=entry['sha256']:raise CaptureError('bootstrap_checksum')
                 dest.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
                 os.link(src,dest)
-                boundary(temporary,config['deadline_ms'])
+                boundary(temporary,config['deadline_ms'],profile=profile)
         durable(temporary)
         fault('before_compaction_rename')
         temporary.rename(root)

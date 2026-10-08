@@ -15,7 +15,7 @@ import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
 from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
 from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
-from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
+from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
 
@@ -59,7 +59,7 @@ def key_batches(dataset,columns,keys):
 
 
 def plan(config,root,previous,journal_data=None,lease=None):
-    with PlanningBoundary(root,config['deadline_ms'],lease) as guard:
+    with PlanningBoundary(root,config['deadline_ms'],lease,config.get('storage_profile','compact')) as guard:
         return plan_rows(config,root,previous,journal_data,guard)
 
 
@@ -125,6 +125,7 @@ def commit_metrics(path,version,metrics):
 
 
 def apply_table(config,root,table,planned,checksum,sealed):
+    profile=config.get('storage_profile','compact')
     path=root/table['path'];delta=DeltaTable(str(path));before=planned['before']
     marker=dict(sb_run=config['id'],sb_plan=checksum)
     if delta.version()==before+1:
@@ -156,8 +157,8 @@ def apply_table(config,root,table,planned,checksum,sealed):
     # Appends create new files; they cannot rewrite the unchanged target.
     table_bytes=0 if append else sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
     reservation=table_bytes+4*source.nbytes+4*1024*1024
-    retained_boundary(root.parent,extra=reservation)
-    boundary(root,config['deadline_ms'],extra=reservation)
+    retained_boundary(root.parent,extra=reservation,profile=profile)
+    boundary(root,config['deadline_ms'],extra=reservation,profile=profile)
     marker['sb_apply']='append' if append else 'merge'
     options=dict(writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
         commit_properties=CommitProperties(custom_metadata=marker,max_commit_retries=0),
@@ -178,11 +179,12 @@ def apply_table(config,root,table,planned,checksum,sealed):
             .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
     metrics['apply_kind']=marker['sb_apply']
     fault('after_table_commit')
-    durable(path,sealed);boundary(root,config['deadline_ms'])
+    durable(path,sealed);boundary(root,config['deadline_ms'],profile=profile)
     return delta.version(),commit_metrics(path,delta.version(),metrics)
 
 
 def run(config):
+    validate_storage_profile(config)
     os.umask(0o077)
     work=Path(config['workspace']);plan_path=work/'plan.json'
     journal_data=None
@@ -197,6 +199,7 @@ def run(config):
 
 
 def run_owned(config,root,journal_data,lease):
+    profile=validate_storage_profile(config)
     work=Path(config['workspace']);plan_path=work/'plan.json'
     previous,compaction=base(config,root)
     sealed=frozenset()
@@ -235,8 +238,9 @@ def run_owned(config,root,journal_data,lease):
     manifest['capture_identity']=config['identity'];manifest['input_bytes']=input_bytes;manifest['apply_metrics']=metrics
     manifest['storage_generation']=config.get('storage_generation')
     manifest['compaction']=compaction
-    manifest['retained_bytes']=retained_boundary(root.parent)
-    used=boundary(root,config['deadline_ms']);manifest['generation_bytes']=used
+    if profile!='compact':manifest['storage_profile']=profile
+    manifest['retained_bytes']=retained_boundary(root.parent,profile=profile)
+    used=boundary(root,config['deadline_ms'],profile=profile);manifest['generation_bytes']=used
     append_only=all(m['metrics'].get('apply_kind')=='append' for m in metrics)
     if config['previous'] is None or compaction is not None:
         # Keep this first-published size across later epochs in the same root.

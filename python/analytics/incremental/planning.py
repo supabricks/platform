@@ -59,9 +59,10 @@ def mutation_lease(root):
     finally:os.close(fd)
 
 
-def inventory_snapshot(root,deadline):
+def inventory_snapshot(root,deadline,profile='compact'):
     """One bounded walk: sizes plus identities, including unreferenced files."""
     if time.time()*1000>deadline:raise CaptureError('apply_deadline')
+    maximum=storage.storage_limits(profile)[0]
     directories={};files={};used=0
     for path in _paths(root):
         meta=path.lstat()
@@ -73,7 +74,7 @@ def inventory_snapshot(root,deadline):
             files[path]=signature(meta);used+=meta.st_size
             if len(files)>storage.MAX_FILES:raise CaptureError('incremental_file_budget')
         else:raise CaptureError('unsafe_incremental_path')
-        if used>storage.MAX_BYTES:raise CaptureError('incremental_disk_budget')
+        if used>maximum:raise CaptureError('incremental_disk_budget')
     return directories,files,used
 
 
@@ -83,19 +84,19 @@ def _paths(root):
 
 
 class PlanningBoundary:
-    def __init__(self,root,deadline,lease=None):
-        self.root=Path(root);self.deadline=deadline;self.lease=lease
+    def __init__(self,root,deadline,lease=None,profile='compact'):
+        self.root=Path(root);self.deadline=deadline;self.lease=lease;self.profile=profile
     def __enter__(self):
         if self.lease is not None:
             if self.lease.root!=self.root:raise CaptureError('incremental_lease_lost')
             self.lease.check()
-            self.snapshot=inventory_snapshot(self.root,self.deadline)
+            self.snapshot=inventory_snapshot(self.root,self.deadline,self.profile)
         self.check()
         return self
     def check(self):
         if self.lease is None:
             # Standalone/unowned callers retain conservative per-batch scans.
-            storage.boundary(self.root,self.deadline)
+            storage.boundary(self.root,self.deadline,profile=self.profile)
             return
         if time.time()*1000>self.deadline:raise CaptureError('apply_deadline')
         self.lease.check()
@@ -106,7 +107,7 @@ class PlanningBoundary:
         # Planning allocates no disk output. Check actual headroom every batch;
         # apply_table still reserves the full output before allocating any file.
         space=os.statvfs(self.root)
-        if self.snapshot[2]>storage.MAX_BYTES or space.f_bavail*space.f_frsize<storage.RESERVE:
+        if self.snapshot[2]>storage.storage_limits(self.profile)[0] or space.f_bavail*space.f_frsize<storage.RESERVE:
             raise CaptureError('incremental_disk_budget')
     def __exit__(self,kind,error,tb):
         if kind is None:
@@ -114,6 +115,6 @@ class PlanningBoundary:
             if self.lease is not None:
                 # Detect in-place growth/edits as well as path changes before a
                 # plan may be persisted or any Delta output may be allocated.
-                if inventory_snapshot(self.root,self.deadline)!=self.snapshot:
+                if inventory_snapshot(self.root,self.deadline,self.profile)!=self.snapshot:
                     raise CaptureError('incremental_plan_mutated')
         self.snapshot=None

@@ -37,6 +37,7 @@ pub(crate) fn data_root(installation: &Path, d: &Value) -> Result<PathBuf> {
     Ok(installation.join(expected))
 }
 pub(crate) fn layout(installation: &Path, d: &Value) -> Result<Vec<(String, u64, String)>> {
+    let profile = crate::incremental::StorageProfile::from_manifest(&d["manifest"])?;
     let root = data_root(installation, d)?;
     if !fs::symlink_metadata(&root)?.is_dir() {
         return Err(invalid("invalid incremental root"));
@@ -116,7 +117,7 @@ pub(crate) fn layout(installation: &Path, d: &Value) -> Result<Vec<(String, u64,
         total = total
             .checked_add(size)
             .ok_or_else(|| invalid("v2 size overflow"))?;
-        if total > 1024 * 1024 * 1024 {
+        if total > profile.generation_bytes() {
             return Err(invalid("v2 output budget"));
         }
         checks.push((name.to_owned(), size, hash.to_owned()));

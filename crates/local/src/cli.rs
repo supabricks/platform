@@ -60,7 +60,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   sync apply CAPTURE [--key KEY] | applied RUN | cancel-apply RUN [--key KEY]
   sync capture start POLICY --revision N [--key KEY] [--spool-bytes N] [--wal-bytes N]
   sync capture status|pause|resume|delete CAPTURE [--key KEY]
-  sync create --branch NAME [--mode snapshot|triggered|continuous] [--strategy full|incremental] [--every-seconds N] [--key KEY]
+  sync create --branch NAME [--mode snapshot|triggered|continuous] [--strategy full|incremental] [--storage-profile compact|large] [--every-seconds N] [--key KEY]
   sync update POLICY_ID --revision N [--every-seconds N] [--key KEY]
   sync list | show POLICY_ID | runs POLICY_ID [--limit 50] | status RUN_ID
   sync run POLICY_ID --revision N [--key KEY]
@@ -2225,6 +2225,11 @@ fn sync_cli(a: &mut Args, c: &Client) -> Result<u8> {
             };
             let config = Config {
                 continuous,
+                storage_profile: match a.take("--storage-profile").as_deref() {
+                    None | Some("compact") => crate::incremental::StorageProfile::Compact,
+                    Some("large") => crate::incremental::StorageProfile::Large,
+                    _ => return Err(invalid("--storage-profile requires compact or large")),
+                },
                 mode,
                 strategy,
                 schedule,
