@@ -83,7 +83,7 @@ or 12,028 rows/s overall (1.108× the cache slice). Over the fixed 6.5–7.3-mil
 row cohort, rounded up to actual publication boundaries, throughput changed
 from 8,049 to 8,482 rows/s (1.054×). No Cargo/rustc processes were observed in
 either timed run. Both respected the 65,536-row backlog window. Exact typed
-verification of `c1` is in progress. The 20k/10× target remains unqualified.
+verification of `c1` passed all 24 tables (`PREFIX_EXACT_PASS`). The 20k/10× target remains unqualified.
 
 ### Controller handoff slice (in progress)
 
@@ -91,9 +91,38 @@ Completed apply receipts and durable publication commits can wake the existing
 sync state machine without waiting for general 200-ms maintenance. The readiness
 probe is only a hint: capture observation, process ownership and RSS/recycling,
 policy fencing, mailbox completion and run deadlines still gate advancement.
-General maintenance and all admission limits remain unchanged. This slice has
-not yet been packaged or qualified; it must be measured against the decoder
-candidate before any performance claim.
+General maintenance and all admission limits remain unchanged. Candidate `1402769` is packaged as `v0.1.0-alpha.36.eq220d`; 231 Rust library
+tests and all 14 publication protocol tests passed. Installed continuous and triggered suites passed atomic groups, idle stability,
+fixed barriers, complete-transaction admission, pause/resume, capture SIGKILL,
+daemon restart, schema drift/resync and independent pinned historical readers.
+The `d1` prefix passed in 512.155 s loading plus 5.223 s draining: 14,274 rows/s
+overall (1.187× decoder), with 9,815 rows/s over the degraded-scale cohort
+(1.157× decoder). No compilers were observed. Exact verification is in progress;
+this still falls short of the target. The sampled observation ledger missed the
+last drain publication between two reads; its final descriptor and SQL ledger
+agree. The summary uses the final checkpoint as a conservative lag bound for
+those last transactions. The initial summary assertion failure is retained.
+
+### Large-profile batching slice (prepared, not yet qualified)
+
+The full-worker diagnostic on a private reconstruction of the paused published
+prefix still spends time in planning, table preparation and inventory metadata
+walks after checksum reuse. Its cProfile run is diagnostic only (2.268 s with
+profiler overhead, 376,270,848-byte peak RSS); it is not an unprofiled throughput
+measurement and does not publish or acknowledge anything in the paused cell.
+
+A separate candidate raises the explicit `large` profile's aggregate apply
+ceiling from 16,384 to 65,536 row operations. The `compact` profile and the strict
+16,384-row ceiling on a *single source transaction* remain unchanged. Complete
+transactions fill the admitted prefix; a transaction is never split. The journal
+read still stops at 16 MiB, Arrow values at 32 MiB, the sealed plan at 64 MiB and
+the worker at 768 MiB / 300 seconds. COPY size, 65,536-row publication window,
+CPU/RAM and SQL timeout remain unchanged. This is an explicit admission change,
+not yet a performance result. All 173 Python tests pass, including a full
+65,536-operation prefix interrupted after its first table commit, replay without
+rereading the journal, subsequent cross-table key move/delete, exact historical
+versions, oversized-transaction rejection and duplicate-key rejection. Installed
+RSS and throughput measurements against the handoff candidate remain pending.
 
 ## Preserved baseline
 

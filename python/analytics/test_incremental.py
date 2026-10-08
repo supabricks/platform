@@ -56,6 +56,7 @@ class IncrementalTests(unittest.TestCase):
         self.spool=Spool(self.root/'spool',identity);self.spool.establish(100,PROFILE);self.spool.set('bootstrap',dict(id='bootstrap',lsn='0/C8'))
         self.config=dict(id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=1,source_revision=1,identity=identity,worker_generation=1,
             workspace=str(self.root/'work1'),generation=str(self.root/'analytics/incremental'/identity['generation']),spool=str(self.spool.path),bootstrap_id='bootstrap',bootstrap_manifest=str(self.base/'manifest.json'),bootstrap_lsn='0/C8',after_lsn='0/C8',target_lsn='0/C8',previous=None,deadline_ms=int(time.time()*1000)+60000)
+        if getattr(self,'storage_profile','compact')!='compact':self.config['storage_profile']=self.storage_profile
         Path(self.config['workspace']).mkdir();run(self.config)
         self.first=json.loads((Path(self.config['workspace'])/'result.json').read_text())['descriptor']
     def tearDown(self):self.spool.close();self.tmp.cleanup()

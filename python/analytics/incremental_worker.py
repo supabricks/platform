@@ -19,6 +19,11 @@ from incremental.storage import JournalBusyDeferred, read_json, initialize, jour
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
 
+# The explicit large storage profile amortizes fixed inventory/publication work
+# across more complete transactions. The decoder's per-transaction MAX_ROWS,
+# 16-MiB journal read, 32-MiB values and 64-MiB sealed plan remain independent.
+LARGE_APPLY_ROWS = 65536
+
 
 def quote(name):return '"'+name.replace('"','""')+'"'
 
@@ -65,15 +70,17 @@ def plan(config,root,previous,journal_data=None,lease=None):
 
 def plan_rows(config,root,previous,journal_data,guard):
     schema,transactions,_,_=journal(config) if journal_data is None else journal_data
+    row_limit=LARGE_APPLY_ROWS if config.get('storage_profile','compact')=='large' else MAX_ROWS
     operations=[];end=lsn(config['after_lsn']);input_bytes=0
     for candidate_end,payload in transactions:
         guard.check()
+        if len(operations)>=row_limit:break
         selected=changes(payload,schema,candidate_end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None)
         # The byte-bounded journal range may contain more small rows than one
         # apply can materialize. Publish a complete-transaction prefix and leave
         # the rest for the next run. changes() still rejects an oversized single
         # transaction; never divide its atomic visibility across publications.
-        if len(operations)+len(selected)>MAX_ROWS:break
+        if len(operations)+len(selected)>row_limit:break
         operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
     touched={}
     for oid,tag,old,new,row in operations:
@@ -95,7 +102,7 @@ def plan_rows(config,root,previous,journal_data,guard):
                 values=[row[c[1]] for c in columns];key=row_key(values,pk)
                 if key in rows:raise CaptureError('duplicate_source_key')
                 rows[key]=values
-                if len(rows)>MAX_ROWS:raise CaptureError('apply_row_budget')
+                if len(rows)>row_limit:raise CaptureError('apply_row_budget')
         existing[oid]=rows
     final=overlay(operations,existing,schema)
     output=[]
