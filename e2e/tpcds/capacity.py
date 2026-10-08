@@ -24,8 +24,14 @@ class CapacityChecks:
     def check(self,name):self.checks.append(name);print('PASS',name,flush=True)
     def run(self,python,export):
         for phase in ('generate','apply','replay','verify','history'):
-            subprocess.run([str(python),str(Path(__file__).resolve()),'--root',str(self.root),'--phase',phase],check=True,timeout=300)
-        self.metrics.update(json.loads((self.root/'measurements.json').read_text()))
+            self.metrics['phase']=phase
+            try:
+                subprocess.run([str(python),str(Path(__file__).resolve()),'--root',str(self.root),'--phase',phase],check=True,timeout=300)
+            finally:
+                # A failing child writes its measurement before asserting the
+                # bound. Preserve it in the installed report, not only /tmp.
+                path=self.root/'measurements.json'
+                if path.exists():self.metrics.update(json.loads(path.read_text()))
         self.metrics['scope']='Synthetic >512 MiB live table; production initialization/planning/apply and commit replay; no PostgreSQL throughput claim'
         for name in sorted(CHECKS):self.check(name)
 
@@ -57,13 +63,17 @@ def run(root,phase):
         report_path.write_text(json.dumps(dict(rows=ROWS,insert_rows=INSERTS,payload_width=WIDTH,source_bytes=size)))
         return
     if phase=='history':
-        started=time.monotonic();latencies=[]
+        started=time.monotonic();latencies=[];memory=[]
+        def sample(label):
+            memory.append(dict(phase=label,highwater_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)))
+        sample('before_append')
         for version in range(2,513):
             before=time.monotonic()
             batch=pa.RecordBatch.from_arrays([pa.array([ROWS+INSERTS+version-2],pa.int32()),
                 pa.array([f'history {version}'])],schema=schema)
             w.write_deltalake(str(target/'tables/42'),batch,mode='append')
             latencies.append(time.monotonic()-before)
+        sample('after_append')
         for version,maximum in ((0,ROWS),(1,ROWS+INSERTS),(512,ROWS+INSERTS+511)):
             table=w.DeltaTable(str(target/'tables/42'),version=version)
             dataset=table.to_pyarrow_dataset(filesystem=w.fs.SubTreeFileSystem(str(target/'tables/42'),w.fs.LocalFileSystem()))
@@ -74,9 +84,10 @@ def run(root,phase):
                     assert 0<=i<maximum and not seen[i] and value==expected
                     seen[i]=1;count+=1
             assert count==maximum
+            sample('after_read_version_'+str(version))
         hwm=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)
         report=json.loads(report_path.read_text());report['history']=dict(last_version=512,appended_rows=511,
-            elapsed_seconds=time.monotonic()-started,highwater_bytes=hwm,commit_seconds=latencies)
+            elapsed_seconds=time.monotonic()-started,highwater_bytes=hwm,commit_seconds=latencies,memory=memory)
         report_path.write_text(json.dumps(report,indent=2)+'\n')
         assert hwm<768*1024**2
         return
