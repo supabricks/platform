@@ -348,6 +348,12 @@ publication is a separate distribution step.
 
 ### L01 — Direct analytical dataset design, following R04
 
+The proposed [data ingestion and database migration strategy](data-ingestion-strategy.md)
+builds on this prerequisite for uploads, cloud files, Snowflake and Databricks
+imports. Its external PostgreSQL migration track does not depend on L01.
+The wider source/destination roadmap does not change the delivered
+I00–I03 contract or establish direct analytical ingestion as implemented.
+
 Produce a bounded follow-on design/spike for immutable managed Delta/Parquet
 datasets using the shared staging/parser service. Specify dataset identity and
 ownership, source provenance, atomic publication, session/epoch bindings, schema
