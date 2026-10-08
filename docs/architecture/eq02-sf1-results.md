@@ -1,11 +1,13 @@
 # EQ02 SF1 end-to-end results
 
 The full SF1 PostgreSQL load and exact Delta comparison pass. The
-[correlated CHAR correction (#198)](eq02-correlated-char.md) qualifies **101 of
-103 statements after explicit ordering review**, up from 97 with the
-[analytical resource profile (#197)](eq02-query-resources.md). All 103 now execute;
-only the two DOUBLE variance mismatches (#206) remain. Every previously correct
-statement stays correct. SP stays frozen. No larger-scale or signed-release
+[variance and numerical review slice (#206)](eq02-variance.md) qualifies **all
+103 statements under the explicit engineering contract**: 101 match exactly after
+individual ordering review, and q39a/q39b satisfy the approved independent
+high-precision oracle bound. The raw strict DOUBLE mismatches remain retained;
+this is not 103 bit-identical results. All 103 execute with the
+[analytical resource profile (#197)](eq02-query-resources.md), with no previously
+exact result regressions. SP stays frozen. No larger-scale or signed-release
 qualification is claimed.
 
 The original baseline below remains unchanged: 69 correct, with 34 tracked

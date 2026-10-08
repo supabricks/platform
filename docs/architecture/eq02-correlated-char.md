@@ -10,7 +10,9 @@ correct results from **97 to 101 of 103**, with no previously correct statement
 regressing. All four targeted statements are now correct. The two remaining
 DOUBLE variance mismatches, q39a and q39b, remain tracked in
 [#206](https://github.com/supabricks/platform/issues/206); they are not accepted
-through a tolerance change. The reduced regressions also pass in both local
+through a tolerance change. The subsequent [#206 review](eq02-variance.md)
+records the source correction and separately approved numerical contract; the
+measurements here remain the historical #198 pair. The reduced regressions also pass in both local
 and local-cluster Sail, matching the independent Spark reference.
 
 ## Cause and correction

@@ -303,3 +303,13 @@ This path qualifies an analytical correction against retained data; it does not
 claim a signed release or broad binary-upgrade compatibility. Keep baseline and
 candidate results in separate fresh output directories and preserve both exact
 comparison ledgers, timings, and descendant-cleanup reports.
+
+### Retained SF1 q39 numerical review
+
+`compare.py` remains the strict ledger. The separate `q39_review.py` command
+implements the explicitly approved #206 contract for the pinned original SF1
+fixture: exact SQL/types/ordered membership/means, with a two-ULP independent
+80-digit oracle bound only for CV columns. It checks both engines and retains
+the raw strict result. See [the numerical review report](../../docs/architecture/eq02-variance.md)
+for provenance, limitations and reproduction. This is not a general float tolerance
+or authorization to qualify another dataset automatically.

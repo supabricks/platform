@@ -1,0 +1,876 @@
+{
+  "engine": "sail",
+  "fixture_sha256": "afd04fe7b3be2a5ca53779323e3eeee8fbc1ede48425e1dac14ddfe0eee3e2ba",
+  "queries": [
+    {
+      "id": "sf1_a",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (10),(404),(13),(814) t(v)",
+      "sql_sha256": "81a381943b8d4b923359edf6f96e156d9b7e0b3adeb44b592117b93e5c833b7d",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "147020.25000000003",
+          "110265.18750000003",
+          "383.4321973960977",
+          "332.0620235739101",
+          "310.25",
+          "1.2358813775861328"
+        ]
+      ],
+      "seconds": 0.006401020043995231
+    },
+    {
+      "id": "sf1_b",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (113),(838),(88),(105) t(v)",
+      "sql_sha256": "c9163cda9156c7db765a4ba2400787a9fd05833a4d0fe4de0d6e3e0fc93d934d",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "135532.6666666667",
+          "101649.50000000001",
+          "368.1476153211734",
+          "318.8251872107974",
+          "286.0",
+          "1.2872294241999072"
+        ]
+      ],
+      "seconds": 0.004825137963052839
+    },
+    {
+      "id": "constant",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (7),(7),(7),(7) t(v)",
+      "sql_sha256": "48c2b71670fc7c882bae69ba337cba7a7b3e6cda04db8c01218e33075f5699d8",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.0",
+          "0.0",
+          "0.0",
+          "0.0",
+          "7.0",
+          "0.0"
+        ]
+      ],
+      "seconds": 0.0050431249546818435
+    },
+    {
+      "id": "singleton",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (7) t(v)",
+      "sql_sha256": "700e48ce88334c58dac2427ab8882edfe229448d971cb518fcaf247fe6d27128",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null,
+          "0.0",
+          null,
+          "0.0",
+          "7.0",
+          null
+        ]
+      ],
+      "seconds": 0.004701556987129152
+    },
+    {
+      "id": "nulls",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (1),(NULL),(2),(3) t(v)",
+      "sql_sha256": "73ab8022c1081d50a002772f3d6d1d91208b83c4c3d3ff3f302b731ae9696d83",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0",
+          "0.6666666666666666",
+          "1.0",
+          "0.816496580927726",
+          "2.0",
+          "0.5"
+        ]
+      ],
+      "seconds": 0.005192032956983894
+    },
+    {
+      "id": "all_nulls",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (CAST(NULL AS DOUBLE)),(NULL) t(v)",
+      "sql_sha256": "bd920a400c08e1ebafd68827b8a1600676aa925b21b6575cb88bc3fea3ff9ff5",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "seconds": 0.00460179103538394
+    },
+    {
+      "id": "nan",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (CAST('NaN' AS DOUBLE)),(1.) t(v)",
+      "sql_sha256": "26932b9e88b62c417a180107810217390049d0f5068bbce71e3213f94c2bc1de",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "nan",
+          "nan",
+          "nan",
+          "nan",
+          "nan",
+          "nan"
+        ]
+      ],
+      "seconds": 0.00638296699617058
+    },
+    {
+      "id": "infinity",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (CAST('Infinity' AS DOUBLE)) t(v)",
+      "sql_sha256": "491116d265461e5d0cee7d3d3a0f40fc00d6243960263eadfd70d162b65f7cb3",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null,
+          "nan",
+          null,
+          "nan",
+          "inf",
+          null
+        ]
+      ],
+      "seconds": 0.004764855024404824
+    },
+    {
+      "id": "large_offset",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (1000000000001.),(1000000000002.),(1000000000003.),(1000000000004.) t(v)",
+      "sql_sha256": "ba1d2d5d12eeae86ae1ba0c59ec3aa9bb9f978ac813583bba2a6aa073af94579",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "decimal(17,4)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.6666666666666667",
+          "1.25",
+          "1.2909944487358056",
+          "1.118033988749895",
+          "1000000000002.5000",
+          "1.290994448732578e-12"
+        ]
+      ],
+      "seconds": 0.005240894970484078
+    },
+    {
+      "id": "decimal",
+      "sql": "SELECT var_samp(v) vs,var_pop(v) vp,stddev_samp(v) ss,stddev_pop(v) sp,avg(v) mean,stddev_samp(v)/avg(v) cov FROM VALUES (CAST(0.0001 AS DECIMAL(18,4))),(0.0003),(0.0005) t(v)",
+      "sql_sha256": "31f108f1439294daccf5cd7af573cfeb9ad897fd81374fe91d157f7988945221",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "sp",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "mean",
+            "type": "decimal(22,8)",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "cov",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.000000000000001e-08",
+          "2.666666666666667e-08",
+          "0.0002",
+          "0.00016329931618554522",
+          "0.00030000",
+          "0.6666666666666667"
+        ]
+      ],
+      "seconds": 0.005234352953266352
+    },
+    {
+      "id": "single_partition",
+      "sql": "SELECT var_samp(v),stddev_samp(v),avg(v),stddev_samp(v)/avg(v) FROM single_partition",
+      "sql_sha256": "1e5f74b3903f87e530a8c2cc204bdf9ee5d510294ad0f92330c2a989f29df2ff",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "var_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "avg(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "(stddev_samp(v) / avg(v))",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "147020.25000000003",
+          "383.4321973960977",
+          "310.25",
+          "1.2358813775861328"
+        ]
+      ],
+      "seconds": 0.004649229987990111
+    },
+    {
+      "id": "empty",
+      "sql": "SELECT var_samp(v),var_pop(v),stddev_samp(v),stddev_pop(v) FROM VALUES (1.) t(v) WHERE false",
+      "sql_sha256": "045571e20e313a6e1280e1107858a731b177573c2d5cb3a3c9403cd936309b59",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "var_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "var_pop(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_pop(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "seconds": 0.0037480779574252665
+    },
+    {
+      "id": "distinct",
+      "sql": "SELECT var_samp(DISTINCT v),var_pop(DISTINCT v),stddev_samp(DISTINCT v),stddev_pop(DISTINCT v) FROM VALUES (1),(2),(2),(3),(NULL) t(v)",
+      "sql_sha256": "463e0c56cb8107d6f57c05214b4ed0a6a99aa7bec605546ed989e222ba467c46",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "var_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "var_pop(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_pop(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0",
+          "0.6666666666666666",
+          "1.0",
+          "0.816496580927726"
+        ]
+      ],
+      "seconds": 0.0039459760300815105
+    },
+    {
+      "id": "grouped",
+      "sql": "SELECT k,var_samp(v),stddev_samp(v),var_pop(v) FILTER (WHERE v<3) FROM VALUES (1,1),(1,2),(1,3),(2,8),(2,NULL) t(k,v) GROUP BY k ORDER BY k",
+      "sql_sha256": "93bb3f7b169c7c0477d93baf89d87577787ff2cbb8faf93ba19ec185cb1286bd",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "k",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "var_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "var_pop(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1",
+          "1.0",
+          "1.0",
+          "0.25"
+        ],
+        [
+          "2",
+          null,
+          null,
+          null
+        ]
+      ],
+      "seconds": 0.0049160479684360325
+    },
+    {
+      "id": "aliases",
+      "sql": "SELECT std(v),stddev(v),stddev_samp(v),variance(v),var_samp(v) FROM VALUES (1),(2),(3) t(v)",
+      "sql_sha256": "83d5b66f95e3563a95b363acf93fbef3a43ea9d44eb2092583dd20c132d0d513",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "std(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "stddev_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "variance(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "var_samp(v)",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0",
+          "1.0",
+          "1.0",
+          "1.0",
+          "1.0"
+        ]
+      ],
+      "seconds": 0.0037900159950368106
+    },
+    {
+      "id": "window",
+      "sql": "SELECT id,var_samp(v) OVER (ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) vs,stddev_samp(v) OVER (ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) ss FROM VALUES (1,10),(2,404),(3,13),(4,814),(5,NULL) t(id,v) ORDER BY id",
+      "sql_sha256": "a51e432c72aec7b02f510df3c9647bbe2717d2c036d61dbf55f71efb0bfb5316",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "vs",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ss",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1",
+          null,
+          null
+        ],
+        [
+          "2",
+          "77618.0",
+          "278.6000717874997"
+        ],
+        [
+          "3",
+          "51354.33333333333",
+          "226.61494507938644"
+        ],
+        [
+          "4",
+          "160430.3333333333",
+          "400.5375554593268"
+        ],
+        [
+          "5",
+          "320800.5",
+          "566.3925317304246"
+        ]
+      ],
+      "seconds": 0.0050269950297661126
+    }
+  ]
+}
