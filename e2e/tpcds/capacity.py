@@ -65,7 +65,15 @@ def run(root,phase):
     if phase=='history':
         started=time.monotonic();latencies=[];memory=[]
         def sample(label):
-            memory.append(dict(phase=label,highwater_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)))
+            point=dict(phase=label,highwater_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024))
+            if sys.platform=='linux':
+                # Distinguish live anonymous memory and transparent huge pages
+                # from a retained high-water mark on hosted Linux runners.
+                for line in Path('/proc/self/smaps_rollup').read_text().splitlines():
+                    fields=line.split()
+                    if fields[0] in ('Rss:','Anonymous:','AnonHugePages:'):
+                        point[fields[0][:-1].lower()+'_bytes']=int(fields[1])*1024
+            memory.append(point)
         sample('before_append')
         for version in range(2,513):
             before=time.monotonic()
@@ -73,6 +81,7 @@ def run(root,phase):
                 pa.array([f'history {version}'])],schema=schema)
             w.write_deltalake(str(target/'tables/42'),batch,mode='append')
             latencies.append(time.monotonic()-before)
+            if version%64==0:sample('after_append_version_'+str(version))
         sample('after_append')
         for version,maximum in ((0,ROWS),(1,ROWS+INSERTS),(512,ROWS+INSERTS+511)):
             table=w.DeltaTable(str(target/'tables/42'),version=version)
@@ -88,6 +97,9 @@ def run(root,phase):
         hwm=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)
         report=json.loads(report_path.read_text());report['history']=dict(last_version=512,appended_rows=511,
             elapsed_seconds=time.monotonic()-started,highwater_bytes=hwm,commit_seconds=latencies,memory=memory)
+        if sys.platform=='linux':
+            report['history']['hugepage_policy']={name:(Path('/sys/kernel/mm/transparent_hugepage')/name).read_text().strip()
+                for name in ('enabled','defrag') if (Path('/sys/kernel/mm/transparent_hugepage')/name).exists()}
         report_path.write_text(json.dumps(report,indent=2)+'\n')
         assert hwm<768*1024**2
         return

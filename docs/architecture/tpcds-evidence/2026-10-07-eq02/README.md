@@ -129,3 +129,10 @@ governed repeats, and three exact-archive capacity repeats. The Delta baseline
 workflow now requires the verified patched wheel. Failed history measurements
 are retained rather than discarded. See [merge-readiness corrections](../../eq02-ci-readiness.md);
 the original intermittent capacity failure is not erased by passing repeats.
+
+`ci-memory/` retains the second hosted capacity failure, passing analytical and
+governed checks, pinned-download interruption, and controlled huge-page
+investigation. The Linux launcher candidate changes only allocator policy;
+three fresh runs meet the unchanged 768 MiB bound. See
+[CI corrections](../../eq02-ci-readiness.md) for the measurements and limits of
+attribution. Full hosted qualification remains required before merging #183.

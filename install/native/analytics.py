@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Assemble a relocatable analytical environment entirely on the build machine."""
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import ssl
 import subprocess
 import tarfile
 import tempfile
+import time
 import tomllib
+import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,11 +25,49 @@ def digest(path):
 
 
 def fetch(url, sha256, path):
-    if not path.exists():
-        with urllib.request.urlopen(url, timeout=120) as response, path.open('wb') as out:
-            shutil.copyfileobj(response, out)
-    if digest(path) != sha256:
-        raise ValueError('analytical build input checksum mismatch: ' + path.name)
+    if path.exists():
+        if digest(path) != sha256:
+            raise ValueError('analytical build input checksum mismatch: ' + path.name)
+        return
+    for attempt in range(3):
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name+'.',
+                                             suffix='.part', delete=False) as out:
+                temporary = Path(out.name)
+                with urllib.request.urlopen(url, timeout=120) as response:
+                    shutil.copyfileobj(response, out)
+            if digest(temporary) != sha256:
+                raise ValueError('analytical build input checksum mismatch: ' + path.name)
+            temporary.replace(path)
+            return
+        except urllib.error.HTTPError as error:
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except urllib.error.URLError as error:
+            if isinstance(error.reason, ssl.SSLCertVerificationError) or attempt == 2:
+                raise
+        except (TimeoutError, ConnectionError, http.client.IncompleteRead):
+            if attempt == 2:
+                raise
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+        time.sleep(attempt + 1)
+
+
+def worker_launcher(target):
+    # jemalloc otherwise inherits the Linux host's transparent-huge-page policy.
+    # Repeated small Delta commits can fault whole 2 MiB pages for sparse arenas,
+    # exhausting the worker RSS budget while live allocations remain small.
+    allocator = 'export _RJEM_MALLOC_CONF=thp:never\n' if target == 'linux-x86_64' else ''
+    return '''#!/bin/bash
+set -euo pipefail
+directory=$(cd -P "$(dirname "$0")" && pwd)
+unset PYTHONHOME PYTHONPATH PYTHONUSERBASE PYTHONSTARTUP PYTHONINSPECT
+export PYTHONDONTWRITEBYTECODE=1
+''' + allocator + '''exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
+'''
 
 
 def macho_dependencies(load_commands):
@@ -177,13 +219,7 @@ def assemble_analytics(destination, target):
     (destination / 'components').mkdir(exist_ok=True)
     shutil.copy2(ROOT / 'components/components.lock.json', destination / 'components/components.lock.json')
     wrapper = worker / 'python'
-    wrapper.write_text('''#!/bin/bash
-set -euo pipefail
-directory=$(cd -P "$(dirname "$0")" && pwd)
-unset PYTHONHOME PYTHONPATH PYTHONUSERBASE PYTHONSTARTUP PYTHONINSPECT
-export PYTHONDONTWRITEBYTECODE=1
-exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
-''')
+    wrapper.write_text(worker_launcher(target))
     wrapper.chmod(0o755)
     probe = worker / 'check_environment.py'
     probe.write_text('from runtime_environment import environment\nimport json\nprint(json.dumps(environment()))\n')

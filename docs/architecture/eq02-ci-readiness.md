@@ -65,3 +65,60 @@ writer crash rollback, and bounded audit behavior.
 CI archive, native-only candidate overlay, tests, failed reports, fresh repeats
 and descendant cleanup. Current-head hosted CI remains required before merge;
 local passes do not overwrite the failed CI receipts.
+
+## Hosted follow-up and bounded Linux allocator pages (#202)
+
+At head `81cbe52`, both analytical-baseline targets pass all 155 worker tests,
+20 fixture tests, and synthetic qualification. The hosted governed release also
+passes: 17 data checks plus identity, sync, upgrade, and browser suites. The
+Linux installed sync job passes its first ten suites, then fails capacity again.
+Its retained measurements now locate the growth before historical readers:
+
+| History boundary | Hosted RSS high-water |
+| --- | ---: |
+| Before append | 164,040,704 B |
+| After 511 append commits | 838,303,744 B |
+| After the first historical read | 851,910,656 B |
+| Original limit | 805,306,368 B (768 MiB) |
+
+The exact failing archive passes locally at 386,416,640 B. A controlled allocator
+probe (`_RJEM_MALLOC_CONF=thp:always`) raises its local append peak to
+736,534,528–791,445,504 B. Linux `smaps_rollup` shows hundreds of MiB of anonymous
+huge pages during those appends. The original hosted huge-page setting was not
+captured; this reproduces the allocation pattern without claiming conclusive
+attribution to that destroyed runner.
+
+The candidate installed Linux analytical launcher sets jemalloc's `thp:never`
+before Python starts. This fixes the allocator page policy independently of the
+host or inherited allocator settings. It changes no Delta data, query, history,
+compaction, file, or memory limit. macOS keeps its existing launcher policy.
+Capacity telemetry now samples anonymous/huge-page bytes every 64 versions and
+records the Linux kernel's huge-page policy.
+
+Three fresh wrapper-only candidate runs, even when launched with inherited
+`thp:always`, pass all three capacity assertions. Append high-water stays below
+246 MiB, and complete history peaks are 390,426,624, 382,738,432, and 387,878,912 B.
+History takes 7.110–7.138 seconds versus 7.052 seconds for the unchanged archive
+under the local default policy. These short fixture timings do not establish a
+general throughput result. All runs have zero leaked descendants. The full
+hosted release qualification remains required before merging.
+
+## Pinned input download interruption (#203)
+
+The first macOS assembly attempt at `81cbe52` times out connecting to a pinned
+notebook fixture wheel. Rerunning only failed release jobs reuses all successful
+source artifacts and completes assembly; no runtime assertion is retried into
+success. The download helper now permits at most three transport attempts,
+writes a unique temporary file, checks the pinned digest before atomic cache
+publication, and removes partial files on failure. Corrupt cached/downloaded
+bytes, certificate verification failures, and permanent HTTP failures remain
+hard failures. The URL, digest, and offline qualification requirements stay fixed.
+
+All 82 native packaging tests and 13 qualification-harness tests pass, including
+new connection/body interruption, retry exhaustion, checksum/certificate/HTTP
+failure, valid-cache, and launcher environment tests.
+
+[Follow-up evidence](tpcds-evidence/2026-10-07-eq02/ci-memory/summary.json)
+retains the hosted failure, successful baseline/governed checks, transport
+failure, exact archive identity, wrapper-only proof, six local runs, commands,
+measurements, tests, and cleanup. SP remains frozen; SF1 is not reloaded.
