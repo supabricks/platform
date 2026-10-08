@@ -1,5 +1,9 @@
 # EQ02: Spark-compatible decimal AVG (#200)
 
+The subsequent [decimal arithmetic correction (#199)](eq02-decimal-types.md)
+raises qualification to 90/103. This report retains the AVG slice's original
+78/103 result and paired measurements.
+
 The candidate fixes all nine same-type decimal AVG mismatches in the retained
 SF1 suite: **78 of 103 statements are now correct after explicit ordering review,
 up from 69**. All 24 tables still match PostgreSQL exactly. The other 25 statements
