@@ -21,8 +21,9 @@ refused. There is one admitted generation per installation, including failed or
 paused generations, until explicit deletion finishes. Starting capture requires
 an installed analytical worker and a running native source.
 
-The source profile is ordinary logged `public` tables with one non-null integer
-primary key, integer/text/varchar/bounded-decimal columns, default replica identity
+The source profile is ordinary logged `public` tables with a non-null integer
+primary key (one or multiple columns after [EQ01/#170](eq01-composite-keys.md)),
+integer/text/varchar/bounded-decimal columns, default replica identity
 and default collation. RLS, partitions, inheritance, foreign/materialized tables,
 generated columns and unsupported types are rejected as a whole group. The
 existing engine control tables are excluded only after owner/type checks; their

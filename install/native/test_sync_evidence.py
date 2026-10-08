@@ -71,6 +71,8 @@ class SyncEvidence(unittest.TestCase):
             lambda d:d['worker_inventory'].update({'capture_worker.py':'c'*64}),
             lambda d:d['worker_inventory'].pop('incremental/planning.py'),
             lambda d:d['worker_inventory'].update({'incremental/planning.py':'c'*64}),
+            lambda d:d['suites'].pop('composite'),lambda d:d['suites']['composite']['checks'].pop(),
+            lambda d:d['worker_inventory'].pop('capture/source.py'),lambda d:d['worker_inventory'].pop('incremental/rows.py'),
             lambda d:d['suites'].pop('maintenance'),lambda d:d['suites']['triggered'].update(exact_installed=False),
             lambda d:d['suites']['triggered'].update(status='FAIL'),lambda d:d['suites']['governed'].update(exit_code=1),
             lambda d:d['suites']['continuous'].update(release_identity='c'*64),

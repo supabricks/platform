@@ -14,9 +14,12 @@ NETWORK={
     'macos-arm64':'macOS Seatbelt; external network and Homebrew denied for all sync descendants',
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
-    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed'))}
-WORKERS=('capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
+    *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite'))}
+WORKERS=('capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
 REQUIRED={
+    'composite':{'native_seven_tpcds_composite_schemas_and_reordered_include_keys_bootstrap',
+        'continuous_iud_all_key_components_toast_decimal_bounds_duplicates_and_pinned_sail',
+        'capture_sigkill_and_daemon_restart_preserve_composite_identity'},
     'triggered':{'triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader',
         'triggered_production_input_budget_preserves_complete_transactions','triggered_restart_reuses_checkpoint_and_delete_retires_source'},
     'continuous':{'sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups',
