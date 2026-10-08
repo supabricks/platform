@@ -1,5 +1,5 @@
 {
-  "status": "Targeted capacity, append-history and bounded-write qualification; full SF1 rerun pending",
+  "status": "Full SF1 load and exact tables PASS; 103 SQL attempted, 69 correct after review, 34 tracked failures/mismatches",
   "issues": [
     191,
     192,
@@ -13,9 +13,14 @@
     "sampler_adapter": "6940e6d",
     "bounded_write": "c9f8723"
   },
-  "full_sf1_pass": false,
-  "product_statements_completed": 0,
+  "full_sf1_pass": true,
+  "full_sf1_rows": 19557335,
+  "full_sf1_seconds": 4431.261933261994,
+  "product_statements_attempted": 103,
+  "product_statements_completed": 90,
+  "product_statements_correct_after_review": 69,
   "product_statements_required": 103,
+  "query_evidence": "../snapshot-recovery/review.json",
   "worker_tests": 155,
   "packaging_tests": 75,
   "harness_tests": 11,
@@ -39,9 +44,33 @@
       "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
     },
     {
+      "suite": "char",
+      "status": "PASS",
+      "checks": 4,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "composite",
+      "status": "PASS",
+      "checks": 3,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "continuous",
+      "status": "PASS",
+      "checks": 4,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
       "suite": "date",
       "status": "PASS",
       "checks": 4,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "maintenance",
+      "status": "PASS",
+      "checks": 5,
       "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
     },
     {
@@ -49,12 +78,18 @@
       "status": "PASS",
       "checks": 4,
       "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
+    },
+    {
+      "suite": "triggered",
+      "status": "PASS",
+      "checks": 3,
+      "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724"
     }
   ],
   "retained_capacity_replay": {
     "predecessor": "incremental_disk_budget",
-    "candidate_seconds": 91.771645,
-    "candidate_highwater_bytes": 450891776,
+    "candidate_seconds": 94.40516478,
+    "candidate_highwater_bytes": 405692416,
     "scope": "diagnostic; production bounds unchanged"
   },
   "limits": {

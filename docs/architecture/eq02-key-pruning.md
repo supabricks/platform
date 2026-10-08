@@ -96,8 +96,10 @@ record exit 124 and take precedence. None is a passing replay.
 
 Fix and qualify #184 before repeating SF1. A complete load must then pass exact
 source/Delta verification and all 103 product/reference analytical comparisons.
-**Current full product SQL coverage remains 0/103.** Neither #182 nor EQ02 is
-closed by crossing the earlier failure point alone.
+**At this slice, product SQL coverage was 0/103.** Later
+[full SF1 results](eq02-sf1-results.md) pass loading and exact table comparison,
+and attempt all 103 statements with 69 correct after explicit order review.
+Neither #182 nor EQ02 is closed by crossing the earlier failure point alone.
 
 [Evidence](tpcds-evidence/2026-10-07-eq02/key-pruning/summary.json) includes package
 proof, tests, six installed-suite receipts, three range replays, failed load

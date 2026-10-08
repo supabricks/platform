@@ -1,7 +1,7 @@
 # EQ02 — native SF1 loading and analytical qualification
 
 Status, 2026-10-07: **resumed; full end-to-end qualification is not complete**.
-Ten completed installed load attempts are retained below. The fourth reached the apply-worker
+Eleven completed installed load attempts are retained below. The fourth reached the apply-worker
 memory blocker (#182). The [bounded lookup correction](eq02-key-pruning.md) passes
 its regression gates; attempt 05 crosses that boundary but stops on a reproducible
 post-compaction Delta merge stall (#184). The [bounded Delta correction](eq02-bounded-merge.md)
@@ -19,7 +19,11 @@ passes retained-batch replay, large-table controls and all 31 installed checks.
 Attempt 10 reaches 17.19 million committed rows, then stops on conservative
 [compaction disk admission](eq02-compaction-capacity.md) (#193). Its retained replay passes the accounting
 correction; append-only rollover (#194) and wide-row compaction memory (#195)
-are being qualified before attempt 11.
+pass all 34 installed checks. Attempt 11 publishes all 19,557,335 rows in
+4,431.262 seconds. Its verification restart then exposes storage-child authorization
+delayed by retained snapshot recovery (#196), before any table or SQL check.
+The corrected restart passes all 24 exact table comparisons and attempts all
+103 statements: [69 correct after review, 34 tracked failures/mismatches](eq02-sf1-results.md).
 Full qualification remains incomplete.
 SP remains [frozen](sync-performance-freeze.md). This work does not merge its
 candidate or restart its performance campaign.
@@ -55,14 +59,16 @@ or automatic replacement trials are used.
 | 08 | Bounded retry for live compaction inventory | 12,746,017 | 12,680,481 observed | 7,201.567 s | Two-hour deadline; publication verification scheduling dominates (#186) |
 | 09 | Faster active publication verification | 13,630,753 | 13,565,217 observed | 2,943.160 s | Merge buffers unchanged inventory rows; worker memory limit (#189) |
 | 10 | Proven-new-key append | 17,194,051 | 17,128,515 observed | 3,434.826 s | Compaction estimate rejects actual working set that fits disk limit (#193) |
+| 11 | Capacity admission, append-only rollover, bounded compaction writes | 19,557,335 | 19,557,335 | 4,431.262 s | Full load/drain PASS; subsequent verification restart blocked by #196 |
 
 These are failure-discovery and harness pilots, **not comparative throughput
 qualification**. The completed attempts stop at different data boundaries; their
 elapsed times cannot establish a speedup. Commit ledgers retain every attempted
 and acknowledged batch, offsets, row/byte counts and COPY-plus-commit latency.
 Observed publications are distinct from source acknowledgment. Counts above do
-not assert source/Delta equality: source was ahead when these attempts stopped.
-All nine completed attempts stopped with zero leaked/remaining descendants.
+not assert exact source/Delta value equality. Failed attempts stopped with source
+ahead; attempt 11 reaches its complete publication boundary. Exact verification
+follows separately. All eleven attempts stopped with zero leaked/remaining descendants.
 
 Receipts, compressed logs, exact earlier loader sources and package proof are in
 [the evidence directory](tpcds-evidence/2026-10-07-eq02/README.md). These trials use
@@ -133,14 +139,16 @@ reference loading took 15.502 seconds and the full reference run 103.741 seconds
 It used Spark 4.2.0, Python 3.12.13 and the captured bundled Java runtime
 17.0.20.1+1. Cleanup observed ten descendants with zero leaked/remaining. This is
 one reference execution, not a comparative performance result or a passing
-product/reference comparison. The full product verifier is blocked on the
-incomplete load (#193; follow-ups #194/#195); #182 qualification remains open. Ten harness tests pass,
-including COPY framing, partitioned
-comparison, duplicate/null/padding preservation and conservative query verdicts.
-Implementing a runner does not qualify its full SF1 results.
+product/reference comparison. The product now passes all 24 exact table checks
+and completes the full 103-statement attempt ledger. Twelve harness tests pass,
+including COPY framing, duplicate/null/padding preservation, conservative query
+verdicts and explicit native-only upgrade provenance. See the
+[full results and remaining query issues](eq02-sf1-results.md).
 
 `verify.py` requires a successfully loaded, stopped cell with the same installation
-identity. It resumes that private cell, pins the completed publication, compares
+identity by default. An explicit native-only stopped upgrade requires the original
+release and completed upgrade provenance; both identities remain recorded.
+It resumes that private cell, pins the completed publication, compares
 all source rows with the corresponding Delta versions using bounded canonical
 SHA-256 partitions, and preserves duplicates, nulls, exact decimals, DATE and
 padded CHAR values. It also checks Delta types and CHAR metadata. A digest
@@ -163,7 +171,8 @@ values exactly. There is no retrospective floating tolerance. Equal multisets
 with different ordering require explicit ORDER BY/tie review; different LIMIT
 boundary results also remain review-required. No subset is labeled full coverage.
 
-Current **product analytical coverage is 0/103**. Full exact product data verification,
-product query execution/comparisons, console upload acceptance, larger scales
-and concurrency/recovery experiments remain pending under the
-[end-to-end plan](../plans/tpcds-end-to-end-qualification.md).
+Current **product coverage is 103/103 attempted, 90 executed, 69 correct after
+explicit ordering review**. All 24 exact table comparisons pass. Query memory,
+alias resolution, decimal typing and rounding remain open (#197–#200). Console
+upload acceptance, larger scales and concurrency/recovery experiments remain
+pending under the [end-to-end plan](../plans/tpcds-end-to-end-qualification.md).

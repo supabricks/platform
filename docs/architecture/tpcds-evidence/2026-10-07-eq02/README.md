@@ -109,3 +109,15 @@ that bound. Diagnostic full-worker replays disable the individual worker kill
 for attribution; production qualification keeps its original limits. Initial
 failed diagnostics and the first fixture's omitted metrics remain explicit.
 Neither directory establishes complete SF1 or analytical query qualification.
+
+
+`compaction-capacity/load-11/` retains the first complete SF1 load: all
+19,557,335 rows committed/published under the original bounds, with zero leaked
+descendants. `snapshot-recovery/` retains the native-only restart fix, supported
+upgrade/backup provenance and explicit copied-worktree attach, exact 24-table
+verification, all 103 product statement attempts, strict comparison and the
+four named SQL-order reviews. Product rows/errors are gzip-compressed; decompress
+to verify original per-query hashes or rerun the comparator/review. The original
+load receipt remains byte-identical. Private state/configuration/backups are
+not published. See [the full disposition](../../eq02-sf1-results.md): 69 correct,
+34 tracked failures/mismatches; SP stays frozen.

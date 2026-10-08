@@ -2,9 +2,11 @@
 
 Status: candidate fixes for [#193](https://github.com/supabricks/platform/issues/193),
 [#194](https://github.com/supabricks/platform/issues/194), and
-[#195](https://github.com/supabricks/platform/issues/195) are under qualification.
+[#195](https://github.com/supabricks/platform/issues/195) pass targeted qualification and the full SF1 load.
 [Retained evidence](tpcds-evidence/2026-10-07-eq02/compaction-capacity/summary.json).
-Full SF1 loading, exact table verification, and product SQL remain incomplete.
+SF1 attempt 11 publishes all 19,557,335 rows in 4,431.262 seconds. Exact table
+verification now passes after the #196 restart fix. [All 103 product statements](eq02-sf1-results.md)
+were attempted; 69 are correct after review and 34 have tracked failures/mismatches.
 SP stays frozen. These changes preserve the original memory, storage, input,
 and deadline limits.
 
@@ -57,7 +59,9 @@ fixture reaches version 512, checks every value in versions 0, 1 and 512, and
 peaks at 417,079,296 bytes RSS. Its 511 individual append commits take a median
 13.59 ms, p95 22.18 ms, and maximum 47.57 ms. This fixture validates bounded log
 history and retained readers; it is not PostgreSQL sync throughput. Full-load
-measurements will establish the effect on compaction count and retained bytes.
+attempt 11 retains all 1,373 publication receipts and records two compactions
+totaling 161.319 seconds. Attempt 10 stopped earlier, so the two attempts do not
+establish a controlled throughput speedup.
 
 ## Wide-value writer buffers (#195)
 
@@ -101,11 +105,30 @@ fork/exec (#191), so its peak is only an observed lower bound. A supplemental
 observer started about 1,050 seconds into the unchanged run; both observers saw
 522,997,760 bytes peak. The supplemental observer adds 181.27 CPU seconds and
 records eight process-exit errors. The corrected maintained sampler is covered
-by a real same-PID fork/exec regression and will run from the start of attempt 11.
+by a real same-PID fork/exec regression and ran from the start of attempt 11.
+It observed 134 apply workers, a 525,434,880-byte peak and zero sampling errors;
+sampling can still miss transient peaks.
 Process-owned fixture and replay high-water measurements above are unaffected.
 
 The bounded-write candidate passes all 155 worker tests, 75 packaging tests,
-and 11 TPC-DS harness tests. Candidate-wide installed regression checks are
-running; a fresh original-bound SF1 run follows. A successful drained load must still pass exact verification of all
-24 tables and all 103 product statements against the retained independent Spark
-reference. No full-load, query, or exact release-archive qualification is claimed.
+and 11 TPC-DS harness tests. All 34 installed checks across ten suites pass with
+zero leaked descendants. The final retained-batch replay passes in 94.405 seconds
+at 405,692,416 bytes peak RSS; this is a memory reduction, not a replay speedup.
+
+Attempt 11 completes the original-bound load and drains all 19,557,335 rows in
+4,431.262 seconds (73.9 minutes; about 4,413 rows/s including startup/cleanup).
+Its final generation is 761,416,771 bytes. Cleanup leaves zero descendants.
+No load limits were raised and no active measurement was restarted.
+
+The following verification restart fails before any table or SQL check (#196):
+synchronous retained-publication recovery delays authorization of storage
+children beyond their readiness-probe window. The candidate finishes recovery
+before launching those children. Verification resumes on a retained copy through
+an explicit stopped native-only upgrade with its backup and both release identities
+recorded; the successful load receipt remains unchanged. All 24 exact table checks
+pass and all 103 statements are attempted: [69 correct after review, 34 remaining
+failures/mismatches](eq02-sf1-results.md). Cleanup leaves zero descendants.
+
+CI on `9ee327b` passes 33 jobs, including both Linux/macOS release-sync gates.
+The macOS notebook recovery job fails after 19 successful checks (tracked in #136).
+Complete query correctness and exact release-archive qualification remain open.

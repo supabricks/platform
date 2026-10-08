@@ -11,15 +11,15 @@ statements pinned; SF1 generates 19,557,335 business rows / 1.253 GB with matchi
 checksums across two invocations. Installed native-schema admission rejects 23/24
 tables; [#170](https://github.com/supabricks/platform/issues/170) and
 [#171](https://github.com/supabricks/platform/issues/171) track composite keys and
-DATE/CHAR support. Product/reference execution remains pending; no scale claim.
+DATE/CHAR support. Later EQ02 results are below; no larger-scale claim.
 
 [EQ01/#170](../architecture/eq01-composite-keys.md) implements native composite
 integer identity and passes local installed correctness/restart/Sail checks. The
 first admission matrix reached 8/24. [EQ01/#171](../architecture/eq01-date-char.md)
 now admits and bootstraps all 24 native schemas with finite DATE and padded CHAR
 payloads. Local installed restart, historical reads and typed query checks pass
-against PostgreSQL and independent Spark 4.2.0 results. The full SF1 load and
-103-statement analytical suite remain pending; Spark Connect DataFrame metadata
+against PostgreSQL and independent Spark 4.2.0 results. The subsequent SF1 load
+and analytical suite results are below; Spark Connect DataFrame metadata
 round trips are tracked separately in #175. Nine separate-slice scalar controls
 pass equality/cleanup; source-commit stalls remain tracked in #176. The measured
 publication means are 857.82 → 881.88 → 843.77 ms (baseline → DATE → CHAR);
@@ -45,10 +45,9 @@ in compaction (#185); a bounded live-inventory retry passes 150 worker tests and
 installed recovery/continuous checks. Attempt 08 reaches 12.75M committed rows
 then exhausts its two-hour deadline. [Publication scheduling #186](../architecture/eq02-publication-verification.md)
 accounts for most of the measured delay; its correction passes matched daemon
-measurements and all 12 installed checks; attempt 09 reaches 13.63M committed rows then stops on merge memory blocker #189; [proven-new-key append](../architecture/eq02-new-key-append.md) passes retained replay, large-table controls and all 31 installed checks; attempt 10 reaches 17.19M committed / 17.13M published rows then fails compaction disk admission #193; its retained replay passes the capacity correction, with append-only rollover #194 and wide-row writer memory #195 qualification pending.
+measurements and all 12 installed checks; attempt 09 reaches 13.63M committed rows then stops on merge memory blocker #189; [proven-new-key append](../architecture/eq02-new-key-append.md) passes retained replay, large-table controls and all 31 installed checks; attempt 10 reaches 17.19M committed / 17.13M published rows then fails compaction disk admission #193; its retained replay passes the capacity correction, then append-only rollover #194 and wide-row writer memory #195 pass all 34 installed checks. Attempt 11 completes all 19,557,335 rows in 4,431.262 seconds; recovery fix #196 enables exact equality for all 24 tables and the full SQL attempt ledger.
 Full qualification remains open.
-The independent Spark reference completes all 103 statements; full product
-table equality, product query execution and result comparisons remain pending.
+The independent Spark reference completes all 103 statements. [Product results](../architecture/eq02-sf1-results.md): 103 attempted, 90 executed, 69 correct after explicit ordering review; nine memory failures (#197), four alias failures (#198), 12 decimal type mismatches (#199), and nine decimal rounding mismatches (#200). Fix and measure each query slice against retained SF1 before broader size/resource/concurrency qualification; no reload for query-only changes.
 
 The initial engineering baseline is platform source
 `8b68cd206edd5de2b1f820c90c39e7a76aedf3aa`, whose full Linux/macOS release CI passed

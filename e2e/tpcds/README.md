@@ -59,11 +59,10 @@ passing truncated preview. Comparisons use exact positional SQL types/values.
 Ordering differences and LIMIT boundary ties require explicit review; floating
 point differences are not silently rounded. The reference is Apache Spark JVM;
 the installed product engine is Sail through Spark Connect. Their measurements
-must stay separately labeled. The full reference run has completed; product
-verification/query execution remains blocked on full-load qualification;
-[compaction capacity and writer corrections](../../docs/architecture/eq02-compaction-capacity.md)
-address the latest #193/#194/#195 boundaries. The [#182 correction](../../docs/architecture/eq02-key-pruning.md) passes its
-worker/installed regressions and crosses the prior failure point; full SF1
+must stay separately labeled. Both full suites have now run. The
+[SF1 results](../../docs/architecture/eq02-sf1-results.md) pass the full load and
+exact table comparison; 69/103 product statements are correct after explicit
+ordering review, with 34 tracked failures/mismatches. Full analytical
 qualification is still incomplete.
 
 ## Pin and inspect inputs
@@ -258,3 +257,20 @@ commit-before-receipt recovery, exact old/new values, and a 512-version append
 history. The installed source-built Delta wheel supplies bounded write settings;
 the upstream PyPI wheel does not implement that API. This synthetic suite is a
 required archive gate, not a PostgreSQL throughput measurement.
+
+## Completed SF1 baseline and retained-state verification
+
+[The full SF1 results](../../docs/architecture/eq02-sf1-results.md) retain the
+successful 19,557,335-row load, exact 24-table comparison, and all 103 query
+attempts. Sixty-nine statements are correct after explicit order review; 34 have
+tracked failures/mismatches. Larger-scale qualification remains open.
+
+`verify.py` defaults to the original load release. After a supported stopped
+**native-only** installation upgrade, pass `--load-release ORIGINAL_RELEASE`
+alongside `--release CANDIDATE_RELEASE`. The verifier requires the original
+receipt identity, identical manifest content except version/native binary, a
+completed upgrade receipt with backup, and matching runtime identity. It records
+both releases; it never rewrites the load result. A copied worktree must be
+explicitly attached to its existing deployment through `project attach` before
+its project API calls can succeed. Retained query-only experiments do not need
+another SF1 load.

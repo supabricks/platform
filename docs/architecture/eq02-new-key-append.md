@@ -6,7 +6,9 @@ All 31 installed checks pass with zero leaked/remaining descendants. SF1 attempt
 3,434.826 seconds, then fails compaction disk admission (#193). All 151 observed
 descendants are cleaned up. The original 768 MiB worker limit remains unchanged.
 [Retained evidence](tpcds-evidence/2026-10-07-eq02/new-key-append/summary.json). Complete SF1 qualification remains
-pending; SP stays frozen.
+pending; SP stays frozen. The later capacity/compaction candidate completes the
+[full SF1 load and exact 24-table comparison](eq02-sf1-results.md); all 103 SQL
+statements are attempted, with 69 correct after review and 34 tracked issues.
 
 ## Failure and attribution
 
