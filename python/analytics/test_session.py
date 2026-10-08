@@ -16,9 +16,9 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(compact['file_bytes'], 16 * 1024**2)
         self.assertFalse(compact['join_reorder'])
         analytical = resource_limits('analytical')
-        self.assertEqual(analytical['query_pool_bytes'], 1024**3)
-        self.assertEqual(analytical['rss_bytes'], 4 * 1024**3)
-        self.assertEqual(analytical['spill_bytes'], 4 * 1024**3)
+        self.assertEqual(analytical['query_pool_bytes'], 2 * 1024**3)
+        self.assertEqual(analytical['rss_bytes'], 6 * 1024**3)
+        self.assertEqual(analytical['spill_bytes'], 8 * 1024**3)
         self.assertEqual(analytical['file_bytes'], 1024**3)
         self.assertTrue(analytical['join_reorder'])
         for invalid in (None, {}, 'unlimited', 'ANALYTICAL', 1):

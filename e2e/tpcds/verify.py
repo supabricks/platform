@@ -136,6 +136,15 @@ def release_provenance(loaded, release, load_root, load_release=None, sail_artif
                 **changes)
 
 
+def open_qualified_session(cell, epoch, profile):
+    # Historical API v1 rejects unknown fields. Preserve the original request
+    # for compact baselines; the new optional field is needed only to opt in.
+    if profile not in ('compact', 'analytical'):
+        raise ValueError('unknown resource profile')
+    options = {} if profile == 'compact' else dict(resource_profile=profile)
+    return cell.opened(epoch=epoch, ttl_ms=600000, **options)
+
+
 def run(args):
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'native'))
     from installed_sync import InstalledContinuous
@@ -190,7 +199,7 @@ def run(args):
         for entry in report['queries']:
             identifier=entry['id'];start=time.monotonic();entry.pop('reason',None);metrics=None
             try:
-                reader=cell.opened(epoch=report['epoch_id'],ttl_ms=600000,resource_profile=args.resource_profile)
+                reader=open_qualified_session(cell,report['epoch_id'],args.resource_profile)
                 assert reader.get('resource_profile','compact')==args.resource_profile
                 entry['resource_profile']=reader.get('resource_profile','compact')
                 entry['resource_limits']=(reader.get('metadata') or {}).get('resource_limits')

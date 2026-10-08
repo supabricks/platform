@@ -100,9 +100,9 @@ or full Spark distribution is required for these qualified entry points.
 | Managed SQL | One active request/session; 32 KiB SQL; one read query |
 | Managed result | 200 rows default, at most 1000; 256 KiB default/max |
 | Managed query deadline | 10 seconds default; 100 ms–30 seconds configurable |
-| Sail query memory pool | Compact: 256 MiB; analytical: 1 GiB fair pool |
-| Sail spill | Compact: 256 MiB total / 16 MiB per file; analytical: 4 GiB total / 1 GiB per file |
-| Worker RSS | Compact: 1 GiB; analytical: 4 GiB sampled watchdog, checked every 100 ms |
+| Sail query memory pool | Compact: 256 MiB; analytical: 2 GiB fair pool |
+| Sail spill | Compact: 256 MiB total / 16 MiB per file; analytical: 8 GiB total / 1 GiB per file |
+| Worker RSS | Compact: 1 GiB; analytical: 6 GiB sampled watchdog, checked every 100 ms |
 
 Select `--resource-profile analytical` when opening a session through `analytics open`,
 `analytics sql`, or `spark shell`. The API field is `resource_profile`; omitted values

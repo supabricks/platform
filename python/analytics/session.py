@@ -189,8 +189,8 @@ def resource_limits(profile):
     profiles = {
         'compact': dict(query_pool_bytes=256 * 1024**2, spill_bytes=256 * 1024**2,
                         rss_bytes=1024**3, file_bytes=16 * 1024**2, join_reorder=False),
-        'analytical': dict(query_pool_bytes=1024**3, spill_bytes=4 * 1024**3,
-                           rss_bytes=4 * 1024**3, file_bytes=1024**3, join_reorder=True),
+        'analytical': dict(query_pool_bytes=2 * 1024**3, spill_bytes=8 * 1024**3,
+                           rss_bytes=6 * 1024**3, file_bytes=1024**3, join_reorder=True),
     }
     if not isinstance(profile, str) or profile not in profiles:
         raise ValueError('unknown analytical resource profile')
