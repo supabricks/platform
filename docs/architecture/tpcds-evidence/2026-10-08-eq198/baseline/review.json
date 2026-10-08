@@ -1,0 +1,595 @@
+{
+  "status": "INCOMPLETE",
+  "fixture_sha256": "566cebb24b33e87659f636d002e079c870a9c99396b74eed1a97a54290ee60fa",
+  "comparison_sha256": "6857b561ea2c13ab81a8e3c741a67d5454157cc6302468370c90f37877d61881",
+  "raw_counts": {
+    "correct": 91,
+    "order_review_required": 6,
+    "failed": 4,
+    "result_mismatch_review_required": 2
+  },
+  "reviewed_counts": {
+    "correct": 97,
+    "value_mismatch": 2,
+    "execution_failed": 4,
+    "order_review_pending": 0
+  },
+  "order_reviews": [
+    {
+      "id": "q24a",
+      "sql_sha256": "b819a8b1944f128cf37d05ebb7344237cb2230b50c249a1d6f517b2e66480414",
+      "status": "correct_after_explicit_order_review",
+      "reason": "No ORDER BY or LIMIT; exact typed multiset.",
+      "product_sha256": "e649a1ce77cb5d02a3a4ccc7e8d99997726f68ea0b5ddc921ca0f91e8e5879e9",
+      "reference_sha256": "21447d943f256b4fa7592b6c6b401043244f0e33a69f2fa82179b4d8f1dae599",
+      "rows": 7
+    },
+    {
+      "id": "q56",
+      "sql_sha256": "547f7203e33ef78f3c91968e85adf6e79dcbb61c60f90e171fc43e79fd96d0ef",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY total_sales LIMIT 100; same selected rows and sorted keys.",
+      "product_sha256": "1c5340427b1bf0a693f9c665e7612135fbe960fe475a272a1fc05f116ee95549",
+      "reference_sha256": "53230e178d9161bd25964cd8ed00a8c1e8d2e383b4b7ed196d302ac4a9fd1f34",
+      "rows": 100
+    },
+    {
+      "id": "q64",
+      "sql_sha256": "b52e8f499ee22ecec48b261ff8df29f3aa8a8c620cd1c50ef7bb93c65622ddf9",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY cs1.product_name, cs1.store_name, cs2.cnt; same rows and sorted keys.",
+      "product_sha256": "ef5214becbbab27bd30ed050e1d28203f7bc0ae84380fa7a226ac689ec3ce23c",
+      "reference_sha256": "5399fce863d74ace5878c475367e53be240445ffec3f348066110e118a6f96c2",
+      "rows": 10
+    },
+    {
+      "id": "q75",
+      "sql_sha256": "290f252971607e74fe4af4e7a39a8b658364910cf511ca1c64038a8bf92860cd",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY sales_cnt_diff LIMIT 100; identical selected typed rows and sorted difference keys; only ties reorder.",
+      "product_sha256": "c0d6d7c29630ef9793291a7d39e7825f28fd75847aa199be8cd6ebf0acd6ea0c",
+      "reference_sha256": "48bd497c9a49d2f4a80d3c834bb0e6b7b5ee5cfbb471ceea4ca2b4a71620f9c3",
+      "rows": 100
+    },
+    {
+      "id": "q77",
+      "sql_sha256": "c33390fc16bb8054deb65deec6fabebbf590259f982ce49ee228243cf72a9a9d",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY channel, id LIMIT 100; same selected rows and sorted keys, NULLS FIRST.",
+      "product_sha256": "4d24ef773a83ce8bcbea58f8193b082bc845f8ab82fbd5dbfff79125a7bffaa1",
+      "reference_sha256": "1986dd99afca82bff9e6facb19f3ac0323072db5e9bea8270734ea676ebf140f",
+      "rows": 44
+    },
+    {
+      "id": "q79",
+      "sql_sha256": "c0db1c460607e4e699abf2bbc4ac40f40dddd1c83b39a9c28439963cfe26d3f6",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY c_last_name, c_first_name, substr(s_city,1,30), profit LIMIT 100; same selected rows and sorted keys.",
+      "product_sha256": "9d4b03cd67de6430045e9cc725cb09f693e7fcb96505baa2da4ab29330b5466c",
+      "reference_sha256": "6e3d58645be2b50efc7f021834c77b90ef81a0547418405d81b970d950216f32",
+      "rows": 100
+    }
+  ],
+  "value_differences": [
+    {
+      "id": "q39a",
+      "product_rows": 243,
+      "reference_rows": 243,
+      "different_values": 59,
+      "differences": [
+        {
+          "row": 5,
+          "column": 4,
+          "type": "double",
+          "product": "1.170227093811101",
+          "reference": "1.1702270938111008"
+        },
+        {
+          "row": 9,
+          "column": 4,
+          "type": "double",
+          "product": "1.1285483279713713",
+          "reference": "1.1285483279713715"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "type": "double",
+          "product": "1.012030835795969",
+          "reference": "1.0120308357959693"
+        },
+        {
+          "row": 15,
+          "column": 9,
+          "type": "double",
+          "product": "1.169384234377615",
+          "reference": "1.1693842343776149"
+        },
+        {
+          "row": 16,
+          "column": 4,
+          "type": "double",
+          "product": "1.565703236635989",
+          "reference": "1.5657032366359889"
+        },
+        {
+          "row": 20,
+          "column": 9,
+          "type": "double",
+          "product": "1.0080922635507177",
+          "reference": "1.008092263550718"
+        },
+        {
+          "row": 23,
+          "column": 9,
+          "type": "double",
+          "product": "1.2358813775861326",
+          "reference": "1.2358813775861328"
+        },
+        {
+          "row": 25,
+          "column": 4,
+          "type": "double",
+          "product": "1.519154518414795",
+          "reference": "1.5191545184147954"
+        },
+        {
+          "row": 25,
+          "column": 9,
+          "type": "double",
+          "product": "1.234212278096043",
+          "reference": "1.2342122780960432"
+        },
+        {
+          "row": 39,
+          "column": 9,
+          "type": "double",
+          "product": "1.34165043988846",
+          "reference": "1.3416504398884601"
+        },
+        {
+          "row": 40,
+          "column": 4,
+          "type": "double",
+          "product": "1.0416902073200347",
+          "reference": "1.041690207320035"
+        },
+        {
+          "row": 47,
+          "column": 4,
+          "type": "double",
+          "product": "1.5295784035794022",
+          "reference": "1.5295784035794024"
+        },
+        {
+          "row": 55,
+          "column": 4,
+          "type": "double",
+          "product": "1.5639741083347447",
+          "reference": "1.563974108334745"
+        },
+        {
+          "row": 56,
+          "column": 4,
+          "type": "double",
+          "product": "1.0422813802180275",
+          "reference": "1.0422813802180273"
+        },
+        {
+          "row": 70,
+          "column": 4,
+          "type": "double",
+          "product": "1.272313269656374",
+          "reference": "1.2723132696563741"
+        },
+        {
+          "row": 70,
+          "column": 9,
+          "type": "double",
+          "product": "1.181579184871904",
+          "reference": "1.1815791848719037"
+        },
+        {
+          "row": 73,
+          "column": 4,
+          "type": "double",
+          "product": "1.6956372368432266",
+          "reference": "1.6956372368432269"
+        },
+        {
+          "row": 77,
+          "column": 4,
+          "type": "double",
+          "product": "1.3416462958520907",
+          "reference": "1.341646295852091"
+        },
+        {
+          "row": 78,
+          "column": 9,
+          "type": "double",
+          "product": "1.311696301457662",
+          "reference": "1.3116963014576621"
+        },
+        {
+          "row": 79,
+          "column": 4,
+          "type": "double",
+          "product": "1.025811293001377",
+          "reference": "1.0258112930013772"
+        },
+        {
+          "row": 86,
+          "column": 9,
+          "type": "double",
+          "product": "1.004063499519034",
+          "reference": "1.0040634995190338"
+        },
+        {
+          "row": 92,
+          "column": 4,
+          "type": "double",
+          "product": "1.0107341657610864",
+          "reference": "1.0107341657610867"
+        },
+        {
+          "row": 94,
+          "column": 9,
+          "type": "double",
+          "product": "1.4152684465941177",
+          "reference": "1.4152684465941172"
+        },
+        {
+          "row": 101,
+          "column": 9,
+          "type": "double",
+          "product": "1.2362393182894102",
+          "reference": "1.2362393182894105"
+        },
+        {
+          "row": 102,
+          "column": 9,
+          "type": "double",
+          "product": "1.0688677983776655",
+          "reference": "1.0688677983776653"
+        },
+        {
+          "row": 106,
+          "column": 9,
+          "type": "double",
+          "product": "1.0239841249245367",
+          "reference": "1.023984124924537"
+        },
+        {
+          "row": 112,
+          "column": 9,
+          "type": "double",
+          "product": "1.2113392480929657",
+          "reference": "1.2113392480929654"
+        },
+        {
+          "row": 114,
+          "column": 4,
+          "type": "double",
+          "product": "1.042283179309031",
+          "reference": "1.0422831793090308"
+        },
+        {
+          "row": 117,
+          "column": 9,
+          "type": "double",
+          "product": "1.0365149332658259",
+          "reference": "1.0365149332658257"
+        },
+        {
+          "row": 125,
+          "column": 9,
+          "type": "double",
+          "product": "1.0171588175042316",
+          "reference": "1.0171588175042319"
+        },
+        {
+          "row": 126,
+          "column": 9,
+          "type": "double",
+          "product": "1.0303724426257317",
+          "reference": "1.030372442625732"
+        },
+        {
+          "row": 136,
+          "column": 9,
+          "type": "double",
+          "product": "1.0287818050404884",
+          "reference": "1.0287818050404882"
+        },
+        {
+          "row": 137,
+          "column": 4,
+          "type": "double",
+          "product": "1.3072589240619619",
+          "reference": "1.307258924061962"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "type": "double",
+          "product": "1.287229424199907",
+          "reference": "1.2872294241999072"
+        },
+        {
+          "row": 146,
+          "column": 4,
+          "type": "double",
+          "product": "1.1137413572906036",
+          "reference": "1.1137413572906039"
+        },
+        {
+          "row": 160,
+          "column": 4,
+          "type": "double",
+          "product": "1.1215380255852638",
+          "reference": "1.121538025585264"
+        },
+        {
+          "row": 161,
+          "column": 4,
+          "type": "double",
+          "product": "1.2049236089487843",
+          "reference": "1.2049236089487845"
+        },
+        {
+          "row": 161,
+          "column": 9,
+          "type": "double",
+          "product": "1.4816550575659289",
+          "reference": "1.4816550575659286"
+        },
+        {
+          "row": 168,
+          "column": 4,
+          "type": "double",
+          "product": "1.2168578242981778",
+          "reference": "1.216857824298178"
+        },
+        {
+          "row": 171,
+          "column": 4,
+          "type": "double",
+          "product": "1.1044206164135038",
+          "reference": "1.104420616413504"
+        },
+        {
+          "row": 175,
+          "column": 4,
+          "type": "double",
+          "product": "1.3427502512651468",
+          "reference": "1.3427502512651466"
+        },
+        {
+          "row": 184,
+          "column": 9,
+          "type": "double",
+          "product": "1.297831368103705",
+          "reference": "1.2978313681037048"
+        },
+        {
+          "row": 187,
+          "column": 9,
+          "type": "double",
+          "product": "1.3533252726200042",
+          "reference": "1.353325272620004"
+        },
+        {
+          "row": 190,
+          "column": 4,
+          "type": "double",
+          "product": "1.2656318762849217",
+          "reference": "1.2656318762849212"
+        },
+        {
+          "row": 193,
+          "column": 4,
+          "type": "double",
+          "product": "1.0056014147334145",
+          "reference": "1.0056014147334147"
+        },
+        {
+          "row": 197,
+          "column": 9,
+          "type": "double",
+          "product": "1.0662249910239625",
+          "reference": "1.0662249910239627"
+        },
+        {
+          "row": 198,
+          "column": 9,
+          "type": "double",
+          "product": "1.083420338860032",
+          "reference": "1.0834203388600319"
+        },
+        {
+          "row": 201,
+          "column": 9,
+          "type": "double",
+          "product": "1.2369797321835676",
+          "reference": "1.2369797321835678"
+        },
+        {
+          "row": 206,
+          "column": 9,
+          "type": "double",
+          "product": "1.091567520520827",
+          "reference": "1.0915675205208268"
+        },
+        {
+          "row": 213,
+          "column": 4,
+          "type": "double",
+          "product": "1.461134600265013",
+          "reference": "1.4611346002650127"
+        },
+        {
+          "row": 214,
+          "column": 9,
+          "type": "double",
+          "product": "1.1607781125264067",
+          "reference": "1.1607781125264065"
+        },
+        {
+          "row": 215,
+          "column": 4,
+          "type": "double",
+          "product": "1.0742136400907767",
+          "reference": "1.074213640090777"
+        },
+        {
+          "row": 223,
+          "column": 4,
+          "type": "double",
+          "product": "1.1682379397902216",
+          "reference": "1.1682379397902218"
+        },
+        {
+          "row": 225,
+          "column": 4,
+          "type": "double",
+          "product": "1.042383929052728",
+          "reference": "1.0423839290527277"
+        },
+        {
+          "row": 228,
+          "column": 9,
+          "type": "double",
+          "product": "1.056449623755786",
+          "reference": "1.0564496237557859"
+        },
+        {
+          "row": 229,
+          "column": 9,
+          "type": "double",
+          "product": "1.038798268096469",
+          "reference": "1.0387982680964687"
+        },
+        {
+          "row": 231,
+          "column": 4,
+          "type": "double",
+          "product": "1.0124777526338784",
+          "reference": "1.0124777526338786"
+        },
+        {
+          "row": 236,
+          "column": 9,
+          "type": "double",
+          "product": "1.2988191692443931",
+          "reference": "1.2988191692443933"
+        },
+        {
+          "row": 240,
+          "column": 9,
+          "type": "double",
+          "product": "1.1416239351288797",
+          "reference": "1.1416239351288795"
+        }
+      ]
+    },
+    {
+      "id": "q39b",
+      "product_rows": 14,
+      "reference_rows": 14,
+      "different_values": 9,
+      "differences": [
+        {
+          "row": 1,
+          "column": 4,
+          "type": "double",
+          "product": "1.565703236635989",
+          "reference": "1.5657032366359889"
+        },
+        {
+          "row": 2,
+          "column": 9,
+          "type": "double",
+          "product": "1.0080922635507177",
+          "reference": "1.008092263550718"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "type": "double",
+          "product": "1.519154518414795",
+          "reference": "1.5191545184147954"
+        },
+        {
+          "row": 3,
+          "column": 9,
+          "type": "double",
+          "product": "1.234212278096043",
+          "reference": "1.2342122780960432"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "type": "double",
+          "product": "1.5295784035794022",
+          "reference": "1.5295784035794024"
+        },
+        {
+          "row": 5,
+          "column": 4,
+          "type": "double",
+          "product": "1.5639741083347447",
+          "reference": "1.563974108334745"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "type": "double",
+          "product": "1.6956372368432266",
+          "reference": "1.6956372368432269"
+        },
+        {
+          "row": 8,
+          "column": 9,
+          "type": "double",
+          "product": "1.2362393182894102",
+          "reference": "1.2362393182894105"
+        },
+        {
+          "row": 13,
+          "column": 9,
+          "type": "double",
+          "product": "1.083420338860032",
+          "reference": "1.0834203388600319"
+        }
+      ]
+    }
+  ],
+  "execution_failures": [
+    {
+      "id": "q30",
+      "issue": 198,
+      "status": "failed",
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#169\", customer_address.\"#170\", customer_address.\"#171\", customer_address.\"#172\", customer_address.\"#173\", customer_address.\"#174\", customer_address.\"#175\", customer_address.\"#176\", customer_address.\"#177\", customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\"."
+    },
+    {
+      "id": "q41",
+      "issue": 198,
+      "status": "failed",
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_manufact. Valid fields are item.\"#88\", item.\"#89\", item.\"#90\", item.\"#91\", item.\"#92\", item.\"#93\", item.\"#94\", item.\"#95\", item.\"#96\", item.\"#97\", item.\"#98\", item.\"#99\", item.\"#100\", item.\"#101\", item.\"#102\", item.\"#103\", item.\"#104\", item.\"#105\", item.\"#106\", item.\"#107\", item.\"#108\", item.\"#109\"."
+    },
+    {
+      "id": "q6",
+      "issue": 198,
+      "status": "failed",
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_category. Valid fields are item.\"#419\", item.\"#420\", item.\"#421\", item.\"#422\", item.\"#423\", item.\"#424\", item.\"#425\", item.\"#426\", item.\"#427\", item.\"#428\", item.\"#429\", item.\"#430\", item.\"#431\", item.\"#432\", item.\"#433\", item.\"#434\", item.\"#435\", item.\"#436\", item.\"#437\", item.\"#438\", item.\"#439\", item.\"#440\"."
+    },
+    {
+      "id": "q81",
+      "issue": 198,
+      "status": "failed",
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\", customer_address.\"#182\", customer_address.\"#183\", customer_address.\"#184\", customer_address.\"#185\", customer_address.\"#186\", customer_address.\"#187\", customer_address.\"#188\", customer_address.\"#189\", customer_address.\"#190\"."
+    }
+  ],
+  "order_review_pending": [],
+  "scope": "Strict comparator unchanged; only individually reviewed SQL ordering cases admitted. No numeric tolerance or rewritten query."
+}

@@ -1,0 +1,331 @@
+{
+  "fixture_sha256": "2f639f30a6db63688e1a107571279cf03f42c72e1ef2d9737c7479b0b986618a",
+  "queries": [
+    {
+      "id": "items_string_view_correlated_avg",
+      "sql": "SELECT a.id FROM items_string a WHERE a.v > (SELECT avg(b.v) FROM items_string b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "elapsed_seconds": 0.007929773011710495
+    },
+    {
+      "id": "items_string_view_correlated_count",
+      "sql": "SELECT a.id FROM items_string a WHERE (SELECT count(*) FROM items_string b WHERE b.c=a.c)>0 ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.007147578988224268
+    },
+    {
+      "id": "items_string_view_exists",
+      "sql": "SELECT a.id FROM items_string a WHERE EXISTS (SELECT 1 FROM items_string b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.006416331976652145
+    },
+    {
+      "id": "items_string_view_uncorrelated",
+      "sql": "SELECT a.id FROM items_string a WHERE a.c='x' ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [],
+      "elapsed_seconds": 0.004277544969227165
+    },
+    {
+      "id": "items_string_table_correlated_avg",
+      "sql": "SELECT a.id FROM src_items_string a WHERE a.v > (SELECT avg(b.v) FROM src_items_string b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2"
+        ]
+      ],
+      "elapsed_seconds": 0.005828597990330309
+    },
+    {
+      "id": "items_string_table_correlated_count",
+      "sql": "SELECT a.id FROM src_items_string a WHERE (SELECT count(*) FROM src_items_string b WHERE b.c=a.c)>0 ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.005773102049715817
+    },
+    {
+      "id": "items_string_table_exists",
+      "sql": "SELECT a.id FROM src_items_string a WHERE EXISTS (SELECT 1 FROM src_items_string b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.0051493889768607914
+    },
+    {
+      "id": "items_string_table_uncorrelated",
+      "sql": "SELECT a.id FROM src_items_string a WHERE a.c='x' ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [],
+      "elapsed_seconds": 0.0038264290196821094
+    },
+    {
+      "id": "items_char_view_correlated_avg",
+      "sql": "SELECT a.id FROM items_char a WHERE a.v > (SELECT avg(b.v) FROM items_char b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "failed",
+      "error": "No field named items_char.c. Valid fields are items_char.\"#12\", items_char.\"#13\", items_char.\"#14\".",
+      "elapsed_seconds": 0.005142155976500362
+    },
+    {
+      "id": "items_char_view_correlated_count",
+      "sql": "SELECT a.id FROM items_char a WHERE (SELECT count(*) FROM items_char b WHERE b.c=a.c)>0 ORDER BY a.id",
+      "status": "failed",
+      "error": "No field named items_char.c. Valid fields are items_char.\"#12\", items_char.\"#13\", items_char.\"#14\".",
+      "elapsed_seconds": 0.005492751020938158
+    },
+    {
+      "id": "items_char_view_exists",
+      "sql": "SELECT a.id FROM items_char a WHERE EXISTS (SELECT 1 FROM items_char b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.007069562037941068
+    },
+    {
+      "id": "items_char_view_uncorrelated",
+      "sql": "SELECT a.id FROM items_char a WHERE a.c='x' ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "elapsed_seconds": 0.0054489270551130176
+    },
+    {
+      "id": "items_char_table_correlated_avg",
+      "sql": "SELECT a.id FROM src_items_char a WHERE a.v > (SELECT avg(b.v) FROM src_items_char b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "failed",
+      "error": "No field named b.c. Valid fields are b.\"#3\", b.\"#4\", b.\"#5\".",
+      "elapsed_seconds": 0.004337357997428626
+    },
+    {
+      "id": "items_char_table_correlated_count",
+      "sql": "SELECT a.id FROM src_items_char a WHERE (SELECT count(*) FROM src_items_char b WHERE b.c=a.c)>0 ORDER BY a.id",
+      "status": "failed",
+      "error": "No field named b.c. Valid fields are b.\"#3\", b.\"#4\", b.\"#5\".",
+      "elapsed_seconds": 0.004161205026321113
+    },
+    {
+      "id": "items_char_table_exists",
+      "sql": "SELECT a.id FROM src_items_char a WHERE EXISTS (SELECT 1 FROM src_items_char b WHERE b.c=a.c) ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "elapsed_seconds": 0.0054555389797315
+    },
+    {
+      "id": "items_char_table_uncorrelated",
+      "sql": "SELECT a.id FROM src_items_char a WHERE a.c='x' ORDER BY a.id",
+      "status": "complete",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ]
+      ],
+      "elapsed_seconds": 0.004087213950697333
+    }
+  ]
+}

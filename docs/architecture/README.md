@@ -25,6 +25,7 @@ remains beside its owning record in the existing evidence directories.
 - [EQ02: native SF1 load pilots and analytical coverage](eq02-sf1.md)
 - [EQ02: decimal arithmetic correction and paired full-suite results (#199)](eq02-decimal-types.md)
 - [EQ02: bounded analytical resource profile and paired SF1 results (#197)](eq02-query-resources.md)
+- [EQ02: correlated CHAR aggregate keys and SF1 qualification (#198)](eq02-correlated-char.md)
 - [EQ02: decimal AVG correction and paired full-suite results (#200)](eq02-decimal-avg.md)
 - [EQ02: apply memory investigation (#182)](eq02-apply-memory-investigation.md)
 - [EQ02: bounded key lookup and post-compaction blocker (#184)](eq02-key-pruning.md)

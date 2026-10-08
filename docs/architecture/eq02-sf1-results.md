@@ -1,11 +1,12 @@
 # EQ02 SF1 end-to-end results
 
 The full SF1 PostgreSQL load and exact Delta comparison pass. The
-[analytical resource profile (#197)](eq02-query-resources.md) qualifies **97 of 103
-statements after explicit ordering review; six remain unresolved**: four alias
-failures (#198) and two newly exposed DOUBLE variance mismatches (#206). All nine
-memory failures execute, and all 90 previously correct statements remain correct.
-SP stays frozen. No larger-scale or signed-release qualification is claimed.
+[correlated CHAR correction (#198)](eq02-correlated-char.md) qualifies **101 of
+103 statements after explicit ordering review**, up from 97 with the
+[analytical resource profile (#197)](eq02-query-resources.md). All 103 now execute;
+only the two DOUBLE variance mismatches (#206) remain. Every previously correct
+statement stays correct. SP stays frozen. No larger-scale or signed-release
+qualification is claimed.
 
 The original baseline below remains unchanged: 69 correct, with 34 tracked
 failures or mismatches. The separate [#200](eq02-decimal-avg.md) and [#199](eq02-decimal-types.md) reports retain their paired baseline
@@ -115,9 +116,8 @@ floating-point tolerance candidates.
 
 ## Next qualification slices
 
-The decimal AVG (#200), arithmetic (#199), and resource profile (#197)
-candidates pass their retained-SF1 checks. Next fix alias resolution (#198) with
-reduced regressions and unchanged original-query reruns, followed by the newly
+The decimal AVG (#200), arithmetic (#199), resource profile (#197), and
+correlated CHAR (#198) candidates pass their retained-SF1 checks. Next fix the newly
 exposed q39 variance differences (#206). Rerun the full 103-statement suite
 against the same retained data and Spark reference after each logical slice. Do not reload SF1 to test query-only changes. EQ03 freshness/recovery,
 EQ04 size/resource scaling and EQ05 concurrency remain unqualified.
