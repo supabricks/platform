@@ -1,0 +1,72 @@
+{
+  "id": "q47",
+  "sql_sha256": "21b86e16ce6aa6b79b767372c84da4944b974a8168ce1a12e6fb55899886b063",
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "i_category",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_brand",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "s_store_name",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "s_company_name",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "d_year",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "d_moy",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "avg_monthly_sales",
+        "type": "decimal(21,6)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "sum_sales",
+        "type": "decimal(17,2)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "psum",
+        "type": "decimal(17,2)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "nsum",
+        "type": "decimal(17,2)",
+        "nullable": true,
+        "metadata": {}
+      }
+    ]
+  },
+  "status": "failed",
+  "error": "Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 2.6 MB for GroupedHashAggregateStream[4] (sum(store_sales.#125)) with 64.0 B already allocated for this reservation - 2.1 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)",
+  "elapsed_seconds": 0.443163687014021
+}

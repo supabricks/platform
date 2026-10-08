@@ -1,0 +1,72 @@
+{
+  "id": "q67",
+  "sql_sha256": "65beb2ef0a082da4ecc2147b03e5aad138f858df4a0d1bb3dc8ba0e653fa095c",
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "i_category",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_class",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_brand",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_product_name",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "d_year",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "d_qoy",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "d_moy",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "s_store_id",
+        "type": "string",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "sumsales",
+        "type": "decimal(28,2)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "rk",
+        "type": "integer",
+        "nullable": false,
+        "metadata": {}
+      }
+    ]
+  },
+  "status": "failed",
+  "error": "Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 7.1 MB for GroupedHashAggregateStream[6] (sum(CASE WHEN __common_expr_1 IS NOT NULL THEN __common_expr_1 ELSE Some(0),18,2 END) as sum(coalesce(spark_decimal_multiply(store_sales.#59,store_sales.#56),Int32(0)))) with 64.0 B already allocated for this reservation - 5.9 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)",
+  "elapsed_seconds": 0.5500326819601469
+}

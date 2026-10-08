@@ -1,0 +1,72 @@
+{
+  "id": "q75",
+  "sql_sha256": "d611650badc3716c58a376b91453804270efe2abcaf3d540814bf2d2c4f6de04",
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "prev_year",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "year",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_brand_id",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_class_id",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_category_id",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "i_manufact_id",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "prev_yr_cnt",
+        "type": "long",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "curr_yr_cnt",
+        "type": "long",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "sales_cnt_diff",
+        "type": "long",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "sales_amt_diff",
+        "type": "decimal(19,2)",
+        "nullable": true,
+        "metadata": {}
+      }
+    ]
+  },
+  "status": "failed",
+  "error": "Failed to allocate additional 1282.0 KB for GroupedHashAggregateStream[14] () with 2.3 MB already allocated for this reservation - 2.5 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)",
+  "elapsed_seconds": 0.6892464400152676
+}

@@ -1,5 +1,8 @@
 # EQ02: Spark-compatible decimal arithmetic (#199)
 
+Subsequent [resource-profile qualification (#197)](eq02-query-resources.md) reaches
+97/103 correct. This report preserves the earlier decimal-arithmetic comparison.
+
 The candidate fixes all 12 decimal precision/scale mismatches in the retained
 SF1 suite: **90 of 103 statements now match Spark after explicit ordering review,
 up from 78**. All 24 tables still match PostgreSQL exactly. The remaining 13
