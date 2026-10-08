@@ -60,10 +60,40 @@ Compare both the complete prefix and the degraded-size tail; report differences
 between those scopes rather than treating their speedups as interchangeable.
 
 The first prefix fixture failed before COPY because its path exceeded the native
-private-socket limit. It remains preserved as a setup failure. A short-path
-attempt is running in `/data2/supabricks-eq/eq220/b1`, against installed candidate
-`v0.1.0-alpha.36.eq220b`. The resulting terminal-error reporting problem is tracked
+private-socket limit. It remains preserved as a setup failure. The short-path
+`b1` attempt passed all 7,385,039 rows against installed candidate
+`v0.1.0-alpha.36.eq220b`: 672.842 s loading plus 7.171 s draining, or
+10,860 published rows/s. Independent typed PostgreSQL-versus-Delta comparison
+passed all 24 tables (`vb1`, `PREFIX_EXACT_PASS`). This is about 2.6× the
+historical whole-prefix reference, not a 10× matched throughput result. The resulting terminal-error reporting problem is tracked
 separately in [#221](https://github.com/supabricks/platform/issues/221).
+
+### Decoder allocation slice
+
+Candidate `dfa654f` removes temporary byte slices and repeated numeric-format
+work in strict pgoutput tuple decoding. Type validation, transaction boundaries,
+NULL/TOAST handling and row/value limits remain unchanged. All 170 Python tests
+passed. Three alternating predecessor/candidate process pairs on the same
+cloned paused journal produced nine unprofiled planning times per candidate:
+median 0.682193 s before and 0.515655 s after (24.4% less planning time).
+Each plans the same 16,384-row prefix. This is an isolated planning measurement;
+its separate cProfile timings include profiler overhead and are not throughput.
+The installed `c1` prefix trial passed: 609.269 s loading plus 4.729 s draining,
+or 12,028 rows/s overall (1.108× the cache slice). Over the fixed 6.5–7.3-million
+row cohort, rounded up to actual publication boundaries, throughput changed
+from 8,049 to 8,482 rows/s (1.054×). No Cargo/rustc processes were observed in
+either timed run. Both respected the 65,536-row backlog window. Exact typed
+verification of `c1` is in progress. The 20k/10× target remains unqualified.
+
+### Controller handoff slice (in progress)
+
+Completed apply receipts and durable publication commits can wake the existing
+sync state machine without waiting for general 200-ms maintenance. The readiness
+probe is only a hint: capture observation, process ownership and RSS/recycling,
+policy fencing, mailbox completion and run deadlines still gate advancement.
+General maintenance and all admission limits remain unchanged. This slice has
+not yet been packaged or qualified; it must be measured against the decoder
+candidate before any performance claim.
 
 ## Preserved baseline
 

@@ -23,6 +23,7 @@ pub struct Publisher {
     verifier: Option<Verifier>,
     verification_progress: bool,
     verified_files: BTreeMap<PathBuf, (FileStamp, String)>,
+    publication_completed: bool,
     pub last_error: Option<String>,
     pub recovery: Value,
 }
@@ -445,6 +446,9 @@ pub(crate) fn check_ready(root: &Path, d: &Value) -> Result<()> {
     Ok(())
 }
 impl Publisher {
+    pub(crate) fn publication_completed(&self) -> bool {
+        self.publication_completed
+    }
     pub(crate) fn verification_pending(&self) -> bool {
         // A stale capture can leave a verifier parked. Only a turn that actually
         // advanced bytes is immediately runnable; blocked work must not spin.
@@ -506,6 +510,7 @@ impl Publisher {
         hook: &mut impl FnMut(&str) -> Result<()>,
     ) -> Result<()> {
         self.verification_progress = false;
+        self.publication_completed = false;
         let (stage, generations) = roots(store)?;
         let pending = store.pending_publications()?;
         if self.verifier.as_ref().is_some_and(|v| {
@@ -558,6 +563,7 @@ impl Publisher {
                     hook("after_rename")?;
                     hook("before_commit")?;
                     store.commit_publication(p)?;
+                    self.publication_completed = true;
                     hook("after_commit")?;
                 }
                 Ok(())
@@ -702,6 +708,7 @@ impl Publisher {
         hook("after_rename")?;
         hook("before_commit")?;
         store.commit_incremental(&mut run, d)?;
+        self.publication_completed = true;
         hook("after_commit")?;
         Ok(())
     }
