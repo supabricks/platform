@@ -29,12 +29,20 @@ class Reader:
         except UnicodeError: raise CaptureError('invalid_pgoutput') from None
     def tuple(self,count):
         if self.number('H')!=count: raise CaptureError('schema_changed')
+        data=self.data;position=self.offset;limit=len(data);length_layout=_NUMBERS['I']
         for _ in range(count):
-            kind=self.take(1)
-            if kind==b't':
-                try:self.take(self.number('I')).decode('utf-8')
+            if position>=limit:raise CaptureError('invalid_pgoutput')
+            kind=data[position];position+=1
+            if kind==116:  # t: text; validate UTF-8 before journaling its bytes.
+                if position+4>limit:raise CaptureError('invalid_pgoutput')
+                length=length_layout.unpack_from(data,position)[0];position+=4
+                end=position+length
+                if end>limit:raise CaptureError('invalid_pgoutput')
+                try:data[position:end].decode('utf-8')
                 except UnicodeError:raise CaptureError('invalid_pgoutput') from None
-            elif kind not in (b'n',b'u'):raise CaptureError('unsupported_tuple')
+                position=end
+            elif kind not in (110,117):raise CaptureError('unsupported_tuple')
+        self.offset=position
     def finish(self):
         if self.offset!=len(self.data):raise CaptureError('invalid_pgoutput')
 

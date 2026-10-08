@@ -29,6 +29,19 @@ class TupleDecode(unittest.TestCase):
             with self.subTest(length=length),self.assertRaises(CaptureError):
                 tuple_values(Reader(data[:length]),columns)
 
+    def test_capture_tuple_framing_validates_all_bytes_and_preserves_boundary(self):
+        data=self.tuple(['café 🧱'.encode(),b'',None,UNCHANGED])
+        reader=Reader(data+b'!');reader.tuple(4)
+        self.assertEqual(reader.offset,len(data))
+        with self.assertRaises(CaptureError):reader.finish()
+        self.assertEqual(reader.take(1),b'!');reader.finish()
+        for length in range(len(data)):
+            with self.subTest(length=length),self.assertRaises(CaptureError):
+                Reader(data[:length]).tuple(4)
+        for malformed in [b'\x00\x01t\xff\xff\xff\xff',b'\x00\x01b',self.tuple([b'\xff'])]:
+            with self.assertRaises(CaptureError):Reader(malformed).tuple(1)
+        with self.assertRaisesRegex(CaptureError,'schema_changed'):Reader(data).tuple(3)
+
     def test_invalid_lengths_kinds_utf8_schema_and_row_budget_fail_closed(self):
         column=[[0,'v',25,-1]]
         cases=[b'\x00\x01t\xff\xff\xff\xff',b'\x00\x01b',

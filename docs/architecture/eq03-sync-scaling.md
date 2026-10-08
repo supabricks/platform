@@ -127,10 +127,10 @@ peak RSS in the diagnostic probe. Its >1-GiB compaction/interrupted-commit/repla
 fixture passed exact old/new versions and peaked at 510,029,824 bytes. Both are
 below 768 MiB. The `e1` prefix passed at 17,575 rows/s overall (1.231× handoff),
 and 15,497 rows/s over the degraded-scale cohort (1.579× handoff), with no observed
-compilers and the same 65,536-row backlog window. Exact prefix verification is
-in progress. Neither throughput target is qualified yet.
+compilers and the same 65,536-row backlog window. Exact prefix verification passed all 24 tables. Neither throughput target is
+qualified yet.
 
-### Scalar allocation slice (prepared, not yet measured)
+### Scalar allocation slice
 
 The large-batch profile still allocates many Decimal digit tuples while checking
 precision/scale and rebuilds key metadata for every row. A follow-up caches only
@@ -139,15 +139,30 @@ for the common declared-scale case, and retains the original tuple-based fallbac
 for other exponents. It also reuses primary-key metadata within one transaction,
 validates unchanged-TOAST markers during insert tuple decoding, and avoids
 constructing the same key twice when no old-key tuple exists. All 175 Python tests passed, including low-context-precision and signed-zero/
-exponent boundaries; all 38 harness tests passed. This candidate must still
-produce identical sealed plans in matched planning probes and have a separate
-installed prefix measurement. No decimal rounding or float conversion is introduced.
+exponent boundaries; all 38 harness tests passed. Across three alternating process pairs (nine unprofiled samples per candidate),
+median planning changed from 1.491613 to 1.176265 s (21.1% less time); every
+57,344-row sealed plan had the same SHA-256. Installed `eq220f` / `0bc57c1` passed
+the full prefix at 17,754 rows/s and the late cohort at 16,512 rows/s. These are
+only 1.010× and 1.066× the batching candidate: the isolated planning improvement
+did not translate proportionally to total throughput. Exact verification passed
+all 24 tables. The 20k/10× target remains unqualified. No decimal rounding or float conversion is introduced.
 
 The additional `sf100-growing-prefix` profile admits 14,770,127 source rows,
 rounded to a complete COPY boundary: more than twice the paused prefix. It uses
 the same 8-core/16-GiB/no-swap container, COPY size, backlog, worker and storage
 bounds. Its receipt/hash cannot substitute for the shorter prefix or full SF100.
 This larger qualification has not started; the original SF100 cell remains paused.
+
+### Capture tuple cursor slice (prepared for measurement)
+
+The source capture parser still created marker/length slices for every field.
+It now uses a bounded local cursor, validates every length and UTF-8 field before
+journaling, and retains schema/transaction/framing checks. All 176 Python tests
+pass, including truncation at every byte, invalid lengths/kinds/UTF-8 and exact
+reader boundaries. A separate cloned-journal decoder probe and installed prefix
+run must measure this contribution; no throughput claim is made yet. The next
+run also samples fixed-label per-process CPU/RSS counters (never argv or SQL)
+to distinguish capture, apply and controller utilization; it adds no quiet gate.
 
 ## Preserved baseline
 

@@ -1,0 +1,398 @@
+[
+  {
+    "pair": 1,
+    "kind": "e",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-e-1",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-e-1"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "c881fc1dbe5503da55f298abcd7f88aae3e2134235b3535b9a834724795896cb",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 32,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.430474149005022,
+        1.4916126989992335,
+        1.4968742830096744
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  },
+  {
+    "pair": 1,
+    "kind": "f",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-f-1",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-f-1"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "2f2e17c3bb74acf6d5ca49084dcd53e937b20be374eb6cedf069fa01ffd34b29",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 27,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.1694876180263236,
+        1.2337019059923477,
+        1.1762652180041187
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  },
+  {
+    "pair": 2,
+    "kind": "f",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-f-2",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-f-2"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "2f2e17c3bb74acf6d5ca49084dcd53e937b20be374eb6cedf069fa01ffd34b29",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 29,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.1623066499596462,
+        1.2174275740399025,
+        1.1753350049839355
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  },
+  {
+    "pair": 2,
+    "kind": "e",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-e-2",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-e-2"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "c881fc1dbe5503da55f298abcd7f88aae3e2134235b3535b9a834724795896cb",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 28,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.394283938978333,
+        1.4947790810256265,
+        1.5045835999771953
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  },
+  {
+    "pair": 3,
+    "kind": "e",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-e-3",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220e",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-e-3"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "c881fc1dbe5503da55f298abcd7f88aae3e2134235b3535b9a834724795896cb",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 28,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.404355172009673,
+        1.4747791420086287,
+        1.493916134990286
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  },
+  {
+    "pair": 3,
+    "kind": "f",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--name",
+      "eq220-plan-f-3",
+      "--network",
+      "none",
+      "--user",
+      "1000:1000",
+      "--cpuset-cpus",
+      "0-7",
+      "--memory",
+      "16g",
+      "--memory-swap",
+      "16g",
+      "-v",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform:/home/anibjoshi/Documents/GitHub/supabricks/platform:ro",
+      "-v",
+      "/data2/supabricks-eq/eq220:/data2/supabricks-eq/eq220",
+      "-v",
+      "/data2/supabricks-eq/sf100/load-01/state:/data2/supabricks-eq/sf100/load-01/state:ro",
+      "-w",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform",
+      "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f/python/analytics/python",
+      "build/eq220/profile-plan-v2.py",
+      "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq220/programs/releases/v0.1.0-alpha.36.eq220f",
+      "/data2/supabricks-eq/sf100/load-01/state",
+      "/data2/supabricks-eq/eq220/plan-root",
+      "/data2/supabricks-eq/eq220/plan-f-3"
+    ],
+    "receipt": {
+      "scope": "Isolated read-only planning on cloned paused SF100 prefix; profile overhead excluded from unprofiled times",
+      "release_identity": "2f2e17c3bb74acf6d5ca49084dcd53e937b20be374eb6cedf069fa01ffd34b29",
+      "fixture_sha256": "ca45d19de2b63f7fcf5fc5e5f4adacbdbf7782bd193578d4f6d3585f6262e763",
+      "plan_sha256": [
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e",
+        "a4e425ea9332b8d29071a28ee21bbec3df22dded03a3888cb526c0b67468105e"
+      ],
+      "planned_end_lsn": "0/86DFE5C0",
+      "transactions": 83,
+      "journal_read": {
+        "attempts": 1,
+        "busy": 0,
+        "wait_ms": 0,
+        "elapsed_ms": 29,
+        "outcome": "complete"
+      },
+      "unprofiled_plan_seconds": [
+        1.159525917028077,
+        1.2238536779768765,
+        1.178021511004772
+      ],
+      "planned_tables": [
+        {
+          "oid": "16513",
+          "rows": 57344
+        }
+      ]
+    }
+  }
+]
