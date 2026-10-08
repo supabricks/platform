@@ -609,10 +609,11 @@ impl Daemon {
                     .err()
                     .map(|e| e.to_string());
                 // Hashing remains bounded to 4 MiB per turn. Yield to IPC and
-                // other work between chunks without imposing the maintenance
-                // tick's 200 ms delay on every chunk of an active verification.
+                // other work between chunks. Runnable verification continues
+                // next turn without sleeping; a parked verifier keeps the idle
+                // cadence, so stale capture observations cannot cause a spin.
                 let delay = if self.publisher.verification_pending() {
-                    20
+                    0
                 } else {
                     200
                 };
@@ -630,7 +631,12 @@ impl Daemon {
                         events: libc::POLLIN,
                         revents: 0,
                     };
-                    let result = unsafe { libc::poll(&mut fd, 1, 20) };
+                    let timeout = if !stopping && self.publisher.verification_pending() {
+                        0
+                    } else {
+                        20
+                    };
+                    let result = unsafe { libc::poll(&mut fd, 1, timeout) };
                     if result < 0 {
                         let error = std::io::Error::last_os_error();
                         if error.kind() != std::io::ErrorKind::Interrupted {

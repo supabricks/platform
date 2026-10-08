@@ -21,6 +21,7 @@ const PER_TICK: usize = 4 * CHUNK;
 #[derive(Default)]
 pub struct Publisher {
     verifier: Option<Verifier>,
+    verification_progress: bool,
     pub last_error: Option<String>,
     pub recovery: Value,
 }
@@ -377,7 +378,9 @@ pub(crate) fn check_ready(root: &Path, d: &Value) -> Result<()> {
 }
 impl Publisher {
     pub(crate) fn verification_pending(&self) -> bool {
-        self.verifier.is_some()
+        // A stale capture can leave a verifier parked. Only a turn that actually
+        // advanced bytes is immediately runnable; blocked work must not spin.
+        self.verifier.is_some() && self.verification_progress
     }
 
     pub fn recover(store: &mut Store) -> Result<Self> {
@@ -434,6 +437,7 @@ impl Publisher {
         store: &mut Store,
         hook: &mut impl FnMut(&str) -> Result<()>,
     ) -> Result<()> {
+        self.verification_progress = false;
         let (stage, generations) = roots(store)?;
         let pending = store.pending_publications()?;
         if self.verifier.as_ref().is_some_and(|v| {
@@ -457,6 +461,7 @@ impl Publisher {
                         )?);
                     }
                     let v = self.verifier.as_mut().unwrap();
+                    self.verification_progress = true;
                     if v.advance(hook)? {
                         let descriptor = json!({"format_version":1,"installation_id":store.installation_id()?,"epoch_id":p.epoch_id,"ordinal":p.ordinal,"export_id":p.export_id,"source_revision":p.source_revision,"prepared_at_ms":chrono::Utc::now().timestamp_millis(),"generation":format!("analytics/generations/{}",p.export_id),"manifest_sha256":v.manifest_hash,"manifest":v.manifest});
                         atomic_descriptor(&v.root, &descriptor, hook)?;
@@ -593,6 +598,7 @@ impl Publisher {
                     current: None,
                 });
             }
+            self.verification_progress = true;
             if self.verifier.as_mut().unwrap().advance(hook)? {
                 atomic_descriptor(&stage.join(p.export_id.to_string()), d, hook)?;
                 store.publication_ready(p, d)?;
