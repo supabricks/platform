@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/storage_capacity.py", line 103, in run
+    try:w.run_owned(config,generation,data,lease)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq213/programs/releases/v0.1.0-alpha.36.eq213a/python/analytics/incremental_worker.py", line 222, in run_owned
+    prepared=plan(config,root,previous,journal_data,lease);atomic(plan_path,prepared)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq213/programs/releases/v0.1.0-alpha.36.eq213a/python/analytics/incremental_worker.py", line 62, in plan
+    with PlanningBoundary(root,config['deadline_ms'],lease,config.get('storage_profile','compact')) as guard:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq213/programs/releases/v0.1.0-alpha.36.eq213a/python/analytics/incremental/planning.py", line 93, in __enter__
+    self.snapshot=inventory_snapshot(self.root,self.deadline,self.profile)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq213/programs/releases/v0.1.0-alpha.36.eq213a/python/analytics/incremental/planning.py", line 69, in inventory_snapshot
+    if meta.st_uid!=os.getuid() or meta.st_mode&0o022:raise CaptureError('unsafe_incremental_path')
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+capture.spool.CaptureError: unsafe_incremental_path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/storage_capacity.py", line 134, in <module>
+    args=parser.parse_args();run(args.release.resolve(),args.root.resolve(),args.phase,args.expected)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/storage_capacity.py", line 125, in run
+    if report['status']!='PASS':raise RuntimeError('capacity phase failed; inspect '+str(report_path))
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: capacity phase failed; inspect /data2/supabricks-eq/eq213/candidate-01/apply.json
