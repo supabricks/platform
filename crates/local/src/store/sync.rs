@@ -350,6 +350,16 @@ impl Store {
                     if let Command::Update { config, .. } = &command {
                         config.validate()?;
                         self.sync_source(&p)?;
+                        if config.storage_profile != p.config.storage_profile
+                            && self
+                                .captures()?
+                                .iter()
+                                .any(|c| c.policy_id == p.id && c.state != "deleted")
+                        {
+                            return Err(conflict(
+                                "complete reviewed resync cleanup before changing storage profile",
+                            ));
+                        }
                         if config.mode != p.config.mode
                             && config.incremental()
                             && p.config.incremental()

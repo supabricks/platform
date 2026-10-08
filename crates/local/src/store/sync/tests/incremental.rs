@@ -74,6 +74,32 @@ pub(super) fn finish(s: &mut Store, r: &Apply) {
 fn head(s: &Store, c: &crate::capture::Capture) -> (String, String, String) {
     s.db.query_row("SELECT h.epoch_id,i.epoch_id,i.published_lsn FROM snapshot_heads h JOIN incremental_heads i ON i.capture_id=?1 WHERE h.branch_id=?2",params![c.id.to_string(),c.branch_id.to_string()],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).unwrap()
 }
+
+#[test]
+fn v2_storage_profile_controls_historical_inventory_admission() {
+    let (_dir, mut s, p, d, b) = setup();
+    let c = ready(&mut s, p, d, b);
+    let mut run = apply(&mut s, &c, "profile");
+    let mut descriptor = prepare(&mut s, &c, &mut run, 0);
+    let relative = "tables/101/sparse.parquet";
+    let path = s
+        .root()
+        .join(descriptor["generation"].as_str().unwrap())
+        .join(relative);
+    let size = 1024_u64.pow(3) + 1;
+    fs::File::create(path).unwrap().set_len(size).unwrap();
+    descriptor["manifest"]["files"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"path":relative,"bytes":size,"sha256":"0".repeat(64)}));
+    assert!(crate::analytics_v2::layout(s.root(), &descriptor).is_err());
+    descriptor["manifest"]["storage_profile"] = json!("large");
+    assert!(crate::analytics_v2::layout(s.root(), &descriptor).is_ok());
+    descriptor["manifest"]["storage_profile"] = json!("unbounded");
+    assert!(crate::analytics_v2::layout(s.root(), &descriptor).is_err());
+    // Inventory admission is separate from hashing/publication; the sparse
+    // payload above is not valid Delta and is never accepted as an epoch.
+}
 #[test]
 fn verified_incremental_publishes_in_one_turn_without_exceeding_hash_budget() {
     for extra_bytes in [0, 5 * 1024 * 1024] {

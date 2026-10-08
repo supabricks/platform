@@ -1,5 +1,71 @@
 use super::incremental::{finish, prepare};
 use super::*;
+
+#[test]
+fn storage_profile_is_persisted_and_cannot_change_an_enrolled_capture() {
+    use crate::incremental::StorageProfile;
+    let (_dir, mut s, p, d, b) = setup();
+    let config = Config {
+        mode: "continuous".into(),
+        strategy: "incremental".into(),
+        storage_profile: StorageProfile::Large,
+        ..Default::default()
+    };
+    let policy: Policy = serde_json::from_value(
+        s.sync_command(
+            p,
+            d,
+            Command::Create {
+                branch: b.to_string(),
+                key: "large".into(),
+                config: config.clone(),
+            },
+            now(),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        s.sync_policy(p, policy.id).unwrap().config.storage_profile,
+        StorageProfile::Large
+    );
+    let c = captured(&s, &policy);
+    s.schedule_continuous(now()).unwrap();
+    let id = s.active_sync_runs().unwrap()[0].id;
+    assert_eq!(
+        s.sync_run(p, id).unwrap().config.storage_profile,
+        StorageProfile::Large
+    );
+    s.tick_triggered(now()).unwrap();
+    let mut apply = s
+        .incremental_run(p, s.sync_run(p, id).unwrap().apply_id.unwrap())
+        .unwrap();
+    assert_eq!(apply.storage_profile, StorageProfile::Large);
+    let mut descriptor = prepare(&mut s, &c, &mut apply, 0);
+    assert!(s.commit_incremental(&mut apply, &descriptor).is_err());
+    descriptor["manifest"]["storage_profile"] = json!("large");
+    s.commit_incremental(&mut apply, &descriptor).unwrap();
+    let mut changed = config;
+    changed.storage_profile = StorageProfile::Compact;
+    assert!(
+        s.sync_command(
+            p,
+            d,
+            Command::Update {
+                id: policy.id,
+                expected_revision: policy.revision,
+                key: "resize-live".into(),
+                config: changed
+            },
+            now()
+        )
+        .is_err()
+    );
+    assert_eq!(
+        s.sync_policy(p, policy.id).unwrap().config.storage_profile,
+        StorageProfile::Large
+    );
+}
 fn now() -> i64 {
     super::super::super::now_ms().unwrap()
 }

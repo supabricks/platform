@@ -38,6 +38,11 @@ pub struct Config {
     pub continuous: Option<Continuous>,
     #[serde(default)]
     pub limits: ExportLimits,
+    #[serde(
+        default,
+        skip_serializing_if = "crate::incremental::StorageProfile::is_compact"
+    )]
+    pub storage_profile: crate::incremental::StorageProfile,
 }
 impl Default for Config {
     fn default() -> Self {
@@ -47,6 +52,7 @@ impl Default for Config {
             schedule: None,
             continuous: None,
             limits: Default::default(),
+            storage_profile: Default::default(),
         }
     }
 }
@@ -61,6 +67,9 @@ impl Config {
         self.continuous.clone().unwrap_or_default()
     }
     pub fn validate(&self) -> Result<()> {
+        if !self.incremental() && !self.storage_profile.is_compact() {
+            return Err(invalid("large storage profile requires incremental sync"));
+        }
         if !((self.mode == "snapshot" && self.strategy == "full") || self.incremental()) {
             return Err(invalid(
                 "supported policies are snapshot/full, triggered/incremental and continuous/incremental",
