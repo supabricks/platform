@@ -1,0 +1,51 @@
+{
+  "status": "RUNNING",
+  "stage": "load",
+  "scope": "SF100 engineering load pilot; no full-suite or release claim",
+  "scale": 100,
+  "started_utc": "2026-10-08T21:05:46.170702+00:00",
+  "elapsed_seconds": 170.06199258199194,
+  "committed_rows": 850944,
+  "committed_transactions": 831,
+  "load_started_seconds": 108.83766683400609,
+  "peak_sampled_cell_bytes": 1247854592,
+  "storage_admission": {
+    "free_bytes": 708450549760,
+    "required_free_bytes": 704374636544,
+    "filesystem_device": 66305,
+    "budget_gib": {
+      "cell": 512,
+      "exact_verification_hashes": 64,
+      "remaining_free": 64,
+      "evidence": 8,
+      "query_spill": 8
+    },
+    "note": "Sampled bounds; full retained workload fit is unproven"
+  },
+  "bounds": {
+    "rows_per_commit": 1024,
+    "encoded_bytes_per_commit": 4194304,
+    "timeout_seconds": 345600,
+    "minimum_free_gib": 656,
+    "maximum_cell_gib": 512,
+    "storage_sample_seconds": 10,
+    "minimum_remaining_free_gib": 64,
+    "max_unpublished_rows": 65536
+  },
+  "workload_profile_sha256": "eff1b872eb63aab0ac36511940f74412ba37c5eb44d11555be87257d12cac518",
+  "input_lock_sha256": "5fc9463c463c21ff90606307a16fb63e0ca8b1ade27371db56e4bd4beadd0558",
+  "generation_receipt_sha256": "4c4b1e715c34492e3356a580f07baca59fe3d09e973b3ba0ca7e238b05109c9c",
+  "load_profile_sha256": "c31cf33503ebd8685e2577f589ed14332a93a1907f6d2d6f6ef44df5876a50e4",
+  "fixture_sha256": "117ed4e32b8fef859d92947cc0a75b2e6190fafcd2a6e6cffafae11f4fe0f825",
+  "release_identity": "cde145bc84704ea8d6cc82fb98e5d51d3db05e4875b93bbfee64ab5351079c08",
+  "checks": [
+    "all_24_native_tables_enrolled_and_continuous_sync_healthy_before_first_copy"
+  ],
+  "observed_utc": "2026-10-08T21:08:36.355122+00:00",
+  "note": "Launch checkpoint only. Final load, exact comparison and 103-query qualification remain pending.",
+  "publication_progress": {
+    "published_rows": 785408,
+    "capture_state": "capturing",
+    "sync_state": "lagging"
+  }
+}
