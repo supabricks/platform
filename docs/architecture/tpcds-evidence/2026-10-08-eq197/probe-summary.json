@@ -1,0 +1,2695 @@
+{
+  "profiles": [
+    {
+      "name": "compact",
+      "profile": {
+        "profile": {
+          "pool_mib": 256,
+          "spill_mib": 256,
+          "rss_mib": 1024,
+          "file_mib": 16
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "af53c9913e09ff07acdbc48a67f49d909f4a5c402b904a75d5eb1d54b0437c6b"
+      },
+      "counts": {
+        "failed": 9
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 561397760,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.403014010982588,
+          "status": "failed",
+          "elapsed_seconds": 0.389710980001837,
+          "error": "Failed to allocate additional 225.4 KB for HashJoinInput with 256.0 MB already allocated for this reservation - 14.1 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 671211520,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.6035912169609219,
+          "status": "failed",
+          "elapsed_seconds": 0.5893713050172664,
+          "error": "Failed to allocate additional 292.1 KB for HashJoinInput with 254.5 MB already allocated for this reservation - 88.4 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 656441344,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.6036557069746777,
+          "status": "failed",
+          "elapsed_seconds": 0.5874471719725989,
+          "error": "Failed to allocate additional 293.6 KB for HashJoinInput with 254.4 MB already allocated for this reservation - 222.6 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 357265408,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.2024980079731904,
+          "status": "failed",
+          "elapsed_seconds": 0.20451711199712008,
+          "error": "Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 2.6 MB for GroupedHashAggregateStream[6] (sum(store_sales.#125)) with 64.0 B already allocated for this reservation - 2.3 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 554934272,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4029439680161886,
+          "status": "failed",
+          "elapsed_seconds": 0.3523345310240984,
+          "error": "Failed to allocate additional 1016.4 KB for HashJoinInput with 164.2 MB already allocated for this reservation - 714.1 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 434012160,
+          "peak_spill_bytes": 73689760,
+          "peak_spill_file_bytes": 6366992,
+          "process_seconds": 1.50388308102265,
+          "status": "failed",
+          "elapsed_seconds": 0.5500326819601469,
+          "error": "Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 7.1 MB for GroupedHashAggregateStream[6] (sum(CASE WHEN __common_expr_1 IS NOT NULL THEN __common_expr_1 ELSE Some(0),18,2 END) as sum(coalesce(spark_decimal_multiply(store_sales.#59,store_sales.#56),Int32(0)))) with 64.0 B already allocated for this reservation - 5.9 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 626528256,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.6037079530069605,
+          "status": "failed",
+          "elapsed_seconds": 0.6232127220137045,
+          "error": "Failed to allocate additional 419.2 KB for HashJoinInput with 203.5 MB already allocated for this reservation - 397.5 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 506494976,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.7039155600359663,
+          "status": "failed",
+          "elapsed_seconds": 0.6892464400152676,
+          "error": "Failed to allocate additional 1282.0 KB for GroupedHashAggregateStream[14] () with 2.3 MB already allocated for this reservation - 2.5 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 351838208,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.202581351972185,
+          "status": "failed",
+          "elapsed_seconds": 0.2455945590045303,
+          "error": "Failed to allocate additional 1675.7 KB for GroupedHashAggregateStream[7] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 2.6 MB already allocated for this reservation - 3.8 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        }
+      ]
+    },
+    {
+      "name": "medium",
+      "profile": {
+        "profile": {
+          "pool_mib": 1024,
+          "spill_mib": 4096,
+          "rss_mib": 4096,
+          "file_mib": 1024
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "af53c9913e09ff07acdbc48a67f49d909f4a5c402b904a75d5eb1d54b0437c6b"
+      },
+      "counts": {
+        "complete": 8,
+        "failed": 1
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1019617280,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.704044457001146,
+          "status": "complete",
+          "elapsed_seconds": 0.7011009689886123,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1199800320,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.5063245170167647,
+          "status": "complete",
+          "elapsed_seconds": 1.4713560030213557,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1199681536,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.5063485810533166,
+          "status": "complete",
+          "elapsed_seconds": 1.487808886973653,
+          "comparison": "correct"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 421527552,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.104742534982506,
+          "status": "complete",
+          "elapsed_seconds": 1.0854123560129665,
+          "comparison": "correct"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 724873216,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.5033498590346426,
+          "status": "complete",
+          "elapsed_seconds": 0.48255627002799883,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 639741952,
+          "peak_spill_bytes": 92643904,
+          "peak_spill_file_bytes": 19341096,
+          "process_seconds": 1.904692101990804,
+          "status": "complete",
+          "elapsed_seconds": 0.9405692089931108,
+          "comparison": "correct"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1439854592,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 3.1072783769923262,
+          "status": "failed",
+          "elapsed_seconds": 2.0937471050419845,
+          "error": "Failed to allocate additional 437.8 KB for HashJoinInput with 971.9 MB already allocated for this reservation - 14.0 KB remain available for the total memory pool: fair(pool_size: 1024.0 MB)"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 503214080,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.8041913260240108,
+          "status": "complete",
+          "elapsed_seconds": 0.721594707982149,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 395911168,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4031047110329382,
+          "status": "complete",
+          "elapsed_seconds": 0.44429419800871983,
+          "comparison": "correct"
+        }
+      ]
+    },
+    {
+      "name": "large",
+      "profile": {
+        "profile": {
+          "pool_mib": 2048,
+          "spill_mib": 8192,
+          "rss_mib": 6144,
+          "file_mib": 1024
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "af53c9913e09ff07acdbc48a67f49d909f4a5c402b904a75d5eb1d54b0437c6b"
+      },
+      "counts": {
+        "complete": 8,
+        "failed": 1
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1012514816,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.7039879120420665,
+          "status": "complete",
+          "elapsed_seconds": 0.7092258600168861,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1188261888,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.5062900939956307,
+          "status": "complete",
+          "elapsed_seconds": 1.4807598419720307,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1153200128,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.5063473699847236,
+          "status": "complete",
+          "elapsed_seconds": 1.5059454700094648,
+          "comparison": "correct"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 422518784,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 2.104702156037092,
+          "status": "complete",
+          "elapsed_seconds": 1.0846552409930155,
+          "comparison": "correct"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 710811648,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.5033382609835826,
+          "status": "complete",
+          "elapsed_seconds": 0.47560360498027876,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 583639040,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.6037155630183406,
+          "status": "complete",
+          "elapsed_seconds": 0.6740175790037028,
+          "comparison": "correct"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 2503110656,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 5.111698471009731,
+          "status": "failed",
+          "elapsed_seconds": 4.001622253039386,
+          "error": "Failed to allocate additional 380.6 KB for HashJoinInput with 1995.9 MB already allocated for this reservation - 13.7 KB remain available for the total memory pool: fair(pool_size: 2.0 GB)"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 510783488,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.8039843689766712,
+          "status": "complete",
+          "elapsed_seconds": 0.7217133509693667,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 393674752,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4030888950219378,
+          "status": "complete",
+          "elapsed_seconds": 0.449828153999988,
+          "comparison": "correct"
+        }
+      ]
+    },
+    {
+      "name": "compact_reorder",
+      "profile": {
+        "profile": {
+          "pool_mib": 256,
+          "spill_mib": 256,
+          "rss_mib": 1024,
+          "file_mib": 16,
+          "reorder": true
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "f047fa08bbce9e66e4c9ea8abf99b53c7930b0428dabf4a3a3dee3425251e0e1"
+      },
+      "counts": {
+        "complete": 5,
+        "failed": 4
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 372805632,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.402825348020997,
+          "status": "complete",
+          "elapsed_seconds": 0.43632647302001715,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 311865344,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.1022008409490809,
+          "status": "complete",
+          "elapsed_seconds": 0.1270431120065041,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 320086016,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.1021893399883993,
+          "status": "complete",
+          "elapsed_seconds": 0.11648658500052989,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 429236224,
+          "peak_spill_bytes": 10055408,
+          "peak_spill_file_bytes": 1242496,
+          "process_seconds": 1.4029870089725591,
+          "status": "failed",
+          "elapsed_seconds": 0.443163687014021,
+          "error": "Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 2.6 MB for GroupedHashAggregateStream[4] (sum(store_sales.#125)) with 64.0 B already allocated for this reservation - 2.1 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 389816320,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.3026508439797908,
+          "status": "complete",
+          "elapsed_seconds": 0.24942935100989416,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 489771008,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.2027247959631495,
+          "status": "failed",
+          "elapsed_seconds": 0.20016543194651604,
+          "error": "Failed to allocate additional 2020.6 KB for HashJoinInput with 250.5 MB already allocated for this reservation - 1005.4 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 471429120,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4032002169988118,
+          "status": "complete",
+          "elapsed_seconds": 0.4121077290037647,
+          "comparison": "correct"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 503209984,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.7038331769872457,
+          "status": "failed",
+          "elapsed_seconds": 0.6713025819626637,
+          "error": "Failed to allocate additional 1282.0 KB for GroupedHashAggregateStream[12] () with 2.3 MB already allocated for this reservation - 2.5 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 358711296,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.202679791022092,
+          "status": "failed",
+          "elapsed_seconds": 0.24309631797950715,
+          "error": "Failed to allocate additional 1675.7 KB for GroupedHashAggregateStream[7] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 2.6 MB already allocated for this reservation - 3.8 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+        }
+      ]
+    },
+    {
+      "name": "medium_reorder",
+      "profile": {
+        "profile": {
+          "pool_mib": 1024,
+          "spill_mib": 4096,
+          "rss_mib": 4096,
+          "file_mib": 1024,
+          "reorder": true
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "3488e10344c5335e0908d03e5b7ee27c41b18e6260937403d1a855b6985952a2"
+      },
+      "counts": {
+        "complete": 9
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 378556416,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4028883340070024,
+          "status": "complete",
+          "elapsed_seconds": 0.42973774595884606,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 318541824,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.1023789829923771,
+          "status": "complete",
+          "elapsed_seconds": 0.12259562104009092,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 325574656,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.1024848380475305,
+          "status": "complete",
+          "elapsed_seconds": 0.11534860101528466,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 427515904,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.9042584510170855,
+          "status": "complete",
+          "elapsed_seconds": 0.9298059609718621,
+          "comparison": "correct"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 385761280,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.3027676029596478,
+          "status": "complete",
+          "elapsed_seconds": 0.24953037197701633,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1666756608,
+          "peak_spill_bytes": 191478560,
+          "peak_spill_file_bytes": 23494424,
+          "process_seconds": 2.911347609013319,
+          "status": "complete",
+          "elapsed_seconds": 1.9347656129975803,
+          "comparison": "correct"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 470372352,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4031634090351872,
+          "status": "complete",
+          "elapsed_seconds": 0.4084400259889662,
+          "comparison": "correct"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 503607296,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.8042520690360107,
+          "status": "complete",
+          "elapsed_seconds": 0.7251334019820206,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 377913344,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.403199695982039,
+          "status": "complete",
+          "elapsed_seconds": 0.4516548119718209,
+          "comparison": "correct"
+        }
+      ]
+    },
+    {
+      "name": "large_reorder",
+      "profile": {
+        "profile": {
+          "pool_mib": 2048,
+          "spill_mib": 8192,
+          "rss_mib": 6144,
+          "file_mib": 1024,
+          "reorder": true
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "85b9d6c82a5071d0322bfa4086e78cbaf0eed18e49ca4364e431534d06e7181d"
+      },
+      "counts": {
+        "complete": 10
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 374636544,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4028990419465117,
+          "status": "complete",
+          "elapsed_seconds": 0.423768270004075,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 322392064,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.103193179005757,
+          "status": "complete",
+          "elapsed_seconds": 0.11993836896726862,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 311832576,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.102309502020944,
+          "status": "complete",
+          "elapsed_seconds": 0.12220908096060157,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 419577856,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.9042747839703225,
+          "status": "complete",
+          "elapsed_seconds": 0.9418167429976165,
+          "comparison": "correct"
+        },
+        {
+          "id": "q64",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 2837356544,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 4.411450624989811,
+          "status": "complete",
+          "elapsed_seconds": 3.2851522089913487,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 395079680,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.3026305949897505,
+          "status": "complete",
+          "elapsed_seconds": 0.25224237696966156,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 1692045312,
+          "peak_spill_bytes": 88093792,
+          "peak_spill_file_bytes": 11105672,
+          "process_seconds": 2.707467657979578,
+          "status": "complete",
+          "elapsed_seconds": 1.6611173950368538,
+          "comparison": "correct"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 463810560,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.403153976018075,
+          "status": "complete",
+          "elapsed_seconds": 0.4115177739877254,
+          "comparison": "correct"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 509341696,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.804128167044837,
+          "status": "complete",
+          "elapsed_seconds": 0.7348380329785869,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 396546048,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.4030411679996178,
+          "status": "complete",
+          "elapsed_seconds": 0.4428338700090535,
+          "comparison": "correct"
+        }
+      ]
+    },
+    {
+      "name": "medium_merge",
+      "profile": {
+        "profile": {
+          "pool_mib": 1024,
+          "spill_mib": 4096,
+          "rss_mib": 4096,
+          "file_mib": 1024,
+          "hash_join": false
+        },
+        "cpus": "0-7",
+        "container_memory_mib": 16384,
+        "swap": false,
+        "source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+        "fixture_sha256": "85b9d6c82a5071d0322bfa4086e78cbaf0eed18e49ca4364e431534d06e7181d"
+      },
+      "counts": {
+        "complete": 6,
+        "failed": 4
+      },
+      "queries": [
+        {
+          "id": "q21",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 477712384,
+          "peak_spill_bytes": 285473920,
+          "peak_spill_file_bytes": 6954584,
+          "process_seconds": 2.4085899589699693,
+          "status": "complete",
+          "elapsed_seconds": 1.4350187269737944,
+          "comparison": "correct"
+        },
+        {
+          "id": "q39a",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 612139008,
+          "peak_spill_bytes": 380882272,
+          "peak_spill_file_bytes": 51609024,
+          "process_seconds": 4.823726832983084,
+          "status": "complete",
+          "elapsed_seconds": 3.8013487680000253,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q39b",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 571695104,
+          "peak_spill_bytes": 388661664,
+          "peak_spill_file_bytes": 36302496,
+          "process_seconds": 4.823509370035026,
+          "status": "complete",
+          "elapsed_seconds": 3.80132159095956,
+          "comparison": "result_mismatch_review_required"
+        },
+        {
+          "id": "q47",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 603197440,
+          "peak_spill_bytes": 520804272,
+          "peak_spill_file_bytes": 40132464,
+          "process_seconds": 1.6098279530415311,
+          "status": "failed",
+          "elapsed_seconds": 0.5822787549695931,
+          "error": "Resources exhausted: Failed to allocate additional 10.0 MB for ExternalSorterMerge[2] with 0.0 B already allocated for this reservation - 3.2 MB remain available for the total memory pool: fair(pool_size: 1024.0 MB)"
+        },
+        {
+          "id": "q64",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 314028032,
+          "peak_spill_bytes": 0,
+          "peak_spill_file_bytes": 0,
+          "process_seconds": 1.2022835059906356,
+          "status": "failed",
+          "elapsed_seconds": 0.1345246609998867,
+          "error": "Resources exhausted: Failed to allocate additional 1364.0 KB for ExternalSorter[6] with 0.0 B already allocated for this reservation - 1311.0 KB remain available for the total memory pool: fair(pool_size: 1024.0 MB)"
+        },
+        {
+          "id": "q66",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 545865728,
+          "peak_spill_bytes": 105083032,
+          "peak_spill_file_bytes": 4270808,
+          "process_seconds": 1.7055938430130482,
+          "status": "complete",
+          "elapsed_seconds": 0.6959854519809596,
+          "comparison": "correct"
+        },
+        {
+          "id": "q67",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 620187648,
+          "peak_spill_bytes": 71852576,
+          "peak_spill_file_bytes": 19340920,
+          "process_seconds": 1.9051324489992112,
+          "status": "complete",
+          "elapsed_seconds": 0.9209690290153958,
+          "comparison": "correct"
+        },
+        {
+          "id": "q72",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 708399104,
+          "peak_spill_bytes": 2043104064,
+          "peak_spill_file_bytes": 136429792,
+          "process_seconds": 14.981450748979114,
+          "status": "failed",
+          "elapsed_seconds": 13.975244191009551,
+          "error": "(Hint: you may increase the file descriptor limit with shell command 'ulimit -n 4096') Failed to create partition file at \"/reports/medium_merge/q72/spill/datafusion-zCVowK/.tmpI9qTWb\": Os { code: 24, kind: Uncategorized, message: \"Too many open files\" }"
+        },
+        {
+          "id": "q75",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 481443840,
+          "peak_spill_bytes": 83529664,
+          "peak_spill_file_bytes": 3479176,
+          "process_seconds": 2.109804119041655,
+          "status": "complete",
+          "elapsed_seconds": 1.0991504700505175,
+          "comparison": "order_review_required"
+        },
+        {
+          "id": "q78",
+          "exit_code": 0,
+          "reason": null,
+          "peak_rss_bytes": 486211584,
+          "peak_spill_bytes": 129233408,
+          "peak_spill_file_bytes": 2601992,
+          "process_seconds": 1.7050153900054283,
+          "status": "failed",
+          "elapsed_seconds": 0.6759601809899323,
+          "error": "Failed to allocate additional 3.3 MB for GroupedHashAggregateStream[3] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 5.1 MB already allocated for this reservation - 7.1 MB remain available for the total memory pool: fair(pool_size: 1024.0 MB)"
+        }
+      ]
+    }
+  ],
+  "differences": [
+    {
+      "profile": "medium",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861326",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        }
+      ]
+    },
+    {
+      "profile": "large",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861326",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        }
+      ]
+    },
+    {
+      "profile": "compact_reorder",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.170227093811101",
+          "expected": "1.1702270938111008"
+        },
+        {
+          "row": 9,
+          "column": 4,
+          "actual": "1.1285483279713713",
+          "expected": "1.1285483279713715"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "actual": "1.012030835795969",
+          "expected": "1.0120308357959693"
+        },
+        {
+          "row": 15,
+          "column": 9,
+          "actual": "1.169384234377615",
+          "expected": "1.1693842343776149"
+        },
+        {
+          "row": 16,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 20,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861326",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 25,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 25,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 39,
+          "column": 9,
+          "actual": "1.34165043988846",
+          "expected": "1.3416504398884601"
+        },
+        {
+          "row": 40,
+          "column": 4,
+          "actual": "1.0416902073200347",
+          "expected": "1.041690207320035"
+        },
+        {
+          "row": 47,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 55,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 56,
+          "column": 4,
+          "actual": "1.0422813802180275",
+          "expected": "1.0422813802180273"
+        },
+        {
+          "row": 70,
+          "column": 4,
+          "actual": "1.272313269656374",
+          "expected": "1.2723132696563741"
+        },
+        {
+          "row": 70,
+          "column": 9,
+          "actual": "1.181579184871904",
+          "expected": "1.1815791848719037"
+        },
+        {
+          "row": 73,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 77,
+          "column": 4,
+          "actual": "1.3416462958520907",
+          "expected": "1.341646295852091"
+        },
+        {
+          "row": 78,
+          "column": 9,
+          "actual": "1.311696301457662",
+          "expected": "1.3116963014576621"
+        },
+        {
+          "row": 79,
+          "column": 4,
+          "actual": "1.025811293001377",
+          "expected": "1.0258112930013772"
+        },
+        {
+          "row": 86,
+          "column": 9,
+          "actual": "1.004063499519034",
+          "expected": "1.0040634995190338"
+        },
+        {
+          "row": 92,
+          "column": 4,
+          "actual": "1.0107341657610864",
+          "expected": "1.0107341657610867"
+        },
+        {
+          "row": 94,
+          "column": 9,
+          "actual": "1.4152684465941177",
+          "expected": "1.4152684465941172"
+        },
+        {
+          "row": 101,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 102,
+          "column": 9,
+          "actual": "1.0688677983776655",
+          "expected": "1.0688677983776653"
+        },
+        {
+          "row": 106,
+          "column": 9,
+          "actual": "1.0239841249245367",
+          "expected": "1.023984124924537"
+        },
+        {
+          "row": 112,
+          "column": 9,
+          "actual": "1.2113392480929657",
+          "expected": "1.2113392480929654"
+        },
+        {
+          "row": 114,
+          "column": 4,
+          "actual": "1.042283179309031",
+          "expected": "1.0422831793090308"
+        },
+        {
+          "row": 117,
+          "column": 9,
+          "actual": "1.0365149332658259",
+          "expected": "1.0365149332658257"
+        },
+        {
+          "row": 125,
+          "column": 9,
+          "actual": "1.0171588175042316",
+          "expected": "1.0171588175042319"
+        },
+        {
+          "row": 126,
+          "column": 9,
+          "actual": "1.0303724426257317",
+          "expected": "1.030372442625732"
+        },
+        {
+          "row": 136,
+          "column": 9,
+          "actual": "1.0287818050404884",
+          "expected": "1.0287818050404882"
+        },
+        {
+          "row": 137,
+          "column": 4,
+          "actual": "1.3072589240619619",
+          "expected": "1.307258924061962"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        },
+        {
+          "row": 146,
+          "column": 4,
+          "actual": "1.1137413572906036",
+          "expected": "1.1137413572906039"
+        },
+        {
+          "row": 160,
+          "column": 4,
+          "actual": "1.1215380255852638",
+          "expected": "1.121538025585264"
+        },
+        {
+          "row": 161,
+          "column": 4,
+          "actual": "1.2049236089487843",
+          "expected": "1.2049236089487845"
+        },
+        {
+          "row": 161,
+          "column": 9,
+          "actual": "1.4816550575659289",
+          "expected": "1.4816550575659286"
+        },
+        {
+          "row": 168,
+          "column": 4,
+          "actual": "1.2168578242981778",
+          "expected": "1.216857824298178"
+        },
+        {
+          "row": 171,
+          "column": 4,
+          "actual": "1.1044206164135038",
+          "expected": "1.104420616413504"
+        },
+        {
+          "row": 175,
+          "column": 4,
+          "actual": "1.3427502512651468",
+          "expected": "1.3427502512651466"
+        },
+        {
+          "row": 184,
+          "column": 9,
+          "actual": "1.297831368103705",
+          "expected": "1.2978313681037048"
+        },
+        {
+          "row": 187,
+          "column": 9,
+          "actual": "1.3533252726200042",
+          "expected": "1.353325272620004"
+        },
+        {
+          "row": 190,
+          "column": 4,
+          "actual": "1.2656318762849217",
+          "expected": "1.2656318762849212"
+        },
+        {
+          "row": 193,
+          "column": 4,
+          "actual": "1.0056014147334145",
+          "expected": "1.0056014147334147"
+        },
+        {
+          "row": 197,
+          "column": 9,
+          "actual": "1.0662249910239625",
+          "expected": "1.0662249910239627"
+        },
+        {
+          "row": 198,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        },
+        {
+          "row": 201,
+          "column": 9,
+          "actual": "1.2369797321835676",
+          "expected": "1.2369797321835678"
+        },
+        {
+          "row": 206,
+          "column": 9,
+          "actual": "1.091567520520827",
+          "expected": "1.0915675205208268"
+        },
+        {
+          "row": 213,
+          "column": 4,
+          "actual": "1.461134600265013",
+          "expected": "1.4611346002650127"
+        },
+        {
+          "row": 214,
+          "column": 9,
+          "actual": "1.1607781125264067",
+          "expected": "1.1607781125264065"
+        },
+        {
+          "row": 215,
+          "column": 4,
+          "actual": "1.0742136400907767",
+          "expected": "1.074213640090777"
+        },
+        {
+          "row": 223,
+          "column": 4,
+          "actual": "1.1682379397902216",
+          "expected": "1.1682379397902218"
+        },
+        {
+          "row": 225,
+          "column": 4,
+          "actual": "1.042383929052728",
+          "expected": "1.0423839290527277"
+        },
+        {
+          "row": 227,
+          "column": 9,
+          "actual": "1.0680909505443132",
+          "expected": "1.0680909505443135"
+        },
+        {
+          "row": 228,
+          "column": 9,
+          "actual": "1.056449623755786",
+          "expected": "1.0564496237557859"
+        },
+        {
+          "row": 229,
+          "column": 9,
+          "actual": "1.038798268096469",
+          "expected": "1.0387982680964687"
+        },
+        {
+          "row": 231,
+          "column": 4,
+          "actual": "1.0124777526338784",
+          "expected": "1.0124777526338786"
+        },
+        {
+          "row": 236,
+          "column": 9,
+          "actual": "1.2988191692443931",
+          "expected": "1.2988191692443933"
+        },
+        {
+          "row": 240,
+          "column": 9,
+          "actual": "1.1416239351288797",
+          "expected": "1.1416239351288795"
+        }
+      ]
+    },
+    {
+      "profile": "compact_reorder",
+      "id": "q39b",
+      "actual_rows": 14,
+      "expected_rows": 14,
+      "differences": [
+        {
+          "row": 1,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 2,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 3,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 8,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 13,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        }
+      ]
+    },
+    {
+      "profile": "medium_reorder",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.170227093811101",
+          "expected": "1.1702270938111008"
+        },
+        {
+          "row": 9,
+          "column": 4,
+          "actual": "1.1285483279713713",
+          "expected": "1.1285483279713715"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "actual": "1.012030835795969",
+          "expected": "1.0120308357959693"
+        },
+        {
+          "row": 15,
+          "column": 9,
+          "actual": "1.169384234377615",
+          "expected": "1.1693842343776149"
+        },
+        {
+          "row": 16,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 20,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861326",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 25,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 25,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 39,
+          "column": 9,
+          "actual": "1.34165043988846",
+          "expected": "1.3416504398884601"
+        },
+        {
+          "row": 40,
+          "column": 4,
+          "actual": "1.0416902073200347",
+          "expected": "1.041690207320035"
+        },
+        {
+          "row": 47,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 55,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 56,
+          "column": 4,
+          "actual": "1.0422813802180275",
+          "expected": "1.0422813802180273"
+        },
+        {
+          "row": 70,
+          "column": 4,
+          "actual": "1.272313269656374",
+          "expected": "1.2723132696563741"
+        },
+        {
+          "row": 70,
+          "column": 9,
+          "actual": "1.181579184871904",
+          "expected": "1.1815791848719037"
+        },
+        {
+          "row": 73,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 77,
+          "column": 4,
+          "actual": "1.3416462958520907",
+          "expected": "1.341646295852091"
+        },
+        {
+          "row": 78,
+          "column": 9,
+          "actual": "1.311696301457662",
+          "expected": "1.3116963014576621"
+        },
+        {
+          "row": 79,
+          "column": 4,
+          "actual": "1.025811293001377",
+          "expected": "1.0258112930013772"
+        },
+        {
+          "row": 86,
+          "column": 9,
+          "actual": "1.004063499519034",
+          "expected": "1.0040634995190338"
+        },
+        {
+          "row": 92,
+          "column": 4,
+          "actual": "1.0107341657610864",
+          "expected": "1.0107341657610867"
+        },
+        {
+          "row": 94,
+          "column": 9,
+          "actual": "1.4152684465941177",
+          "expected": "1.4152684465941172"
+        },
+        {
+          "row": 101,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 102,
+          "column": 9,
+          "actual": "1.0688677983776655",
+          "expected": "1.0688677983776653"
+        },
+        {
+          "row": 106,
+          "column": 9,
+          "actual": "1.0239841249245367",
+          "expected": "1.023984124924537"
+        },
+        {
+          "row": 112,
+          "column": 9,
+          "actual": "1.2113392480929657",
+          "expected": "1.2113392480929654"
+        },
+        {
+          "row": 114,
+          "column": 4,
+          "actual": "1.042283179309031",
+          "expected": "1.0422831793090308"
+        },
+        {
+          "row": 117,
+          "column": 9,
+          "actual": "1.0365149332658259",
+          "expected": "1.0365149332658257"
+        },
+        {
+          "row": 125,
+          "column": 9,
+          "actual": "1.0171588175042316",
+          "expected": "1.0171588175042319"
+        },
+        {
+          "row": 126,
+          "column": 9,
+          "actual": "1.0303724426257317",
+          "expected": "1.030372442625732"
+        },
+        {
+          "row": 136,
+          "column": 9,
+          "actual": "1.0287818050404884",
+          "expected": "1.0287818050404882"
+        },
+        {
+          "row": 137,
+          "column": 4,
+          "actual": "1.3072589240619619",
+          "expected": "1.307258924061962"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        },
+        {
+          "row": 146,
+          "column": 4,
+          "actual": "1.1137413572906036",
+          "expected": "1.1137413572906039"
+        },
+        {
+          "row": 160,
+          "column": 4,
+          "actual": "1.1215380255852638",
+          "expected": "1.121538025585264"
+        },
+        {
+          "row": 161,
+          "column": 4,
+          "actual": "1.2049236089487843",
+          "expected": "1.2049236089487845"
+        },
+        {
+          "row": 161,
+          "column": 9,
+          "actual": "1.4816550575659289",
+          "expected": "1.4816550575659286"
+        },
+        {
+          "row": 168,
+          "column": 4,
+          "actual": "1.2168578242981778",
+          "expected": "1.216857824298178"
+        },
+        {
+          "row": 171,
+          "column": 4,
+          "actual": "1.1044206164135038",
+          "expected": "1.104420616413504"
+        },
+        {
+          "row": 175,
+          "column": 4,
+          "actual": "1.3427502512651468",
+          "expected": "1.3427502512651466"
+        },
+        {
+          "row": 184,
+          "column": 9,
+          "actual": "1.297831368103705",
+          "expected": "1.2978313681037048"
+        },
+        {
+          "row": 187,
+          "column": 9,
+          "actual": "1.3533252726200042",
+          "expected": "1.353325272620004"
+        },
+        {
+          "row": 190,
+          "column": 4,
+          "actual": "1.2656318762849217",
+          "expected": "1.2656318762849212"
+        },
+        {
+          "row": 193,
+          "column": 4,
+          "actual": "1.0056014147334145",
+          "expected": "1.0056014147334147"
+        },
+        {
+          "row": 197,
+          "column": 9,
+          "actual": "1.0662249910239625",
+          "expected": "1.0662249910239627"
+        },
+        {
+          "row": 198,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        },
+        {
+          "row": 201,
+          "column": 9,
+          "actual": "1.2369797321835676",
+          "expected": "1.2369797321835678"
+        },
+        {
+          "row": 206,
+          "column": 9,
+          "actual": "1.091567520520827",
+          "expected": "1.0915675205208268"
+        },
+        {
+          "row": 213,
+          "column": 4,
+          "actual": "1.461134600265013",
+          "expected": "1.4611346002650127"
+        },
+        {
+          "row": 214,
+          "column": 9,
+          "actual": "1.1607781125264067",
+          "expected": "1.1607781125264065"
+        },
+        {
+          "row": 215,
+          "column": 4,
+          "actual": "1.0742136400907767",
+          "expected": "1.074213640090777"
+        },
+        {
+          "row": 223,
+          "column": 4,
+          "actual": "1.1682379397902216",
+          "expected": "1.1682379397902218"
+        },
+        {
+          "row": 225,
+          "column": 4,
+          "actual": "1.042383929052728",
+          "expected": "1.0423839290527277"
+        },
+        {
+          "row": 227,
+          "column": 9,
+          "actual": "1.0680909505443132",
+          "expected": "1.0680909505443135"
+        },
+        {
+          "row": 228,
+          "column": 9,
+          "actual": "1.056449623755786",
+          "expected": "1.0564496237557859"
+        },
+        {
+          "row": 229,
+          "column": 9,
+          "actual": "1.038798268096469",
+          "expected": "1.0387982680964687"
+        },
+        {
+          "row": 231,
+          "column": 4,
+          "actual": "1.0124777526338784",
+          "expected": "1.0124777526338786"
+        },
+        {
+          "row": 236,
+          "column": 9,
+          "actual": "1.2988191692443931",
+          "expected": "1.2988191692443933"
+        },
+        {
+          "row": 240,
+          "column": 9,
+          "actual": "1.1416239351288797",
+          "expected": "1.1416239351288795"
+        }
+      ]
+    },
+    {
+      "profile": "medium_reorder",
+      "id": "q39b",
+      "actual_rows": 14,
+      "expected_rows": 14,
+      "differences": [
+        {
+          "row": 1,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 2,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 3,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 8,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 13,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        }
+      ]
+    },
+    {
+      "profile": "large_reorder",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.170227093811101",
+          "expected": "1.1702270938111008"
+        },
+        {
+          "row": 9,
+          "column": 4,
+          "actual": "1.1285483279713713",
+          "expected": "1.1285483279713715"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "actual": "1.012030835795969",
+          "expected": "1.0120308357959693"
+        },
+        {
+          "row": 15,
+          "column": 9,
+          "actual": "1.169384234377615",
+          "expected": "1.1693842343776149"
+        },
+        {
+          "row": 16,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 20,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861326",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 25,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 25,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 39,
+          "column": 9,
+          "actual": "1.34165043988846",
+          "expected": "1.3416504398884601"
+        },
+        {
+          "row": 40,
+          "column": 4,
+          "actual": "1.0416902073200347",
+          "expected": "1.041690207320035"
+        },
+        {
+          "row": 47,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 55,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 56,
+          "column": 4,
+          "actual": "1.0422813802180275",
+          "expected": "1.0422813802180273"
+        },
+        {
+          "row": 70,
+          "column": 4,
+          "actual": "1.272313269656374",
+          "expected": "1.2723132696563741"
+        },
+        {
+          "row": 70,
+          "column": 9,
+          "actual": "1.181579184871904",
+          "expected": "1.1815791848719037"
+        },
+        {
+          "row": 73,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 77,
+          "column": 4,
+          "actual": "1.3416462958520907",
+          "expected": "1.341646295852091"
+        },
+        {
+          "row": 78,
+          "column": 9,
+          "actual": "1.311696301457662",
+          "expected": "1.3116963014576621"
+        },
+        {
+          "row": 79,
+          "column": 4,
+          "actual": "1.025811293001377",
+          "expected": "1.0258112930013772"
+        },
+        {
+          "row": 86,
+          "column": 9,
+          "actual": "1.004063499519034",
+          "expected": "1.0040634995190338"
+        },
+        {
+          "row": 92,
+          "column": 4,
+          "actual": "1.0107341657610864",
+          "expected": "1.0107341657610867"
+        },
+        {
+          "row": 94,
+          "column": 9,
+          "actual": "1.4152684465941177",
+          "expected": "1.4152684465941172"
+        },
+        {
+          "row": 101,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 102,
+          "column": 9,
+          "actual": "1.0688677983776655",
+          "expected": "1.0688677983776653"
+        },
+        {
+          "row": 106,
+          "column": 9,
+          "actual": "1.0239841249245367",
+          "expected": "1.023984124924537"
+        },
+        {
+          "row": 112,
+          "column": 9,
+          "actual": "1.2113392480929657",
+          "expected": "1.2113392480929654"
+        },
+        {
+          "row": 114,
+          "column": 4,
+          "actual": "1.042283179309031",
+          "expected": "1.0422831793090308"
+        },
+        {
+          "row": 117,
+          "column": 9,
+          "actual": "1.0365149332658259",
+          "expected": "1.0365149332658257"
+        },
+        {
+          "row": 125,
+          "column": 9,
+          "actual": "1.0171588175042316",
+          "expected": "1.0171588175042319"
+        },
+        {
+          "row": 126,
+          "column": 9,
+          "actual": "1.0303724426257317",
+          "expected": "1.030372442625732"
+        },
+        {
+          "row": 136,
+          "column": 9,
+          "actual": "1.0287818050404884",
+          "expected": "1.0287818050404882"
+        },
+        {
+          "row": 137,
+          "column": 4,
+          "actual": "1.3072589240619619",
+          "expected": "1.307258924061962"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        },
+        {
+          "row": 146,
+          "column": 4,
+          "actual": "1.1137413572906036",
+          "expected": "1.1137413572906039"
+        },
+        {
+          "row": 160,
+          "column": 4,
+          "actual": "1.1215380255852638",
+          "expected": "1.121538025585264"
+        },
+        {
+          "row": 161,
+          "column": 4,
+          "actual": "1.2049236089487843",
+          "expected": "1.2049236089487845"
+        },
+        {
+          "row": 161,
+          "column": 9,
+          "actual": "1.4816550575659289",
+          "expected": "1.4816550575659286"
+        },
+        {
+          "row": 168,
+          "column": 4,
+          "actual": "1.2168578242981778",
+          "expected": "1.216857824298178"
+        },
+        {
+          "row": 171,
+          "column": 4,
+          "actual": "1.1044206164135038",
+          "expected": "1.104420616413504"
+        },
+        {
+          "row": 175,
+          "column": 4,
+          "actual": "1.3427502512651468",
+          "expected": "1.3427502512651466"
+        },
+        {
+          "row": 184,
+          "column": 9,
+          "actual": "1.297831368103705",
+          "expected": "1.2978313681037048"
+        },
+        {
+          "row": 187,
+          "column": 9,
+          "actual": "1.3533252726200042",
+          "expected": "1.353325272620004"
+        },
+        {
+          "row": 190,
+          "column": 4,
+          "actual": "1.2656318762849217",
+          "expected": "1.2656318762849212"
+        },
+        {
+          "row": 193,
+          "column": 4,
+          "actual": "1.0056014147334145",
+          "expected": "1.0056014147334147"
+        },
+        {
+          "row": 197,
+          "column": 9,
+          "actual": "1.0662249910239625",
+          "expected": "1.0662249910239627"
+        },
+        {
+          "row": 198,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        },
+        {
+          "row": 201,
+          "column": 9,
+          "actual": "1.2369797321835676",
+          "expected": "1.2369797321835678"
+        },
+        {
+          "row": 206,
+          "column": 9,
+          "actual": "1.091567520520827",
+          "expected": "1.0915675205208268"
+        },
+        {
+          "row": 213,
+          "column": 4,
+          "actual": "1.461134600265013",
+          "expected": "1.4611346002650127"
+        },
+        {
+          "row": 214,
+          "column": 9,
+          "actual": "1.1607781125264067",
+          "expected": "1.1607781125264065"
+        },
+        {
+          "row": 215,
+          "column": 4,
+          "actual": "1.0742136400907767",
+          "expected": "1.074213640090777"
+        },
+        {
+          "row": 223,
+          "column": 4,
+          "actual": "1.1682379397902216",
+          "expected": "1.1682379397902218"
+        },
+        {
+          "row": 225,
+          "column": 4,
+          "actual": "1.042383929052728",
+          "expected": "1.0423839290527277"
+        },
+        {
+          "row": 227,
+          "column": 9,
+          "actual": "1.0680909505443132",
+          "expected": "1.0680909505443135"
+        },
+        {
+          "row": 228,
+          "column": 9,
+          "actual": "1.056449623755786",
+          "expected": "1.0564496237557859"
+        },
+        {
+          "row": 229,
+          "column": 9,
+          "actual": "1.038798268096469",
+          "expected": "1.0387982680964687"
+        },
+        {
+          "row": 231,
+          "column": 4,
+          "actual": "1.0124777526338784",
+          "expected": "1.0124777526338786"
+        },
+        {
+          "row": 236,
+          "column": 9,
+          "actual": "1.2988191692443931",
+          "expected": "1.2988191692443933"
+        },
+        {
+          "row": 240,
+          "column": 9,
+          "actual": "1.1416239351288797",
+          "expected": "1.1416239351288795"
+        }
+      ]
+    },
+    {
+      "profile": "large_reorder",
+      "id": "q39b",
+      "actual_rows": 14,
+      "expected_rows": 14,
+      "differences": [
+        {
+          "row": 1,
+          "column": 4,
+          "actual": "1.565703236635989",
+          "expected": "1.5657032366359889"
+        },
+        {
+          "row": 2,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 3,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 5,
+          "column": 4,
+          "actual": "1.5639741083347447",
+          "expected": "1.563974108334745"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 8,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 13,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        }
+      ]
+    },
+    {
+      "profile": "medium_merge",
+      "id": "q39a",
+      "actual_rows": 243,
+      "expected_rows": 243,
+      "differences": [
+        {
+          "row": 5,
+          "column": 9,
+          "actual": "1.3057281471249385",
+          "expected": "1.3057281471249382"
+        },
+        {
+          "row": 10,
+          "column": 4,
+          "actual": "1.0604290412504491",
+          "expected": "1.060429041250449"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "actual": "1.012030835795969",
+          "expected": "1.0120308357959693"
+        },
+        {
+          "row": 15,
+          "column": 9,
+          "actual": "1.169384234377615",
+          "expected": "1.1693842343776149"
+        },
+        {
+          "row": 19,
+          "column": 9,
+          "actual": "1.0470055593145149",
+          "expected": "1.047005559314515"
+        },
+        {
+          "row": 20,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 23,
+          "column": 9,
+          "actual": "1.2358813775861324",
+          "expected": "1.2358813775861328"
+        },
+        {
+          "row": 25,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 25,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 34,
+          "column": 9,
+          "actual": "1.0808767951625096",
+          "expected": "1.0808767951625093"
+        },
+        {
+          "row": 39,
+          "column": 9,
+          "actual": "1.34165043988846",
+          "expected": "1.3416504398884601"
+        },
+        {
+          "row": 40,
+          "column": 4,
+          "actual": "1.0416902073200347",
+          "expected": "1.041690207320035"
+        },
+        {
+          "row": 47,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 56,
+          "column": 4,
+          "actual": "1.0422813802180275",
+          "expected": "1.0422813802180273"
+        },
+        {
+          "row": 59,
+          "column": 9,
+          "actual": "1.0317910685481697",
+          "expected": "1.03179106854817"
+        },
+        {
+          "row": 60,
+          "column": 4,
+          "actual": "1.1336790046919887",
+          "expected": "1.1336790046919885"
+        },
+        {
+          "row": 62,
+          "column": 9,
+          "actual": "1.0597185274084642",
+          "expected": "1.0597185274084644"
+        },
+        {
+          "row": 70,
+          "column": 9,
+          "actual": "1.181579184871904",
+          "expected": "1.1815791848719037"
+        },
+        {
+          "row": 71,
+          "column": 9,
+          "actual": "1.274369863616506",
+          "expected": "1.2743698636165062"
+        },
+        {
+          "row": 73,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 74,
+          "column": 9,
+          "actual": "1.0939707146753301",
+          "expected": "1.09397071467533"
+        },
+        {
+          "row": 75,
+          "column": 9,
+          "actual": "1.1399543855818015",
+          "expected": "1.1399543855818017"
+        },
+        {
+          "row": 78,
+          "column": 9,
+          "actual": "1.311696301457662",
+          "expected": "1.3116963014576621"
+        },
+        {
+          "row": 79,
+          "column": 4,
+          "actual": "1.025811293001377",
+          "expected": "1.0258112930013772"
+        },
+        {
+          "row": 80,
+          "column": 4,
+          "actual": "1.111227178221055",
+          "expected": "1.1112271782210548"
+        },
+        {
+          "row": 86,
+          "column": 9,
+          "actual": "1.004063499519034",
+          "expected": "1.0040634995190338"
+        },
+        {
+          "row": 94,
+          "column": 9,
+          "actual": "1.4152684465941177",
+          "expected": "1.4152684465941172"
+        },
+        {
+          "row": 101,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 102,
+          "column": 9,
+          "actual": "1.0688677983776655",
+          "expected": "1.0688677983776653"
+        },
+        {
+          "row": 104,
+          "column": 9,
+          "actual": "1.0756580649722334",
+          "expected": "1.0756580649722338"
+        },
+        {
+          "row": 106,
+          "column": 9,
+          "actual": "1.0239841249245367",
+          "expected": "1.023984124924537"
+        },
+        {
+          "row": 112,
+          "column": 9,
+          "actual": "1.211339248092966",
+          "expected": "1.2113392480929654"
+        },
+        {
+          "row": 117,
+          "column": 9,
+          "actual": "1.0365149332658259",
+          "expected": "1.0365149332658257"
+        },
+        {
+          "row": 125,
+          "column": 9,
+          "actual": "1.0171588175042316",
+          "expected": "1.0171588175042319"
+        },
+        {
+          "row": 126,
+          "column": 9,
+          "actual": "1.0303724426257317",
+          "expected": "1.030372442625732"
+        },
+        {
+          "row": 138,
+          "column": 4,
+          "actual": "1.640380012394735",
+          "expected": "1.6403800123947352"
+        },
+        {
+          "row": 143,
+          "column": 9,
+          "actual": "1.287229424199907",
+          "expected": "1.2872294241999072"
+        },
+        {
+          "row": 146,
+          "column": 4,
+          "actual": "1.1137413572906036",
+          "expected": "1.1137413572906039"
+        },
+        {
+          "row": 161,
+          "column": 9,
+          "actual": "1.4816550575659289",
+          "expected": "1.4816550575659286"
+        },
+        {
+          "row": 168,
+          "column": 4,
+          "actual": "1.2168578242981778",
+          "expected": "1.216857824298178"
+        },
+        {
+          "row": 175,
+          "column": 4,
+          "actual": "1.3427502512651468",
+          "expected": "1.3427502512651466"
+        },
+        {
+          "row": 184,
+          "column": 9,
+          "actual": "1.297831368103705",
+          "expected": "1.2978313681037048"
+        },
+        {
+          "row": 185,
+          "column": 9,
+          "actual": "1.447036456507824",
+          "expected": "1.4470364565078238"
+        },
+        {
+          "row": 187,
+          "column": 9,
+          "actual": "1.3533252726200042",
+          "expected": "1.353325272620004"
+        },
+        {
+          "row": 191,
+          "column": 4,
+          "actual": "1.0959714573775443",
+          "expected": "1.095971457377544"
+        },
+        {
+          "row": 191,
+          "column": 9,
+          "actual": "1.0081148286008834",
+          "expected": "1.0081148286008836"
+        },
+        {
+          "row": 193,
+          "column": 4,
+          "actual": "1.0056014147334145",
+          "expected": "1.0056014147334147"
+        },
+        {
+          "row": 198,
+          "column": 9,
+          "actual": "1.083420338860032",
+          "expected": "1.0834203388600319"
+        },
+        {
+          "row": 201,
+          "column": 9,
+          "actual": "1.2369797321835676",
+          "expected": "1.2369797321835678"
+        },
+        {
+          "row": 205,
+          "column": 4,
+          "actual": "1.1046408074063154",
+          "expected": "1.1046408074063157"
+        },
+        {
+          "row": 206,
+          "column": 9,
+          "actual": "1.091567520520827",
+          "expected": "1.0915675205208268"
+        },
+        {
+          "row": 211,
+          "column": 9,
+          "actual": "1.1168408058550758",
+          "expected": "1.116840805855076"
+        },
+        {
+          "row": 213,
+          "column": 4,
+          "actual": "1.461134600265013",
+          "expected": "1.4611346002650127"
+        },
+        {
+          "row": 214,
+          "column": 9,
+          "actual": "1.1607781125264067",
+          "expected": "1.1607781125264065"
+        },
+        {
+          "row": 215,
+          "column": 4,
+          "actual": "1.0742136400907767",
+          "expected": "1.074213640090777"
+        },
+        {
+          "row": 221,
+          "column": 9,
+          "actual": "1.5536125641938163",
+          "expected": "1.553612564193816"
+        },
+        {
+          "row": 223,
+          "column": 4,
+          "actual": "1.1682379397902216",
+          "expected": "1.1682379397902218"
+        },
+        {
+          "row": 225,
+          "column": 4,
+          "actual": "1.042383929052728",
+          "expected": "1.0423839290527277"
+        },
+        {
+          "row": 230,
+          "column": 4,
+          "actual": "1.2987590579253727",
+          "expected": "1.2987590579253725"
+        },
+        {
+          "row": 231,
+          "column": 4,
+          "actual": "1.0124777526338784",
+          "expected": "1.0124777526338786"
+        },
+        {
+          "row": 236,
+          "column": 9,
+          "actual": "1.2988191692443931",
+          "expected": "1.2988191692443933"
+        }
+      ]
+    },
+    {
+      "profile": "medium_merge",
+      "id": "q39b",
+      "actual_rows": 14,
+      "expected_rows": 14,
+      "differences": [
+        {
+          "row": 2,
+          "column": 9,
+          "actual": "1.0080922635507177",
+          "expected": "1.008092263550718"
+        },
+        {
+          "row": 3,
+          "column": 4,
+          "actual": "1.519154518414795",
+          "expected": "1.5191545184147954"
+        },
+        {
+          "row": 3,
+          "column": 9,
+          "actual": "1.234212278096043",
+          "expected": "1.2342122780960432"
+        },
+        {
+          "row": 4,
+          "column": 4,
+          "actual": "1.5295784035794022",
+          "expected": "1.5295784035794024"
+        },
+        {
+          "row": 7,
+          "column": 4,
+          "actual": "1.6956372368432266",
+          "expected": "1.6956372368432269"
+        },
+        {
+          "row": 8,
+          "column": 9,
+          "actual": "1.2362393182894102",
+          "expected": "1.2362393182894105"
+        },
+        {
+          "row": 11,
+          "column": 4,
+          "actual": "1.640380012394735",
+          "expected": "1.6403800123947352"
+        }
+      ]
+    }
+  ]
+}

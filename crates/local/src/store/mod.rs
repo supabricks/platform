@@ -25,7 +25,7 @@ pub(crate) mod ownership;
 mod project_apply;
 mod sessions;
 pub(crate) mod sync;
-pub use sessions::AnalyticalSession;
+pub use sessions::{AnalyticalResourceProfile, AnalyticalSession};
 mod work;
 pub use analytics::{Publication, Snapshot, SnapshotLease};
 pub use error::{Error, Result};

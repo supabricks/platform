@@ -1,0 +1,54 @@
+{
+  "id": "q78",
+  "sql_sha256": "a8f37182d57de41989a3cb86ed0361ed1f30d874a1824e96469fa51f15085874",
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "name": "ratio",
+        "type": "double",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "store_qty",
+        "type": "long",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "store_wholesale_cost",
+        "type": "decimal(17,2)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "store_sales_price",
+        "type": "decimal(17,2)",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "other_chan_qty",
+        "type": "long",
+        "nullable": false,
+        "metadata": {}
+      },
+      {
+        "name": "other_chan_wholesale_cost",
+        "type": "decimal(18,2)",
+        "nullable": false,
+        "metadata": {}
+      },
+      {
+        "name": "other_chan_sales_price",
+        "type": "decimal(18,2)",
+        "nullable": false,
+        "metadata": {}
+      }
+    ]
+  },
+  "status": "failed",
+  "error": "Failed to allocate additional 1675.7 KB for GroupedHashAggregateStream[7] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 2.6 MB already allocated for this reservation - 3.8 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)",
+  "elapsed_seconds": 0.24309631797950715
+}

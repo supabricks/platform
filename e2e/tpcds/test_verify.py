@@ -7,11 +7,25 @@ import tempfile
 import unittest
 
 from compare import disposition
-from verify import digest_rows, release_provenance
+from verify import digest_rows, release_provenance, open_qualified_session
 from inputs import sha
 
 
 class ResultChecks(unittest.TestCase):
+    def test_compact_qualification_remains_compatible_with_historical_api(self):
+        class LegacyCell:
+            def opened(self, *, epoch, ttl_ms):
+                return dict(epoch=epoch, ttl_ms=ttl_ms)
+        self.assertEqual(open_qualified_session(LegacyCell(), 'epoch', 'compact'),
+                         dict(epoch='epoch', ttl_ms=600000))
+        class CurrentCell:
+            def opened(self, **fields):
+                return fields
+        self.assertEqual(open_qualified_session(CurrentCell(), 'epoch', 'analytical'),
+                         dict(epoch='epoch', ttl_ms=600000, resource_profile='analytical'))
+        with self.assertRaises(ValueError):
+            open_qualified_session(CurrentCell(), 'epoch', 'unlimited')
+
     def test_upgrade_requires_original_receipt_native_only_payload_and_completed_journal(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);old=root/'old';new=root/'new';load=root/'load'
