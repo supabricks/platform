@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "name": "eq03-sf100",
+  "scale": 100,
+  "business_rows": 959037905,
+  "generation_receipt_sha256": "4c4b1e715c34492e3356a580f07baca59fe3d09e973b3ba0ca7e238b05109c9c",
+  "generation_profile_sha256": "e82473cc608f16071ba64ed61f46f8c22d64c412afea3b70f873b56c005eb72e",
+  "storage_profile": "large",
+  "load_bounds": {
+    "timeout_seconds": 345600,
+    "minimum_free_gib": 656,
+    "maximum_cell_gib": 512,
+    "minimum_remaining_free_gib": 64,
+    "storage_sample_seconds": 10,
+    "default_max_unpublished_rows": 65536
+  },
+  "storage_budget_gib": {
+    "cell": 512,
+    "exact_verification_hashes": 64,
+    "remaining_free": 64,
+    "evidence": 8,
+    "query_spill": 8
+  },
+  "runtime": {"cpus": "0-7", "memory_gib": 16, "swap_gib": 0},
+  "note": "Bounded stress attempt; sampled storage ceiling is not a filesystem quota or proof of full-workload fit. Spark reference requires separate admission on another filesystem. Worker and query bounds are unchanged."
+}

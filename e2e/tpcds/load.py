@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EQ02: bounded native SF1 COPY with continuous sync already active.
+"""Bounded native TPC-DS COPY with continuous sync already active.
 
 This is a pilot, not a throughput qualification. Each attempt owns a fresh cell;
 failed/ambiguous commits are retained and never automatically retried.
@@ -16,6 +16,7 @@ import sys
 import time
 
 from inputs import LOCK, inventory, sha
+from workload import workload, validate_generation, require_storage
 
 ROWS = 1024
 BYTES = 4 * 1024**2
@@ -54,6 +55,20 @@ def save(path, value):
     temporary.replace(path)
 
 
+def country_control(path, columns):
+    """Bind the Unicode control to this dataset, without assuming SF1 row keys."""
+    names = [c['name'] for c in columns]
+    key, country = names.index('c_customer_sk'), names.index('c_birth_country')
+    with path.open('rb') as stream:
+        for index, raw in enumerate(stream):
+            fields = raw.rstrip(b'\n').split(b'|')
+            if any(byte >= 128 for byte in fields[country]):
+                return int(fields[key]), fields[country].decode('latin1')
+            if index >= 1023:
+                break
+    raise ValueError('no non-ASCII country control in first 1024 customer rows')
+
+
 def run(args):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'native'))
     from installed_sync import InstalledContinuous
@@ -66,16 +81,21 @@ def run(args):
     cell = InstalledContinuous(args.release.resolve(), root)
     manifest = inventory(json.loads(LOCK.read_text()), args.inputs)
     generation = json.loads((args.dataset / 'generation.json').read_text())
+    selected = workload(args.workload)
+    bounds = selected['load_bounds']
     profile = json.loads(PROFILE.read_text())
     assert profile['rows_per_commit']==ROWS and profile['encoded_copy_bytes_per_commit']==BYTES
-    report = dict(status='RUNNING', stage='admission', scope='EQ02 SF1 engineering load pilot; no full-suite or release claim',
+    report = dict(status='RUNNING', stage='admission', scope=f'SF{selected["scale"]} engineering load pilot; no full-suite or release claim',
+                  scale=selected['scale'], workload_profile=selected,
+                  workload_profile_sha256=selected['profile_sha256'],
                   started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   input_lock_sha256=sha(LOCK), generation_receipt_sha256=sha(args.dataset / 'generation.json'),
                   load_profile=profile, load_profile_sha256=sha(PROFILE),
                   fixture_sha256=sha(Path(__file__)), release_identity=sha(args.release / 'release.json'),
                   bounds=dict(rows_per_commit=ROWS, encoded_bytes_per_commit=BYTES,
-                              timeout_seconds=args.timeout, minimum_free_gib=80,
-                              maximum_cell_gib=64, storage_sample_seconds=10,
+                              timeout_seconds=args.timeout, minimum_free_gib=bounds['minimum_free_gib'],
+                              maximum_cell_gib=bounds['maximum_cell_gib'], storage_sample_seconds=10,
+                              minimum_remaining_free_gib=bounds['minimum_remaining_free_gib'],
                               max_unpublished_rows=args.max_unpublished_rows),
                   load_order=[t['name'] for t in manifest['tables']],
                   committed_rows=0, committed_transactions=0, flow_control_wait_seconds=0,
@@ -112,17 +132,21 @@ def run(args):
                 except FileNotFoundError:
                     pass
             report['peak_sampled_cell_bytes'] = max(report.get('peak_sampled_cell_bytes', 0), total)
-            if total > 64 * 1024**3 or shutil.disk_usage(root).free < 16 * 1024**3:
-                raise RuntimeError('cell storage safety bound reached')
+            report['latest_free_bytes'] = shutil.disk_usage(root).free
+            require_storage(selected, report['latest_free_bytes'], total)
         checkpoint()
         if policy['continuous_status']['state'] in ('blocked', 'failed') or capture['state'] in ('resync_required', 'failed'):
             raise RuntimeError('continuous sync blocked; see retained policy/capture observation')
     try:
-        assert generation['status'] == 'PASS' and generation['input_lock_sha256'] == sha(LOCK)
-        assert generation['business_rows'] == 19557335
-        assert shutil.disk_usage(root).free >= 80 * 1024**3, '80 GiB free admission required'
-        expected = {t['file']: t for t in generation['tables']}
-        assert set(expected) == {t['name']+'.dat' for t in manifest['tables']}
+        expected = validate_generation(selected, generation, report['generation_receipt_sha256'],
+                                       sha(LOCK), manifest['tables'])
+        report['storage_admission'] = dict(free_bytes=shutil.disk_usage(root).free,
+                                          required_free_bytes=bounds['minimum_free_gib'] * 1024**3,
+                                          filesystem_device=root.stat().st_dev,
+                                          budget_gib=selected.get('storage_budget_gib'),
+                                          note='Sampled bounds; full retained workload fit is unproven')
+        checkpoint()
+        require_storage(selected, report['storage_admission']['free_bytes'], admission=True)
         for name, data in expected.items():
             path = args.dataset / 'data' / name
             assert path.stat().st_size == data['bytes'] and sha(path) == data['sha256'], name
@@ -131,9 +155,13 @@ def run(args):
         report['stage'] = 'bootstrap'; checkpoint()
         cell.setup_source(str(cell.release/'python/analytics/python'), cell.release/'python/analytics/export.py',
                           ';'.join(t['ddl'] for t in manifest['tables']))
-        policy = cell.cli('sync', 'create', '--branch', 'main', '--mode', 'continuous', '--key', 'sf1')
+        storage_args = [] if selected['storage_profile'] == 'compact' else ['--storage-profile', selected['storage_profile']]
+        policy = cell.cli('sync', 'create', '--branch', 'main', '--mode', 'continuous',
+                          '--key', args.workload, *storage_args)
         cell.policy_id = policy['id']; cap = dict(id=policy['capture_id'])
+        assert policy['config'].get('storage_profile', 'compact') == selected['storage_profile']
         cell.healthy(); report['initial_capture'] = cell.status(cap)
+        assert cell.current()['descriptor']['manifest'].get('storage_profile', 'compact') == selected['storage_profile']
         report['empty_epoch'] = cell.current()['epoch_id']
         cell.check('all_24_native_tables_enrolled_and_continuous_sync_healthy_before_first_copy')
         report['stage'] = 'load'; report['load_started_seconds'] = time.monotonic()-started
@@ -177,7 +205,9 @@ def run(args):
                 entry['elapsed_seconds'] = time.monotonic()-table_start
                 assert entry['rows'] == expected[name+'.dat']['rows'], name
                 if name=='customer':
-                    assert db.execute('SELECT c_birth_country FROM customer WHERE c_customer_sk=28').fetchone()[0]=="CÔTE D'IVOIRE"
+                    key, country = country_control(args.dataset/'data/customer.dat', table['columns'])
+                    assert db.execute('SELECT c_birth_country FROM customer WHERE c_customer_sk=%s', (key,)).fetchone()[0] == country
+                    report['unicode_control'] = dict(customer_key=key, birth_country=country)
                     cell.check('latin1_generator_country_preserved_as_postgresql_unicode')
                 print('LOADED', name, entry['rows'], flush=True); checkpoint()
             # Last changed transaction's marker is before COMMIT; a covering
@@ -195,7 +225,7 @@ def run(args):
         report['publication'] = cell.current()
         assert report['committed_rows'] == generation['business_rows']
         assert all(report['source_rows'][t['name']] == expected[t['name']+'.dat']['rows'] for t in manifest['tables'])
-        cell.check('all_sf1_rows_committed_and_published_boundary_reached')
+        cell.check(f'all_{args.workload}_rows_committed_and_published_boundary_reached')
         report.update(status='PASS', stage='loaded_requires_exact_verification_and_queries')
     except BaseException as error:
         report['status'] = 'FAIL'
@@ -217,10 +247,17 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('release', 'inputs', 'dataset', 'output'):
         p.add_argument('--'+name, type=Path, required=True)
-    p.add_argument('--timeout', type=int, default=7200)
-    p.add_argument('--max-unpublished-rows',type=int,default=0,
+    p.add_argument('--workload', choices=('sf1', 'sf100'), default='sf1')
+    p.add_argument('--timeout', type=int)
+    p.add_argument('--max-unpublished-rows',type=int,
                    help='0: unrestricted pilot; otherwise pause COPY outside transactions at this row window')
     args=p.parse_args()
+    bounds = workload(args.workload)['load_bounds']
+    if args.timeout is None: args.timeout = bounds['timeout_seconds']
+    if not 0 < args.timeout <= bounds['timeout_seconds']:
+        p.error('timeout must be positive and within workload deadline')
+    if args.max_unpublished_rows is None:
+        args.max_unpublished_rows = bounds['default_max_unpublished_rows']
     if args.max_unpublished_rows and not ROWS<=args.max_unpublished_rows<=131072:
         p.error('row window must be 0 or between 1,024 and 131,072')
     run(args)
