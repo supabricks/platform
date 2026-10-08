@@ -224,8 +224,18 @@ impl Daemon {
         }
         let listener = UnixListener::bind(&socket)?;
         fs::set_permissions(&socket, fs::Permissions::from_mode(0o600))?;
-        let cell = if store.root().join("runtime.json").exists() {
-            Some(crate::engine::Cell::open(&mut store)?)
+        let engine_configured = store.root().join("runtime.json").exists();
+        if engine_configured {
+            // Fence old writers before inspecting publications. New children
+            // must not wait for authorization behind potentially slow recovery:
+            // their readiness probes run once the supervisor starts.
+            crate::engine::Cell::recover(&mut store)?;
+            store.recover_captures()?;
+        }
+        let sessions = crate::sessions::Sessions::recover(&mut store)?;
+        let publisher = crate::analytics::Publisher::recover(&mut store)?;
+        let cell = if engine_configured {
+            Some(crate::engine::Cell::open_recovered(&mut store)?)
         } else {
             None
         };
@@ -238,8 +248,6 @@ impl Daemon {
             .as_ref()
             .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
             .transpose()?;
-        let sessions = crate::sessions::Sessions::recover(&mut store)?;
-        let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
             catalog,
             catalog_publication,

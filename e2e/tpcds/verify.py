@@ -102,13 +102,41 @@ def query_worker(config):
     # Parent closes the product-owned session, including failed/cancelled work.
 
 
+def release_provenance(loaded, release, load_root, load_release=None):
+    """Admit a stopped, explicit native-only upgrade without rewriting receipts."""
+    identity=sha(release/'release.json')
+    original=loaded['release_identity']
+    if load_release is None:
+        assert original==identity,'load release changed without explicit upgrade provenance'
+        return dict(release_identity=identity)
+    assert sha(load_release/'release.json')==original,'wrong original load release'
+    before=json.loads((load_release/'release.json').read_text())
+    after=json.loads((release/'release.json').read_text())
+    assert before['version']!=after['version'],'upgrade must have a distinct version'
+    before.pop('version');after.pop('version')
+    old_binary=before['files'].pop('bin/supabricks')
+    new_binary=after['files'].pop('bin/supabricks')
+    assert old_binary!=new_binary and before==after,'only the native binary may change'
+    journal=load_root/'state/last-upgrade.json'
+    upgrade=json.loads(journal.read_text())
+    assert upgrade['from']['identity']==original and upgrade['to']['identity']==identity
+    assert upgrade['backup_id'] and upgrade['backup'],'explicit stopped backup required'
+    runtime=json.loads((load_root/'state/runtime.json').read_text())
+    assert runtime['installation_identity']==identity,'upgrade not applied to this cell'
+    assert not (load_root/'state/upgrade.json').exists(),'incomplete upgrade'
+    return dict(release_identity=identity,load_release_identity=original,
+                upgrade_receipt_sha256=sha(journal),upgrade_backup_id=upgrade['backup_id'],
+                changed_payload_files=['bin/supabricks'])
+
+
 def run(args):
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'native'))
     from installed_sync import InstalledContinuous
     from cell import wait
     loaded=json.loads((args.load/'result.json').read_text())
     assert loaded['status']=='PASS' and loaded['committed_rows']==19557335
-    assert loaded['stopped'] and loaded['release_identity']==sha(args.release/'release.json')
+    assert loaded['stopped']
+    provenance=release_provenance(loaded,args.release,args.load,args.load_release)
     assert loaded['input_lock_sha256']==sha(LOCK)
     manifest=inventory(json.loads(LOCK.read_text()),args.inputs)
     args.output.mkdir(parents=True,exist_ok=False)
@@ -117,7 +145,7 @@ def run(args):
     cell.python=str(cell.release/'python/analytics/python');cell.policy_id=loaded['final_policy']['id']
     report=dict(status='RUNNING',scope='EQ02 engineering installed product; no exact release claim',
                 fixture_sha256=sha(Path(__file__)),load_receipt_sha256=sha(args.load/'result.json'),
-                input_lock_sha256=sha(LOCK),release_identity=loaded['release_identity'],
+                input_lock_sha256=sha(LOCK),**provenance,
                 generation_receipt_sha256=loaded['generation_receipt_sha256'],
                 load_profile_sha256=loaded['load_profile_sha256'],
                 epoch_id=loaded['publication']['epoch_id'],tables=[],
@@ -187,6 +215,8 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker',choices=['table','query'])
     for name in ('release','inputs','load','output'):parser.add_argument('--'+name,type=Path)
+    parser.add_argument('--load-release',type=Path,
+                        help='Original release, only after an explicit stopped native-only upgrade')
     args=parser.parse_args()
     if args.worker:
         {'table':table_worker,'query':query_worker}[args.worker](json.load(sys.stdin))
