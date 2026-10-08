@@ -313,3 +313,21 @@ fixture: exact SQL/types/ordered membership/means, with a two-ULP independent
 the raw strict result. See [the numerical review report](../../docs/architecture/eq02-variance.md)
 for provenance, limitations and reproduction. This is not a general float tolerance
 or authorization to qualify another dataset automatically.
+# SF100 generation and qualification
+
+SF100 uses an explicit opt-in generation profile while preserving the historical
+SF1 input lock:
+
+```sh
+python3 e2e/tpcds/generate.py --profile sf100 \
+  --kit build/eq00-20261006/tpcds-kit \
+  --inputs build/eq00-20261006/inputs \
+  --output /data2/supabricks-eq/sf100/gen-01
+```
+
+Use a fresh output directory. The profile caps raw input at 128 GiB, requires
+192 GiB free at admission, and preserves 64 GiB free while generating. Follow
+`progress.json`, then inspect the complete `generation.json` inventory.
+This only generates input. See [the SF100 qualification plan](../../docs/architecture/eq03-sf100.md)
+for the storage blocker, load/reference harness work and required exact evidence.
+

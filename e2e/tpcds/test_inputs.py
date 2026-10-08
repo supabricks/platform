@@ -1,8 +1,11 @@
 from pathlib import Path
+import hashlib
+import json
 import tempfile
+import time
 import unittest
-from inputs import schema, statements, verify
-from generate import scan
+from inputs import LOCK, schema, statements, verify
+from generate import generation_profile, scan
 
 
 class InputTests(unittest.TestCase):
@@ -39,9 +42,25 @@ class InputTests(unittest.TestCase):
             result = scan(path, columns)
             self.assertEqual(result['rows'], 2)
             self.assertEqual(result['empty_fields_by_column'], [0, 1])
+            self.assertEqual(result['sha256'], hashlib.sha256(path.read_bytes()).hexdigest())
+            with self.assertRaises(TimeoutError):
+                scan(path, columns, time.monotonic() - 1)
             for invalid in [b'', b'1|value|', b'1|value|extra|\n', b'|value|\n']:
                 path.write_bytes(invalid)
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError): scan(path, columns)
+
+    def test_large_generation_is_explicit_and_preserves_original_pin(self):
+        lock = json.loads(LOCK.read_text())
+        scale, bounds, profile = generation_profile('sf1', lock)
+        self.assertEqual(scale, 1)
+        self.assertEqual(bounds, lock['pilot'])
+        self.assertIsNone(profile)
+        scale, bounds, profile = generation_profile('sf100', lock)
+        self.assertEqual(scale, 100)
+        self.assertGreaterEqual(bounds['minimum_free_gib'], bounds['maximum_generated_gib'] + bounds['minimum_remaining_free_gib'])
+        self.assertEqual(len(profile['sha256']), 64)
+        self.assertEqual(lock['generator']['scale'], 1)
+        with self.assertRaises(ValueError): generation_profile('unbounded', lock)
 
 
 if __name__ == '__main__': unittest.main()
