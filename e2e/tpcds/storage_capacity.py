@@ -6,6 +6,7 @@ worker capacity; it is not PostgreSQL throughput or SF100 qualification.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import resource
 import struct
@@ -28,6 +29,9 @@ def payload_packet(rows):
 
 
 def run(release,root,phase,expected):
+    # Production run() sets this before Delta creates nested paths. This fixture
+    # calls the owned phases directly to inject a journal and a commit fault.
+    os.umask(0o077)
     sys.path.insert(0,str(release/'python/analytics'))
     import pyarrow as pa
     import incremental_worker as w
@@ -42,6 +46,7 @@ def run(release,root,phase,expected):
     schema=pa.schema([pa.field('id',pa.int32(),False),pa.field('payload',pa.string())])
     def payload(i):return f'{i:08d}'+'x'*(WIDTH-8) if i<ROWS else f'new {i}'
     report=dict(status='FAIL',phase=phase,release_identity=hashlib.sha256((release/'release.json').read_bytes()).hexdigest(),
+        fixture_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         scope=__doc__,rows=ROWS,width=WIDTH,inserts=INSERTS)
     started=time.monotonic()
     try:
@@ -63,6 +68,7 @@ def run(release,root,phase,expected):
             report['source_bytes']=size
         else:
             previous=json.loads(saved.read_bytes())
+            report['source_descriptor_sha256']=hashlib.sha256(saved.read_bytes()).hexdigest()
             config=dict(id='capacity-apply',identity=dict(installation_id='fixture',generation='capture',decoder_version=1),
                 storage_profile='large',generation=str(target),previous_generation=str(source),previous=previous,
                 storage_generation='candidate',bootstrap_id='bootstrap',bootstrap_lsn='0/64',workspace=str(work),
@@ -116,6 +122,9 @@ def run(release,root,phase,expected):
                     report['retained_bytes']=manifest['retained_bytes']
                 assert w.DeltaTable(str(target/'tables/42')).version()==1
         report['status']='PASS'
+    except BaseException as error:
+        report['error']=str(error)
+        raise
     finally:
         report['elapsed_seconds']=time.monotonic()-started
         report['highwater_bytes']=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)
