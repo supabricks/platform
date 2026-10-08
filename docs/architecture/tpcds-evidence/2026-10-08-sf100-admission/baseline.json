@@ -1,0 +1,40 @@
+{
+  "scope": "Reproduce installed incremental byte admission with sparse files, without a load.\n\nThis probes quota accounting only. Sparse files are not Delta data and do not\nqualify physical capacity, throughput, publication or query correctness.\n",
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "generation_below_1_gib",
+      "logical_bytes": 1073741823,
+      "allocated_bytes": 0,
+      "expected_error": null,
+      "observed_error": null,
+      "elapsed_seconds": 0.00010089302668347955
+    },
+    {
+      "name": "generation_above_1_gib",
+      "logical_bytes": 1073741825,
+      "allocated_bytes": 0,
+      "expected_error": "incremental_disk_budget",
+      "observed_error": "incremental_disk_budget",
+      "elapsed_seconds": 4.3670006562024355e-05
+    },
+    {
+      "name": "planning_above_1_gib",
+      "logical_bytes": 1073741825,
+      "allocated_bytes": 0,
+      "expected_error": "incremental_disk_budget",
+      "observed_error": "incremental_disk_budget",
+      "elapsed_seconds": 4.04230086132884e-05
+    },
+    {
+      "name": "retained_above_4_gib",
+      "logical_bytes": 4294967297,
+      "allocated_bytes": 0,
+      "expected_error": "incremental_retention_budget",
+      "observed_error": "incremental_retention_budget",
+      "elapsed_seconds": 4.5361986849457026e-05
+    }
+  ],
+  "worker_sha256": "35c24816debb28fc6a282904d2f9425ff8e7ef4eed8e60c995a38c758f9b2dea",
+  "release_manifest_sha256": "cbffbb7c4fec7517f56c822fa0e829df76dbbd0dec1e9744f2b3cd0e9d8b2166"
+}
