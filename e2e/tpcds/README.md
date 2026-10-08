@@ -4,6 +4,67 @@ See the [EQ plan](../../docs/plans/tpcds-end-to-end-qualification.md) and
 [EQ00 results](../../docs/architecture/tpcds-eq00.md). These tools do not claim
 end-to-end qualification or an official benchmark score.
 
+## EQ02 native SF1 workflow
+
+See [the live assessment and failed attempts](../../docs/architecture/eq02-sf1.md).
+`load.py` verifies the existing generated files, starts a fresh installed cell,
+enrolls all original tables with continuous sync, then performs bounded COPY.
+It requires 80 GiB free on its state filesystem; the cell's 64 GiB ceiling is
+sampled, and the original input/installed release must be budgeted separately.
+Run under the existing descendant supervisor in an isolated 8-CPU/16-GiB
+container with swap/network disabled and read-only input/release mounts:
+
+```sh
+python3 install/native/catalog_gate.py --timeout 7500 --report /reports/load.cleanup.json -- \
+  python3 e2e/tpcds/load.py --release /release --inputs /inputs \
+    --dataset /sf1-generation --output /reports/load --max-unpublished-rows 65536
+```
+
+The dataset directory includes `generation.json` and `data/`. Omitting the row
+window reproduces unrestricted ingestion; retained attempts show it exceeding the
+current WAL envelope. The window is specific to this one-loader, insert-only
+fixture. It waits outside transactions and reports all waiting time. The
+`load-profile.json` contract explicitly decodes the pinned generator's Latin-1
+country names; bytes/checksums stay unchanged. Each attempt needs a fresh output
+directory. No failed or ambiguous batch is automatically retried; inspect its
+attempt/ack ledger and private state instead. A load PASS is only a committed and
+drained boundary, not full table or query correctness.
+
+After a successful stopped load, retain the same writable state mount/path and
+installation for `verify.py`. It restarts that private cell, checks every source
+row against the pinned Delta versions, then executes all 103 original queries
+through managed product sessions. Credentials travel only over the child worker's
+stdin. The product's normal session resource limits stay in force.
+
+```sh
+python3 install/native/catalog_gate.py --timeout 18000 --report /reports/verify.cleanup.json -- \
+  python3 e2e/tpcds/verify.py --release /release --inputs /inputs \
+    --load /reports/load --output /reports/product
+```
+
+Run `reference.py` **separately** with the hash-pinned Spark 4.2.0 environment from
+`reference-requirements.txt`, the captured bundled Java 17 runtime and its own 8-CPU/16-GiB resource boundary.
+It uses an 8 GiB JVM driver, native logical types including CHAR table semantics,
+the identical input files and encoding profile, and all statements without test
+exclusions. Reference rows, schemas and query plans remain in its fresh output.
+
+```sh
+python e2e/tpcds/reference.py --inputs /inputs --dataset /sf1-generation --output /reports/reference
+python3 e2e/tpcds/compare.py --product /reports/product --reference /reports/reference --output /reports/comparison.json
+```
+
+Full results have a declared 16 MiB evidence ceiling and queries a 120-second
+execution ceiling. Exceeding either is an explicit non-passing result, never a
+passing truncated preview. Comparisons use exact positional SQL types/values.
+Ordering differences and LIMIT boundary ties require explicit review; floating
+point differences are not silently rounded. The reference is Apache Spark JVM;
+the installed product engine is Sail through Spark Connect. Their measurements
+must stay separately labeled. Both full suites have now run. The
+[SF1 results](../../docs/architecture/eq02-sf1-results.md) pass the full load and
+exact table comparison; 69/103 product statements are correct after explicit
+ordering review, with 34 tracked failures/mismatches. Full analytical
+qualification is still incomplete.
+
 ## Pin and inspect inputs
 
 Python 3.11+ is required. From the repository root:
@@ -139,7 +200,7 @@ python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.j
 
 Each result is compared with committed Apache Spark JVM goldens before a check
 passes. To reproduce those goldens, use a separate Python 3.12 environment with
-`uv pip install --require-hashes -r e2e/tpcds/reference-requirements.txt`, Java 21,
+`uv pip install --require-hashes -r e2e/tpcds/reference-requirements.txt`, the captured bundled Java 17 runtime,
 and `type_reference.py --report FRESH_PATH`. The fixture creates typed Parquet
 reference tables; it does not use Sail or reuse product query results as expected
 values. Retain failed attempts and compare all rows/types, not generated column
@@ -154,3 +215,62 @@ arms over three repetitions; each cell has 8 CPUs, 16 GiB, no swap/network, two
 or automatic replacements of failures. Raw commands, results, cleanup and timing
 samples are retained. Treat the summary as descriptive compatibility evidence,
 not a sustained throughput benchmark or an SP qualification.
+
+## Bounded post-compaction merge regression (#184)
+
+The mandatory installed `merge` suite uses 1,888,080 mixed-width rows in one
+compacted file and a separate 131,072-row small-file layout. Both receive 16,384
+inserts and sparse updates/deletes/key movement. The old runtime hangs on the
+compacted fixture; a single-partition-only correction exhausts the bounded hash
+build pool on the small-file fixture. The complete patch must pass both.
+It verifies every field and key exactly at all three versions, including replay
+of a saved plan after a commit-before-receipt fault. Each generation/apply/read
+phase runs in a separate installed Python process with a 90-second external
+timeout; reported apply RSS excludes fixture generation and equality checking.
+This fixture is synthetic storage regression coverage, not a PostgreSQL/Sail
+throughput result or a replacement for the full SF1 run.
+
+```sh
+python3 install/native/catalog_gate.py --timeout 600 --report /reports/cleanup.json -- \
+  python3 e2e/native/installed_sync.py --release /release --suite merge --report /reports/result.json
+```
+
+`package.py --delta-artifact DIRECTORY` accepts only a verified artifact from
+`components/build-deltalake.py`, replacing the native wheel and recording its
+source, patch, lock and dependency notice inventory in an unsigned engineering
+overlay. Production qualification still requires both unchanged native archives.
+
+The Linux external apply-memory observer is maintained in `apply_memory.py`.
+Invoke it as `python3 e2e/tpcds/apply_memory.py OUTPUT SUPERVISOR_COMMAND...`
+with an existing private output directory and the usual descendant supervisor.
+It requires psutil from the native qualification environment. Negative process
+roles are rechecked after fork/exec; confirmed workers are tracked by PID and
+birth time. Sampling can still miss short-lived workers or their final peaks.
+The earlier build-local observer could cache a pre-exec negative role for an
+entire worker lifetime (#191); retain that limitation on its historical samples.
+
+## Installed compaction capacity regression
+
+The `capacity` suite exercises a >512 MiB wide-text live table, compaction plus
+new-key append under the original 1 GiB generation / 768 MiB worker limits,
+commit-before-receipt recovery, exact old/new values, and a 512-version append
+history. The installed source-built Delta wheel supplies bounded write settings;
+the upstream PyPI wheel does not implement that API. This synthetic suite is a
+required archive gate, not a PostgreSQL throughput measurement.
+
+## Completed SF1 baseline and retained-state verification
+
+[The full SF1 results](../../docs/architecture/eq02-sf1-results.md) retain the
+successful 19,557,335-row load, exact 24-table comparison, and all 103 query
+attempts. Sixty-nine statements are correct after explicit order review; 34 have
+tracked failures/mismatches. Larger-scale qualification remains open.
+
+`verify.py` defaults to the original load release. After a supported stopped
+**native-only** installation upgrade, pass `--load-release ORIGINAL_RELEASE`
+alongside `--release CANDIDATE_RELEASE`. The verifier requires the original
+receipt identity, identical manifest content except version/native binary, a
+completed upgrade receipt with backup, and matching runtime identity. It records
+both releases; it never rewrites the load result. A copied worktree must be
+explicitly attached to its existing deployment through `project attach` before
+its project API calls can succeed. Retained query-only experiments do not need
+another SF1 load.

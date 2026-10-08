@@ -1,0 +1,45 @@
+{
+  "status": "INCOMPLETE",
+  "scope": "SF1 engineering end-to-end qualification; SP remains frozen",
+  "native_fix": "a721740740282f48253b5839d21019fa003e3230",
+  "issues": [
+    196,
+    197,
+    198,
+    199,
+    200
+  ],
+  "exact_tables": 24,
+  "exact_rows": 19557335,
+  "statements_attempted": 103,
+  "statements_executed": 90,
+  "raw_counts": {
+    "correct": 65,
+    "type_mismatch": 12,
+    "result_mismatch_review_required": 9,
+    "failed": 13,
+    "order_review_required": 4
+  },
+  "reviewed_counts": {
+    "correct": 69,
+    "type_mismatch": 12,
+    "decimal_value_mismatch": 9,
+    "execution_failed": 13
+  },
+  "cleanup": {
+    "exit_code": 0,
+    "timed_out": false,
+    "inspection_failed": false,
+    "descendants_observed": 288,
+    "leaked_descendants": 0,
+    "remaining_descendants": 0
+  },
+  "limitations": [
+    "Unsigned engineering runtime, not exact signed archive qualification.",
+    "Supported native-only upgrade and explicit copied-worktree attach are recorded; original load receipt unchanged.",
+    "No elapsed restart performance claim: health wait includes explicit relocation attach.",
+    "Decimal mismatches remain failures; no tolerance or coercion.",
+    "Order reviews apply only to four named SQL statements with exact typed multisets and verified ordering keys.",
+    "CI at prior commit passes 33 jobs but macOS notebook recovery fails (#136); candidate CI remains separate."
+  ]
+}

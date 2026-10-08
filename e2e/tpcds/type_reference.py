@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate independently executed Apache Spark DATE/CHAR golden query results.
 
-Requires pyspark==4.2.0 and Java 21. This uses JVM Spark, never Sail. Regenerate
+Requires pyspark==4.2.0 and the captured bundled Java 17 runtime. This uses JVM Spark, never Sail. Regenerate
 only with reviewed type_cases.py, then compare the installed native results.
 """
 import argparse

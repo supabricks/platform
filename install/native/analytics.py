@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Assemble a relocatable analytical environment entirely on the build machine."""
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import ssl
 import subprocess
 import tarfile
 import tempfile
+import time
 import tomllib
+import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,11 +25,49 @@ def digest(path):
 
 
 def fetch(url, sha256, path):
-    if not path.exists():
-        with urllib.request.urlopen(url, timeout=120) as response, path.open('wb') as out:
-            shutil.copyfileobj(response, out)
-    if digest(path) != sha256:
-        raise ValueError('analytical build input checksum mismatch: ' + path.name)
+    if path.exists():
+        if digest(path) != sha256:
+            raise ValueError('analytical build input checksum mismatch: ' + path.name)
+        return
+    for attempt in range(3):
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name+'.',
+                                             suffix='.part', delete=False) as out:
+                temporary = Path(out.name)
+                with urllib.request.urlopen(url, timeout=120) as response:
+                    shutil.copyfileobj(response, out)
+            if digest(temporary) != sha256:
+                raise ValueError('analytical build input checksum mismatch: ' + path.name)
+            temporary.replace(path)
+            return
+        except urllib.error.HTTPError as error:
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except urllib.error.URLError as error:
+            if isinstance(error.reason, ssl.SSLCertVerificationError) or attempt == 2:
+                raise
+        except (TimeoutError, ConnectionError, http.client.IncompleteRead):
+            if attempt == 2:
+                raise
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+        time.sleep(attempt + 1)
+
+
+def worker_launcher(target):
+    # jemalloc otherwise inherits the Linux host's transparent-huge-page policy.
+    # Repeated small Delta commits can fault whole 2 MiB pages for sparse arenas,
+    # exhausting the worker RSS budget while live allocations remain small.
+    allocator = 'export _RJEM_MALLOC_CONF=thp:never\n' if target == 'linux-x86_64' else ''
+    return '''#!/bin/bash
+set -euo pipefail
+directory=$(cd -P "$(dirname "$0")" && pwd)
+unset PYTHONHOME PYTHONPATH PYTHONUSERBASE PYTHONSTARTUP PYTHONINSPECT
+export PYTHONDONTWRITEBYTECODE=1
+''' + allocator + '''exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
+'''
 
 
 def macho_dependencies(load_commands):
@@ -126,15 +168,17 @@ def assemble_analytics(destination, target):
         subprocess.run([str(python), '-I', '-B', *map(str, args)], env=env, check=True)
 
     requirements = (ROOT / 'python/analytics/requirements.lock').read_text()
-    # Sail must come from the reviewed native source build. Other registry
+    # Sail and Delta must come from reviewed native source builds. Other registry
     # wheels retain the existing exact lock; Spark Connect uses its locked sdist.
     from sail import install_inputs
     sail_wheel, sail_report = install_inputs(destination, target)
+    from delta_runtime import install_inputs as delta_inputs
+    delta_wheel, delta_report = delta_inputs(destination, target)
     blocks = re.split(r'(?=^[a-zA-Z0-9][a-zA-Z0-9_.-]*==)', requirements, flags=re.M)
     wheels = cache / 'wheels'
     wheels.mkdir(exist_ok=True)
     binary_requirements = cache / 'binary-requirements.txt'
-    binary_requirements.write_text(''.join(b for b in blocks if not b.startswith(('pyspark-client==', 'pysail=='))))
+    binary_requirements.write_text(''.join(b for b in blocks if not b.startswith(('pyspark-client==', 'pysail==', 'deltalake=='))))
     run('-m', 'pip', 'download', '--require-hashes', '--no-deps', '--only-binary=:all:',
         '--dest', wheels, '-r', binary_requirements)
     run('-m', 'pip', 'install', '--no-index', '--no-deps', '--no-compile', '--find-links', wheels,
@@ -145,7 +189,7 @@ def assemble_analytics(destination, target):
     fetch(sdist['url'], sdist['hash'].removeprefix('sha256:'), source)
     run('-m', 'pip', 'wheel', '--no-index', '--no-deps', '--no-build-isolation', '--wheel-dir', wheels, source)
     expected = {p['name'].replace('_', '-'): p['version'] for p in lock['package'] if 'registry' in p['source']}
-    selected = sorted(p for p in wheels.glob('*.whl') if not p.name.startswith('pysail-')) + [sail_wheel]
+    selected = sorted(p for p in wheels.glob('*.whl') if not p.name.startswith(('pysail-', 'deltalake-'))) + [sail_wheel, delta_wheel]
     # A reused cache may contain old packages: never install anything beyond the
     # exact lock. pip's metadata check below additionally rejects duplicates.
     selected = [p for p in selected if p.name.split('-')[0].replace('_', '-') in expected
@@ -175,13 +219,7 @@ def assemble_analytics(destination, target):
     (destination / 'components').mkdir(exist_ok=True)
     shutil.copy2(ROOT / 'components/components.lock.json', destination / 'components/components.lock.json')
     wrapper = worker / 'python'
-    wrapper.write_text('''#!/bin/bash
-set -euo pipefail
-directory=$(cd -P "$(dirname "$0")" && pwd)
-unset PYTHONHOME PYTHONPATH PYTHONUSERBASE PYTHONSTARTUP PYTHONINSPECT
-export PYTHONDONTWRITEBYTECODE=1
-exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
-''')
+    wrapper.write_text(worker_launcher(target))
     wrapper.chmod(0o755)
     probe = worker / 'check_environment.py'
     probe.write_text('from runtime_environment import environment\nimport json\nprint(json.dumps(environment()))\n')
@@ -194,7 +232,7 @@ exec "$directory/../runtime/bin/python3.12" -E -s -B "$@"
     sqlite = validate(python_identity(wrapper), 'python')
     report = dict(native_objects_checked=loaders, python=pin, target=target, sqlite=sqlite, uv_lock_sha256=digest(ROOT / 'python/analytics/uv.lock'),
                   wheels={p.name: digest(p) for p in selected}, spark_sdist=sdist,
-                  package_versions=expected, sail=sail_report)
+                  package_versions=expected, sail=sail_report, deltalake=delta_report)
     (destination / 'provenance/analytical-build.json').write_text(json.dumps(report, indent=2) + '\n')
     shutil.copy2(ROOT / 'components/analytical-runtime.lock.json', destination / 'provenance/analytical-runtime.lock.json')
     return report

@@ -20,7 +20,59 @@ permissions:
   actions: read
 
 jobs:
+  source-deltalake:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x86_64
+          - runner: macos-15
+            target: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read reviewed Delta source
+        id: delta
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          pin = json.load(open('components/deltalake-source.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('commit=' + pin['commit'] + '\n')
+              output.write('rust=' + pin['rust'] + '\n')
+          PYCODE
+      - uses: actions/checkout@v4
+        with:
+          repository: delta-io/delta-rs
+          ref: ${{ steps.delta.outputs.commit }}
+          path: build/deltalake-source
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.delta.outputs.rust }}
+          components: rustfmt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: build/deltalake-source -> target
+          shared-key: source-deltalake-${{ matrix.target }}
+          cache-on-failure: true
+      - name: Install pinned source builder
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/deltalake-build-requirements.txt
+      - name: Build native Delta from locked source
+        run: python components/build-deltalake.py --source build/deltalake-source --target ${{ matrix.target }} --output build/deltalake-artifacts/${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-deltalake-${{ matrix.target }}
+          path: build/deltalake-artifacts/${{ matrix.target }}
+          if-no-files-found: error
+
   native-cell:
+    needs: source-deltalake
     strategy:
       fail-fast: false
       matrix:
@@ -78,6 +130,21 @@ jobs:
           enable-cache: false
       - name: Install locked exporter environment
         run: uv sync --project python/analytics --locked --managed-python
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-deltalake-${{ matrix.target }}
+          path: build/deltalake-artifacts/${{ matrix.target }}
+      - name: Verify and install reviewed Delta runtime
+        run: |
+          python - <<'PYCODE'
+          import subprocess, sys
+          from pathlib import Path
+          sys.path.insert(0, 'install/native')
+          from delta_runtime import verify
+          wheel, _ = verify(Path('build/deltalake-artifacts/${{ matrix.target }}'), '${{ matrix.target }}')
+          subprocess.run(['uv', 'pip', 'install', '--python', 'python/analytics/.venv/bin/python',
+                          '--no-deps', '--reinstall', str(wheel)], check=True)
+          PYCODE
       - name: Frozen export correctness, isolation and interrupted cleanup
         run: python e2e/native/exports.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-exports.json
       - name: Atomic epochs, durable reader leases and retained recovery

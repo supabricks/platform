@@ -224,8 +224,18 @@ impl Daemon {
         }
         let listener = UnixListener::bind(&socket)?;
         fs::set_permissions(&socket, fs::Permissions::from_mode(0o600))?;
-        let cell = if store.root().join("runtime.json").exists() {
-            Some(crate::engine::Cell::open(&mut store)?)
+        let engine_configured = store.root().join("runtime.json").exists();
+        if engine_configured {
+            // Fence old writers before inspecting publications. New children
+            // must not wait for authorization behind potentially slow recovery:
+            // their readiness probes run once the supervisor starts.
+            crate::engine::Cell::recover(&mut store)?;
+            store.recover_captures()?;
+        }
+        let sessions = crate::sessions::Sessions::recover(&mut store)?;
+        let publisher = crate::analytics::Publisher::recover(&mut store)?;
+        let cell = if engine_configured {
+            Some(crate::engine::Cell::open_recovered(&mut store)?)
         } else {
             None
         };
@@ -238,8 +248,6 @@ impl Daemon {
             .as_ref()
             .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
             .transpose()?;
-        let sessions = crate::sessions::Sessions::recover(&mut store)?;
-        let publisher = crate::analytics::Publisher::recover(&mut store)?;
         Ok(Self {
             catalog,
             catalog_publication,
@@ -288,6 +296,7 @@ impl Daemon {
         let _profile_session = crate::sync_profile::init(self.store.root());
         self.listener.set_nonblocking(true)?;
         let mut next_tick = std::time::Instant::now();
+        let mut next_publication_tick = next_tick;
         let mut stopping = false;
         loop {
             self.finish_environment_gc();
@@ -327,7 +336,20 @@ impl Daemon {
                                         )
                                     }
                                     AuthorizedFollowup::Data(deployment, command) => {
-                                        self.store.data_job(ctx, token_hash, deployment, command)
+                                        let cell = self.cell.as_ref();
+                                        self.store.data_job(
+                                            ctx,
+                                            token_hash,
+                                            deployment,
+                                            command,
+                                            |store, branch| {
+                                                cell.map(|cell| {
+                                                    cell.connection_ready(store, branch)
+                                                })
+                                                .transpose()
+                                                .map(|ready| ready.unwrap_or(false))
+                                            },
+                                        )
                                     }
                                     AuthorizedFollowup::Catalog(command) => {
                                         let broker = crate::catalog::governance::Broker::managed(
@@ -576,17 +598,25 @@ impl Daemon {
                 {
                     return Ok(());
                 }
-                if !stopping {
-                    // Consume worker receipts accepted by cell.tick in this turn.
-                    // Publication still verifies the files and commits its own
-                    // durable state; an extra timer turn adds no ordering guarantee.
-                    self.publisher.last_error = self
-                        .publisher
-                        .tick(&mut self.store)
-                        .err()
-                        .map(|e| e.to_string());
-                }
+                // Consume receipts accepted by cell.tick in this turn too.
+                next_publication_tick = std::time::Instant::now();
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
+            }
+            if !stopping && std::time::Instant::now() >= next_publication_tick {
+                self.publisher.last_error = self
+                    .publisher
+                    .tick(&mut self.store)
+                    .err()
+                    .map(|e| e.to_string());
+                // Hashing remains bounded to 4 MiB per turn. Yield to IPC and
+                // other work between chunks without imposing the maintenance
+                // tick's 200 ms delay on every chunk of an active verification.
+                let delay = if self.publisher.verification_pending() {
+                    20
+                } else {
+                    200
+                };
+                next_publication_tick = std::time::Instant::now() + Duration::from_millis(delay);
             }
             let (mut stream, _) = match self.listener.accept() {
                 Ok(pair) => pair,

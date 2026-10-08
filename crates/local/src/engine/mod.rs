@@ -299,6 +299,11 @@ impl Cell {
         // able to race recovery by launching another generation of writers.
         Self::recover(store)?;
         store.recover_captures()?;
+        Self::open_recovered(store)
+    }
+
+    /// Start children only after the caller has completed synchronous recovery.
+    pub(crate) fn open_recovered(store: &mut Store) -> Result<Self> {
         let config = RuntimeConfig::load(store)?;
         let root = store.root().to_owned();
         for name in [
@@ -1151,7 +1156,8 @@ impl Cell {
         let records = store.native_processes()?;
         Ok(
             json!({"supervisor":"process-compose","object_store":"seaweedfs-sqlite","ready":self.storage_ready,"last_error":self.last_error,
-            "processes":records.iter().map(|p|json!({"role":p.role,"pid":p.pid,"generation":p.generation})).collect::<Vec<_>>() }),
+            "processes":records.iter().map(|p|json!({"role":p.role,"pid":p.pid,"generation":p.generation,
+                "configured":self.configured.contains(&(p.role.clone(),p.pid))})).collect::<Vec<_>>() }),
         )
     }
 }

@@ -942,3 +942,116 @@ fn daemon_recovery_cancels_waiting_notebook_admissions_but_preserves_cli_waiters
     );
     assert_eq!(store.active_analytical_sessions().unwrap().len(), 1);
 }
+
+// Exercise the real daemon loop with an inventory large enough to span many
+// verification turns. Files are protocol fixtures, not Parquet/SQL benchmarks.
+#[test]
+fn daemon_streams_large_publication_and_rejects_tail_corruption() {
+    use std::io::{Seek, SeekFrom};
+    use std::time::Instant;
+    use supabricks_local::{client, daemon::Request};
+    struct ChildGuard(std::process::Child);
+    impl Drop for ChildGuard {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+    for corrupt in [false, true] {
+        let root = root();
+        let state = root.path().join("state");
+        let mut store = Store::open(&state).unwrap();
+        let (project, branch) = parent(&mut store);
+        let id = complete_export(&mut store, project, branch, 1);
+        let stage = state.join(format!("analytics/staging/{id}"));
+        let manifest_path = stage.join("manifest.json");
+        let mut manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+        let path = stage.join("101/data.parquet");
+        let mut file = fs::File::create(&path).unwrap();
+        let chunk = vec![b'x'; 1024 * 1024];
+        let mut digest = Sha256::new();
+        for _ in 0..128 {
+            file.write_all(&chunk).unwrap();
+            digest.update(&chunk);
+        }
+        file.sync_all().unwrap();
+        let entry = manifest["files"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|entry| entry["path"] == "101/data.parquet")
+            .unwrap();
+        entry["bytes"] = json!(128 * 1024 * 1024);
+        entry["sha256"] = json!(hex::encode(digest.finalize()));
+        fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        if corrupt {
+            file.seek(SeekFrom::End(-1)).unwrap();
+            file.write_all(b"!").unwrap();
+            file.sync_all().unwrap();
+        }
+        drop(file);
+        store.publish_export(project, id).unwrap();
+        drop(store);
+        // Override only for matched predecessor/candidate diagnostic runs.
+        let binary = std::env::var_os("SB_PUBLICATION_BENCH_BINARY")
+            .unwrap_or_else(|| env!("CARGO_BIN_EXE_supabricks").into());
+        let mut daemon = ChildGuard(
+            Command::new(binary)
+                .args(["daemon", "--data-dir"])
+                .arg(&state)
+                .stdout(Stdio::null())
+                .stderr(Stdio::inherit())
+                .spawn()
+                .unwrap(),
+        );
+        let started = Instant::now();
+        let db = rusqlite::Connection::open_with_flags(
+            state.join("state.sqlite3"),
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .unwrap();
+        let mut probes = 0;
+        let mut max_ipc = Duration::ZERO;
+        loop {
+            assert!(started.elapsed() < Duration::from_secs(45));
+            if state.join("control.sock").exists() {
+                let before = Instant::now();
+                client::request(&state, Request::Status).unwrap();
+                max_ipc = max_ipc.max(before.elapsed());
+                probes += 1;
+            }
+            let status: String = db
+                .query_row(
+                    "SELECT state FROM publications WHERE export_id=?1",
+                    [id.to_string()],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            if status == "published" || status == "failed" {
+                assert_eq!(status, if corrupt { "failed" } else { "published" });
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert!(probes > 1, "verification must yield to IPC between chunks");
+        println!(
+            "publication_measurement {}",
+            json!({"bytes":128 * 1024 * 1024,"tail_corruption":corrupt,
+                "elapsed_seconds":started.elapsed().as_secs_f64(),"status_probes":probes,
+                "max_status_seconds":max_ipc.as_secs_f64()})
+        );
+        client::request(&state, Request::Shutdown).unwrap();
+        let stop = Instant::now();
+        loop {
+            if let Some(exit) = daemon.0.try_wait().unwrap() {
+                assert!(exit.success());
+                break;
+            }
+            assert!(stop.elapsed() < Duration::from_secs(10));
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        let store = Store::open(&state).unwrap();
+        assert_eq!(store.current_snapshot(project, branch).is_ok(), !corrupt);
+    }
+}
