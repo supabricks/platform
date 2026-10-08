@@ -121,3 +121,11 @@ to verify original per-query hashes or rerun the comparator/review. The original
 load receipt remains byte-identical. Private state/configuration/backups are
 not published. See [the full disposition](../../eq02-sf1-results.md): 69 correct,
 34 tracked failures/mismatches; SP stays frozen.
+
+
+`ci-readiness/` preserves the subsequent hosted CI failures, exact CI archive
+identity, native-only governed-readiness candidate, source tests, three candidate
+governed repeats, and three exact-archive capacity repeats. The Delta baseline
+workflow now requires the verified patched wheel. Failed history measurements
+are retained rather than discarded. See [merge-readiness corrections](../../eq02-ci-readiness.md);
+the original intermittent capacity failure is not erased by passing repeats.
