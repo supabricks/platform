@@ -1,10 +1,23 @@
 # TPC-DS end to end qualification
 
-Status: planned follow-on to SP00–SP12, requested 2026-10-03. Begin execution
-after the [SP workstream](sync-performance-implementation.md) has a reviewed
-disposition and an installed release baseline. Planning does not change or restart
-the running SP10c qualification. No dataset generation or competing benchmarks
-run alongside its measurements.
+Status: **EQ00 started 2026-10-06; prioritized ahead of further SP work by user
+direction.** The [SP workstream is frozen](../architecture/sync-performance-freeze.md)
+at its retained results, including unresolved #169. SP11/SP12 completion is no
+longer a prerequisite for starting EQ. Return to SP after reviewing end-to-end
+results. No SP qualification or tuning runs alongside this work.
+
+[EQ00 initial results](../architecture/tpcds-eq00.md): sources and all 103 SQL
+statements pinned; SF1 generates 19,557,335 business rows / 1.253 GB with matching
+checksums across two invocations. Installed native-schema admission rejects 23/24
+tables; [#170](https://github.com/supabricks/platform/issues/170) and
+[#171](https://github.com/supabricks/platform/issues/171) track composite keys and
+DATE/CHAR support. Product/reference execution remains pending; no scale claim.
+
+The initial engineering baseline is platform source
+`8b68cd206edd5de2b1f820c90c39e7a76aedf3aa`, whose full Linux/macOS release CI passed
+in run `37522400869`. Exact package identity must accompany each installed trial.
+The EQ branch is stacked on that unmerged SP candidate; this does not merge PR
+#167, qualify sustained performance or transfer SP's targets to TPC-DS.
 
 The objective is to measure the complete product journey: load a substantial
 retail dataset into PostgreSQL with continuous sync enabled, query the resulting

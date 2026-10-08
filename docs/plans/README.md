@@ -57,8 +57,8 @@ current release guarantees.
 
 ## End to end analytical qualification
 
-[TPC-DS qualification](tpcds-end-to-end-qualification.md), EQ00–EQ06, is planned
-after SP00–SP12: PostgreSQL loading with continuous sync already active, full
+[TPC-DS qualification](tpcds-end-to-end-qualification.md), EQ00–EQ06, starts
+with EQ00 while SP is frozen by user direction (2026-10-06): PostgreSQL loading with continuous sync already active, full
 analytical query coverage through Sail/Spark Connect, independent Apache Spark
 result verification, increasing dataset sizes and concurrent load/query scaling.
 Schema/type compatibility and capacity admission precede large runs. No execution

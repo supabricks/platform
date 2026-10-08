@@ -1,0 +1,37 @@
+{
+  "status": "FAIL",
+  "scope": "generation-only SF1 engineering pilot",
+  "started_utc": "2026-10-06T22:27:54.174382+00:00",
+  "input_lock_sha256": "5fc9463c463c21ff90606307a16fb63e0ca8b1ade27371db56e4bd4beadd0558",
+  "generator_revision": "1b7fb7529edae091684201fab142d956d6afd881",
+  "binary_sha256": "5a8aed3ab9e9ac97478e324a652128ce204b4f1a1824f834424486022177d10e",
+  "distributions_sha256": "d8cb8e7b20c4b0f47c99a3c2991bdb6289c4eb78a9b8eefbe88abfe1e3a6aaa7",
+  "command": [
+    "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq00-20261006/tpcds-kit/tools/dsdgen",
+    "-SCALE",
+    "1",
+    "-DIR",
+    "/data2/supabricks-eq/eq00-20261006/sf1-01/data",
+    "-DISTRIBUTIONS",
+    "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq00-20261006/tpcds-kit/tools/tpcds.idx",
+    "-RNGSEED",
+    "19620718",
+    "-QUIET",
+    "Y"
+  ],
+  "bounds": {
+    "minimum_free_gib": 16,
+    "maximum_generated_gib": 4,
+    "timeout_seconds": 300,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "memory_gib": 4
+  },
+  "bounds_note": "4 GiB address-space limit; total file size polled every 0.2s, may overshoot; no scale/performance qualification",
+  "error": "generator exit -11",
+  "total_seconds_including_validation": 1.2020109140139539
+}
