@@ -2,10 +2,19 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from load import batches
+from load import batches, country_control
 
 
 class CopyBatches(unittest.TestCase):
+    def test_country_control_uses_this_scale_customer_key_and_latin1(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'customer.dat'
+            path.write_bytes(b'4|CANADA|\n900|R\xc9UNION|\n')
+            columns = [dict(name='c_customer_sk'), dict(name='c_birth_country')]
+            self.assertEqual(country_control(path, columns), (900, 'RÉUNION'))
+            path.write_bytes(b'4|CANADA|\n')
+            with self.assertRaises(ValueError): country_control(path, columns)
+
     def converted(self, data, **limits):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'table.dat'; path.write_bytes(data)
