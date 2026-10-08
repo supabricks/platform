@@ -153,16 +153,39 @@ the same 8-core/16-GiB/no-swap container, COPY size, backlog, worker and storage
 bounds. Its receipt/hash cannot substitute for the shorter prefix or full SF100.
 This larger qualification has not started; the original SF100 cell remains paused.
 
-### Capture tuple cursor slice (prepared for measurement)
+### Capture tuple cursor slice
 
 The source capture parser still created marker/length slices for every field.
 It now uses a bounded local cursor, validates every length and UTF-8 field before
 journaling, and retains schema/transaction/framing checks. All 176 Python tests
 pass, including truncation at every byte, invalid lengths/kinds/UTF-8 and exact
-reader boundaries. A separate cloned-journal decoder probe and installed prefix
-run must measure this contribution; no throughput claim is made yet. The next
-run also samples fixed-label per-process CPU/RSS counters (never argv or SQL)
-to distinguish capture, apply and controller utilization; it adds no quiet gate.
+reader boundaries. Three alternating process pairs on the same 57,344-row cloned-journal range
+reproduce all encoded transactions exactly. Median decoding changes from
+0.431532 to 0.239266 s (1.804×); this excludes sockets, durability and publication.
+Installed `eq220g` / `7727538` passes the prefix at 18,546 rows/s overall (1.045×
+scalar) and 16,513 rows/s in the late cohort (effectively unchanged). Exact
+verification passed all 24 tables. Fixed-label process counters suggest both
+capture and apply remain substantial consumers; sampled late-cohort averages
+are about 0.61 capture cores, 0.68 apply cores and 0.22 controller cores. These
+are diagnostic samples and may miss short process tails. The observer records
+no argv or SQL and introduces no quiet gate. Neither target is qualified.
+
+### Bounded wire read-ahead (prepared for measurement)
+
+The capture transport previously waited for and read every packet header/body
+separately. A bounded 64-KiB receive now serves buffered complete packets in
+order, keeping the existing `MAX_MESSAGE + 30` total frame-buffer ceiling and
+partial-frame deadlines. Consumed bytes are compacted only before another
+receive, avoiding per-packet buffer shifts. Every header, payload, UTF-8 tuple,
+transaction and durable acknowledgment still follows the existing validation.
+All 179 Python tests passed, including coalesced packets, partial tails, invalid
+buffered headers and the maximum-frame memory bound. Installed lifecycle and
+throughput qualification remain pending.
+
+A separate source-review opportunity for repeated ownership-table scans during
+historical cleanup is tracked in [#223](https://github.com/supabricks/platform/issues/223).
+Its prepared lookup patch is not part of these candidates; the current evidence
+does not isolate its cost from other controller work.
 
 ## Preserved baseline
 

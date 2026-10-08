@@ -265,6 +265,56 @@ class WorkerGroupTests(unittest.TestCase):
 
 
 class StreamTests(unittest.TestCase):
+    def test_coalesced_packets_and_partial_tail_keep_order_with_bounded_reads(self):
+        a,b=socket.socketpair();self.addCleanup(a.close);self.addCleanup(b.close)
+        class Counted:
+            calls=0;maximum=0
+            def fileno(self):return a.fileno()
+            def recv(self,size):
+                self.calls+=1
+                self.maximum=max(self.maximum,size)
+                return a.recv(size)
+        counted=Counted();w=Wire.__new__(Wire);w.socket=counted
+        packets=[]
+        for end in range(513):
+            data=b'k'+struct.pack('!QqB',end,0,1)
+            packets.append(b'd'+struct.pack('!I',len(data)+4)+data)
+        b.sendall(b''.join(packets[:512])+packets[512][:7])
+        for end in range(512):
+            self.assertEqual(w.receive(timeout=.010),('keepalive',end,1))
+            self.assertLessEqual(len(w.stream_buffer),MAX_MESSAGE+30)
+        self.assertLess(counted.calls,64)
+        self.assertLessEqual(counted.maximum,64*1024)
+        self.assertIsNone(w.receive(timeout=.010))
+        b.sendall(packets[512][7:]);self.assertEqual(w.receive(timeout=.010),('keepalive',512,1))
+
+    def test_invalid_buffered_header_cannot_hide_behind_valid_packet(self):
+        a,b=socket.socketpair();self.addCleanup(a.close);self.addCleanup(b.close)
+        w=Wire.__new__(Wire);w.socket=a
+        data=b'k'+struct.pack('!QqB',400,0,1)
+        b.sendall(b'd'+struct.pack('!I',len(data)+4)+data+b'd'+struct.pack('!I',MAX_MESSAGE+100))
+        self.assertEqual(w.receive(timeout=.010),('keepalive',400,1))
+        with self.assertRaisesRegex(CaptureError,'message_budget'):w.receive(timeout=.010)
+
+    def test_read_ahead_keeps_existing_maximum_frame_memory_ceiling(self):
+        payload=b'x'*MAX_MESSAGE
+        data=b'w'+struct.pack('!QQq',100,200,0)+payload
+        packet=b'd'+struct.pack('!I',len(data)+4)+data
+        w=Wire.__new__(Wire)
+        class Input:
+            remaining=packet;maximum_buffer=0;maximum_read=0
+            def recv(self,size):
+                self.maximum_read=max(self.maximum_read,size)
+                part=self.remaining[:size];self.remaining=self.remaining[size:]
+                self.maximum_buffer=max(self.maximum_buffer,len(w.stream_buffer)+len(part))
+                return part
+        source=Input();w.socket=source
+        with patch('capture.protocol.select.select',return_value=([source],[],[])):
+            self.assertEqual(w.receive(timeout=1),('data',200,payload))
+        self.assertLessEqual(source.maximum_buffer,MAX_MESSAGE+30)
+        self.assertLessEqual(source.maximum_read,64*1024)
+        self.assertEqual(w.stream_offset,0);self.assertFalse(w.stream_buffer)
+
     def test_partial_wire_packet_preserves_bytes_without_overriding_flush_deadline(self):
         a,b=socket.socketpair();self.addCleanup(a.close);self.addCleanup(b.close)
         w=Wire.__new__(Wire);w.socket=a;a.settimeout(3)

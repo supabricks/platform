@@ -153,20 +153,31 @@ class Wire:
     def stream_packet(self, timeout):
         # Keep a partial frame across deadlines. A readable socket does not
         # promise that its whole packet is available; exact() could wait 3 s.
-        if not hasattr(self,'stream_buffer'):self.stream_buffer=bytearray()
+        if not hasattr(self,'stream_buffer'):
+            self.stream_buffer=bytearray();self.stream_offset=0
         deadline=time.monotonic()+timeout
         while True:
-            size=5
-            if len(self.stream_buffer)>=5:
-                payload_size=struct.unpack('!I',self.stream_buffer[1:5])[0]-4
+            offset=self.stream_offset;available=len(self.stream_buffer)-offset
+            if available>=5:
+                payload_size=_NUMBERS['I'].unpack_from(self.stream_buffer,offset+1)[0]-4
                 if payload_size<0 or payload_size>MAX_MESSAGE+25:raise CaptureError('message_budget')
                 size=5+payload_size
-                if len(self.stream_buffer)==size:
-                    tag=bytes(self.stream_buffer[:1]);data=bytes(self.stream_buffer[5:]);self.stream_buffer.clear()
+                if available>=size:
+                    tag=bytes(self.stream_buffer[offset:offset+1])
+                    data=bytes(self.stream_buffer[offset+5:offset+size])
+                    self.stream_offset+=size
+                    if self.stream_offset==len(self.stream_buffer):
+                        self.stream_buffer.clear();self.stream_offset=0
                     return tag,data
             remaining=max(0,deadline-time.monotonic())
             if not select.select([self.socket],[],[],remaining)[0]:return None
-            part=self.socket.recv(size-len(self.stream_buffer))
+            # Read ahead within the existing one-maximum-frame memory ceiling.
+            # Compact only when another receive is necessary, not for every row.
+            if self.stream_offset:
+                del self.stream_buffer[:self.stream_offset];self.stream_offset=0
+            capacity=MAX_MESSAGE+30-len(self.stream_buffer)
+            if capacity<=0:raise CaptureError('message_budget')
+            part=self.socket.recv(min(64*1024,capacity))
             if not part:raise ConnectionError('replication_disconnected')
             self.stream_buffer.extend(part)
             if time.monotonic()>=deadline:return None
