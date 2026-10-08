@@ -1,12 +1,12 @@
 # EQ02 SF1 end-to-end results
 
 The full SF1 PostgreSQL load and exact Delta comparison pass. The
-[decimal AVG correction (#200)](eq02-decimal-avg.md) qualifies **78 of 103
-statements after explicit ordering review; 25 remain unresolved**. SP stays
+[decimal arithmetic correction (#199)](eq02-decimal-types.md) qualifies **90 of 103
+statements after explicit ordering review; 13 remain unresolved**. SP stays
 frozen. No larger-scale result or signed-release qualification is claimed.
 
 The original baseline below remains unchanged: 69 correct, with 34 tracked
-failures or mismatches. The separate #200 report retains the paired baseline
+failures or mismatches. The separate [#200](eq02-decimal-avg.md) and [#199](eq02-decimal-types.md) reports retain their paired baseline
 and candidate reruns, exact results, and per-query timings.
 
 [Machine-readable evidence](tpcds-evidence/2026-10-07-eq02/snapshot-recovery/summary.json),
@@ -113,9 +113,8 @@ floating-point tolerance candidates.
 
 ## Next qualification slices
 
-The decimal AVG candidate (#200) passes its retained-SF1 qualification. Next fix
-decimal expression typing (#199) and alias
-resolution (#198) with reduced regressions and unchanged original-query reruns
+The decimal AVG (#200) and arithmetic (#199) candidates pass retained-SF1
+qualification. Next fix alias resolution (#198) with reduced regressions and unchanged original-query reruns
 after each logical slice. Investigate the query resource/plan failures (#197)
 separately, retaining a declared baseline and any changed resource profile.
 Then rerun the full 103-statement suite against the same retained data and Spark
