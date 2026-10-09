@@ -308,8 +308,16 @@ that release the interpreter lock. It does not provide parallel execution of
 two Python CPU stages. Deterministic concurrency tests require verification to
 run while preparation is in progress, compare sealed plans byte-for-byte, and
 check failure propagation, cancellation, deadline expiry and single consumption.
-The retained J prefix is the before measurement. Candidate component and full-
-prefix measurements are pending; no pipeline speedup is claimed.
+The retained J prefix is the before measurement. Three alternating J/K process
+pairs (nine warm samples each) verify and plan the same cloned 57,344-row range.
+Median time is 1.255865 s before and 1.237611 s with preparation, a 1.015x ratio.
+Every sealed plan has the same SHA256. This small component difference excludes
+journal transport, initialization, Delta mutation and publication; it does not
+establish an end-to-end gain. The full-prefix comparison is pending.
+The corrected Python suite passes 195 tests; a separate eight-test reuse suite
+includes the added large-profile multi-epoch/restart case. All 38 harness and
+three evidence-inventory tests pass. Initial fixture failures and corrections
+are retained. Installed lifecycle checks explicitly select the large profile.
 
 Cross-batch look-ahead remains a later slice. It needs a separately authorized,
 fixed read-only LSN range, one queued batch with aggregate memory admission,
