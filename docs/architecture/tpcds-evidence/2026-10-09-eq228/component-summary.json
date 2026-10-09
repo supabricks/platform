@@ -1,0 +1,189 @@
+{
+  "status": "PASS",
+  "scope": "Repeated private component attribution; not installed throughput",
+  "cpus": "0-7",
+  "rows": 32768,
+  "pairs": 3,
+  "bounds_unchanged": true,
+  "all_plans_identical": true,
+  "all_baseline_recycle": true,
+  "all_candidate_reusable": true,
+  "results": [
+    {
+      "label": "baseline-cold-1",
+      "seconds": 2.6101222740253434,
+      "peak": 597078016,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.7035440464969724
+      }
+    },
+    {
+      "label": "baseline-cold-2",
+      "seconds": 2.632795565004926,
+      "peak": 582828032,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.6899237745674327
+      }
+    },
+    {
+      "label": "baseline-cold-3",
+      "seconds": 2.601817559043411,
+      "peak": 597082112,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.6925187687156722
+      }
+    },
+    {
+      "label": "baseline-warm-1",
+      "seconds": 2.000467022007797,
+      "peak": 595595264,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07229026884306222
+      }
+    },
+    {
+      "label": "baseline-warm-2",
+      "seconds": 1.9867607899941504,
+      "peak": 586158080,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07186337996972725
+      }
+    },
+    {
+      "label": "baseline-warm-3",
+      "seconds": 2.252376985969022,
+      "peak": 597524480,
+      "reusable": false,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07210341596510261
+      }
+    },
+    {
+      "label": "candidate-cold-1",
+      "seconds": 2.5235547829652205,
+      "peak": 428650496,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.7077963430201635
+      }
+    },
+    {
+      "label": "candidate-cold-2",
+      "seconds": 2.5386261789826676,
+      "peak": 429359104,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.701718442433048
+      }
+    },
+    {
+      "label": "candidate-cold-3",
+      "seconds": 9.143538235977758,
+      "peak": 422248448,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 1012,
+        "bytes": 1354643144,
+        "seconds": 0.7067541046999395
+      }
+    },
+    {
+      "label": "candidate-warm-1",
+      "seconds": 1.880320358031895,
+      "peak": 429215744,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07155940303346142
+      }
+    },
+    {
+      "label": "candidate-warm-2",
+      "seconds": 1.894553698017262,
+      "peak": 431747072,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07203283219132572
+      }
+    },
+    {
+      "label": "candidate-warm-3",
+      "seconds": 1.8797650519991294,
+      "peak": 429842432,
+      "reusable": true,
+      "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+      "hashes": {
+        "calls": 2022,
+        "misses": 2,
+        "bytes": 3040365,
+        "seconds": 0.07196427829330787
+      }
+    }
+  ],
+  "baseline_cold": {
+    "median_seconds": 2.6101222740253434,
+    "min_peak": 582828032,
+    "max_peak": 597082112
+  },
+  "baseline_warm": {
+    "median_seconds": 2.000467022007797,
+    "min_peak": 586158080,
+    "max_peak": 597524480
+  },
+  "candidate_cold": {
+    "median_seconds": 2.5386261789826676,
+    "min_peak": 422248448,
+    "max_peak": 429359104
+  },
+  "candidate_warm": {
+    "median_seconds": 1.880320358031895,
+    "min_peak": 429215744,
+    "max_peak": 431747072
+  }
+}

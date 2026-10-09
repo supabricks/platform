@@ -50,8 +50,11 @@ def key_filter(columns,keys):
 def key_batches(dataset,columns,keys):
     pk=key_columns(columns)
     # Keep native read-ahead bounded even when statistics cannot prune a scan.
+    # This dataset is scanned once. Retaining every visited Parquet footer grows
+    # with the published prefix, even when pruning returns no rows, and can force
+    # a worker recycle that discards its fenced file-verification evidence.
     for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32,
-            batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
+            batch_readahead=1,fragment_readahead=1,use_threads=False,cache_metadata=False).to_batches():
         if len(pk)>1:
             # Reject Cartesian neighbors before row/value budgets or overlay.
             # Materialize only the key vectors, and at most one 32-row batch.

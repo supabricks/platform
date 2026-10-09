@@ -1,0 +1,259 @@
+{
+  "mode": "cold",
+  "scope": "Private component fixture using next actual SF100 rows; synthetic LSN framing; no source ACK or controller publication",
+  "seconds": 2.5204892770270817,
+  "post_gc": {
+    "rss": 353185792,
+    "peak": 431796224,
+    "arrow": 0
+  },
+  "recycle_peak": false,
+  "hashes": {
+    "calls": 2022,
+    "misses": 1012,
+    "bytes": 1354643144,
+    "seconds": 0.7005044803954661
+  },
+  "events": [
+    {
+      "stage": "journal",
+      "wall": 0.01737219002097845,
+      "cpu": 0.017372557000000066,
+      "before": {
+        "rss": 164986880,
+        "peak": 164986880,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 174931968,
+        "peak": 176427008,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "initialize",
+      "wall": 0.009257652971427888,
+      "cpu": 0.009244517999999924,
+      "before": {
+        "rss": 174936064,
+        "peak": 176427008,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 175009792,
+        "peak": 176427008,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "verify_previous",
+      "wall": 0.680440369003918,
+      "cpu": 0.680288251,
+      "before": {
+        "rss": 175013888,
+        "peak": 176427008,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 177197056,
+        "peak": 177197056,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "decode",
+      "wall": 0.33201057399855927,
+      "cpu": 0.3318146289999999,
+      "before": {
+        "rss": 179093504,
+        "peak": 179093504,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 234528768,
+        "peak": 234528768,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.0034876849967986345,
+      "cpu": 0.0034874250000000995,
+      "before": {
+        "rss": 271704064,
+        "peak": 271704064,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 276664320,
+        "peak": 276664320,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "key_batches",
+      "wall": 0.6525799779919907,
+      "before": {
+        "rss": 276664320,
+        "peak": 276664320,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 330907648,
+        "peak": 330907648,
+        "arrow": 0
+      },
+      "rows": 0
+    },
+    {
+      "stage": "overlay",
+      "wall": 0.006717518030200154,
+      "cpu": 0.006716847999999942,
+      "before": {
+        "rss": 330907648,
+        "peak": 330907648,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 332480512,
+        "peak": 332480512,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "plan",
+      "wall": 1.2268194939824753,
+      "cpu": 1.415663001,
+      "before": {
+        "rss": 177827840,
+        "peak": 177827840,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 356835328,
+        "peak": 368316416,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.0009197180042974651,
+      "cpu": 0.0009199720000001577,
+      "before": {
+        "rss": 378511360,
+        "peak": 378511360,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 378519552,
+        "peak": 378519552,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "schema_for",
+      "wall": 0.001076541026122868,
+      "cpu": 0.0010761429999996963,
+      "before": {
+        "rss": 378511360,
+        "peak": 378511360,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 378519552,
+        "peak": 378519552,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.023330338997766376,
+      "cpu": 0.007543654000000011,
+      "before": {
+        "rss": 432427008,
+        "peak": 432427008,
+        "arrow": 6238208
+      },
+      "after": {
+        "rss": 432439296,
+        "peak": 432439296,
+        "arrow": 6238208
+      }
+    },
+    {
+      "stage": "apply_table",
+      "wall": 0.3412373900064267,
+      "cpu": 0.35646604800000015,
+      "before": {
+        "rss": 369803264,
+        "peak": 374956032,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 430374912,
+        "peak": 431796224,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "inventory",
+      "wall": 0.07559439400210977,
+      "cpu": 0.07599351799999976,
+      "before": {
+        "rss": 430387200,
+        "peak": 431796224,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 430051328,
+        "peak": 431796224,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.0226665890077129,
+      "cpu": 0.013255782999999965,
+      "before": {
+        "rss": 430051328,
+        "peak": 431796224,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 429961216,
+        "peak": 431796224,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "run",
+      "wall": 2.5203349189832807,
+      "cpu": 2.690359115,
+      "before": {
+        "rss": 164986880,
+        "peak": 164986880,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 355266560,
+        "peak": 431796224,
+        "arrow": 0
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "metrics": {
+        "apply_kind": "append",
+        "execution_time_ms": 20,
+        "new_parquet_bytes": 3039584,
+        "num_added_files": 1,
+        "num_added_rows": 32768,
+        "num_partitions": 0,
+        "num_removed_files": 0,
+        "retained_parquet_bytes": 882527664
+      },
+      "oid": 16513
+    }
+  ]
+}
