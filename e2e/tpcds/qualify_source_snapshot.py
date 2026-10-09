@@ -44,6 +44,19 @@ def run(args):
     try:
         cell.start();cell.parent=cell.request(method='branch',id=policy['branch_id'])
         cell.parent=cell.state(cell.parent,'running');wait(lambda:cell.sql(cell.parent,'SELECT 1')=='1')
+        # The stopped fixture owns an interrupted full bootstrap. Replace that
+        # capture through the product's reviewed resync API; never replay COPY,
+        # edit the control database or silently rewrite the old failure receipt.
+        review=cell.cli('sync','review-resync',cell.policy_id)
+        report['resync_review']=review;checkpoint()
+        old_capture=review['capture_id']
+        cell.cli('sync','resync',cell.policy_id,'--revision',str(review['expected_revision']),
+                 '--review-hash',review['review_hash'],'--key','eq232-postload-resync')
+        if old_capture:
+            wait(lambda:cell.status(dict(id=old_capture))['state']=='deleted',timeout=120)
+        current=cell.policy()
+        cell.cli('sync','resume',cell.policy_id,'--revision',str(current['revision']),
+                 '--key','eq232-postload-resume')
         while time.monotonic()-started < 900:
             current=cell.policy();capture=cell.status(dict(id=current['capture_id']))
             report['final_policy']=current;report['final_capture']=capture
