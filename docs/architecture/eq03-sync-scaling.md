@@ -395,8 +395,7 @@ cursor supplies a larger useful prefix; it does not wait or change deadlines on
 the apply path. O (`f7d805d`) completed `o1` at 24,592 rows/s overall / 19,324 late:
 better than N2 but still 4.6% / 1.6% below the fresh serial comparator. It consumed
 174 prepared batches, with a median prepared prefix of 15,360 rows (versus N2's
-8,192); median consumption was 118 ms. Exact verification is pending at this
-checkpoint. An additional installed
+8,192); median consumption was 118 ms. Exact verification passes all 24 tables. An additional installed
 functional harness holds actual preparation/apply processes with SIGSTOP to
 exercise pause and daemon-SIGKILL fencing before checking every key/value domain. It passes both cases against O, ending with exactly 65,537 rows per table. The initial fixture setup failed on ambiguous smallint generate_series parameters; that failure and the explicit-cast correction are retained separately.
 
@@ -408,7 +407,16 @@ instrumented timings are not added to the unprofiled measurements. The next
 candidate caches each relation's key profile within one consumption call and
 validates already-typed JSON integers/text in place. Integer bounds, exact
 decimal/date/CHAR checks, key/TOAST validation and checksums remain; no decoded
-state survives the request. Its component and installed performance are pending.
+state survives the request. P (`a8a6348`) lowers component consumption from
+0.642064 to 0.558336 s (13.0%), with identical decoded objects and batch checksum;
+raw decode remains 0.574922 s. Consumption is therefore only 2.9% cheaper than
+local decoding on this fixture. Its installed `pa` prefix completes at 24,580
+rows/s overall / 19,740 late, versus fresh serial L's 25,777 / 19,648: 4.6% lower
+overall and 0.5% higher late. This is no demonstrated end-to-end gain. No compiler
+activity was observed; the sampled p95 commit-to-publication upper bound is
+3.382 s. Exact verification passes all 24 tables. The predeclared growing-data pair is
+running at this checkpoint. Component timing excludes process launch, transport and
+publication, and cannot be credited as a throughput improvement.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks
