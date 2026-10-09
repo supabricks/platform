@@ -1,0 +1,19 @@
+{
+  "issue": 232,
+  "scope": "Diagnostic source attribution; no optimization or full SF100 qualification claim",
+  "arms": ["source_only", "concurrent"],
+  "order": ["source_only", "concurrent"],
+  "source_rows": 14770127,
+  "late_source_acknowledgment_cohort": [13000000, 14600000],
+  "frozen_loader_revision": "0bc57c170cb6e34f7d3cefa1ae6981c9b1e8d090",
+  "release": "v0.1.0-alpha.36.eq230profile",
+  "release_identity": "b42e32d688bab10d577f485a6a7e2316e85f8ef71e94e4f9d53301187dcae08c",
+  "cpus": "0-7", "memory_gib": 16, "swap": false,
+  "copy_rows": 1024, "copy_bytes": 4194304, "concurrent_backlog_rows": 65536,
+  "journal_bytes": 16777216, "values_bytes": 33554432, "plan_bytes": 67108864,
+  "apply_bytes": 805306368, "recycle_bytes": 536870912,
+  "observer": {"writer_io_clocks": true, "wait_sample_seconds": 0.02, "storage_sample_seconds": 2, "per_ledger_limit_bytes": 67108864},
+  "source_only": "No capture/apply policy during timed load; logical WAL, replica identity/indexes and synchronous durability preserved. Post-timing sync bootstrap permits the same independent 24-table exact comparison. No publication backlog pacing in this arm.",
+  "acceptance": ["all COPY attempt ledgers byte-identical between arms", "each phase event joins its attempt/ack exactly", "zero observer errors/drops", "exact 24-table prefix verification", "source and installed package identities retained", "original SF100 stays paused; SP stays frozen"],
+  "limits": ["one matched diagnostic pair, not a precise effect size", "wait events sampled, not full tracing", "PG/Neon cumulative counter window explicitly narrower than transaction cohort", "writer IO clocks and observers introduce overhead", "no host cache dropping; input validation reads source files in both arms", "shared host disk counters are not isolated device saturation proof"]
+}
