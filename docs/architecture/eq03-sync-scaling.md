@@ -1,12 +1,60 @@
 # SF100 sync scaling
 
-Status: matched 7.39-million- and 14.77-million-row prefix trials and exact
-24-table verification are complete. Cross-batch preparation is experimental:
-it shows no installed throughput gain. Both larger-prefix variants fall to about
-8,700 rows/s late, below the [#220](https://github.com/supabricks/platform/issues/220)
-target. [#228](https://github.com/supabricks/platform/issues/228) tracks the observed
-worker churn and its possible loss of verification reuse. **20k/10× end-to-end
-improvement is not qualified.** Original SF100 load-01 remains paused; SP is frozen.
+Status: the [#228](https://github.com/supabricks/platform/issues/228) candidate
+removes one-shot Parquet metadata retention that forces worker recycling.
+A matched 14.77-million-row installed pair improves overall throughput from
+15,762 to 16,693 rows/s and the late cohort from 8,437 to 9,462 rows/s;
+both runs pass exact 24-table verification. Cross-batch preparation remains
+experimental and disabled in normal builds. **20k/10× end-to-end improvement is
+not qualified.** Original SF100 load-01 remains paused; SP is frozen.
+
+## One-shot Parquet metadata retention (#228)
+
+The key lookup constructs a fresh Arrow dataset for one scan. Its default
+metadata cache retained Parquet footers across all visited fragments, including
+when statistics pruned every row. At the completed 14.77-million-row prefix,
+a 32,768-row continuation returned no existing keys but increased RSS by about
+206 MiB during scanning. The subsequent apply exceeded the unchanged 512-MiB
+high-water recycling threshold. A fresh worker then hashed 1.355 GB of published
+files; a process with primed, fenced evidence hashed only 3.040 MB of new files.
+
+Set `cache_metadata=False` on that one scan. The predicate, exact composite-key
+filter, read-ahead, mutation leases, digest-cache bounds, corruption detection,
+durability and resource ceilings are unchanged. Twelve real-mailbox component
+probes produced byte-identical sealed plans: all six baselines retired at
+556–570 MiB peak; all six candidates permitted reuse at 403–412 MiB. All 211
+Python regression tests pass. Component timings include diagnostic wrappers;
+the retained fsync outlier is not discarded or presented as throughput evidence.
+
+The installed comparison uses the same frozen growing-prefix harness, eight
+logical CPUs, 16 GiB without swap, COPY1024/4 MiB and a 65,536-row backlog.
+Candidate `e4914bf` / `eq228a` changes only the worker source and its compiled
+Python cache relative to the packaged serial baseline `eq226serial` / `c7af44c`.
+Each row rate includes load plus drain, excluding admission and exact checks.
+
+| Measurement | Serial baseline `c228b` | Candidate `c228a` |
+| --- | ---: | ---: |
+| All 14,770,127 rows | 15,762 rows/s | 16,693 rows/s (+5.9%) |
+| Fixed 13.0–14.6m publication window | 8,437 rows/s | 9,462 rows/s (+12.1%) |
+| Sampled distinct late apply workers | 44 | 4 |
+| Maximum sampled late apply RSS | 562.4 MiB | 441.6 MiB |
+| Sampled p95 commit-to-publication upper bound | 6.344 s | 5.026 s |
+| Publications within the exact late window | 52 | 72 |
+| Median late rows per batch | 31,744 | 22,016 |
+| Median late worker / after-manifest time | 3,144 / 448.5 ms | 1,596.5 / 409 ms |
+
+This is one matched pair, not a precise effect-size or full SF100 qualification.
+Two-second process samples miss short-lived process tails and RSS peaks; their
+row endpoints differ slightly from exact publication endpoints. Receipt phases
+are nested and must not be added. No compiler activity was observed; no local
+build, test or profiling workload ran during either timed trial.
+
+Worker reuse improves substantially, while smaller batches require more
+publications. [#230](https://github.com/supabricks/platform/issues/230) tracks
+measurement of capture supply, target freshness, batch fill and publication
+costs before another implementation slice. The cause of the smaller batches is
+not yet established. [Receipts and reproducible probes](tpcds-evidence/2026-10-09-eq228/README.md)
+retain both trials, component outliers and package/source bindings.
 
 ## Implemented slices and current qualification
 

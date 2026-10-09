@@ -1,0 +1,44 @@
+{
+  "declared_at": "2026-10-09T16:27:54.631741+00:00",
+  "scope": "One matched installed growing-prefix pair; engineering attribution, not full SF100 qualification",
+  "candidate": {
+    "label": "c228a",
+    "release": "v0.1.0-alpha.36.eq228a",
+    "source": "e4914bf68c3cd68aff3deafa93cbc9225f4f50e0",
+    "identity": "9b3d8c7e31a0918ddeaaa3189d38f9fb23b02971b7f9e47cf66ae42156fcd60f"
+  },
+  "baseline": {
+    "label": "c228b",
+    "release": "v0.1.0-alpha.36.eq226serial",
+    "source": "c7af44c",
+    "identity": "2a9005386bfff9a5454bc3f62e3ae371d84be4bba18d3521db55383fdd9ac17f"
+  },
+  "order": [
+    "candidate",
+    "baseline"
+  ],
+  "frozen_harness": "0bc57c170cb6e34f7d3cefa1ae6981c9b1e8d090",
+  "rows": 14770127,
+  "late_publication_thresholds": [
+    13000000,
+    14600000
+  ],
+  "runtime": {
+    "cpus": "0-7",
+    "memory_gib": 16,
+    "swap_gib": 0
+  },
+  "limits": {
+    "copy_rows": 1024,
+    "copy_bytes": 4194304,
+    "backlog_rows": 65536,
+    "apply_bytes": 805306368,
+    "recycle_bytes": 536870912,
+    "journal_bytes": 16777216,
+    "arrow_values_bytes": 33554432,
+    "plan_bytes": 67108864,
+    "apply_seconds": 300
+  },
+  "correctness": "Exact typed PostgreSQL-versus-Delta comparison for all 24 enrolled tables, after each stopped completed trial",
+  "measurement": "No concurrent local builds, tests, probes or correctness checks; no quiet-period gate; preserve failed/outlier evidence"
+}
