@@ -419,9 +419,31 @@ local decoding on this fixture. Its installed `pa` prefix completes at 24,580
 rows/s overall / 19,740 late, versus fresh serial L's 25,777 / 19,648: 4.6% lower
 overall and 0.5% higher late. This is no demonstrated end-to-end gain. No compiler
 activity was observed; the sampled p95 commit-to-publication upper bound is
-3.382 s. Exact verification passes all 24 tables. The predeclared growing-data pair is
-running at this checkpoint. Component timing excludes process launch, transport and
+3.382 s. Exact verification passes all 24 tables. The completed growing-data comparison is below. Component timing excludes process launch, transport and
 publication, and cannot be credited as a throughput improvement.
+
+The predeclared 14,770,127-row candidate `pgrow` completes at **15,370 rows/s
+overall / 8,689 late**, with a sampled p95 publication-lag upper bound of 6.477 s.
+The late cohort starts at the first publication at or beyond 13.0m and ends at
+the first at or beyond 14.6m rows. No compilers were observed; the backlog limit
+remained 65,536. The immediately following serial `lgrow` completes at 16,121 rows/s overall /
+8,654 late, with a 6.202-s sampled p95 lag bound. Preparation is 4.7% slower
+overall and 0.4% higher late: no demonstrated gain. No compiler activity was
+observed in either trial. Both retain the existing limits and fixed workload.
+Exact growing-data verification remains pending at this checkpoint.
+
+The late candidate cohort observes 51 distinct apply process identities across
+51 publications, versus two process identities around 6.5–7.3m in the same run.
+Resource and publication sample endpoints differ slightly. Last-30 median worker
+time is 2,967.5 ms, after-manifest time 436.5 ms and nested Delta append execution
+19 ms. Sampled apply RSS reaches 581.2 MiB. Workers recycle at a 512-MiB high-water
+threshold and verified-file evidence is process-local; recycling may therefore
+reintroduce repeated verification as the live set grows. [#228](https://github.com/supabricks/platform/issues/228)
+tracks retirement-reason and cold/warm phase attribution. Serial also exhibits
+46 distinct sampled late apply processes; this is a shared scaling problem. The observed process
+churn is established; its cause and contribution to the slowdown are not yet
+isolated. Retain the 768-MiB enforcement and corruption/lease fences while testing
+any remedy. This candidate does not meet the growing-data performance target.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks
