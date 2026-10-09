@@ -1,5 +1,5 @@
 {
-  "scope": "Matched 14,770,127-row growing prefix; exact verification pending; no full SF100 or query-suite claim",
+  "scope": "Matched 14,770,127-row growing prefix; both exact all-table checks pass; no full SF100 or query-suite claim",
   "serial": {
     "release_identity": "462ab39ef6edfe31866649a6a34909bda846ab4e5a90cdb1a85b8b55764a1f96",
     "workload_profile_sha256": "d2c9d0aadb832ff3d111c88096ffe0594cdbf9b22af6b19538e9b8adba5251c0",
@@ -112,5 +112,9 @@
     }
   },
   "decision": "No demonstrated gain; retain serial default and explicit experimental build gate. Growing worker churn tracked in #228.",
-  "caveat": "One run per candidate. Coarse process sampling misses short-lived process tails and RSS peaks. Resource/publication cohort endpoints differ slightly."
+  "caveat": "One run per candidate. Coarse process sampling misses short-lived process tails and RSS peaks. Resource/publication cohort endpoints differ slightly.",
+  "correctness": {
+    "pgrow": "PREFIX_EXACT_PASS, 24 tables",
+    "lgrow": "PREFIX_EXACT_PASS, 24 tables"
+  }
 }

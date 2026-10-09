@@ -1,10 +1,12 @@
 # SF100 sync scaling
 
-Status: SF100 load-01 remains paused. Scheduling and verified-file reuse are
-implemented for [#220](https://github.com/supabricks/platform/issues/220), with
-local correctness checks passing. The installed, matched-prefix performance
-qualification is in progress; **10× end-to-end improvement is not yet qualified**.
-SP remains frozen.
+Status: matched 7.39-million- and 14.77-million-row prefix trials and exact
+24-table verification are complete. Cross-batch preparation is experimental:
+it shows no installed throughput gain. Both larger-prefix variants fall to about
+8,700 rows/s late, below the [#220](https://github.com/supabricks/platform/issues/220)
+target. [#228](https://github.com/supabricks/platform/issues/228) tracks the observed
+worker churn and its possible loss of verification reuse. **20k/10× end-to-end
+improvement is not qualified.** Original SF100 load-01 remains paused; SP is frozen.
 
 ## Implemented slices and current qualification
 
@@ -151,7 +153,8 @@ The additional `sf100-growing-prefix` profile admits 14,770,127 source rows,
 rounded to a complete COPY boundary: more than twice the paused prefix. It uses
 the same 8-core/16-GiB/no-swap container, COPY size, backlog, worker and storage
 bounds. Its receipt/hash cannot substitute for the shorter prefix or full SF100.
-This larger qualification has not started; the original SF100 cell remains paused.
+The completed matched larger-prefix results are reported below; the original
+SF100 cell remains paused.
 
 ### Capture tuple cursor slice
 
@@ -280,7 +283,8 @@ draining). Independent typed verification passes all 24 tables. No compilers wer
 These results precede any preparation pipeline change. I failed, so the H-to-J
 comparison combines control-version reuse and restart-snapshot maintenance; it
 cannot attribute the gain to either change alone. The fresh original baseline
-and growing-prefix qualifications remain outstanding; 10x is not established.
+qualification remains outstanding; the later growing-prefix comparison below
+also misses the performance target. 10x is not established.
 
 ### Preparation pipeline: first slice
 
@@ -362,8 +366,8 @@ authorized journal range N ---+                            +--> state-dependent 
 
 Cross-batch look-ahead is tracked in [#226](https://github.com/supabricks/platform/issues/226).
 The first implementation candidate supplies a daemon-owned, separate
-`prepare_worker.py` process for the explicit large profile. Qualification and
-the broader comparison remain in progress; this is not a measured speedup.
+`prepare_worker.py` process for the explicit large profile. The matched whole/late-prefix and growing-data comparisons are complete;
+none demonstrates a throughput gain.
 The compact profile retains its existing path. The final build gate now requires
 the explicit experimental Cargo feature `sync-lookahead`; normal release builds
 retain serial behavior for large profiles too. Engineering packages opt in with
@@ -430,7 +434,8 @@ remained 65,536. The immediately following serial `lgrow` completes at 16,121 ro
 8,654 late, with a 6.202-s sampled p95 lag bound. Preparation is 4.7% slower
 overall and 0.4% higher late: no demonstrated gain. No compiler activity was
 observed in either trial. Both retain the existing limits and fixed workload.
-Exact growing-data verification remains pending at this checkpoint.
+Exact growing-data verification passes all 24 tables for both variants, with
+no leaked processes. See [the matched report](tpcds-evidence/2026-10-09-eq226/growing-comparison.json).
 
 The late candidate cohort observes 51 distinct apply process identities across
 51 publications, versus two process identities around 6.5–7.3m in the same run.
@@ -444,6 +449,18 @@ tracks retirement-reason and cold/warm phase attribution. Serial also exhibits
 churn is established; its cause and contribution to the slowdown are not yet
 isolated. Retain the 768-MiB enforcement and corruption/lease fences while testing
 any remedy. This candidate does not meet the growing-data performance target.
+
+Final source `c7af44c` is packaged both normally (`eq226serial`) and with the
+experimental feature (`eq226experimental`). All 211 Python tests, 233 Rust library
+tests (four existing ignores), two experimental-feature range/receipt tests,
+38 harness tests, three evidence-inventory tests and formatting checks pass.
+Installed normal-build qualification proves the large profile issues no
+preparation grant and publishes every expected key exactly. Installed experimental
+qualification passes actual in-flight pause and daemon-SIGKILL fencing, and a
+triggered test that consumes preparation while later commits exist beyond the
+fixed target; those rows appear exactly only after the next trigger. All cleanup
+reports show zero leaked descendants. [Final disposition and evidence](tpcds-evidence/2026-10-09-eq226/README.md)
+retain the results. Preparation is not promoted to the normal build.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks
