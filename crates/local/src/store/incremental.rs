@@ -327,6 +327,14 @@ impl Store {
                             serde_json::to_string(&r)?
                         ],
                     )?;
+                    crate::sync_profile::event("apply.requested", || {
+                        json!({
+                            "id":r.id,"parent":r.sync_run_id,"after_lsn":r.after_lsn,
+                            "target_lsn":r.target_lsn,"captured_lsn":c.captured_lsn,
+                            "capture_observed_at_ms":c.observed_at_ms,"source_lsn":c.source_lsn,
+                            "created_at_ms":r.created_at_ms
+                        })
+                    });
                     json!(r)
                 }
                 Command::Cancel { id, .. } => {
@@ -561,6 +569,11 @@ impl Store {
             let _commit = crate::sync_profile::span("publication.sqlite_commit");
             tx.commit()?;
         }
+        crate::sync_profile::event("apply.published", || {
+            json!({
+                "id":r.id,"parent":r.sync_run_id,"end_lsn":end
+            })
+        });
         Ok(())
     }
     pub(crate) fn artifact_in_project(&self, project: ProjectId, id: OperationId) -> Result<()> {
