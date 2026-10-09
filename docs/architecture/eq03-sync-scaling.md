@@ -361,6 +361,45 @@ authorized journal range N ---+                            +--> state-dependent 
 ```
 
 Cross-batch look-ahead is tracked in [#226](https://github.com/supabricks/platform/issues/226).
+The first implementation candidate now supplies a daemon-owned, separate
+`prepare_worker.py` process for the explicit large profile. Qualification and
+the matched throughput comparison are pending; this is not a measured speedup.
+The compact profile retains its existing path.
+
+After the active worker reports its complete decoded end, the daemon may issue
+one exact read-only range in `analytics/prepare-work`. The capture owner checks
+that separate authorization before and after materializing the bounded snapshot.
+Continuous preparation may sample the current captured cursor; triggered work
+cannot pass its parent run's fixed target. The preparer imports no Arrow/Delta,
+holds no journal snapshot during decoding, and has no mutation/publication or
+source acknowledgment path. Typed JSON lines preserve decimals, dates, composite
+keys and unchanged TOAST markers without general-purpose object deserialization.
+
+One result is bounded to 65,536 operations and 64 MiB on disk; the existing
+16-MiB journal range and per-transaction bounds remain unchanged. Active apply
+plus lookahead can therefore hold at most two bounded row batches. Admission
+reserves 256 MiB of the existing 768-MiB sampled RSS budget for preparation;
+the daemon discards preparation if its RSS exceeds 256 MiB or combined
+incremental-worker RSS exceeds 768 MiB. This retains the existing sampled RSS
+enforcement model, not a new hard kernel memory limit.
+
+The daemon waits for successful predecessor publication and preparation process
+exit before handing off. The consumer rechecks identity, schema, revisions,
+generation, actual predecessor, LSN bounds, bytes, rows and checksum before
+initialization. State-dependent planning and ordered writes remain in apply.
+Late, missing, stale or failed preparation falls back to the normal journal path;
+it never delays dispatch. Cancellation/pause/authority changes stop the owned
+process group. Recovery fences old groups before deleting preparation state;
+only existing sealed apply plans can replay. Per-consumed-batch evidence records
+preparation CPU/wall time, handoff age, consume time, bytes, rows and process RSS.
+
+The remaining installation-wide single-capture/writer admission is an initial
+implementation restriction, not a PostgreSQL/Delta requirement. Removing it
+requires separate ownership and global resource admission for independent
+sources. Within one source, this candidate overlaps decode; parallel independent
+table application behind ordered group publication remains separate work.
+
+The original design requirements remain:
 It needs a separately authorized,
 fixed read-only LSN range, one queued batch with aggregate memory admission,
 identity/schema/policy fencing on consumption, and discard-on-restart recovery.

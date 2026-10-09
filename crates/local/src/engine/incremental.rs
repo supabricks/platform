@@ -60,6 +60,8 @@ impl Cell {
         )
     }
     fn control_apply_workers(&mut self, store: &mut Store) -> Result<()> {
+        // Optional decode loses admission before the existing writer's budget.
+        self.control_preparation(store)?;
         let records = store.native_processes()?;
         let mut stop = Vec::new();
         for (id, worker) in &self.apply_workers {
@@ -209,6 +211,7 @@ impl Cell {
                 continue;
             }
             let c = store.incremental_live(&r)?;
+            self.start_preparation(store, &r, &c)?;
             let work = self
                 .root
                 .join("analytics/apply-work")
@@ -455,6 +458,8 @@ impl Cell {
             config["journal_access"] = self.journal_access(store, &c, r.source_revision)?;
             config["reuse_authority"] = scope.clone();
             config["reuse_worker"] = json!(reuse || self.apply_workers.len() < 4);
+            config["prepare_next"] = json!(!r.storage_profile.is_compact());
+            self.attach_preparation(store, &r, &mut config)?;
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;

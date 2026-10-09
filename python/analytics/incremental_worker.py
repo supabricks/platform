@@ -19,7 +19,8 @@ from incremental.rows import overlay, key_columns, row_key, key_values, value, M
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile, verified_digests
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
-from incremental.preparation import Preparation, decode, row_limit
+from incremental.preparation import Preparation, DecodedBatch, decode, row_limit
+from incremental.lookahead import optional_consume, hint
 
 def quote(name):return '"'+name.replace('"','""')+'"'
 
@@ -68,8 +69,12 @@ def plan_rows(config,root,previous,journal_data,guard):
     if isinstance(journal_data,Preparation):
         decoded=journal_data.result()
         guard.check()
+    elif isinstance(journal_data,DecodedBatch):
+        decoded=journal_data
+        guard.check()
     else:
         decoded=decode(config,journal(config) if journal_data is None else journal_data,guard.check)
+    hint(config,decoded)
     schema=decoded.schema;operations=decoded.operations;end=decoded.end;input_bytes=decoded.input_bytes
     limit=row_limit(config)
     touched={}
@@ -189,14 +194,15 @@ def run(config, *, prepare_overlap=False):
         # A deferred read must precede initialization too: initialize may compact
         # Delta tables into a new generation. Existing plans use crash replay and
         # never re-enter this retryable boundary after partial table mutation.
-        journal_data=journal(config)
+        journal_data=optional_consume(config)
+        if journal_data is None:journal_data=journal(config)
     # Only the existing authorized range may prepare. Bootstrap and sealed-plan
     # crash replay do not decode or fetch journal data. The same process's RSS
     # ceiling covers both stages; there is no executor queue or extra process.
     # Experimental only: EQ220 K regressed the installed late cohort. The
     # daemon/execute path keeps serial preparation until a later measured slice
     # justifies overlap. Tests can exercise the boundary without a product knob.
-    context=(Preparation(config,journal_data) if prepare_overlap and journal_data is not None
+    context=(Preparation(config,journal_data) if prepare_overlap and journal_data is not None and not isinstance(journal_data,DecodedBatch)
              and config.get('storage_profile','compact')=='large' else nullcontext(journal_data))
     with context as prepared:
         root=initialize(config)
@@ -246,6 +252,8 @@ def run_verified(config,root,journal_data,lease):
         end=prepared['end_lsn'];input_bytes=prepared['input_bytes']
         manifest=copy.deepcopy(previous['manifest']);manifest.update(id=config['id'],tables=tables,files=inventory(root,tables))
     manifest['source']['lsn']=end;manifest['observed_at_ms']=int(time.time()*1000)
+    manifest.pop('preparation',None)
+    if config.get('_preparation') is not None:manifest['preparation']=config['_preparation']
     manifest['capture_identity']=config['identity'];manifest['input_bytes']=input_bytes;manifest['apply_metrics']=metrics
     manifest['storage_generation']=config.get('storage_generation')
     manifest['compaction']=compaction
@@ -269,7 +277,7 @@ def run_verified(config,root,journal_data,lease):
     durable(root,sealed)
     fault('before_epoch_receipt')
     lease.check()
-    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),descriptor=descriptor))
+    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),preparation=config.get('_preparation'),descriptor=descriptor))
     fault('after_epoch_receipt')
 
 
