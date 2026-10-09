@@ -166,7 +166,9 @@ jobs:
       - name: Sync compaction, spool reclamation and pinned-reader recovery
         run: python e2e/native/sync_maintenance.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --python "$PWD/python/analytics/.venv/bin/python" --worker python/analytics/export.py --report native-sync-maintenance.json
       - name: Analytical worker boundary tests
-        run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py'
+        run: |
+          set -o pipefail
+          python/analytics/.venv/bin/python python/analytics/run_tests.py --report analytical-tests.json 2>&1 | tee analytical-tests.log
       - name: Coding-agent setup adapter contracts
         run: python agents/test-setup.py
       - uses: actions/upload-artifact@v4
@@ -174,6 +176,8 @@ jobs:
         with:
           name: native-cell-${{ matrix.target }}
           path: |
+            analytical-tests.json
+            analytical-tests.log
             native-sync-maintenance.json
             native-sync-maintenance.log
             native-sync-surfaces.json

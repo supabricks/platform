@@ -41,6 +41,7 @@ on:
       - 'agents/**'
       - 'LICENSE'
       - '.github/workflows/native-release.yml'
+      - '.github/actions/docker-registry-mirror/**'
       - '.github/workflows/catalog-release.yml'
   workflow_dispatch:
 
@@ -330,6 +331,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: ./.github/actions/docker-registry-mirror
+        if: runner.os == 'Linux'
       - uses: actions/download-artifact@v4
         with:
           name: release-linux-x86_64
@@ -416,6 +419,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: ./.github/actions/docker-registry-mirror
+        if: runner.os == 'Linux'
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ matrix.target }}
@@ -946,6 +951,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: ./.github/actions/docker-registry-mirror
+        if: runner.os == 'Linux'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
