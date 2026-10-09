@@ -140,11 +140,12 @@ def analyze(root, qualification=None):
         assert report['status']=='PREFIX_PASS'
     else:
         qualified=json.loads(Path(qualification).read_text())
-        assert report['status']=='FAIL' and report['stage']=='post_timing_sync_bootstrap'
-        assert qualified['status']=='PREFIX_PASS' and qualified['stopped']
+        assert report.get('arm')=='source_only'
+        assert report['status']=='SOURCE_LOAD_PASS' or (report['status']=='FAIL' and report['stage']=='post_timing_sync_bootstrap')
+        assert qualified['status']=='SOURCE_EXACT_PASS' and qualified['stopped']
         assert qualified['source_load_receipt_sha256']==hashlib.sha256((root/'result.json').read_bytes()).hexdigest()
         assert qualified['release_identity']==report['release_identity']
-        assert qualified['committed_rows']==report['committed_rows']
+        assert qualified['rows']==report['committed_rows']
     observer=json.loads((root/'source-profile/observer.json').read_text())
     assert not observer['errors'] and observer['samples']>0
     for kind in ('transactions','storage'):

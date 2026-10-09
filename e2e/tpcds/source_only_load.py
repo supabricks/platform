@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """EQ232 source-only control: frozen TPC-DS bytes, order and COPY transactions.
 
-No capture/apply policy during measurement. WAL/logical settings, indexes and
-source durability stay enabled. Enroll sync after timing for independent exact
-24-table verification; this post-load bootstrap is excluded from source rate.
+No capture/apply policy. WAL/logical settings, indexes and source durability
+stay enabled. Verify directly against the generated prefix after timing; large
+full-bootstrap limits are tracked separately in issue #237.
 """
 import argparse
 import datetime
@@ -55,6 +55,7 @@ def run(args):
         with sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro', uri=True) as control:
             assert control.execute('SELECT count(*) FROM sync_policies').fetchone() == (0,)
             assert control.execute('SELECT count(*) FROM sync_captures').fetchone() == (0,)
+        report.update(project_id=cell.project, branch_id=cell.parent['id'])
         cell.check('no_capture_or_apply_during_source_capacity_measurement')
         report['stage'] = 'load'; save()
         # The same frozen batching function and transaction statements as load.py.
@@ -114,27 +115,7 @@ def run(args):
         counts = {t['table']: t['rows'] for t in report['tables']}
         assert all(report['source_rows'][t['name']] == counts.get(t['name'], 0) for t in manifest['tables'])
         assert report['committed_rows'] == selected['load_rows']
-        # Explicitly after measurement: produce Delta to reuse the independent verifier.
-        report['stage'] = 'post_timing_sync_bootstrap'; save(); post_start = time.monotonic()
-        policy = cell.cli('sync', 'create', '--branch', 'main', '--mode', 'continuous', '--key', 'sf100-growing-prefix', '--storage-profile', 'large')
-        cell.policy_id = policy['id']
-        # A preloaded 14.77m-row source exports a full baseline here. The
-        # three-minute empty-bootstrap helper is not this fixture's deadline.
-        while time.monotonic() - post_start < 900:
-            current = cell.policy(); state = current['continuous_status']['state']
-            if state in ('blocked', 'failed'):
-                raise RuntimeError('post-load source snapshot blocked')
-            if state == 'healthy':
-                break
-            time.sleep(1)
-        else:
-            raise TimeoutError('post-timing source snapshot deadline')
-        report['publication'] = cell.current()
-        report['final_policy'] = cell.policy()
-        report['final_capture'] = cell.status(dict(id=policy['capture_id']))
-        assert sum(t['rows'] for t in report['publication']['descriptor']['manifest']['tables']) == selected['load_rows']
-        report['post_timing_bootstrap_seconds'] = time.monotonic() - post_start
-        report.update(status='PREFIX_PASS', stage='loaded_requires_exact_verification_and_queries')
+        report.update(status='SOURCE_LOAD_PASS', stage='loaded_requires_exact_source_verification')
     except BaseException as error:
         report.update(status='FAIL', error_type=type(error).__name__); raise
     finally:

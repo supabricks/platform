@@ -6,6 +6,7 @@ import unittest
 from contextlib import contextmanager
 from source_profile import Ledger, TimedConnection
 from analyze_source_profile import reconcile
+from verify_source_only import typed, expected_rows
 
 
 class FakeDB:
@@ -36,6 +37,21 @@ class FakeDB:
 
 
 class SourceProfileTests(unittest.TestCase):
+    def test_generator_oracle_preserves_null_padding_and_exact_decimal(self):
+        from decimal import Decimal
+        self.assertIsNone(typed(b'',dict(type='integer',nullable=True)))
+        with self.assertRaises(AssertionError):typed(b'',dict(type='integer',nullable=False))
+        self.assertEqual(typed(b'007',dict(type='integer')),7)
+        self.assertEqual(typed(b'1.20',dict(type='decimal(7,2)')),Decimal('1.20'))
+        self.assertEqual(str(typed(b'-0.00',dict(type='decimal(7,2)'))),'0.00')
+        self.assertEqual(typed(b'C\xd4TE',dict(type='char(6)')),'CÔTE  ')
+        self.assertEqual(typed(b'x\\y',dict(type='varchar(9)')),'x\\y')
+        with tempfile.TemporaryDirectory() as root:
+            p=Path(root)/'rows.dat';p.write_bytes(b'7|1.20|\n8||\n')
+            columns=[dict(type='integer',nullable=False),dict(type='decimal(7,2)',nullable=True)]
+            self.assertEqual(list(expected_rows(p,columns,2)),[[7,Decimal('1.20')],[8,None]])
+            with self.assertRaises(AssertionError):list(expected_rows(p,columns,3))
+
     def test_join_rejects_missing_ack_and_wrong_copy_bytes(self):
         event = dict(success=True, ordinal=1, rows=1, encoded_bytes=2,
                      committed_rows=1, start_ns=1, end_ns=20,
