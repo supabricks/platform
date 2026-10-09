@@ -285,9 +285,12 @@ and growing-prefix qualifications remain outstanding; 10x is not established.
 ### Preparation pipeline: first slice
 
 The first slice separates strict pgoutput decoding/type conversion and complete-
-transaction selection from planning against a pinned Delta version. In the
-explicit large profile, one request-local preparation thread overlaps that CPU
-work with initialization and previous-inventory verification. State-dependent
+transaction selection from planning against a pinned Delta version. Experimental
+candidate K overlaps that CPU work with initialization and previous-inventory
+verification using one request-local thread in the explicit large profile.
+The measured result did not justify enabling it: the normal daemon/execute path
+now stays synchronous. `run(..., prepare_overlap=True)` is an explicit internal
+qualification hook, not a policy option or a daemon-issued setting. State-dependent
 key lookup, TOAST resolution, conflict detection, Delta writes, verification and
 publication retain their order. Compact applies remain synchronous. Bootstrap
 and sealed-plan replay create no preparation job or additional journal read.
@@ -313,7 +316,18 @@ pairs (nine warm samples each) verify and plan the same cloned 57,344-row range.
 Median time is 1.255865 s before and 1.237611 s with preparation, a 1.015x ratio.
 Every sealed plan has the same SHA256. This small component difference excludes
 journal transport, initialization, Delta mutation and publication; it does not
-establish an end-to-end gain. The full-prefix comparison is pending.
+establish an end-to-end gain. K's complete installed prefix passes exact typed
+verification across all 24 tables but measures 25,369 rows/s overall and 19,418
+in the late cohort, versus J's 25,944 / 20,635 (observed changes -2.2% / -5.9%).
+Its sampled lag upper-bound p95 is 3.456 s versus 3.164 s. No compilers were
+observed. One matched pair does not establish a robust effect size, but it does
+not support enabling overlap, and the late cohort misses the 20k target.
+Sampled apply RSS peaks at 447 MiB versus J's 441 MiB. An installed >1-GiB
+compaction/commit-interruption/replay fixture now enters production `run()` so
+it actually exercises preparation alongside initialization. All three phases
+pass, with exact old/new versions and 487.1-MiB peak RSS. The resource ceiling
+is unchanged. The retained serial path passes all 199 Python tests; its separate
+installed performance comparison is pending.
 The corrected Python suite passes 195 tests; a separate eight-test reuse suite
 includes the added large-profile multi-epoch/restart case. All 38 harness and
 three evidence-inventory tests pass. Initial fixture failures and corrections
@@ -321,11 +335,23 @@ are retained. Installed continuous and triggered checks explicitly select the la
 and pass. Applying that adapter to the manual snapshot/full maintenance fixture
 correctly rejected policy creation; the failed setup and cleanup are retained.
 The adapter now accepts only supported continuous/triggered suites. The original
-compact maintenance suite is running separately. Ten focused preparation tests
+compact maintenance suite passes separately, including automatic 64-version
+rollover, pinned Sail history, journal pruning/restart, old-root cleanup, stopped
+backup restoration and source retirement. Ten focused preparation tests
 pass, including large-profile compaction with exact history and interruption at
 compaction/apply boundaries; no production policy guard was relaxed.
 
-Cross-batch look-ahead remains a later slice. It needs a separately authorized,
+The experimental ordering (disabled on the normal worker path) is:
+
+```text
+                              +-- decode/type conversion --+
+authorized journal range N ---+                            +--> state-dependent plan N
+                              +-- initialize/verify -------+          |
+                                                               apply/verify/publish N
+```
+
+Cross-batch look-ahead is tracked in [#226](https://github.com/supabricks/platform/issues/226).
+It needs a separately authorized,
 fixed read-only LSN range, one queued batch with aggregate memory admission,
 identity/schema/policy fencing on consumption, and discard-on-restart recovery.
 Only decoding may run ahead of the previous publication; any Delta-dependent

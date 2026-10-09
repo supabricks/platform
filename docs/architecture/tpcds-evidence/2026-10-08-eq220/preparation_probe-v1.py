@@ -18,7 +18,6 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('release','config','root','spool','output'):
         parser.add_argument('--'+name,type=Path,required=True)
-    parser.add_argument('--serial',action='store_true',help='Measure the retained synchronous boundary')
     args=parser.parse_args()
     sys.path.insert(0,str(args.release.resolve()/'python/analytics'))
     import incremental_worker as worker
@@ -28,7 +27,7 @@ def main():
     config.pop('journal_access',None)
     config.update(spool=str(args.spool.resolve()),deadline_ms=int(time.time()*1000)+120000)
     data=journal(config);previous=config['previous'];samples=[];hashes=[]
-    preparation=None if args.serial else getattr(worker,'Preparation',None)
+    preparation=getattr(worker,'Preparation',None)
     for index in range(4):
         start=time.monotonic()
         context=preparation(config,data) if preparation else nullcontext(data)

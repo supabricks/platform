@@ -180,7 +180,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
     return delta.version(),commit_metrics(path,delta.version(),metrics)
 
 
-def run(config):
+def run(config, *, prepare_overlap=False):
     validate_storage_profile(config)
     os.umask(0o077)
     work=Path(config['workspace']);plan_path=work/'plan.json'
@@ -193,7 +193,10 @@ def run(config):
     # Only the existing authorized range may prepare. Bootstrap and sealed-plan
     # crash replay do not decode or fetch journal data. The same process's RSS
     # ceiling covers both stages; there is no executor queue or extra process.
-    context=(Preparation(config,journal_data) if journal_data is not None
+    # Experimental only: EQ220 K regressed the installed late cohort. The
+    # daemon/execute path keeps serial preparation until a later measured slice
+    # justifies overlap. Tests can exercise the boundary without a product knob.
+    context=(Preparation(config,journal_data) if prepare_overlap and journal_data is not None
              and config.get('storage_profile','compact')=='large' else nullcontext(journal_data))
     with context as prepared:
         root=initialize(config)

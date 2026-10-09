@@ -91,7 +91,7 @@ class OverlapTests(unittest.TestCase):
             self.assertTrue(started.wait(5))
             try:return verify(*args)
             finally:verified.set()
-        with patch.object(p,'decode',prepare),patch.object(w,'verify_previous',verification):w.run(config)
+        with patch.object(p,'decode',prepare),patch.object(w,'verify_previous',verification):w.run(config,prepare_overlap=True)
         actual=json.loads((Path(config['workspace'])/'plan.json').read_text())
         self.assertEqual(canonical(expected),canonical(actual))
         self.assertFalse(any(t.name=='apply-prepare' for t in threading.enumerate()))
@@ -106,15 +106,24 @@ class OverlapTests(unittest.TestCase):
         def initialization(config):
             self.assertTrue(started.wait(5));raise CaptureError('incremental_disk_budget')
         with patch.object(p,'decode',prepare),patch.object(w,'initialize',initialization),patch.object(w,'apply_table') as apply:
-            with self.assertRaisesRegex(CaptureError,'incremental_disk_budget'):w.run(config)
+            with self.assertRaisesRegex(CaptureError,'incremental_disk_budget'):w.run(config,prepare_overlap=True)
             apply.assert_not_called()
         self.assertFalse((Path(config['workspace'])/'result.json').exists())
         self.assertFalse(any(t.name=='apply-prepare' for t in threading.enumerate()))
 
+    def test_production_default_does_not_start_experimental_overlap(self):
+        self.spool.append(280,300,f.tx(280,300,f.change(b'I',42,new=[2,None,'two'])))
+        config=self.config_next('0/12C')
+        with patch.object(p.Preparation,'__enter__',side_effect=AssertionError('experimental stage enabled')):
+            self.assertEqual(w.execute(config),0)
+
 
 class LargeCompactionTests(unittest.TestCase):
     storage_profile='large'
-    setUp=OverlapTests.setUp
+    def setUp(self):
+        OverlapTests.setUp(self)
+        active=patch.object(maintenance,'run',lambda config:w.run(config,prepare_overlap=True))
+        active.start();self.addCleanup(active.stop)
     tearDown=f.IncrementalTests.tearDown
     config_next=f.IncrementalTests.config_next
     config_compact=maintenance.CompactionTests.config_compact
