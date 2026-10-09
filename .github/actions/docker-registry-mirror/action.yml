@@ -1,0 +1,27 @@
+name: Public Docker Hub cache for disposable Linux runners
+description: Preserve image references and digest verification while using Google's public Hub cache.
+runs:
+  using: composite
+  steps:
+    - name: Configure the public mirror before starting qualification containers
+      shell: bash
+      run: |
+        test "$GITHUB_ACTIONS" = true
+        test "$RUNNER_OS" = Linux
+        # https://docs.cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images
+        # Docker falls back to Hub on a cache miss. Other registries are unchanged.
+        sudo python3 - <<'PY'
+        import json, os
+        from pathlib import Path
+        path = Path('/etc/docker/daemon.json')
+        config = json.loads(path.read_text()) if path.exists() else {}
+        mirrors = config.get('registry-mirrors', [])
+        config['registry-mirrors'] = ['https://mirror.gcr.io', *[m for m in mirrors if m.rstrip('/') != 'https://mirror.gcr.io']]
+        temporary = path.with_suffix('.ci-tmp')
+        temporary.write_text(json.dumps(config) + '\n')
+        temporary.chmod(0o644)
+        os.replace(temporary, path)
+        PY
+        sudo dockerd --validate --config-file /etc/docker/daemon.json
+        sudo systemctl restart docker
+        docker info --format '{{json .RegistryConfig.Mirrors}}'

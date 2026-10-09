@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 from capture.groups import Groups
@@ -279,10 +280,16 @@ class StreamTests(unittest.TestCase):
         for end in range(513):
             data=b'k'+struct.pack('!QqB',end,0,1)
             packets.append(b'd'+struct.pack('!I',len(data)+4)+data)
-        b.sendall(b''.join(packets[:512])+packets[512][:7])
-        for end in range(512):
-            self.assertEqual(w.receive(timeout=.010),('keepalive',end,1))
-            self.assertLessEqual(len(w.stream_buffer),MAX_MESSAGE+30)
+        # A Unix socket's default buffer can be smaller than this payload on
+        # macOS. Drain concurrently, and force that condition on Linux too.
+        b.setsockopt(socket.SOL_SOCKET,socket.SO_SNDBUF,1024)
+        b.settimeout(5)
+        with ThreadPoolExecutor(max_workers=1) as sender:
+            sent=sender.submit(b.sendall,b''.join(packets[:512])+packets[512][:7])
+            for end in range(512):
+                self.assertEqual(w.receive(timeout=3),('keepalive',end,1))
+                self.assertLessEqual(len(w.stream_buffer),MAX_MESSAGE+30)
+            sent.result(timeout=5)
         self.assertLess(counted.calls,64)
         self.assertLessEqual(counted.maximum,64*1024)
         self.assertIsNone(w.receive(timeout=.010))

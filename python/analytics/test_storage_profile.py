@@ -1,5 +1,6 @@
 """Explicit disk profiles preserve fences, legacy admission and worker reuse."""
 import json
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -14,6 +15,9 @@ import test_incremental as fixture
 
 
 class StorageProfileTests(unittest.TestCase):
+    def setUp(self):
+        previous=os.umask(0o077);self.addCleanup(os.umask,previous)
+
     def test_large_admission_does_not_leak_into_the_next_compact_call(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);path=root/'sparse'
