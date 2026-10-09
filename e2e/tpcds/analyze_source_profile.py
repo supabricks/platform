@@ -2,6 +2,7 @@
 """Reconcile EQ232 COPY phases against every frozen-source attempt and ack."""
 import argparse
 from collections import Counter
+import datetime
 import json
 from pathlib import Path
 import statistics
@@ -90,6 +91,44 @@ def sample_summary(samples, events):
     return result
 
 
+def resource_summary(samples, events):
+    def stamp(row):
+        return datetime.datetime.fromisoformat(row['utc']).timestamp()*1e9
+    selected=[s for s in samples if events[0]['start_unix_ns'] <= stamp(s) <= events[-1]['end_unix_ns']]
+    assert len(selected)>=2, 'missing cgroup samples'
+    a,b=selected[0],selected[-1]; elapsed=(stamp(b)-stamp(a))/1e9
+    def counters(text):
+        return {k:int(v) for k,v in (line.split() for line in text.splitlines())}
+    def delta(name):
+        aa,bb=counters(a[name]),counters(b[name])
+        return {k:bb[k]-aa[k] for k in aa.keys()&bb.keys()}
+    cpu=delta('cpu.stat'); memory=delta('memory.stat')
+    pressure={}
+    for name in ('memory.pressure','io.pressure','cpu.pressure'):
+        def totals(s):
+            return {line.split()[0]:int(line.split('total=')[1]) for line in s.splitlines()}
+        aa,bb=totals(a[name]),totals(b[name])
+        pressure[name]={k:(bb[k]-aa[k])/1e6 for k in aa}
+    roles={}; initial={}; final={}
+    for s in selected:
+        for p in s['processes']:
+            key=(p['pid'],p['start_ticks']); value=p['user_ticks']+p['system_ticks']
+            if s is a:initial[key]=value
+            final[key]=(p['role'],value)
+    for key,(role,value) in final.items():
+        roles[role]=roles.get(role,0)+(value-initial.get(key,0))/a['clock_ticks_per_second']/elapsed
+    return dict(samples=len(selected),seconds=elapsed,cgroup_cpu_cores=cpu['usage_usec']/1e6/elapsed,
+        sampled_process_cpu_cores=roles,
+        process_note='Retired processes use their last observed CPU counter; short-lived work can be missed. Cgroup CPU is authoritative for the cell total.',
+        memory_current_bytes=distribution([int(s['memory.current']) for s in selected]),
+        memory_first=counters(a['memory.stat']),memory_last=counters(b['memory.stat']),
+        memory_event_delta=delta('memory.events'),
+        reclaim_fault_delta={k:v for k,v in memory.items() if k.startswith(('pgscan','pgsteal','pgfault','pgmajfault','workingset_'))},
+        pressure_stall_seconds=pressure,io_first=a['io.stat'],io_last=b['io.stat'],
+        host_disks_first=a['host_diskstats'],host_disks_last=b['host_diskstats'],
+        observed_compilers=[p for s in selected for p in s['observed_compilers']])
+
+
 def analyze(root):
     root=Path(root); report=json.loads((root/'result.json').read_text())
     assert report['status']=='PREFIX_PASS' and report['stopped']
@@ -102,9 +141,11 @@ def analyze(root):
     assert reconcile(events,list(rows(root/'commits.jsonl'))) == report['committed_rows'] == 14770127
     samples=list(rows(root/'source-profile/storage.jsonl'))
     late=[e for e in events if LOW <= e['committed_rows'] <= HIGH]
+    resources=list(rows(root.parent/(root.name+'-control')/'resources.jsonl'))
     return dict(scope='Diagnostic source attribution, not optimization qualification. Late cohort uses source acknowledgments, not the EQ230 publication cohort.',
         rows=report['committed_rows'],release_identity=report['release_identity'],observer=observer,
         overall=phase_summary(events),late=phase_summary(late),late_observations=sample_summary(samples,late),
+        late_resources=resource_summary(resources,late),
         load_seconds=report['load_seconds'],flow_control_wait_seconds=report['flow_control_wait_seconds'])
 
 
