@@ -204,7 +204,43 @@ installed twice. All raw traces and its invalid-instrumentation disposition are
 retained. [#224](https://github.com/supabricks/platform/issues/224) fixes package
 hook insertion and runtime installation to be idempotent; the regression suite
 passes eight tests, including rebuilding a diagnostic overlay from another one.
-A fresh corrected diagnostic will precede the next optimization decision.
+The corrected `p2` attempt completed with a single instrumentation layer. In its
+late cohort, 27 complete apply runs had median 1.266 s total worker time and
+1.190 CPU-seconds per request. Nested planning took 586 ms, table application
+330 ms, inventory 71 ms and previous-inventory verification 46 ms. The median
+manifest-to-worker-end segment was 78 ms; another 246 ms elapsed before durable
+publication, including GC and controller work. These medians are not additive.
+Over its approximately 45-second capture snapshot window, control reads cost
+16.266 s and native fsync calls totaled 14.532 s across threads. The latter also
+occurs within other stage measurements. `p2` throughput includes instrumentation
+and is not acceptance or a reliable fixed overhead correction: it measured
+19,923 rows/s overall and 18,001 in the late cohort versus uninstrumented H's
+20,786 / 17,156. Retain both observed scopes without inferring a speedup.
+
+### Capture control-version reuse (prepared)
+
+Capture currently reopens and reparses its daemon-owned control JSON for every
+replication message. The next slice retains just one parsed control version,
+bounded by the existing 64-KiB limit. Every loop still checks inode, ownership/
+permission metadata, link count, size, mtime and ctime before reusing it. A changed
+version is opened without following a symlink, read with a fixed bound, and
+checked against both the open descriptor and current path before being cached.
+Atomic replacement, in-place changes, errors and process restart invalidate the
+value. Rapid replacement retries are bounded and then report unavailability.
+Desired state, generation fencing and owner health retain their per-loop checks;
+journal-reader authorization still performs independent uncached validation.
+No acknowledgment, durability, queue, CPU or memory limit changes. All 184 Python
+tests pass, including warm reuse, restored-mtime writes, mid-read replacement,
+symlinks/hardlinks, oversized controls, error/restart invalidation, bounded churn
+and existing pause/fencing/feedback tests. Installed measurement is pending.
+
+The user's pipeline-parallelism proposal is a separate possible follow-up. Today
+capture overlaps apply, but one active sync run per policy serializes planning,
+Delta mutation, verification and publication. Read-only decoding/type conversion
+could prepare the next bounded range while the preceding batch finishes; checks
+against Delta state, conflicting writes and publication still require order.
+Such a change needs explicit bounded-queue admission and recovery evidence. It
+has not been implemented or credited with a speedup in this work.
 
 A separate source-review opportunity for repeated ownership-table scans during
 historical cleanup is tracked in [#223](https://github.com/supabricks/platform/issues/223).
