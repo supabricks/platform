@@ -66,7 +66,7 @@ def prepare(config):
     # Ephemeral data need not be fsynced: restart discards it. Publish the small
     # receipt only after close; the daemon additionally waits for process exit.
     atomic(work/'result.json',dict(state='ready',id=config['id'],end_lsn=pg_lsn(decoded.end),
-        input_bytes=decoded.input_bytes,rows=len(decoded.operations),bytes=size,sha256=digest.hexdigest(),
+        input_bytes=decoded.input_bytes,rows=len(decoded.operations),transactions=decoded.transactions,bytes=size,sha256=digest.hexdigest(),
         journal_read=config['_journal_read'],elapsed_ms=round((time.monotonic()-wall)*1000),
         cpu_ms=round((time.process_time()-cpu)*1000),started_at_ms=started,prepared_at_ms=int(time.time()*1000),
         peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)))
@@ -88,9 +88,10 @@ def consume(config):
     work=Path(config['workspace'])/'prepared'
     private_directory(work)
     if private_json(work/'input.json',4*1024*1024)!=issued:raise CaptureError('preparation_fenced')
-    rows=receipt['rows'];size=receipt['bytes']
+    rows=receipt['rows'];size=receipt['bytes'];transactions=receipt['transactions']
     if type(rows) is not int or not 0<=rows<=row_limit(config) or type(size) is not int or not 0<size<=MAX_BYTES:
         raise CaptureError('preparation_byte_budget')
+    if type(transactions) is not int or not 1<=transactions<=65536:raise CaptureError('preparation_byte_budget')
     fd=os.open(work/'batch.jsonl',os.O_RDONLY|os.O_NOFOLLOW)
     operations=[];digest=hashlib.sha256();used=0
     with os.fdopen(fd,'rb') as stream:
@@ -139,7 +140,7 @@ def consume(config):
     config['_preparation']=dict(outcome='consumed',rows=rows,bytes=size,prepare_ms=receipt['elapsed_ms'],prepare_cpu_ms=receipt['cpu_ms'],
         consume_ms=round((time.monotonic()-started)*1000),age_ms=attachment.get('age_ms'),
         started_at_ms=receipt['started_at_ms'],prepared_at_ms=receipt['prepared_at_ms'],peak_rss_bytes=receipt['peak_rss_bytes'])
-    return DecodedBatch(schema,operations,lsn(receipt['end_lsn']),receipt['input_bytes'])
+    return DecodedBatch(schema,operations,lsn(receipt['end_lsn']),receipt['input_bytes'],transactions)
 
 
 def optional_consume(config):
@@ -159,13 +160,15 @@ row and input-byte limits. Selection never splits a source transaction.
 """
     remaining_rows=row_limit(config)-len(decoded.operations)
     remaining_bytes=16*1024*1024-decoded.input_bytes
-    if decoded.end==lsn(config['target_lsn']) or remaining_rows<=0 or remaining_bytes<=0:return decoded
+    remaining_transactions=65536-decoded.transactions
+    if decoded.end==lsn(config['target_lsn']) or min(remaining_rows,remaining_bytes,remaining_transactions)<=0:return decoded
     if config.get('prepared_read_after')!=pg_lsn(decoded.end):raise CaptureError('preparation_fenced')
     data=journal(config,suffix=True)
     if data[0]!=decoded.schema:raise CaptureError('schema_changed')
     suffix=decode(dict(config,after_lsn=pg_lsn(decoded.end)),data,lambda:check(config),
-        remaining_rows=remaining_rows,remaining_bytes=remaining_bytes)
+        remaining_rows=remaining_rows,remaining_bytes=remaining_bytes,remaining_transactions=remaining_transactions)
     config['_preparation']['suffix_rows']=len(suffix.operations)
     decoded.operations.extend(suffix.operations)
     decoded.end=suffix.end;decoded.input_bytes+=suffix.input_bytes
+    decoded.transactions+=suffix.transactions
     return decoded

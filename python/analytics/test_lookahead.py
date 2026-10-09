@@ -143,9 +143,19 @@ class LookaheadTests(unittest.TestCase):
 
     def test_byte_and_row_limits_reject_before_consumption(self):
         self.changes();config=self.next();self.prepared(config)
-        for key,value in [('rows',65537),('bytes',p.MAX_BYTES+1),('input_bytes',16*1024*1024+1)]:
+        for key,value in [('rows',65537),('bytes',p.MAX_BYTES+1),('input_bytes',16*1024*1024+1),('transactions',65537),('transactions',0)]:
             changed=copy.deepcopy(config);changed['prepared_batch']['receipt'][key]=value
             self.assertIsNone(p.optional_consume(changed))
+
+    def test_empty_transactions_share_the_original_record_limit(self):
+        from incremental.preparation import decode
+        config=self.next()
+        data=(f.PROFILE,[(300,f.tx(280,300)),(400,f.tx(380,400))],400,0)
+        decoded=decode(config,data,lambda:None,remaining_transactions=1)
+        self.assertEqual((decoded.end,decoded.transactions,len(decoded.operations)),(300,1,0))
+        config['target_lsn']='0/190';decoded.transactions=65536
+        with patch.object(p,'journal',side_effect=AssertionError('record budget exceeded')):
+            self.assertIs(p.complete(config,decoded),decoded)
 
     def test_fill_preserves_serial_batch_and_transaction_overlay(self):
         self.changes()

@@ -29,6 +29,7 @@ fn receipt_in_range(authorization: &Value, receipt: &Value) -> bool {
             end > lsn(authorization["after_lsn"].as_str()?).ok()?
                 && end <= lsn(authorization["target_lsn"].as_str()?).ok()?
                 && receipt["rows"].as_u64()? <= 65536
+                && (1..=65536).contains(&receipt["transactions"].as_u64()?)
                 && receipt["bytes"].as_u64()? <= 64 * MIB
                 && receipt["input_bytes"].as_u64()? <= 16 * MIB
                 && receipt["peak_rss_bytes"].as_u64()? <= 256 * MIB,
@@ -333,13 +334,15 @@ mod tests {
     #[test]
     fn suffix_authority_requires_a_bounded_complete_preparation_receipt() {
         let authorization = json!({"after_lsn":"0/20","target_lsn":"0/50"});
-        let receipt = json!({"end_lsn":"0/40","rows":65536,"bytes":64*MIB,"input_bytes":16*MIB,"peak_rss_bytes":256*MIB});
+        let receipt = json!({"end_lsn":"0/40","rows":65536,"transactions":65536,"bytes":64*MIB,"input_bytes":16*MIB,"peak_rss_bytes":256*MIB});
         assert!(receipt_in_range(&authorization, &receipt));
         for (key, value) in [
             ("end_lsn", json!("0/20")),
             ("end_lsn", json!("0/51")),
             ("end_lsn", json!("invalid")),
             ("rows", json!(65537)),
+            ("transactions", json!(65537)),
+            ("transactions", json!(0)),
             ("bytes", json!(64 * MIB + 1)),
             ("input_bytes", json!(16 * MIB + 1)),
             ("peak_rss_bytes", json!(256 * MIB + 1)),

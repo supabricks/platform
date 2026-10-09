@@ -378,7 +378,7 @@ are retained. No compiler activity was observed in the trial.
 The next candidate separately authorizes an exact suffix from the prepared end
 to the current apply target, while retaining the full original range for a
 cache-miss fallback. Prefix plus suffix obeys the same 65,536-row/16-MiB input
-selection bounds, including whole transactions. A focused test compares the
+selection bounds and the 65,536-record limit, including whole transactions. A focused test compares the
 combined plan byte-for-byte with an ordinary serial read, including conflicting
 updates across the preparation boundary. Its throughput has not yet been measured.
 

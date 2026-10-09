@@ -26,26 +26,27 @@ class DecodedBatch:
     operations: list
     end: int
     input_bytes: int
+    transactions: int = 0
 
 
-def decode(config, journal_data, check, *, remaining_rows=None, remaining_bytes=None):
+def decode(config, journal_data, check, *, remaining_rows=None, remaining_bytes=None, remaining_transactions=65536):
     schema,transactions,_,_=journal_data
     limit=row_limit(config) if remaining_rows is None else min(row_limit(config),remaining_rows)
-    operations=[];end=lsn(config['after_lsn']);input_bytes=0
+    operations=[];end=lsn(config['after_lsn']);input_bytes=0;selected_transactions=0
     prefix=('supabricks.barrier.'+config['identity']['generation']
             if config['identity'].get('decoder_version')==2 else None)
     check()
     for candidate_end,payload in transactions:
         check()
-        if len(operations)>=limit:break
+        if len(operations)>=limit or selected_transactions>=remaining_transactions:break
         if remaining_bytes is not None and input_bytes+len(payload)>remaining_bytes:break
         selected=changes(payload,schema,candidate_end,prefix)
         # Per-transaction admission stays in changes(). Never split a commit to
         # fill the aggregate batch; the next authorized run handles the remainder.
         if len(operations)+len(selected)>limit:break
-        operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
+        operations.extend(selected);end=candidate_end;input_bytes+=len(payload);selected_transactions+=1
     check()
-    return DecodedBatch(schema,operations,end,input_bytes)
+    return DecodedBatch(schema,operations,end,input_bytes,selected_transactions)
 
 
 class Preparation:
