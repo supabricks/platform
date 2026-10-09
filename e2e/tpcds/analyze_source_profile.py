@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import datetime
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -13,7 +14,9 @@ LOW, HIGH = 13_000_000, 14_600_000
 
 
 def rows(path):
-    with Path(path).open() as stream:
+    path=Path(path)
+    stream=path.open() if path.exists() else gzip.open(str(path)+'.gz','rt')
+    with stream:
         for line in stream:
             yield json.loads(line)
 

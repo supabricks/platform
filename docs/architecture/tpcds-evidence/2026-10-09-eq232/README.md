@@ -1,6 +1,11 @@
 # EQ232 source-write attribution
 
-Status: instrumentation validated; paired installed measurements pending.
+Status: instrumentation validated; source timing completed, concurrent timing
+and exact qualification in progress. The source control's post-load snapshot
+exceeded the old three-minute empty-bootstrap helper deadline. Its original
+failed receipt and complete timing ledger are retained. A separate post-timing
+qualification resumes the stopped cell with a 15-minute readiness bound; it
+does not replay COPY or overwrite that original receipt.
 [Issue #232](https://github.com/supabricks/platform/issues/232) follows the
 completed EQ230 batch/publication attribution. This is a diagnostic slice;
 there is no production configuration change or performance improvement claim.
