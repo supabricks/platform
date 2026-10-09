@@ -1,0 +1,21 @@
+PASS all_24_native_tables_enrolled_and_continuous_sync_healthy_before_first_copy
+LOADED customer_address 1000000
+LOADED customer_demographics 1920800
+LOADED date_dim 73049
+LOADED warehouse 15
+LOADED ship_mode 20
+LOADED time_dim 86400
+LOADED reason 55
+LOADED income_band 20
+LOADED item 204000
+LOADED store 402
+LOADED call_center 30
+Traceback (most recent call last):
+  File "/data2/supabricks-eq/eq220/i1-control/harness/e2e/tpcds/load.py", line 274, in <module>
+    run(args)
+  File "/data2/supabricks-eq/eq220/i1-control/harness/e2e/tpcds/load.py", line 195, in run
+    time.sleep(.2);sample(True)
+                   ^^^^^^^^^^^^
+  File "/data2/supabricks-eq/eq220/i1-control/harness/e2e/tpcds/load.py", line 141, in sample
+    raise RuntimeError('continuous sync blocked; see retained policy/capture observation')
+RuntimeError: continuous sync blocked; see retained policy/capture observation

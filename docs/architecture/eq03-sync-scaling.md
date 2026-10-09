@@ -232,7 +232,40 @@ journal-reader authorization still performs independent uncached validation.
 No acknowledgment, durability, queue, CPU or memory limit changes. All 184 Python
 tests pass, including warm reuse, restored-mtime writes, mid-read replacement,
 symlinks/hardlinks, oversized controls, error/restart invalidation, bounded churn
-and existing pause/fencing/feedback tests. Installed measurement is pending.
+and existing pause/fencing/feedback tests. Installed continuous and triggered
+suites pass. A >1-GiB compaction/interrupted-commit/replay fixture passes exact
+historical/current versions at 507,518,976-byte peak RSS (484.0 MiB).
+Three alternating predecessor/candidate process pairs poll identical control
+bytes 100,000 times per sample. Median time changes from 1.784017 to 0.333404 s
+(5.351×), with identical parsed contents. This is a polling component probe,
+not a published-row rate. Installed `eq220i` / `bfc87c7` failed the uninstrumented `i1` prefix at 4,693,815
+committed and 4,628,279 published rows with `wal_budget`. This is not a throughput
+pass; every receipt is retained. [#225](https://github.com/supabricks/platform/issues/225)
+tracks the newly exposed source-retention blocker.
+
+### WAL restart-snapshot pressure (prepared)
+
+The slot's restart LSN, reconstructed from source LSN minus retained bytes,
+advances in approximately 15-second steps in `i1`, while durable feedback
+continues advancing. Its last restart point stays at `0/44B2B360` for about
+15 seconds; the last successful observation has 419,522,120 retained bytes,
+just below the subsequent failing 80%-of-512-MiB check. H peaked at
+366,617,752 bytes. PostgreSQL's [background writer](https://github.com/postgres/postgres/blob/REL_17_STABLE/src/backend/postmaster/bgwriter.c)
+logs running-transaction snapshots every 15 seconds; logical decoding uses
+those records to propose safe restart progress. This cadence is consistent
+with the observed retention steps, not evidence of missing durable feedback.
+
+A new slice requests [`pg_log_standby_snapshot()`](https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-SNAPSHOT-SYNCHRONIZATION)
+after another quarter-budget of WAL under pressure, at most once per second.
+Idle pressure without further WAL growth does not generate repeated requests.
+The operation logs transaction state; it does not advance the slot, skip WAL,
+or acknowledge data. PostgreSQL's oldest-transaction fence, durable capture
+feedback, the existing 80% stop and server-enforced WAL cap remain unchanged.
+Source progress now includes confirmed/restart/source positions and request
+counts. A bounded installed fixture will verify progress, long-transaction
+pinning and exact application under the existing 32-MiB minimum WAL profile.
+All 187 Python tests and 38 qualification-harness tests pass; installed validation
+is pending.
 
 The user's pipeline-parallelism proposal is a separate possible follow-up. Today
 capture overlaps apply, but one active sync run per policy serializes planning,

@@ -8,7 +8,7 @@ from package import overlay
 
 WORKERS=['incremental_worker.py','incremental/storage.py','incremental/planning.py',
          'incremental/maintenance.py','incremental/reuse.py','incremental/rows.py',
-         'capture/protocol.py','capture_worker.py']
+         'capture/protocol.py','capture/source.py','capture_worker.py']
 
 
 def package(base,destination,proof):

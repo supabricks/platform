@@ -112,6 +112,8 @@ def run(path):
             progress['capture_journal']=spool.storage_progress()
             progress['stream_observed_at_ms']=stream_observed
             if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
+            if observed:
+                progress['source_slot']={key:observed[key] for key in ('confirmed','restart','source','wal_status','retained_bytes','restart_snapshot') if key in observed}
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
