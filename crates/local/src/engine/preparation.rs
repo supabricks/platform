@@ -22,6 +22,21 @@ fn bounded_json(path: &Path, limit: u64) -> Option<Value> {
     serde_json::from_slice(&fs::read(path).ok()?).ok()
 }
 
+fn receipt_in_range(authorization: &Value, receipt: &Value) -> bool {
+    let valid = || -> Option<bool> {
+        let end = lsn(receipt["end_lsn"].as_str()?).ok()?;
+        Some(
+            end > lsn(authorization["after_lsn"].as_str()?).ok()?
+                && end <= lsn(authorization["target_lsn"].as_str()?).ok()?
+                && receipt["rows"].as_u64()? <= 65536
+                && receipt["bytes"].as_u64()? <= 64 * MIB
+                && receipt["input_bytes"].as_u64()? <= 16 * MIB
+                && receipt["peak_rss_bytes"].as_u64()? <= 256 * MIB,
+        )
+    };
+    valid().unwrap_or(false)
+}
+
 fn range(
     after: &str,
     decoded: &str,
@@ -234,12 +249,20 @@ impl Cell {
         if log.exists() {
             fs::remove_file(&log)?;
         }
-        let child = supervisor::start_owned(
+        let child = match supervisor::start_owned(
             store,
             &launch,
             &self.root.join("launches/incremental-prepare.json"),
             &log,
-        )?;
+        ) {
+            Ok(child) => child,
+            Err(error) => {
+                // start_owned has already fenced a failed launch. Retire its
+                // unused grant so successive failures cannot accumulate files.
+                fs::remove_dir_all(&work)?;
+                return Err(error);
+            }
+        };
         self.preparation = Some(Preparation {
             origin: r.clone(),
             authorization,
@@ -285,6 +308,7 @@ impl Cell {
             if let Some(receipt) = bounded_json(&slot.work.join("result.json"), 65536)
                 && receipt["state"] == "ready"
                 && receipt["id"] == slot.authorization["id"]
+                && receipt_in_range(&slot.authorization, &receipt)
             {
                 let destination =
                     PathBuf::from(config["workspace"].as_str().unwrap()).join("prepared");
@@ -294,6 +318,7 @@ impl Cell {
                 fs::rename(&slot.work, &destination)?;
                 config["prepared_batch"] = json!({"authorization":slot.authorization,"receipt":receipt,
                     "age_ms":slot.born.elapsed().as_millis()});
+                config["prepared_read_after"] = receipt["end_lsn"].clone();
             }
         }
         // Never wait on a late preparer. Ordinary authorized journal reading is
@@ -305,6 +330,25 @@ impl Cell {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn suffix_authority_requires_a_bounded_complete_preparation_receipt() {
+        let authorization = json!({"after_lsn":"0/20","target_lsn":"0/50"});
+        let receipt = json!({"end_lsn":"0/40","rows":65536,"bytes":64*MIB,"input_bytes":16*MIB,"peak_rss_bytes":256*MIB});
+        assert!(receipt_in_range(&authorization, &receipt));
+        for (key, value) in [
+            ("end_lsn", json!("0/20")),
+            ("end_lsn", json!("0/51")),
+            ("end_lsn", json!("invalid")),
+            ("rows", json!(65537)),
+            ("bytes", json!(64 * MIB + 1)),
+            ("input_bytes", json!(16 * MIB + 1)),
+            ("peak_rss_bytes", json!(256 * MIB + 1)),
+        ] {
+            let mut changed = receipt.clone();
+            changed[key] = value;
+            assert!(!receipt_in_range(&authorization, &changed));
+        }
+    }
     #[test]
     fn complete_end_and_triggered_barrier_bound_the_fixed_range() {
         assert_eq!(

@@ -20,7 +20,7 @@ from incremental.storage import JournalBusyDeferred, read_json, initialize, jour
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
 from incremental.preparation import Preparation, DecodedBatch, decode, row_limit
-from incremental.lookahead import optional_consume, hint
+from incremental.lookahead import optional_consume, complete, hint
 
 def quote(name):return '"'+name.replace('"','""')+'"'
 
@@ -196,6 +196,7 @@ def run(config, *, prepare_overlap=False):
         # never re-enter this retryable boundary after partial table mutation.
         journal_data=optional_consume(config)
         if journal_data is None:journal_data=journal(config)
+        else:journal_data=complete(config,journal_data)
     # Only the existing authorized range may prepare. Bootstrap and sealed-plan
     # crash replay do not decode or fetch journal data. The same process's RSS
     # ceiling covers both stages; there is no executor queue or extra process.

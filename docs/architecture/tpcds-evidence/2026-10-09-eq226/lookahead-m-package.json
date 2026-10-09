@@ -1,0 +1,121 @@
+{
+  "signed_release": false,
+  "platform_revision": "100170d7c329abb12f1e82392e7dbc1b09245204",
+  "source_dirty": false,
+  "command": [
+    "cargo",
+    "build",
+    "--release",
+    "--locked",
+    "-p",
+    "supabricks-local"
+  ],
+  "cargo_lock_sha256": "947cc348838828f6ad9a64cf63894ec8737f85192d4f2e9e569a88ce257f5f33",
+  "build_log_sha256": "3f8717122c3844fa1812f42ce5342cf23984e3380868cc0ec8460891510371e9",
+  "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+  "base_release_identity": "462ab39ef6edfe31866649a6a34909bda846ab4e5a90cdb1a85b8b55764a1f96",
+  "candidate_release_identity": "0b70d0e7af8e509206a967ee558e798cbb44a1543df27f40217641acee86a54b",
+  "python_overlay_sha256": "d6e461f7d985a99ba846e20d226d8780594a089146cf71cd555a47c95a30d07a",
+  "installation_verification": {
+    "identity": "0b70d0e7af8e509206a967ee558e798cbb44a1543df27f40217641acee86a54b",
+    "root": "<repo>/build/eq220/programs/releases/v0.1.0-alpha.36.eq220m",
+    "sqlite": {
+      "binding": "rusqlite/bundled",
+      "compile_options": [
+        "ATOMIC_INTRINSICS=1",
+        "COMPILER=gcc-13.3.0",
+        "DEFAULT_AUTOVACUUM",
+        "DEFAULT_CACHE_SIZE=-2000",
+        "DEFAULT_FILE_FORMAT=4",
+        "DEFAULT_FOREIGN_KEYS",
+        "DEFAULT_JOURNAL_SIZE_LIMIT=-1",
+        "DEFAULT_MMAP_SIZE=0",
+        "DEFAULT_PAGE_SIZE=4096",
+        "DEFAULT_PCACHE_INITSZ=20",
+        "DEFAULT_RECURSIVE_TRIGGERS",
+        "DEFAULT_SECTOR_SIZE=4096",
+        "DEFAULT_SYNCHRONOUS=2",
+        "DEFAULT_WAL_AUTOCHECKPOINT=1000",
+        "DEFAULT_WAL_SYNCHRONOUS=2",
+        "DEFAULT_WORKER_THREADS=0",
+        "DIRECT_OVERFLOW_READ",
+        "ENABLE_API_ARMOR",
+        "ENABLE_COLUMN_METADATA",
+        "ENABLE_DBSTAT_VTAB",
+        "ENABLE_FTS3",
+        "ENABLE_FTS3_PARENTHESIS",
+        "ENABLE_FTS5",
+        "ENABLE_LOAD_EXTENSION",
+        "ENABLE_MEMORY_MANAGEMENT",
+        "ENABLE_RTREE",
+        "ENABLE_STAT4",
+        "HAVE_ISNAN",
+        "MALLOC_SOFT_LIMIT=1024",
+        "MAX_ATTACHED=10",
+        "MAX_COLUMN=2000",
+        "MAX_COMPOUND_SELECT=500",
+        "MAX_DEFAULT_PAGE_SIZE=8192",
+        "MAX_EXPR_DEPTH=1000",
+        "MAX_FUNCTION_ARG=1000",
+        "MAX_LENGTH=1000000000",
+        "MAX_LIKE_PATTERN_LENGTH=50000",
+        "MAX_MMAP_SIZE=0x7fff0000",
+        "MAX_PAGE_COUNT=0xfffffffe",
+        "MAX_PAGE_SIZE=65536",
+        "MAX_SQL_LENGTH=1000000000",
+        "MAX_TRIGGER_DEPTH=1000",
+        "MAX_VARIABLE_NUMBER=32766",
+        "MAX_VDBE_OP=250000000",
+        "MAX_WORKER_THREADS=8",
+        "MUTEX_PTHREADS",
+        "SOUNDEX",
+        "SYSTEM_MALLOC",
+        "TEMP_STORE=1",
+        "THREADSAFE=1",
+        "USE_URI"
+      ],
+      "source_id": "2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24",
+      "version": "3.53.2"
+    },
+    "verified": true,
+    "version": "v0.1.0-alpha.36.eq220m"
+  },
+  "changed_files": {
+    "bin/supabricks": {
+      "sha256": "d692228e7b11fddbf1f67b5d26e5d41e3084fb02e5180235eea40d5eb46d678f",
+      "executable": true
+    },
+    "python/analytics/__pycache__/incremental_worker.cpython-312.pyc": {
+      "executable": false,
+      "sha256": "8c7a0dc49c0cc7662467d1bc70a7652a4b7d805ec8d109f3b867987255e3bb2e"
+    },
+    "python/analytics/__pycache__/prepare_worker.cpython-312.pyc": {
+      "executable": false,
+      "sha256": "b25f03a9fb1e2bc2bef6f582179ceae7be2d7a53c206542b899dc15f11b3cf28"
+    },
+    "python/analytics/capture/__pycache__/owner.cpython-312.pyc": {
+      "executable": false,
+      "sha256": "937b5791ce79540a4ab0a50c263b745ba4dd0140c8e52c433c569332cddb4bf1"
+    },
+    "python/analytics/capture/owner.py": {
+      "executable": false,
+      "sha256": "6a03e5daefea26d6673febca79c1eefe3b801f7434907b34b21a617f2d402ff9"
+    },
+    "python/analytics/incremental/__pycache__/lookahead.cpython-312.pyc": {
+      "executable": false,
+      "sha256": "f7cc67a00ae4918a2ad0386e81c5b2b65fe6705f08f8e1053d9e005f5aa40202"
+    },
+    "python/analytics/incremental/lookahead.py": {
+      "executable": false,
+      "sha256": "b587df53da9e21c755f67d4cc3ad4b45e786531480377babb013793cba7c5b3f"
+    },
+    "python/analytics/incremental_worker.py": {
+      "executable": false,
+      "sha256": "589664a3c1094ddf378e57db12f2dd8a9b4eeb9eeff58954de07ac0747de1b97"
+    },
+    "python/analytics/prepare_worker.py": {
+      "executable": false,
+      "sha256": "a08ad49bb098ba146c6febf9f9add258e23f1db8e6ad1dbc0537804e58a2a18c"
+    }
+  }
+}

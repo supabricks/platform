@@ -34,6 +34,15 @@ class PreparationAuthorityTests(unittest.TestCase):
         (work/'input.json').unlink()
         with self.assertRaises(CaptureError):self.request(config)
 
+    def test_suffix_is_exact_separate_authority_and_full_fallback_remains_valid(self):
+        self.config['prepared_read_after']='0/C8';atomic(self.input,self.config)
+        def read(config):return owner.read_range(owner.request_for(config,suffix=True),time.monotonic()+3)
+        self.assertEqual(read(self.config)[1],[(300,b'second')])
+        self.assertEqual(self.request()[1],[(200,b'first'),(300,b'second')])
+        with self.assertRaises(CaptureError):read(dict(self.config,prepared_read_after='0/64'))
+        atomic(self.control,dict(self.control_value,desired='paused'))
+        with self.assertRaises(CaptureError):read(self.config)
+
 
 class LookaheadTests(unittest.TestCase):
     storage_profile='large'
@@ -54,21 +63,29 @@ class LookaheadTests(unittest.TestCase):
     config_next=f.IncrementalTests.config_next
     rows=f.IncrementalTests.rows
 
-    def prepared(self,config):
+    def prepared(self,config,target=None,interrupt=False):
         id=str(uuid.uuid4());work=self.root/'analytics/prepare-work'/id;work.mkdir(mode=0o700)
         issued=dict(preparation=1,id=id,attempt=1,epoch_id=config['previous']['epoch_id'],
             workspace=str(work),schema_sha256=hashlib.sha256(canonical(f.PROFILE)).hexdigest(),
             **{k:config[k] for k in p.SCOPE+('after_lsn','target_lsn','deadline_ms')})
+        if target is not None:issued['target_lsn']=target
         atomic(work/'input.json',issued)
-        child=subprocess.run([sys.executable,'-B',str(Path(w.__file__).with_name('prepare_worker.py')),str(work/'input.json')],capture_output=True)
+        env=dict(os.environ)
+        if interrupt:env['SUPABRICKS_CAPTURE_FAILPOINT']='after_prepare_decode'
+        child=subprocess.run([sys.executable,'-B',str(Path(w.__file__).with_name('prepare_worker.py')),str(work/'input.json')],capture_output=True,env=env)
+        if interrupt:
+            self.assertEqual(child.returncode,86);self.assertFalse((work/'result.json').exists())
+            return work
         self.assertEqual(child.returncode,0,child.stderr.decode())
         receipt=json.loads((work/'result.json').read_text())
         work.rename(Path(config['workspace'])/'prepared')
         config['prepared_batch']=dict(authorization=issued,receipt=receipt)
+        config['prepared_read_after']=receipt['end_lsn']
         return receipt
 
     def next(self):
         config=self.config_next('0/12C');config['journal_access']=self.access
+        config['attempt']=1
         return config
 
     def changes(self):
@@ -129,6 +146,57 @@ class LookaheadTests(unittest.TestCase):
         for key,value in [('rows',65537),('bytes',p.MAX_BYTES+1),('input_bytes',16*1024*1024+1)]:
             changed=copy.deepcopy(config);changed['prepared_batch']['receipt'][key]=value
             self.assertIsNone(p.optional_consume(changed))
+
+    def test_fill_preserves_serial_batch_and_transaction_overlay(self):
+        self.changes()
+        self.spool.append(380,400,f.tx(380,400,f.change(b'U',42,new=[2,'98.76543210',f.UNCHANGED])))
+        config=self.next();config['target_lsn']='0/190'
+        direct=dict(config);direct.pop('journal_access')
+        expected=w.plan(config,Path(config['generation']),self.first,w.journal(direct))
+        self.prepared(config,target='0/12C')
+        work=self.root/'analytics/apply-work'/config['id'];work.mkdir(parents=True,mode=0o700)
+        atomic(work/'input.json',config)
+        with patch.object(w,'journal',side_effect=AssertionError('prepared prefix read twice')):w.run(config)
+        actual=json.loads((Path(config['workspace'])/'plan.json').read_text())
+        self.assertEqual(canonical(actual),canonical(expected))
+        self.assertEqual(config['_preparation']['suffix_rows'],1)
+
+    def test_fill_does_not_split_transactions_or_enlarge_input_budget(self):
+        self.changes();config=self.next();self.prepared(config)
+        config['target_lsn']='0/190'
+        two=f.tx(380,400,f.change(b'I',42,new=[3,None,'three']),f.change(b'I',42,new=[4,None,'four']))
+        data=(f.PROFILE,[(400,two)],400,len(two))
+        for limit in ('rows','bytes'):
+            decoded=p.consume(config)
+            if limit=='rows':decoded.operations=[decoded.operations[0]]*65535
+            else:decoded.input_bytes=16*1024*1024-len(two)+1
+            original=(len(decoded.operations),decoded.end,decoded.input_bytes)
+            with patch.object(p,'journal',return_value=data):combined=p.complete(config,decoded)
+            self.assertEqual((len(combined.operations),combined.end,combined.input_bytes),original)
+
+    def test_prepared_prefix_survives_compaction_retry_only_with_same_predecessor(self):
+        self.changes();config=self.next();self.prepared(config)
+        old=Path(config['generation']);generation=str(uuid.uuid4())
+        config.update(storage_generation=generation,previous_generation=str(old),
+            generation=str(self.root/'analytics/incremental'/generation))
+        def fail(point):
+            if point=='after_compaction_rename':raise SystemExit(86)
+        with patch.object(w,'journal',side_effect=AssertionError('prepared batch reread')):
+            with patch('incremental.storage.fault',fail),self.assertRaises(SystemExit):w.run(config)
+            w.run(config)
+        result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(result['manifest']['compaction']['rows'],3)
+        self.assertEqual(self.rows(self.first,42)[0]['note'],'original')
+        self.config['generation']=config['generation']
+        self.assertEqual(self.rows(result,42),[dict(id=2,amount='12.34567890',note='original')])
+
+    def test_interrupted_preparer_keeps_no_snapshot_or_source_progress(self):
+        import fcntl
+        self.changes();config=self.next();before=self.spool.captured
+        work=self.prepared(config,interrupt=True)
+        self.assertEqual(self.spool.captured,before)
+        with (self.spool.root/'readers.lock').open('rb') as stream:fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        self.assertFalse((work/'batch.jsonl').exists())
 
 
 if __name__=='__main__':unittest.main()

@@ -187,12 +187,13 @@ def journal_backoff(seconds):
     time.sleep(seconds)
 
 
-def journal(config):
+def journal(config, *, suffix=False):
     # Freeze the request once. A retry must not follow a newer target or identity.
     if 'journal_access' in config:
         from capture.owner import request_for
-        request=copy.deepcopy(request_for(config))
+        request=copy.deepcopy(request_for(config,suffix=suffix))
     else:
+        if suffix:raise CaptureError('preparation_authority')
         # Direct backend access is retained for isolated storage qualification.
         # Daemon-issued production requests always carry journal_access.
         request=copy.deepcopy({k:config[k] for k in ('spool','identity','bootstrap_lsn','after_lsn','target_lsn')})

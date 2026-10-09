@@ -361,10 +361,26 @@ authorized journal range N ---+                            +--> state-dependent 
 ```
 
 Cross-batch look-ahead is tracked in [#226](https://github.com/supabricks/platform/issues/226).
-The first implementation candidate now supplies a daemon-owned, separate
+The first implementation candidate supplies a daemon-owned, separate
 `prepare_worker.py` process for the explicit large profile. Qualification and
-the matched throughput comparison are pending; this is not a measured speedup.
+the broader comparison remain in progress; this is not a measured speedup.
 The compact profile retains its existing path.
+
+Candidate M (`100170d`) passed the 7,385,039-row prefix and exact verification of
+all 24 tables, but regressed to 19,783 rows/s overall / 14,384 late, versus the
+previous serial L trial's 25,685 / 18,523. It consumed 175 prepared batches;
+late median rows/batch dropped from 31,744 to 21,504. Prepared prefixes sampled
+early were shortening the following batch. Median preparation/consume times
+were 256/164 ms among consumed results. These nested measurements do not add
+to a predicted speedup. [Raw receipts and negative disposition](tpcds-evidence/2026-10-09-eq226/m1/disposition.json)
+are retained. No compiler activity was observed in the trial.
+
+The next candidate separately authorizes an exact suffix from the prepared end
+to the current apply target, while retaining the full original range for a
+cache-miss fallback. Prefix plus suffix obeys the same 65,536-row/16-MiB input
+selection bounds, including whole transactions. A focused test compares the
+combined plan byte-for-byte with an ordinary serial read, including conflicting
+updates across the preparation boundary. Its throughput has not yet been measured.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks

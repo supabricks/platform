@@ -14,10 +14,10 @@ import resource
 import sys
 import time
 from capture.owner import private_directory, private_json
-from capture.spool import CaptureError, atomic, canonical, lsn, pg_lsn
+from capture.spool import CaptureError, atomic, canonical, lsn, pg_lsn, fault
 from .preparation import DecodedBatch, decode, row_limit
 from .rows import UNCHANGED, key_columns, key_values, row_key, value
-from .storage import journal
+from .storage import journal, RESERVE
 
 MAX_BYTES=64*1024*1024
 MAX_LINE=2*1024*1024
@@ -48,9 +48,12 @@ def prepare(config):
     check(config);wall=time.monotonic();cpu=time.process_time();started=int(time.time()*1000)
     data=journal(config)
     decoded=decode(config,data,lambda:check(config));del data
+    fault('after_prepare_decode')
     if hashlib.sha256(canonical(decoded.schema)).hexdigest()!=config['schema_sha256']:
         raise CaptureError('schema_changed')
     work=Path(config['workspace']);size=0;digest=hashlib.sha256()
+    space=os.statvfs(work)
+    if space.f_bavail*space.f_frsize<RESERVE+MAX_BYTES:raise CaptureError('preparation_byte_budget')
     with (work/'batch.jsonl').open('xb') as out:
         def line(v):
             nonlocal size
@@ -145,3 +148,24 @@ def optional_consume(config):
         # A stale/missing result is a cache miss before initialization/mutation.
         config['_preparation']={'outcome':'discarded'}
         return None
+
+
+def complete(config, decoded):
+    """Fill an early prefix to the same bounds as an ordinary current-run read.
+
+The daemon authorizes both the original full range (cache-miss fallback) and
+one exact suffix (cache hit). Prefix plus suffix shares the original aggregate
+row and input-byte limits. Selection never splits a source transaction.
+"""
+    remaining_rows=row_limit(config)-len(decoded.operations)
+    remaining_bytes=16*1024*1024-decoded.input_bytes
+    if decoded.end==lsn(config['target_lsn']) or remaining_rows<=0 or remaining_bytes<=0:return decoded
+    if config.get('prepared_read_after')!=pg_lsn(decoded.end):raise CaptureError('preparation_fenced')
+    data=journal(config,suffix=True)
+    if data[0]!=decoded.schema:raise CaptureError('schema_changed')
+    suffix=decode(dict(config,after_lsn=pg_lsn(decoded.end)),data,lambda:check(config),
+        remaining_rows=remaining_rows,remaining_bytes=remaining_bytes)
+    config['_preparation']['suffix_rows']=len(suffix.operations)
+    decoded.operations.extend(suffix.operations)
+    decoded.end=suffix.end;decoded.input_bytes+=suffix.input_bytes
+    return decoded
