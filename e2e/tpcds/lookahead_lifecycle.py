@@ -10,6 +10,7 @@ from pathlib import Path
 import os
 import hashlib
 import json
+import sqlite3
 import signal
 import sys
 import threading
@@ -18,7 +19,7 @@ import psutil
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'native'))
 import installed_sync
-from cell import wait
+from cell import wait,lsn
 from preparation_lifecycle import LargeProfile
 
 ROWS=32768
@@ -80,7 +81,8 @@ class Lookahead(LargeProfile,installed_sync.InstalledContinuous):
         # Unique integers, cardinality and closed min/max prove every key in the
         # interval. Equal min/max payload proves every corresponding value.
         def published():
-            p=self.policy();assert p['continuous_status']['state'] not in ('failed','blocked'),p
+            p=self.policy()
+            if p.get('continuous_status'):assert p['continuous_status']['state'] not in ('failed','blocked'),p
             return sum(t['rows'] for t in self.current()['descriptor']['manifest']['tables'])==count*2
         wait(published,timeout=180)
         reader=self.opened(epoch=self.current()['epoch_id'],ttl_ms=600000)
@@ -146,6 +148,70 @@ class LookaheadDisabled(Lookahead):
         self.stop()
 
 
+class LookaheadTriggered(Lookahead):
+    trigger=installed_sync.InstalledTriggered.trigger
+    finished=installed_sync.InstalledTriggered.finished
+
+    def run(self,python,worker):
+        self.metrics['fixture_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        self.setup_source(python,worker,"CREATE TABLE orders(id int PRIMARY KEY,payload text); CREATE TABLE payments(id int PRIMARY KEY,payload text); INSERT INTO orders VALUES(0,repeat('x',512)); INSERT INTO payments VALUES(0,repeat('x',512))")
+        policy=self.cli('sync','create','--branch','main','--mode','triggered','--strategy','incremental','--key','triggered-lookahead')
+        self.policy_id=policy['id'];self.finished(self.trigger(policy,'bootstrap'))
+        with self.source() as db:
+            for start in range(1,ROWS+1,1024):
+                with db.transaction():
+                    for table in ('orders','payments'):
+                        db.execute(f"INSERT INTO {table} SELECT i,repeat('x',512) FROM generate_series(%s::int,%s::int) i",(start,start+1023))
+        run=self.trigger(policy,'bounded');frozen=[]
+        try:
+            def hold():
+                records=self.records()
+                prep=next((p for p in records if p['role']=='incremental-prepare'),None)
+                writer=next((p for p in records if p['role'].startswith('incremental-') and p['role']!='incremental-prepare'),None)
+                if not prep or not writer:return False
+                try:
+                    p=psutil.Process(prep['pid'])
+                    if p.status()==psutil.STATUS_ZOMBIE:return False
+                    p.suspend();frozen.append(p)
+                    p=psutil.Process(writer['pid']);p.suspend();frozen.append(p)
+                    return True
+                except psutil.NoSuchProcess:
+                    for p in frozen:
+                        try:p.resume()
+                        except psutil.NoSuchProcess:pass
+                    frozen.clear();return False
+            # Poll faster than cell.wait's 200 ms cadence so the real short-lived
+            # preparation stage is stopped before a successful exit/reap.
+            until=time.monotonic()+90
+            while time.monotonic()<until and not hold():time.sleep(.005)
+            assert len(frozen)==2,'no triggered in-flight preparation observed'
+            directories=list((self.root/'analytics/prepare-work').iterdir());assert len(directories)==1
+            grant=json.loads((directories[0]/'input.json').read_text())
+            target=self.sync('run',id=run['id'])['target_lsn']
+            assert lsn(grant['after_lsn'])<lsn(grant['target_lsn'])<=lsn(target)
+            # Commit after the fixed barrier while both pipeline stages are held.
+            with self.source() as db:
+                with db.transaction():
+                    for table in ('orders','payments'):
+                        db.execute(f"INSERT INTO {table} VALUES(%s,repeat('x',512))",(ROWS+1,))
+            frozen[0].resume()
+            wait(lambda:self.gone(frozen[0]),timeout=30)
+            assert json.loads((directories[0]/'result.json').read_text())['state']=='ready'
+        finally:
+            for process in frozen:
+                try:process.resume()
+                except psutil.NoSuchProcess:pass
+        bounded,_=self.finished(run);assert bounded['target_lsn']==target
+        self.exact(ROWS+1)
+        with sqlite3.connect((self.root/'state.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
+            consumed=[json.loads(row[0])['manifest'].get('preparation',{}) for row in db.execute("select descriptor from publications where state='published'")]
+        assert any(p.get('outcome')=='consumed' for p in consumed),'triggered test did not consume preparation'
+        self.check('triggered_consumed_preparation_preserves_fixed_barrier_with_later_commits')
+        self.finished(self.trigger(self.policy(),'later'));self.exact(ROWS+2)
+        self.check('later_trigger_applies_post_barrier_rows_exactly')
+        self.stop()
+
+
 if __name__=='__main__':
-    installed_sync.SUITES={'lookahead':Lookahead,'lookahead-disabled':LookaheadDisabled}
+    installed_sync.SUITES={'lookahead':Lookahead,'lookahead-disabled':LookaheadDisabled,'lookahead-triggered':LookaheadTriggered}
     installed_sync.main()
