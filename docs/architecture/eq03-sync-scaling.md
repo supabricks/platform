@@ -392,9 +392,23 @@ The next scheduling candidate waits for a capture observation at least as recent
 as the predecessor's decoded-end marker before freezing the optional range.
 Capture reports continuous progress every 250 ms. This tests whether a fresh
 cursor supplies a larger useful prefix; it does not wait or change deadlines on
-the apply path. Its throughput has not yet been measured. An additional installed
+the apply path. O (`f7d805d`) completed `o1` at 24,592 rows/s overall / 19,324 late:
+better than N2 but still 4.6% / 1.6% below the fresh serial comparator. It consumed
+174 prepared batches, with a median prepared prefix of 15,360 rows (versus N2's
+8,192); median consumption was 118 ms. Exact verification is pending at this
+checkpoint. An additional installed
 functional harness holds actual preparation/apply processes with SIGSTOP to
 exercise pause and daemon-SIGKILL fencing before checking every key/value domain. It passes both cases against O, ending with exactly 65,537 rows per table. The initial fixture setup failed on ambiguous smallint generate_series parameters; that failure and the explicit-cast correction are retained separately.
+
+An isolated read-only transfer probe on the same 57,344-row cloned journal gives
+O median decode/consume times of 0.574089 / 0.642064 s. All decoded objects match
+exactly. A separate cProfile diagnostic identifies repeated per-row key-schema
+derivation and 1,111,892 calls through the text-wire value converter. Those
+instrumented timings are not added to the unprofiled measurements. The next
+candidate caches each relation's key profile within one consumption call and
+validates already-typed JSON integers/text in place. Integer bounds, exact
+decimal/date/CHAR checks, key/TOAST validation and checksums remain; no decoded
+state survives the request. Its component and installed performance are pending.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks

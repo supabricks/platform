@@ -16,7 +16,7 @@ import time
 from capture.owner import private_directory, private_json
 from capture.spool import CaptureError, atomic, canonical, lsn, pg_lsn, fault
 from .preparation import DecodedBatch, decode, row_limit
-from .rows import UNCHANGED, key_columns, key_values, row_key, value
+from .rows import UNCHANGED, key_columns, key_values, row_key, value, _INT_LIMITS
 from .storage import journal, RESERVE
 
 MAX_BYTES=64*1024*1024
@@ -111,10 +111,11 @@ def consume(config):
             s=schema[str(t['oid'])]
             if (s[:2]!=[t['schema'],t['name']] or
                 [c[1:] for c in s[3]]!=[[c['name'],c['type_oid'],c['typmod']] for c in t['columns']]):raise CaptureError('schema_changed')
+        profiles={oid:(s[3],key_columns(s[3])) for oid,s in schema.items()}
         for _ in range(rows):
             oid,tag,old,new,row=line()
             if oid not in schema or tag not in ('I','U','D'):raise CaptureError('preparation_shape')
-            columns=schema[oid][3];keys=key_columns(columns)
+            columns,keys=profiles[oid]
             def key(k):
                 v=key_values(k,keys);return v[0] if len(v)==1 else tuple(v)
             old=key(old)
@@ -123,15 +124,21 @@ def consume(config):
             else:
                 new=key(new)
                 if not isinstance(row,list) or len(row)!=len(columns):raise CaptureError('preparation_shape')
-                converted=[]
-                for v,c in zip(row,columns):
-                    if isinstance(v,dict):
+                # JSON already materializes integers/text in their final Python
+                # representation. Validate in place, without copying every row
+                # or dispatching those values through the text-wire converter.
+                for i,(v,c) in enumerate(zip(row,columns)):
+                    if v is None:continue
+                    typ=c[2]
+                    if type(v) is int and typ in _INT_LIMITS:
+                        low,high=_INT_LIMITS[typ]
+                        if not low<=v<high:raise CaptureError('preparation_shape')
+                    elif type(v) is str and typ not in _INT_LIMITS:
+                        if typ not in (25,1043):row[i]=value(v,c)
+                    elif type(v) is dict:
                         if tag!='U' or v!={'unchanged':True}:raise CaptureError('preparation_shape')
-                        converted.append(UNCHANGED)
-                    elif v is None:converted.append(None)
-                    elif type(v) in (str,int):converted.append(value(v,c))
+                        row[i]=UNCHANGED
                     else:raise CaptureError('preparation_shape')
-                row=converted
                 if row_key(row,keys)!=new or (tag=='I' and old!=new):raise CaptureError('preparation_shape')
             operations.append((oid,tag.encode('ascii'),old,new,row))
         if stream.read(1) or used!=size or digest.hexdigest()!=receipt['sha256']:raise CaptureError('preparation_checksum')
