@@ -1,4 +1,4 @@
-//! Opt-in diagnostic spans. No credentials, SQL, row values, or synchronous writes.
+//! Opt-in diagnostic spans. No credentials, SQL, row values, or fsync.
 #[cfg(feature = "sync-profile")]
 mod enabled {
     use serde::Serialize;

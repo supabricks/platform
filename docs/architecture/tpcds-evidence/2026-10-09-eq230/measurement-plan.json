@@ -1,0 +1,42 @@
+{
+  "issue": 230,
+  "scope": "Diagnostic attribution only; operating policy unchanged",
+  "baseline": "c228a",
+  "candidate": "c230a",
+  "rows": 14770127,
+  "publication_window_rows": [
+    13000000,
+    14600000
+  ],
+  "harness_revision": "0bc57c170cb6e34f7d3cefa1ae6981c9b1e8d090",
+  "logical_cpus": "0-7",
+  "memory_bytes": 17179869184,
+  "swap": false,
+  "backlog_rows": 65536,
+  "copy_rows": 1024,
+  "copy_bytes": 4194304,
+  "journal_bytes": 16777216,
+  "values_bytes": 33554432,
+  "plan_bytes": 67108864,
+  "apply_bytes": 805306368,
+  "recycle_bytes": 536870912,
+  "original_sf100": "paused",
+  "sp_series": "frozen",
+  "diagnostic_budget_per_process_bytes": 8388608,
+  "acceptance": [
+    "exact 24-table prefix verification",
+    "zero diagnostic errors/drops; complete joins or explicit incomplete result",
+    "preserve failed/outlier receipts",
+    "source-bound verified installed package",
+    "no builds/tests/profilers during timed throughput interval"
+  ],
+  "questions": [
+    "source COPY/commit latency and supply",
+    "commit to durable capture latency",
+    "reported capture age and eligible rows at target/admission/read",
+    "target/16 MiB/65536 row transaction cuts",
+    "worker stages and warm/cold verification",
+    "publication handoff"
+  ],
+  "comparison": "Profiled throughput is not an optimization claim; compare observation overhead to c228a and report limits."
+}

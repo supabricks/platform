@@ -6,12 +6,24 @@ import struct
 import tempfile
 import unittest
 from unittest.mock import patch
+from analyze_batch_profile import match_copy_commits
 
 spec=importlib.util.spec_from_file_location('batch_profile',Path(__file__).with_name('batch_profile.py'))
 profile=importlib.util.module_from_spec(spec);spec.loader.exec_module(profile)
 
 
 class BatchProfileTests(unittest.TestCase):
+    def test_source_join_uses_exact_rows_and_lsn_intervals(self):
+        transactions=[dict(commit=105,end=110,rows=1024),dict(commit=50000,end=50005,rows=1024)]
+        acks=[dict(boundary_lsn='0/64',rows=1024,copy_and_commit_ms=1,table='t',elapsed_seconds=1),
+              dict(boundary_lsn='0/C350',rows=1024,copy_and_commit_ms=2,table='t',elapsed_seconds=2)]
+        self.assertEqual(sum(t['rows'] for t in match_copy_commits(transactions,acks)),2048)
+        with self.assertRaises(AssertionError):match_copy_commits(transactions[:1],acks)
+        with self.assertRaises(AssertionError):match_copy_commits(transactions,[dict(acks[0],rows=1023),acks[1]])
+        # Equal row counts cannot hide a shifted transaction: its WAL interval
+        # must be after this COPY's marker and before the next COPY's marker.
+        with self.assertRaises(AssertionError):match_copy_commits(transactions,[dict(acks[0],boundary_lsn='0/C350'),acks[1]])
+
     def test_framing_counts_changes_without_reading_values(self):
         frames=[b'Bheader',b'Iprivate-value',b'Uother-secret',b'Dkey',b'Mbarrier',b'Ccommit']
         wire=b''.join(struct.pack('!I',len(f))+f for f in frames)
