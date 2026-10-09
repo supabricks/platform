@@ -149,7 +149,8 @@ impl Cell {
         r: &Run,
         c: &crate::capture::Capture,
     ) -> Result<()> {
-        if self.preparation.is_some()
+        if !cfg!(feature = "sync-lookahead")
+            || self.preparation.is_some()
             || r.state != "running"
             || r.storage_profile.is_compact()
             || r.previous_epoch.is_none()

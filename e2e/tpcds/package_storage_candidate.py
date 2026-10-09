@@ -11,7 +11,7 @@ WORKERS=['incremental_worker.py','prepare_worker.py','incremental/lookahead.py',
          'capture/protocol.py','capture/source.py','capture_worker.py']
 
 
-def package(base,destination,proof):
+def package(base,destination,proof,*,lookahead=False):
     repo=Path(__file__).resolve().parents[2]
     def git(*args):return subprocess.check_output(['git',*args],cwd=repo,text=True).strip()
     if git('status','--porcelain'):raise ValueError('commit the complete candidate before packaging')
@@ -19,6 +19,7 @@ def package(base,destination,proof):
     if destination.exists() or proof.exists():raise ValueError('fresh candidate paths required')
     proof.parent.mkdir(parents=True,exist_ok=True)
     command=['cargo','build','--release','--locked','-p','supabricks-local']
+    if lookahead:command+=['--features','sync-lookahead']
     log=proof.with_suffix('.build.log')
     with log.open('x') as stream:subprocess.run(command,cwd=repo,stdout=stream,stderr=subprocess.STDOUT,check=True)
     if git('status','--porcelain') or git('rev-parse','HEAD')!=revision:raise ValueError('source changed during build')
@@ -41,6 +42,7 @@ def package(base,destination,proof):
     if not verified['verified'] or verified['identity']!=sha(path):raise ValueError('candidate verification failed')
     if sha(base/'bin/supabricks')!=original['files']['bin/supabricks']['sha256']:raise ValueError('base binary changed')
     report=dict(signed_release=False,platform_revision=revision,source_dirty=False,command=command,
+        experimental_sync_lookahead=lookahead,
         cargo_lock_sha256=sha(repo/'Cargo.lock'),build_log_sha256=sha(log),
         rustc=subprocess.check_output(['rustc','--version'],text=True).strip(),
         base_release_identity=sha(base/'release.json'),candidate_release_identity=sha(path),
@@ -52,5 +54,6 @@ def package(base,destination,proof):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('base','destination','proof'):parser.add_argument('--'+name,type=Path,required=True)
+    parser.add_argument('--lookahead',action='store_true',help='Explicit experimental sync-lookahead build; not a normal release default')
     args=parser.parse_args()
-    package(args.base.resolve(),args.destination.resolve(),args.proof.resolve())
+    package(args.base.resolve(),args.destination.resolve(),args.proof.resolve(),lookahead=args.lookahead)

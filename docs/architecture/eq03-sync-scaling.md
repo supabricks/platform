@@ -364,7 +364,12 @@ Cross-batch look-ahead is tracked in [#226](https://github.com/supabricks/platfo
 The first implementation candidate supplies a daemon-owned, separate
 `prepare_worker.py` process for the explicit large profile. Qualification and
 the broader comparison remain in progress; this is not a measured speedup.
-The compact profile retains its existing path.
+The compact profile retains its existing path. The final build gate now requires
+the explicit experimental Cargo feature `sync-lookahead`; normal release builds
+retain serial behavior for large profiles too. Engineering packages opt in with
+`package_storage_candidate.py --lookahead`. Candidates M–P below predate this
+gate and enabled the stage for large profiles. The gate changes admission only;
+the prepared-data format and authority checks are unchanged.
 
 Candidate M (`100170d`) passed the 7,385,039-row prefix and exact verification of
 all 24 tables, but regressed to 19,783 rows/s overall / 14,384 late, versus the

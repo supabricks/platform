@@ -25,6 +25,8 @@ jobs:
         run: python3 scripts/check-portable-deps.py
       - name: portable contracts and local crash recovery without UI or cluster setup
         run: cargo test --locked -p supabricks-core -p supabricks-local
+      - name: experimental preparation range and receipt contracts
+        run: cargo test --locked -p supabricks-local --lib --features sync-lookahead engine::preparation::tests
       - name: console survives a busy daemon and fences changed ownership
         run: |
           cargo build --locked -p supabricks-local

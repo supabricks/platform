@@ -3,10 +3,13 @@
 Hold the actual daemon-owned preparer and apply worker with SIGSTOP, then pause
 or crash/recover the daemon. Use the immutable installed workers and assert the
 old process identities and preparation directory cannot survive or be replayed.
+Requires a package built with the experimental sync-lookahead Cargo feature;
+the normal release deliberately does not launch this stage.
 """
 from pathlib import Path
 import os
 import hashlib
+import json
 import signal
 import sys
 import threading
@@ -117,6 +120,32 @@ class Lookahead(LargeProfile,installed_sync.InstalledContinuous):
         self.stop()
 
 
+class LookaheadDisabled(Lookahead):
+    def run(self,python,worker):
+        self.metrics['fixture_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        self.setup_source(python,worker,"CREATE TABLE orders(id int PRIMARY KEY,payload text); CREATE TABLE payments(id int PRIMARY KEY,payload text); INSERT INTO orders VALUES(0,repeat('x',512)); INSERT INTO payments VALUES(0,repeat('x',512))")
+        self.policy_id=self.cli('sync','create','--branch','main','--mode','continuous','--key','serial-default')['id']
+        self.healthy()
+        with self.source() as db:
+            for start in range(1,ROWS+1,1024):
+                with db.transaction():
+                    for table in ('orders','payments'):
+                        db.execute(f"INSERT INTO {table} SELECT i,repeat('x',512) FROM generate_series(%s::int,%s::int) i",(start,start+1023))
+        self.exact(ROWS+1)
+        inputs=list((self.root/'analytics/apply-workers').glob('*/input.json'))
+        assert inputs,'no installed incremental worker exercised'
+        for path in inputs:
+            config=json.loads(path.read_text())
+            assert config['storage_profile']=='large' and config['prepare_next'] is False
+            assert 'prepared_batch' not in config
+        assert all(p['role']!='incremental-prepare' for p in self.records())
+        directory=self.root/'analytics/prepare-work'
+        assert not directory.exists() or not list(directory.iterdir())
+        self.check('normal_large_profile_keeps_serial_default_and_exact_all_keys')
+        self.metrics['rows_per_table']=ROWS+1
+        self.stop()
+
+
 if __name__=='__main__':
-    installed_sync.SUITES={'lookahead':Lookahead}
+    installed_sync.SUITES={'lookahead':Lookahead,'lookahead-disabled':LookaheadDisabled}
     installed_sync.main()
