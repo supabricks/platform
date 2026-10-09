@@ -198,6 +198,14 @@ that synchronous filesystem latency is absent. A separate coarse diagnostic
 package is profiling control reads, worker phases and publication; its timings
 will not substitute for an uninstrumented qualification.
 
+The first coarse diagnostic attempt `p1` completed its load but is excluded from
+capture attribution and acceptance: inherited opt-in capture/export hooks were
+installed twice. All raw traces and its invalid-instrumentation disposition are
+retained. [#224](https://github.com/supabricks/platform/issues/224) fixes package
+hook insertion and runtime installation to be idempotent; the regression suite
+passes eight tests, including rebuilding a diagnostic overlay from another one.
+A fresh corrected diagnostic will precede the next optimization decision.
+
 A separate source-review opportunity for repeated ownership-table scans during
 historical cleanup is tracked in [#223](https://github.com/supabricks/platform/issues/223).
 Its prepared lookup patch is not part of these candidates; the current evidence

@@ -30,15 +30,23 @@ def build(base,dest,binary,io_library):
         '  profile_parent=$(dirname -- "$profile_parent")',
         'done', ''])
     assert launcher.count(marker)==1
-    replace('python/analytics/python',launcher.replace(marker,probe+marker).encode(),True)
+    # Engineering bases can already carry opt-in profiling. Reapplying an
+    # overlay must not stack launcher blocks or worker hooks.
+    assert launcher.count(probe)<=1
+    if probe not in launcher:launcher=launcher.replace(marker,probe+marker)
+    replace('python/analytics/python',launcher.encode(),True)
     replace('python/analytics/worker_profile.py',Path(__file__).with_name('worker_profile.py').read_bytes())
     for file,role in [('capture_worker.py','capture'),('incremental_worker.py','incremental'),('export.py','export')]:
         p=base/'python/analytics'/file;s=p.read_text();lines=s.splitlines(keepends=True)
-        lines.insert(2,'import worker_profile\n');s=''.join(lines)
+        assert lines.count('import worker_profile\n')<=1
+        if 'import worker_profile\n' not in lines:lines.insert(2,'import worker_profile\n')
+        s=''.join(lines)
         # Install after declarations, before entry. No exception behavior or retry changes.
         marker="if __name__=='__main__':" if "if __name__=='__main__':" in s else "if __name__ == '__main__':"
         assert s.count(marker)==1
-        s=s.replace(marker,"worker_profile.install(globals(), '"+role+"')\n\n"+marker)
+        hook="worker_profile.install(globals(), '"+role+"')\n"
+        assert s.count(hook)<=1
+        if hook not in s:s=s.replace(marker,hook+'\n'+marker)
         replace('python/analytics/'+file,s.encode(),manifest['files']['python/analytics/'+file]['executable'])
     p=dest/'release.json';p.unlink();p.write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n')
     assert sha(base/'release.json')==original

@@ -1,0 +1,21 @@
+test_filesystem_counts_are_nested_and_contain_no_paths (test_profile.ProfilingTests.test_filesystem_counts_are_nested_and_contain_no_paths) ... ok
+test_install_connect_factory_is_not_rebound_by_other_hooks (test_profile.ProfilingTests.test_install_connect_factory_is_not_rebound_by_other_hooks) ... ok
+test_nested_spans_keep_self_time_and_original_exception (test_profile.ProfilingTests.test_nested_spans_keep_self_time_and_original_exception) ... ok
+test_process_sampling_retains_transient_denial_but_rejects_persistent_denial (test_profile.ProfilingTests.test_process_sampling_retains_transient_denial_but_rejects_persistent_denial) ... ok
+test_reused_process_profiles_each_request_and_keeps_errors_separate (test_profile.ProfilingTests.test_reused_process_profiles_each_request_and_keeps_errors_separate) ... Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/performance/worker_profile.py", line 87, in measured
+    with Span(name):result=function(*args,**kwargs)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/performance/test_profile.py", line 100, in run
+    if config['id']=='bad':raise ValueError('private row')
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: private row
+ok
+test_sql_labels_never_contain_literals (test_profile.ProfilingTests.test_sql_labels_never_contain_literals) ... ok
+test_sqlite_busy_is_recorded_without_changing_transaction_behavior (test_profile.ProfilingTests.test_sqlite_busy_is_recorded_without_changing_transaction_behavior) ... ok
+test_reapplying_overlay_keeps_one_hook_and_preserves_each_base (test_profile_package.ProfilePackageTests.test_reapplying_overlay_keeps_one_hook_and_preserves_each_base) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.178s
+
+OK

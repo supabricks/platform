@@ -83,6 +83,7 @@ with tempfile.TemporaryDirectory() as root:
  root=Path(root);(root/'sync-profile').mkdir();(root/'sync-profile/enabled').touch()
  path=root/'capture/id/control.json';path.parent.mkdir(parents=True);path.touch();sys.argv=['worker',str(path)]
  p.install({'select':select},'capture')
+ p.install({'select':select},'capture')  # Repeated overlays cannot double-wrap.
  db=sqlite3.connect(':memory:');assert isinstance(db,p.Connection);db.execute('SELECT 1');db.close()
  p.STOP.set();p.flush(final=True)
  assert p.METRICS['sqlite.connect']['calls']==1
