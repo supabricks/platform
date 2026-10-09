@@ -15,7 +15,7 @@ NETWORK={
 }
 TOP_CHECKS={'exact_installed_capture_wal_faults','signed_curl_install_and_bundled_sync_workers_verified','archive_and_installed_inventory_unchanged',
     *('exact_installed_'+name for name in ('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge','append','capacity'))}
-WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py')
+WORKERS=('export.py','capture_worker.py','incremental_worker.py','session.py','capture/spool.py','capture/wal.py','capture/protocol.py','capture/groups.py','capture/source.py','incremental/rows.py','incremental/storage.py','incremental/maintenance.py','incremental/planning.py','incremental/preparation.py')
 REQUIRED={
     'capacity':{'large_live_set_compaction_and_append_fit_original_capacity',
         'capacity_replay_preserves_exact_source_and_old_versions',

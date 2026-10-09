@@ -109,4 +109,8 @@ class EpochReuseTests(unittest.TestCase):
         self.assertEqual(self.rows(replay,42),self.rows(last,42))
 
 
+class LargeEpochReuseTests(EpochReuseTests):
+    storage_profile='large'
+
+
 if __name__=='__main__':unittest.main()

@@ -211,7 +211,7 @@ class IncrementalTests(unittest.TestCase):
         config=self.config_next('0/190')
         def crash(point):
             if point=='after_first_table':raise SystemExit(86)
-        with patch('incremental_worker.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
+        with patch('incremental.preparation.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
             run(config)
         prepared=json.loads((Path(config['workspace'])/'plan.json').read_text())
         self.assertEqual(prepared['end_lsn'],'0/12C')
@@ -225,7 +225,7 @@ class IncrementalTests(unittest.TestCase):
         following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=3,
                        workspace=str(self.root/'work3'),previous=prefix,after_lsn='0/12C')
         Path(following['workspace']).mkdir()
-        with patch('incremental_worker.MAX_ROWS',3):run(following)
+        with patch('incremental.preparation.MAX_ROWS',3):run(following)
         final=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
         self.assertEqual(final['manifest']['source']['lsn'],'0/190')
         self.assertEqual(final['manifest']['input_bytes'],len(second))

@@ -23,8 +23,11 @@ def overlay(base,destination,repo,proof,names,sail_artifact=None,delta_artifact=
         if not source.resolve().is_relative_to((repo/'python/analytics').resolve()) or source.suffix!='.py':
             raise ValueError('analytics Python source required')
         relative='python/analytics/'+name;p=destination/relative
-        before=sha(p);mode=p.stat().st_mode&0o777
-        p.unlink();p.write_bytes(source.read_bytes());p.chmod(mode)
+        before=sha(p) if p.exists() else None
+        mode=p.stat().st_mode&0o777 if p.exists() else source.stat().st_mode&0o777
+        if p.exists():p.unlink()
+        p.parent.mkdir(parents=True,exist_ok=True)
+        p.write_bytes(source.read_bytes());p.chmod(mode)
         cache=p.parent/'__pycache__'/(p.stem+'.cpython-312.pyc')
         old_cache=sha(cache) if cache.exists() else None
         if cache.exists():cache.unlink()

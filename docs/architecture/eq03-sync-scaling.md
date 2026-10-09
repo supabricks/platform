@@ -276,20 +276,48 @@ collects only unpinned old roots, restores a compacted epoch from stopped backup
 with capture fenced, and retires source resources without deleting retained
 history. The uninstrumented `j1` prefix passed at 25,944 published rows/s
 overall and 20,635 in the fixed late cohort (283.963 s loading plus 0.692 s
-draining). Independent typed verification passes all 24 tables. Neither phase
-observed a compiler. The sampled commit-to-publication upper-bound p95 is 3.164 s.
+draining). Independent typed verification passes all 24 tables. No compilers were observed during the timed load. The sampled commit-to-publication upper-bound p95 is 3.164 s.
 These results precede any preparation pipeline change. I failed, so the H-to-J
 comparison combines control-version reuse and restart-snapshot maintenance; it
 cannot attribute the gain to either change alone. The fresh original baseline
 and growing-prefix qualifications remain outstanding; 10x is not established.
 
-The user's pipeline-parallelism proposal is a separate possible follow-up. Today
-capture overlaps apply, but one active sync run per policy serializes planning,
-Delta mutation, verification and publication. Read-only decoding/type conversion
-could prepare the next bounded range while the preceding batch finishes; checks
-against Delta state, conflicting writes and publication still require order.
-Such a change needs explicit bounded-queue admission and recovery evidence. It
-has not been implemented or credited with a speedup in this work.
+### Preparation pipeline: first slice
+
+The first slice separates strict pgoutput decoding/type conversion and complete-
+transaction selection from planning against a pinned Delta version. In the
+explicit large profile, one request-local preparation thread overlaps that CPU
+work with initialization and previous-inventory verification. State-dependent
+key lookup, TOAST resolution, conflict detection, Delta writes, verification and
+publication retain their order. Compact applies remain synchronous. Bootstrap
+and sealed-plan replay create no preparation job or additional journal read.
+
+The existing owner service still authorizes one exact LSN range, checks its
+identity and returns a complete fenced response before preparation starts.
+There is no speculative next-range read, extra journal snapshot, queue, process,
+WAL acknowledgment or publication authority. Both stages share the unchanged
+768-MiB process RSS ceiling and original deadline. Complete transactions retain
+the 16,384-row/4-MiB limits, with the existing 65,536-row aggregate apply bound.
+A failure cancels and joins preparation before returning to the reusable worker;
+decoded data is ephemeral and never reused across requests. Cancellation and
+deadline checks occur between bounded transactions. Read-only planning remains
+protected by its mutation lease and inventory boundary after preparation joins.
+
+This thread can overlap Python work with native calls and filesystem operations
+that release the interpreter lock. It does not provide parallel execution of
+two Python CPU stages. Deterministic concurrency tests require verification to
+run while preparation is in progress, compare sealed plans byte-for-byte, and
+check failure propagation, cancellation, deadline expiry and single consumption.
+The retained J prefix is the before measurement. Candidate component and full-
+prefix measurements are pending; no pipeline speedup is claimed.
+
+Cross-batch look-ahead remains a later slice. It needs a separately authorized,
+fixed read-only LSN range, one queued batch with aggregate memory admission,
+identity/schema/policy fencing on consumption, and discard-on-restart recovery.
+Only decoding may run ahead of the previous publication; any Delta-dependent
+plan must bind to the actual committed predecessor. A process or native decode
+implementation would be needed to parallelize two Python CPU stages across
+cores. Evaluate that after this measured boundary, without raising limits.
 
 A separate source-review opportunity for repeated ownership-table scans during
 historical cleanup is tracked in [#223](https://github.com/supabricks/platform/issues/223).

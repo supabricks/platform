@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Daemon-owned SY03 batch applier. SQLite publication remains the sole authority."""
 import copy
+from contextlib import nullcontext
 from decimal import Decimal
 from datetime import date
 import hashlib
@@ -13,17 +14,12 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
-from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
-from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
+from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
+from incremental.rows import overlay, key_columns, row_key, key_values, value, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile, verified_digests
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
-
-# The explicit large storage profile amortizes fixed inventory/publication work
-# across more complete transactions. The decoder's per-transaction MAX_ROWS,
-# 16-MiB journal read, 32-MiB values and 64-MiB sealed plan remain independent.
-LARGE_APPLY_ROWS = 65536
-
+from incremental.preparation import Preparation, decode, row_limit
 
 def quote(name):return '"'+name.replace('"','""')+'"'
 
@@ -69,19 +65,13 @@ def plan(config,root,previous,journal_data=None,lease=None):
 
 
 def plan_rows(config,root,previous,journal_data,guard):
-    schema,transactions,_,_=journal(config) if journal_data is None else journal_data
-    row_limit=LARGE_APPLY_ROWS if config.get('storage_profile','compact')=='large' else MAX_ROWS
-    operations=[];end=lsn(config['after_lsn']);input_bytes=0
-    for candidate_end,payload in transactions:
+    if isinstance(journal_data,Preparation):
+        decoded=journal_data.result()
         guard.check()
-        if len(operations)>=row_limit:break
-        selected=changes(payload,schema,candidate_end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None)
-        # The byte-bounded journal range may contain more small rows than one
-        # apply can materialize. Publish a complete-transaction prefix and leave
-        # the rest for the next run. changes() still rejects an oversized single
-        # transaction; never divide its atomic visibility across publications.
-        if len(operations)+len(selected)>row_limit:break
-        operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
+    else:
+        decoded=decode(config,journal(config) if journal_data is None else journal_data,guard.check)
+    schema=decoded.schema;operations=decoded.operations;end=decoded.end;input_bytes=decoded.input_bytes
+    limit=row_limit(config)
     touched={}
     for oid,tag,old,new,row in operations:
         touched.setdefault(oid,set()).add(old)
@@ -102,7 +92,7 @@ def plan_rows(config,root,previous,journal_data,guard):
                 values=[row[c[1]] for c in columns];key=row_key(values,pk)
                 if key in rows:raise CaptureError('duplicate_source_key')
                 rows[key]=values
-                if len(rows)>row_limit:raise CaptureError('apply_row_budget')
+                if len(rows)>limit:raise CaptureError('apply_row_budget')
         existing[oid]=rows
     final=overlay(operations,existing,schema)
     output=[]
@@ -200,9 +190,15 @@ def run(config):
         # Delta tables into a new generation. Existing plans use crash replay and
         # never re-enter this retryable boundary after partial table mutation.
         journal_data=journal(config)
-    root=initialize(config)
-    with mutation_lease(root) as lease:
-        return run_owned(config,root,journal_data,lease)
+    # Only the existing authorized range may prepare. Bootstrap and sealed-plan
+    # crash replay do not decode or fetch journal data. The same process's RSS
+    # ceiling covers both stages; there is no executor queue or extra process.
+    context=(Preparation(config,journal_data) if journal_data is not None
+             and config.get('storage_profile','compact')=='large' else nullcontext(journal_data))
+    with context as prepared:
+        root=initialize(config)
+        with mutation_lease(root) as lease:
+            return run_owned(config,root,prepared,lease)
 
 
 def run_owned(config,root,journal_data,lease):
