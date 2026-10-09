@@ -270,7 +270,18 @@ keeps its restart pin despite snapshot requests, and the pin advances only after
 commit and durable feedback. The 32-MiB WAL limit is unchanged. The first fixture
 attempt failed before inserting business rows because of ambiguous SQL parameter
 types; its failure and the corrected second attempt are both retained. Continuous,
-triggered and automatic-rollover checks are in progress before a fresh prefix.
+triggered and automatic-rollover checks pass. The installed maintenance suite
+also preserves pinned Sail history, prunes and restarts the journal without gaps,
+collects only unpinned old roots, restores a compacted epoch from stopped backup
+with capture fenced, and retires source resources without deleting retained
+history. The uninstrumented `j1` prefix passed at 25,944 published rows/s
+overall and 20,635 in the fixed late cohort (283.963 s loading plus 0.692 s
+draining). Independent typed verification passes all 24 tables. Neither phase
+observed a compiler. The sampled commit-to-publication upper-bound p95 is 3.164 s.
+These results precede any preparation pipeline change. I failed, so the H-to-J
+comparison combines control-version reuse and restart-snapshot maintenance; it
+cannot attribute the gain to either change alone. The fresh original baseline
+and growing-prefix qualifications remain outstanding; 10x is not established.
 
 The user's pipeline-parallelism proposal is a separate possible follow-up. Today
 capture overlaps apply, but one active sync run per policy serializes planning,
