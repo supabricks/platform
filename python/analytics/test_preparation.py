@@ -10,6 +10,7 @@ from capture.spool import CaptureError,canonical
 from incremental import preparation as p
 import incremental_worker as w
 import test_incremental as f
+import test_maintenance as maintenance
 
 
 class PreparationTests(unittest.TestCase):
@@ -109,6 +110,18 @@ class OverlapTests(unittest.TestCase):
             apply.assert_not_called()
         self.assertFalse((Path(config['workspace'])/'result.json').exists())
         self.assertFalse(any(t.name=='apply-prepare' for t in threading.enumerate()))
+
+
+class LargeCompactionTests(unittest.TestCase):
+    storage_profile='large'
+    setUp=OverlapTests.setUp
+    tearDown=f.IncrementalTests.tearDown
+    config_next=f.IncrementalTests.config_next
+    config_compact=maintenance.CompactionTests.config_compact
+    result=maintenance.CompactionTests.result
+    rows=maintenance.CompactionTests.rows
+    test_compaction_preserves_exact_old_epoch_and_next_batch_reuses_root=maintenance.CompactionTests.test_compaction_preserves_exact_old_epoch_and_next_batch_reuses_root
+    test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation=maintenance.CompactionTests.test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation
 
 
 if __name__=='__main__':unittest.main()

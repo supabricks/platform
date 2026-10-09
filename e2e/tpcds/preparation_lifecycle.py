@@ -33,5 +33,5 @@ class LargeProfile:
 if __name__=='__main__':
     installed_sync.SUITES={name:type('Large'+suite.__name__,(LargeProfile,suite),{})
                           for name,suite in installed_sync.SUITES.items()
-                          if name in ('continuous','triggered','maintenance')}
+                          if name in ('continuous','triggered')}
     installed_sync.main()

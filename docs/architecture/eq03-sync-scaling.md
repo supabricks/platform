@@ -317,7 +317,13 @@ establish an end-to-end gain. The full-prefix comparison is pending.
 The corrected Python suite passes 195 tests; a separate eight-test reuse suite
 includes the added large-profile multi-epoch/restart case. All 38 harness and
 three evidence-inventory tests pass. Initial fixture failures and corrections
-are retained. Installed lifecycle checks explicitly select the large profile.
+are retained. Installed continuous and triggered checks explicitly select the large profile
+and pass. Applying that adapter to the manual snapshot/full maintenance fixture
+correctly rejected policy creation; the failed setup and cleanup are retained.
+The adapter now accepts only supported continuous/triggered suites. The original
+compact maintenance suite is running separately. Ten focused preparation tests
+pass, including large-profile compaction with exact history and interruption at
+compaction/apply boundaries; no production policy guard was relaxed.
 
 Cross-batch look-ahead remains a later slice. It needs a separately authorized,
 fixed read-only LSN range, one queued batch with aggregate memory admission,
