@@ -85,7 +85,7 @@ from 8,049 to 8,482 rows/s (1.054×). No Cargo/rustc processes were observed in
 either timed run. Both respected the 65,536-row backlog window. Exact typed
 verification of `c1` passed all 24 tables (`PREFIX_EXACT_PASS`). The 20k/10× target remains unqualified.
 
-### Controller handoff slice (in progress)
+### Controller handoff slice
 
 Completed apply receipts and durable publication commits can wake the existing
 sync state machine without waiting for general 200-ms maintenance. The readiness
@@ -103,7 +103,7 @@ last drain publication between two reads; its final descriptor and SQL ledger
 agree. The summary uses the final checkpoint as a conservative lag bound for
 those last transactions. The initial summary assertion failure is retained.
 
-### Large-profile batching slice (prepared, not yet qualified)
+### Large-profile batching slice
 
 The full-worker diagnostic on a private reconstruction of the paused published
 prefix still spends time in planning, table preparation and inventory metadata
@@ -118,7 +118,7 @@ transactions fill the admitted prefix; a transaction is never split. The journal
 read still stops at 16 MiB, Arrow values at 32 MiB, the sealed plan at 64 MiB and
 the worker at 768 MiB / 300 seconds. COPY size, 65,536-row publication window,
 CPU/RAM and SQL timeout remain unchanged. This is an explicit admission change,
-not yet a performance result. All 173 Python tests pass, including a full
+measured separately below. All 173 Python tests pass, including a full
 65,536-operation prefix interrupted after its first table commit, replay without
 rereading the journal, subsequent cross-table key move/delete, exact historical
 versions, oversized-transaction rejection and duplicate-key rejection. Installed
@@ -170,7 +170,7 @@ are about 0.61 capture cores, 0.68 apply cores and 0.22 controller cores. These
 are diagnostic samples and may miss short process tails. The observer records
 no argv or SQL and introduces no quiet gate. Neither target is qualified.
 
-### Bounded wire read-ahead (prepared for measurement)
+### Bounded wire read-ahead
 
 The capture transport previously waited for and read every packet header/body
 separately. A bounded 64-KiB receive now serves buffered complete packets in
@@ -179,8 +179,24 @@ partial-frame deadlines. Consumed bytes are compacted only before another
 receive, avoiding per-packet buffer shifts. Every header, payload, UTF-8 tuple,
 transaction and durable acknowledgment still follows the existing validation.
 All 179 Python tests passed, including coalesced packets, partial tails, invalid
-buffered headers and the maximum-frame memory bound. Installed lifecycle and
-throughput qualification remain pending.
+buffered headers and the maximum-frame memory bound. Installed continuous and
+triggered suites pass pause/resume, forced capture/daemon restart, schema drift,
+fixed barriers, complete-transaction admission and pinned historical readers.
+Three alternating process pairs on the same cloned journal reproduce every
+encoded transaction exactly. Median socketpair transport plus strict decoding
+changes from 0.569073 to 0.277381 s (2.052×). This excludes PostgreSQL, durable
+journaling and publication. Installed `eq220h` / `ea7690d` passes the prefix at 20,786 rows/s overall
+(1.121× capture-cursor) and 17,156 rows/s in the late cohort (1.039×). Exact typed
+verification passes all 24 tables. The overall rate crosses 20k, but the late
+cohort still misses the target. No compilers were observed during the timed run.
+The late cohort averages 2.15 of eight allocated CPU cores, including about 0.51
+capture and 0.66 apply cores. Across the load, sampled apply RSS peaks at 431 MiB
+and capture at 111 MiB; full-cell anonymous memory peaks at 1.78 GiB. Total
+cgroup memory reaches its 16-GiB ceiling primarily through filesystem cache.
+The existing 768-MiB worker bound is not exhausted. These samples do not prove
+that synchronous filesystem latency is absent. A separate coarse diagnostic
+package is profiling control reads, worker phases and publication; its timings
+will not substitute for an uninstrumented qualification.
 
 A separate source-review opportunity for repeated ownership-table scans during
 historical cleanup is tracked in [#223](https://github.com/supabricks/platform/issues/223).
