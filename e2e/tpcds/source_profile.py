@@ -148,6 +148,14 @@ class Observer:
         self.samples = Ledger(self.root / 'storage.jsonl')
         self.writer = None; self.stop_event = threading.Event(); self.thread = None
         self.capabilities = {}; self.errors = []; self.sample_ns = 0; self.sample_count = 0; self.settings = {}
+    def prepare(self):
+        """Install diagnostic views before capture's DDL fence is established."""
+        if hasattr(self, 'neon_schema'):
+            return
+        with self.connect() as setup:
+            setup.execute('CREATE SCHEMA IF NOT EXISTS eq232_diagnostics')
+            setup.execute('CREATE EXTENSION IF NOT EXISTS neon WITH SCHEMA eq232_diagnostics')
+            self.neon_schema = setup.execute("SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='neon'").fetchone()[0]
     def source(self):
         db = self.connect()
         # A single connection owns this fixture's serial load; the sampler uses connect directly.
@@ -155,13 +163,10 @@ class Observer:
             db.execute("SET track_io_timing=on")
             db.execute("SET track_wal_io_timing=on")
             self.writer = TimedConnection(db, self.ledger)
+            self.prepare()
             with self.connect() as setup:
-                setup.execute('CREATE SCHEMA IF NOT EXISTS eq232_diagnostics')
-                setup.execute('CREATE EXTENSION IF NOT EXISTS neon WITH SCHEMA eq232_diagnostics')
-                extension_schema = setup.execute("SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='neon'").fetchone()[0]
                 import psycopg
-                setup.execute(psycopg.sql.SQL('SET search_path TO {}, public, pg_catalog').format(psycopg.sql.Identifier(extension_schema)))
-                self.neon_schema = extension_schema
+                setup.execute(psycopg.sql.SQL('SET search_path TO {}, public, pg_catalog').format(psycopg.sql.Identifier(self.neon_schema)))
                 self.settings = dict(setup.execute("SELECT name,setting FROM pg_settings WHERE name IN ('wal_level','synchronous_commit','fsync','full_page_writes','shared_buffers','effective_cache_size','track_io_timing','track_wal_io_timing') OR name IN ('neon.file_cache_size_limit','neon.max_file_cache_size','neon.file_cache_chunk_size','neon.readahead_buffer_size','neon.store_prefetch_result_in_lfc')").fetchall())
                 self.settings['writer_track_io_timing'] = db.execute('SHOW track_io_timing').fetchone()[0]
                 self.settings['writer_track_wal_io_timing'] = db.execute('SHOW track_wal_io_timing').fetchone()[0]

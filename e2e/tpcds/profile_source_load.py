@@ -12,6 +12,7 @@ from installed_sync import InstalledContinuous
 from source_profile import Observer
 original_init = InstalledContinuous.__init__
 original_stop = InstalledContinuous.stop
+original_setup = InstalledContinuous.setup_source
 
 
 def initialize(self, release, root):
@@ -31,7 +32,14 @@ def stop(self):
         original_stop(self)
 
 
+def setup(self, *args, **kwargs):
+    result = original_setup(self, *args, **kwargs)
+    self.source_observer.prepare()
+    return result
+
+
 InstalledContinuous.__init__ = initialize
 InstalledContinuous.stop = stop
+InstalledContinuous.setup_source = setup
 sys.argv = sys.argv[1:]
 runpy.run_path(str(load), run_name='__main__')
