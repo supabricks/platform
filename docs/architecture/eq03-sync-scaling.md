@@ -1,13 +1,43 @@
 # SF100 sync scaling
 
-Status: [#230](https://github.com/supabricks/platform/issues/230) attribution is
-complete: all 14,770,127 profiled rows published and all 24 tables passed exact
-verification. Late batches reach their targets without hitting row/byte limits;
-source COPY+commit averages 98 ms per 1,024 rows while existing-key scans and
-publication handoff also remain material. [#232](https://github.com/supabricks/platform/issues/232)
-will split and attribute source write costs before another optimization.
+Status: [#232](https://github.com/supabricks/platform/issues/232) source attribution
+is complete. Both arms load the same 14,770,127-row prefix and pass exact checks
+across all 24 tables. Repeated PostgreSQL primary-key page reads dominate late
+COPY; concurrent sync additionally increases commit latency and storage work.
+Next is a bounded source cache profile in [#236](https://github.com/supabricks/platform/issues/236).
+Full bootstrap of an already-large PostgreSQL source is separately blocked by
+its batch budget, tracked in [#237](https://github.com/supabricks/platform/issues/237).
 **20k/10× end-to-end improvement is not qualified.** Original SF100 load-01
-remains paused; SP is frozen. PRs #222/#229 are held by CI failures.
+remains paused; SP is frozen.
+
+## Source COPY, commit and page-read attribution (#232)
+
+The same 1,562 source transactions in the 13.0–14.6m acknowledgment cohort
+average 69.1 ms in COPY completion without sync and 70.9 ms with sync. COMMIT
+rises from 15.7 to 26.3 ms. COPY streaming and the pre-commit LSN query are small.
+Within narrower two-second counter windows, both loaders wait about 98–99 s
+for 766–771k Neon page fetches; `store_returns` primary-key index block reads
+closely match those counts. The 128-MiB PostgreSQL buffer cache and disabled
+Neon local file cache warrant a measured cache-profile experiment before a
+cell-wide memory increase, parallel writers or larger COPY/sync batches.
+
+Concurrent sync publishes the full prefix in 930.7 s (~15,870 rows/s). Its late
+source cohort runs at 9,123 rows/s versus 11,441 in the isolated control; this is
+an acknowledgment cohort, not EQ230's publication cohort. Total late CPU is
+2.52 of eight cores. Memory reclaim is visible but its measured full-pressure
+stall is only 0.065 s; I/O stall and write volume are higher with sync. The
+unassigned inter-transaction gap includes harness work and is not entirely
+sync pacing. No production optimization is included in this diagnostic slice.
+
+The control's first post-load snapshot exceeded the harness readiness timeout.
+Inspection found a stronger full-export ceiling: 1,024 × 4,096 rows across all
+tables, at most 4,194,304 rows before other limits. The original failure is
+retained. The control is instead checked directly against typed generated rows
+and every original COPY hash; the concurrent arm passes the normal exact
+PostgreSQL-to-Delta comparison. Both cover all 24 tables. No bootstrap limit
+was raised or timed load restarted. [Detailed evidence and replay commands](tpcds-evidence/2026-10-09-eq232/README.md)
+retain all 14,434 matched transactions, counter scopes, the interrupted receipt,
+exact results and the single-pair/observer limitations.
 
 ## Batch fill and publication attribution (#230)
 

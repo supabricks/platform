@@ -1,0 +1,21 @@
+{
+  "issue": 237,
+  "control": "s232a",
+  "observed_failure": "Harness 180-second readiness timeout after successful timed load; export interrupted during cleanup, not a measured metadata-budget rejection",
+  "observed_interrupted_parquet_files": 301,
+  "observed_interrupted_parquet_bytes": 62546346,
+  "policy_export_limits": {
+    "max_bytes": 1073741824,
+    "timeout_ms": 300000
+  },
+  "source_constants": {
+    "BATCH_ROWS": 4096,
+    "MAX_BATCHES": 1024,
+    "scope": "entire generation, including empty and partial table batches"
+  },
+  "theoretical_maximum_rows": 4194304,
+  "actual_control_rows": 14770127,
+  "resolution_in_eq232": "Preserve original failed receipt. Verify all PostgreSQL control rows directly against typed generated input plus every COPY payload hash. Do not increase bootstrap limits or repeat timing.",
+  "bootstrap_scalability_qualified": false,
+  "installed_export_sha256": "8512947c7cccc44f7911bffe3482d992d7dafc4445673ad886b2a04243ac1c5a"
+}

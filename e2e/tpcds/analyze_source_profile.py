@@ -176,4 +176,4 @@ if __name__=='__main__':
     p.add_argument('--qualification',type=Path)
     args=p.parse_args();result=analyze(args.root,args.qualification)
     if args.compare:result['paired_inputs']=compare(args.root,args.compare)
-    args.output.write_text(json.dumps(result,indent=2)+'\n')
+    args.output.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
