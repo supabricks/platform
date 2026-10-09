@@ -264,8 +264,13 @@ feedback, the existing 80% stop and server-enforced WAL cap remain unchanged.
 Source progress now includes confirmed/restart/source positions and request
 counts. A bounded installed fixture will verify progress, long-transaction
 pinning and exact application under the existing 32-MiB minimum WAL profile.
-All 187 Python tests and 38 qualification-harness tests pass; installed validation
-is pending.
+All 187 Python tests and 38 qualification-harness tests pass. Installed `eq220j`
+passes the pressure fixture: 3,700 rows apply exactly; a live long transaction
+keeps its restart pin despite snapshot requests, and the pin advances only after
+commit and durable feedback. The 32-MiB WAL limit is unchanged. The first fixture
+attempt failed before inserting business rows because of ambiguous SQL parameter
+types; its failure and the corrected second attempt are both retained. Continuous,
+triggered and automatic-rollover checks are in progress before a fresh prefix.
 
 The user's pipeline-parallelism proposal is a separate possible follow-up. Today
 capture overlaps apply, but one active sync run per policy serializes planning,

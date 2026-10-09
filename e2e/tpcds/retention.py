@@ -57,7 +57,7 @@ class Retention(InstalledContinuous):
                 observations.append(value);return value
             def insert(count=16):
                 nonlocal transactions,next_key
-                db.execute("INSERT INTO orders SELECT i,repeat('x',8192) FROM generate_series(%s,%s) i",(next_key,next_key+count-1))
+                db.execute("INSERT INTO orders SELECT i,repeat('x',8192) FROM generate_series(%s::integer,%s::integer) i",(next_key,next_key+count-1))
                 next_key+=count;transactions+=1
             def grow():
                 before=lsn(db.execute('SELECT pg_current_wal_flush_lsn()::text').fetchone()[0])

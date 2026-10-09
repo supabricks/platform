@@ -1,0 +1,36 @@
+{
+  "image": "sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec",
+  "state": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 0,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-10-09T00:50:05.770401221Z",
+    "FinishedAt": "2026-10-09T00:50:29.787383177Z"
+  },
+  "command": [
+    "python3",
+    "install/native/catalog_gate.py",
+    "--timeout",
+    "600",
+    "--data-root",
+    "/tmp",
+    "--report",
+    "build/eq220/retention-fixture-02-cleanup.json",
+    "--",
+    "sh",
+    "-c",
+    "umask 077; python3 e2e/tpcds/retention.py --release build/eq220/programs/releases/v0.1.0-alpha.36.eq220j --output build/eq220/retention-fixture-02"
+  ],
+  "limits": {
+    "CpusetCpus": "0-7",
+    "Memory": 17179869184,
+    "MemorySwap": 17179869184,
+    "NetworkMode": "none"
+  }
+}
