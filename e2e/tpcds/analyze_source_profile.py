@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import datetime
+import hashlib
 import json
 from pathlib import Path
 import statistics
@@ -129,9 +130,18 @@ def resource_summary(samples, events):
         observed_compilers=[p for s in selected for p in s['observed_compilers']])
 
 
-def analyze(root):
+def analyze(root, qualification=None):
     root=Path(root); report=json.loads((root/'result.json').read_text())
-    assert report['status']=='PREFIX_PASS' and report['stopped']
+    assert report['stopped']
+    if qualification is None:
+        assert report['status']=='PREFIX_PASS'
+    else:
+        qualified=json.loads(Path(qualification).read_text())
+        assert report['status']=='FAIL' and report['stage']=='post_timing_sync_bootstrap'
+        assert qualified['status']=='PREFIX_PASS' and qualified['stopped']
+        assert qualified['source_load_receipt_sha256']==hashlib.sha256((root/'result.json').read_bytes()).hexdigest()
+        assert qualified['release_identity']==report['release_identity']
+        assert qualified['committed_rows']==report['committed_rows']
     observer=json.loads((root/'source-profile/observer.json').read_text())
     assert not observer['errors'] and observer['samples']>0
     for kind in ('transactions','storage'):
@@ -144,6 +154,7 @@ def analyze(root):
     resources=list(rows(root.parent/(root.name+'-control')/'resources.jsonl'))
     return dict(scope='Diagnostic source attribution, not optimization qualification. Late cohort uses source acknowledgments, not the EQ230 publication cohort.',
         rows=report['committed_rows'],release_identity=report['release_identity'],observer=observer,
+        original_load_status=report['status'],post_timing_qualification=qualification is not None,
         overall=phase_summary(events),late=phase_summary(late),late_observations=sample_summary(samples,late),
         late_resources=resource_summary(resources,late),
         load_seconds=report['load_seconds'],flow_control_wait_seconds=report['flow_control_wait_seconds'])
@@ -158,6 +169,7 @@ def compare(a,b):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('root',type=Path);p.add_argument('--compare',type=Path);p.add_argument('--output',type=Path,required=True)
-    args=p.parse_args();result=analyze(args.root)
+    p.add_argument('--qualification',type=Path)
+    args=p.parse_args();result=analyze(args.root,args.qualification)
     if args.compare:result['paired_inputs']=compare(args.root,args.compare)
     args.output.write_text(json.dumps(result,indent=2)+'\n')

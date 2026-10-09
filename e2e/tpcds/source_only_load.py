@@ -117,7 +117,18 @@ def run(args):
         # Explicitly after measurement: produce Delta to reuse the independent verifier.
         report['stage'] = 'post_timing_sync_bootstrap'; save(); post_start = time.monotonic()
         policy = cell.cli('sync', 'create', '--branch', 'main', '--mode', 'continuous', '--key', 'sf100-growing-prefix', '--storage-profile', 'large')
-        cell.policy_id = policy['id']; cell.healthy()
+        cell.policy_id = policy['id']
+        # A preloaded 14.77m-row source exports a full baseline here. The
+        # three-minute empty-bootstrap helper is not this fixture's deadline.
+        while time.monotonic() - post_start < 900:
+            current = cell.policy(); state = current['continuous_status']['state']
+            if state in ('blocked', 'failed'):
+                raise RuntimeError('post-load source snapshot blocked')
+            if state == 'healthy':
+                break
+            time.sleep(1)
+        else:
+            raise TimeoutError('post-timing source snapshot deadline')
         report['publication'] = cell.current()
         report['final_policy'] = cell.policy()
         report['final_capture'] = cell.status(dict(id=policy['capture_id']))
