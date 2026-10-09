@@ -1,0 +1,20 @@
+Private installed sync diagnostics: /tmp/sy08-n8b3iih7
+Traceback (most recent call last):
+  File "<repo>/e2e/tpcds/lookahead_lifecycle.py", line 120, in <module>
+    installed_sync.main()
+  File "<repo>/e2e/native/installed_sync.py", line 208, in main
+    cell.run(release/'python/analytics/python',release/'python/analytics/export.py')
+  File "<repo>/e2e/tpcds/lookahead_lifecycle.py", line 93, in run
+    processes,directory=self.freeze_pipeline(1)
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/e2e/tpcds/lookahead_lifecycle.py", line 61, in freeze_pipeline
+    if failures:raise failures[0]
+                ^^^^^^^^^^^^^^^^^
+  File "<repo>/e2e/tpcds/lookahead_lifecycle.py", line 33, in write
+    db.execute(f"INSERT INTO {table} SELECT i,repeat('x',512) FROM generate_series(%s,%s) i",(start,start+1023))
+  File "/opt/qualification/lib/python3.12/site-packages/psycopg/connection.py", line 300, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.AmbiguousFunction: function generate_series(smallint, smallint) is not unique
+LINE 1: INSERT INTO orders SELECT i,repeat('x',512) FROM generate_se...
+                                                         ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.

@@ -386,7 +386,7 @@ prepared batches. Late median rows/batch recovered to 31,744, but the median
 prepared portion was only 8,192 rows, with 22,528 further rows decoded in apply
 (these medians are not additive). The immediately following fresh serial `l2`
 completed at 25,777 / 19,648. N2 therefore still regresses this pair by 6.8% / 10.7%.
-Exact verification for both is pending at this checkpoint.
+Both passed exact verification of all 24 tables. No compiler activity was observed in either timed trial.
 
 The next scheduling candidate waits for a capture observation at least as recent
 as the predecessor's decoded-end marker before freezing the optional range.
@@ -394,7 +394,7 @@ Capture reports continuous progress every 250 ms. This tests whether a fresh
 cursor supplies a larger useful prefix; it does not wait or change deadlines on
 the apply path. Its throughput has not yet been measured. An additional installed
 functional harness holds actual preparation/apply processes with SIGSTOP to
-exercise pause and daemon-SIGKILL fencing before checking every key/value domain.
+exercise pause and daemon-SIGKILL fencing before checking every key/value domain. It passes both cases against O, ending with exactly 65,537 rows per table. The initial fixture setup failed on ambiguous smallint generate_series parameters; that failure and the explicit-cast correction are retained separately.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks

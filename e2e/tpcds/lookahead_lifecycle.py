@@ -6,6 +6,7 @@ old process identities and preparation directory cannot survive or be replayed.
 """
 from pathlib import Path
 import os
+import hashlib
 import signal
 import sys
 import threading
@@ -30,7 +31,7 @@ class Lookahead(LargeProfile,installed_sync.InstalledContinuous):
                     for start in range(first,first+ROWS,1024):
                         with db.transaction():
                             for table in ('orders','payments'):
-                                db.execute(f"INSERT INTO {table} SELECT i,repeat('x',512) FROM generate_series(%s,%s) i",(start,start+1023))
+                                db.execute(f"INSERT INTO {table} SELECT i,repeat('x',512) FROM generate_series(%s::int,%s::int) i",(start,start+1023))
             except BaseException as error:failures.append(error)
         producer=threading.Thread(target=write);producer.start()
         frozen=[];directory=None
@@ -87,6 +88,7 @@ class Lookahead(LargeProfile,installed_sync.InstalledContinuous):
         finally:self.close(reader)
 
     def run(self,python,worker):
+        self.metrics['fixture_sha256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
         self.setup_source(python,worker,"CREATE TABLE orders(id int PRIMARY KEY,payload text); CREATE TABLE payments(id int PRIMARY KEY,payload text); INSERT INTO orders VALUES(0,repeat('x',512)); INSERT INTO payments VALUES(0,repeat('x',512))")
         policy=self.cli('sync','create','--branch','main','--mode','continuous','--key','lookahead')
         self.policy_id=policy['id'];self.healthy()
