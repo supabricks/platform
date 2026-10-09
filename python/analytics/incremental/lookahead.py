@@ -33,7 +33,7 @@ def hint(config, decoded):
     check(config)
     atomic(Path(config['workspace'])/'decoded.json',dict(id=config['id'],attempt=config['attempt'],
         worker_generation=config['worker_generation'],end_lsn=pg_lsn(decoded.end),
-        schema_sha256=hashlib.sha256(canonical(decoded.schema)).hexdigest()))
+        decoded_at_ms=int(time.time()*1000),schema_sha256=hashlib.sha256(canonical(decoded.schema)).hexdigest()))
 
 
 def scalar(v):
@@ -139,6 +139,7 @@ def consume(config):
     config['_journal_read']=receipt['journal_read']
     config['_preparation']=dict(outcome='consumed',rows=rows,bytes=size,prepare_ms=receipt['elapsed_ms'],prepare_cpu_ms=receipt['cpu_ms'],
         consume_ms=round((time.monotonic()-started)*1000),age_ms=attachment.get('age_ms'),
+        predecessor_decoded_at_ms=issued.get('decoded_at_ms'),capture_observed_at_ms=issued.get('capture_observed_at_ms'),
         started_at_ms=receipt['started_at_ms'],prepared_at_ms=receipt['prepared_at_ms'],peak_rss_bytes=receipt['peak_rss_bytes'])
     return DecodedBatch(schema,operations,lsn(receipt['end_lsn']),receipt['input_bytes'],transactions)
 

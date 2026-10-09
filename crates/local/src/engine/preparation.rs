@@ -171,6 +171,15 @@ impl Cell {
         {
             return Ok(());
         }
+        // A previously reported cursor often exposes only a small fraction of
+        // the next batch. Wait for one fresh capture observation before freezing
+        // the optional range. Apply/publication never waits for this stage.
+        let Some(decoded_at) = hint["decoded_at_ms"].as_i64() else {
+            return Ok(());
+        };
+        if c.observed_at_ms.is_none_or(|at| at < decoded_at) {
+            return Ok(());
+        }
         self.preparation_attempt = Some((r.id, r.attempts));
         let Some(end) = hint["end_lsn"].as_str() else {
             return Ok(());
@@ -228,7 +237,7 @@ impl Cell {
             "identity":c.identity,"worker_generation":store.generation(),"source_revision":r.source_revision,
             "bootstrap_lsn":c.bootstrap_lsn,"after_lsn":end,"target_lsn":target,"deadline_ms":r.deadline_ms,
             "journal_access":self.journal_access(store,c,r.source_revision)?,"storage_profile":r.storage_profile,
-            "workspace":work,"schema_sha256":schema});
+            "workspace":work,"schema_sha256":schema,"decoded_at_ms":decoded_at,"capture_observed_at_ms":c.observed_at_ms});
         write_json(&work.join("input.json"), &authorization)?;
         // One fixed role/file/log avoids unbounded launch metadata. start_owned
         // records OS identity before opening the execution gate, including when

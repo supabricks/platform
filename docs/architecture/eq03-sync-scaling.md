@@ -380,7 +380,21 @@ to the current apply target, while retaining the full original range for a
 cache-miss fallback. Prefix plus suffix obeys the same 65,536-row/16-MiB input
 selection bounds and the 65,536-record limit, including whole transactions. A focused test compares the
 combined plan byte-for-byte with an ordinary serial read, including conflicting
-updates across the preparation boundary. Its throughput has not yet been measured.
+updates across the preparation boundary. The corrected record-bounded runtime N2
+(`974d9b8`) completed `n1` at 24,024 rows/s overall / 17,550 late, consuming 211
+prepared batches. Late median rows/batch recovered to 31,744, but the median
+prepared portion was only 8,192 rows, with 22,528 further rows decoded in apply
+(these medians are not additive). The immediately following fresh serial `l2`
+completed at 25,777 / 19,648. N2 therefore still regresses this pair by 6.8% / 10.7%.
+Exact verification for both is pending at this checkpoint.
+
+The next scheduling candidate waits for a capture observation at least as recent
+as the predecessor's decoded-end marker before freezing the optional range.
+Capture reports continuous progress every 250 ms. This tests whether a fresh
+cursor supplies a larger useful prefix; it does not wait or change deadlines on
+the apply path. Its throughput has not yet been measured. An additional installed
+functional harness holds actual preparation/apply processes with SIGSTOP to
+exercise pause and daemon-SIGKILL fencing before checking every key/value domain.
 
 After the active worker reports its complete decoded end, the daemon may issue
 one exact read-only range in `analytics/prepare-work`. The capture owner checks
