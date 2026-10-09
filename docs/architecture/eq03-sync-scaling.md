@@ -326,8 +326,18 @@ Sampled apply RSS peaks at 447 MiB versus J's 441 MiB. An installed >1-GiB
 compaction/commit-interruption/replay fixture now enters production `run()` so
 it actually exercises preparation alongside initialization. All three phases
 pass, with exact old/new versions and 487.1-MiB peak RSS. The resource ceiling
-is unchanged. The retained serial path passes all 199 Python tests; its separate
-installed performance comparison is pending.
+is unchanged. The retained serial path passes all 199 Python tests, plus an
+11-test focused run that explicitly enables preparation in interrupted child
+processes. Three alternating J/L process pairs are neutral: median 1.246249 s
+before versus 1.246131 s after, with identical plans. L's installed prefix
+passes at 25,685 rows/s overall and 18,523 late (286.254 s loading plus 1.264 s
+draining); exact typed verification passes all 24 tables. No compilers were observed. The
+spread across J/K/L means the observed late-cohort differences cannot establish
+a precise causal effect for the thread or refactor. Last-30 worker medians are
+1,206.5 / 1,190.5 / 1,185.5 ms, with median batch sizes 32,768 / 31,232 / 31,744
+rows and after-manifest intervals 257 / 285 / 277.5 ms. These are different
+batch populations and the medians are not additive. Do not credit a throughput
+gain: retain serial behavior and qualify cross-batch preparation separately.
 The corrected Python suite passes 195 tests; a separate eight-test reuse suite
 includes the added large-profile multi-epoch/restart case. All 38 harness and
 three evidence-inventory tests pass. Initial fixture failures and corrections

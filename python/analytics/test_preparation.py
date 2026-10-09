@@ -2,6 +2,8 @@
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import threading
 import time
 import unittest
@@ -130,7 +132,18 @@ class LargeCompactionTests(unittest.TestCase):
     result=maintenance.CompactionTests.result
     rows=maintenance.CompactionTests.rows
     test_compaction_preserves_exact_old_epoch_and_next_batch_reuses_root=maintenance.CompactionTests.test_compaction_preserves_exact_old_epoch_and_next_batch_reuses_root
-    test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation=maintenance.CompactionTests.test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation
+    def test_sigkill_at_compaction_and_apply_boundaries_recovers_same_generation(self):
+        config=self.config_compact();path=self.root/'config.json';path.write_bytes(canonical(config))
+        script='import json,sys;from incremental_worker import run;run(json.load(open(sys.argv[1])),prepare_overlap=True)'
+        for point in ('after_compaction_table','before_compaction_rename','after_compaction_rename','after_first_table'):
+            env=dict(os.environ,SUPABRICKS_CAPTURE_FAILPOINT=point)
+            child=subprocess.run([sys.executable,'-c',script,str(path)],env=env,cwd=Path(w.__file__).parent)
+            self.assertEqual(child.returncode,86)
+            self.assertEqual(len(self.rows(self.first,42)),1)
+            self.assertFalse((Path(config['workspace'])/'result.json').exists())
+        w.run(config,prepare_overlap=True);result=self.result(config)
+        self.assertEqual(len(self.rows(result,42)),2)
+        self.assertEqual(result['manifest']['tables'][0]['version'],1)
 
 
 if __name__=='__main__':unittest.main()
