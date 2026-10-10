@@ -1,0 +1,241 @@
+# Projects: the container for everything else.
+
+projects:
+  get:
+    operationId: listProjects
+    tags: [Projects]
+    summary: List projects
+    description: Projects the caller can open. In the governed profile that is every project where they hold a role.
+    x-backend: ready
+    x-console-features: [HM-01]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+      - { name: q, in: query, description: 'Only projects whose name contains this text.', schema: { type: string } }
+    responses:
+      '200':
+        description: A page of projects.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectPage' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+  post:
+    operationId: createProject
+    tags: [Projects]
+    summary: Create a project
+    description: 'Creates the project and its first database, `main`. Loading sample tables (`start_from: sample`) is not available yet.'
+    x-backend: ready
+    x-console-features: [HM-01, FR-02]
+    x-issues: [315]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectCreate' } } }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+project:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: getProject
+    tags: [Projects]
+    summary: Get a project
+    x-backend: ready
+    x-console-features: [HM-01]
+    responses:
+      '200':
+        description: The project.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  patch:
+    operationId: updateProject
+    tags: [Projects]
+    summary: Rename a project or change its description
+    description: Renaming keeps the project ID, so datasets other projects read from it keep working.
+    x-backend: new
+    x-console-features: [HM-01b, ST-02]
+    x-issues: [287, 314]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectUpdate' } } }
+    responses:
+      '200':
+        description: The updated project.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+  delete:
+    operationId: deleteProject
+    tags: [Projects]
+    summary: Delete a project and everything in it
+    description: >-
+      Irreversible. Read the deletion impact first and show it to the person.
+      Refused with `409` while another project reads a dataset this one
+      publishes, unless `force` is true.
+    x-backend: new
+    x-console-features: [HM-01b]
+    x-issues: [287]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+      - { name: confirm, in: query, required: true, description: 'The project name, typed by the person.', schema: { type: string } }
+      - { name: force, in: query, schema: { type: boolean, default: false } }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+projectDeletionImpact:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: getProjectDeletionImpact
+    tags: [Projects]
+    summary: See what deleting a project would remove
+    x-backend: new
+    x-console-features: [HM-01b]
+    x-issues: [287]
+    responses:
+      '200':
+        description: What would be removed, and what blocks it.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/DeletionImpact' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectStart:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  post:
+    operationId: startProject
+    tags: [Projects]
+    summary: Start a stopped project
+    x-backend: new
+    x-console-features: [HM-01b]
+    x-issues: [287]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectStop:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  post:
+    operationId: stopProject
+    tags: [Projects]
+    summary: Stop a project
+    description: Data is kept. Connections, sync and jobs pause until the project is started again.
+    x-backend: new
+    x-console-features: [HM-01b]
+    x-issues: [287]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectMap:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: getProjectMap
+    tags: [Projects]
+    summary: Get the project map
+    description: Databases, pipelines, analytical tables and their readers as one graph, for the project overview.
+    x-backend: ready
+    x-console-features: [HM-05]
+    responses:
+      '200':
+        description: The map.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectMap' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectServices:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listProjectServices
+    tags: [Projects]
+    summary: List the services that run a project, with their health
+    x-backend: cli-only
+    x-console-features: [HM-04]
+    responses:
+      '200':
+        description: The services.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items: { type: array, items: { $ref: './schemas.yaml#/Service' } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectServiceRestart:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - { name: service, in: path, required: true, schema: { type: string } }
+  post:
+    operationId: restartProjectService
+    tags: [Projects]
+    summary: Restart one service
+    x-backend: cli-only
+    x-console-features: [HM-04]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+projectRecents:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listRecentItems
+    tags: [Projects]
+    summary: List what the caller used recently in a project
+    description: Per person. Never includes something the caller can no longer open.
+    x-backend: new
+    x-console-features: [HM-02]
+    x-issues: [286]
+    parameters:
+      - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+    responses:
+      '200':
+        description: Recent items, newest first.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items: { type: array, items: { $ref: './schemas.yaml#/RecentItem' } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

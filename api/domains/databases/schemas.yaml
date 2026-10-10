@@ -1,0 +1,126 @@
+Database:
+  type: object
+  description: A PostgreSQL database. It always has at least one branch, and one of them is the default.
+  required: [id, name, state, postgres_version, compute, default_branch_id, created_at, revision]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    name: { $ref: './schemas.yaml#/DatabaseName' }
+    state: { type: string, enum: [provisioning, running, scaling, suspended, deleting] }
+    postgres_version: { type: string, examples: ['17.8'] }
+    compute: { $ref: './schemas.yaml#/Compute' }
+    default_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_count: { type: integer }
+    storage:
+      description: Not reported yet.
+      $ref: './schemas.yaml#/DatabaseStorage'
+    connections:
+      type: object
+      description: Not reported yet.
+      properties:
+        open: { type: integer }
+        limit: { type: integer }
+    history_retention_seconds:
+      type: integer
+      description: How far back a branch can be created or a restore made. Not exposed yet.
+    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    last_active_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+
+DatabaseName:
+  type: string
+  pattern: '^[a-z][a-z0-9_-]{0,62}$'
+  examples: [app]
+
+DatabaseStorage:
+  type: object
+  properties:
+    data_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'Size of the default branch.' }
+    history_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'Changes kept for restore and branching.' }
+    branches_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'What the other branches have changed since they were made.' }
+
+Compute:
+  type: object
+  required: [size]
+  properties:
+    size: { type: string, description: 'ID of a compute size.', examples: [s] }
+    vcpu: { type: number }
+    memory_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
+    max_connections: { type: integer }
+    autosuspend_seconds:
+      type: integer
+      minimum: 0
+      description: Suspend after this long with no connections. 0 means never.
+
+ComputeSize:
+  type: object
+  required: [id, label, vcpu, memory_bytes, max_connections]
+  properties:
+    id: { type: string, examples: [xs, s, m, l, xl] }
+    label: { type: string, examples: [Small] }
+    vcpu: { type: number }
+    memory_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
+    max_connections: { type: integer }
+
+DatabaseCreate:
+  type: object
+  required: [name]
+  properties:
+    name: { $ref: './schemas.yaml#/DatabaseName' }
+    compute_size: { type: string, description: 'Defaults to the smallest size.' }
+    autosuspend_seconds: { type: integer, minimum: 0 }
+
+DatabaseUpdate:
+  type: object
+  minProperties: 1
+  description: Send only what changes. Changing `compute_size` returns an operation; the others apply at once.
+  properties:
+    name: { $ref: './schemas.yaml#/DatabaseName' }
+    default_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    compute_size: { type: string }
+    autosuspend_seconds: { type: integer, minimum: 0 }
+    history_retention_seconds: { type: integer, minimum: 3600 }
+
+DatabasePage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Database' } }
+
+Connection:
+  type: object
+  description: >-
+    Everything needed to connect, without the password. Clients build psql,
+    JDBC, environment-file and driver snippets from these parts.
+  required: [host, port, database, role, branch_id, sslmode]
+  properties:
+    host: { type: string }
+    port: { type: integer }
+    database: { type: string }
+    role: { type: string, examples: [app_owner] }
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_name: { type: string }
+    options: { type: string, description: 'Value for the `options` connection parameter that selects the branch.' }
+    sslmode: { type: string, enum: [disable, require, verify-full] }
+    pooled:
+      type: object
+      description: Present when a pooled endpoint exists. Not available yet.
+      properties:
+        host: { type: string }
+        port: { type: integer }
+        mode: { type: string, enum: [transaction, session] }
+    available:
+      type: boolean
+      description: False in the governed profile, where PostgreSQL is private and nobody connects directly.
+
+Credentials:
+  type: object
+  required: [role, password, uri]
+  properties:
+    role: { type: string }
+    password: { type: string, format: password }
+    uri: { type: string, description: 'A complete connection URI including the password.' }
+    expires_at:
+      description: Set when the credentials are short-lived. Null for a standing application role.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]

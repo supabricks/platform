@@ -1,0 +1,223 @@
+# Branches of a database.
+
+branches:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  get:
+    operationId: listBranches
+    tags: [Branches]
+    summary: List the branches of a database
+    description: >-
+      Flat, with `parent_id` on each so the client can draw the tree.
+      `delta_bytes` is omitted until the platform reports it.
+    x-backend: ready
+    x-console-features: [BR-01, BR-01b]
+    x-issues: [246]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of branches.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/BranchPage' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createBranch
+    tags: [Branches]
+    summary: Create a branch
+    description: >-
+      From the parent's current head, or from a past time or log position
+      inside the restore window. Restoring a database to a new branch is this
+      call with `from.kind: time`.
+    x-backend: ready
+    x-console-features: [BR-02a, BR-02b, DB-10a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/BranchCreate' } } }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+branch:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: getBranch
+    tags: [Branches]
+    summary: Get a branch
+    x-backend: ready
+    x-console-features: [BR-01]
+    responses:
+      '200':
+        description: The branch.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Branch' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  patch:
+    operationId: updateBranch
+    tags: [Branches]
+    summary: Rename a branch or change when it expires
+    description: To make a branch the default, update the database's `default_branch_id`.
+    x-backend: cli-only
+    x-console-features: [BR-04b]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/BranchUpdate' } } }
+    responses:
+      '200':
+        description: The updated branch.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Branch' } } }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+  delete:
+    operationId: deleteBranch
+    tags: [Branches]
+    summary: Delete a branch
+    description: Refused for the default branch, for a branch that has children, and while a sync pipeline reads it.
+    x-backend: ready
+    x-console-features: [BR-04a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+
+branchSuspend:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: suspendBranch
+    tags: [Branches]
+    summary: Suspend a branch's compute
+    x-backend: ready
+    x-console-features: [BR-04a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+branchResume:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: resumeBranch
+    tags: [Branches]
+    summary: Resume a suspended branch
+    x-backend: ready
+    x-console-features: [BR-04a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+branchReset:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: resetBranch
+    tags: [Branches]
+    summary: Reset a branch to its parent
+    description: >-
+      Replaces the branch's contents with the parent's current head, or a past
+      point in the parent. Everything written to the branch is lost. The branch
+      keeps its ID, name and connection string.
+    x-backend: new
+    x-console-features: [BR-06]
+    x-issues: [256]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              to:
+                description: Defaults to the parent's current head.
+                $ref: './schemas.yaml#/BranchPoint'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+branchRestoreWindow:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: getBranchRestoreWindow
+    tags: [Branches]
+    summary: Get the span of history a new branch can start from
+    x-backend: new
+    x-console-features: [BR-02b, DB-10a, DB-10c]
+    x-issues: [254]
+    responses:
+      '200':
+        description: The window.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/RestoreWindow' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+branchSchemaDiff:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: getBranchSchemaDiff
+    tags: [Branches]
+    summary: Compare the schema of a branch with another branch
+    description: The branch in the path is the one compared; `base` is what it is compared against.
+    x-backend: new
+    x-console-features: [BR-05]
+    x-issues: [255]
+    parameters:
+      - { name: base, in: query, description: 'Branch ID to compare against. Defaults to the parent.', schema: { $ref: '../../shared/schemas.yaml#/Id' } }
+    responses:
+      '200':
+        description: The differences.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/SchemaDiff' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

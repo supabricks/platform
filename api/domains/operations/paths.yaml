@@ -1,0 +1,86 @@
+# Operations: the durable record of every piece of asynchronous work.
+
+operations:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listOperations
+    tags: [Operations]
+    summary: List operations in a project
+    description: >-
+      Newest first, across every feature. This is the project's activity feed:
+      branch changes, imports, sync runs, backups, job runs and applies appear
+      in one ordered list.
+    x-backend: new
+    x-console-features: [HM-03]
+    x-issues: [285]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+      - name: kind
+        in: query
+        description: Only operations of this kind. A prefix ending in `.` matches a whole resource, for example `branch.`.
+        schema: { type: string }
+      - name: state
+        in: query
+        schema: { $ref: '../../shared/schemas.yaml#/OperationState' }
+      - name: target
+        in: query
+        description: Only operations on this resource, as `<kind>:<id>`.
+        schema: { type: string }
+      - name: idempotency_key
+        in: query
+        description: Find the operation a key started, to recover after a lost response.
+        schema: { type: string }
+    responses:
+      '200':
+        description: A page of operations.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/OperationPage' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+operation:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Operation'
+  get:
+    operationId: getOperation
+    tags: [Operations]
+    summary: Get one operation
+    description: Poll this until `state` is final. Responses carry `Retry-After` while the operation is running.
+    x-backend: ready
+    x-console-features: [HM-03]
+    responses:
+      '200':
+        description: The operation.
+        headers:
+          Retry-After: { schema: { type: integer }, description: 'Suggested seconds before the next poll. Absent once final.' }
+        content:
+          application/json:
+            schema: { $ref: '../../shared/schemas.yaml#/Operation' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+operationCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Operation'
+  post:
+    operationId: cancelOperation
+    tags: [Operations]
+    summary: Ask an operation to stop
+    description: >-
+      Accepted only while `cancellable` is true. Cancelling is a request: the
+      operation reaches `cancelled` once it has stopped cleanly, or finishes
+      anyway if it was too late.
+    x-backend: ready
+    x-console-features: [HM-03]
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }

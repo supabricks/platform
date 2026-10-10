@@ -1,0 +1,149 @@
+# Schemas used by every domain.
+
+Id:
+  type: string
+  description: >-
+    Opaque, stable identifier assigned by the platform. The prefix names the kind
+    (`prj_`, `db_`, `br_`, `op_`). Treat the rest as opaque.
+  pattern: '^[a-z]{2,5}_[A-Za-z0-9]{6,40}$'
+  examples: [db_8f2a91c4]
+
+Name:
+  type: string
+  description: Human-chosen name, unique within its parent. Can be changed without changing the ID.
+  minLength: 1
+  maxLength: 63
+
+Timestamp:
+  type: string
+  format: date-time
+  description: RFC 3339 instant in UTC.
+  examples: ['2026-10-10T14:05:00Z']
+
+Bytes:
+  type: integer
+  format: int64
+  minimum: 0
+  description: A size in bytes.
+
+Revision:
+  type: integer
+  format: int64
+  minimum: 0
+  description: >-
+    Increases by one each time the resource changes. Send it back in `If-Match`
+    to make a change conditional on nobody else having changed the resource.
+
+Lsn:
+  type: string
+  description: PostgreSQL log sequence number.
+  pattern: '^[0-9A-F]{1,8}/[0-9A-F]{1,8}$'
+  examples: ['0/4A2F0000']
+
+PrincipalRef:
+  type: object
+  description: Who did something. In the local profile this is always the local owner.
+  required: [id, kind, label]
+  properties:
+    id: { $ref: '#/Id' }
+    kind: { type: string, enum: [local_owner, user, service] }
+    label: { type: string }
+
+ResourceRef:
+  type: object
+  description: A pointer to any resource, used by operations, activity and alerts.
+  required: [kind, id]
+  properties:
+    kind:
+      type: string
+      enum: [project, database, branch, sync_pipeline, analytical_version, analytical_session, notebook, environment, job, job_run, publication, shared_dataset, import, backup, secret, service]
+    id: { type: string }
+    label: { type: string, description: 'Display name at the time of the response.' }
+
+Problem:
+  type: object
+  description: Error body, following RFC 9457. `code` is stable and safe to branch on; `detail` is for people.
+  required: [type, title, status, code]
+  properties:
+    type: { type: string, format: uri-reference, examples: ['https://supabricks.dev/problems/conflict'] }
+    title: { type: string }
+    status: { type: integer }
+    code:
+      type: string
+      description: Stable machine-readable code.
+      examples: [name_taken, revision_mismatch, capacity_exhausted, not_permitted, not_found, invalid_request, precondition_required, unavailable_in_profile]
+    detail: { type: string }
+    instance: { type: string, description: 'The request ID, for support.' }
+    errors:
+      type: array
+      description: Per-field problems for `invalid_request`.
+      items:
+        type: object
+        required: [field, message]
+        properties:
+          field: { type: string, description: 'JSON pointer into the request body.' }
+          message: { type: string }
+
+Operation:
+  type: object
+  description: >-
+    A piece of work the platform carries out after the request returns. Operations
+    are durable: they survive a restart and can be found again by ID or by the
+    idempotency key that started them.
+  required: [id, kind, state, project_id, created_at]
+  properties:
+    id: { $ref: '#/Id' }
+    kind:
+      type: string
+      description: What the operation does, as `<resource>.<verb>`.
+      examples: [database.create, branch.create, branch.reset, backup.create, database.restore, sync.run, project.apply, import.load]
+    state: { $ref: '#/OperationState' }
+    project_id: { $ref: '#/Id' }
+    target: { $ref: '#/ResourceRef' }
+    actor: { $ref: '#/PrincipalRef' }
+    idempotency_key: { type: string }
+    created_at: { $ref: '#/Timestamp' }
+    started_at: { oneOf: [{ $ref: '#/Timestamp' }, { type: 'null' }] }
+    finished_at: { oneOf: [{ $ref: '#/Timestamp' }, { type: 'null' }] }
+    steps:
+      type: array
+      description: The steps of the operation in order, so a client can show progress.
+      items:
+        type: object
+        required: [name, state]
+        properties:
+          name: { type: string }
+          state: { type: string, enum: [pending, running, succeeded, failed, skipped] }
+          progress: { type: number, minimum: 0, maximum: 1, description: 'Fraction complete, when the step can measure it.' }
+          detail: { type: string }
+    result:
+      type: object
+      description: Set when the operation succeeds. Its shape depends on `kind` and always includes the resource that was created or changed.
+      additionalProperties: true
+    error: { $ref: '#/Problem' }
+    cancellable: { type: boolean }
+
+OperationState:
+  type: string
+  enum: [pending, running, succeeded, failed, cancelled, superseded]
+  description: >-
+    `superseded` means a later operation on the same resource made this one
+    unnecessary before it ran.
+
+PageInfo:
+  type: object
+  required: [next_cursor]
+  properties:
+    next_cursor:
+      oneOf: [{ type: string }, { type: 'null' }]
+      description: Pass as `cursor` to get the next page. Null on the last page.
+    total_estimate:
+      type: integer
+      description: Present only where the platform can estimate the total cheaply.
+
+BackendStatus:
+  type: string
+  description: >-
+    Not part of the wire contract. Records, for each operation in this document,
+    whether the platform can do it today.
+  enum: [ready, cli-only, new]

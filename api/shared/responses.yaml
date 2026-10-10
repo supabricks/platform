@@ -1,0 +1,67 @@
+# Responses used by more than one domain.
+
+Accepted:
+  description: >-
+    The work was accepted and continues after this response. Follow the operation
+    until it reaches a final state.
+  headers:
+    Location: { description: 'URL of the operation.', schema: { type: string } }
+  content:
+    application/json:
+      schema: { $ref: './schemas.yaml#/Operation' }
+
+NoContent:
+  description: Done. There is nothing to return.
+
+BadRequest:
+  description: The request is malformed or a field is invalid.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+Unauthorized:
+  description: Not signed in, or the session or token has expired.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+Forbidden:
+  description: >-
+    Signed in, but not allowed to do this. Also returned for an operation that
+    the server's profile does not offer (`code: unavailable_in_profile`).
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+NotFound:
+  description: >-
+    No such resource, or the caller may not know that it exists.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+Conflict:
+  description: The change conflicts with the current state, for example a name that is taken.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+PreconditionFailed:
+  description: The resource changed since the `ETag` sent in `If-Match`.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+PreconditionRequired:
+  description: This change needs an `If-Match` header.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
+
+TooManyRequests:
+  description: A fixed capacity is in use, for example both analytical session slots. Retry later.
+  headers:
+    Retry-After: { schema: { type: integer }, description: 'Seconds to wait.' }
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }
