@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from analyze_source_profile import analyze, compare, rows
+from cache_publications import summarize as publication_summary
 
 
 def run(base, labels):
@@ -45,6 +46,8 @@ def run(base, labels):
         comparisons.append(compare(base / labels[0], root))
         data['end_to_end_rows_s'] = report['committed_rows'] / (report['load_seconds'] + report.get('drain_seconds', 0))
         data['end_to_end_scope'] = 'source load plus drain' if arm == 'concurrent' else 'source load only'
+        if arm == 'concurrent':
+            data['publications'] = publication_summary(root, json.loads((control / 'publications.json').read_text()), report, rows(control / 'daemon-events.jsonl'))
         results[label] = data
     effects = {}
     for arm, before, after in [('source_only', labels[0], labels[1]), ('concurrent', labels[2], labels[3])]:
