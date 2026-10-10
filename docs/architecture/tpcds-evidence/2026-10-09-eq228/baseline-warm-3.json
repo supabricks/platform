@@ -1,0 +1,270 @@
+{
+  "mode": "warm",
+  "source_revision": "installed",
+  "release_sha256": "2a9005386bfff9a5454bc3f62e3ae371d84be4bba18d3521db55383fdd9ac17f",
+  "fixture_sha256": "b89c5dd96342c277ebaac5f11cb86eb90a30e8c699ecd341db3849e061bd747c",
+  "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+  "scope": "Private component fixture using next actual SF100 rows; synthetic LSN framing; no source ACK or controller publication",
+  "done": {
+    "attempt": 1,
+    "id": "c957989b-4db9-419f-a2d9-3e72f923ba61",
+    "reusable": false,
+    "worker_generation": 1
+  },
+  "ru_maxrss_bytes": 597524480,
+  "seconds": 2.252376985969022,
+  "post_gc": {
+    "rss": 528269312,
+    "peak": 597524480,
+    "arrow": 0
+  },
+  "recycle_peak": true,
+  "hashes": {
+    "calls": 2022,
+    "misses": 2,
+    "bytes": 3040365,
+    "seconds": 0.07210341596510261
+  },
+  "events": [
+    {
+      "stage": "journal",
+      "wall": 0.01811000402085483,
+      "cpu": 0.018096372000000027,
+      "before": {
+        "rss": 165494784,
+        "peak": 166125568,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 176451584,
+        "peak": 178061312,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "initialize",
+      "wall": 0.009310928988270462,
+      "cpu": 0.009311422999999985,
+      "before": {
+        "rss": 176463872,
+        "peak": 178061312,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 176607232,
+        "peak": 178061312,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "verify_previous",
+      "wall": 0.05075118399690837,
+      "cpu": 0.05075253700000015,
+      "before": {
+        "rss": 176615424,
+        "peak": 178061312,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 176615424,
+        "peak": 178061312,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "decode",
+      "wall": 0.33321783604333177,
+      "cpu": 0.3331773470000001,
+      "before": {
+        "rss": 178339840,
+        "peak": 178339840,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 233762816,
+        "peak": 233762816,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.003692738013342023,
+      "cpu": 0.0036921889999996793,
+      "before": {
+        "rss": 271482880,
+        "peak": 271482880,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 276549632,
+        "peak": 276549632,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "key_batches",
+      "wall": 0.7183045360143296,
+      "before": {
+        "rss": 276549632,
+        "peak": 276549632,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 503504896,
+        "peak": 503504896,
+        "arrow": 0
+      },
+      "rows": 0
+    },
+    {
+      "stage": "overlay",
+      "wall": 0.007384053023997694,
+      "cpu": 0.00738339599999982,
+      "before": {
+        "rss": 503504896,
+        "peak": 503504896,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 506191872,
+        "peak": 506191872,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "plan",
+      "wall": 1.318609417998232,
+      "cpu": 1.5063551030000002,
+      "before": {
+        "rss": 177094656,
+        "peak": 178061312,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 533458944,
+        "peak": 544038912,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.0009164019720628858,
+      "cpu": 0.0009167059999999339,
+      "before": {
+        "rss": 541704192,
+        "peak": 544038912,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 541724672,
+        "peak": 544038912,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "schema_for",
+      "wall": 0.001081056019756943,
+      "cpu": 0.0010807320000001397,
+      "before": {
+        "rss": 541704192,
+        "peak": 544038912,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 541724672,
+        "peak": 544038912,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.02428892202442512,
+      "cpu": 0.007932414000000332,
+      "before": {
+        "rss": 598020096,
+        "peak": 598020096,
+        "arrow": 6238208
+      },
+      "after": {
+        "rss": 597975040,
+        "peak": 597975040,
+        "arrow": 6238208
+      }
+    },
+    {
+      "stage": "apply_table",
+      "wall": 0.34755698300432414,
+      "cpu": 0.3622482539999998,
+      "before": {
+        "rss": 532799488,
+        "peak": 544038912,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 595881984,
+        "peak": 597524480,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "inventory",
+      "wall": 0.07556617195950821,
+      "cpu": 0.07574438400000005,
+      "before": {
+        "rss": 595886080,
+        "peak": 597524480,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 595492864,
+        "peak": 597524480,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.02165690396213904,
+      "cpu": 0.013287383999999847,
+      "before": {
+        "rss": 595394560,
+        "peak": 597524480,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 595394560,
+        "peak": 597524480,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "run",
+      "wall": 2.252223190967925,
+      "cpu": 2.151180122,
+      "before": {
+        "rss": 165486592,
+        "peak": 166125568,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 533430272,
+        "peak": 597524480,
+        "arrow": 0
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "metrics": {
+        "apply_kind": "append",
+        "execution_time_ms": 19,
+        "new_parquet_bytes": 3039584,
+        "num_added_files": 1,
+        "num_added_rows": 32768,
+        "num_partitions": 0,
+        "num_removed_files": 0,
+        "retained_parquet_bytes": 882527664
+      },
+      "oid": 16513
+    }
+  ]
+}

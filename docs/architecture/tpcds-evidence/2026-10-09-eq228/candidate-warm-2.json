@@ -1,0 +1,270 @@
+{
+  "mode": "warm",
+  "source_revision": "<repo>/python/analytics",
+  "release_sha256": "2a9005386bfff9a5454bc3f62e3ae371d84be4bba18d3521db55383fdd9ac17f",
+  "fixture_sha256": "b89c5dd96342c277ebaac5f11cb86eb90a30e8c699ecd341db3849e061bd747c",
+  "plan_sha256": "68a1053682ceb3246a77148c3bedd4ed8b5701c49cd6d19a91f6c8c26336fc55",
+  "scope": "Private component fixture using next actual SF100 rows; synthetic LSN framing; no source ACK or controller publication",
+  "done": {
+    "attempt": 1,
+    "id": "c957989b-4db9-419f-a2d9-3e72f923ba61",
+    "reusable": true,
+    "worker_generation": 1
+  },
+  "ru_maxrss_bytes": 431747072,
+  "seconds": 1.894553698017262,
+  "post_gc": {
+    "rss": 362377216,
+    "peak": 431747072,
+    "arrow": 0
+  },
+  "recycle_peak": false,
+  "hashes": {
+    "calls": 2022,
+    "misses": 2,
+    "bytes": 3040365,
+    "seconds": 0.07203283219132572
+  },
+  "events": [
+    {
+      "stage": "journal",
+      "wall": 0.017916923970915377,
+      "cpu": 0.01791770700000006,
+      "before": {
+        "rss": 166789120,
+        "peak": 167202816,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 176959488,
+        "peak": 178520064,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "initialize",
+      "wall": 0.009316272975411266,
+      "cpu": 0.009316773999999972,
+      "before": {
+        "rss": 176963584,
+        "peak": 178520064,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 177127424,
+        "peak": 178520064,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "verify_previous",
+      "wall": 0.05036755895707756,
+      "cpu": 0.05036889000000011,
+      "before": {
+        "rss": 177135616,
+        "peak": 178520064,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 177135616,
+        "peak": 178520064,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "decode",
+      "wall": 0.33360060601262376,
+      "cpu": 0.33351267500000015,
+      "before": {
+        "rss": 178855936,
+        "peak": 178855936,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 234250240,
+        "peak": 234250240,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.0028744550072588027,
+      "cpu": 0.002874437999999646,
+      "before": {
+        "rss": 276905984,
+        "peak": 276905984,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 281882624,
+        "peak": 281882624,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "key_batches",
+      "wall": 0.6613898030482233,
+      "before": {
+        "rss": 281882624,
+        "peak": 281882624,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 333254656,
+        "peak": 333254656,
+        "arrow": 0
+      },
+      "rows": 0
+    },
+    {
+      "stage": "overlay",
+      "wall": 0.00763655302580446,
+      "cpu": 0.0076359190000001576,
+      "before": {
+        "rss": 333254656,
+        "peak": 333254656,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 336908288,
+        "peak": 336908288,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "plan",
+      "wall": 1.2421873639686964,
+      "cpu": 1.4528617050000001,
+      "before": {
+        "rss": 177610752,
+        "peak": 178520064,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 360112128,
+        "peak": 371675136,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "to_pyarrow_dataset",
+      "wall": 0.0010476940078660846,
+      "cpu": 0.0010480310000002824,
+      "before": {
+        "rss": 377417728,
+        "peak": 377417728,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 377446400,
+        "peak": 377446400,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "schema_for",
+      "wall": 0.0012405390152707696,
+      "cpu": 0.001240169999999985,
+      "before": {
+        "rss": 377417728,
+        "peak": 377417728,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 377446400,
+        "peak": 377446400,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.022951696999371052,
+      "cpu": 0.007685248999999672,
+      "before": {
+        "rss": 432508928,
+        "peak": 432508928,
+        "arrow": 6238208
+      },
+      "after": {
+        "rss": 432205824,
+        "peak": 432205824,
+        "arrow": 6238208
+      }
+    },
+    {
+      "stage": "apply_table",
+      "wall": 0.34042648604372516,
+      "cpu": 0.35693158599999997,
+      "before": {
+        "rss": 366780416,
+        "peak": 371675136,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 430501888,
+        "peak": 431747072,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "inventory",
+      "wall": 0.07533782400423661,
+      "cpu": 0.07570490700000043,
+      "before": {
+        "rss": 430505984,
+        "peak": 431747072,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 429928448,
+        "peak": 431747072,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "durable",
+      "wall": 0.02319363399874419,
+      "cpu": 0.013153992999999975,
+      "before": {
+        "rss": 429928448,
+        "peak": 431747072,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 429895680,
+        "peak": 431747072,
+        "arrow": 0
+      }
+    },
+    {
+      "stage": "run",
+      "wall": 1.8944106450071558,
+      "cpu": 2.086289616,
+      "before": {
+        "rss": 166780928,
+        "peak": 167202816,
+        "arrow": 0
+      },
+      "after": {
+        "rss": 367620096,
+        "peak": 431747072,
+        "arrow": 0
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "metrics": {
+        "apply_kind": "append",
+        "execution_time_ms": 20,
+        "new_parquet_bytes": 3039584,
+        "num_added_files": 1,
+        "num_added_rows": 32768,
+        "num_partitions": 0,
+        "num_removed_files": 0,
+        "retained_parquet_bytes": 882527664
+      },
+      "oid": 16513
+    }
+  ]
+}
