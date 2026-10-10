@@ -297,6 +297,7 @@ impl Daemon {
         self.listener.set_nonblocking(true)?;
         let mut next_tick = std::time::Instant::now();
         let mut next_publication_tick = next_tick;
+        let mut next_receipt_tick = next_tick;
         let mut stopping = false;
         loop {
             self.finish_environment_gc();
@@ -578,7 +579,17 @@ impl Daemon {
                             capture_observation
                         };
                         match cell.tick(&mut self.store, capture_observation) {
-                            Ok(()) => cell.last_error = None,
+                            Ok(()) => {
+                                cell.last_error = None;
+                                // Consume accepted receipts in this turn, but
+                                // never admit new sync work during shutdown.
+                                if !stopping {
+                                    self.sync_error =
+                                        crate::sync::tick(&mut self.store, Some(cell))
+                                            .err()
+                                            .map(|e| e.to_string());
+                                }
+                            }
                             Err(e) => cell.last_error = Some(e.to_string()),
                         }
                     }
@@ -602,6 +613,22 @@ impl Daemon {
                 next_publication_tick = std::time::Instant::now();
                 next_tick = std::time::Instant::now() + Duration::from_millis(200);
             }
+            if !stopping && std::time::Instant::now() >= next_receipt_tick {
+                next_receipt_tick = std::time::Instant::now() + Duration::from_millis(20);
+                if let Some(cell) = self.cell.as_mut()
+                    && cell.apply_receipt_pending()
+                {
+                    match cell.progress_sync(&mut self.store) {
+                        Ok(progressed) => {
+                            self.sync_error = None;
+                            if progressed {
+                                next_publication_tick = std::time::Instant::now();
+                            }
+                        }
+                        Err(error) => self.sync_error = Some(error.to_string()),
+                    }
+                }
+            }
             if !stopping && std::time::Instant::now() >= next_publication_tick {
                 self.publisher.last_error = self
                     .publisher
@@ -609,14 +636,32 @@ impl Daemon {
                     .err()
                     .map(|e| e.to_string());
                 // Hashing remains bounded to 4 MiB per turn. Yield to IPC and
-                // other work between chunks without imposing the maintenance
-                // tick's 200 ms delay on every chunk of an active verification.
+                // other work between chunks. Runnable verification continues
+                // next turn without sleeping; a parked verifier keeps the idle
+                // cadence, so stale capture observations cannot cause a spin.
                 let delay = if self.publisher.verification_pending() {
-                    20
+                    0
                 } else {
                     200
                 };
                 next_publication_tick = std::time::Instant::now() + Duration::from_millis(delay);
+                // Publication commits durable authority. Advance its managed run
+                // and dispatch an already-admitted successor without another
+                // 200-ms maintenance wait. The same capture/live-policy checks
+                // run before every admission and mailbox handoff.
+                if self.publisher.publication_completed()
+                    && let Some(cell) = self.cell.as_mut()
+                {
+                    match cell.progress_sync(&mut self.store) {
+                        Ok(progressed) => {
+                            self.sync_error = None;
+                            if progressed {
+                                next_publication_tick = std::time::Instant::now();
+                            }
+                        }
+                        Err(error) => self.sync_error = Some(error.to_string()),
+                    }
+                }
             }
             let (mut stream, _) = match self.listener.accept() {
                 Ok(pair) => pair,
@@ -630,7 +675,12 @@ impl Daemon {
                         events: libc::POLLIN,
                         revents: 0,
                     };
-                    let result = unsafe { libc::poll(&mut fd, 1, 20) };
+                    let timeout = if !stopping && self.publisher.verification_pending() {
+                        0
+                    } else {
+                        20
+                    };
+                    let result = unsafe { libc::poll(&mut fd, 1, timeout) };
                     if result < 0 {
                         let error = std::io::Error::last_os_error();
                         if error.kind() != std::io::ErrorKind::Interrupted {

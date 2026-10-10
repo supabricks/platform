@@ -1,0 +1,19 @@
+{
+  "status": "FAIL",
+  "scope": "Installed PG slot retention under pressure and a pinned long transaction.\n\nA bounded correctness fixture, not a throughput benchmark. It uses the existing\n32-MiB minimum WAL profile to exercise pressure without changing production limits.\n",
+  "release_identity": "27a3227cf439e03929a0b0f421ae7a8f0abcb158ae3c9f0750f91b1546900504",
+  "fixture_sha256": "9df17fe991496dc65953adc2ab70372e4326801f91a9948cbc87f59aa51735ee",
+  "checks": [],
+  "metrics": {
+    "wal_limit_bytes": 33554432,
+    "slot_observations": [
+      {
+        "at_ms": 1791506946864,
+        "confirmed": "0/1584CB8",
+        "restart": "0/1584C80",
+        "source": "0/1584F38",
+        "retained_bytes": 696
+      }
+    ]
+  }
+}

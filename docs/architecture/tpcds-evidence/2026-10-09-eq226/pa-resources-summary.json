@@ -1,0 +1,89 @@
+{
+  "scope": "Sampled published-row cohort; cgroup CPU/IO include all cell processes. IO is per device, not summed across device layers. Role counters miss short-lived process tails and sampled RSS is not a hard high-water mark.",
+  "requested_rows": [
+    6500000,
+    7300000
+  ],
+  "first_published_rows": 6560719,
+  "last_published_rows": 7280591,
+  "first_utc": "2026-10-09T15:21:28.728179+00:00",
+  "last_utc": "2026-10-09T15:22:05.241126+00:00",
+  "elapsed_seconds": 36.51294708251953,
+  "cgroup_cpu_delta": {
+    "usage_usec": 69482680,
+    "user_usec": 54319663,
+    "system_usec": 15163016,
+    "nice_usec": 0,
+    "core_sched.force_idle_usec": 0,
+    "nr_periods": 0,
+    "nr_throttled": 0,
+    "throttled_usec": 0,
+    "nr_bursts": 0,
+    "burst_usec": 0
+  },
+  "average_cgroup_cores": 1.9029600607962056,
+  "io_delta_by_device": {
+    "259:2": {
+      "rbytes": 0,
+      "wbytes": 16384,
+      "rios": 0,
+      "wios": 1,
+      "dbytes": 0,
+      "dios": 0
+    },
+    "259:0": {
+      "rbytes": 50520064,
+      "wbytes": 1667416064,
+      "rios": 435,
+      "wios": 20755,
+      "dbytes": 0,
+      "dios": 0
+    }
+  },
+  "role_cpu_seconds": {
+    "python3": 6.989999999999999,
+    "supabricks": 6.589999999999999,
+    "process-compose": 0.07,
+    "weed": 2.5900000000000003,
+    "pageserver": 2.96,
+    "storage_broker": 0.01,
+    "safekeeper": 1.7800000000000005,
+    "java": 0.3800000000000001,
+    "compute_ctl": 0.060000000000000005,
+    "postgres": 5.099999999999996,
+    "capture_worker.py": 9.980000000000002,
+    "incremental_worker.py": 25.139999999999997
+  },
+  "role_average_cores": {
+    "python3": 0.1914389431289276,
+    "supabricks": 0.18048392492412485,
+    "process-compose": 0.001917128185840477,
+    "weed": 0.07093374287609765,
+    "pageserver": 0.08106713471554017,
+    "storage_broker": 0.00027387545512006813,
+    "safekeeper": 0.04874983101137214,
+    "java": 0.010407267294562591,
+    "compute_ctl": 0.0016432527307204089,
+    "postgres": 0.13967648211123462,
+    "capture_worker.py": 0.27332770420982805,
+    "incremental_worker.py": 0.6885228941718512
+  },
+  "role_peak_sampled_rss_bytes": {
+    "python3": 77135872,
+    "supabricks": 48136192,
+    "process-compose": 64266240,
+    "weed": 899059712,
+    "pageserver": 361005056,
+    "storage_broker": 15269888,
+    "safekeeper": 55545856,
+    "java": 318435328,
+    "compute_ctl": 19861504,
+    "postgres": 172949504,
+    "capture_worker.py": 113897472,
+    "incremental_worker.py": 452694016,
+    "prepare_worker.py": 53694464
+  },
+  "disappeared_process_tails": 3,
+  "peak_cgroup_memory_bytes": 17094176768,
+  "observed_compilers": []
+}

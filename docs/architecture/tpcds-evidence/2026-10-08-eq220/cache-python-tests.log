@@ -1,0 +1,21 @@
+..............................................................................................................................................................E.......
+======================================================================
+ERROR: test_scope_failure_and_lost_lease_invalidate_evidence (test_verified_digests.VerifiedDigests.test_scope_failure_and_lost_lease_invalidate_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/python/analytics/test_verified_digests.py", line 72, in test_scope_failure_and_lost_lease_invalidate_evidence
+    with mutation_lease(self.root) as lease:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/build/eq213/programs/releases/v0.1.0-alpha.36.eq213a/python/runtime/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/python/analytics/incremental/planning.py", line 57, in mutation_lease
+    lease.check()
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/python/analytics/incremental/planning.py", line 31, in check
+    if self.fd is None:raise CaptureError('incremental_lease_lost')
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+capture.spool.CaptureError: incremental_lease_lost
+
+----------------------------------------------------------------------
+Ran 166 tests in 81.361s
+
+FAILED (errors=1)

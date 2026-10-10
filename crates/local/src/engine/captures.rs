@@ -46,8 +46,8 @@ impl Cell {
         }
         Ok(())
     }
-    /// Ingest durable worker receipts once per maintenance turn. Lifecycle dispatch
-    /// consumes the persisted state without polling a second time.
+    /// Observe durable capture receipts before maintenance or a sync progress
+    /// event. Unchanged timestamps do not rewrite durable observation state.
     pub(crate) fn observe_captures(&mut self, store: &mut Store) -> Result<()> {
         let _profile = crate::sync_profile::span("capture.observe");
         for mut c in store.captures()? {

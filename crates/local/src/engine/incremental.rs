@@ -60,6 +60,8 @@ impl Cell {
         )
     }
     fn control_apply_workers(&mut self, store: &mut Store) -> Result<()> {
+        // Optional decode loses admission before the existing writer's budget.
+        self.control_preparation(store)?;
         let records = store.native_processes()?;
         let mut stop = Vec::new();
         for (id, worker) in &self.apply_workers {
@@ -162,13 +164,54 @@ impl Cell {
         }
         Ok(())
     }
-    pub(super) fn tick_incremental(&mut self, store: &mut Store) -> Result<()> {
+    /// Cheap readiness hint only; the normal receipt path still validates owner,
+    /// process generation, mailbox completion, capture and publication fencing.
+    pub(crate) fn apply_receipt_pending(&self) -> bool {
+        self.apply_workers.values().any(|worker| {
+            worker.busy
+                && self
+                    .root
+                    .join("analytics/apply-work")
+                    .join(worker.run.id.to_string())
+                    .join("result.json")
+                    .metadata()
+                    .is_ok_and(|m| m.is_file() && m.len() <= 2 * 1024 * 1024)
+        })
+    }
+
+    /// Advance an observed pipeline event, not the whole maintenance loop.
+    pub(crate) fn progress_sync(&mut self, store: &mut Store) -> Result<bool> {
+        if !self.storage_ready || !self.bucket_ready {
+            return Ok(false);
+        }
+        // Failure defers both admission and dispatch, exactly as on maintenance.
+        self.observe_captures(store)?;
+        // Event-driven dispatch must retain the maintenance path's process
+        // authority, RSS and idle-worker recycling checks.
+        self.control_apply_workers(store)?;
+        crate::sync::tick(store, Some(self))?;
+        let progressed = self.tick_incremental(store)?;
+        if progressed {
+            crate::sync::tick(store, Some(self))?;
+        }
+        Ok(progressed)
+    }
+
+    pub(super) fn tick_incremental(&mut self, store: &mut Store) -> Result<bool> {
         let _profile = crate::sync_profile::span("apply.dispatch");
+        let mut progressed = false;
         for mut r in store.active_incremental()? {
+            if chrono::Utc::now().timestamp_millis() > r.deadline_ms {
+                self.stop_incremental(store, &r)?;
+                store.fail_incremental(&mut r, "materialization_fenced_or_expired", false)?;
+                progressed = true;
+                continue;
+            }
             if r.state == "ready" {
                 continue;
             }
             let c = store.incremental_live(&r)?;
+            self.start_preparation(store, &r, &c)?;
             let work = self
                 .root
                 .join("analytics/apply-work")
@@ -224,6 +267,7 @@ impl Cell {
                     } else {
                         self.stop_incremental(store, &r)?;
                     }
+                    progressed = true;
                     if v["state"] == "deferred" {
                         if store
                             .defer_incremental(&mut r, &v, chrono::Utc::now().timestamp_millis())
@@ -414,6 +458,9 @@ impl Cell {
             config["journal_access"] = self.journal_access(store, &c, r.source_revision)?;
             config["reuse_authority"] = scope.clone();
             config["reuse_worker"] = json!(reuse || self.apply_workers.len() < 4);
+            config["prepare_next"] =
+                json!(cfg!(feature = "sync-lookahead") && !r.storage_profile.is_compact());
+            self.attach_preparation(store, &r, &mut config)?;
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;
@@ -439,6 +486,7 @@ impl Cell {
                 slot.run = r.clone();
                 slot.busy = true;
                 slot.requests += 1;
+                progressed = true;
                 continue;
             }
             let mut argv = vec![path(&python)?, "-B".into(), path(&worker)?, path(&input)?];
@@ -468,7 +516,8 @@ impl Cell {
                 self.root.clone(),
             ))?;
             self.update()?;
+            progressed = true;
         }
-        Ok(())
+        Ok(progressed)
     }
 }

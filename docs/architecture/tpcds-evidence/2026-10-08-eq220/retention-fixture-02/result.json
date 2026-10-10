@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "scope": "Installed PG slot retention under pressure and a pinned long transaction.\n\nA bounded correctness fixture, not a throughput benchmark. It uses the existing\n32-MiB minimum WAL profile to exercise pressure without changing production limits.\n",
+  "release_identity": "27a3227cf439e03929a0b0f421ae7a8f0abcb158ae3c9f0750f91b1546900504",
+  "fixture_sha256": "f895baae2efc6cd6d279b37eb1181d1b87f38da2f0fbf36c8590e08fc6678cf7",
+  "checks": [
+    "pressure_snapshot_advances_restart_only_after_durable_capture_feedback",
+    "snapshot_request_preserves_the_open_transaction_restart_pin",
+    "released_transaction_and_every_committed_row_apply_exactly_with_unchanged_wal_cap"
+  ],
+  "metrics": {
+    "wal_limit_bytes": 33554432,
+    "slot_observations": [
+      {
+        "at_ms": 1791507020454,
+        "confirmed": "0/1584CB8",
+        "restart": "0/1584C80",
+        "source": "0/1584F38",
+        "retained_bytes": 696
+      },
+      {
+        "at_ms": 1791507022059,
+        "confirmed": "0/2046D30",
+        "restart": "0/2044838",
+        "source": "0/2046E70",
+        "retained_bytes": 9784
+      },
+      {
+        "at_ms": 1791507024184,
+        "confirmed": "0/2B06CE0",
+        "restart": "0/2044838",
+        "source": "0/2B06CE0",
+        "retained_bytes": 11281576
+      },
+      {
+        "at_ms": 1791507026255,
+        "confirmed": "0/35C6D50",
+        "restart": "0/35C45D8",
+        "source": "0/35C6D50",
+        "retained_bytes": 10104
+      }
+    ],
+    "phase_wal_bytes": [
+      11270336,
+      11262328,
+      11262152
+    ],
+    "exact_rows": 3700,
+    "source_transactions": 235,
+    "maximum_observed_retained_bytes": 11281576
+  }
+}

@@ -83,10 +83,12 @@ def run(args):
     generation = json.loads((args.dataset / 'generation.json').read_text())
     selected = workload(args.workload)
     bounds = selected['load_bounds']
+    load_rows = selected.get('load_rows', selected['business_rows'])
     profile = json.loads(PROFILE.read_text())
     assert profile['rows_per_commit']==ROWS and profile['encoded_copy_bytes_per_commit']==BYTES
     report = dict(status='RUNNING', stage='admission', scope=f'SF{selected["scale"]} engineering load pilot; no full-suite or release claim',
                   scale=selected['scale'], workload_profile=selected,
+                  load_rows=load_rows,
                   workload_profile_sha256=selected['profile_sha256'],
                   started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   input_lock_sha256=sha(LOCK), generation_receipt_sha256=sha(args.dataset / 'generation.json'),
@@ -170,11 +172,18 @@ def run(args):
             db.execute("SET DateStyle='ISO,YMD'")
             db.execute("SET statement_timeout='120s'")
             for table in manifest['tables']:
+                if report['committed_rows'] == load_rows:
+                    break
                 name = table['name']; table_start = time.monotonic()
+                table_target = min(expected[name+'.dat']['rows'], load_rows-report['committed_rows'])
                 entry = dict(table=name, rows=0, transactions=0); report['tables'].append(entry)
                 sql = psycopg.sql.SQL('COPY {} FROM STDIN WITH (ENCODING {})').format(
                     psycopg.sql.Identifier(name), psycopg.sql.Literal(profile['postgres_copy_encoding']))
                 for begin, end, count, data in batches(args.dataset/'data'/(name+'.dat'), table['columns']):
+                    if entry['rows'] == table_target:
+                        break
+                    if entry['rows']+count > table_target:
+                        raise ValueError('qualification prefix must end at a COPY boundary')
                     sample()
                     # This insert-only, single-loader fixture begins empty. The
                     # coherent publication's exact row total is a conservative
@@ -203,7 +212,7 @@ def run(args):
                     report['committed_rows'] += count; report['committed_transactions'] += 1
                     report['last_ack_lsn'] = boundary; report.pop('inflight')
                 entry['elapsed_seconds'] = time.monotonic()-table_start
-                assert entry['rows'] == expected[name+'.dat']['rows'], name
+                assert entry['rows'] == table_target, name
                 if name=='customer':
                     key, country = country_control(args.dataset/'data/customer.dat', table['columns'])
                     assert db.execute('SELECT c_birth_country FROM customer WHERE c_customer_sk=%s', (key,)).fetchone()[0] == country
@@ -223,10 +232,12 @@ def run(args):
             time.sleep(.5)
         report['drain_seconds'] = time.monotonic()-drain_start
         report['publication'] = cell.current()
-        assert report['committed_rows'] == generation['business_rows']
-        assert all(report['source_rows'][t['name']] == expected[t['name']+'.dat']['rows'] for t in manifest['tables'])
+        assert report['committed_rows'] == load_rows
+        loaded_counts = {t['table']:t['rows'] for t in report['tables']}
+        assert all(report['source_rows'][t['name']] == loaded_counts.get(t['name'], 0) for t in manifest['tables'])
         cell.check(f'all_{args.workload}_rows_committed_and_published_boundary_reached')
-        report.update(status='PASS', stage='loaded_requires_exact_verification_and_queries')
+        report.update(status='PASS' if load_rows == generation['business_rows'] else 'PREFIX_PASS',
+                      stage='loaded_requires_exact_verification_and_queries')
     except BaseException as error:
         report['status'] = 'FAIL'
         report['error'] = str(error)
@@ -247,7 +258,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('release', 'inputs', 'dataset', 'output'):
         p.add_argument('--'+name, type=Path, required=True)
-    p.add_argument('--workload', choices=('sf1', 'sf100'), default='sf1')
+    p.add_argument('--workload', choices=('sf1', 'sf100', 'sf100-prefix', 'sf100-growing-prefix'), default='sf1')
     p.add_argument('--timeout', type=int)
     p.add_argument('--max-unpublished-rows',type=int,
                    help='0: unrestricted pilot; otherwise pause COPY outside transactions at this row window')

@@ -112,7 +112,9 @@ jobs:
                           '--no-deps', '--reinstall', str(wheel)], check=True)
           PYCODE
       - name: Exporter failure boundaries
-        run: python/analytics/.venv/bin/python -m unittest discover -s python/analytics -p 'test_*.py' -v
+        run: |
+          set -o pipefail
+          python/analytics/.venv/bin/python python/analytics/run_tests.py --report analytical-tests.json 2>&1 | tee analytical-tests.log
       - name: CSV parser and conversion boundaries
         run: python/analytics/.venv/bin/python -m unittest discover -s python/ingest -p 'test_*.py' -v
       - name: Synthetic Sail and Delta qualification
@@ -124,6 +126,8 @@ jobs:
         with:
           name: analytical-probe-${{ matrix.target }}
           path: |
+            analytical-tests.json
+            analytical-tests.log
             analytical-qualification.json
             analytical-qualification.log
 

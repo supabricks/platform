@@ -1,0 +1,26 @@
+{
+  "status": "IMPLEMENTED_EXPERIMENTAL",
+  "source_revision": "c7af44c946f5535727cf6d41a12bb63133642e8d",
+  "normal_build": "serial; sync-lookahead feature absent",
+  "experimental_build": "sync-lookahead feature; explicit large profile only",
+  "performance": "No demonstrated installed gain; serial retained. Growing target unmet in both paths.",
+  "exact": "P 7,385,039 rows and both 14,770,127-row variants pass all 24 tables",
+  "validation": {
+    "python": 211,
+    "rust": 233,
+    "rust_ignored": 4,
+    "experimental_rust": 2,
+    "harness": 38,
+    "evidence_inventory": 3,
+    "installed": [
+      "default serial",
+      "in-flight pause and daemon SIGKILL",
+      "consumed triggered fixed barrier"
+    ],
+    "leaked_descendants": 0
+  },
+  "followup_issue": 228,
+  "original_sf100_paused": true,
+  "sp": "frozen",
+  "scope": "Engineering packages and bounded prefixes, not full SF100 or SQL-suite/release qualification"
+}

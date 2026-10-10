@@ -1,6 +1,7 @@
 """Strict pgoutput row conversion and transaction-ordered primary-key overlay."""
 from decimal import Decimal, InvalidOperation
 from datetime import date
+from functools import lru_cache
 import struct
 from capture.spool import CaptureError, frames, MAX_MESSAGE
 from capture.protocol import Reader,barrier_message
@@ -8,6 +9,14 @@ from capture.protocol import Reader,barrier_message
 UNCHANGED = object()
 MAX_ROWS = 16384
 MAX_VALUES = 32*1024*1024
+_INT_LIMITS={typ:(-(1<<(bits-1)),1<<(bits-1)) for typ,bits in ((20,64),(21,16),(23,32))}
+_LENGTH=struct.Struct('!I')
+
+
+@lru_cache(maxsize=128)
+def numeric_shape(mod):
+    precision=((mod-4)>>16)&65535;scale=(mod-4)&2047
+    return precision-scale,scale,Decimal((0,(1,),-scale))
 
 
 def key_columns(columns):
@@ -33,18 +42,24 @@ def key_values(key,keys):
 
 def value(raw, column):
     if raw is None:return None
-    typ,mod=column[2:]
+    typ=column[2];mod=column[3]
     try:
-        if typ in (20,21,23):
-            n=int(raw);bits={20:64,21:16,23:32}[typ]
-            if not -(1<<(bits-1))<=n<(1<<(bits-1)):raise ValueError()
+        if typ in _INT_LIMITS:
+            n=int(raw);low,high=_INT_LIMITS[typ]
+            if not low<=n<high:raise ValueError()
             return n
         if typ==1700:
-            n=Decimal(raw);precision=((mod-4)>>16)&65535;scale=(mod-4)&2047
+            n=Decimal(raw);integer_digits,scale,quantum=numeric_shape(mod)
             # Decimal context rounding must never change source numeric values.
             if not n.is_finite():raise ValueError()
+            # PostgreSQL typmod text normally has exactly the declared scale.
+            # These exact Decimal predicates avoid allocating a digits tuple for
+            # that common case; neither rounds nor consults context precision.
+            if n.same_quantum(quantum):
+                if integer_digits<0 or n.adjusted()>=integer_digits:raise ValueError()
+                return n
             sign,digits,exponent=n.as_tuple()
-            if exponent < -scale or max(len(digits)+exponent,0)>precision-scale:raise ValueError()
+            if exponent < -scale or max(len(digits)+exponent,0)>integer_digits:raise ValueError()
             return n
         if typ in (25,1043):return raw
         if typ==1042:
@@ -59,24 +74,32 @@ def value(raw, column):
     raise CaptureError('unsupported_incremental_value')
 
 
-def tuple_values(reader,columns):
+def tuple_values(reader,columns,*,allow_unchanged=True):
     if reader.number('H')!=len(columns):raise CaptureError('schema_changed')
-    result=[];size=0
+    result=[];size=0;data=reader.data;position=reader.offset;limit=len(data)
     for column in columns:
-        kind=reader.take(1)
-        if kind==b'u':result.append(UNCHANGED)
-        elif kind==b'n':result.append(None)
-        elif kind==b't':
-            raw=reader.take(reader.number('I'));size+=len(raw)
+        if position>=limit:raise CaptureError('invalid_pgoutput')
+        kind=data[position];position+=1
+        if kind==117:  # u: unchanged TOAST
+            if not allow_unchanged:raise CaptureError('invalid_unchanged_column')
+            result.append(UNCHANGED)
+        elif kind==110:result.append(None)  # n: NULL
+        elif kind==116:  # t: length-prefixed UTF-8 text
+            if position+4>limit:raise CaptureError('invalid_pgoutput')
+            length=_LENGTH.unpack_from(data,position)[0];position+=4
+            end=position+length
+            if end>limit:raise CaptureError('invalid_pgoutput')
+            raw=data[position:end];position=end;size+=length
             try:result.append(value(raw.decode('utf8'),column))
             except UnicodeError:raise CaptureError('invalid_pgoutput') from None
         else:raise CaptureError('unsupported_tuple')
     if size>256*1024:raise CaptureError('row_budget')
+    reader.offset=position
     return result
 
 
 def changes(payload,schema,end,barrier_prefix=None):
-    result=[];begun=False;finished=False;final=None
+    result=[];begun=False;finished=False;final=None;profiles={}
     for frame in frames(payload):
         r=Reader(frame);tag=r.take(1)
         if tag==b'B' and not begun:
@@ -90,18 +113,21 @@ def changes(payload,schema,end,barrier_prefix=None):
         elif tag in (b'I',b'U',b'D') and begun and not finished:
             oid=str(r.number('I'))
             if oid not in schema:raise CaptureError('schema_changed')
-            columns=schema[oid][3];pk=key_columns(columns)
+            if oid not in profiles:
+                columns=schema[oid][3];profiles[oid]=(columns,key_columns(columns))
+            columns,pk=profiles[oid]
             marker=r.take(1);old=new=None
             if tag!=b'I' and marker in (b'K',b'O'):
                 old=tuple_values(r,columns)
                 if tag==b'U':marker=r.take(1)
             if tag!=b'D':
                 if marker!=b'N':raise CaptureError('invalid_tuple')
-                new=tuple_values(r,columns)
+                new=tuple_values(r,columns,allow_unchanged=tag!=b'I')
             elif old is None:raise CaptureError('missing_replica_identity')
             oldkey=row_key(old if old is not None else new,pk)
-            newkey=row_key(new,pk) if new is not None else None
-            if tag==b'I' and any(v is UNCHANGED for v in new):raise CaptureError('invalid_unchanged_column')
+            # Without an old-key tuple both keys come from the same already
+            # validated new row. Key-changing updates still validate both.
+            newkey=(oldkey if old is None else row_key(new,pk)) if new is not None else None
             result.append((oid,tag,oldkey,newkey,new))
             if len(result)>MAX_ROWS:raise CaptureError('apply_row_budget')
         else:raise CaptureError('unsupported_pgoutput')

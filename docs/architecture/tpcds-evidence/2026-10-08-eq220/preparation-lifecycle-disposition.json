@@ -1,0 +1,7 @@
+{
+  "continuous": "PASS, explicit large profile",
+  "triggered": "PASS, explicit large profile",
+  "maintenance_first": "SETUP_FAIL: applying large to the snapshot/full fixture correctly rejects policy creation; no rollover assertions ran",
+  "correction": "Restrict large-profile adapter to supported continuous/triggered policies. Run the original maintenance suite under compact; separately test large-profile preparation with actual compaction and interruption recovery.",
+  "large_compaction": "Ten focused preparation tests pass, including exact historical/current reads and compaction/apply interruption recovery. No production guard relaxed."
+}

@@ -193,6 +193,7 @@ def request_profile(function):
 
 def install(namespace,role):
     global ENABLED,OUTPUT,ROLE,NATIVE,CONTEXT_ID,COUNT_FS,PROFILE_ROOT
+    if ENABLED:return
     if len(sys.argv)<2:return
     path=Path(sys.argv[1])
     root=next((p for p in list(path.parents)[:6] if (p/'sync-profile/enabled').is_file()),None)

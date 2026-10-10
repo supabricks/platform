@@ -6,6 +6,7 @@ from pathlib import Path
 import select
 import signal
 import sqlite3
+import stat
 import sys
 import time
 import psycopg
@@ -19,13 +20,52 @@ from capture.source import Source
 from capture.bootstrap import verify
 
 
-def read(path):
-    if path.stat().st_size>65536:raise CaptureError('invalid_control')
-    return json.loads(path.read_text())
+class ControlReader:
+    """One bounded control version; callers treat the returned value as read-only.
+
+    The daemon atomically replaces this managed file. Check inode/change metadata
+    on every loop, including ctime for in-place writes with a restored mtime.
+    This saves parsing, not control polling or independent owner authorization.
+    """
+    def __init__(self,path):
+        self.path=Path(path);self.signature=None;self.value=None
+
+    @staticmethod
+    def stamp(meta):
+        if not stat.S_ISREG(meta.st_mode) or meta.st_nlink not in (0,1) or meta.st_size>65536:
+            raise CaptureError('invalid_control')
+        return (meta.st_dev,meta.st_ino,meta.st_mode,meta.st_uid,meta.st_gid,
+                meta.st_nlink,meta.st_size,meta.st_mtime_ns,meta.st_ctime_ns)
+
+    def read(self):
+        try:return self.read_version()
+        except BaseException:
+            self.signature=None;self.value=None
+            raise
+
+    def read_version(self):
+        for _ in range(8):
+            before=self.stamp(self.path.lstat())
+            if before[5]==0:continue
+            if before==self.signature:return self.value
+            self.signature=None;self.value=None
+            fd=os.open(self.path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+            with os.fdopen(fd,'rb') as stream:
+                if self.stamp(os.fstat(stream.fileno()))!=before:continue
+                data=stream.read(65537)
+                if self.stamp(os.fstat(stream.fileno()))!=before:continue
+            if self.stamp(self.path.lstat())!=before:continue
+            if len(data)>65536:raise CaptureError('invalid_control')
+            value=json.loads(data.decode('utf-8'))
+            self.signature=before;self.value=value
+            return value
+        # Rapid replacement is unavailable, not evidence that history was lost.
+        raise ReadBusy()
 
 
 def run(path):
-    config=read(path);root=path.parent;identity=config['identity'];generation=config['worker_generation']
+    read=ControlReader(path).read
+    config=read();root=path.parent;identity=config['identity'];generation=config['worker_generation']
     os.umask(0o077)
     spool=source=wire=groups=owner=None
     stopping=False;feedback_lsn=None
@@ -47,7 +87,7 @@ def run(path):
                 return
             except SpoolBackpressure:
                 if owner:owner.check()
-                control=read(path)
+                control=read()
                 if control['identity']!=identity or control['worker_generation']!=generation:
                     raise CaptureError('worker_fenced')
                 if stopping or control['desired']!='running':raise
@@ -72,6 +112,8 @@ def run(path):
             progress['capture_journal']=spool.storage_progress()
             progress['stream_observed_at_ms']=stream_observed
             if groups:progress['capture_groups']=dict(groups.progress(),feedback_lsn=feedback_lsn)
+            if observed:
+                progress['source_slot']={key:observed[key] for key in ('confirmed','restart','source','wal_status','retained_bytes','restart_snapshot') if key in observed}
         atomic(root/'status.json',dict(identity=identity,worker_generation=generation,state=state,error=error,
             observed_at_ms=int(time.time()*1000),start_lsn=pg_lsn(spool.get('start')) if spool and spool.get('start') is not None else None,
             captured_lsn=pg_lsn(spool.captured) if spool and spool.captured is not None else None,
@@ -87,7 +129,7 @@ def run(path):
         profile=source.setup();groups=Groups(spool);report('established')
         while True:
             owner.check()
-            current=read(path)
+            current=read()
             if current['identity']!=identity or current['worker_generation']!=generation:raise CaptureError('worker_fenced')
             if stopping:
                 flush();report('paused');return

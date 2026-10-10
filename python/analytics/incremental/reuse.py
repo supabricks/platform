@@ -1,4 +1,4 @@
-"""Bounded, serial daemon mailbox. Only imported code survives between requests.
+"""Bounded, serial mailbox; imported code and fenced digest evidence may survive.
 
 The daemon owns authorization, cancellation and process-group fencing. A mailbox
 is private to one launch; it is never recovered across daemon generations.

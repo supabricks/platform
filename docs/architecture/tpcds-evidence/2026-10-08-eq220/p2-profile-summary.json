@@ -1,0 +1,5805 @@
+{
+  "scope": "Diagnostic package only, profiling overhead present. Worker medians are per complete run within the cohort. Capture/controller snapshots round down independently. Nested phase times and different-thread totals must not be added. Apply gc_collect is not captured in final request snapshots; after-worker interval includes GC and controller work.",
+  "start": {
+    "at_ms": 1791505492386,
+    "rows": 6512591
+  },
+  "end": {
+    "at_ms": 1791505537154,
+    "rows": 7318479
+  },
+  "worker_count": 27,
+  "worker_metric_medians": {
+    "apply.apply_table": {
+      "calls": 1,
+      "total_ns": 330166899,
+      "self_ns": 254380017,
+      "max_ns": 330166899
+    },
+    "apply.boundary": {
+      "calls": 3,
+      "total_ns": 36450097,
+      "self_ns": 36450097,
+      "max_ns": 12492044
+    },
+    "apply.commit_metrics": {
+      "calls": 1,
+      "total_ns": 413653,
+      "self_ns": 413653,
+      "max_ns": 413653
+    },
+    "apply.durable": {
+      "calls": 2,
+      "total_ns": 74238316,
+      "self_ns": 18594654,
+      "max_ns": 43226399
+    },
+    "apply.initialize": {
+      "calls": 1,
+      "total_ns": 12323800,
+      "self_ns": 83124,
+      "max_ns": 12323800
+    },
+    "apply.inventory": {
+      "calls": 1,
+      "total_ns": 70931347,
+      "self_ns": 70931347,
+      "max_ns": 70931347
+    },
+    "apply.journal": {
+      "calls": 1,
+      "total_ns": 25145451,
+      "self_ns": 25145451,
+      "max_ns": 25145451
+    },
+    "apply.maintenance.base": {
+      "calls": 1,
+      "total_ns": 7995,
+      "self_ns": 7995,
+      "max_ns": 7995
+    },
+    "apply.plan": {
+      "calls": 1,
+      "total_ns": 585747605,
+      "self_ns": 543948784,
+      "max_ns": 585747605
+    },
+    "apply.planning_check": {
+      "calls": 102,
+      "total_ns": 25607301,
+      "self_ns": 25607301,
+      "max_ns": 367005
+    },
+    "apply.planning_inventory": {
+      "calls": 2,
+      "total_ns": 14733398,
+      "self_ns": 14733398,
+      "max_ns": 7637901
+    },
+    "apply.retained_boundary": {
+      "calls": 3,
+      "total_ns": 36273428,
+      "self_ns": 36273428,
+      "max_ns": 12444726
+    },
+    "apply.run": {
+      "calls": 1,
+      "total_ns": 1265477079,
+      "self_ns": 44231386,
+      "max_ns": 1265477079
+    },
+    "apply.schema_for": {
+      "calls": 1,
+      "total_ns": 418651,
+      "self_ns": 418651,
+      "max_ns": 418651
+    },
+    "apply.verify_previous": {
+      "calls": 1,
+      "total_ns": 46322541,
+      "self_ns": 46322541,
+      "max_ns": 46322541
+    },
+    "durability.atomic": {
+      "calls": 2,
+      "total_ns": 79398279,
+      "self_ns": 30244400,
+      "max_ns": 57888756
+    },
+    "durability.fsync": {
+      "calls": 63,
+      "total_ns": 104195193,
+      "self_ns": 104195193,
+      "max_ns": 18841229
+    }
+  },
+  "worker_interval_medians": {
+    "request_cpu_s": 1.1896189999999995,
+    "post_manifest_worker_ms": 77.84912109375,
+    "after_worker_profile_ms": 245.68310546875
+  },
+  "workers": [
+    {
+      "run_id": "090b81db-7bcf-4680-857b-aa882ae501c3",
+      "batch": {
+        "run_id": "090b81db-7bcf-4680-857b-aa882ae501c3",
+        "started_ms": 1791505496075,
+        "manifest_ms": 1791505497038,
+        "published_ms": 1791505497365,
+        "worker_ms": 963,
+        "after_manifest_ms": 327,
+        "cycle_ms": 1290,
+        "live_bytes": 594244896,
+        "new_bytes": 2091174,
+        "rows": 22528,
+        "delta_execution_ms": 13,
+        "journal_ms": 21
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 20848247,
+          "self_ns": 20848247,
+          "max_ns": 20848247,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35322121,
+          "self_ns": 35322121,
+          "max_ns": 12051732,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12137613,
+          "self_ns": 85881,
+          "max_ns": 12137613,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8095,
+          "self_ns": 8095,
+          "max_ns": 8095,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46017051,
+          "self_ns": 46017051,
+          "max_ns": 46017051,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14307004,
+          "self_ns": 14307004,
+          "max_ns": 7332862,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 70,
+          "total_ns": 17421648,
+          "self_ns": 17421648,
+          "max_ns": 360363,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 14,
+            "7": 56
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 430664181,
+          "self_ns": 398935529,
+          "max_ns": 430664181,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 109407902,
+          "self_ns": 109407902,
+          "max_ns": 23082860,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 5,
+            "12": 3,
+            "9": 1,
+            "5": 1,
+            "6": 1,
+            "0": 51
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 70692023,
+          "self_ns": 20876218,
+          "max_ns": 53924556,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 367957,
+          "self_ns": 367957,
+          "max_ns": 367957,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35032451,
+          "self_ns": 35032451,
+          "max_ns": 11857510,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 76689091,
+          "self_ns": 17096994,
+          "max_ns": 60936679,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 454999,
+          "self_ns": 454999,
+          "max_ns": 454999,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 274958673,
+          "self_ns": 177772511,
+          "max_ns": 274958673,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 66347812,
+          "self_ns": 66347812,
+          "max_ns": 66347812,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1001611263,
+          "self_ns": 41308843,
+          "max_ns": 1001611263,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        }
+      },
+      "request_cpu_s": 0.9226380000000001,
+      "post_manifest_worker_ms": 65.259033203125,
+      "after_worker_profile_ms": 261.740966796875
+    },
+    {
+      "run_id": "45e48dee-e0db-46e0-9045-f477fb39cf06",
+      "batch": {
+        "run_id": "45e48dee-e0db-46e0-9045-f477fb39cf06",
+        "started_ms": 1791505533917,
+        "manifest_ms": 1791505535210,
+        "published_ms": 1791505535543,
+        "worker_ms": 1293,
+        "after_manifest_ms": 333,
+        "cycle_ms": 1626,
+        "live_bytes": 658453479,
+        "new_bytes": 2943087,
+        "rows": 31744,
+        "delta_execution_ms": 17,
+        "journal_ms": 27
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 26817832,
+          "self_ns": 26817832,
+          "max_ns": 26817832,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37422453,
+          "self_ns": 37422453,
+          "max_ns": 13014219,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12542037,
+          "self_ns": 81581,
+          "max_ns": 12542037,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7554,
+          "self_ns": 7554,
+          "max_ns": 7554,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 48850831,
+          "self_ns": 48850831,
+          "max_ns": 48850831,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15736913,
+          "self_ns": 15736913,
+          "max_ns": 8399894,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 1,
+            "13": 1
+          }
+        },
+        "apply.planning_check": {
+          "calls": 103,
+          "total_ns": 25607301,
+          "self_ns": 25607301,
+          "max_ns": 352018,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 83,
+            "8": 20
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 610259207,
+          "self_ns": 568914993,
+          "max_ns": 610259207,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 122854568,
+          "self_ns": 122854568,
+          "max_ns": 18841229,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 7,
+            "12": 1,
+            "9": 1,
+            "6": 1,
+            "5": 1,
+            "1": 2,
+            "0": 49
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 86491660,
+          "self_ns": 29675918,
+          "max_ns": 59768134,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 419834,
+          "self_ns": 419834,
+          "max_ns": 419834,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36991878,
+          "self_ns": 36991878,
+          "max_ns": 12492044,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 85745817,
+          "self_ns": 19706991,
+          "max_ns": 68502943,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 460871,
+          "self_ns": 460871,
+          "max_ns": 460871,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 390018191,
+          "self_ns": 282717698,
+          "max_ns": 390018191,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 71367281,
+          "self_ns": 71367281,
+          "max_ns": 71367281,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1335497524,
+          "self_ns": 47863027,
+          "max_ns": 1335497524,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2644340000000085,
+      "post_manifest_worker_ms": 70.0537109375,
+      "after_worker_profile_ms": 262.9462890625
+    },
+    {
+      "run_id": "757999ee-7d1a-4951-bd6c-d72a12c01a92",
+      "batch": {
+        "run_id": "757999ee-7d1a-4951-bd6c-d72a12c01a92",
+        "started_ms": 1791505504010,
+        "manifest_ms": 1791505505062,
+        "published_ms": 1791505505305,
+        "worker_ms": 1052,
+        "after_manifest_ms": 243,
+        "cycle_ms": 1295,
+        "live_bytes": 608017660,
+        "new_bytes": 2374058,
+        "rows": 25600,
+        "delta_execution_ms": 14,
+        "journal_ms": 29
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 29145880,
+          "self_ns": 29145880,
+          "max_ns": 29145880,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35483002,
+          "self_ns": 35483002,
+          "max_ns": 11945654,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12028459,
+          "self_ns": 82805,
+          "max_ns": 12028459,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8135,
+          "self_ns": 8135,
+          "max_ns": 8135,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45275767,
+          "self_ns": 45275767,
+          "max_ns": 45275767,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14436145,
+          "self_ns": 14436145,
+          "max_ns": 7405868,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 79,
+          "total_ns": 19829813,
+          "self_ns": 19829813,
+          "max_ns": 351075,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 62,
+            "8": 17
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 486128277,
+          "self_ns": 451862319,
+          "max_ns": 486128277,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 87790694,
+          "self_ns": 87790694,
+          "max_ns": 17798974,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 5,
+            "14": 1,
+            "12": 1,
+            "0": 53,
+            "8": 1,
+            "6": 2
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 79398279,
+          "self_ns": 24354073,
+          "max_ns": 54078944,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 341297,
+          "self_ns": 341297,
+          "max_ns": 341297,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36201534,
+          "self_ns": 36201534,
+          "max_ns": 12240555,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 50662776,
+          "self_ns": 17916288,
+          "max_ns": 34806640,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 375461,
+          "self_ns": 375461,
+          "max_ns": 375461,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 267621661,
+          "self_ns": 196222667,
+          "max_ns": 267621661,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 76783377,
+          "self_ns": 76783377,
+          "max_ns": 76783377,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1080617500,
+          "self_ns": 44508243,
+          "max_ns": 1080617500,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.0217039999999997,
+      "post_manifest_worker_ms": 76.016845703125,
+      "after_worker_profile_ms": 166.983154296875
+    },
+    {
+      "run_id": "9c425ddc-cb04-4be3-ba1d-31bff12dedd9",
+      "batch": {
+        "run_id": "9c425ddc-cb04-4be3-ba1d-31bff12dedd9",
+        "started_ms": 1791505532175,
+        "manifest_ms": 1791505533507,
+        "published_ms": 1791505533813,
+        "worker_ms": 1332,
+        "after_manifest_ms": 306,
+        "cycle_ms": 1638,
+        "live_bytes": 655509611,
+        "new_bytes": 3133428,
+        "rows": 33792,
+        "delta_execution_ms": 18,
+        "journal_ms": 26
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 26273916,
+          "self_ns": 26273916,
+          "max_ns": 26273916,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 38163477,
+          "self_ns": 38163477,
+          "max_ns": 13080453,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 13168368,
+          "self_ns": 87915,
+          "max_ns": 13168368,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7875,
+          "self_ns": 7875,
+          "max_ns": 7875,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46775184,
+          "self_ns": 46775184,
+          "max_ns": 46775184,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15804258,
+          "self_ns": 15804258,
+          "max_ns": 8675187,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 1,
+            "13": 1
+          }
+        },
+        "apply.planning_check": {
+          "calls": 134,
+          "total_ns": 33804720,
+          "self_ns": 33804720,
+          "max_ns": 370712,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 102,
+            "8": 32
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 680484015,
+          "self_ns": 630875037,
+          "max_ns": 680484015,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 71929706,
+          "self_ns": 71929706,
+          "max_ns": 21562820,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 4,
+            "14": 1,
+            "0": 54,
+            "8": 1,
+            "5": 2,
+            "12": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 86434294,
+          "self_ns": 33931004,
+          "max_ns": 69081975,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 431315,
+          "self_ns": 431315,
+          "max_ns": 431315,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 37706432,
+          "self_ns": 37706432,
+          "max_ns": 13148459,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 38021070,
+          "self_ns": 18594654,
+          "max_ns": 21537213,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 468334,
+          "self_ns": 468334,
+          "max_ns": 468334,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 345393182,
+          "self_ns": 284961058,
+          "max_ns": 345393182,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 71437482,
+          "self_ns": 71437482,
+          "max_ns": 71437482,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1356985017,
+          "self_ns": 45732650,
+          "max_ns": 1356985017,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.3194599999999994,
+      "post_manifest_worker_ms": 60.703369140625,
+      "after_worker_profile_ms": 245.296630859375
+    },
+    {
+      "run_id": "8ddb8bd1-dba7-4c05-82d8-f296c90c1eaa",
+      "batch": {
+        "run_id": "8ddb8bd1-dba7-4c05-82d8-f296c90c1eaa",
+        "started_ms": 1791505500711,
+        "manifest_ms": 1791505502018,
+        "published_ms": 1791505502355,
+        "worker_ms": 1307,
+        "after_manifest_ms": 337,
+        "cycle_ms": 1644,
+        "live_bytes": 603076376,
+        "new_bytes": 2943832,
+        "rows": 31744,
+        "delta_execution_ms": 17,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25400637,
+          "self_ns": 25400637,
+          "max_ns": 25400637,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35209042,
+          "self_ns": 35209042,
+          "max_ns": 11875173,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 11961383,
+          "self_ns": 86210,
+          "max_ns": 11961383,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7724,
+          "self_ns": 7724,
+          "max_ns": 7724,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45165741,
+          "self_ns": 45165741,
+          "max_ns": 45165741,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14721196,
+          "self_ns": 14721196,
+          "max_ns": 7880253,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 178,
+          "total_ns": 43064279,
+          "self_ns": 43064279,
+          "max_ns": 380180,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 155,
+            "8": 23
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 631774333,
+          "self_ns": 573988858,
+          "max_ns": 631774333,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 98679527,
+          "self_ns": 98679527,
+          "max_ns": 19306519,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 5,
+            "12": 3,
+            "8": 1,
+            "6": 1,
+            "5": 1,
+            "1": 1,
+            "0": 50
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 81597685,
+          "self_ns": 31515263,
+          "max_ns": 65629310,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "13": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 418651,
+          "self_ns": 418651,
+          "max_ns": 418651,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 39982254,
+          "self_ns": 39982254,
+          "max_ns": 16632566,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 2,
+            "14": 1
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 65863489,
+          "self_ns": 17266384,
+          "max_ns": 50242832,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 366945,
+          "self_ns": 366945,
+          "max_ns": 366945,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 345534297,
+          "self_ns": 254380017,
+          "max_ns": 345534297,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 78742655,
+          "self_ns": 78742655,
+          "max_ns": 78742655,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1300378252,
+          "self_ns": 41382869,
+          "max_ns": 1300378252,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2217599999999997,
+      "post_manifest_worker_ms": 57.14697265625,
+      "after_worker_profile_ms": 279.85302734375
+    },
+    {
+      "run_id": "96f28665-c697-4b01-ac32-f0e954c249cf",
+      "batch": {
+        "run_id": "96f28665-c697-4b01-ac32-f0e954c249cf",
+        "started_ms": 1791505530466,
+        "manifest_ms": 1791505531714,
+        "published_ms": 1791505532085,
+        "worker_ms": 1248,
+        "after_manifest_ms": 371,
+        "cycle_ms": 1619,
+        "live_bytes": 652375402,
+        "new_bytes": 2755360,
+        "rows": 29696,
+        "delta_execution_ms": 15,
+        "journal_ms": 29
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 29224776,
+          "self_ns": 29224776,
+          "max_ns": 29224776,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37180881,
+          "self_ns": 37180881,
+          "max_ns": 12680506,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12766767,
+          "self_ns": 86261,
+          "max_ns": 12766767,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7464,
+          "self_ns": 7464,
+          "max_ns": 7464,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 48239239,
+          "self_ns": 48239239,
+          "max_ns": 48239239,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14735564,
+          "self_ns": 14735564,
+          "max_ns": 7449039,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 162,
+          "total_ns": 39950327,
+          "self_ns": 39950327,
+          "max_ns": 360744,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 132,
+            "8": 30
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 620454426,
+          "self_ns": 565768535,
+          "max_ns": 620454426,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 135953007,
+          "self_ns": 135953007,
+          "max_ns": 12556344,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 10,
+            "12": 6,
+            "0": 45,
+            "11": 1,
+            "1": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 65736720,
+          "self_ns": 30392338,
+          "max_ns": 48302427,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 475257,
+          "self_ns": 475257,
+          "max_ns": 475257,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36830626,
+          "self_ns": 36830626,
+          "max_ns": 12737682,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 120710341,
+          "self_ns": 20101716,
+          "max_ns": 81314234,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "16": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 455731,
+          "self_ns": 455731,
+          "max_ns": 455731,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 333950483,
+          "self_ns": 256299010,
+          "max_ns": 333950483,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 70952047,
+          "self_ns": 70952047,
+          "max_ns": 70952047,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1325863018,
+          "self_ns": 39210239,
+          "max_ns": 1325863018,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2227020000000053,
+      "post_manifest_worker_ms": 125.31689453125,
+      "after_worker_profile_ms": 245.68310546875
+    },
+    {
+      "run_id": "0e17d02d-31a8-4a7b-9ea9-b8e94d6746a2",
+      "batch": {
+        "run_id": "0e17d02d-31a8-4a7b-9ea9-b8e94d6746a2",
+        "started_ms": 1791505520320,
+        "manifest_ms": 1791505521606,
+        "published_ms": 1791505521926,
+        "worker_ms": 1286,
+        "after_manifest_ms": 320,
+        "cycle_ms": 1606,
+        "live_bytes": 636032233,
+        "new_bytes": 2850543,
+        "rows": 30720,
+        "delta_execution_ms": 17,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25164495,
+          "self_ns": 25164495,
+          "max_ns": 25164495,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36353366,
+          "self_ns": 36353366,
+          "max_ns": 12444726,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12150086,
+          "self_ns": 79519,
+          "max_ns": 12150086,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8025,
+          "self_ns": 8025,
+          "max_ns": 8025,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46411567,
+          "self_ns": 46411567,
+          "max_ns": 46411567,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14804893,
+          "self_ns": 14804893,
+          "max_ns": 7450281,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 157,
+          "total_ns": 38250900,
+          "self_ns": 38250900,
+          "max_ns": 356355,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 133,
+            "8": 24
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 632813249,
+          "self_ns": 579757456,
+          "max_ns": 632813249,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 108608009,
+          "self_ns": 108608009,
+          "max_ns": 18733738,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "13": 4,
+            "0": 52,
+            "11": 1,
+            "5": 2,
+            "12": 2
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 84073728,
+          "self_ns": 33128727,
+          "max_ns": 68227641,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "13": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 420826,
+          "self_ns": 420826,
+          "max_ns": 420826,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 39279901,
+          "self_ns": 39279901,
+          "max_ns": 14683947,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 76210485,
+          "self_ns": 18547477,
+          "max_ns": 57437453,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 435243,
+          "self_ns": 435243,
+          "max_ns": 435243,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 365062291,
+          "self_ns": 267040631,
+          "max_ns": 365062291,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 69684300,
+          "self_ns": 69684300,
+          "max_ns": 69684300,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1317988483,
+          "self_ns": 40013148,
+          "max_ns": 1317988483,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2415450000000021,
+      "post_manifest_worker_ms": 60.5048828125,
+      "after_worker_profile_ms": 259.4951171875
+    },
+    {
+      "run_id": "a25876dc-2dd4-45c1-ac9b-1390e5a7d177",
+      "batch": {
+        "run_id": "a25876dc-2dd4-45c1-ac9b-1390e5a7d177",
+        "started_ms": 1791505516966,
+        "manifest_ms": 1791505518237,
+        "published_ms": 1791505518594,
+        "worker_ms": 1271,
+        "after_manifest_ms": 357,
+        "cycle_ms": 1628,
+        "live_bytes": 630427263,
+        "new_bytes": 2848907,
+        "rows": 30720,
+        "delta_execution_ms": 16,
+        "journal_ms": 24
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 24192010,
+          "self_ns": 24192010,
+          "max_ns": 24192010,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35890692,
+          "self_ns": 35890692,
+          "max_ns": 12232099,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 11829337,
+          "self_ns": 80581,
+          "max_ns": 11829337,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8295,
+          "self_ns": 8295,
+          "max_ns": 8295,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46518847,
+          "self_ns": 46518847,
+          "max_ns": 46518847,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14828417,
+          "self_ns": 14828417,
+          "max_ns": 7637901,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 92,
+          "total_ns": 22957618,
+          "self_ns": 22957618,
+          "max_ns": 365663,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 73,
+            "8": 19
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 620447342,
+          "self_ns": 582661307,
+          "max_ns": 620447342,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 146307455,
+          "self_ns": 146307455,
+          "max_ns": 19047023,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 4,
+            "12": 9,
+            "11": 1,
+            "14": 2,
+            "1": 3,
+            "0": 44
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 78501584,
+          "self_ns": 32785706,
+          "max_ns": 51244571,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 441574,
+          "self_ns": 441574,
+          "max_ns": 441574,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 37165464,
+          "self_ns": 37165464,
+          "max_ns": 12792055,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 120443354,
+          "self_ns": 19851777,
+          "max_ns": 71658686,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "16": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 413653,
+          "self_ns": 413653,
+          "max_ns": 413653,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 338648183,
+          "self_ns": 252402780,
+          "max_ns": 338648183,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 81934904,
+          "self_ns": 81934904,
+          "max_ns": 81934904,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1352043703,
+          "self_ns": 53602623,
+          "max_ns": 1352043703,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.229809999999997,
+      "post_manifest_worker_ms": 137.927734375,
+      "after_worker_profile_ms": 219.072265625
+    },
+    {
+      "run_id": "7113fcea-7144-4dce-bd98-29cfc08d8de9",
+      "batch": {
+        "run_id": "7113fcea-7144-4dce-bd98-29cfc08d8de9",
+        "started_ms": 1791505492477,
+        "manifest_ms": 1791505493926,
+        "published_ms": 1791505494254,
+        "worker_ms": 1449,
+        "after_manifest_ms": 328,
+        "cycle_ms": 1777,
+        "live_bytes": 589681469,
+        "new_bytes": 3605067,
+        "rows": 38912,
+        "delta_execution_ms": 20,
+        "journal_ms": 30
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 29954870,
+          "self_ns": 29954870,
+          "max_ns": 29954870,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35143468,
+          "self_ns": 35143468,
+          "max_ns": 12274558,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 11659871,
+          "self_ns": 90439,
+          "max_ns": 11659871,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7604,
+          "self_ns": 7604,
+          "max_ns": 7604,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 44080816,
+          "self_ns": 44080816,
+          "max_ns": 44080816,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14601843,
+          "self_ns": 14601843,
+          "max_ns": 8012240,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 181,
+          "total_ns": 43434895,
+          "self_ns": 43434895,
+          "max_ns": 367005,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 163,
+            "8": 18
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 795890933,
+          "self_ns": 737854195,
+          "max_ns": 795890933,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 100250003,
+          "self_ns": 100250003,
+          "max_ns": 15271004,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 6,
+            "12": 4,
+            "0": 49,
+            "8": 1,
+            "5": 2,
+            "3": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 82674216,
+          "self_ns": 39419290,
+          "max_ns": 63100639,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 352568,
+          "self_ns": 352568,
+          "max_ns": 352568,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 34905665,
+          "self_ns": 34905665,
+          "max_ns": 11901752,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 74238316,
+          "self_ns": 17243239,
+          "max_ns": 40381449,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 2
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 341488,
+          "self_ns": 341488,
+          "max_ns": 341488,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 372767019,
+          "self_ns": 302312679,
+          "max_ns": 372767019,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 66288913,
+          "self_ns": 66288913,
+          "max_ns": 66288913,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1530865764,
+          "self_ns": 64583789,
+          "max_ns": 1530865764,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.4454289999999999,
+      "post_manifest_worker_ms": 101.800537109375,
+      "after_worker_profile_ms": 226.199462890625
+    },
+    {
+      "run_id": "66ae5adf-96ec-4e90-8167-78a353899632",
+      "batch": {
+        "run_id": "66ae5adf-96ec-4e90-8167-78a353899632",
+        "started_ms": 1791505494341,
+        "manifest_ms": 1791505495422,
+        "published_ms": 1791505495938,
+        "worker_ms": 1081,
+        "after_manifest_ms": 516,
+        "cycle_ms": 1597,
+        "live_bytes": 592152941,
+        "new_bytes": 2470691,
+        "rows": 26624,
+        "delta_execution_ms": 14,
+        "journal_ms": 21
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 21382465,
+          "self_ns": 21382465,
+          "max_ns": 21382465,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35436185,
+          "self_ns": 35436185,
+          "max_ns": 12340011,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12424548,
+          "self_ns": 84537,
+          "max_ns": 12424548,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7995,
+          "self_ns": 7995,
+          "max_ns": 7995,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 44720912,
+          "self_ns": 44720912,
+          "max_ns": 44720912,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14118601,
+          "self_ns": 14118601,
+          "max_ns": 7234878,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 105,
+          "total_ns": 25780398,
+          "self_ns": 25780398,
+          "max_ns": 387824,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 87,
+            "8": 18
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 509913042,
+          "self_ns": 470014043,
+          "max_ns": 509913042,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 322106645,
+          "self_ns": 322106645,
+          "max_ns": 22219297,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 3,
+            "13": 16,
+            "1": 2,
+            "12": 13,
+            "0": 27,
+            "11": 1,
+            "10": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 83773339,
+          "self_ns": 24891377,
+          "max_ns": 64498039,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 344102,
+          "self_ns": 344102,
+          "max_ns": 344102,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35665685,
+          "self_ns": 35665685,
+          "max_ns": 12715973,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 282301173,
+          "self_ns": 19076490,
+          "max_ns": 247697622,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "17": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 350404,
+          "self_ns": 350404,
+          "max_ns": 350404,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 284381758,
+          "self_ns": 213190472,
+          "max_ns": 284381758,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 66906706,
+          "self_ns": 66906706,
+          "max_ns": 66906706,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1343766746,
+          "self_ns": 49689729,
+          "max_ns": 1343766746,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.0549080000000002,
+      "post_manifest_worker_ms": 302.570068359375,
+      "after_worker_profile_ms": 213.429931640625
+    },
+    {
+      "run_id": "91d90f67-4957-4719-834a-574b4828867c",
+      "batch": {
+        "run_id": "91d90f67-4957-4719-834a-574b4828867c",
+        "started_ms": 1791505497470,
+        "manifest_ms": 1791505498656,
+        "published_ms": 1791505498973,
+        "worker_ms": 1186,
+        "after_manifest_ms": 317,
+        "cycle_ms": 1503,
+        "live_bytes": 597189628,
+        "new_bytes": 2943951,
+        "rows": 31744,
+        "delta_execution_ms": 18,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 24849568,
+          "self_ns": 24849568,
+          "max_ns": 24849568,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 34841365,
+          "self_ns": 34841365,
+          "max_ns": 11741964,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 11782930,
+          "self_ns": 83124,
+          "max_ns": 11782930,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7654,
+          "self_ns": 7654,
+          "max_ns": 7654,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 44554390,
+          "self_ns": 44554390,
+          "max_ns": 44554390,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14580595,
+          "self_ns": 14580595,
+          "max_ns": 7756042,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 111,
+          "total_ns": 27144527,
+          "self_ns": 27144527,
+          "max_ns": 383796,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 93,
+            "8": 18
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 582964289,
+          "self_ns": 541239167,
+          "max_ns": 582964289,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 78348031,
+          "self_ns": 78348031,
+          "max_ns": 26456809,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 3,
+            "12": 3,
+            "0": 53,
+            "8": 1,
+            "6": 1,
+            "5": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 82722356,
+          "self_ns": 29051855,
+          "max_ns": 65544191,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 330607,
+          "self_ns": 330607,
+          "max_ns": 330607,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 34497031,
+          "self_ns": 34497031,
+          "max_ns": 11569863,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 41865871,
+          "self_ns": 17188341,
+          "max_ns": 26288375,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 350504,
+          "self_ns": 350504,
+          "max_ns": 350504,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 319844051,
+          "self_ns": 258205433,
+          "max_ns": 319844051,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 77401080,
+          "self_ns": 77401080,
+          "max_ns": 77401080,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1236832407,
+          "self_ns": 54159135,
+          "max_ns": 1236832407,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1943839999999994,
+      "post_manifest_worker_ms": 70.111572265625,
+      "after_worker_profile_ms": 246.888427734375
+    },
+    {
+      "run_id": "214f523f-7abc-439d-b8f2-c9a05d835e0e",
+      "batch": {
+        "run_id": "214f523f-7abc-439d-b8f2-c9a05d835e0e",
+        "started_ms": 1791505510419,
+        "manifest_ms": 1791505511647,
+        "published_ms": 1791505512056,
+        "worker_ms": 1228,
+        "after_manifest_ms": 409,
+        "cycle_ms": 1637,
+        "live_bytes": 619506991,
+        "new_bytes": 2848793,
+        "rows": 30720,
+        "delta_execution_ms": 18,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25339893,
+          "self_ns": 25339893,
+          "max_ns": 25339893,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35962268,
+          "self_ns": 35962268,
+          "max_ns": 12440138,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12011908,
+          "self_ns": 82053,
+          "max_ns": 12011908,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7174,
+          "self_ns": 7174,
+          "max_ns": 7174,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 48028376,
+          "self_ns": 48028376,
+          "max_ns": 48028376,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14349613,
+          "self_ns": 14349613,
+          "max_ns": 7384278,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 88,
+          "total_ns": 21782294,
+          "self_ns": 21782294,
+          "max_ns": 436585,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 73,
+            "8": 15
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 600665942,
+          "self_ns": 564534035,
+          "max_ns": 600665942,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 260727564,
+          "self_ns": 260727564,
+          "max_ns": 19865321,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "12": 12,
+            "13": 13,
+            "6": 2,
+            "1": 2,
+            "0": 32
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 76706431,
+          "self_ns": 33119077,
+          "max_ns": 57888756,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 458066,
+          "self_ns": 458066,
+          "max_ns": 458066,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35812877,
+          "self_ns": 35812877,
+          "max_ns": 12199027,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 236668104,
+          "self_ns": 19527894,
+          "max_ns": 185499274,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "17": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 400948,
+          "self_ns": 400948,
+          "max_ns": 400948,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 343954102,
+          "self_ns": 255267481,
+          "max_ns": 343954102,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 80754140,
+          "self_ns": 80754140,
+          "max_ns": 80754140,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1448879622,
+          "self_ns": 52725869,
+          "max_ns": 1448879622,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2126529999999978,
+      "post_manifest_worker_ms": 242.103271484375,
+      "after_worker_profile_ms": 166.896728515625
+    },
+    {
+      "run_id": "9991f69c-6ac4-4602-9a28-e9a71a382b53",
+      "batch": {
+        "run_id": "9991f69c-6ac4-4602-9a28-e9a71a382b53",
+        "started_ms": 1791505505416,
+        "manifest_ms": 1791505506654,
+        "published_ms": 1791505506984,
+        "worker_ms": 1238,
+        "after_manifest_ms": 330,
+        "cycle_ms": 1568,
+        "live_bytes": 610961533,
+        "new_bytes": 2943092,
+        "rows": 31744,
+        "delta_execution_ms": 16,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25145451,
+          "self_ns": 25145451,
+          "max_ns": 25145451,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35395309,
+          "self_ns": 35395309,
+          "max_ns": 12112115,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12203166,
+          "self_ns": 91051,
+          "max_ns": 12203166,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7614,
+          "self_ns": 7614,
+          "max_ns": 7614,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 48235914,
+          "self_ns": 48235914,
+          "max_ns": 48235914,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15052616,
+          "self_ns": 15052616,
+          "max_ns": 7774917,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 85,
+          "total_ns": 21369702,
+          "self_ns": 21369702,
+          "max_ns": 366254,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 64,
+            "8": 21
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 618011432,
+          "self_ns": 581589114,
+          "max_ns": 618011432,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 72910252,
+          "self_ns": 72910252,
+          "max_ns": 15813185,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 5,
+            "1": 2,
+            "0": 52,
+            "9": 1,
+            "5": 2,
+            "12": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 76887000,
+          "self_ns": 33493910,
+          "max_ns": 52862372,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 427959,
+          "self_ns": 427959,
+          "max_ns": 427959,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35102322,
+          "self_ns": 35102322,
+          "max_ns": 11837693,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 47338509,
+          "self_ns": 17821347,
+          "max_ns": 31514072,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 379779,
+          "self_ns": 379779,
+          "max_ns": 379779,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 335133996,
+          "self_ns": 267482019,
+          "max_ns": 335133996,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 69693378,
+          "self_ns": 69693378,
+          "max_ns": 69693378,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1265477079,
+          "self_ns": 41279342,
+          "max_ns": 1265477079,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.2095390000000013,
+      "post_manifest_worker_ms": 65.615234375,
+      "after_worker_profile_ms": 264.384765625
+    },
+    {
+      "run_id": "e043326a-5405-4145-b1c5-0d0f54f5e4b7",
+      "batch": {
+        "run_id": "e043326a-5405-4145-b1c5-0d0f54f5e4b7",
+        "started_ms": 1791505499053,
+        "manifest_ms": 1791505500297,
+        "published_ms": 1791505500597,
+        "worker_ms": 1244,
+        "after_manifest_ms": 300,
+        "cycle_ms": 1544,
+        "live_bytes": 600131763,
+        "new_bytes": 2941354,
+        "rows": 31744,
+        "delta_execution_ms": 17,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 24629938,
+          "self_ns": 24629938,
+          "max_ns": 24629938,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35598629,
+          "self_ns": 35598629,
+          "max_ns": 12243711,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12323800,
+          "self_ns": 80089,
+          "max_ns": 12323800,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8035,
+          "self_ns": 8035,
+          "max_ns": 8035,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45089370,
+          "self_ns": 45089370,
+          "max_ns": 45089370,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14746894,
+          "self_ns": 14746894,
+          "max_ns": 7931990,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 112,
+          "total_ns": 27596442,
+          "self_ns": 27596442,
+          "max_ns": 362988,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 95,
+            "8": 17
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 585747605,
+          "self_ns": 543404269,
+          "max_ns": 585747605,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 116216734,
+          "self_ns": 116216734,
+          "max_ns": 25200364,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "12": 5,
+            "13": 3,
+            "1": 3,
+            "11": 1,
+            "10": 1,
+            "0": 48
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 89362614,
+          "self_ns": 30869648,
+          "max_ns": 71638160,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 348360,
+          "self_ns": 348360,
+          "max_ns": 348360,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35305030,
+          "self_ns": 35305030,
+          "max_ns": 11978696,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 75690437,
+          "self_ns": 17966669,
+          "max_ns": 40753363,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 2
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 352018,
+          "self_ns": 352018,
+          "max_ns": 352018,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 331162193,
+          "self_ns": 254175856,
+          "max_ns": 331162193,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 77627844,
+          "self_ns": 77627844,
+          "max_ns": 77627844,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1268247211,
+          "self_ns": 44231386,
+          "max_ns": 1268247211,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1896189999999995,
+      "post_manifest_worker_ms": 77.84912109375,
+      "after_worker_profile_ms": 222.15087890625
+    },
+    {
+      "run_id": "e6e376da-373d-4359-b338-821c733bf2eb",
+      "batch": {
+        "run_id": "e6e376da-373d-4359-b338-821c733bf2eb",
+        "started_ms": 1791505523636,
+        "manifest_ms": 1791505524780,
+        "published_ms": 1791505525266,
+        "worker_ms": 1144,
+        "after_manifest_ms": 486,
+        "cycle_ms": 1630,
+        "live_bytes": 641258317,
+        "new_bytes": 2470027,
+        "rows": 26624,
+        "delta_execution_ms": 14,
+        "journal_ms": 29
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 29384063,
+          "self_ns": 29384063,
+          "max_ns": 29384063,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36879678,
+          "self_ns": 36879678,
+          "max_ns": 12648206,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12733826,
+          "self_ns": 85620,
+          "max_ns": 12733826,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8105,
+          "self_ns": 8105,
+          "max_ns": 8105,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 47247146,
+          "self_ns": 47247146,
+          "max_ns": 47247146,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15286823,
+          "self_ns": 15286823,
+          "max_ns": 7932772,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 92,
+          "total_ns": 23128270,
+          "self_ns": 23128270,
+          "max_ns": 363860,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 70,
+            "8": 22
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 547427650,
+          "self_ns": 509012557,
+          "max_ns": 547427650,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 232628830,
+          "self_ns": 232628830,
+          "max_ns": 17841793,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 12,
+            "14": 1,
+            "12": 12,
+            "11": 1,
+            "1": 2,
+            "0": 35
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 70265043,
+          "self_ns": 27243796,
+          "max_ns": 46452693,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 408563,
+          "self_ns": 408563,
+          "max_ns": 408563,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36450097,
+          "self_ns": 36450097,
+          "max_ns": 12257316,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 228160224,
+          "self_ns": 38552641,
+          "max_ns": 176274317,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "17": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 440583,
+          "self_ns": 440583,
+          "max_ns": 440583,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 312813815,
+          "self_ns": 223295844,
+          "max_ns": 312813815,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 69576398,
+          "self_ns": 69576398,
+          "max_ns": 69576398,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1333706836,
+          "self_ns": 44077822,
+          "max_ns": 1333706836,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1275060000000003,
+      "post_manifest_worker_ms": 236.084716796875,
+      "after_worker_profile_ms": 249.915283203125
+    },
+    {
+      "run_id": "5c7cc875-288c-43ca-8508-6a4801304295",
+      "batch": {
+        "run_id": "5c7cc875-288c-43ca-8508-6a4801304295",
+        "started_ms": 1791505507064,
+        "manifest_ms": 1791505508280,
+        "published_ms": 1791505508686,
+        "worker_ms": 1216,
+        "after_manifest_ms": 406,
+        "cycle_ms": 1622,
+        "live_bytes": 613713834,
+        "new_bytes": 2751520,
+        "rows": 29696,
+        "delta_execution_ms": 16,
+        "journal_ms": 27
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 27309100,
+          "self_ns": 27309100,
+          "max_ns": 27309100,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36273428,
+          "self_ns": 36273428,
+          "max_ns": 12563718,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12648366,
+          "self_ns": 84648,
+          "max_ns": 12648366,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7444,
+          "self_ns": 7444,
+          "max_ns": 7444,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45474007,
+          "self_ns": 45474007,
+          "max_ns": 45474007,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14277007,
+          "self_ns": 14277007,
+          "max_ns": 7255597,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 85,
+          "total_ns": 21347097,
+          "self_ns": 21347097,
+          "max_ns": 388465,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 66,
+            "8": 19
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 571691104,
+          "self_ns": 536067000,
+          "max_ns": 571691104,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 208770667,
+          "self_ns": 208770667,
+          "max_ns": 23897159,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 11,
+            "14": 2,
+            "12": 7,
+            "9": 1,
+            "11": 1,
+            "0": 40,
+            "1": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 84057729,
+          "self_ns": 29588448,
+          "max_ns": 67624365,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 382063,
+          "self_ns": 382063,
+          "max_ns": 382063,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36229185,
+          "self_ns": 36229185,
+          "max_ns": 12461127,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 173538382,
+          "self_ns": 19236996,
+          "max_ns": 114173399,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "16": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 383176,
+          "self_ns": 383176,
+          "max_ns": 383176,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 350560970,
+          "self_ns": 253962637,
+          "max_ns": 350560970,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 68412426,
+          "self_ns": 68412426,
+          "max_ns": 68412426,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1346318620,
+          "self_ns": 48513291,
+          "max_ns": 1346318620,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.158650999999999,
+      "post_manifest_worker_ms": 166.71533203125,
+      "after_worker_profile_ms": 239.28466796875
+    },
+    {
+      "run_id": "1a68a6bc-3d1e-485a-a784-e98678655aba",
+      "batch": {
+        "run_id": "1a68a6bc-3d1e-485a-a784-e98678655aba",
+        "started_ms": 1791505518692,
+        "manifest_ms": 1791505519877,
+        "published_ms": 1791505520204,
+        "worker_ms": 1185,
+        "after_manifest_ms": 327,
+        "cycle_ms": 1512,
+        "live_bytes": 633180909,
+        "new_bytes": 2752865,
+        "rows": 29696,
+        "delta_execution_ms": 16,
+        "journal_ms": 24
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 23692277,
+          "self_ns": 23692277,
+          "max_ns": 23692277,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36483640,
+          "self_ns": 36483640,
+          "max_ns": 12519927,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12601309,
+          "self_ns": 81382,
+          "max_ns": 12601309,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8296,
+          "self_ns": 8296,
+          "max_ns": 8296,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46420373,
+          "self_ns": 46420373,
+          "max_ns": 46420373,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14444168,
+          "self_ns": 14444168,
+          "max_ns": 7416477,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 91,
+          "total_ns": 23108867,
+          "self_ns": 23108867,
+          "max_ns": 382604,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 72,
+            "8": 19
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 577221292,
+          "self_ns": 539668257,
+          "max_ns": 577221292,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 87112161,
+          "self_ns": 87112161,
+          "max_ns": 16308671,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 5,
+            "1": 1,
+            "0": 51,
+            "8": 1,
+            "6": 1,
+            "5": 1,
+            "12": 3
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 70829338,
+          "self_ns": 30244400,
+          "max_ns": 55181922,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "13": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 466852,
+          "self_ns": 466852,
+          "max_ns": 466852,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 37499608,
+          "self_ns": 37499608,
+          "max_ns": 13768748,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 65016785,
+          "self_ns": 18489562,
+          "max_ns": 35705557,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "15": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 428049,
+          "self_ns": 428049,
+          "max_ns": 428049,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 320372359,
+          "self_ns": 252216412,
+          "max_ns": 320372359,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 68832841,
+          "self_ns": 68832841,
+          "max_ns": 68832841,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1230100236,
+          "self_ns": 50903091,
+          "max_ns": 1230100236,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1722240000000035,
+      "post_manifest_worker_ms": 87.84765625,
+      "after_worker_profile_ms": 239.15234375
+    },
+    {
+      "run_id": "eea5bf76-66d3-48df-bad9-f29658841b86",
+      "batch": {
+        "run_id": "eea5bf76-66d3-48df-bad9-f29658841b86",
+        "started_ms": 1791505535667,
+        "manifest_ms": 1791505536813,
+        "published_ms": 1791505537154,
+        "worker_ms": 1146,
+        "after_manifest_ms": 341,
+        "cycle_ms": 1487,
+        "live_bytes": 660829797,
+        "new_bytes": 2375537,
+        "rows": 25600,
+        "delta_execution_ms": 13,
+        "journal_ms": 24
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 23632986,
+          "self_ns": 23632986,
+          "max_ns": 23632986,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37564677,
+          "self_ns": 37564677,
+          "max_ns": 12907530,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12991818,
+          "self_ns": 84288,
+          "max_ns": 12991818,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8276,
+          "self_ns": 8276,
+          "max_ns": 8276,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46993833,
+          "self_ns": 46993833,
+          "max_ns": 46993833,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14603637,
+          "self_ns": 14603637,
+          "max_ns": 7460269,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 128,
+          "total_ns": 32415769,
+          "self_ns": 32415769,
+          "max_ns": 396951,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 95,
+            "8": 33
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 556555234,
+          "self_ns": 509535828,
+          "max_ns": 556555234,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 129659879,
+          "self_ns": 129659879,
+          "max_ns": 20501458,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "13": 5,
+            "12": 3,
+            "9": 1,
+            "5": 2,
+            "0": 50
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 90139661,
+          "self_ns": 25889839,
+          "max_ns": 61129195,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 414785,
+          "self_ns": 414785,
+          "max_ns": 414785,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 37115630,
+          "self_ns": 37115630,
+          "max_ns": 12556375,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 85406654,
+          "self_ns": 19996597,
+          "max_ns": 60501023,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 493501,
+          "self_ns": 493501,
+          "max_ns": 493501,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 305338272,
+          "self_ns": 206403478,
+          "max_ns": 305338272,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 71055599,
+          "self_ns": 71055599,
+          "max_ns": 71055599,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1198673515,
+          "self_ns": 42804913,
+          "max_ns": 1198673515,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1060080000000028,
+      "post_manifest_worker_ms": 88.009521484375,
+      "after_worker_profile_ms": 252.990478515625
+    },
+    {
+      "run_id": "c75bcba3-fe57-4735-9558-f3d0c5903f18",
+      "batch": {
+        "run_id": "c75bcba3-fe57-4735-9558-f3d0c5903f18",
+        "started_ms": 1791505512148,
+        "manifest_ms": 1791505513249,
+        "published_ms": 1791505513557,
+        "worker_ms": 1101,
+        "after_manifest_ms": 308,
+        "cycle_ms": 1409,
+        "live_bytes": 621976383,
+        "new_bytes": 2468611,
+        "rows": 26624,
+        "delta_execution_ms": 14,
+        "journal_ms": 23
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 23098759,
+          "self_ns": 23098759,
+          "max_ns": 23098759,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35791428,
+          "self_ns": 35791428,
+          "max_ns": 12119689,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12135568,
+          "self_ns": 83325,
+          "max_ns": 12135568,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7745,
+          "self_ns": 7745,
+          "max_ns": 7745,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45976074,
+          "self_ns": 45976074,
+          "max_ns": 45976074,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14921721,
+          "self_ns": 14921721,
+          "max_ns": 7843094,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 115,
+          "total_ns": 28626347,
+          "self_ns": 28626347,
+          "max_ns": 358840,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 94,
+            "8": 21
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 538393138,
+          "self_ns": 494845070,
+          "max_ns": 538393138,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 104195193,
+          "self_ns": 104195193,
+          "max_ns": 17216505,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 4,
+            "14": 2,
+            "12": 3,
+            "1": 2,
+            "0": 50,
+            "10": 1,
+            "5": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 85669808,
+          "self_ns": 27254649,
+          "max_ns": 55879555,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 510493,
+          "self_ns": 510493,
+          "max_ns": 510493,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35985038,
+          "self_ns": 35985038,
+          "max_ns": 12365948,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 65056941,
+          "self_ns": 19276907,
+          "max_ns": 39774815,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "15": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 398214,
+          "self_ns": 398214,
+          "max_ns": 398214,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 278978924,
+          "self_ns": 216502031,
+          "max_ns": 278978924,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 67886925,
+          "self_ns": 67886925,
+          "max_ns": 67886925,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1159259145,
+          "self_ns": 43899226,
+          "max_ns": 1159259145,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.0838990000000024,
+      "post_manifest_worker_ms": 103.974853515625,
+      "after_worker_profile_ms": 204.025146484375
+    },
+    {
+      "run_id": "2452d078-ed5e-470c-b67a-81a2ccf9caca",
+      "batch": {
+        "run_id": "2452d078-ed5e-470c-b67a-81a2ccf9caca",
+        "started_ms": 1791505528905,
+        "manifest_ms": 1791505530024,
+        "published_ms": 1791505530354,
+        "worker_ms": 1119,
+        "after_manifest_ms": 330,
+        "cycle_ms": 1449,
+        "live_bytes": 649619261,
+        "new_bytes": 2280413,
+        "rows": 24576,
+        "delta_execution_ms": 13,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25316639,
+          "self_ns": 25316639,
+          "max_ns": 25316639,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 38493963,
+          "self_ns": 38493963,
+          "max_ns": 13158419,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 13237596,
+          "self_ns": 79177,
+          "max_ns": 13237596,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8025,
+          "self_ns": 8025,
+          "max_ns": 8025,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 47371809,
+          "self_ns": 47371809,
+          "max_ns": 47371809,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14858603,
+          "self_ns": 14858603,
+          "max_ns": 7600431,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 92,
+          "total_ns": 23110535,
+          "self_ns": 23110535,
+          "max_ns": 398454,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 75,
+            "8": 17
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 524688490,
+          "self_ns": 486719352,
+          "max_ns": 524688490,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 120830867,
+          "self_ns": 120830867,
+          "max_ns": 31406069,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "13": 3,
+            "12": 5,
+            "8": 1,
+            "10": 1,
+            "11": 1,
+            "0": 50
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 89368633,
+          "self_ns": 28572128,
+          "max_ns": 72435156,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 400428,
+          "self_ns": 400428,
+          "max_ns": 400428,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 37263676,
+          "self_ns": 37263676,
+          "max_ns": 12688531,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 79565268,
+          "self_ns": 19530906,
+          "max_ns": 52195956,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 446033,
+          "self_ns": 446033,
+          "max_ns": 446033,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 289712530,
+          "self_ns": 198760130,
+          "max_ns": 289712530,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 70931347,
+          "self_ns": 70931347,
+          "max_ns": 70931347,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1149938210,
+          "self_ns": 37244592,
+          "max_ns": 1149938210,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.0747499999999945,
+      "post_manifest_worker_ms": 71.142578125,
+      "after_worker_profile_ms": 258.857421875
+    },
+    {
+      "run_id": "7b0d220e-6eb4-40ca-8adb-165abfdde427",
+      "batch": {
+        "run_id": "7b0d220e-6eb4-40ca-8adb-165abfdde427",
+        "started_ms": 1791505513673,
+        "manifest_ms": 1791505514866,
+        "published_ms": 1791505515216,
+        "worker_ms": 1193,
+        "after_manifest_ms": 350,
+        "cycle_ms": 1543,
+        "live_bytes": 624823563,
+        "new_bytes": 2846399,
+        "rows": 30720,
+        "delta_execution_ms": 16,
+        "journal_ms": 26
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 25805683,
+          "self_ns": 25805683,
+          "max_ns": 25805683,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37609563,
+          "self_ns": 37609563,
+          "max_ns": 13144793,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 13229651,
+          "self_ns": 84858,
+          "max_ns": 13229651,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8035,
+          "self_ns": 8035,
+          "max_ns": 8035,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46185606,
+          "self_ns": 46185606,
+          "max_ns": 46185606,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14733398,
+          "self_ns": 14733398,
+          "max_ns": 7506094,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 90,
+          "total_ns": 22975439,
+          "self_ns": 22975439,
+          "max_ns": 384558,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 66,
+            "8": 24
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 592970260,
+          "self_ns": 555261423,
+          "max_ns": 592970260,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 79846056,
+          "self_ns": 79846056,
+          "max_ns": 15086939,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 4,
+            "12": 5,
+            "1": 1,
+            "0": 51,
+            "11": 1,
+            "10": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 63933192,
+          "self_ns": 31537454,
+          "max_ns": 47066710,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 428560,
+          "self_ns": 428560,
+          "max_ns": 428560,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36643148,
+          "self_ns": 36643148,
+          "max_ns": 12656591,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 66470861,
+          "self_ns": 19020543,
+          "max_ns": 33772458,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 403243,
+          "self_ns": 403243,
+          "max_ns": 403243,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 330166899,
+          "self_ns": 258403276,
+          "max_ns": 330166899,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 68522291,
+          "self_ns": 68522291,
+          "max_ns": 68522291,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1236036537,
+          "self_ns": 38567961,
+          "max_ns": 1236036537,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1810340000000004,
+      "post_manifest_worker_ms": 75.774169921875,
+      "after_worker_profile_ms": 274.225830078125
+    },
+    {
+      "run_id": "fce11880-13f9-414c-b93c-962421603a85",
+      "batch": {
+        "run_id": "fce11880-13f9-414c-b93c-962421603a85",
+        "started_ms": 1791505527259,
+        "manifest_ms": 1791505528462,
+        "published_ms": 1791505528762,
+        "worker_ms": 1203,
+        "after_manifest_ms": 300,
+        "cycle_ms": 1503,
+        "live_bytes": 647338067,
+        "new_bytes": 2660607,
+        "rows": 28672,
+        "delta_execution_ms": 16,
+        "journal_ms": 23
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 23274798,
+          "self_ns": 23274798,
+          "max_ns": 23274798,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37753380,
+          "self_ns": 37753380,
+          "max_ns": 12671409,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12753953,
+          "self_ns": 82544,
+          "max_ns": 12753953,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8045,
+          "self_ns": 8045,
+          "max_ns": 8045,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46678174,
+          "self_ns": 46678174,
+          "max_ns": 46678174,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15320566,
+          "self_ns": 15320566,
+          "max_ns": 8227472,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 1,
+            "13": 1
+          }
+        },
+        "apply.planning_check": {
+          "calls": 96,
+          "total_ns": 24098955,
+          "self_ns": 24098955,
+          "max_ns": 350434,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 77,
+            "8": 19
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 576671560,
+          "self_ns": 537252039,
+          "max_ns": 576671560,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 106671058,
+          "self_ns": 106671058,
+          "max_ns": 20639366,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 6,
+            "14": 1,
+            "12": 2,
+            "9": 1,
+            "5": 2,
+            "0": 51
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 73828478,
+          "self_ns": 29913373,
+          "max_ns": 55528800,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 431215,
+          "self_ns": 431215,
+          "max_ns": 431215,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 56479565,
+          "self_ns": 56479565,
+          "max_ns": 31280174,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 2,
+            "14": 1
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 81702258,
+          "self_ns": 18946305,
+          "max_ns": 65227478,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 457684,
+          "self_ns": 457684,
+          "max_ns": 457684,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 362817817,
+          "self_ns": 240792060,
+          "max_ns": 362817817,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 69887018,
+          "self_ns": 69887018,
+          "max_ns": 69887018,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1246581286,
+          "self_ns": 38534507,
+          "max_ns": 1246581286,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1733839999999987,
+      "post_manifest_worker_ms": 62.89111328125,
+      "after_worker_profile_ms": 237.10888671875
+    },
+    {
+      "run_id": "1a289ff2-8465-4342-8b5f-5f5f5b846621",
+      "batch": {
+        "run_id": "1a289ff2-8465-4342-8b5f-5f5f5b846621",
+        "started_ms": 1791505525355,
+        "manifest_ms": 1791505526767,
+        "published_ms": 1791505527139,
+        "worker_ms": 1412,
+        "after_manifest_ms": 372,
+        "cycle_ms": 1784,
+        "live_bytes": 644676679,
+        "new_bytes": 3417581,
+        "rows": 36864,
+        "delta_execution_ms": 19,
+        "journal_ms": 28
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 28134971,
+          "self_ns": 28134971,
+          "max_ns": 28134971,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 37023218,
+          "self_ns": 37023218,
+          "max_ns": 12689724,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12780984,
+          "self_ns": 91260,
+          "max_ns": 12780984,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8095,
+          "self_ns": 8095,
+          "max_ns": 8095,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46302052,
+          "self_ns": 46302052,
+          "max_ns": 46302052,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15198017,
+          "self_ns": 15198017,
+          "max_ns": 8112918,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 102,
+          "total_ns": 26102348,
+          "self_ns": 26102348,
+          "max_ns": 366474,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 73,
+            "8": 29
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 723985916,
+          "self_ns": 682685551,
+          "max_ns": 723985916,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 99881771,
+          "self_ns": 99881771,
+          "max_ns": 23874257,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2,
+            "13": 3,
+            "12": 3,
+            "0": 52,
+            "8": 1,
+            "5": 2
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 86190990,
+          "self_ns": 35447865,
+          "max_ns": 68711734,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 384377,
+          "self_ns": 384377,
+          "max_ns": 384377,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36045262,
+          "self_ns": 36045262,
+          "max_ns": 12337306,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 67473862,
+          "self_ns": 18335216,
+          "max_ns": 43226399,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 440343,
+          "self_ns": 440343,
+          "max_ns": 440343,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 362726467,
+          "self_ns": 282189263,
+          "max_ns": 362726467,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 84017321,
+          "self_ns": 84017321,
+          "max_ns": 84017321,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1456061316,
+          "self_ns": 63774386,
+          "max_ns": 1456061316,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.4044199999999982,
+      "post_manifest_worker_ms": 81.871826171875,
+      "after_worker_profile_ms": 290.128173828125
+    },
+    {
+      "run_id": "c5bd0111-7244-4855-b9c0-c7a2225bfe05",
+      "batch": {
+        "run_id": "c5bd0111-7244-4855-b9c0-c7a2225bfe05",
+        "started_ms": 1791505522021,
+        "manifest_ms": 1791505523214,
+        "published_ms": 1791505523536,
+        "worker_ms": 1193,
+        "after_manifest_ms": 322,
+        "cycle_ms": 1515,
+        "live_bytes": 638787509,
+        "new_bytes": 2754495,
+        "rows": 29696,
+        "delta_execution_ms": 16,
+        "journal_ms": 23
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 22826761,
+          "self_ns": 22826761,
+          "max_ns": 22826761,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36956834,
+          "self_ns": 36956834,
+          "max_ns": 12929581,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12210037,
+          "self_ns": 80679,
+          "max_ns": 12210037,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7163,
+          "self_ns": 7163,
+          "max_ns": 7163,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46322541,
+          "self_ns": 46322541,
+          "max_ns": 46322541,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14558313,
+          "self_ns": 14558313,
+          "max_ns": 7594210,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 156,
+          "total_ns": 38237360,
+          "self_ns": 38237360,
+          "max_ns": 368569,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 132,
+            "8": 24
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 598137894,
+          "self_ns": 545342221,
+          "max_ns": 598137894,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 62603099,
+          "self_ns": 62603099,
+          "max_ns": 16234151,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3,
+            "12": 3,
+            "1": 1,
+            "0": 53,
+            "9": 1,
+            "5": 2
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 73867391,
+          "self_ns": 27805979,
+          "max_ns": 58097857,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "13": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 430554,
+          "self_ns": 430554,
+          "max_ns": 430554,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36933580,
+          "self_ns": 36933580,
+          "max_ns": 12689022,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 35135913,
+          "self_ns": 18594226,
+          "max_ns": 18761019,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 423801,
+          "self_ns": 423801,
+          "max_ns": 423801,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 321766591,
+          "self_ns": 264152809,
+          "max_ns": 321766591,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 71810309,
+          "self_ns": 71810309,
+          "max_ns": 71810309,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1228589631,
+          "self_ns": 41503402,
+          "max_ns": 1228589631,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.216701999999998,
+      "post_manifest_worker_ms": 58.864501953125,
+      "after_worker_profile_ms": 263.135498046875
+    },
+    {
+      "run_id": "f2964483-f7ca-46a4-a2b9-163df3802cb6",
+      "batch": {
+        "run_id": "f2964483-f7ca-46a4-a2b9-163df3802cb6",
+        "started_ms": 1791505508827,
+        "manifest_ms": 1791505510014,
+        "published_ms": 1791505510319,
+        "worker_ms": 1187,
+        "after_manifest_ms": 305,
+        "cycle_ms": 1492,
+        "live_bytes": 616657417,
+        "new_bytes": 2942802,
+        "rows": 31744,
+        "delta_execution_ms": 17,
+        "journal_ms": 25
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 24610381,
+          "self_ns": 24610381,
+          "max_ns": 24610381,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36060140,
+          "self_ns": 36060140,
+          "max_ns": 12395845,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12086517,
+          "self_ns": 79578,
+          "max_ns": 12086517,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7845,
+          "self_ns": 7845,
+          "max_ns": 7845,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 45406210,
+          "self_ns": 45406210,
+          "max_ns": 45406210,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 15015847,
+          "self_ns": 15015847,
+          "max_ns": 8048047,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 87,
+          "total_ns": 21679263,
+          "self_ns": 21679263,
+          "max_ns": 357287,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 70,
+            "8": 17
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 601554863,
+          "self_ns": 564859753,
+          "max_ns": 601554863,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 52234814,
+          "self_ns": 52234814,
+          "max_ns": 10682727,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 4,
+            "12": 2,
+            "1": 1,
+            "0": 52,
+            "9": 1,
+            "5": 2,
+            "2": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 66817377,
+          "self_ns": 31893648,
+          "max_ns": 49989317,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 388746,
+          "self_ns": 388746,
+          "max_ns": 388746,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 35648170,
+          "self_ns": 35648170,
+          "max_ns": 12016627,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 35125615,
+          "self_ns": 17814530,
+          "max_ns": 19261103,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "13": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 388014,
+          "self_ns": 388014,
+          "max_ns": 388014,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 318076056,
+          "self_ns": 261722466,
+          "max_ns": 318076056,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 67857030,
+          "self_ns": 67857030,
+          "max_ns": 67857030,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1229195251,
+          "self_ns": 53528816,
+          "max_ns": 1229195251,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1994769999999981,
+      "post_manifest_worker_ms": 71.14453125,
+      "after_worker_profile_ms": 233.85546875
+    },
+    {
+      "run_id": "8787bc30-f4b3-43cf-8d61-e7749b4eb8e5",
+      "batch": {
+        "run_id": "8787bc30-f4b3-43cf-8d61-e7749b4eb8e5",
+        "started_ms": 1791505502501,
+        "manifest_ms": 1791505503629,
+        "published_ms": 1791505503902,
+        "worker_ms": 1128,
+        "after_manifest_ms": 273,
+        "cycle_ms": 1401,
+        "live_bytes": 605642821,
+        "new_bytes": 2565664,
+        "rows": 27648,
+        "delta_execution_ms": 16,
+        "journal_ms": 22
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 22113600,
+          "self_ns": 22113600,
+          "max_ns": 22113600,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 35123762,
+          "self_ns": 35123762,
+          "max_ns": 11903786,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 11800694,
+          "self_ns": 78727,
+          "max_ns": 11800694,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 7754,
+          "self_ns": 7754,
+          "max_ns": 7754,
+          "errors": 0,
+          "hist_us_log2": {
+            "2": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 44945571,
+          "self_ns": 44945571,
+          "max_ns": 44945571,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14611552,
+          "self_ns": 14611552,
+          "max_ns": 7711348,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 142,
+          "total_ns": 34093869,
+          "self_ns": 34093869,
+          "max_ns": 425935,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 132,
+            "8": 10
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 566134462,
+          "self_ns": 517429041,
+          "max_ns": 566134462,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 83493816,
+          "self_ns": 83493816,
+          "max_ns": 15097650,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 5,
+            "1": 2,
+            "0": 50,
+            "10": 1,
+            "12": 3,
+            "11": 1,
+            "2": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 69708106,
+          "self_ns": 29831790,
+          "max_ns": 45469148,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 411177,
+          "self_ns": 411177,
+          "max_ns": 411177,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 53434380,
+          "self_ns": 53434380,
+          "max_ns": 29771217,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 2,
+            "14": 1
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 62060667,
+          "self_ns": 18443167,
+          "max_ns": 32353449,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 2
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 355053,
+          "self_ns": 355053,
+          "max_ns": 355053,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 286500591,
+          "self_ns": 217813963,
+          "max_ns": 286500591,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 75929162,
+          "self_ns": 75929162,
+          "max_ns": 75929162,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1191557644,
+          "self_ns": 43441260,
+          "max_ns": 1191557644,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.1338649999999983,
+      "post_manifest_worker_ms": 103.48046875,
+      "after_worker_profile_ms": 169.51953125
+    },
+    {
+      "run_id": "316c1d38-548e-44d4-8b7f-d00a521e3473",
+      "batch": {
+        "run_id": "316c1d38-548e-44d4-8b7f-d00a521e3473",
+        "started_ms": 1791505515315,
+        "manifest_ms": 1791505516482,
+        "published_ms": 1791505516867,
+        "worker_ms": 1167,
+        "after_manifest_ms": 385,
+        "cycle_ms": 1552,
+        "live_bytes": 627577575,
+        "new_bytes": 2753231,
+        "rows": 29696,
+        "delta_execution_ms": 17,
+        "journal_ms": 24
+      },
+      "metrics": {
+        "apply.journal": {
+          "calls": 1,
+          "total_ns": 23903221,
+          "self_ns": 23903221,
+          "max_ns": 23903221,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1
+          }
+        },
+        "apply.retained_boundary": {
+          "calls": 3,
+          "total_ns": 36698383,
+          "self_ns": 36698383,
+          "max_ns": 12752932,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.initialize": {
+          "calls": 1,
+          "total_ns": 12834764,
+          "self_ns": 81832,
+          "max_ns": 12834764,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 1
+          }
+        },
+        "apply.maintenance.base": {
+          "calls": 1,
+          "total_ns": 8276,
+          "self_ns": 8276,
+          "max_ns": 8276,
+          "errors": 0,
+          "hist_us_log2": {
+            "3": 1
+          }
+        },
+        "apply.verify_previous": {
+          "calls": 1,
+          "total_ns": 46326819,
+          "self_ns": 46326819,
+          "max_ns": 46326819,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1
+          }
+        },
+        "apply.planning_inventory": {
+          "calls": 2,
+          "total_ns": 14613305,
+          "self_ns": 14613305,
+          "max_ns": 7587507,
+          "errors": 0,
+          "hist_us_log2": {
+            "12": 2
+          }
+        },
+        "apply.planning_check": {
+          "calls": 89,
+          "total_ns": 22300594,
+          "self_ns": 22300594,
+          "max_ns": 401139,
+          "errors": 0,
+          "hist_us_log2": {
+            "7": 72,
+            "8": 17
+          }
+        },
+        "apply.plan": {
+          "calls": 1,
+          "total_ns": 580862683,
+          "self_ns": 543948784,
+          "max_ns": 580862683,
+          "errors": 0,
+          "hist_us_log2": {
+            "19": 1
+          }
+        },
+        "durability.fsync": {
+          "calls": 63,
+          "total_ns": 87319803,
+          "self_ns": 87319803,
+          "max_ns": 15689294,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 5,
+            "12": 5,
+            "0": 50,
+            "8": 1,
+            "6": 1,
+            "1": 1
+          }
+        },
+        "durability.atomic": {
+          "calls": 2,
+          "total_ns": 71896711,
+          "self_ns": 31417691,
+          "max_ns": 47383381,
+          "errors": 0,
+          "hist_us_log2": {
+            "15": 1,
+            "14": 1
+          }
+        },
+        "apply.schema_for": {
+          "calls": 1,
+          "total_ns": 436776,
+          "self_ns": 436776,
+          "max_ns": 436776,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.boundary": {
+          "calls": 3,
+          "total_ns": 36347676,
+          "self_ns": 36347676,
+          "max_ns": 12267335,
+          "errors": 0,
+          "hist_us_log2": {
+            "13": 3
+          }
+        },
+        "apply.durable": {
+          "calls": 2,
+          "total_ns": 66535502,
+          "self_ns": 19694719,
+          "max_ns": 39652487,
+          "errors": 0,
+          "hist_us_log2": {
+            "14": 1,
+            "15": 1
+          }
+        },
+        "apply.commit_metrics": {
+          "calls": 1,
+          "total_ns": 415115,
+          "self_ns": 415115,
+          "max_ns": 415115,
+          "errors": 0,
+          "hist_us_log2": {
+            "8": 1
+          }
+        },
+        "apply.apply_table": {
+          "calls": 1,
+          "total_ns": 319146973,
+          "self_ns": 255230711,
+          "max_ns": 319146973,
+          "errors": 0,
+          "hist_us_log2": {
+            "18": 1
+          }
+        },
+        "apply.inventory": {
+          "calls": 1,
+          "total_ns": 68461046,
+          "self_ns": 68461046,
+          "max_ns": 68461046,
+          "errors": 0,
+          "hist_us_log2": {
+            "16": 1
+          }
+        },
+        "apply.run": {
+          "calls": 1,
+          "total_ns": 1236408399,
+          "self_ns": 49203648,
+          "max_ns": 1236408399,
+          "errors": 0,
+          "hist_us_log2": {
+            "20": 1
+          }
+        }
+      },
+      "request_cpu_s": 1.172308000000001,
+      "post_manifest_worker_ms": 100.26611328125,
+      "after_worker_profile_ms": 284.73388671875
+    }
+  ],
+  "capture": {
+    "first_at_ms": 1791505487454.5203,
+    "last_at_ms": 1791505532456.6692,
+    "elapsed_ms": 45002.14892578125,
+    "metrics": {
+      "startup.imports": {
+        "calls": 0,
+        "total_ns": 0,
+        "self_ns": 0
+      },
+      "capture.control_read": {
+        "calls": 801593,
+        "total_ns": 16265559886,
+        "self_ns": 16265559886
+      },
+      "durability.fsync": {
+        "calls": 340,
+        "total_ns": 4199085196,
+        "self_ns": 4199085196
+      },
+      "sqlite.connect": {
+        "calls": 27,
+        "total_ns": 2297991,
+        "self_ns": 2297991
+      },
+      "sqlite.PRAGMA": {
+        "calls": 2766,
+        "total_ns": 15847720,
+        "self_ns": 15847720
+      },
+      "sqlite.script": {
+        "calls": 0,
+        "total_ns": 0,
+        "self_ns": 0
+      },
+      "sqlite.INSERT": {
+        "calls": 3967,
+        "total_ns": 68299103,
+        "self_ns": 68299103
+      },
+      "sqlite.SELECT": {
+        "calls": 8015,
+        "total_ns": 230268296,
+        "self_ns": 230268296
+      },
+      "capture.spool.verify": {
+        "calls": 0,
+        "total_ns": 0,
+        "self_ns": 0
+      },
+      "sqlite.BEGIN": {
+        "calls": 836,
+        "total_ns": 3438228,
+        "self_ns": 3438228
+      },
+      "sqlite.COMMIT": {
+        "calls": 808,
+        "total_ns": 9484440390,
+        "self_ns": 9484440390
+      },
+      "capture.source.setup": {
+        "calls": 0,
+        "total_ns": 0,
+        "self_ns": 0
+      },
+      "capture.spool.progress": {
+        "calls": 170,
+        "total_ns": 78081094,
+        "self_ns": 61274594
+      },
+      "durability.atomic": {
+        "calls": 170,
+        "total_ns": 4280651967,
+        "self_ns": 81566771
+      },
+      "capture.groups.flush": {
+        "calls": 1001,
+        "total_ns": 10536685166,
+        "self_ns": 10611834
+      },
+      "capture.source.check": {
+        "calls": 44,
+        "total_ns": 214733238,
+        "self_ns": 213090931
+      },
+      "capture.wire.feedback": {
+        "calls": 782,
+        "total_ns": 10647478,
+        "self_ns": 10647478
+      },
+      "capture.spool.append": {
+        "calls": 782,
+        "total_ns": 10526073332,
+        "self_ns": 484797586
+      },
+      "capture.spool.prune": {
+        "calls": 68,
+        "total_ns": 986476044,
+        "self_ns": 655704188
+      },
+      "sqlite.WAL_CHECKPOINT": {
+        "calls": 43,
+        "total_ns": 769258821,
+        "self_ns": 769258821
+      },
+      "sqlite.DELETE": {
+        "calls": 26,
+        "total_ns": 9517698,
+        "self_ns": 9517698
+      }
+    },
+    "native_io_delta": {
+      "fsync": {
+        "calls": 1303,
+        "total_ns": 14532060410,
+        "errors": 0
+      },
+      "fdatasync": {
+        "calls": 0,
+        "total_ns": 0,
+        "errors": 0
+      }
+    },
+    "cpu_seconds": 25.742176000000015,
+    "stack_sample_delta": {
+      "worker_profile.py:executescript:170;sqlite_journal.py:open:57;sqlite_journal.py:__init__:23;spool.py:open:78": 0,
+      "worker_profile.py:measured:88;sqlite_journal.py:open:61;sqlite_journal.py:__init__:23;spool.py:open:78": 0,
+      "_cursor_base.py:_maybe_prepare_gen:312;_cursor_base.py:_execute_gen:206;connection.py:wait:484;cursor.py:execute:113": 0,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:setup:112": 0,
+      "source.py:setup:117;worker_profile.py:measured:88;capture_worker.py:run:88;capture_worker.py:<module>:176": 0,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:setup:121": 0,
+      "worker_profile.py:measured:88;spool.py:atomic:62;worker_profile.py:measured:88;capture_worker.py:report:76": 44,
+      "protocol.py:stream_packet:173;protocol.py:receive:186;capture_worker.py:run:133;capture_worker.py:<module>:176": 88,
+      "worker_profile.py:measured:88;spool.py:atomic:59;worker_profile.py:measured:88;capture_worker.py:report:76": 59,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:inspect:37": 1,
+      "pathlib.py:stat:840;pathlib.py:lstat:847;pathlib.py:is_symlink:914;bootstrap.py:<genexpr>:46": 0,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:inspect:31": 0,
+      "connection.py:wait:484;transaction.py:__exit__:271;connection.py:transaction:362;contextlib.py:__exit__:144": 10,
+      "pathlib.py:stat:840;capture_worker.py:read:24;worker_profile.py:measured:88;capture_worker.py:run:91": 116,
+      "worker_profile.py:execute:156;sqlite_journal.py:append_group:139;spool.py:append_many:192;marker_profile.py:append:29": 194,
+      "pathlib.py:open:1013;pathlib.py:read_text:1027;capture_worker.py:read:25;worker_profile.py:measured:88": 233,
+      "pathlib.py:read_text:1028;capture_worker.py:read:25;worker_profile.py:measured:88;capture_worker.py:run:91": 70,
+      "protocol.py:stream_packet:180;protocol.py:receive:186;capture_worker.py:run:133;capture_worker.py:<module>:176": 12,
+      "spool.py:append_many:175;marker_profile.py:append:29;worker_profile.py:measured:88;groups.py:flush:37": 2,
+      "pathlib.py:read_text:1027;capture_worker.py:read:25;worker_profile.py:measured:88;capture_worker.py:run:91": 15,
+      "worker_profile.py:execute:156;wal.py:checkpoint:147;wal.py:after_write:190;sqlite_journal.py:after_write:97": 12,
+      "worker_profile.py:execute:156;sqlite_journal.py:prune_group:168;spool.py:prune:242;worker_profile.py:measured:88": 8,
+      "spool.py:prune:230;worker_profile.py:measured:88;spool.py:maintain:257;capture_worker.py:run:108": 5,
+      "pathlib.py:stat:840;pathlib.py:lstat:847;wal.py:private_sizes:24;wal.py:physical:133": 1,
+      "pathlib.py:stat:840;pathlib.py:lstat:847;wal.py:private_sizes:24;wal.py:before_write:172": 0,
+      "sqlite_journal.py:prune_group:180;spool.py:prune:242;worker_profile.py:measured:88;spool.py:maintain:257": 7,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;spool.py:captured:106": 2,
+      "worker_profile.py:executemany:168;sqlite_journal.py:append_group:136;spool.py:append_many:192;marker_profile.py:append:29": 2,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;source.py:check:141": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:payloads:118;spool.py:progress:143;worker_profile.py:measured:88": 0,
+      "spool.py:atomic:60;worker_profile.py:measured:88;capture_worker.py:report:76;capture_worker.py:run:110": 2,
+      "pathlib.py:stat:840;pathlib.py:lstat:847;wal.py:private_sizes:24;wal.py:progress:193": 1,
+      "pathlib.py:stat:840;pathlib.py:lstat:847;wal.py:private_sizes:24;wal.py:checkpoint:138": 0,
+      "spool.py:private_file:44;spool.py:atomic:55;worker_profile.py:measured:88;capture_worker.py:report:76": 0,
+      "wal.py:before_write:181;sqlite_journal.py:append_group:131;spool.py:append_many:192;marker_profile.py:append:29": 1,
+      "worker_profile.py:execute:156;wal.py:checkpoint:147;wal.py:after_write:190;sqlite_journal.py:prune_group:180": 0,
+      "worker_profile.py:execute:156;wal.py:checkpoint:147;wal.py:after_write:190;sqlite_journal.py:prune_group:177": 1,
+      "sqlite_journal.py:get:71;spool.py:get:92;spool.py:append_many:189;marker_profile.py:append:29": 2,
+      "sqlite_journal.py:get:71;spool.py:get:92;spool.py:captured:106;capture_worker.py:feedback:39": 0,
+      "wal.py:before_append:160;sqlite_journal.py:append_group:130;spool.py:append_many:192;marker_profile.py:append:29": 0,
+      "worker_profile.py:execute:156;wal.py:before_append:160;sqlite_journal.py:append_group:130;spool.py:append_many:192": 3,
+      "worker_profile.py:execute:156;sqlite_journal.py:backlog_bytes:115;spool.py:progress:140;worker_profile.py:measured:88": 0,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:inspect:20": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:set:77;sqlite_journal.py:append_group:137;spool.py:append_many:192": 0,
+      "spool.py:atomic:59;worker_profile.py:measured:88;capture_worker.py:report:76;capture_worker.py:run:110": 1,
+      "spool.py:atomic:58;worker_profile.py:measured:88;capture_worker.py:report:76;capture_worker.py:run:110": 0,
+      "worker_profile.py:execute:156;wal.py:checkpoint:137;wal.py:after_write:190;sqlite_journal.py:after_write:97": 0,
+      "sqlite_journal.py:prune_candidates:154;spool.py:prune:224;worker_profile.py:measured:88;spool.py:maintain:257": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:append_group:133;spool.py:append_many:192;marker_profile.py:append:29": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:prune_candidates:152;spool.py:prune:224;worker_profile.py:measured:88": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:prune_group:166;spool.py:prune:242;worker_profile.py:measured:88": 0,
+      "worker_profile.py:execute:156;wal.py:checkpoint:145;wal.py:after_write:190;sqlite_journal.py:after_write:97": 0,
+      "worker_profile.py:execute:156;wal.py:before_append:161;sqlite_journal.py:append_group:130;spool.py:append_many:192": 0,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:check:135": 1,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:verify_resources:147": 0,
+      "_cursor_base.py:_send_query_prepared:602;_cursor_base.py:_maybe_prepare_gen:297;_cursor_base.py:_execute_gen:206;connection.py:wait:484": 0,
+      "spool.py:progress:143;worker_profile.py:measured:88;capture_worker.py:report:70;capture_worker.py:run:110": 0,
+      "worker_profile.py:record:44;worker_profile.py:__exit__:65;worker_profile.py:measured:88;capture_worker.py:run:91": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;source.py:check:142": 0,
+      "sqlite_journal.py:get:71;spool.py:get:92;capture_worker.py:report:77;capture_worker.py:run:110": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;spool.py:prune:238": 0,
+      "spool.py:atomic:61;worker_profile.py:measured:88;capture_worker.py:report:76;capture_worker.py:run:110": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;source.py:established:66": 1,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:inspect:18": 0,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;sqlite_journal.py:prune_group:167;spool.py:prune:242": 1,
+      "connection.py:wait:484;cursor.py:execute:113;connection.py:execute:298;source.py:check:143": 1,
+      "sqlite_journal.py:get:71;spool.py:get:92;spool.py:captured:106;spool.py:append_many:169": 1,
+      "worker_profile.py:execute:156;sqlite_journal.py:get:71;spool.py:get:92;spool.py:append_many:189": 1
+    }
+  },
+  "controller": {
+    "first_at_ms": 1791505491426,
+    "last_at_ms": 1791505536316,
+    "elapsed_ms": 44890,
+    "metrics": {
+      "apply.dispatch": {
+        "calls": 229,
+        "total_ns": 3534165404,
+        "self_ns": 3534165404
+      },
+      "capture.dispatch": {
+        "calls": 158,
+        "total_ns": 5365637008,
+        "self_ns": 5365637008
+      },
+      "capture.observe": {
+        "calls": 229,
+        "total_ns": 1871390363,
+        "self_ns": 1871390363
+      },
+      "daemon.tick": {
+        "calls": 158,
+        "total_ns": 10100860249,
+        "self_ns": 45899194
+      },
+      "engine.tick": {
+        "calls": 158,
+        "total_ns": 7948641719,
+        "self_ns": 1698240325
+      },
+      "publication.commit": {
+        "calls": 27,
+        "total_ns": 365442983,
+        "self_ns": 33156957
+      },
+      "publication.descriptor": {
+        "calls": 27,
+        "total_ns": 541604602,
+        "self_ns": 541604602
+      },
+      "publication.file_fsync": {
+        "calls": 54,
+        "total_ns": 91092006,
+        "self_ns": 91092006
+      },
+      "publication.sqlite_commit": {
+        "calls": 27,
+        "total_ns": 332286026,
+        "self_ns": 332286026
+      },
+      "publication.tick": {
+        "calls": 462,
+        "total_ns": 3260540805,
+        "self_ns": 2005601407
+      },
+      "publication.verify": {
+        "calls": 325,
+        "total_ns": 347891813,
+        "self_ns": 256799807
+      },
+      "sync.schedule": {
+        "calls": 432,
+        "total_ns": 854054936,
+        "self_ns": 854054936
+      },
+      "sync.tick": {
+        "calls": 432,
+        "total_ns": 2063625554,
+        "self_ns": 1209570618
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/retention.py", line 118, in <module>
+    if __name__=='__main__':main()
+Private retained fixture: /tmp/eq225-awprxvwp
+                            ^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/retention.py", line 107, in main
+    cell.run(release/'python/analytics/python',release/'python/analytics/export.py');report['status']='PASS'
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/retention.py", line 69, in run
+    initial=observe();self.metrics['phase_wal_bytes']=[grow()]
+                                                       ^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/retention.py", line 65, in grow
+    insert()
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/retention.py", line 60, in insert
+    db.execute("INSERT INTO orders SELECT i,repeat('x',8192) FROM generate_series(%s,%s) i",(next_key,next_key+count-1))
+  File "/opt/qualification/lib/python3.12/site-packages/psycopg/connection.py", line 300, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.AmbiguousFunction: function generate_series(smallint, smallint) is not unique
+LINE 1: INSERT INTO orders SELECT i,repeat('x',8192) FROM generate_s...
+                                                          ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.

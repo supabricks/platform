@@ -1,0 +1,367 @@
+{
+  "scope": "Isolated decode/typed-transfer attribution on an explicit journal clone.\n\nNo source mutation or publication. One prepared fixture, identical decoded\nobjects, unprofiled paired timings followed by a separate cProfile diagnostic.\nThis excludes process launch, real transport and overlap; installed trials own\nthroughput and aggregate memory claims.\n",
+  "release_identity": "cd2055e7b4ac6595ed99529fbb91493975a402f1b46b358c3428ef3d97e55792",
+  "fixture_sha256": "044f89c83825d507272a2ba0f86df094ca7896033471e0c79d3eaf11a4e3d7f0",
+  "rows": 57344,
+  "end": 2262820288,
+  "batch_sha256": "9c4647a9c2e0ed2980d0368b9312ef1eee96e7590d047ac7590c147dbb4bc6cb",
+  "samples": [
+    {
+      "kind": "consume",
+      "seconds": 0.6368044079863466,
+      "cpu_seconds": 0.6366967400000001
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.5740890390006825,
+      "cpu_seconds": 0.5738080569999995
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.5883480250486173,
+      "cpu_seconds": 0.5883285129999996
+    },
+    {
+      "kind": "consume",
+      "seconds": 0.6618397749844007,
+      "cpu_seconds": 0.661637679
+    },
+    {
+      "kind": "consume",
+      "seconds": 0.6420643460005522,
+      "cpu_seconds": 0.6417721390000004
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.5680533680133522,
+      "cpu_seconds": 0.5679937669999999
+    }
+  ],
+  "median_seconds": {
+    "decode": 0.5740890390006825,
+    "consume": 0.6420643460005522
+  },
+  "profile_scope": "Separate instrumented diagnostic; do not add these times to unprofiled timings",
+  "profile": [
+    {
+      "file": "lookahead.py",
+      "line": 75,
+      "function": "consume",
+      "calls": 1,
+      "self_seconds": 0.6495281810000001,
+      "cumulative_seconds": 2.168993362
+    },
+    {
+      "file": "rows.py",
+      "line": 43,
+      "function": "value",
+      "calls": 1111892,
+      "self_seconds": 0.41952673700000004,
+      "cumulative_seconds": 0.5507194320000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'append' of 'list' objects>",
+      "calls": 1204228,
+      "self_seconds": 0.09901108500000001,
+      "cumulative_seconds": 0.09901108500000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.isinstance>",
+      "calls": 1433625,
+      "self_seconds": 0.09812329600000001,
+      "cumulative_seconds": 0.09812329600000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "calls": 229377,
+      "self_seconds": 0.075327659,
+      "cumulative_seconds": 0.13949673
+    },
+    {
+      "file": "decoder.py",
+      "line": 344,
+      "function": "raw_decode",
+      "calls": 57346,
+      "self_seconds": 0.072380162,
+      "cumulative_seconds": 0.072380162
+    },
+    {
+      "file": "rows.py",
+      "line": 36,
+      "function": "key_values",
+      "calls": 114688,
+      "self_seconds": 0.064733993,
+      "cumulative_seconds": 0.15875138400000002
+    },
+    {
+      "file": "lookahead.py",
+      "line": 101,
+      "function": "line",
+      "calls": 57345,
+      "self_seconds": 0.06031846800000001,
+      "cumulative_seconds": 0.377034843
+    },
+    {
+      "file": "rows.py",
+      "line": 22,
+      "function": "key_columns",
+      "calls": 57344,
+      "self_seconds": 0.056974387,
+      "cumulative_seconds": 0.092875759
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'same_quantum' of 'decimal.Decimal' objects>",
+      "calls": 498616,
+      "self_seconds": 0.056308133,
+      "cumulative_seconds": 0.056308133
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.len>",
+      "calls": 860173,
+      "self_seconds": 0.05211757,
+      "cumulative_seconds": 0.05211757
+    },
+    {
+      "file": "rows.py",
+      "line": 29,
+      "function": "row_key",
+      "calls": 57344,
+      "self_seconds": 0.046952818,
+      "cumulative_seconds": 0.10294636700000001
+    },
+    {
+      "file": "decoder.py",
+      "line": 333,
+      "function": "decode",
+      "calls": 57346,
+      "self_seconds": 0.043474869,
+      "cumulative_seconds": 0.15109650200000002
+    },
+    {
+      "file": "__init__.py",
+      "line": 299,
+      "function": "loads",
+      "calls": 57346,
+      "self_seconds": 0.040546034,
+      "cumulative_seconds": 0.256647446
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'adjusted' of 'decimal.Decimal' objects>",
+      "calls": 498616,
+      "self_seconds": 0.040021791,
+      "cumulative_seconds": 0.040021791
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'is_finite' of 'decimal.Decimal' objects>",
+      "calls": 498616,
+      "self_seconds": 0.034862771,
+      "cumulative_seconds": 0.034862771
+    },
+    {
+      "file": "lookahead.py",
+      "line": 118,
+      "function": "key",
+      "calls": 114688,
+      "self_seconds": 0.034534226,
+      "cumulative_seconds": 0.199504858
+    },
+    {
+      "file": "rows.py",
+      "line": 38,
+      "function": "<genexpr>",
+      "calls": 344064,
+      "self_seconds": 0.032349276,
+      "cumulative_seconds": 0.032349276
+    },
+    {
+      "file": "__init__.py",
+      "line": 244,
+      "function": "detect_encoding",
+      "calls": 57346,
+      "self_seconds": 0.028648396000000003,
+      "cumulative_seconds": 0.047619706000000005
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'match' of 're.Pattern' objects>",
+      "calls": 114692,
+      "self_seconds": 0.02111926,
+      "cumulative_seconds": 0.02111926
+    },
+    {
+      "file": "rows.py",
+      "line": 31,
+      "function": "<genexpr>",
+      "calls": 172032,
+      "self_seconds": 0.016557555,
+      "cumulative_seconds": 0.016557555
+    },
+    {
+      "file": "rows.py",
+      "line": 30,
+      "function": "<genexpr>",
+      "calls": 172032,
+      "self_seconds": 0.01644288,
+      "cumulative_seconds": 0.01644288
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'startswith' of 'bytes' objects>",
+      "calls": 172038,
+      "self_seconds": 0.015479438000000002,
+      "cumulative_seconds": 0.015479438000000002
+    },
+    {
+      "file": "rows.py",
+      "line": 24,
+      "function": "<genexpr>",
+      "calls": 172032,
+      "self_seconds": 0.015258834,
+      "cumulative_seconds": 0.015258834
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'update' of '_hashlib.HASH' objects>",
+      "calls": 57345,
+      "self_seconds": 0.014144770000000001,
+      "cumulative_seconds": 0.014144770000000001
+    },
+    {
+      "file": "lookahead.py",
+      "line": 27,
+      "function": "check",
+      "calls": 57347,
+      "self_seconds": 0.013826047000000001,
+      "cumulative_seconds": 0.019027988000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'readline' of '_io.BufferedReader' objects>",
+      "calls": 57345,
+      "self_seconds": 0.012560389,
+      "cumulative_seconds": 0.012560389
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'end' of 're.Match' objects>",
+      "calls": 114692,
+      "self_seconds": 0.010061564,
+      "cumulative_seconds": 0.010061564
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'decode' of 'bytes' objects>",
+      "calls": 57346,
+      "self_seconds": 0.008934413,
+      "cumulative_seconds": 0.008934413
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'endswith' of 'bytes' objects>",
+      "calls": 57345,
+      "self_seconds": 0.006817888,
+      "cumulative_seconds": 0.006817888
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'encode' of 'str' objects>",
+      "calls": 57345,
+      "self_seconds": 0.006506682000000001,
+      "cumulative_seconds": 0.006506682000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method time.time>",
+      "calls": 57347,
+      "self_seconds": 0.005201941000000001,
+      "cumulative_seconds": 0.005201941000000001
+    },
+    {
+      "file": "encoder.py",
+      "line": 205,
+      "function": "iterencode",
+      "calls": 1,
+      "self_seconds": 9.550800000000001e-05,
+      "cumulative_seconds": 9.550800000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'read' of '_io.BufferedReader' objects>",
+      "calls": 2,
+      "self_seconds": 2.8132e-05,
+      "cumulative_seconds": 2.8132e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.stat>",
+      "calls": 2,
+      "self_seconds": 2.0808e-05,
+      "cumulative_seconds": 5.3920000000000006e-05
+    },
+    {
+      "file": "owner.py",
+      "line": 57,
+      "function": "private_json",
+      "calls": 1,
+      "self_seconds": 1.6983e-05,
+      "cumulative_seconds": 0.000118041
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _io.open>",
+      "calls": 2,
+      "self_seconds": 1.3606000000000002e-05,
+      "cumulative_seconds": 1.3606000000000002e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+      "calls": 1,
+      "self_seconds": 1.3345e-05,
+      "cumulative_seconds": 1.3345e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.open>",
+      "calls": 2,
+      "self_seconds": 1.1711e-05,
+      "cumulative_seconds": 3.3703e-05
+    },
+    {
+      "file": "pathlib.py",
+      "line": 437,
+      "function": "__str__",
+      "calls": 4,
+      "self_seconds": 9.107000000000001e-06,
+      "cumulative_seconds": 5.2949000000000004e-05
+    }
+  ]
+}

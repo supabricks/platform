@@ -1,0 +1,16 @@
+..............................................................F....................................................................................................................................
+======================================================================
+FAIL: test_row_bounded_prefix_replays_and_drains_without_splitting_transaction (test_incremental.IncrementalTests.test_row_bounded_prefix_replays_and_drains_without_splitting_transaction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/python/analytics/test_incremental.py", line 217, in test_row_bounded_prefix_replays_and_drains_without_splitting_transaction
+    self.assertEqual(prepared['end_lsn'],'0/12C')
+AssertionError: '0/190' != '0/12C'
+- 0/190
++ 0/12C
+
+
+----------------------------------------------------------------------
+Ran 195 tests in 78.124s
+
+FAILED (failures=1)

@@ -43,7 +43,8 @@ def tx(commit_lsn,end,*messages):
 
 class IncrementalTests(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name).resolve()
+        previous=os.umask(0o077);self.addCleanup(os.umask,previous)
+        self.tmp=tempfile.TemporaryDirectory(dir=getattr(self,"temporary_parent",None));self.root=Path(self.tmp.name).resolve()
         identity=dict(generation=str(uuid.uuid4()),installation_id='install',project_id='p',branch_id='b',tenant_id='t',timeline_id='l',decoder_version=1)
         self.base=self.root/'baseline';self.base.mkdir();tables=[]
         schema=pa.schema([pa.field('id',pa.int32(),nullable=False),pa.field('amount',pa.decimal128(38,8)),pa.field('note',pa.string())])
@@ -56,6 +57,7 @@ class IncrementalTests(unittest.TestCase):
         self.spool=Spool(self.root/'spool',identity);self.spool.establish(100,PROFILE);self.spool.set('bootstrap',dict(id='bootstrap',lsn='0/C8'))
         self.config=dict(id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=1,source_revision=1,identity=identity,worker_generation=1,
             workspace=str(self.root/'work1'),generation=str(self.root/'analytics/incremental'/identity['generation']),spool=str(self.spool.path),bootstrap_id='bootstrap',bootstrap_manifest=str(self.base/'manifest.json'),bootstrap_lsn='0/C8',after_lsn='0/C8',target_lsn='0/C8',previous=None,deadline_ms=int(time.time()*1000)+60000)
+        if getattr(self,'storage_profile','compact')!='compact':self.config['storage_profile']=self.storage_profile
         Path(self.config['workspace']).mkdir();run(self.config)
         self.first=json.loads((Path(self.config['workspace'])/'result.json').read_text())['descriptor']
     def tearDown(self):self.spool.close();self.tmp.cleanup()
@@ -210,7 +212,7 @@ class IncrementalTests(unittest.TestCase):
         config=self.config_next('0/190')
         def crash(point):
             if point=='after_first_table':raise SystemExit(86)
-        with patch('incremental_worker.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
+        with patch('incremental.preparation.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
             run(config)
         prepared=json.loads((Path(config['workspace'])/'plan.json').read_text())
         self.assertEqual(prepared['end_lsn'],'0/12C')
@@ -224,7 +226,7 @@ class IncrementalTests(unittest.TestCase):
         following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=3,
                        workspace=str(self.root/'work3'),previous=prefix,after_lsn='0/12C')
         Path(following['workspace']).mkdir()
-        with patch('incremental_worker.MAX_ROWS',3):run(following)
+        with patch('incremental.preparation.MAX_ROWS',3):run(following)
         final=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
         self.assertEqual(final['manifest']['source']['lsn'],'0/190')
         self.assertEqual(final['manifest']['input_bytes'],len(second))

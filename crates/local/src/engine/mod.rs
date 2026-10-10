@@ -6,6 +6,7 @@ mod http;
 mod incremental;
 mod lifecycle;
 mod pageserver;
+mod preparation;
 mod s3;
 mod sql;
 pub(crate) mod validation;
@@ -265,6 +266,8 @@ pub struct Cell {
     key: ComputeKey,
     launches: BTreeMap<String, Launch>,
     apply_workers: std::collections::HashMap<OperationId, incremental::Worker>,
+    preparation: Option<preparation::Preparation>,
+    preparation_attempt: Option<(OperationId, u32)>,
     processes: BTreeMap<String, Value>,
     supervisor: Option<Child>,
     bucket_ready: bool,
@@ -338,6 +341,8 @@ impl Cell {
             key,
             launches: BTreeMap::new(),
             apply_workers: std::collections::HashMap::new(),
+            preparation: None,
+            preparation_attempt: None,
             processes: BTreeMap::new(),
             supervisor: None,
             bucket_ready: false,
@@ -401,6 +406,10 @@ impl Cell {
         let mailboxes = store.root().join("analytics/apply-workers");
         if mailboxes.exists() {
             fs::remove_dir_all(mailboxes)?;
+        }
+        let preparation = store.root().join("analytics/prepare-work");
+        if preparation.exists() {
+            fs::remove_dir_all(preparation)?;
         }
         store.interrupt_exports()?;
         if !store.processes()?.is_empty() {
@@ -1130,6 +1139,7 @@ impl Cell {
         Ok(())
     }
     pub fn stop(&mut self, store: &mut Store) -> Result<bool> {
+        self.discard_preparation(store)?;
         if !self.pc("GET", "/live").unwrap_or(false) {
             Self::recover(store)?;
             if let Some(mut child) = self.supervisor.take() {

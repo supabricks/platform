@@ -1,0 +1,73 @@
+         19764643 function calls (19702325 primitive calls) in 5.592 seconds
+
+   Ordered by: cumulative time
+   List reduced from 484 to 65 due to restriction <65>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    5.592    5.592 incremental_worker.py:193(run)
+        1    0.026    0.026    5.540    5.540 incremental_worker.py:208(run_owned)
+        1    0.020    0.020    5.514    5.514 incremental_worker.py:213(run_verified)
+        1    0.027    0.027    3.581    3.581 incremental_worker.py:66(plan)
+        1    0.326    0.326    3.519    3.519 incremental_worker.py:71(plan_rows)
+       83    0.140    0.002    2.681    0.032 rows.py:86(changes)
+    57344    0.669    0.000    1.921    0.000 rows.py:64(tuple_values)
+  1610508    0.869    0.000    1.570    0.000 rows.py:36(value)
+        1    0.330    0.330    1.258    1.258 incremental_worker.py:134(apply_table)
+   997232    0.266    0.000    0.473    0.000 {method 'as_tuple' of 'decimal.Decimal' objects}
+   344068    0.159    0.000    0.308    0.000 {built-in method builtins.any}
+    56631    0.009    0.000    0.233    0.000 pathlib.py:835(stat)
+   114688    0.087    0.000    0.232    0.000 rows.py:22(row_key)
+    56651    0.200    0.000    0.224    0.000 {built-in method posix.stat}
+        1    0.003    0.003    0.222    0.222 storage.py:317(inventory)
+     2150    0.010    0.000    0.216    0.000 storage.py:106(digest)
+   997232    0.125    0.000    0.207    0.000 <string>:1(<lambda>)
+      175    0.100    0.001    0.193    0.001 incremental_worker.py:53(key_batches)
+        9    0.001    0.000    0.181    0.020 spool.py:30(canonical)
+       12    0.000    0.000    0.175    0.015 __init__.py:183(dumps)
+       12    0.000    0.000    0.175    0.015 encoder.py:183(encode)
+        9    0.175    0.019    0.175    0.019 encoder.py:205(iterencode)
+    37142    0.006    0.000    0.162    0.000 pathlib.py:842(lstat)
+   114688    0.057    0.000    0.141    0.000 rows.py:29(key_values)
+        1    0.002    0.002    0.138    0.138 storage.py:309(verify_previous)
+2255673/2219015    0.133    0.000    0.137    0.000 {built-in method builtins.len}
+  1227242    0.119    0.000    0.119    0.000 {method 'unpack_from' of '_struct.Struct' objects}
+  1330981    0.114    0.000    0.114    0.000 {method 'append' of 'list' objects}
+     3226    0.003    0.000    0.110    0.000 pathlib.py:690(is_relative_to)
+        2    0.000    0.000    0.109    0.054 spool.py:52(atomic)
+  1111948    0.106    0.000    0.106    0.000 {method 'decode' of 'bytes' objects}
+   997242    0.101    0.000    0.101    0.000 {built-in method builtins.max}
+        6    0.004    0.001    0.096    0.016 storage.py:134(files)
+    57348    0.051    0.000    0.087    0.000 rows.py:15(key_columns)
+  1047719    0.087    0.000    0.087    0.000 {built-in method __new__ of type object at 0x14484b0}
+  1436291    0.087    0.000    0.087    0.000 {built-in method builtins.isinstance}
+        1    0.018    0.018    0.086    0.086 incremental_worker.py:36(key_filter)
+    47066    0.019    0.000    0.085    0.000 pathlib.py:380(with_segments)
+   115350    0.052    0.000    0.084    0.000 protocol.py:18(number)
+    12967    0.002    0.000    0.081    0.000 pathlib.py:1097(rglob)
+       63    0.079    0.001    0.079    0.001 {built-in method posix.fsync}
+    12967    0.002    0.000    0.079    0.000 pathlib.py:234(_select_from)
+     2150    0.007    0.000    0.075    0.000 storage.py:55(_owned_parents)
+        2    0.001    0.001    0.075    0.037 storage.py:163(durable)
+    22092    0.004    0.000    0.072    0.000 <frozen _collections_abc>:1022(__iter__)
+     1076    0.003    0.000    0.071    0.000 pathlib.py:663(relative_to)
+      259    0.006    0.000    0.071    0.000 planning.py:96(check)
+   997232    0.069    0.000    0.069    0.000 {method 'is_finite' of 'decimal.Decimal' objects}
+        3    0.000    0.000    0.069    0.023 storage.py:144(boundary)
+        3    0.003    0.001    0.067    0.022 storage.py:81(retained_boundary)
+    18866    0.010    0.000    0.067    0.000 pathlib.py:277(__getitem__)
+   344064    0.067    0.000    0.067    0.000 rows.py:23(<genexpr>)
+  1204224    0.067    0.000    0.067    0.000 rows.py:112(<genexpr>)
+    25348    0.009    0.000    0.063    0.000 pathlib.py:420(_from_parsed_parts)
+     3226    0.004    0.000    0.063    0.000 <frozen _collections_abc>:1032(__contains__)
+    65691    0.021    0.000    0.063    0.000 pathlib.py:484(_str_normcase)
+    28885    0.010    0.000    0.062    0.000 pathlib.py:519(__eq__)
+    13652    0.015    0.000    0.059    0.000 pathlib.py:200(_select_from)
+    10370    0.004    0.000    0.058    0.000 pathlib.py:909(is_symlink)
+    50305    0.016    0.000    0.058    0.000 pathlib.py:1157(__init__)
+    41114    0.007    0.000    0.056    0.000 pathlib.py:551(drive)
+   105518    0.012    0.000    0.056    0.000 pathlib.py:437(__str__)
+    57620    0.035    0.000    0.053    0.000 spool.py:292(frames)
+    10771    0.006    0.000    0.049    0.000 pathlib.py:407(_load_parts)
+        2    0.043    0.022    0.043    0.022 table.py:160(__init__)
+
+

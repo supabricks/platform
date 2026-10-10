@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Daemon-owned SY03 batch applier. SQLite publication remains the sole authority."""
 import copy
+from contextlib import nullcontext
 from decimal import Decimal
 from datetime import date
 import hashlib
@@ -13,12 +14,13 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
 from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
-from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
-from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
-from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile
+from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
+from incremental.rows import overlay, key_columns, row_key, key_values, value, MAX_VALUES
+from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary, validate_storage_profile, verified_digests
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
-
+from incremental.preparation import Preparation, DecodedBatch, decode, row_limit
+from incremental.lookahead import optional_consume, complete, hint
 
 def quote(name):return '"'+name.replace('"','""')+'"'
 
@@ -64,17 +66,17 @@ def plan(config,root,previous,journal_data=None,lease=None):
 
 
 def plan_rows(config,root,previous,journal_data,guard):
-    schema,transactions,_,_=journal(config) if journal_data is None else journal_data
-    operations=[];end=lsn(config['after_lsn']);input_bytes=0
-    for candidate_end,payload in transactions:
+    if isinstance(journal_data,Preparation):
+        decoded=journal_data.result()
         guard.check()
-        selected=changes(payload,schema,candidate_end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None)
-        # The byte-bounded journal range may contain more small rows than one
-        # apply can materialize. Publish a complete-transaction prefix and leave
-        # the rest for the next run. changes() still rejects an oversized single
-        # transaction; never divide its atomic visibility across publications.
-        if len(operations)+len(selected)>MAX_ROWS:break
-        operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
+    elif isinstance(journal_data,DecodedBatch):
+        decoded=journal_data
+        guard.check()
+    else:
+        decoded=decode(config,journal(config) if journal_data is None else journal_data,guard.check)
+    hint(config,decoded)
+    schema=decoded.schema;operations=decoded.operations;end=decoded.end;input_bytes=decoded.input_bytes
+    limit=row_limit(config)
     touched={}
     for oid,tag,old,new,row in operations:
         touched.setdefault(oid,set()).add(old)
@@ -95,7 +97,7 @@ def plan_rows(config,root,previous,journal_data,guard):
                 values=[row[c[1]] for c in columns];key=row_key(values,pk)
                 if key in rows:raise CaptureError('duplicate_source_key')
                 rows[key]=values
-                if len(rows)>MAX_ROWS:raise CaptureError('apply_row_budget')
+                if len(rows)>limit:raise CaptureError('apply_row_budget')
         existing[oid]=rows
     final=overlay(operations,existing,schema)
     output=[]
@@ -183,7 +185,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
     return delta.version(),commit_metrics(path,delta.version(),metrics)
 
 
-def run(config):
+def run(config, *, prepare_overlap=False):
     validate_storage_profile(config)
     os.umask(0o077)
     work=Path(config['workspace']);plan_path=work/'plan.json'
@@ -192,13 +194,29 @@ def run(config):
         # A deferred read must precede initialization too: initialize may compact
         # Delta tables into a new generation. Existing plans use crash replay and
         # never re-enter this retryable boundary after partial table mutation.
-        journal_data=journal(config)
-    root=initialize(config)
-    with mutation_lease(root) as lease:
-        return run_owned(config,root,journal_data,lease)
+        journal_data=optional_consume(config)
+        if journal_data is None:journal_data=journal(config)
+        else:journal_data=complete(config,journal_data)
+    # Only the existing authorized range may prepare. Bootstrap and sealed-plan
+    # crash replay do not decode or fetch journal data. The same process's RSS
+    # ceiling covers both stages; there is no executor queue or extra process.
+    # Experimental only: EQ220 K regressed the installed late cohort. The
+    # daemon/execute path keeps serial preparation until a later measured slice
+    # justifies overlap. Tests can exercise the boundary without a product knob.
+    context=(Preparation(config,journal_data) if prepare_overlap and journal_data is not None and not isinstance(journal_data,DecodedBatch)
+             and config.get('storage_profile','compact')=='large' else nullcontext(journal_data))
+    with context as prepared:
+        root=initialize(config)
+        with mutation_lease(root) as lease:
+            return run_owned(config,root,prepared,lease)
 
 
 def run_owned(config,root,journal_data,lease):
+    with verified_digests(lease,config):
+        return run_verified(config,root,journal_data,lease)
+
+
+def run_verified(config,root,journal_data,lease):
     profile=validate_storage_profile(config)
     work=Path(config['workspace']);plan_path=work/'plan.json'
     previous,compaction=base(config,root)
@@ -235,6 +253,8 @@ def run_owned(config,root,journal_data,lease):
         end=prepared['end_lsn'];input_bytes=prepared['input_bytes']
         manifest=copy.deepcopy(previous['manifest']);manifest.update(id=config['id'],tables=tables,files=inventory(root,tables))
     manifest['source']['lsn']=end;manifest['observed_at_ms']=int(time.time()*1000)
+    manifest.pop('preparation',None)
+    if config.get('_preparation') is not None:manifest['preparation']=config['_preparation']
     manifest['capture_identity']=config['identity'];manifest['input_bytes']=input_bytes;manifest['apply_metrics']=metrics
     manifest['storage_generation']=config.get('storage_generation')
     manifest['compaction']=compaction
@@ -258,7 +278,7 @@ def run_owned(config,root,journal_data,lease):
     durable(root,sealed)
     fault('before_epoch_receipt')
     lease.check()
-    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),descriptor=descriptor))
+    atomic(work/'result.json',dict(state='ready',id=config['id'],worker_generation=config['worker_generation'],journal_read=config.get('_journal_read'),preparation=config.get('_preparation'),descriptor=descriptor))
     fault('after_epoch_receipt')
 
 

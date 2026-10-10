@@ -39,7 +39,13 @@ FIELDS=('id','attempt','epoch_id','identity','worker_generation','bootstrap_lsn'
         'after_lsn','target_lsn','deadline_ms','journal_access')
 
 
-def request_for(config):return {key:config[key] for key in FIELDS}
+def request_for(config, *, suffix=False):
+    request={key:config[key] for key in FIELDS}
+    if 'preparation' in config:request['preparation']=config['preparation']
+    if suffix:
+        request['suffix']=1
+        request['after_lsn']=config['prepared_read_after']
+    return request
 
 
 def private_directory(path):
@@ -159,7 +165,10 @@ class Owner:
             self.listener.close();raise
 
     def authorize(self, request, check=lambda:None):
-        if set(request)!=set(FIELDS):raise CaptureError('journal_owner_fenced')
+        expected=set(FIELDS)|({'preparation'} if 'preparation' in request else set())|({'suffix'} if 'suffix' in request else set())
+        if set(request)!=expected:raise CaptureError('journal_owner_fenced')
+        if 'preparation' in request and request['preparation']!=1:raise CaptureError('journal_owner_fenced')
+        if 'suffix' in request and (request['suffix']!=1 or 'preparation' in request):raise CaptureError('journal_owner_fenced')
         if str(uuid.UUID(request['id']))!=request['id'] or type(request['attempt']) is not int or not 1<=request['attempt']<=3:
             raise CaptureError('journal_owner_fenced')
         config=private_json(self.control,65536,check)
@@ -168,10 +177,10 @@ class Owner:
             or request['worker_generation']!=self.generation
             or request['journal_access']!=config['journal_access']):
             raise CaptureError('journal_owner_fenced')
-        work=self.root/'analytics'/'apply-work'/request['id']
+        work=self.root/'analytics'/('prepare-work' if 'preparation' in request else 'apply-work')/request['id']
         for directory in (work.parent.parent,work.parent,work):private_directory(directory)
         issued=private_json(work/'input.json',4*1024*1024,check)
-        if canonical(request_for(issued))!=canonical(request):raise CaptureError('journal_owner_fenced')
+        if canonical(request_for(issued,suffix='suffix' in request))!=canonical(request):raise CaptureError('journal_owner_fenced')
         if time.time()*1000>=request['deadline_ms']:raise CaptureError('journal_read_deadline')
         after=lsn(request['after_lsn']);target=lsn(request['target_lsn'])
         if not 0<=after<=target<2**64:raise CaptureError('journal_owner_fenced')

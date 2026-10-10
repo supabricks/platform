@@ -55,6 +55,7 @@ def inspect(conn,identity):
 class Source:
     def __init__(self,config,spool):
         self.config=config;self.spool=spool;self.conn=connect(config)
+        self.snapshot_source=None;self.snapshot_at=None;self.snapshot_lsn=None;self.snapshot_requests=0
         self.name='sbcap_'+config['identity']['generation'].replace('-','')
         self.slot=self.name;self.publication=self.name;self.schema=self.name
         self.fence='supabricks.capture.'+config['identity']['generation']
@@ -142,7 +143,23 @@ class Source:
         self.verify_resources(self.spool.get('profile'))
         triggers=self.conn.execute('SELECT count(*) FROM pg_event_trigger WHERE evtname=ANY(%s) AND evtenabled=\'O\'',([self.name+'_end',self.name+'_drop'],)).fetchone()[0]
         if triggers!=2:raise CaptureError('schema_fence_missing')
+        self.maintain_restart(slot)
+        slot['restart_snapshot']=dict(requests=self.snapshot_requests,lsn=self.snapshot_lsn)
         return slot
+
+    def maintain_restart(self,slot):
+        # PG normally logs running-transaction snapshots about every 15 seconds.
+        # At high WAL rates that can retain a large already-acknowledged prefix.
+        # Ask PG for a snapshot after each quarter-budget of WAL under pressure.
+        # This neither advances the slot nor acknowledges any source position:
+        # decoding, durable feedback and PG's oldest-transaction fence still own
+        # restart eligibility. The existing 80% stop and server cap stay intact.
+        quantum=self.config['wal_bytes']//4;source=lsn(slot['source']);now=time.monotonic()
+        if slot['retained_bytes']<quantum:return
+        if self.snapshot_source is not None and source-self.snapshot_source<quantum:return
+        if self.snapshot_at is not None and now-self.snapshot_at<1:return
+        requested=self.conn.execute('SELECT pg_log_standby_snapshot()::text').fetchone()[0]
+        self.snapshot_lsn=requested;self.snapshot_source=source;self.snapshot_at=now;self.snapshot_requests+=1
     def verify_resources(self,profile):
         pub=self.conn.execute("SELECT oid,obj_description(oid,'pg_publication'),pubowner='cloud_admin'::regrole,puballtables,pubinsert,pubupdate,pubdelete,pubtruncate,pubviaroot FROM pg_publication WHERE pubname=%s",(self.publication,)).fetchone()
         if pub is None or pub[1:]!=(self.owner,True,False,True,True,True,True,False):raise CaptureError('capture_publication_changed')

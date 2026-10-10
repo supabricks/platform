@@ -1,0 +1,34 @@
+PASS sustained_50_rows_per_second_and_200_row_burst_meet_5s_p95_with_atomic_groups
+PASS continuous_idle_and_old_epoch_remain_stable_during_workload
+PASS continuous_pause_sigkill_and_daemon_restart_keep_durable_checkpoint
+PASS continuous_schema_drift_preserves_epoch_and_explicit_resync_recovers
+PASS triggered_fixed_barrier_idempotency_long_transaction_and_pinned_reader
+PASS triggered_production_input_budget_preserves_complete_transactions
+PASS triggered_restart_reuses_checkpoint_and_delete_retires_source
+Private installed sync diagnostics: /tmp/sy08-s11dbtn4
+Traceback (most recent call last):
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/preparation_lifecycle.py", line 37, in <module>
+    installed_sync.main()
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/installed_sync.py", line 208, in main
+    cell.run(release/'python/analytics/python',release/'python/analytics/export.py')
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/sync_maintenance.py", line 29, in run
+    policy=self.sync('create',branch='main',key='policy',config=dict(mode='snapshot',strategy='full',schedule=None))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/tpcds/preparation_lifecycle.py", line 29, in sync
+    result=super().sync(kind,**fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/snapshot_policies.py", line 17, in sync
+    return self.api('managed_snapshots', command=dict(kind=kind, **fields))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/installed_sync.py", line 46, in api
+    return super().api(action,**fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/exports.py", line 30, in api
+    return self.request(method='api', api_version=1,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/installed_sync.py", line 52, in request
+    return super().request(**request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/anibjoshi/Documents/GitHub/supabricks/platform/e2e/native/cell.py", line 93, in request
+    raise RuntimeError(str(response['error']))
+RuntimeError: {'code': 'invalid_input', 'detail': {'hint': 'check the local state request', 'message': 'large storage profile requires incremental sync'}}

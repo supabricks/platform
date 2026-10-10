@@ -957,6 +957,10 @@ fn daemon_streams_large_publication_and_rejects_tail_corruption() {
             let _ = self.0.wait();
         }
     }
+    let mib: usize = std::env::var("SB_PUBLICATION_BENCH_MIB")
+        .map(|s| s.parse().expect("integer fixture MiB"))
+        .unwrap_or(128);
+    assert!((128..=1024).contains(&mib));
     for corrupt in [false, true] {
         let root = root();
         let state = root.path().join("state");
@@ -971,7 +975,7 @@ fn daemon_streams_large_publication_and_rejects_tail_corruption() {
         let mut file = fs::File::create(&path).unwrap();
         let chunk = vec![b'x'; 1024 * 1024];
         let mut digest = Sha256::new();
-        for _ in 0..128 {
+        for _ in 0..mib {
             file.write_all(&chunk).unwrap();
             digest.update(&chunk);
         }
@@ -982,7 +986,7 @@ fn daemon_streams_large_publication_and_rejects_tail_corruption() {
             .iter_mut()
             .find(|entry| entry["path"] == "101/data.parquet")
             .unwrap();
-        entry["bytes"] = json!(128 * 1024 * 1024);
+        entry["bytes"] = json!(mib * 1024 * 1024);
         entry["sha256"] = json!(hex::encode(digest.finalize()));
         fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
         if corrupt {
@@ -1037,7 +1041,7 @@ fn daemon_streams_large_publication_and_rejects_tail_corruption() {
         assert!(probes > 1, "verification must yield to IPC between chunks");
         println!(
             "publication_measurement {}",
-            json!({"bytes":128 * 1024 * 1024,"tail_corruption":corrupt,
+            json!({"bytes":mib * 1024 * 1024,"tail_corruption":corrupt,
                 "elapsed_seconds":started.elapsed().as_secs_f64(),"status_probes":probes,
                 "max_status_seconds":max_ipc.as_secs_f64()})
         );

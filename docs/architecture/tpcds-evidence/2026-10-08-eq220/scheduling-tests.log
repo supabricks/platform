@@ -1,0 +1,22 @@
+   Compiling supabricks-local v0.1.0 (/home/anibjoshi/Documents/GitHub/supabricks/platform/crates/local)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.77s
+     Running tests/analytics.rs (target/debug/deps/analytics-cdaaf7692fe26d0c)
+
+running 14 tests
+test publication_crash_worker ... ok
+test daemon_recovery_cancels_waiting_notebook_admissions_but_preserves_cli_waiters ... ok
+test analytical_session_admission_is_bounded_and_epoch_selection_is_project_scoped ... ok
+test stopped_analytical_bundle_keeps_identity_pointers_and_leases_when_copied ... ok
+test analytical_resource_reservations_survive_closing_and_recovery ... ok
+test recovery_fails_closed_on_missing_files_and_accepts_a_restored_bundle ... ok
+test refresh_status_distinguishes_standalone_exports_and_cancelled_refreshes ... ok
+test analytical_session_references_survive_expiry_and_closing_until_verified_recovery ... ok
+test publication_leases_retention_and_restart_preserve_references ... ok
+test stale_source_cancellation_and_bad_files_never_replace_the_head ... ok
+test disk_error_and_sql_rollback_preserve_the_previous_complete_snapshot ... ok
+test malformed_generations_are_rejected_before_they_can_become_current ... ok
+test sigkill_at_each_publication_and_deletion_boundary_is_recoverable ... ok
+test daemon_streams_large_publication_and_rejects_tail_corruption ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.86s
+

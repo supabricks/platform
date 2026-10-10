@@ -1,0 +1,19 @@
+{
+  "scope": "Read-only attribution from the completed pgrow candidate; exact growing verification and serial comparison pending",
+  "source": "a8a6348",
+  "published_batches_in_exact_late_cohort": 51,
+  "sampled_distinct_apply_processes": 51,
+  "process_cohort_note": "Resource and publication endpoints differ slightly; short-lived processes can be missed",
+  "late_rows_per_second": 8689.016163378541,
+  "last_30_medians": {
+    "worker_ms": 2967.5,
+    "after_manifest_ms": 436.5,
+    "cycle_ms": 3436.5,
+    "live_bytes": 1310087261.0,
+    "new_bytes": 2894994.5,
+    "rows": 31232.0,
+    "delta_execution_ms": 19.0,
+    "journal_ms": 17.0
+  },
+  "finding": "Near one new apply process per late publication. Source recycles at 512-MiB high-water and digest cache is process-local. Recycle cause and cold-hash cost require direct attribution; do not raise 768-MiB hard enforcement or change durability based on this observation alone."
+}
