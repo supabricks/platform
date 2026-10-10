@@ -44,7 +44,8 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   project adopt RUNTIME_PROJECT_ID --key KEY [--target NAME]
   project fork --destination NEW_DIRECTORY --name NAME
   init NAME                    Write retry-safe public supabricks.toml (offline)
-  up                           Start/reconnect using the installed native bundle
+  up [--compute-cache-profile compact|source-load]
+                               Start/reconnect; cache profile is fixed at cell creation
       [--bundle PATH --helpers PATH]  Override parts for source development
   down                         Stop the cell, retain all data
   status | doctor              Runtime status / actionable diagnostics
@@ -548,6 +549,19 @@ pub fn run() -> Result<u8> {
         return Ok(0);
     }
     if matches!(command.as_str(), "daemon" | "up" | "down" | "status") {
+        let cache_profile = a
+            .take("--compute-cache-profile")
+            .map(|value| {
+                if !matches!(command.as_str(), "up" | "daemon") {
+                    return Err(invalid("--compute-cache-profile requires up"));
+                }
+                match value.as_str() {
+                    "compact" => Ok(supabricks_core::spec::ComputeCacheProfile::Compact),
+                    "source-load" => Ok(supabricks_core::spec::ComputeCacheProfile::SourceLoad),
+                    _ => Err(invalid("use compute cache profile compact or source-load")),
+                }
+            })
+            .transpose()?;
         let bundle = a.take("--bundle").map(PathBuf::from);
         let helpers = a.take("--helpers").map(PathBuf::from);
         if bundle.is_some() != helpers.is_some()
@@ -561,7 +575,7 @@ pub fn run() -> Result<u8> {
         if let Some(project) = &project {
             crate::projects::source_identity(project)?;
         }
-        crate::runtime_cli::run(&command, root, bundle, helpers)?;
+        crate::runtime_cli::run(&command, root, bundle, helpers, cache_profile)?;
         return Ok(0);
     }
     if command == "catalog" && a.pos.get(1).is_some_and(|s| s == "service") {

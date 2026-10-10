@@ -275,6 +275,7 @@ impl Ctx {
                 pageserver_connstring: &self.pageserver_connstring,
             },
             &Settings {
+                cache_profile: Default::default(),
                 port: 55433,
                 listen_addresses: "0.0.0.0",
                 fsync: false,

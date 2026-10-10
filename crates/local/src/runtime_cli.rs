@@ -21,6 +21,7 @@ pub fn run(
     root: PathBuf,
     bundle: Option<PathBuf>,
     helpers: Option<PathBuf>,
+    cache_profile: Option<supabricks_core::spec::ComputeCacheProfile>,
 ) -> Result<()> {
     if matches!(command, "up" | "daemon") {
         crate::installation::check_data_root(&root)?;
@@ -32,9 +33,28 @@ pub fn run(
     };
     let bundle = bundle.or_else(|| installed.as_ref().map(|i| i.bundle()));
     let helpers = helpers.or_else(|| installed.as_ref().map(|i| i.helpers()));
+    if let Some(profile) = cache_profile {
+        crate::engine::RuntimeConfig::require_cache_profile(&root, profile)?;
+    }
     if command == "daemon" {
         if let Some(installed) = crate::installation::Installation::discover()? {
             installed.verify()?;
+        }
+        if let Some(profile) = cache_profile {
+            // Hold the data-root ownership lock while initializing/checking the
+            // durable profile, before any compute is opened by Daemon::bind.
+            let store = Store::open(&root)?;
+            if let (Some(bundle), Some(helpers)) = (&bundle, &helpers) {
+                crate::engine::RuntimeConfig::initialize_with_cache(
+                    &store, bundle, helpers, profile,
+                )?;
+            } else if !root.join("runtime.json").exists() {
+                return Err(crate::store::error::invalid(
+                    "a compute cache profile requires an installed engine or --bundle and --helpers",
+                ));
+            } else {
+                crate::engine::RuntimeConfig::require_cache_profile(&root, profile)?;
+            }
         }
         let daemon = Daemon::bind(&root)?;
         return if let (Some(bundle), Some(helpers)) = (bundle, helpers) {
@@ -93,6 +113,9 @@ pub fn run(
             .arg(bundle)
             .arg("--helpers")
             .arg(helpers);
+    }
+    if let Some(profile) = cache_profile {
+        cmd.arg("--compute-cache-profile").arg(profile.name());
     }
     let mut child = cmd.spawn()?;
     wait_ready(&root, Some(&mut child))

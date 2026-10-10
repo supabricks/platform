@@ -10,6 +10,7 @@ import datetime
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import sqlite3
@@ -29,6 +30,9 @@ def run(args):
     selected = load.workload('sf100-growing-prefix'); bounds = selected['load_bounds']
     args.output.mkdir(exist_ok=False, parents=True); root = args.output / 'state'; root.mkdir(mode=0o700)
     cell = InstalledContinuous(args.release.resolve(), root.resolve())
+    if cache_profile := os.environ.get("EQ236_COMPUTE_CACHE_PROFILE"):
+        from compute_cache_profile import install
+        install(cell, cache_profile)
     observer = Observer(cell, cell.source, args.output / 'source-profile')
     manifest = load.inventory(json.loads(load.LOCK.read_text()), args.inputs)
     generation = json.loads((args.dataset / 'generation.json').read_text())

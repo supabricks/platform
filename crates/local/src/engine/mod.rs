@@ -59,6 +59,8 @@ pub struct RuntimeConfig {
     pub connection_startup_timeout_ms: u64,
     #[serde(default)]
     pub compute_tls: Option<ComputeTls>,
+    #[serde(default)]
+    pub compute_cache_profile: supabricks_core::spec::ComputeCacheProfile,
 }
 fn connection_timeout() -> u64 {
     30_000
@@ -162,11 +164,39 @@ impl RuntimeConfig {
         }
         Ok(())
     }
+    /// A profile is selected when creating a cell and retained on restart.
+    /// Refuse a different explicit selection rather than silently ignoring it.
+    pub fn require_cache_profile(
+        root: &Path,
+        profile: supabricks_core::spec::ComputeCacheProfile,
+    ) -> Result<()> {
+        let path = root.join("runtime.json");
+        if path.exists() {
+            let config: Self = serde_json::from_slice(&fs::read(path)?)?;
+            if config.compute_cache_profile != profile {
+                return Err(conflict(
+                    "compute cache profile differs from this data root; select the existing profile or use a new data root",
+                ));
+            }
+        }
+        Ok(())
+    }
     pub fn initialize(store: &Store, bundle: &Path, helpers: &Path) -> Result<()> {
+        if store.root().join("runtime.json").exists() {
+            return Ok(());
+        }
+        Self::initialize_with_cache(store, bundle, helpers, Default::default())
+    }
+    pub fn initialize_with_cache(
+        store: &Store,
+        bundle: &Path,
+        helpers: &Path,
+        profile: supabricks_core::spec::ComputeCacheProfile,
+    ) -> Result<()> {
         let root = store.root();
         let path = root.join("runtime.json");
         if path.exists() {
-            return Ok(());
+            return Self::require_cache_profile(root, profile);
         }
         let mut reserved: HashSet<u16> = store
             .branches()?
@@ -218,6 +248,7 @@ impl RuntimeConfig {
             validation_token: secret(),
             connection_startup_timeout_ms: connection_timeout(),
             compute_tls: None,
+            compute_cache_profile: profile,
         };
         for executable in [
             config.bundle.join("bin/pageserver"),
@@ -885,6 +916,7 @@ impl Cell {
         let mut plan = crate::plan_compute(
             &crate::ComputeInput {
                 pg_major: branch.endpoint.pg_major,
+                cache_profile: self.config.compute_cache_profile,
                 bundle: &self.config.bundle,
                 data: &root.join("pgdata"),
                 config: &spec_file,
