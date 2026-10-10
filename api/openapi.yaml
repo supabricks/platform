@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: Supabricks Platform API
+  version: 1.0.0-draft.1
+  summary: One API for the console, the command line, agents and automation.
+  description: |
+    The contract the platform provides to every surface: the browser console,
+    the `supabricks` command line, MCP agents and customer automation.
+
+    This document is a **design target**, not a description of what ships
+    today. It was derived from the console prototype: each operation names the
+    prototype features it serves (`x-console-features`) and says whether the
+    platform can already do it (`x-backend`):
+
+    - `ready`: the platform does this today, through its current action API.
+    - `cli-only`: the platform does this today, but only from the command line
+      or a server-side admin request file.
+    - `new`: there is no platform support yet. `x-issues` lists the tracking
+      issues on `supabricks/platform`.
+
+    ## Conventions
+
+    - **Resources and IDs.** Paths address resources by opaque ID, never by
+      name. Names can change; IDs do not.
+    - **Long-running work.** Anything that takes more than a moment returns
+      `202` with an `Operation`. Follow it at
+      `/projects/{project}/operations/{operation}`.
+    - **Idempotency.** Every request that creates something or starts work
+      takes an `Idempotency-Key` header. Repeating the request returns the
+      original result.
+    - **Concurrency.** Reads return an `ETag`. Send it back in `If-Match` to
+      make a change conditional. Changes that are hard to undo require it.
+    - **Paging.** Lists take `limit` and `cursor` and return `items` and
+      `next_cursor`.
+    - **Errors.** `application/problem+json` (RFC 9457) with a stable `code`.
+    - **Time and size.** Instants are RFC 3339 in UTC. Sizes are bytes.
+      Durations name their unit in the field (`_seconds`, `_ms`).
+    - **Profiles.** The same API serves a single-user local install and a
+      governed server. An operation a profile does not offer returns `403`
+      with `code: unavailable_in_profile`.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: '{origin}/api/v1'
+    variables:
+      origin:
+        default: https://analytics.internal.example:8443
+        description: The console address of the installation.
+security:
+  - session: []
+  - token: []
+tags:
+  - { name: Projects, description: 'The container for everything else.' }
+  - { name: Operations, description: 'The durable record of asynchronous work, and the project activity feed.' }
+  - { name: Databases, description: 'PostgreSQL databases: lifecycle, compute and how to connect.' }
+  - { name: Branches, description: 'Copy-on-write branches of a database.' }
+x-tagGroups:
+  - name: Project
+    tags: [Projects, Operations]
+  - name: PostgreSQL
+    tags: [Databases, Branches]
+paths:
+  # ---- Projects ----
+  /projects: { $ref: './domains/projects/paths.yaml#/projects' }
+  /projects/{project}: { $ref: './domains/projects/paths.yaml#/project' }
+  /projects/{project}/deletion-impact: { $ref: './domains/projects/paths.yaml#/projectDeletionImpact' }
+  /projects/{project}/start: { $ref: './domains/projects/paths.yaml#/projectStart' }
+  /projects/{project}/stop: { $ref: './domains/projects/paths.yaml#/projectStop' }
+  /projects/{project}/map: { $ref: './domains/projects/paths.yaml#/projectMap' }
+  /projects/{project}/services: { $ref: './domains/projects/paths.yaml#/projectServices' }
+  /projects/{project}/services/{service}/restart: { $ref: './domains/projects/paths.yaml#/projectServiceRestart' }
+  /projects/{project}/recents: { $ref: './domains/projects/paths.yaml#/projectRecents' }
+  # ---- Operations ----
+  /projects/{project}/operations: { $ref: './domains/operations/paths.yaml#/operations' }
+  /projects/{project}/operations/{operation}: { $ref: './domains/operations/paths.yaml#/operation' }
+  /projects/{project}/operations/{operation}/cancel: { $ref: './domains/operations/paths.yaml#/operationCancel' }
+  # ---- Databases ----
+  /compute-sizes: { $ref: './domains/databases/paths.yaml#/computeSizes' }
+  /projects/{project}/databases: { $ref: './domains/databases/paths.yaml#/databases' }
+  /projects/{project}/databases/{database}: { $ref: './domains/databases/paths.yaml#/database' }
+  /projects/{project}/databases/{database}/suspend: { $ref: './domains/databases/paths.yaml#/databaseSuspend' }
+  /projects/{project}/databases/{database}/resume: { $ref: './domains/databases/paths.yaml#/databaseResume' }
+  /projects/{project}/databases/{database}/connection: { $ref: './domains/databases/paths.yaml#/databaseConnection' }
+  /projects/{project}/databases/{database}/credentials: { $ref: './domains/databases/paths.yaml#/databaseCredentials' }
+  # ---- Branches ----
+  /projects/{project}/databases/{database}/branches: { $ref: './domains/branches/paths.yaml#/branches' }
+  /projects/{project}/databases/{database}/branches/{branch}: { $ref: './domains/branches/paths.yaml#/branch' }
+  /projects/{project}/databases/{database}/branches/{branch}/suspend: { $ref: './domains/branches/paths.yaml#/branchSuspend' }
+  /projects/{project}/databases/{database}/branches/{branch}/resume: { $ref: './domains/branches/paths.yaml#/branchResume' }
+  /projects/{project}/databases/{database}/branches/{branch}/reset: { $ref: './domains/branches/paths.yaml#/branchReset' }
+  /projects/{project}/databases/{database}/branches/{branch}/restore-window: { $ref: './domains/branches/paths.yaml#/branchRestoreWindow' }
+  /projects/{project}/databases/{database}/branches/{branch}/schema-diff: { $ref: './domains/branches/paths.yaml#/branchSchemaDiff' }
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: sb_session
+      description: >-
+        Browser session set at sign-in. Non-GET requests must also carry the
+        `X-CSRF-Token` header. In the local profile the session is created when
+        the console is launched.
+    token:
+      type: http
+      scheme: bearer
+      description: A service account token or API key.

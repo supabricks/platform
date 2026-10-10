@@ -1,0 +1,143 @@
+Project:
+  type: object
+  description: A project holds databases, sync pipelines, notebooks, jobs and saved queries that belong together.
+  required: [id, name, state, created_at, revision, counts]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    name: { $ref: './schemas.yaml#/ProjectName' }
+    description: { type: string, maxLength: 500 }
+    state: { type: string, enum: [starting, running, stopping, stopped] }
+    path:
+      type: string
+      description: Folder that holds the project definition. Absent when the caller may not see server paths.
+    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    last_active_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+    counts:
+      type: object
+      required: [databases, sync_pipelines, notebooks, jobs]
+      properties:
+        databases: { type: integer }
+        sync_pipelines: { type: integer }
+        notebooks: { type: integer }
+        jobs: { type: integer }
+    definition:
+      type: object
+      description: The project definition (`supabricks.toml`) as installed. See the Project definition domain.
+      properties:
+        format: { type: integer, examples: [2] }
+        installed_revision: { type: integer }
+        matches_folder: { type: boolean }
+    my_role:
+      description: The caller's effective role in this project. Null in the local profile, where the owner can do everything.
+      oneOf:
+        - { type: string, enum: [viewer, editor, administrator] }
+        - { type: 'null' }
+
+ProjectName:
+  type: string
+  pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
+  examples: [sales-analytics]
+
+ProjectCreate:
+  type: object
+  required: [name]
+  properties:
+    name: { $ref: './schemas.yaml#/ProjectName' }
+    description: { type: string, maxLength: 500 }
+    start_from:
+      type: string
+      enum: [empty, sample]
+      default: empty
+      description: >-
+        `empty` creates one empty database called `main`. `sample` also loads
+        the sample tables that ship with the release.
+
+ProjectUpdate:
+  type: object
+  minProperties: 1
+  properties:
+    name: { $ref: './schemas.yaml#/ProjectName' }
+    description: { type: string, maxLength: 500 }
+
+ProjectPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Project' } }
+
+DeletionImpact:
+  type: object
+  description: Everything that deleting the project removes, so the caller can show it before asking for confirmation.
+  required: [removes, blocked_by]
+  properties:
+    removes:
+      type: object
+      properties:
+        databases: { type: integer }
+        branches: { type: integer }
+        analytical_versions: { type: integer }
+        notebooks: { type: integer }
+        jobs: { type: integer }
+        secrets: { type: integer }
+        backups: { type: integer }
+        storage_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
+    blocked_by:
+      type: array
+      description: Other projects that read a dataset this project publishes. Deleting is refused unless `force` is set.
+      items:
+        type: object
+        required: [project, publication]
+        properties:
+          project: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+          publication: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+
+ProjectMap:
+  type: object
+  description: >-
+    The project as a graph: databases and branches, the pipelines that publish
+    them, the analytical tables that result, and what reads those. Assembled by
+    the platform so the console makes one request for its overview.
+  required: [nodes, edges]
+  properties:
+    nodes:
+      type: array
+      items:
+        type: object
+        required: [ref, engine, state]
+        properties:
+          ref: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+          engine: { type: string, enum: [postgres, analytics, none], description: 'Which side of the product the node belongs to.' }
+          state: { type: string }
+          summary: { type: string, description: 'One line for display, for example "3 tables, 4.3 GB".' }
+          freshness_ms: { type: integer, description: 'For analytical nodes, how far behind PostgreSQL they are.' }
+    edges:
+      type: array
+      items:
+        type: object
+        required: [from, to, kind]
+        properties:
+          from: { type: string, description: '`<kind>:<id>` of the source node.' }
+          to: { type: string }
+          kind: { type: string, enum: [branch_of, publishes, reads, shares_from] }
+
+Service:
+  type: object
+  description: One of the processes that run a project.
+  required: [id, name, state]
+  properties:
+    id: { type: string, enum: [postgres, storage, sync_capture, analytics_engine, catalog, notebooks] }
+    name: { type: string }
+    state: { type: string, enum: [starting, running, unhealthy, stopped] }
+    detail: { type: string }
+    since: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+
+RecentItem:
+  type: object
+  required: [resource, at]
+  properties:
+    resource: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+    at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    action: { type: string, enum: [opened, ran, edited] }

@@ -1,0 +1,111 @@
+Branch:
+  type: object
+  description: >-
+    A full, writable copy of a database that shares storage with its parent
+    and costs only what it changes.
+  required: [id, database_id, name, state, is_default, created_at, revision]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    name: { $ref: './schemas.yaml#/BranchName' }
+    parent_id:
+      description: Null for the root branch of a database.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    state: { type: string, enum: [creating, running, suspended, resetting, deleting] }
+    is_default: { type: boolean }
+    created_from: { $ref: './schemas.yaml#/BranchPoint' }
+    created_by: { $ref: '../../shared/schemas.yaml#/PrincipalRef' }
+    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    expires_at:
+      description: When the branch deletes itself. Null to keep it.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    head_lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
+    delta_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'What this branch has changed since it was made. Not reported yet.' }
+    child_count: { type: integer }
+    sync_pipeline_id:
+      description: The sync pipeline that publishes this branch, if any.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+
+BranchName:
+  type: string
+  pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]{0,62}$'
+  examples: [feature/loyalty-points]
+
+BranchPoint:
+  description: The moment in the parent's history that a branch starts from.
+  oneOf:
+    - type: object
+      required: [kind]
+      properties: { kind: { const: head } }
+    - type: object
+      required: [kind, timestamp]
+      properties:
+        kind: { const: time }
+        timestamp: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    - type: object
+      required: [kind, lsn]
+      properties:
+        kind: { const: lsn }
+        lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
+
+BranchCreate:
+  type: object
+  required: [name, parent_id]
+  properties:
+    name: { $ref: './schemas.yaml#/BranchName' }
+    parent_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    from:
+      description: Defaults to the parent's current head.
+      $ref: './schemas.yaml#/BranchPoint'
+    expires_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    start_suspended: { type: boolean, default: false }
+
+BranchUpdate:
+  type: object
+  minProperties: 1
+  properties:
+    name: { $ref: './schemas.yaml#/BranchName' }
+    expires_at:
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+
+BranchPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Branch' } }
+
+RestoreWindow:
+  type: object
+  description: The span of history a branch can be created from.
+  required: [earliest, latest]
+  properties:
+    earliest: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    latest: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    earliest_lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
+
+SchemaDiff:
+  type: object
+  description: How the schema of one branch differs from another. Data is not compared.
+  required: [base_branch_id, compare_branch_id, changes]
+  properties:
+    base_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    compare_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    changes:
+      type: array
+      items:
+        type: object
+        required: [change, object_kind, name]
+        properties:
+          change: { type: string, enum: [added, removed, changed] }
+          object_kind: { type: string, enum: [table, column, index, constraint, view, function, sequence, type, extension] }
+          schema: { type: string }
+          name: { type: string }
+          parent: { type: string, description: 'The table, for a column, index or constraint.' }
+          before: { type: string, description: 'Definition on the base branch.' }
+          after: { type: string, description: 'Definition on the compared branch.' }
+    ddl:
+      type: string
+      description: Statements that would bring the base branch to the compared branch's schema. For review, never run automatically.

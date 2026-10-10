@@ -1,0 +1,9 @@
+OperationPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '../../shared/schemas.yaml#/Operation' }
