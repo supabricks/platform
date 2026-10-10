@@ -32,9 +32,11 @@ allocations. Selection also works with source-build `--bundle` and `--helpers`.
 
 This changes only `shared_buffers`. WAL, synchronous durability, Neon local-file
 cache, query memory and sync batch/worker limits retain their existing values.
-The [#236 measurement plan](tpcds-evidence/2026-10-09-eq236/measurement-plan.json)
-compares the two profiles under the same 8-CPU/16-GiB boundary. Performance
-qualification is in progress; the profile does not imply full SF100 scalability.
+The [#236 qualification report](tpcds-evidence/2026-10-09-eq236/README.md)
+compares both profiles under the same 8-CPU/16-GiB boundary. Across the matched
+14.77m-row prefix, source-only throughput improves 65.6% and concurrent sync
+throughput improves 9.95%; publication-lag p95 increases 4.706 → 5.201 s.
+All 96 exact table checks pass. The profile does not imply full SF100 scalability.
 
 ## Process ownership
 

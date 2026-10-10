@@ -1,0 +1,193 @@
+{
+  "status": "SOURCE_LOAD_PASS",
+  "arm": "source_only",
+  "stage": "loaded_requires_exact_source_verification",
+  "scope": "EQ232 source capacity; post-timing sync bootstrap is not concurrent sync throughput",
+  "started_utc": "2026-10-10T02:37:53.642108+00:00",
+  "scale": 100,
+  "workload_profile_sha256": "d2c9d0aadb832ff3d111c88096ffe0594cdbf9b22af6b19538e9b8adba5251c0",
+  "workload_profile": {
+    "format_version": 1,
+    "name": "eq220-sf100-growing-prefix",
+    "scale": 100,
+    "business_rows": 959037905,
+    "load_rows": 14770127,
+    "generation_receipt_sha256": "4c4b1e715c34492e3356a580f07baca59fe3d09e973b3ba0ca7e238b05109c9c",
+    "generation_profile_sha256": "e82473cc608f16071ba64ed61f46f8c22d64c412afea3b70f873b56c005eb72e",
+    "storage_profile": "large",
+    "load_bounds": {
+      "timeout_seconds": 7200,
+      "minimum_free_gib": 80,
+      "maximum_cell_gib": 64,
+      "minimum_remaining_free_gib": 16,
+      "storage_sample_seconds": 10,
+      "default_max_unpublished_rows": 65536
+    },
+    "storage_budget_gib": {
+      "cell": 64,
+      "remaining_free": 16
+    },
+    "runtime": {
+      "cpus": "0-7",
+      "memory_gib": 16,
+      "swap_gib": 0
+    },
+    "note": "COPY-aligned growing-data prefix: at least twice the paused SF100 row count, all 24 tables enrolled before COPY. Same COPY, backlog, worker, CPU/RAM and cell bounds. PREFIX_PASS is not full SF100 qualification; compaction/replay also has a separate installed capacity fixture.",
+    "profile_sha256": "d2c9d0aadb832ff3d111c88096ffe0594cdbf9b22af6b19538e9b8adba5251c0"
+  },
+  "load_profile": {
+    "schema_version": 1,
+    "input_encoding": "ISO-8859-1",
+    "postgres_copy_encoding": "LATIN1",
+    "target_text_encoding": "UTF-8",
+    "generator_commit": "1b7fb7529edae091684201fab142d956d6afd881",
+    "encoding_evidence": {
+      "path": "tools/tpcds.dst",
+      "sha256": "b84eddb69da20326d41e97b3a090104afb77ec74d5e8b6083967f923c04cb9d6",
+      "country_literals": [
+        "C\u00d4TE D'IVOIRE",
+        "R\u00c9UNION"
+      ]
+    },
+    "null_encoding": "empty generated field",
+    "rows_per_commit": 1024,
+    "encoded_copy_bytes_per_commit": 4194304,
+    "note": "Original generator bytes and hashes retained. Decode Latin-1 losslessly; do not replace invalid text or trim CHAR padding."
+  },
+  "load_profile_sha256": "c31cf33503ebd8685e2577f589ed14332a93a1907f6d2d6f6ef44df5876a50e4",
+  "generation_receipt_sha256": "4c4b1e715c34492e3356a580f07baca59fe3d09e973b3ba0ca7e238b05109c9c",
+  "input_lock_sha256": "5fc9463c463c21ff90606307a16fb63e0ca8b1ade27371db56e4bd4beadd0558",
+  "release_identity": "6d68820b47edbccee5f8095fe9bfedfd26d92577a88657253ef942694d24daa9",
+  "fixture_sha256": "1f78e656941e023c53a627f6ed77eb2e80aa23c46d415bd21a90dc2214fba147",
+  "frozen_load_sha256": "86dbd92d594d8279437a93a2c2d008433b623d17da14afdebd2b60864c31cb15",
+  "committed_rows": 14770127,
+  "committed_transactions": 14434,
+  "flow_control_wait_seconds": 0,
+  "tables": [
+    {
+      "table": "customer_address",
+      "rows": 1000000,
+      "transactions": 977,
+      "elapsed_seconds": 17.51961698901141
+    },
+    {
+      "table": "customer_demographics",
+      "rows": 1920800,
+      "transactions": 1876,
+      "elapsed_seconds": 22.91004474199144
+    },
+    {
+      "table": "date_dim",
+      "rows": 73049,
+      "transactions": 72,
+      "elapsed_seconds": 1.0659211530000903
+    },
+    {
+      "table": "warehouse",
+      "rows": 15,
+      "transactions": 1,
+      "elapsed_seconds": 0.007718722976278514
+    },
+    {
+      "table": "ship_mode",
+      "rows": 20,
+      "transactions": 1,
+      "elapsed_seconds": 0.007484056055545807
+    },
+    {
+      "table": "time_dim",
+      "rows": 86400,
+      "transactions": 85,
+      "elapsed_seconds": 1.0462068989872932
+    },
+    {
+      "table": "reason",
+      "rows": 55,
+      "transactions": 1,
+      "elapsed_seconds": 0.006927107984665781
+    },
+    {
+      "table": "income_band",
+      "rows": 20,
+      "transactions": 1,
+      "elapsed_seconds": 0.007475560007151216
+    },
+    {
+      "table": "item",
+      "rows": 204000,
+      "transactions": 200,
+      "elapsed_seconds": 3.5526279879850335
+    },
+    {
+      "table": "store",
+      "rows": 402,
+      "transactions": 1,
+      "elapsed_seconds": 0.014571592037100345
+    },
+    {
+      "table": "call_center",
+      "rows": 30,
+      "transactions": 1,
+      "elapsed_seconds": 0.013079121010378003
+    },
+    {
+      "table": "customer",
+      "rows": 2000000,
+      "transactions": 1954,
+      "elapsed_seconds": 40.158251736022066
+    },
+    {
+      "table": "web_site",
+      "rows": 24,
+      "transactions": 1,
+      "elapsed_seconds": 0.8065869130077772
+    },
+    {
+      "table": "store_returns",
+      "rows": 9485312,
+      "transactions": 9263,
+      "elapsed_seconds": 241.04123486299068
+    }
+  ],
+  "checks": [
+    "no_capture_or_apply_during_source_capacity_measurement"
+  ],
+  "project_id": "f0fa4a7c-d67a-4e9b-9bdb-8bab8c2b300d",
+  "branch_id": "89d46aec-8597-4ed4-b7da-75bf6bddea59",
+  "load_started_unix_ns": 1791599979704618692,
+  "last_ack_lsn": "1/5B786CE8",
+  "peak_sampled_cell_bytes": 25849344000,
+  "unicode_control": {
+    "customer_key": 28,
+    "birth_country": "C\u00d4TE D'IVOIRE"
+  },
+  "load_seconds": 328.1624111740384,
+  "load_finished_unix_ns": 1791600307867030086,
+  "source_rows": {
+    "customer_address": 1000000,
+    "customer_demographics": 1920800,
+    "date_dim": 73049,
+    "warehouse": 15,
+    "ship_mode": 20,
+    "time_dim": 86400,
+    "reason": 55,
+    "income_band": 20,
+    "item": 204000,
+    "store": 402,
+    "call_center": 30,
+    "customer": 2000000,
+    "web_site": 24,
+    "store_returns": 9485312,
+    "household_demographics": 0,
+    "web_page": 0,
+    "promotion": 0,
+    "catalog_page": 0,
+    "inventory": 0,
+    "catalog_returns": 0,
+    "web_returns": 0,
+    "web_sales": 0,
+    "catalog_sales": 0,
+    "store_sales": 0
+  },
+  "stopped": true
+}
