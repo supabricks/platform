@@ -343,3 +343,14 @@ all transactions and can replay the archived compressed ledgers. See the
 [EQ232 report](../../docs/architecture/tpcds-evidence/2026-10-09-eq232/README.md)
 for exact cohort boundaries, resource limits, results and the independently
 tracked full-bootstrap size limitation.
+
+
+For the bounded cache comparison, pass a fourth positional argument, `compact`
+or `source-load`, to `run_source_profile.py LABEL RELEASE ARM PROFILE`. This
+selects the product's creation-time CLI option and records evidence under the
+separate `eq236` campaign directory. The installed package is identical between
+profiles. `qualify_compute_cache.py` checks default/start/restart, additional
+branches, suspend/resume, durability settings and conflicting profile rejection.
+The [measurement plan](../../docs/architecture/tpcds-evidence/2026-10-09-eq236/measurement-plan.json)
+retains the original 14,770,127-row input and all original COPY/sync/resource
+bounds. No speedup or larger-scale claim follows from configuration tests alone.
