@@ -17,7 +17,7 @@ def run(release, output):
     output.mkdir(parents=True, exist_ok=False)
     checks = []
     for profile, expected in [('compact', '128MB'), ('source-load', '1GB')]:
-        root = output / profile; root.mkdir(mode=0o700)
+        root = output / ('c' if profile == 'compact' else 's'); root.mkdir(mode=0o700)
         cell = InstalledContinuous(release, root)
         # Exercise the unchanged no-flag creation path as the compact control.
         if profile == 'source-load': install(cell, profile)
