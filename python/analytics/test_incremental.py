@@ -44,7 +44,7 @@ def tx(commit_lsn,end,*messages):
 class IncrementalTests(unittest.TestCase):
     def setUp(self):
         previous=os.umask(0o077);self.addCleanup(os.umask,previous)
-        self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name).resolve()
+        self.tmp=tempfile.TemporaryDirectory(dir=getattr(self,"temporary_parent",None));self.root=Path(self.tmp.name).resolve()
         identity=dict(generation=str(uuid.uuid4()),installation_id='install',project_id='p',branch_id='b',tenant_id='t',timeline_id='l',decoder_version=1)
         self.base=self.root/'baseline';self.base.mkdir();tables=[]
         schema=pa.schema([pa.field('id',pa.int32(),nullable=False),pa.field('amount',pa.decimal128(38,8)),pa.field('note',pa.string())])
