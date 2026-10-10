@@ -59,7 +59,7 @@ def run(args):
         with sqlite3.connect(f'file:{root}/state.sqlite3?mode=ro', uri=True) as control:
             assert control.execute('SELECT count(*) FROM sync_policies').fetchone() == (0,)
             assert control.execute('SELECT count(*) FROM sync_captures').fetchone() == (0,)
-        report.update(project_id=cell.project, branch_id=cell.parent['id'])
+        report.update(project_id=cell.project, branch_id=cell.parent['branch']['id'])
         cell.check('no_capture_or_apply_during_source_capacity_measurement')
         report['stage'] = 'load'; save()
         # The same frozen batching function and transaction statements as load.py.
