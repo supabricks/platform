@@ -331,3 +331,15 @@ Use a fresh output directory. The profile caps raw input at 128 GiB, requires
 `progress.json`, then inspect the complete `generation.json` inventory.
 This only generates input. See [the SF100 qualification plan](../../docs/architecture/eq03-sf100.md)
 for the storage blocker, load/reference harness work and required exact evidence.
+
+## Growing-source COPY attribution
+
+`run_source_profile.py` runs the frozen growing-prefix COPY workload with an
+opt-in source phase/wait/storage observer, either isolated or with continuous
+sync. `verify_source_only.py` checks the isolated PostgreSQL data against typed
+generated rows and every original COPY hash; `verify.py` retains the normal
+PG-to-Delta checks for concurrent sync. `analyze_source_profile.py` reconciles
+all transactions and can replay the archived compressed ledgers. See the
+[EQ232 report](../../docs/architecture/tpcds-evidence/2026-10-09-eq232/README.md)
+for exact cohort boundaries, resource limits, results and the independently
+tracked full-bootstrap size limitation.
