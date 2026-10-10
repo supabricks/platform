@@ -11,6 +11,17 @@ fn profile_is_persistent_bounded_and_legacy_defaults_to_compact() {
     let helpers = temp.path().join("helpers");
     fs::create_dir(&bundle).unwrap();
     fs::create_dir(&helpers).unwrap();
+    for name in [
+        "bin/pageserver",
+        "bin/safekeeper",
+        "bin/storage_broker",
+        "bin/compute_ctl",
+        "pg_install/v17/bin/postgres",
+    ] {
+        let path = bundle.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, b"").unwrap();
+    }
     for name in ["process-compose", "weed"] {
         fs::write(helpers.join(name), b"").unwrap();
     }
