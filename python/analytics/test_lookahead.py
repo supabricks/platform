@@ -45,6 +45,8 @@ class PreparationAuthorityTests(unittest.TestCase):
 
 
 class LookaheadTests(unittest.TestCase):
+    # A canonical short root is required even when macOS TMPDIR is very long.
+    temporary_parent=Path('/tmp').resolve()
     storage_profile='large'
     def setUp(self):
         mask=os.umask(0o077);self.addCleanup(os.umask,mask)
