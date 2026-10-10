@@ -25,6 +25,14 @@ All workstreams above are merged within their stated profiles. Alpha.36's
 retained evidence for the combined local product and the Linux governed profile.
 This does not retroactively qualify failed predecessor archives.
 
+## Platform API
+
+[AP00 onward: one REST API for every surface](platform-api-implementation.md) is
+proposed. The [OpenAPI specification](../../api/README.md) in `api/` was derived
+from the console prototype and is a design target, not delivered scope. The plan
+defines when a domain counts as complete, the test methodology and CI gates, and
+the first slices: foundations (AP00), Project (AP01) and PostgreSQL (AP02–AP08).
+
 ## Analytical synchronization
 
 | Plan | Slice IDs | Implemented scope |
