@@ -47,6 +47,10 @@ def run(base, labels):
         data['end_to_end_rows_s'] = report['committed_rows'] / (report['load_seconds'] + report.get('drain_seconds', 0))
         data['end_to_end_scope'] = 'source load plus drain' if arm == 'concurrent' else 'source load only'
         if arm == 'concurrent':
+            health = list(rows(control / 'daemon.jsonl'))
+            assert health and health[-1]['final']
+            assert all(not h['budget_exceeded'] and h['event_dropped'] == h['profile_write_errors'] == 0 for h in health)
+            data['publication_observer_health'] = dict(errors=0, drops=0, final_records=sum(h['final'] for h in health))
             data['publications'] = publication_summary(root, json.loads((control / 'publications.json').read_text()), report, rows(control / 'daemon-events.jsonl'))
         results[label] = data
     effects = {}
