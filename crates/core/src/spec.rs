@@ -55,11 +55,36 @@ pub struct SpecParams<'a> {
     pub pageserver_connstring: &'a str,
 }
 
+/// Fixed per-compute cache allocations. These do not change the cell memory limit
+/// or any WAL, durability, work_mem, or Neon local-file-cache setting.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ComputeCacheProfile {
+    #[default]
+    Compact,
+    SourceLoad,
+}
+impl ComputeCacheProfile {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::SourceLoad => "source-load",
+        }
+    }
+    pub fn shared_buffers(self) -> &'static str {
+        match self {
+            Self::Compact => "128MB",
+            Self::SourceLoad => "1024MB",
+        }
+    }
+}
+
 /// Runtime settings supplied by the deployment adapter.
 pub struct Settings<'a> {
     pub port: u16,
     pub listen_addresses: &'a str,
     pub fsync: bool,
+    pub cache_profile: ComputeCacheProfile,
     /// None preserves the engine default; Some("") disables Unix sockets.
     pub unix_socket_directories: Option<&'a str>,
 }
@@ -91,6 +116,7 @@ pub fn render(p: &SpecParams, settings: &Settings) -> anyhow::Result<Value> {
             "neon.safekeepers" => p.safekeepers.to_owned(),
             "neon.pageserver_connstring" => p.pageserver_connstring.to_owned(),
             "port" => settings.port.to_string(),
+            "shared_buffers" => settings.cache_profile.shared_buffers().to_owned(),
             "listen_addresses" => settings.listen_addresses.to_owned(),
             "fsync" => if settings.fsync { "on" } else { "off" }.to_owned(),
             _ => continue,
@@ -111,6 +137,7 @@ mod tests {
             port: 55433,
             listen_addresses: "0.0.0.0",
             fsync: false,
+            cache_profile: ComputeCacheProfile::Compact,
             unix_socket_directories: None,
         }
     }

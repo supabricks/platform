@@ -9,6 +9,35 @@ The engineering control socket still accepts P02 project and operation requests.
 [P05](native-connections.md) supplies stable connection addresses and wake on
 connection. Public CLI/MCP commands follow in P06.
 
+## Compute cache profile
+
+Select a cache allocation when creating a local cell:
+
+```sh
+supabricks up --data-dir /private/sb-source --compute-cache-profile source-load
+```
+
+The default `compact` profile uses 128 MiB of PostgreSQL `shared_buffers` per
+compute. The opt-in `source-load` profile uses 1 GiB per compute, including other
+branches and export computes in that cell. Account for every active compute in
+the host/container memory budget; this setting does not raise or enforce that
+budget. The cache is shared by PostgreSQL backends within a compute.
+
+The choice is retained in the private runtime configuration across restart and
+branch suspension/resume. Existing configurations without the field use
+`compact`. A later `up` may omit the option or repeat the same profile; a
+conflicting explicit profile is rejected. Use a new data root to select another
+profile. Unknown profiles are rejected rather than accepting arbitrary memory
+allocations. Selection also works with source-build `--bundle` and `--helpers`.
+
+This changes only `shared_buffers`. WAL, synchronous durability, Neon local-file
+cache, query memory and sync batch/worker limits retain their existing values.
+The [#236 qualification report](tpcds-evidence/2026-10-09-eq236/README.md)
+compares both profiles under the same 8-CPU/16-GiB boundary. Across the matched
+14.77m-row prefix, source-only throughput improves 65.6% and concurrent sync
+throughput improves 9.95%; publication-lag p95 increases 4.706 → 5.201 s.
+All 96 exact table checks pass. The profile does not imply full SF100 scalability.
+
 ## Process ownership
 
 The daemon owns desired state and the SQLite operation journal. Process Compose

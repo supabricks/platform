@@ -1,14 +1,31 @@
 # SF100 sync scaling
 
-Status: [#232](https://github.com/supabricks/platform/issues/232) source attribution
-is complete. Both arms load the same 14,770,127-row prefix and pass exact checks
-across all 24 tables. Repeated PostgreSQL primary-key page reads dominate late
-COPY; concurrent sync additionally increases commit latency and storage work.
-Next is a bounded source cache profile in [#236](https://github.com/supabricks/platform/issues/236).
-Full bootstrap of an already-large PostgreSQL source is separately blocked by
-its batch budget, tracked in [#237](https://github.com/supabricks/platform/issues/237).
+Status: [#236](https://github.com/supabricks/platform/issues/236) implements and
+qualifies the opt-in `source-load` PostgreSQL cache profile on the 14,770,127-row
+prefix. Four matched arms and all 96 exact table checks pass. With the same
+8-CPU/16-GiB boundary, changing only shared buffers from 128 MiB to 1 GiB raises
+isolated source throughput 27,180 → 45,009 rows/s and concurrent load-plus-drain
+throughput 16,463 → 18,101 rows/s (+9.95%). Late index-read/getpage counter deltas
+fall to zero. The default remains `compact` (128 MiB).
+
+Publication lag does not improve: post-commit event-bound p95 rises 4.706 →
+5.201 s. Faster ingestion exposes more backlog pacing; planning/key scanning
+and durable publication remain material. The next optimization should measure
+those costs separately, preserving correctness and all resource bounds
+([#263](https://github.com/supabricks/platform/issues/263)).
+[Complete cache report and replayable evidence](tpcds-evidence/2026-10-09-eq236/README.md).
+This is one matched pair per mode, with no confidence interval or larger-prefix
+claim. Full bootstrap of an already-large PostgreSQL source remains tracked in
+[#237](https://github.com/supabricks/platform/issues/237).
 **20k/10× end-to-end improvement is not qualified.** Original SF100 load-01
 remains paused; SP is frozen.
+
+Lag measurement erratum ([#243](https://github.com/supabricks/platform/issues/243)):
+historical sampled figures below were labeled upper bounds, but their sample
+clock preceded the publication read. They are pre-read estimates, not strict
+bounds. Raw historical receipts remain unchanged. EQ236 retains both a
+conservative next-sample/checkpoint bound and a tighter post-SQLite-commit event
+bound; neither should be compared directly with the old estimates.
 
 ## Source COPY, commit and page-read attribution (#232)
 
@@ -96,7 +113,7 @@ Each row rate includes load plus drain, excluding admission and exact checks.
 | Fixed 13.0–14.6m publication window | 8,437 rows/s | 9,462 rows/s (+12.1%) |
 | Sampled distinct late apply workers | 44 | 4 |
 | Maximum sampled late apply RSS | 562.4 MiB | 441.6 MiB |
-| Sampled p95 commit-to-publication upper bound | 6.344 s | 5.026 s |
+| Pre-read sampled p95 commit-to-publication estimate | 6.344 s | 5.026 s |
 | Publications within the exact late window | 52 | 72 |
 | Median late rows per batch | 31,744 | 22,016 |
 | Median late worker / after-manifest time | 3,144 / 448.5 ms | 1,596.5 / 409 ms |
@@ -385,7 +402,7 @@ collects only unpinned old roots, restores a compacted epoch from stopped backup
 with capture fenced, and retires source resources without deleting retained
 history. The uninstrumented `j1` prefix passed at 25,944 published rows/s
 overall and 20,635 in the fixed late cohort (283.963 s loading plus 0.692 s
-draining). Independent typed verification passes all 24 tables. No compilers were observed during the timed load. The sampled commit-to-publication upper-bound p95 is 3.164 s.
+draining). Independent typed verification passes all 24 tables. No compilers were observed during the timed load. The pre-read sampled commit-to-publication p95 estimate is 3.164 s.
 These results precede any preparation pipeline change. I failed, so the H-to-J
 comparison combines control-version reuse and restart-snapshot maintenance; it
 cannot attribute the gain to either change alone. The fresh original baseline
@@ -429,7 +446,7 @@ journal transport, initialization, Delta mutation and publication; it does not
 establish an end-to-end gain. K's complete installed prefix passes exact typed
 verification across all 24 tables but measures 25,369 rows/s overall and 19,418
 in the late cohort, versus J's 25,944 / 20,635 (observed changes -2.2% / -5.9%).
-Its sampled lag upper-bound p95 is 3.456 s versus 3.164 s. No compilers were
+Its pre-read sampled lag p95 estimate is 3.456 s versus 3.164 s. No compilers were
 observed. One matched pair does not establish a robust effect size, but it does
 not support enabling overlap, and the late cohort misses the 20k target.
 Sampled apply RSS peaks at 447 MiB versus J's 441 MiB. An installed >1-GiB
@@ -528,12 +545,12 @@ raw decode remains 0.574922 s. Consumption is therefore only 2.9% cheaper than
 local decoding on this fixture. Its installed `pa` prefix completes at 24,580
 rows/s overall / 19,740 late, versus fresh serial L's 25,777 / 19,648: 4.6% lower
 overall and 0.5% higher late. This is no demonstrated end-to-end gain. No compiler
-activity was observed; the sampled p95 commit-to-publication upper bound is
+activity was observed; the pre-read sampled p95 commit-to-publication estimate is
 3.382 s. Exact verification passes all 24 tables. The completed growing-data comparison is below. Component timing excludes process launch, transport and
 publication, and cannot be credited as a throughput improvement.
 
 The predeclared 14,770,127-row candidate `pgrow` completes at **15,370 rows/s
-overall / 8,689 late**, with a sampled p95 publication-lag upper bound of 6.477 s.
+overall / 8,689 late**, with a pre-read sampled p95 publication-lag estimate of 6.477 s.
 The late cohort starts at the first publication at or beyond 13.0m and ends at
 the first at or beyond 14.6m rows. No compilers were observed; the backlog limit
 remained 65,536. The immediately following serial `lgrow` completes at 16,121 rows/s overall /

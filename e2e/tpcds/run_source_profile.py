@@ -2,24 +2,30 @@ import datetime,hashlib,io,json,os,shlex,subprocess,sys,tarfile,time
 from pathlib import Path
 repo=Path.cwd();label=sys.argv[1];release=Path(sys.argv[2]).resolve();arm=sys.argv[3]
 assert arm in ('concurrent','source_only')
+cache_profile=sys.argv[4] if len(sys.argv)>4 else None
+assert cache_profile in (None,'compact','source-load')
+campaign='eq236' if cache_profile else 'eq232'
 assert label.replace('-','').isalnum()
-base=Path('/data2/supabricks-eq/eq232');control=base/(label+'-control');control.mkdir(mode=0o700)
+base=Path('/data2/supabricks-eq')/campaign;base.mkdir(mode=0o700,exist_ok=True);control=base/(label+'-control');control.mkdir(mode=0o700)
 output=base/label;harness=control/'harness';harness.mkdir()
 assert subprocess.check_output(['docker','inspect','eq03-sf100-load-01','--format','{{.State.Paused}}'],text=True).strip()=='true'
 revision='0bc57c170cb6e34f7d3cefa1ae6981c9b1e8d090'
 archive=subprocess.check_output(['git','archive',revision,'e2e/native','e2e/tpcds','install/native'])
 (control/'harness.tar').write_bytes(archive)
 with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(harness,filter='data')
-for name in ('profile_source_load.py','source_only_load.py','source_profile.py'):
+for name in ('profile_source_load.py','source_only_load.py','source_profile.py','compute_cache_profile.py'):
  (control/name).write_bytes((repo/'e2e/tpcds'/name).read_bytes())
 wrapper=control/('profile_source_load.py' if arm=='concurrent' else 'source_only_load.py')
 image='sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec'
 load_args=([str(harness/'e2e/tpcds/load.py'),'--workload','sf100-growing-prefix'] if arm=='concurrent' else ['--load',str(harness/'e2e/tpcds/load.py')])
 command=['python3',str(harness/'install/native/catalog_gate.py'),'--timeout','8100','--data-root',str(output/'state'),'--report',str(control/'cleanup.json'),'--','python3',str(wrapper),*load_args,'--release',str(release),'--inputs',str(repo/'build/eq00-20261006/inputs'),'--dataset','/data2/supabricks-eq/sf100/gen-01','--output',str(output)]
-docker=['docker','run','--detach','--name','eq232-'+label,'--network','none','--user','1000:1000','--cpuset-cpus','0-7','--memory','16g','--memory-swap','16g','--log-opt','max-size=10m','-v',f'{repo}:{repo}:ro','-v',f'{base}:{base}','-v','/data2/supabricks-eq/sf100/gen-01:/data2/supabricks-eq/sf100/gen-01:ro','-w',str(repo),image,'sh','-c','umask 077; exec '+shlex.join(command)+' > '+shlex.quote(str(control/'run.log'))+' 2>&1']
+docker=['docker','run','--detach','--name',campaign+'-'+label,'--network','none','--user','1000:1000','--cpuset-cpus','0-7','--memory','16g','--memory-swap','16g','--log-opt','max-size=10m','-v',f'{repo}:{repo}:ro','-v',f'{base}:{base}','-v','/data2/supabricks-eq/sf100/gen-01:/data2/supabricks-eq/sf100/gen-01:ro','-w',str(repo),image,'sh','-c','umask 077; exec '+shlex.join(command)+' > '+shlex.quote(str(control/'run.log'))+' 2>&1']
 receipt=dict(status='STARTING',arm=arm,started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),harness_revision=revision,harness_archive_sha256=hashlib.sha256(archive).hexdigest(),diagnostic_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),wrapper_sha256=hashlib.sha256(wrapper.read_bytes()).hexdigest(),runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),release_identity=hashlib.sha256((release/'release.json').read_bytes()).hexdigest(),command=docker)
 def save():
  temp=control/'launch.tmp';temp.write_text(json.dumps(receipt,indent=2)+'\n');temp.replace(control/'launch.json')
+if cache_profile:
+ docker[2:2]=['--env','EQ236_COMPUTE_CACHE_PROFILE='+cache_profile]
+ receipt['compute_cache_profile']=cache_profile
 save();container=subprocess.check_output(docker,text=True).strip();receipt.update(status='RUNNING',container=container);save()
 info=json.loads(subprocess.check_output(['docker','inspect',container],text=True))[0]
 pid=info['State']['Pid'];group=Path('/sys/fs/cgroup')/Path('/proc',str(pid),'cgroup').read_text().strip().split('::',1)[1].lstrip('/')

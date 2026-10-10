@@ -50,6 +50,7 @@ pub struct ComputePlan {
 
 pub struct ComputeInput<'a> {
     pub pg_major: PgMajor,
+    pub cache_profile: supabricks_core::spec::ComputeCacheProfile,
     pub bundle: &'a Path,
     pub data: &'a Path,
     pub config: &'a Path,
@@ -111,6 +112,7 @@ pub fn plan_compute(
             port: input.sql.port(),
             listen_addresses: &input.sql.ip().to_string(),
             fsync: true,
+            cache_profile: input.cache_profile,
             unix_socket_directories: Some(""),
         },
     )
@@ -172,6 +174,7 @@ mod tests {
     fn input() -> ComputeInput<'static> {
         ComputeInput {
             pg_major: PgMajor::V17,
+            cache_profile: Default::default(),
             bundle: Path::new("/tmp/bundle with spaces"),
             data: Path::new("/tmp/cell/compute"),
             config: Path::new("/tmp/cell/spec.json"),
@@ -221,6 +224,25 @@ mod tests {
             assert_eq!(matching[0]["value"], value);
         }
     }
+    #[test]
+    fn source_load_changes_only_shared_buffers() {
+        let mut candidate = input();
+        candidate.cache_profile = supabricks_core::spec::ComputeCacheProfile::SourceLoad;
+        let mut larger = plan_compute(&candidate, &params()).unwrap();
+        let compact = plan_compute(&input(), &params()).unwrap();
+        let gucs = larger.config["spec"]["cluster"]["settings"]
+            .as_array_mut()
+            .unwrap();
+        let cache = gucs
+            .iter_mut()
+            .find(|v| v["name"] == "shared_buffers")
+            .unwrap();
+        assert_eq!(cache["value"], "1024MB");
+        cache["value"] = serde_json::json!("128MB");
+        assert_eq!(larger.config, compact.config);
+        assert_eq!(larger.command, compact.command);
+    }
+
     #[test]
     fn rejects_invalid_native_configuration() {
         let p = params();
