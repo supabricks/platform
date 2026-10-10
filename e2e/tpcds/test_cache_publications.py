@@ -45,4 +45,3 @@ class LagBoundTests(unittest.TestCase):
             self.assertAlmostEqual(lag['p50'], .303)
             with self.assertRaisesRegex(AssertionError, 'ambiguous repeated'):
                 summarize(root, publications, report, events + events[:1])
-
