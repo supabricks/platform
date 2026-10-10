@@ -3,7 +3,7 @@
 import argparse
 import json
 from pathlib import Path
-from analyze_source_profile import analyze, compare
+from analyze_source_profile import analyze, compare, rows
 
 
 def run(base, labels):
@@ -26,6 +26,12 @@ def run(base, labels):
         assert container['limits'] == dict(CpusetCpus='0-7', Memory=16*1024**3, MemorySwap=16*1024**3, NetworkMode='none')
         assert not container['state']['OOMKilled'] and container['state']['ExitCode'] == 0
         data = analyze(root, verification if arm == 'source_only' else None)
+        resource_samples = list(rows(control / 'resources.jsonl'))
+        events = [dict(line.split() for line in sample['memory.events'].splitlines())
+                  for sample in resource_samples if 'memory.events' in sample]
+        assert events and all(int(event['oom']) == int(event['oom_kill']) == 0 for event in events)
+        data['sampled_cell_memory_peak_bytes'] = max(int(sample['memory.peak']) for sample in resource_samples if 'memory.peak' in sample)
+        data['whole_trial_observed_compilers'] = sorted({(p['pid'], p['name']) for sample in resource_samples for p in sample['observed_compilers']})
         settings = dict(data['observer']['settings'])
         assert settings.pop('shared_buffers') == blocks
         assert settings['fsync'] == settings['full_page_writes'] == settings['synchronous_commit'] == 'on'
