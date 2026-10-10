@@ -212,6 +212,12 @@ impl Store {
             if r.target_lsn.is_none() && r.config.continuous() {
                 r.target_lsn = c.captured_lsn.clone();
                 self.save_sync_run(&r)?;
+                crate::sync_profile::event("sync.target", || {
+                    json!({
+                        "id":r.id,"target_lsn":r.target_lsn,
+                        "capture_observed_at_ms":c.observed_at_ms,"source_lsn":c.source_lsn
+                    })
+                });
             }
             if r.target_lsn.is_none() {
                 let Some(ref barrier) = c.barrier else {

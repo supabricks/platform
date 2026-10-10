@@ -461,6 +461,14 @@ impl Cell {
             config["prepare_next"] =
                 json!(cfg!(feature = "sync-lookahead") && !r.storage_profile.is_compact());
             self.attach_preparation(store, &r, &mut config)?;
+            crate::sync_profile::event("apply.dispatch", || {
+                json!({
+                    "id":r.id,"parent":r.sync_run_id,"after_lsn":r.after_lsn,
+                    "target_lsn":r.target_lsn,"captured_lsn":c.captured_lsn,
+                    "capture_observed_at_ms":c.observed_at_ms,"source_lsn":c.source_lsn,
+                    "reuse":reuse,"attempt":r.attempts+1
+                })
+            });
             write_json(&input, &config)?;
             if result.exists() {
                 fs::remove_file(&result)?;

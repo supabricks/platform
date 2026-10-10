@@ -1,4 +1,4 @@
-//! Opt-in diagnostic spans. No credentials, SQL, row values, or synchronous writes.
+//! Opt-in diagnostic spans. No credentials, SQL, row values, or fsync.
 #[cfg(feature = "sync-profile")]
 mod enabled {
     use serde::Serialize;
@@ -26,6 +26,8 @@ mod enabled {
         bytes: usize,
         write_ns: u64,
         write_errors: u64,
+        event_bytes: usize,
+        event_dropped: u64,
     }
     static STATE: OnceLock<Mutex<State>> = OnceLock::new();
     thread_local! { static STACK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) }; }
@@ -43,9 +45,43 @@ mod enabled {
                 bytes: 0,
                 write_ns: 0,
                 write_errors: 0,
+                event_bytes: 0,
+                event_dropped: 0,
             }))
             .ok()?;
         Some(Session)
+    }
+    // Separate bounded stream: per-request attribution must not evict the
+    // cumulative span snapshots. Callers supply fixed fields, never row/SQL text.
+    pub fn event(name: &'static str, fields: impl FnOnce() -> serde_json::Value) {
+        let Some(state) = STATE.get() else { return };
+        let Ok(mut state) = state.lock() else { return };
+        if state.event_bytes >= 8 * 1024 * 1024 {
+            state.event_dropped += 1;
+            return;
+        }
+        let start = Instant::now();
+        let row = serde_json::json!({"stage":name,"at_ms":chrono::Utc::now().timestamp_millis(),"fields":fields()});
+        let result = (|| -> std::io::Result<()> {
+            let mut bytes = serde_json::to_vec(&row)?;
+            bytes.push(b'\n');
+            if bytes.len() > 8192 || state.event_bytes + bytes.len() > 8 * 1024 * 1024 {
+                state.event_dropped += 1;
+                return Ok(());
+            }
+            let mut file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .mode(0o600)
+                .open(state.path.with_file_name("daemon-events.jsonl"))?;
+            file.write_all(&bytes)?; // Diagnostic only: never fsync or publication authority.
+            state.event_bytes += bytes.len();
+            Ok(())
+        })();
+        if result.is_err() {
+            state.write_errors += 1;
+        }
+        state.write_ns += start.elapsed().as_nanos() as u64;
     }
     fn flush(state: &mut State, final_record: bool) {
         if !final_record
@@ -54,7 +90,7 @@ mod enabled {
             return;
         }
         let start = Instant::now();
-        let row = serde_json::json!({"role":"daemon", "at_ms":chrono::Utc::now().timestamp_millis(), "final":final_record, "metrics":state.metrics, "profile_write_ns":state.write_ns, "profile_write_errors":state.write_errors,"budget_exceeded":state.bytes>=8*1024*1024});
+        let row = serde_json::json!({"role":"daemon", "at_ms":chrono::Utc::now().timestamp_millis(), "final":final_record, "metrics":state.metrics, "profile_write_ns":state.write_ns, "profile_write_errors":state.write_errors,"budget_exceeded":state.bytes>=8*1024*1024,"event_bytes":state.event_bytes,"event_dropped":state.event_dropped});
         let result = (|| -> std::io::Result<()> {
             let mut bytes = serde_json::to_vec(&row)?;
             bytes.push(b'\n');
@@ -128,6 +164,11 @@ mod enabled {
             std::fs::create_dir(root.path().join("sync-profile")).unwrap();
             std::fs::write(root.path().join("sync-profile/enabled"), "").unwrap();
             let session = init(root.path()).unwrap();
+            event("test", || serde_json::json!({"rows":1024}));
+            event(
+                "oversized",
+                || serde_json::json!({"value":"x".repeat(8192)}),
+            );
             {
                 let _outer = span("outer");
                 {
@@ -144,6 +185,15 @@ mod enabled {
             .unwrap();
             assert_eq!(row["final"], true);
             assert_eq!(row["profile_write_errors"], 0);
+            assert_eq!(row["event_dropped"], 1);
+            let events =
+                std::fs::read_to_string(root.path().join("sync-profile/daemon-events.jsonl"))
+                    .unwrap();
+            assert_eq!(events.lines().count(), 1);
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(events.trim()).unwrap()["fields"]["rows"],
+                1024
+            );
             assert!(
                 row["metrics"]["outer"]["total_ns"].as_u64().unwrap()
                     >= row["metrics"]["inner"]["total_ns"].as_u64().unwrap()
@@ -153,7 +203,17 @@ mod enabled {
     }
 }
 #[cfg(feature = "sync-profile")]
-pub(crate) use enabled::{init, span};
+pub(crate) use enabled::{event, init, span};
+#[cfg(not(feature = "sync-profile"))]
+#[inline]
+pub(crate) fn event(_: &'static str, _: impl FnOnce() -> serde_json::Value) {}
+#[cfg(all(test, not(feature = "sync-profile")))]
+#[test]
+fn disabled_events_do_not_evaluate_fields() {
+    event("disabled", || {
+        panic!("diagnostic allocation in normal build")
+    });
+}
 #[cfg(not(feature = "sync-profile"))]
 pub(crate) struct Disabled;
 #[cfg(not(feature = "sync-profile"))]

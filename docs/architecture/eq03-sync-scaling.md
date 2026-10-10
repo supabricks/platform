@@ -1,12 +1,40 @@
 # SF100 sync scaling
 
-Status: the [#228](https://github.com/supabricks/platform/issues/228) candidate
-removes one-shot Parquet metadata retention that forces worker recycling.
-A matched 14.77-million-row installed pair improves overall throughput from
-15,762 to 16,693 rows/s and the late cohort from 8,437 to 9,462 rows/s;
-both runs pass exact 24-table verification. Cross-batch preparation remains
-experimental and disabled in normal builds. **20k/10× end-to-end improvement is
-not qualified.** Original SF100 load-01 remains paused; SP is frozen.
+Status: [#230](https://github.com/supabricks/platform/issues/230) attribution is
+complete: all 14,770,127 profiled rows published and all 24 tables passed exact
+verification. Late batches reach their targets without hitting row/byte limits;
+source COPY+commit averages 98 ms per 1,024 rows while existing-key scans and
+publication handoff also remain material. [#232](https://github.com/supabricks/platform/issues/232)
+will split and attribute source write costs before another optimization.
+**20k/10× end-to-end improvement is not qualified.** Original SF100 load-01
+remains paused; SP is frozen. PRs #222/#229 are held by CI failures.
+
+## Batch fill and publication attribution (#230)
+
+The diagnostic-only package preserves all operating limits and uses the frozen
+14.77-million-row harness. In the fixed 13.0–14.6m publication window, all 73
+batches consume their full selected journal range and reach their authorized
+target. Median batch size is 21,504 rows; maximum input is 9.19 MiB, below the
+16-MiB journal limit. Median report age is 217 ms, excluding 2,048 already-durable
+rows at admission. Capture's median source-commit-to-durable delay is 45.7 ms.
+
+The same row cohort averages 98.3 ms per COPY+commit, about 10,400 rows/s during
+active source calls under simultaneous sync. This is not an isolated source
+capacity measurement. Apply also remains significant: median existing-key scan
+530 ms, complete planning 924 ms (including decode and scan), complete worker
+1,795 ms and done-to-publication 248 ms. These nested medians are not additive.
+Warm previous-version verification costs 61.7 ms versus 880.5 ms for fresh
+workers. Source and apply costs both warrant attention; a larger batch limit
+or fill delay is not justified by this evidence.
+
+The profiled run measures 16,129 rows/s overall and 8,963 rows/s late, 3.4% and
+5.3% below the unprofiled #228 run. This includes observer effects and variability,
+not an optimization regression estimate. Exact 24-table verification passes;
+all capture/source transactions and publication requests correlate, with zero
+recorded observer errors/drops. One early diagnostic done event is missing after
+worker retirement; all late handoff events are present. No local builds/tests
+ran during the trial. [Detailed findings and reproducible receipts](tpcds-evidence/2026-10-09-eq230/README.md)
+include source/package binding, resource observations, health and limitations.
 
 ## One-shot Parquet metadata retention (#228)
 
@@ -52,8 +80,8 @@ build, test or profiling workload ran during either timed trial.
 Worker reuse improves substantially, while smaller batches require more
 publications. [#230](https://github.com/supabricks/platform/issues/230) tracks
 measurement of capture supply, target freshness, batch fill and publication
-costs before another implementation slice. The cause of the smaller batches is
-not yet established. [Receipts and reproducible probes](tpcds-evidence/2026-10-09-eq228/README.md)
+costs before another implementation slice. The completed attribution above identifies source supply and per-publication
+work as the next measurement targets; the input limits did not constrain late batches. [Receipts and reproducible probes](tpcds-evidence/2026-10-09-eq228/README.md)
 retain both trials, component outliers and package/source bindings.
 
 ## Implemented slices and current qualification
