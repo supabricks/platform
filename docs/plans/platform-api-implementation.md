@@ -91,12 +91,23 @@ that the specification does not describe.
 | Long work | `202` with an `Operation` | Existing durable operations; a uniform view over the per-feature tables |
 | Profiles | `403 unavailable_in_profile` | Existing gated-operation inventory |
 
-**Project means deployment.** The platform has three records where the API has
-one: `project_definitions` (identity and name), `deployments` (a definition
-installed for a target, the unit of authorization) and the runtime `projects`
-row (the owner of branches). The API's `Project` is a deployment. Its `id` is
-the deployment ID, and its name is the definition's name. AP01 confirms this
-against the governed authorization model before the contract is frozen.
+**Project means the logical package.** A Supabricks installation is deployed
+once. A project is a named package of resources inside it: databases and their
+branches, analytical tables, notebooks, jobs, catalog publications and access
+policy. Nothing is deployed, started or stopped per project.
+
+The platform stores this as three records: `project_definitions` (identity and
+name), `deployments` (the definition applied to a target, which is where
+authorization is attached today) and the runtime `projects` row (the owner of
+branches). The API exposes one resource. `Project.id` is the definition ID and
+`Project.name` is the definition's name. The deployment and runtime rows are
+internal and never appear in a path, a schema or an error. Authorization is
+expressed per project and resolved to the internal record by the server.
+
+The schema allows one definition to have several deployment rows. The API
+assumes exactly one per project in an installation. AP01.1 decides whether to
+enforce that with a constraint or to keep the rows as an internal detail of
+`project apply`.
 
 ## 4. Test methodology
 
@@ -212,13 +223,13 @@ It corrects three `x-backend` values in the first draft of the specification.
 
 | Operation | Today | Finding | Proposed |
 |---|---|---|---|
-| `listProjects` | Console lists projects (`console/projects.rs`); governed lists by role | Maps to deployments | Version 1 |
+| `listProjects` | Console lists projects (`console/projects.rs`); governed lists by role | One entry per project definition | Version 1 |
 | `createProject` | `project create --key`; governed request table keyed by actor and key | Idempotency already exists. `start_from: sample` has no backing (#315) | Version 1 without `sample` |
 | `getProject` | Available | | Version 1 |
 | `updateProject` | No rename; no description field | Needs a migration and an action. Name lives in two tables | Version 1 (#287, #314) |
 | `deleteProject` | Not available | The largest gap: must remove branches, analytical data, catalog publications, notebooks and bindings, and refuse while another project reads a publication | Version 1 (#287) |
 | `getProjectDeletionImpact` | Not available | Read-only companion to delete | Version 1 (#287) |
-| `startProject`, `stopProject` | `up` and `down` act on the whole cell | There is no per-project runtime to start or stop. The draft implied there was | **Defer.** Decide what stopping one project means first |
+| `startProject`, `stopProject` | `up` and `down` act on the whole cell | The installation is deployed and run once. A project has no runtime of its own, so the draft was wrong | **Remove.** Starting and stopping belong to the installation, in the `server` domain |
 | `getProjectMap` | Console overview assembles it | Needs a typed action so REST does not depend on console code | Version 1 |
 | `listProjectServices` | `status` and `doctor`, for the cell | Not per project | **Move** to the `server` domain |
 | `restartProjectService` | Not available | Draft marked it command-line only; it does not exist | **Defer** |
@@ -227,16 +238,16 @@ It corrects three `x-backend` values in the first draft of the specification.
 | `getOperation` | `operation get ID` | | Version 1 |
 | `cancelOperation` | Cancel exists per feature | Needs dispatch by kind | Version 1 |
 
-That is ten operations in version 1, four deferred and one moved.
+That is ten operations in version 1, two removed, two deferred and one moved.
 
 **Design questions to settle in AP01.1**
 
-- Whether `Project.id` is the deployment ID (proposed), and what a project with
-  several targets looks like through the API.
+- Whether to enforce one deployment row per project definition, and how
+  existing project-scoped authorization moves from the deployment to the
+  project without changing who can do what.
 - What a `path` is on a governed server, and who may see it.
 - What deleting a project does to backups and to data other projects have
   already read.
-- Whether stopping a single project should exist at all.
 
 **Parts**
 
@@ -277,7 +288,7 @@ after restart the operation is found by key and reaches a final state, and a
 half-deleted project is either fully present or fully gone.
 
 **Parity tests (L6):** a project created through REST appears in
-`project deployments`; one created through the command line appears in
+the command line's project listing; one created through the command line appears in
 `listProjects`.
 
 **Acceptance:** all ten operations pass L0 to L7 on the local profile on Linux
