@@ -403,7 +403,7 @@ known now:
 
 | Slice | Mostly exists | Main gaps |
 |---|---|---|
-| AP02 Databases | Create, list, delete, suspend, resume, connection details | Compute sizes (#244), idle timeout (#245), storage and connection counts (#246), pooled connections (#252) |
+| AP02 Databases | Done; see below | Compute sizes (#244), idle timeout (#245), storage (#246), pooled connections (#252), governed changes (#322), cascade delete (#323) |
 | AP03 Branches | Create at head, time or log position; rename, default, expiry, suspend, resume, delete | Reset (#256), schema diff (#255), restore window (#254), per-branch size (#246) |
 | AP04 SQL | One statement, cancel, saved queries | Multiple statements, plans, history (#261) |
 | AP05 Tables and objects | Tables and columns; bounded preview | Paged reads (#257), batched edits (#258), reviewed DDL (#259), full introspection (#260) |
@@ -413,6 +413,96 @@ known now:
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
 are the fastest. AP07 and AP08 are mostly new capability and are the slowest.
+
+### AP02: Databases
+
+**Completeness review.** From reading the code on 2026-10-11. The draft
+described a database as a record of its own with compute, storage and a
+default branch. The platform has none of that:
+
+- **A database is a root branch.** There is no `databases` table. A database
+  is a branch with no parent, and its branches are that branch's descendants.
+  Its ID, name, state and PostgreSQL version are the root branch's. So the
+  database's first branch carries the database's name, and a database name is
+  unique among the branches of the project, not only among databases.
+- **A project can hold several databases.** Nothing limits roots per project;
+  the limit is 32 running branches per installation.
+- **The default branch is one per project**, not one per database.
+- **Lifecycle changes are branch changes** (`SetState`, `DeleteBranch`,
+  `RenameBranch`), each a durable operation the engines carry out. Without
+  engines nothing finishes.
+- **Nothing recorded when a branch was created, and a rename did not move its
+  revision**, because that revision fences lifecycle work.
+- **Compute size, idle timeout, storage used and history retention do not
+  exist.** Open connections through the gateway are counted, with a fixed
+  limit of 64 per branch.
+- **On a governed server every lifecycle request is reserved to the
+  operator**, PostgreSQL is private, and nobody connects directly.
+
+| Operation | Today | Decision |
+|---|---|---|
+| `listDatabases`, `getDatabase` | Branch listing; no root-only view | Version 1, over a new store view |
+| `createDatabase` | `database create` | Version 1, local profile. Name only |
+| `updateDatabase` | `branch rename` on the root | Version 1, local profile. Rename only; the default branch, size, idle timeout and retention are removed from the request |
+| `deleteDatabase` | `branch delete` on the root, which refuses while it has children or is the default | Version 1, local profile, with those refusals as `delete_blocked` (#323) |
+| `suspendDatabase`, `resumeDatabase` | `branch suspend` and `resume` on the root | Version 1, local profile |
+| `getDatabaseConnection` | `connect`, which returns address and password together | Version 1. Address only; `available: false` on a governed server |
+| `revealDatabaseCredentials` | The same `connect` | Version 1, local profile |
+| `listComputeSizes` | Nothing | **Deferred** (#244) |
+
+Nine operations are in version 1 and one is deferred.
+
+**Applied to the specification:** `compute`, `storage`,
+`history_retention_seconds` and `last_active_at` are removed from `Database`
+until they exist (#244, #245, #246, #254); `state` is `provisioning`,
+`running`, `suspending`, `suspended`, `resuming` or `deleting`;
+`holds_project_default` says why a database cannot be deleted alone;
+`postgres_version` is the major version; names follow the platform's rule (40
+characters, letters, digits and hyphens); `Connection` has no `options`,
+`pooled` or role choice (#251, #252) and gains `sslmode: prefer`; every change
+is `x-profiles: [local]` (#322).
+
+**Built:**
+
+- Catalog 33 records when each branch was created and counts its renames, by
+  trigger, so no writer changed. The API's revision is the lifecycle revision
+  plus the renames, so it rises with both and `If-Match` works for a rename.
+- `store/database_directory.rs`: databases as root branches with their state,
+  branch count, connections and whether they hold the project default.
+- `rest/databases.rs`: thin handlers that call the same branch actions the
+  command line uses (`api::Action`), so there is one implementation.
+- The router now carries what only the owner's machine has (engines and the
+  connection gateway), which connection details need.
+- Operations on a root branch are reported as database operations:
+  `database.create`, `database.suspend`, `database.resume` and
+  `database.delete`, with the database as `target`.
+- A change repeated with the same key after the reply was lost finds the
+  operation the first attempt started.
+
+**Tests.** 61 scenario, durability and parity tests in
+`api/tests/test_databases.py`, 54 generated role tests, and the generated
+invariant and fuzz layers. Two of the scenarios need engines: a database
+starts, accepts a real `psql` connection, suspends, resumes with its data, is
+refused deletion while it has a branch, is deleted and frees its name; and a
+connection wakes a suspended database. The `api` workflow gains an `engines`
+job that runs every engine-backed API test on Linux and macOS with the
+qualified engine archive, so they no longer run locally only.
+
+**Left out, with where each is tracked:**
+
+| Gap | Tracked |
+|---|---|
+| Any database change on a governed server | #322 |
+| Deleting a database with its branches, or the one that holds the default | #323 |
+| A default branch per database | With branches (AP03) and #323 |
+| Compute sizes, idle timeout | #244, #245 |
+| Storage used | #246 (open connections are now reported) |
+| Pooled connections, choosing a role | #252, #251 |
+| Per-person credentials on a governed server | #306 |
+
+**Acceptance:** the nine operations pass L0 to L7 on the local profile on
+Linux and macOS and L4 on the governed profile, and the engine-backed
+scenarios pass in CI; `databases` is `complete`.
 
 ## 7. Risks
 

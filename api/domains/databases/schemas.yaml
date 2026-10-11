@@ -1,55 +1,51 @@
 Database:
   type: object
-  description: A PostgreSQL database. It always has at least one branch, and one of them is the default.
-  required: [id, name, state, postgres_version, compute, default_branch_id, created_at, revision]
+  description: >-
+    A PostgreSQL database and its branches. Its first branch carries the
+    database's name and is its default branch. Compute size, storage used and
+    history retention are not reported in version 1.
+  required: [id, name, state, postgres_version, default_branch_id, branch_count, holds_project_default, connections, created_at, revision]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
     name: { $ref: './schemas.yaml#/DatabaseName' }
-    state: { type: string, enum: [provisioning, running, scaling, suspended, deleting] }
-    postgres_version: { type: string, examples: ['17.8'] }
-    compute: { $ref: './schemas.yaml#/Compute' }
-    default_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
-    branch_count: { type: integer }
-    storage:
-      description: Not reported yet.
-      $ref: './schemas.yaml#/DatabaseStorage'
+    state:
+      type: string
+      enum: [provisioning, running, suspending, suspended, resuming, deleting]
+      description: >-
+        The state of the database's first branch. `provisioning` until it has
+        started for the first time; the `-ing` states last until the operation
+        that caused them finishes.
+    postgres_version: { type: string, description: 'The PostgreSQL major version.', examples: ['17'] }
+    default_branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: The database's first branch. It cannot be changed in version 1.
+    branch_count: { type: integer, minimum: 1, description: 'Branches of this database that exist now, including the first.' }
+    holds_project_default:
+      type: boolean
+      description: >-
+        Whether the project's default branch is in this database. Such a
+        database cannot be deleted on its own.
     connections:
       type: object
-      description: Not reported yet.
+      description: Client connections to the first branch through the server.
+      required: [open, limit]
       properties:
-        open: { type: integer }
-        limit: { type: integer }
-    history_retention_seconds:
-      type: integer
-      description: How far back a branch can be created or a restore made. Not exposed yet.
-    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
-    last_active_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+        open: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, description: 'The most one branch accepts at a time.' }
+    created_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: >-
+        When the database was created. For one that existed before the server
+        recorded this, the time of the upgrade that started recording it.
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
 
 DatabaseName:
   type: string
-  pattern: '^[a-z][a-z0-9_-]{0,62}$'
-  examples: [app]
-
-DatabaseStorage:
-  type: object
-  properties:
-    data_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'Size of the default branch.' }
-    history_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'Changes kept for restore and branching.' }
-    branches_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'What the other branches have changed since they were made.' }
-
-Compute:
-  type: object
-  required: [size]
-  properties:
-    size: { type: string, description: 'ID of a compute size.', examples: [s] }
-    vcpu: { type: number }
-    memory_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
-    max_connections: { type: integer }
-    autosuspend_seconds:
-      type: integer
-      minimum: 0
-      description: Suspend after this long with no connections. 0 means never.
+  description: >-
+    Unique among the databases and branches of the project. Letters, digits
+    and hyphens, at most 40 characters, stored in lower case.
+  pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
+  examples: [main]
 
 ComputeSize:
   type: object
@@ -64,21 +60,16 @@ ComputeSize:
 DatabaseCreate:
   type: object
   required: [name]
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/DatabaseName' }
-    compute_size: { type: string, description: 'Defaults to the smallest size.' }
-    autosuspend_seconds: { type: integer, minimum: 0 }
 
 DatabaseUpdate:
   type: object
-  minProperties: 1
-  description: Send only what changes. Changing `compute_size` returns an operation; the others apply at once.
+  required: [name]
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/DatabaseName' }
-    default_branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
-    compute_size: { type: string }
-    autosuspend_seconds: { type: integer, minimum: 0 }
-    history_retention_seconds: { type: integer, minimum: 3600 }
 
 DatabasePage:
   allOf:
@@ -92,31 +83,23 @@ Connection:
   type: object
   description: >-
     Everything needed to connect, without the password. Clients build psql,
-    JDBC, environment-file and driver snippets from these parts.
-  required: [host, port, database, role, branch_id, sslmode]
+    JDBC, environment-file and driver snippets from these parts. When
+    `available` is false only `branch_id` accompanies it.
+  required: [available, branch_id]
   properties:
-    host: { type: string }
-    port: { type: integer }
-    database: { type: string }
-    role: { type: string, examples: [app_owner] }
-    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
-    branch_name: { type: string }
-    options: { type: string, description: 'Value for the `options` connection parameter that selects the branch.' }
-    sslmode: { type: string, enum: [disable, require, verify-full] }
-    pooled:
-      type: object
-      description: Present when a pooled endpoint exists. Not available yet.
-      properties:
-        host: { type: string }
-        port: { type: integer }
-        mode: { type: string, enum: [transaction, session] }
     available:
       type: boolean
-      description: False in the governed profile, where PostgreSQL is private and nobody connects directly.
+      description: False on a governed server, where PostgreSQL is private and nobody connects directly.
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    host: { type: string }
+    port: { type: integer }
+    database: { type: string, description: 'The PostgreSQL database name to connect to, which is always `postgres`.' }
+    role: { type: string, examples: [supabricks_owner] }
+    sslmode: { type: string, enum: [disable, prefer, require, verify-full] }
 
 Credentials:
   type: object
-  required: [role, password, uri]
+  required: [role, password, uri, expires_at]
   properties:
     role: { type: string }
     password: { type: string, format: password }

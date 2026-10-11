@@ -79,3 +79,9 @@ TooManyRequests:
   content:
     application/problem+json:
       schema: { $ref: './schemas.yaml#/Problem' }
+
+Unavailable:
+  description: Something the request needs is not running, for example the database engines. Retry later.
+  content:
+    application/problem+json:
+      schema: { $ref: './schemas.yaml#/Problem' }

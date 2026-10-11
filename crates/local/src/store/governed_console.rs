@@ -413,6 +413,96 @@ mod tests {
             body: Some(body).filter(|b| !b.is_null()),
         }
     }
+    /// The server can stop after a change is durable and before its reply is
+    /// stored. The repeat must find the same operation, not start another or
+    /// be refused by the state the first attempt left.
+    #[test]
+    fn platform_api_database_changes_converge_when_the_reply_was_lost() {
+        use crate::rest::{Caller, Local, dispatch};
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&dir.path().join("state")).unwrap();
+        let alice = user(&mut store, "alice");
+        store
+            .db
+            .execute(
+                "UPDATE identity_realm SET bootstrap_principal=?1",
+                [&alice.actor_id],
+            )
+            .unwrap();
+        let made = dispatch(
+            &mut store,
+            None,
+            &api(
+                Caller::Principal(alice),
+                "POST",
+                "/projects",
+                "create-key-1",
+                json!({"name": "finance"}),
+            ),
+        );
+        let project = made.body.unwrap()["project_id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let binding = crate::api::Binding {
+            project_id: supabricks_core::resource::ProjectId::new(),
+            worktree: dir.path().into(),
+        };
+        let owner = |store: &mut Store, method: &str, path: &str, key: &str, body: Value| {
+            let mut call = api(Caller::LocalOwner, method, path, key, body);
+            if method == "DELETE" {
+                call.if_match = Some("*".into());
+                call.query = vec![("confirm".into(), "reporting".into())];
+            }
+            let host = Local {
+                binding: &binding,
+                cell: None,
+                gateway: None,
+            };
+            dispatch(store, Some(host), &call)
+        };
+        let lose = |store: &mut Store| store.db.execute("DELETE FROM api_idempotency", []).unwrap();
+        let databases = format!("/projects/{project}/databases");
+
+        let body = json!({"name": "reporting"});
+        let first = owner(
+            &mut store,
+            "POST",
+            &databases,
+            "database-key-1",
+            body.clone(),
+        );
+        assert_eq!(first.status, 202, "{:?}", first.body);
+        lose(&mut store);
+        let again = owner(&mut store, "POST", &databases, "database-key-1", body);
+        assert_eq!(again, first);
+        let one = format!(
+            "{databases}/{}",
+            first.body.unwrap()["target"]["id"].as_str().unwrap()
+        );
+
+        for (method, path, key) in [
+            ("POST", format!("{one}/suspend"), "suspend-key-1"),
+            ("DELETE", one.clone(), "delete-key-1"),
+        ] {
+            let first = owner(&mut store, method, &path, key, Value::Null);
+            assert_eq!(first.status, 202, "{method} {:?}", first.body);
+            lose(&mut store);
+            let again = owner(&mut store, method, &path, key, Value::Null);
+            assert_eq!(again.status, 202, "{method} {:?}", again.body);
+            assert_eq!(again.body.unwrap()["id"], first.body.unwrap()["id"]);
+        }
+        let listed = owner(&mut store, "GET", &databases, "", Value::Null)
+            .body
+            .unwrap();
+        let names: Vec<_> = listed["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|d| (d["name"].as_str().unwrap(), d["state"].as_str().unwrap()))
+            .collect();
+        assert_eq!(names, [("main", "provisioning"), ("reporting", "deleting")]);
+    }
     #[test]
     fn platform_api_creates_a_governed_project_for_an_installation_administrator_only() {
         use crate::rest::{Caller, dispatch};

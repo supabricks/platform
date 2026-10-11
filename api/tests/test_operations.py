@@ -138,7 +138,7 @@ def test_a_database_change_cannot_be_cancelled(api, created):
     project = created[0]
     change = next(o for o in listed(api, project) if o['kind'] == 'database.create')
     assert change['cancellable'] is False
-    assert change['target']['kind'] == 'branch'
+    assert change['target']['kind'] == 'database'
     response = api.call('cancelOperation', path={'project': project, 'operation': change['id']}, expect=409)
     assert response.json()['code'] == 'not_cancellable'
 

@@ -73,7 +73,7 @@ server routes only operations that are `implemented` or `complete`.
 | `server` | AP00 | draft | 3 | 1 | 1 |
 | `projects` | AP01 | complete | 8 | 6 | 1 |
 | `operations` | AP01 | complete | 3 | 3 | 0 |
-| `databases` | AP02 | draft | 10 | 0 | 0 |
+| `databases` | AP02 | implemented | 10 | 9 | 1 |
 | `branches` | AP03 | draft | 10 | 0 | 0 |
 <!-- status:end -->
 
