@@ -33,13 +33,6 @@ Project:
       properties:
         databases: { type: integer, minimum: 0 }
         branches: { type: integer, minimum: 0, description: 'Including the default branch of each database.' }
-    definition:
-      type: object
-      description: The project definition (`supabricks.toml`) as installed. See the Project definition domain.
-      properties:
-        format: { type: integer, examples: [2] }
-        installed_revision: { type: integer }
-        matches_folder: { type: boolean }
     my_role:
       description: The caller's effective role in this project. Null in the local profile, where the owner can do everything.
       oneOf:
@@ -49,9 +42,9 @@ Project:
 ProjectName:
   type: string
   description: >-
-    Chosen by the person when the project is created or imported; there is no
-    default. Unique in the installation, compared without regard to case, so a
-    source imported twice needs two names (`sales-analytics` and
+    Chosen by the person. Required when a project is created through this API;
+    there is no default. Unique in the installation, compared without regard to
+    case, so a source imported twice needs two names (`sales-analytics` and
     `sales-analytics-staging`). Letters, digits and hyphens, at most 40
     characters, stored in lower case.
   pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'

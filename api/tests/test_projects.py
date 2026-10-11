@@ -551,3 +551,58 @@ def test_delete_removes_the_databases_and_the_project_folder(engine_api):
     remade = create(api, 'removed-for-real').json()
     wait(lambda: api.call('getOperation', path={'project': remade['project_id'], 'operation': remade['id']})
          .json()['state'] == 'succeeded', timeout=180)
+
+
+# --- The same operations for signed-in callers on a governed server -----------
+
+@pytest.mark.l2
+def test_a_signed_in_caller_lists_only_projects_where_they_hold_a_role(governed):
+    def names(caller):
+        return [p['name'] for p in governed.callers[caller].call('listProjects', expect=200).json()['items']]
+    assert names('viewer') == names('administrator') == ['roles-one']
+    assert names('elsewhere') == ['roles-two']
+    assert names('outsider') == []
+    # The filter and the page size apply to what the caller can see, not to everything.
+    page = governed.callers['viewer'].call('listProjects', params=dict(q='roles', limit=1), expect=200).json()
+    assert [p['name'] for p in page['items']] == ['roles-one'] and page['next_cursor'] is None
+
+
+@pytest.mark.l2
+@pytest.mark.parametrize('caller', ['viewer', 'editor', 'administrator'])
+def test_a_signed_in_caller_sees_their_role_and_no_server_path(caller, governed):
+    for project in [governed.callers[caller].call('getProject', path=dict(project=governed.project), expect=200).json(),
+                    governed.callers[caller].call('listProjects', expect=200).json()['items'][0]]:
+        assert project['my_role'] == caller
+        assert 'path' not in project
+
+
+@pytest.mark.l2
+def test_an_administrator_changes_the_description_and_it_is_audited(governed):
+    admin, project = governed.callers['administrator'], dict(project=governed.project)
+    before = admin.call('getProject', path=project, expect=200)
+    changed = admin.call('updateProject', path=project, json=dict(description='Owned by analytics'),
+                         headers={'If-Match': before.headers['ETag']}, expect=200).json()
+    assert changed['revision'] == before.json()['revision'] + 1
+    seen = governed.callers['viewer'].call('getProject', path=project, expect=200).json()
+    assert seen['description'] == 'Owned by analytics'
+    assert any(e['action'] == 'project.update' and e['actor_id'] == governed.ids['administrator']
+               for e in governed.server.audit(governed.project))
+
+
+@pytest.mark.l2
+def test_an_administrator_previews_a_delete_but_a_governed_server_does_not_delete(governed):
+    admin, project = governed.callers['administrator'], dict(project=governed.project)
+    impact = admin.call('getProjectDeletionImpact', path=project, expect=200).json()
+    assert impact['blocked_by'] == []
+    current = admin.call('getProject', path=project, expect=200)
+    refused = admin.call('deleteProject', path=project, params=dict(confirm='roles-one'),
+                         headers={'If-Match': current.headers['ETag'], 'Idempotency-Key': 'governed-delete-1'},
+                         expect=403)
+    assert refused.json()['code'] == 'unavailable_in_profile'
+    admin.call('getProject', path=project, expect=200)
+
+
+@pytest.mark.l2
+def test_the_server_reports_the_governed_profile(governed, api):
+    assert governed.callers['outsider'].call('getServerVersion', expect=200).json()['profile'] == 'governed'
+    assert api.call('getServerVersion', expect=200).json()['profile'] == 'local'

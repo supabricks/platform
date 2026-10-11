@@ -31,3 +31,45 @@ pub const ROUTES: &[(&str, &str, Operation)] = &[
     ("POST", "/projects/{project}/operations/{operation}/cancel", Operation::CancelOperation),
     ("GET", "/server/version", Operation::GetServerVersion),
 ];
+
+/// The least role a signed-in caller needs (`x-required-role`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    Any,
+    Viewer,
+    Editor,
+    Administrator,
+    InstallationAdmin,
+}
+
+impl Operation {
+    pub const fn role(self) -> Role {
+        match self {
+            Self::CancelOperation => Role::Editor,
+            Self::CreateProject => Role::InstallationAdmin,
+            Self::DeleteProject => Role::Administrator,
+            Self::GetOperation => Role::Viewer,
+            Self::GetProject => Role::Viewer,
+            Self::GetProjectDeletionImpact => Role::Administrator,
+            Self::GetServerVersion => Role::Any,
+            Self::ListOperations => Role::Viewer,
+            Self::ListProjects => Role::Any,
+            Self::UpdateProject => Role::Administrator,
+        }
+    }
+    /// Whether the governed profile offers the operation (`x-profiles`).
+    pub const fn governed(self) -> bool {
+        match self {
+            Self::CancelOperation => true,
+            Self::CreateProject => true,
+            Self::DeleteProject => false,
+            Self::GetOperation => true,
+            Self::GetProject => true,
+            Self::GetProjectDeletionImpact => true,
+            Self::GetServerVersion => true,
+            Self::ListOperations => true,
+            Self::ListProjects => true,
+            Self::UpdateProject => true,
+        }
+    }
+}

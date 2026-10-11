@@ -201,3 +201,15 @@ def test_a_new_project_finishes_and_its_operations_record_it(engine_api):
     assert {o['id'] for o in listed(api, operation['project_id'], state='succeeded')} == {o['id'] for o in items}
     project = api.call('getProject', path={'project': operation['project_id']}).json()
     assert project['counts'] == {'databases': 1, 'branches': 1}
+
+
+@pytest.mark.l2
+def test_a_viewer_follows_operations_and_an_editor_may_cancel(governed):
+    project = dict(project=governed.project)
+    listed = governed.callers['viewer'].call('listOperations', path=project, expect=200).json()['items']
+    assert governed.operation in [o['id'] for o in listed]
+    one = dict(project, operation=governed.operation)
+    assert governed.callers['viewer'].call('getOperation', path=one, expect=200).json()['kind'] == 'project.apply'
+    assert governed.callers['viewer'].call('cancelOperation', path=one).status_code == 403
+    # Allowed for an editor; whether it can still be stopped is a separate answer.
+    assert governed.callers['editor'].call('cancelOperation', path=one).status_code in (202, 409)

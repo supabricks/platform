@@ -8,7 +8,17 @@ use crate::store::{ProjectRecord, Store};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-fn body_of(caller: Caller, record: &ProjectRecord) -> Value {
+fn body_of(store: &Store, caller: &Caller, record: &ProjectRecord) -> Value {
+    let role = match caller {
+        Caller::Principal(context) => match store.project_role(&context.actor_id, &record.id) {
+            1 => json!("viewer"),
+            2 => json!("editor"),
+            3 => json!("administrator"),
+            _ => Value::Null,
+        },
+        // The local owner can do everything and holds no role.
+        Caller::LocalOwner | Caller::Nobody => Value::Null,
+    };
     let mut value = json!({
         "id": public_id("prj", &record.id),
         "name": record.name,
@@ -17,8 +27,7 @@ fn body_of(caller: Caller, record: &ProjectRecord) -> Value {
         "created_at": timestamp(record.created_at_ms),
         "revision": record.revision,
         "counts": {"databases": record.databases, "branches": record.branches},
-        // The local owner can do everything and holds no role.
-        "my_role": null,
+        "my_role": role,
     });
     // A server path is shown only to the owner of the machine.
     if let (Caller::LocalOwner, Some(path)) = (caller, &record.path) {
@@ -36,8 +45,12 @@ pub fn list(store: &mut Store, call: &Call) -> Result<Reply, Problem> {
         Some(_) => return Err(Problem::invalid("cursor is not one this server issued.")),
     };
     let contains = call.parameter("q")?.filter(|text| !text.is_empty());
+    let visible_to = match &call.caller {
+        Caller::Principal(context) => Some(context.actor_id.as_str()),
+        Caller::LocalOwner | Caller::Nobody => None,
+    };
     let mut records = store
-        .project_records(after, contains, limit + 1)
+        .project_records(after, contains, visible_to, limit + 1)
         .map_err(|e| Problem::from(&e))?;
     let next = (records.len() > limit).then(|| {
         records.truncate(limit);
@@ -45,7 +58,10 @@ pub fn list(store: &mut Store, call: &Call) -> Result<Reply, Problem> {
         cursor(&[&last.name, &last.id])
     });
     Ok(page(
-        records.iter().map(|r| body_of(call.caller, r)).collect(),
+        records
+            .iter()
+            .map(|r| body_of(store, &call.caller, r))
+            .collect(),
         next,
     ))
 }
@@ -55,7 +71,7 @@ pub fn get(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Probl
     let missing = || Problem::not_found("There is no such project.");
     let id = internal_id("prj", project).ok_or_else(missing)?;
     let record = store.project_record(&id).map_err(|_| missing())?;
-    let mut reply = Reply::ok(body_of(call.caller, &record));
+    let mut reply = Reply::ok(body_of(store, &call.caller, &record));
     reply.headers.insert("ETag".into(), etag(record.revision));
     Ok(reply)
 }
@@ -75,7 +91,39 @@ fn derived(purpose: &str, key: &str) -> supabricks_core::resource::OperationId {
         .expect("a UUID is a valid operation ID")
 }
 
-pub fn create(store: &mut Store, host: &Binding, call: &Call) -> Result<Reply, Problem> {
+/// The reply to a create: the operation that prepares the new project.
+fn created(
+    store: &Store,
+    deployment: &str,
+    operation: &str,
+    description: &str,
+    key: &str,
+) -> Result<Reply, Problem> {
+    let unreadable = || Problem::new(500, "internal_error", "The new project is unreadable.");
+    store
+        .set_project_description(deployment, description)
+        .map_err(|e| Problem::from(&e))?;
+    store
+        .set_operation_api_key(operation, key)
+        .map_err(|e| Problem::from(&e))?;
+    let project = store
+        .project_record(deployment)
+        .map_err(|e| Problem::from(&e))?;
+    let entry = store
+        .operation_entry(deployment, operation)
+        .map_err(|e| Problem::from(&e))?;
+    let view = operations::view(store, &project, &entry).ok_or_else(unreadable)?;
+    Ok(operations::accepted(&project, view))
+}
+fn name_taken(name: &str) -> Problem {
+    Problem::new(
+        409,
+        "name_taken",
+        format!("A project named {name} already exists. Choose another name."),
+    )
+}
+
+pub fn create(store: &mut Store, host: Option<&Binding>, call: &Call) -> Result<Reply, Problem> {
     let body = fields(call, &["name", "description"])?;
     let name = text(body, "name")?.ok_or_else(|| Problem::invalid("name is required."))?;
     let name = supabricks_core::validation::valid_name(&json!({"name": name}), "name")
@@ -86,7 +134,36 @@ pub fn create(store: &mut Store, host: &Binding, call: &Call) -> Result<Reply, P
             "description may be at most 500 characters.",
         ));
     }
-    idempotent(store, call, "local-owner:createProject", |store, key| {
+    let scope = format!("{}:createProject", call.caller.scope());
+    let unreadable = || Problem::new(500, "internal_error", "The new project is unreadable.");
+    // A signed-in administrator creates through the governed path, which
+    // makes them the project's administrator and enrols its first database.
+    if let Caller::Principal(context) = &call.caller {
+        return idempotent(store, call, &scope, |store, key| {
+            let known = store
+                .governed_created(&context.actor_id, key)
+                .map_err(|e| Problem::from(&e))?;
+            if !known
+                && !store
+                    .project_name_free(&name, None)
+                    .map_err(|e| Problem::from(&e))?
+            {
+                return Err(name_taken(&name));
+            }
+            let made = store
+                .governed_create(context, &name, key)
+                .map_err(|e| Problem::from(&e))?;
+            let deployment = made["project"]["deployment_id"]
+                .as_str()
+                .ok_or_else(unreadable)?;
+            let first = store
+                .first_operation(deployment)
+                .map_err(|e| Problem::from(&e))?;
+            created(store, deployment, &first.id, &description, key)
+        });
+    }
+    let host = host.ok_or_else(unreadable)?;
+    idempotent(store, call, &scope, |store, key| {
         let (source, attempt) = (derived("project", key), derived("apply", key));
         let known = store
             .root()
@@ -100,33 +177,15 @@ pub fn create(store: &mut Store, host: &Binding, call: &Call) -> Result<Reply, P
                 .project_name_free(&name, None)
                 .map_err(|e| Problem::from(&e))?
         {
-            return Err(Problem::new(
-                409,
-                "name_taken",
-                format!("A project named {name} already exists. Choose another name."),
-            ));
+            return Err(name_taken(&name));
         }
-        let created = crate::console::projects::create(store, host, source, &name, attempt)
+        let made = crate::console::projects::create(store, host, source, &name, attempt)
             .map_err(|e| Problem::from(&e))?;
-        let unreadable = || Problem::new(500, "internal_error", "The new project is unreadable.");
-        let deployment = created["operation"]["plan"]["context"]["deployment_id"]
+        let deployment = made["operation"]["plan"]["context"]["deployment_id"]
             .as_str()
             .ok_or_else(unreadable)?;
-        let operation = created["operation"]["id"].as_str().ok_or_else(unreadable)?;
-        store
-            .set_project_description(deployment, &description)
-            .map_err(|e| Problem::from(&e))?;
-        store
-            .set_operation_api_key(operation, key)
-            .map_err(|e| Problem::from(&e))?;
-        let project = store
-            .project_record(deployment)
-            .map_err(|e| Problem::from(&e))?;
-        let entry = store
-            .operation_entry(deployment, operation)
-            .map_err(|e| Problem::from(&e))?;
-        let view = operations::view(store, &project, &entry).ok_or_else(unreadable)?;
-        Ok(operations::accepted(&project, view))
+        let operation = made["operation"]["id"].as_str().ok_or_else(unreadable)?;
+        created(store, deployment, operation, &description, key)
     })
 }
 
@@ -154,7 +213,12 @@ pub fn update(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Pr
     let record = store
         .update_project(&id, name.as_deref(), description, expected)
         .map_err(|e| Problem::from(&e))?;
-    let mut reply = Reply::ok(body_of(call.caller, &record));
+    if let Caller::Principal(context) = &call.caller {
+        store
+            .audit_api_change(context, &id, "project.update", "")
+            .map_err(|e| Problem::from(&e))?;
+    }
+    let mut reply = Reply::ok(body_of(store, &call.caller, &record));
     reply.headers.insert("ETag".into(), etag(record.revision));
     Ok(reply)
 }
@@ -189,7 +253,8 @@ pub fn delete(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Pr
             "confirm must be the project's name, exactly as it is now.",
         ));
     }
-    idempotent(store, call, "local-owner:deleteProject", |store, key| {
+    let scope = format!("{}:deleteProject", call.caller.scope());
+    idempotent(store, call, &scope, |store, key| {
         let operation = derived("delete", key).to_string();
         // `*` matches any revision; a repeat after the delete began matches too.
         let expected = match expected {

@@ -417,6 +417,12 @@ impl Store {
         if let Command::Workspace { command } = command {
             return self.workspace_command(ctx, command);
         }
+        if let Command::Api { mut call } = command {
+            call.caller = crate::rest::Caller::Principal(ctx.clone());
+            return Ok(serde_json::to_value(crate::rest::dispatch(
+                self, None, &call,
+            ))?);
+        }
         if matches!(command, Command::Projects {}) {
             let mut projects = Vec::new();
             for id in self
@@ -436,6 +442,7 @@ impl Store {
             Command::SetRole { .. } => 3,
             Command::SaveSource { .. } => 2,
             Command::Workspace { .. }
+            | Command::Api { .. }
             | Command::Projects {}
             | Command::Catalog { .. }
             | Command::Data { .. }
@@ -533,7 +540,7 @@ impl Store {
                 let result=execution(&tx,&deployment,id)?;
                 audit(&tx,ctx,&deployment,*expected_policy,"execution.cancel",key,id,result["effective_principal_id"].as_str().ok_or_else(auth::denied)?)?;result
             },
-            Command::Workspace{..}|Command::Data{..}|Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
+            Command::Workspace{..}|Command::Api{..}|Command::Data{..}|Command::Projects {}|Command::Catalog{..}|Command::Runtime{..}|Command::Unavailable{..}=>return Err(auth::denied()),
         };
         if let Some((_, key)) = command.mutation() {
             receipt(&tx, ctx, &deployment, key, &command, &result)?;

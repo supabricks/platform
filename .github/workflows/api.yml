@@ -61,5 +61,5 @@ jobs:
           python-version: '3.12'
       - run: python3 -m pip install -r api/tests/requirements.txt
       - run: cargo build --locked -p supabricks-local
-      - name: API tests against a real server (L0 to L3, L5, L7)
+      - name: API tests against a real server, local and governed (L0 to L7)
         run: python3 -m pytest api/tests -q --binary target/debug/supabricks

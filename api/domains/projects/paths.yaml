@@ -45,7 +45,8 @@ projects:
     summary: Create a project
     description: >-
       Creates a new, empty project and its first database, `main`. The caller
-      becomes its administrator. The reply is the operation that prepares the
+      becomes its administrator. On a governed server only an installation
+      administrator may create a project. The reply is the operation that prepares the
       project; its `target` is the new project, which can be read at once. To
       create another project from a source that already exists (a staging
       copy), import it instead. Starting from the sample tables is not part of
@@ -53,7 +54,7 @@ projects:
       already has is refused with `409` and `code: name_taken`, including when
       the same source is created again.
     x-backend: ready
-    x-required-role: any
+    x-required-role: installation-admin
     x-console-features: [HM-01, FR-02]
     x-issues: [315]
     parameters:
@@ -150,9 +151,12 @@ project:
       the project go with it. In version 1 the request is refused with `409`
       and `code: delete_blocked` while the project still has sync pipelines,
       publications, analytical data or running work, or while another project
-      reads its data. Remove those first; the deletion impact lists them.
+      reads its data. Remove those first; the deletion impact lists them. A
+      governed server does not offer delete yet and answers `403` with
+      `code: unavailable_in_profile`.
     x-backend: ready
     x-required-role: administrator
+    x-profiles: [local]
     x-console-features: [HM-01b]
     x-issues: [287, 320]
     parameters:
@@ -202,10 +206,14 @@ projectMap:
     operationId: getProjectMap
     tags: [Projects]
     summary: Get the project map
-    description: Databases, pipelines, analytical tables and their readers as one graph, for the project overview.
+    description: >-
+      Databases, pipelines, analytical tables and their readers as one graph,
+      for the project overview. Not served yet: every node belongs to another
+      domain, so the map is built as those domains are completed.
     x-backend: new
     x-required-role: viewer
     x-console-features: [HM-05]
+    x-issues: [321]
     responses:
       '200':
         description: The map.

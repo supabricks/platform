@@ -130,7 +130,16 @@ impl Store {
             }
         }
     }
-    fn governed_create(&mut self, ctx: &Context, name: &str, key: &str) -> Result<Value> {
+    /// Whether this caller's create request already produced a project.
+    pub(crate) fn governed_created(&self, actor: &str, key: &str) -> Result<bool> {
+        Ok(self.db.prepare("SELECT 1 FROM governed_project_requests WHERE actor=?1 AND request_key=?2 AND deployment IS NOT NULL")?.exists(params![actor, key])?)
+    }
+    pub(crate) fn governed_create(
+        &mut self,
+        ctx: &Context,
+        name: &str,
+        key: &str,
+    ) -> Result<Value> {
         authorization::key(key)?;
         let name = canonical_name(name)?;
         let directory = identity::hash(&format!("{}:{key}", ctx.actor_id));
@@ -386,6 +395,106 @@ mod tests {
             scopes: vec![authorization::CONTROL_SCOPE.into()],
             expires_ms: identity::now() + 60000,
         }
+    }
+    fn api(
+        caller: crate::rest::Caller,
+        method: &str,
+        path: &str,
+        key: &str,
+        body: Value,
+    ) -> crate::rest::Call {
+        crate::rest::Call {
+            caller,
+            method: method.into(),
+            path: path.into(),
+            query: vec![],
+            idempotency_key: Some(key.into()).filter(|k: &String| !k.is_empty()),
+            if_match: None,
+            body: Some(body).filter(|b| !b.is_null()),
+        }
+    }
+    #[test]
+    fn platform_api_creates_a_governed_project_for_an_installation_administrator_only() {
+        use crate::rest::{Caller, dispatch};
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&dir.path().join("state")).unwrap();
+        let alice = user(&mut store, "alice");
+        let bob = user(&mut store, "bob");
+        store
+            .db
+            .execute(
+                "UPDATE identity_realm SET bootstrap_principal=?1",
+                [&alice.actor_id],
+            )
+            .unwrap();
+        let create = |who: &Context, key: &str, name: &str| {
+            api(
+                Caller::Principal(who.clone()),
+                "POST",
+                "/projects",
+                key,
+                json!({"name": name, "description": "Quarterly numbers"}),
+            )
+        };
+        let refused = dispatch(&mut store, None, &create(&bob, "create-key-1", "finance"));
+        assert_eq!(refused.status, 403);
+        assert_eq!(refused.body.unwrap()["code"], "not_permitted");
+
+        let first = dispatch(&mut store, None, &create(&alice, "create-key-1", "finance"));
+        assert_eq!(first.status, 202, "{:?}", first.body);
+        let operation = first.body.clone().unwrap();
+        assert_eq!(operation["kind"], "database.create");
+        assert_eq!(operation["idempotency_key"], "create-key-1");
+        // The same key returns the same reply and makes nothing new.
+        assert_eq!(
+            dispatch(&mut store, None, &create(&alice, "create-key-1", "finance")),
+            first
+        );
+        let taken = dispatch(&mut store, None, &create(&alice, "create-key-2", "Finance"));
+        assert_eq!(taken.status, 409);
+        assert_eq!(taken.body.unwrap()["code"], "name_taken");
+
+        let path = format!("/projects/{}", operation["project_id"].as_str().unwrap());
+        let read = |store: &mut Store, who: &Context| {
+            dispatch(
+                store,
+                None,
+                &api(
+                    Caller::Principal(who.clone()),
+                    "GET",
+                    &path,
+                    "",
+                    Value::Null,
+                ),
+            )
+        };
+        let project = read(&mut store, &alice).body.unwrap();
+        assert_eq!(project["name"], "finance");
+        assert_eq!(project["description"], "Quarterly numbers");
+        assert_eq!(project["my_role"], "administrator");
+        assert_eq!(project["counts"]["databases"], 1);
+        assert!(project.get("path").is_none());
+        // The creator alone holds a role; nobody else can tell it exists.
+        assert_eq!(read(&mut store, &bob).status, 404);
+    }
+    #[test]
+    fn platform_api_callers_cannot_be_named_on_the_wire() {
+        use crate::rest::{Call, dispatch};
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&dir.path().join("state")).unwrap();
+        // A caller is set by the daemon from how the request arrived. A request
+        // that tries to carry one is malformed, and one without is nobody.
+        assert!(
+            serde_json::from_value::<Call>(
+                json!({"caller":"local_owner","method":"GET","path":"/projects"})
+            )
+            .is_err()
+        );
+        let call: Call =
+            serde_json::from_value(json!({"method":"GET","path":"/projects"})).unwrap();
+        let reply = dispatch(&mut store, None, &call);
+        assert_eq!(reply.status, 401);
+        assert_eq!(reply.body.unwrap()["code"], "unauthorized");
     }
     #[test]
     fn governed_console_creation_retries_without_restoring_revoked_roles_or_implicit_data() {

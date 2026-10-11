@@ -262,7 +262,12 @@ pub fn get(store: &mut Store, project_id: &str, operation: &str) -> Result<Reply
     Ok(reply(200, entry(store, &project, operation)?.1))
 }
 
-pub fn cancel(store: &mut Store, project_id: &str, operation: &str) -> Result<Reply, Problem> {
+pub fn cancel(
+    store: &mut Store,
+    call: &Call,
+    project_id: &str,
+    operation: &str,
+) -> Result<Reply, Problem> {
     let project = project(store, project_id)?;
     let (found, value) = entry(store, &project, operation)?;
     if value["cancellable"] != true {
@@ -281,6 +286,11 @@ pub fn cancel(store: &mut Store, project_id: &str, operation: &str) -> Result<Re
         .map_err(|e| Problem::from(&e))?;
     apply.cancel_requested = true;
     store.save_apply(&apply).map_err(|e| Problem::from(&e))?;
+    if let super::Caller::Principal(context) = &call.caller {
+        store
+            .audit_api_change(context, &project.id, "operation.cancel", &found.id)
+            .map_err(|e| Problem::from(&e))?;
+    }
     let value = view(store, &project, &found).ok_or_else(parse)?;
     Ok(accepted(&project, value))
 }

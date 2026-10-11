@@ -64,6 +64,19 @@ impl Store {
             .optional()?
             .ok_or_else(|| missing("operation"))
     }
+    /// The first operation recorded for a project: the one that created it.
+    pub fn first_operation(&self, deployment: &str) -> Result<OperationEntry> {
+        self.db
+            .query_row(
+                &format!(
+                    "SELECT {COLUMNS} FROM operation_index WHERE deployment_id=?1 ORDER BY seq LIMIT 1"
+                ),
+                [deployment],
+                entry,
+            )
+            .optional()?
+            .ok_or_else(|| missing("operation"))
+    }
     pub fn set_operation_api_key(&self, id: &str, key: &str) -> Result<()> {
         self.db.execute(
             "UPDATE operation_index SET api_key=?2 WHERE id=?1 AND api_key IS NULL",

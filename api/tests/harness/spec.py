@@ -93,6 +93,8 @@ class Operation:
         self.stage = (override or status()['domains'][self.domain])['stage']
         self.served = self.stage in SERVED
         self.secured = body.get('security', bundle().get('security')) != []
+        self.role = body.get('x-required-role')
+        self.governed = 'governed' in body.get('x-profiles', ['local', 'governed'])
 
     def __repr__(self):
         return self.id

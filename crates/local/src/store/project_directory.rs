@@ -76,14 +76,49 @@ impl Store {
             .to_string_lossy()
             .into_owned()
     }
+    /// The principal's rank in a project, directly or through a group:
+    /// 0 none, 1 viewer, 2 editor, 3 administrator.
+    pub(crate) fn project_role(&self, principal: &str, deployment: &str) -> u8 {
+        super::authorization::role(&self.db, principal, deployment).unwrap_or(0)
+    }
+    /// Whether the caller administers the installation, not just a project.
+    pub(crate) fn installation_admin(&self, context: &crate::identity::Context) -> bool {
+        super::governed_console::realm_admin(&self.db, context).is_ok()
+    }
+    /// Record a change a signed-in caller made through the API.
+    pub(crate) fn audit_api_change(
+        &self,
+        context: &crate::identity::Context,
+        deployment: &str,
+        action: &str,
+        key: &str,
+    ) -> Result<()> {
+        super::authorization::audit(
+            &self.db,
+            context,
+            deployment,
+            super::authorization::policy(&self.db, deployment)?,
+            action,
+            key,
+            deployment,
+            &context.actor_id,
+        )
+    }
     /// Projects ordered by name then ID, after `after`, whose name contains
-    /// `contains` (ignoring case). Returns at most `limit`.
+    /// `contains` (ignoring case). With `visible_to`, only projects where that
+    /// principal holds a role. Returns at most `limit`.
     pub fn project_records(
         &self,
         after: Option<(&str, &str)>,
         contains: Option<&str>,
+        visible_to: Option<&str>,
         limit: usize,
     ) -> Result<Vec<ProjectRecord>> {
+        let subjects = visible_to
+            .map(|principal| super::authorization::subjects(&self.db, principal))
+            .transpose()?
+            .map(|subjects| serde_json::to_string(&subjects))
+            .transpose()?;
         let (after_name, after_id) = after.unwrap_or(("", ""));
         let pattern = contains.map(|text| {
             let escaped = text
@@ -97,6 +132,8 @@ impl Store {
              AND x.deleted_at_ms IS NULL
              AND (?2 IS NULL OR p.name LIKE ?2 ESCAPE '\\')
              AND (lower(p.name),d.id) > (lower(?3),?4)
+             AND (?6 IS NULL OR EXISTS (SELECT 1 FROM authorization_roles a WHERE a.deployment=d.id
+                  AND a.subject IN (SELECT value FROM json_each(?6))))
              ORDER BY lower(p.name),d.id LIMIT ?5"
         );
         Ok(self
@@ -108,7 +145,8 @@ impl Store {
                     pattern,
                     after_name,
                     after_id,
-                    limit as i64
+                    limit as i64,
+                    subjects
                 ],
                 record,
             )?

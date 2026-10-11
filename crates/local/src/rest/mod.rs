@@ -8,7 +8,7 @@ mod routes;
 mod shared;
 
 pub use problem::Problem;
-pub use routes::{Operation, ROUTES};
+pub use routes::{Operation, ROUTES, Role};
 
 use crate::store::{SCHEMA_VERSION, Store};
 use serde::{Deserialize, Serialize};
@@ -19,17 +19,30 @@ pub const PREFIX: &str = "/api/v1";
 /// Largest request body a transport may forward.
 pub const BODY_LIMIT: usize = 60000;
 
-/// Who is calling, as established by the transport.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+/// Who is calling. Never read from the wire: the daemon sets it from how the
+/// request arrived, so nothing a client sends can claim an identity.
+#[derive(Clone, Debug, Default)]
 pub enum Caller {
+    /// Not established. Every call is refused.
+    #[default]
+    Nobody,
     /// The owner of a local installation, through a launched console session.
     LocalOwner,
+    /// A signed-in person or service on a governed server.
+    Principal(crate::identity::Context),
 }
 impl Caller {
-    fn profile(self) -> &'static str {
+    fn profile(&self) -> &'static str {
         match self {
-            Self::LocalOwner => "local",
+            Self::Principal(_) => "governed",
+            Self::LocalOwner | Self::Nobody => "local",
+        }
+    }
+    /// Separates one caller's idempotency keys from another's.
+    pub(crate) fn scope(&self) -> String {
+        match self {
+            Self::Principal(context) => format!("principal:{}", context.actor_id),
+            Self::LocalOwner | Self::Nobody => "local-owner".into(),
         }
     }
 }
@@ -38,6 +51,7 @@ impl Caller {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Call {
+    #[serde(skip)]
     pub caller: Caller,
     pub method: String,
     /// Path below `/api/v1`, starting with `/`.
@@ -130,8 +144,51 @@ pub fn resolve<'a>(method: &str, path: &'a str) -> Result<Match<'a>, Reply> {
     Err(reply)
 }
 
+/// Whether a signed-in caller may run the operation. A project the caller
+/// holds no role in is reported as missing, so its existence is not revealed.
+fn authorize(
+    store: &Store,
+    context: &crate::identity::Context,
+    operation: Operation,
+    project: &str,
+) -> Result<(), Problem> {
+    if !operation.governed() {
+        return Err(Problem::new(
+            403,
+            "unavailable_in_profile",
+            "A governed server does not offer this operation yet.",
+        ));
+    }
+    let needed = match operation.role() {
+        Role::Any => return Ok(()),
+        Role::InstallationAdmin => {
+            return if store.installation_admin(context) {
+                Ok(())
+            } else {
+                Err(Problem::forbidden(
+                    "Only an installation administrator may do this.",
+                ))
+            };
+        }
+        Role::Viewer => 1,
+        Role::Editor => 2,
+        Role::Administrator => 3,
+    };
+    let held = shared::internal_id("prj", project)
+        .map(|id| store.project_role(&context.actor_id, &id))
+        .unwrap_or(0);
+    match held {
+        0 => Err(Problem::not_found("There is no such project.")),
+        held if held < needed => Err(Problem::forbidden(
+            "Your role in this project does not allow this.",
+        )),
+        _ => Ok(()),
+    }
+}
+
 /// Route one call and run it. Never fails: every failure is a problem reply.
-pub fn dispatch(store: &mut Store, host: &crate::api::Binding, call: &Call) -> Reply {
+/// `host` is the console the local owner launched; a governed call has none.
+pub fn dispatch(store: &mut Store, host: Option<&crate::api::Binding>, call: &Call) -> Reply {
     let found = match resolve(&call.method, &call.path) {
         Ok(found) => found,
         Err(reply) => return reply,
@@ -144,6 +201,21 @@ pub fn dispatch(store: &mut Store, host: &crate::api::Binding, call: &Call) -> R
             .map(|(_, value)| *value)
             .unwrap_or_default()
     };
+    match &call.caller {
+        Caller::Nobody => {
+            return Problem::unauthorized("The session is missing or has expired.").into();
+        }
+        Caller::LocalOwner => {}
+        // Checked before the request is read, so a refusal says nothing about
+        // whether the request was otherwise valid.
+        Caller::Principal(context) => {
+            if let Err(problem) = authorize(store, context, found.operation, parameter("project")) {
+                let deployment = shared::internal_id("prj", parameter("project"));
+                let _ = store.audit_denial(context, deployment.as_deref());
+                return problem.into();
+            }
+        }
+    }
     let result = match found.operation {
         Operation::GetServerVersion => Ok(Reply::ok(json!({
             "version": env!("CARGO_PKG_VERSION"),
@@ -164,7 +236,7 @@ pub fn dispatch(store: &mut Store, host: &crate::api::Binding, call: &Call) -> R
             operations::get(store, parameter("project"), parameter("operation"))
         }
         Operation::CancelOperation => {
-            operations::cancel(store, parameter("project"), parameter("operation"))
+            operations::cancel(store, call, parameter("project"), parameter("operation"))
         }
     };
     result.unwrap_or_else(Reply::from)

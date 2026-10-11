@@ -199,6 +199,71 @@ class EngineServer(Server):
         return self._cli('doctor', timeout=30).stdout
 
 
+class GovernedServer(Server):
+    """The same server with the API also served to signed-in callers.
+
+    Callers are service accounts, which the owner of the machine creates and
+    gives roles through the control socket, so no identity provider is needed.
+    The API is served by `supabricks identity api`, which checks the token and
+    the caller's role in the project exactly as the governed console does.
+    """
+
+    def start(self):
+        super().start()
+        with socket.socket() as probe:
+            probe.bind(('127.0.0.1', 0))
+            port = probe.getsockname()[1]
+        self.governed = f'http://127.0.0.1:{port}'
+        self._api = subprocess.Popen(
+            [str(self.binary), 'identity', 'api', '--listen', f'127.0.0.1:{port}', '--data-dir', str(self.data)],
+            stdout=self._log, stderr=self._log)
+        wait(lambda: self._listening(port))
+        return self
+
+    @staticmethod
+    def _listening(port):
+        with socket.socket() as probe:
+            return probe.connect_ex(('127.0.0.1', port)) == 0
+
+    def principal(self, label):
+        """A new service account: (its ID, a client signed in as it)."""
+        principal = self.rpc(method='identity_admin', command=dict(action='service', label=label))['principal_id']
+        return principal, self.sign_in(principal)
+
+    def sign_in(self, principal):
+        from .client import Client
+        issued = self.rpc(method='identity_admin', command=dict(
+            action='issue_service', principal=principal, scopes=['identity:self', 'project:control'],
+            ttl_seconds=3600))
+        return self.bearer(issued['token'])
+
+    def bearer(self, token):
+        from .client import Client
+        http = requests.Session()
+        http.trust_env = False
+        return Client(self.governed, http, None, {'Authorization': f'Bearer {token}'} if token else {})
+
+    def grant(self, project, subject, role, kind='principal'):
+        """Give a principal or group a role in a project, or remove it with None."""
+        deployment = str(uuid.UUID(project.removeprefix('prj_')))
+        revision = self.rpc(method='authorization_admin',
+                            command=dict(action='policy', deployment=deployment))['policy_revision']
+        self.rpc(method='authorization_admin', command=dict(
+            action='set_role', deployment=deployment, subject=dict(kind=kind, id=subject), role=role,
+            expected_policy=revision, key=str(uuid.uuid4())))
+
+    def audit(self, project):
+        deployment = str(uuid.UUID(project.removeprefix('prj_')))
+        return self.rpc(method='authorization_admin',
+                        command=dict(action='audit', deployment=deployment, after=0))['events']
+
+    def stop(self):
+        if getattr(self, '_api', None) and self._api.poll() is None:
+            self._api.terminate()
+            self._api.wait(timeout=15)
+        super().stop()
+
+
 def wait(call, timeout=20):
     until = time.monotonic() + timeout
     while time.monotonic() < until:
