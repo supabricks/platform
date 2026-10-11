@@ -23,3 +23,44 @@ serverVersion:
               profile: local
               schema_version: 71
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+
+serverServices:
+  get:
+    operationId: listServices
+    tags: [Server]
+    summary: List the services that run the installation, with their health
+    description: The services are shared by every project. `status` and `doctor` report the same on the command line.
+    x-backend: cli-only
+    x-required-role: any
+    x-console-features: [HM-04]
+    responses:
+      '200':
+        description: The services.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items: { type: array, items: { $ref: './schemas.yaml#/Service' } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+
+serverServiceRestart:
+  parameters:
+    - { name: service, in: path, required: true, schema: { type: string } }
+  post:
+    operationId: restartService
+    tags: [Server]
+    summary: Restart one service
+    description: Affects every project. Not part of version 1.
+    x-backend: new
+    x-required-role: installation-admin
+    x-console-features: [HM-04]
+    x-issues: [318]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

@@ -12,6 +12,7 @@ operations:
       branch changes, imports, sync runs, backups, job runs and applies appear
       in one ordered list.
     x-backend: new
+    x-required-role: viewer
     x-console-features: [HM-03]
     x-issues: [285]
     parameters:
@@ -52,6 +53,7 @@ operation:
     summary: Get one operation
     description: Poll this until `state` is final. Responses carry `Retry-After` while the operation is running.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [HM-03]
     responses:
       '200':
@@ -77,6 +79,7 @@ operationCancel:
       operation reaches `cancelled` once it has stopped cleanly, or finishes
       anyway if it was too late.
     x-backend: ready
+    x-required-role: editor
     x-console-features: [HM-03]
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }

@@ -1,15 +1,25 @@
 Project:
   type: object
-  description: A project holds databases, sync pipelines, notebooks, jobs and saved queries that belong together.
-  required: [id, name, state, created_at, revision, counts]
+  description: >-
+    A project holds databases, sync pipelines, notebooks, jobs and saved queries
+    that belong together, with its own access policy. It is one instance: two
+    projects created from the same source share nothing.
+  required: [id, name, source_id, created_at, revision, counts]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }
-    state: { type: string, enum: [starting, running, stopping, stopped] }
+    source_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: >-
+        The source this project was created from. It travels with the project
+        definition (`supabricks.toml`), so projects created from one source,
+        here or in another installation, share it.
     path:
       type: string
-      description: Folder that holds the project definition. Absent when the caller may not see server paths.
+      description: >-
+        Folder that holds the project definition. Local profile only; a
+        governed server never reveals its own paths.
     created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
     last_active_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
@@ -45,13 +55,9 @@ ProjectCreate:
   properties:
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }
-    start_from:
-      type: string
-      enum: [empty, sample]
-      default: empty
-      description: >-
-        `empty` creates one empty database called `main`. `sample` also loads
-        the sample tables that ship with the release.
+    source_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: Create another instance of this source. Omit it to start a new, empty project.
 
 ProjectUpdate:
   type: object
@@ -122,17 +128,6 @@ ProjectMap:
           from: { type: string, description: '`<kind>:<id>` of the source node.' }
           to: { type: string }
           kind: { type: string, enum: [branch_of, publishes, reads, shares_from] }
-
-Service:
-  type: object
-  description: One of the processes that run a project.
-  required: [id, name, state]
-  properties:
-    id: { type: string, enum: [postgres, storage, sync_capture, analytics_engine, catalog, notebooks] }
-    name: { type: string }
-    state: { type: string, enum: [starting, running, unhealthy, stopped] }
-    detail: { type: string }
-    since: { $ref: '../../shared/schemas.yaml#/Timestamp' }
 
 RecentItem:
   type: object

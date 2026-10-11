@@ -258,6 +258,11 @@ It corrects three `x-backend` values in the first draft of the specification.
 
 That is ten operations in version 1, two removed, two deferred and one moved.
 
+**Applied to the specification so far:** start and stop are removed with the
+`state` field; services moved to `/server/services`; restart is deferred
+(#318); `start_from` is replaced by `source_id`; every operation names its
+required role; `x-backend` values are corrected.
+
 **Design questions to settle in AP01.1**
 
 - Where a project's name lives. Two instances of one source need different

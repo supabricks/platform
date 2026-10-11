@@ -68,11 +68,7 @@ paths:
   /projects: { $ref: './domains/projects/paths.yaml#/projects' }
   /projects/{project}: { $ref: './domains/projects/paths.yaml#/project' }
   /projects/{project}/deletion-impact: { $ref: './domains/projects/paths.yaml#/projectDeletionImpact' }
-  /projects/{project}/start: { $ref: './domains/projects/paths.yaml#/projectStart' }
-  /projects/{project}/stop: { $ref: './domains/projects/paths.yaml#/projectStop' }
   /projects/{project}/map: { $ref: './domains/projects/paths.yaml#/projectMap' }
-  /projects/{project}/services: { $ref: './domains/projects/paths.yaml#/projectServices' }
-  /projects/{project}/services/{service}/restart: { $ref: './domains/projects/paths.yaml#/projectServiceRestart' }
   /projects/{project}/recents: { $ref: './domains/projects/paths.yaml#/projectRecents' }
   # ---- Operations ----
   /projects/{project}/operations: { $ref: './domains/operations/paths.yaml#/operations' }
@@ -97,6 +93,8 @@ paths:
 
   # ---- Server ----
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }
+  /server/services: { $ref: './domains/server/paths.yaml#/serverServices' }
+  /server/services/{service}/restart: { $ref: './domains/server/paths.yaml#/serverServiceRestart' }
 
 components:
   securitySchemes:

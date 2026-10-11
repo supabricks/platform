@@ -70,8 +70,8 @@ server routes only operations that are `implemented` or `complete`.
 <!-- status:start -->
 | Domain | Slice | Stage | Operations | Served | Deferred |
 |---|---|---|---|---|---|
-| `server` | AP00 | draft | 1 | 1 | 0 |
-| `projects` | AP01 | draft | 12 | 0 | 0 |
+| `server` | AP00 | draft | 3 | 1 | 1 |
+| `projects` | AP01 | draft | 8 | 0 | 1 |
 | `operations` | AP01 | draft | 3 | 0 | 0 |
 | `databases` | AP02 | draft | 10 | 0 | 0 |
 | `branches` | AP03 | draft | 10 | 0 | 0 |
