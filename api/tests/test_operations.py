@@ -159,7 +159,10 @@ def test_operations_and_their_order_survive_a_killed_daemon(private_server):
     api = private_server.session()
     operation = api.call('createProject', json={'name': 'durable-ops'},
                          headers={'Idempotency-Key': key()}, expect=202).json()
+    # Wait for the apply's database change, or it may first appear after the restart.
+    wait(lambda: any(o['kind'] == 'database.create' for o in listed(api, operation['project_id'])))
     before = [(o['id'], o['created_at']) for o in listed(api, operation['project_id'])]
+    assert len(before) == 2
     private_server.restart(kill=True)
     api = private_server.session()
     assert [(o['id'], o['created_at']) for o in listed(api, operation['project_id'])] == before
