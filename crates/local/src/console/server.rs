@@ -1,5 +1,6 @@
 mod health;
 mod notebooks;
+mod rest;
 use super::{
     Config,
     assets::{Assets, VERSION},
@@ -74,6 +75,13 @@ fn fail(status: u16, message: &str) -> Reply {
         status,
         json!({"api_version":VERSION,"error":{"message":message}}),
     )
+}
+/// A `403` in the shape the requested surface uses.
+fn refuse(v1: &Option<String>, message: &str) -> Reply {
+    match v1 {
+        Some(_) => rest::reply(crate::rest::Problem::forbidden(message).into()),
+        None => fail(403, message),
+    }
 }
 fn single<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
     let mut all = headers.get_all(name).iter();
@@ -179,11 +187,19 @@ impl State {
         sessions.get(&id).map(|s| (id, s.csrf.clone()))
     }
     async fn handle(self: Arc<Self>, request: HttpRequest<Incoming>) -> Reply {
+        // Platform API v1 paths take query parameters and answer every
+        // failure with a problem document; nothing else on this server does.
+        let v1 = request
+            .uri()
+            .path()
+            .strip_prefix(crate::rest::PREFIX)
+            .filter(|rest| rest.starts_with('/'))
+            .map(str::to_owned);
         if single(request.headers(), "host") != Some(self.host.as_str())
-            || request.uri().query().is_some()
+            || (request.uri().query().is_some() && v1.is_none())
             || request.uri().authority().is_some()
         {
-            return fail(403, "Unexpected console host or URL");
+            return refuse(&v1, "Unexpected console host or URL");
         }
         let origin = single(request.headers(), "origin");
         // Reopening a deployment navigates between loopback ports. Permit only
@@ -198,7 +214,10 @@ impl State {
                 !matches!(s, "same-origin" | "none") && !(s == "same-site" && launch_navigation)
             })
         {
-            return fail(403, "Cross-origin console requests are refused");
+            return refuse(&v1, "Cross-origin console requests are refused");
+        }
+        if let Some(path) = v1 {
+            return self.rest(path, request).await;
         }
         let path = request.uri().path().to_owned();
         if !path.starts_with("/api/") {

@@ -54,6 +54,7 @@ pub fn boundary(request: &Request) -> Boundary {
         | Request::ConsoleAction { .. }
         | Request::ConsoleOpen { .. }
         | Request::ConsoleOverview { .. }
+        | Request::Rest { .. }
         | Request::Api { .. }
         | Request::Status
         | Request::RegisterProject { .. }

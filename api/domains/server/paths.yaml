@@ -1,0 +1,25 @@
+# Server: facts about the installation itself.
+
+serverVersion:
+  get:
+    operationId: getServerVersion
+    tags: [Server]
+    summary: Get the server version
+    description: >-
+      The build that is running, the API version it serves and its profile.
+      Clients use it to check compatibility before they do anything else.
+    x-backend: ready
+    x-required-role: any
+    x-console-features: [ST-01]
+    responses:
+      '200':
+        description: The version.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ServerVersion' }
+            example:
+              version: 0.1.0
+              api_version: v1
+              profile: local
+              schema_version: 71
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }

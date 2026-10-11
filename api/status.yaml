@@ -1,0 +1,23 @@
+# Where each domain stands. See docs/plans/platform-api-implementation.md.
+#
+# stage: draft        the contract is still changing
+#        frozen       the contract is agreed; changes need a review
+#        implemented  the server serves it
+#        complete     it passes every test layer and is gated in CI
+#
+# A domain's stage applies to all of its operations. An entry under
+# `operations` overrides it for one operation, and may also be `deferred`
+# (described, but not part of version 1) with the issue that tracks it.
+#
+# The server routes only operations that are `implemented` or `complete`.
+# Run `python3 api/scripts/generate.py` after changing this file.
+
+domains:
+  server:     { slice: AP00, stage: draft }
+  projects:   { slice: AP01, stage: draft }
+  operations: { slice: AP01, stage: draft }
+  databases:  { slice: AP02, stage: draft }
+  branches:   { slice: AP03, stage: draft }
+
+operations:
+  getServerVersion: { stage: implemented }

@@ -71,7 +71,7 @@ Problem:
     code:
       type: string
       description: Stable machine-readable code.
-      examples: [name_taken, revision_mismatch, capacity_exhausted, not_permitted, not_found, invalid_request, precondition_required, unavailable_in_profile]
+      examples: [invalid_request, unauthorized, not_permitted, unavailable_in_profile, not_found, method_not_allowed, conflict, name_taken, revision_mismatch, precondition_required, capacity_exhausted, request_too_large, unsupported_media_type, unavailable, internal_error]
     detail: { type: string }
     instance: { type: string, description: 'The request ID, for support.' }
     errors:

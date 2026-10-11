@@ -1,0 +1,65 @@
+# Platform API (docs/plans/platform-api-implementation.md). Every pull request
+# in any workstream runs this: the contract checks need no build, and the
+# server tests run the full harness against a real daemon.
+name: api
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python3 -m pip install -r api/tests/requirements.txt
+      - name: specification is valid
+        run: npx --yes @redocly/cli@2.62.1 lint api/openapi.yaml --config api/redocly.yaml
+      - name: route table and status table match the specification
+        run: python3 api/scripts/generate.py --check
+      - name: specification rules (L0)
+        run: python3 -m pytest api/tests -m l0 -q
+      - name: no incompatible change to a protected operation
+        if: github.event_name == 'pull_request'
+        run: |
+          base="$RUNNER_TEMP/base"; mkdir -p "$base"
+          if ! git archive "origin/${{ github.base_ref }}" api 2>/dev/null | tar -x -C "$base" \
+             || [ ! -f "$base/api/scripts/bundle.py" ]; then
+            echo "the base branch has no specification yet; nothing to compare"; exit 0
+          fi
+          python3 "$base/api/scripts/bundle.py" --protected > "$RUNNER_TEMP/base.json"
+          python3 api/scripts/bundle.py > "$RUNNER_TEMP/head.json"
+          docker run --rm -v "$RUNNER_TEMP:/w" \
+            tufin/oasdiff@sha256:37cded09a045370fcbebc95640e6269d2e3548a781e13ae0549cc34905c39d9c \
+            breaking /w/base.json /w/head.json --fail-on ERR
+
+  server:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install -r api/tests/requirements.txt
+      - run: cargo build --locked -p supabricks-local
+      - name: API tests against a real server (L0 to L3, L5, L7)
+        run: python3 -m pytest api/tests -q --binary target/debug/supabricks

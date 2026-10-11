@@ -21,7 +21,10 @@ api/
   domains/<domain>/
     paths.yaml            Path items for one domain, keyed by a short name
     schemas.yaml          Schemas for that domain
+  status.yaml             The stage of every domain and operation
   scripts/coverage.py     Compares the spec with the prototype's feature list
+  scripts/generate.py     Writes the server's route table and the status table
+  tests/                  The test harness, run against a real server
 ```
 
 `openapi.yaml` is the route index: every path appears there once, pointing at a
@@ -32,7 +35,7 @@ they share schemas only through `shared/`.
 
 | # | Domain | Scope | Prototype features | State |
 |---|---|---|---|---|
-| 1 | `projects` | Projects, start and stop, project map, services, recent items | HM, FR, ST-02 | Written |
+| 1 | `projects` | Projects, project map, recent items | HM, FR, ST-02 | Written |
 | 2 | `operations` | Asynchronous work and the project activity feed | HM-03 | Written |
 | 3 | `databases` | Database lifecycle, compute, connection details | DB-01 to DB-06, DB-11 | Written |
 | 4 | `branches` | Branches, reset, restore window, schema diff | BR | Written |
@@ -55,7 +58,28 @@ they share schemas only through `shared/`.
 | 21 | `secrets` | Secret store, grants, reads | SC | Planned |
 | 22 | `alerts` | Alerts, rules, destinations, deliveries | AL | Planned |
 | 23 | `usage` | Per-project and cross-project usage, limits | UQ | Planned |
-| 24 | `server` | Version, verify, diagnostics, fixed limits | ST-01 | Planned |
+| 24 | `server` | Version, service health, verify, diagnostics, fixed limits | ST-01 | Started |
+
+## Status
+
+Each domain moves through four stages: `draft`, `frozen`, `implemented` and
+`complete`. `api/status.yaml` records them, and the plan in
+`docs/plans/platform-api-implementation.md` says what each one requires. The
+server routes only operations that are `implemented` or `complete`.
+
+<!-- status:start -->
+| Domain | Slice | Stage | Operations | Served | Deferred |
+|---|---|---|---|---|---|
+| `server` | AP00 | draft | 1 | 1 | 0 |
+| `projects` | AP01 | draft | 12 | 0 | 0 |
+| `operations` | AP01 | draft | 3 | 0 | 0 |
+| `databases` | AP02 | draft | 10 | 0 | 0 |
+| `branches` | AP03 | draft | 10 | 0 | 0 |
+<!-- status:end -->
+
+This table and the server's route table (`crates/local/src/rest/routes.rs`) are
+generated. After changing the specification or `status.yaml`, run
+`python3 api/scripts/generate.py`.
 
 ## Conventions
 
@@ -81,6 +105,7 @@ Every operation carries:
 | `x-backend` | `ready` (the platform does this today), `cli-only` (only from the command line or an admin request file), or `new` (no platform support) |
 | `x-console-features` | Feature IDs from the prototype's `src/lib/backing.ts` that the operation serves |
 | `x-issues` | Tracking issues on `supabricks/platform` for whatever part is not `ready` |
+| `x-required-role` | The least project role that may call it: `viewer`, `editor`, `administrator`, `installation-admin`, or `any` for every signed-in caller. The authorization tests are generated from it. Required once a domain is `frozen` |
 
 When one operation serves both a supported feature and an unsupported option
 (for example creating a database, where choosing a compute size is new),
@@ -93,6 +118,7 @@ available yet.
 npx @redocly/cli lint api/openapi.yaml --config api/redocly.yaml
 npx @redocly/cli bundle api/openapi.yaml -o openapi.bundle.yaml
 python3 api/scripts/coverage.py ../console/prototype/src/lib/backing.ts
+python3 api/scripts/generate.py --check
 ```
 
 `coverage.py` lists, per prototype section, how many features have at least one

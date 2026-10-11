@@ -55,11 +55,14 @@ tags:
   - { name: Operations, description: 'The durable record of asynchronous work, and the project activity feed.' }
   - { name: Databases, description: 'PostgreSQL databases: lifecycle, compute and how to connect.' }
   - { name: Branches, description: 'Copy-on-write branches of a database.' }
+  - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
     tags: [Databases, Branches]
+  - name: Installation
+    tags: [Server]
 paths:
   # ---- Projects ----
   /projects: { $ref: './domains/projects/paths.yaml#/projects' }
@@ -91,6 +94,10 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/reset: { $ref: './domains/branches/paths.yaml#/branchReset' }
   /projects/{project}/databases/{database}/branches/{branch}/restore-window: { $ref: './domains/branches/paths.yaml#/branchRestoreWindow' }
   /projects/{project}/databases/{database}/branches/{branch}/schema-diff: { $ref: './domains/branches/paths.yaml#/branchSchemaDiff' }
+
+  # ---- Server ----
+  /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }
+
 components:
   securitySchemes:
     session:
@@ -99,8 +106,10 @@ components:
       name: sb_session
       description: >-
         Browser session set at sign-in. Non-GET requests must also carry the
-        `X-CSRF-Token` header. In the local profile the session is created when
-        the console is launched.
+        `X-CSRF-Token` header and the server's own `Origin`. In the local
+        profile the session is created when the console is launched, and the
+        cookie is named `sb_<console instance>` so that two consoles on one
+        machine do not share it.
     token:
       type: http
       scheme: bearer

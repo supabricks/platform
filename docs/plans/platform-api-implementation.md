@@ -56,7 +56,7 @@ individually, which removes it from the gates and from the published contract.
 
 ## 3. Architecture decisions
 
-These are proposed. AP00 implements them, so they need agreement first.
+These were agreed on 2026-10-10. AP00 implements them.
 
 **One implementation, several adapters.** REST handlers are thin. Each parses
 and validates a request, calls an existing typed action (`api::Action`,
@@ -64,23 +64,37 @@ and validates a request, calls an existing typed action (`api::Action`,
 line and MCP keep calling the same actions. No business logic lives in the HTTP
 layer. Where a typed action does not exist, step c adds it first.
 
-**Served by the existing console server.** The REST API is mounted at
-`/api/v1` in `crates/local/src/console/server.rs`, next to the current
+**Routed on the daemon, served by the existing HTTP servers.** The platform
+has two HTTP servers: the local console server (`console/server.rs`, one per
+launched console) and the governed sign-in server (`identity/transport.rs`).
+Neither holds state; both forward to the daemon, which is the single writer. So
+the API has two parts:
+
+- `crates/local/src/rest/` runs on the daemon. It owns the route table, the
+  handlers and the problem mapping, and has no HTTP dependency.
+- Each HTTP server is a transport. It checks the session, origin and CSRF
+  token, frames the request as a `rest::Call`, sends it to the daemon and writes
+  the `rest::Reply` back.
+
+The local console server mounts it at `/api/v1`, next to the current
 `POST /api/workspace` action endpoint. Both run until the console has moved to
-`/api/v1`; then the action endpoint is removed. Sessions, CSRF, TLS, Host and
-Origin checks are the ones already there.
+`/api/v1`; then the action endpoint is removed. The governed server gains the
+same mount when the first domain needs authorization tests.
 
 **No web framework by default.** The server uses `hyper` directly today, and
 the repository checks its dependency boundary. The plan adds a route table and
 a small path matcher, not `axum`. If routing by hand becomes a burden, adding a
 framework is a separate, explicit decision.
 
-**The specification is the source of truth for routes.** A build-time check
-compares the route table with the bundled specification: every operation in an
-`implemented` or `complete` domain must be routed, and nothing may be routed
-that the specification does not describe.
+**The specification is the source of truth for routes.**
+`api/scripts/generate.py` writes the server's route table
+(`rest/routes.rs`) from the specification and `api/status.yaml`: one enum
+variant and one route per operation that is `implemented` or `complete`. The
+dispatcher matches on the enum exhaustively, so an operation marked implemented
+without a handler does not compile, and CI fails if the generated file is out
+of date. Nothing can be routed that the specification does not describe.
 
-**Cross-cutting behaviour is implemented once**, in the HTTP layer:
+**Cross-cutting behaviour is implemented once**, in `rest/`:
 
 | Concern | Behaviour | Backed by |
 |---|---|---|
@@ -160,12 +174,14 @@ takes on a hosted runner and decides whether it can run on every PR.
 
 A new workflow, `.github/workflows/api.yml`, runs on every pull request:
 
-1. Lint, bundle and coverage scripts.
-2. `oasdiff`: a `complete` domain may gain operations and optional fields. It
-   may not lose or change anything a client could depend on.
-3. The route check from section 3.
-4. Build the binary, start the server, run the suite.
-5. The scenario-coverage script.
+1. Lint the specification.
+2. Check that the generated route table and status table are current.
+3. `oasdiff`: compare the base branch's protected operations (`frozen`,
+   `implemented` or `complete`) with the change. They may gain optional fields.
+   They may not lose or change anything a client could depend on.
+4. Build the binary, start the server and run the whole suite, on Linux and
+   macOS. This includes the rule that every served operation has a scenario
+   test in its domain's file.
 
 A domain's tests are selected by its stage, so marking a domain `complete` is
 what makes its tests mandatory. From then on any pull request, in any
@@ -203,18 +219,20 @@ another and can proceed in parallel once AP03 is complete.
 
 No domain is completed in this slice. It builds what every domain needs.
 
-| Part | Work |
-|---|---|
-| AP00.1 | `api/status.yaml`; generate the README table; add `x-required-role` and `x-stage` to the conventions |
-| AP00.2 | Route table and matcher in the console server at `/api/v1`; the route-versus-spec check |
-| AP00.3 | Shared behaviour: problem errors, idempotency, `ETag` and `If-Match`, paging helpers, profile gating |
-| AP00.4 | Uniform `Operation` view over the existing operation tables |
-| AP00.5 | Test harness: server fixture, validating client, generated L3 invariants, pinned dependencies |
-| AP00.6 | `api.yml` workflow with `oasdiff` and the coverage scripts; governed-profile timing |
-| AP00.7 | One endpoint end to end, `GET /server/version`, to prove every layer |
+| Part | Work | State |
+|---|---|---|
+| AP00.1 | `api/status.yaml`; generated README table; `x-required-role` in the conventions | Done |
+| AP00.2 | `rest/` on the daemon with the generated route table and matcher; mounted at `/api/v1` in the local console server | Done |
+| AP00.3 | Shared behaviour: problem errors and their mapping from platform errors | Done |
+| AP00.3b | Idempotency, `ETag` and `If-Match`, paging | Moved to AP01, with the first operations that use them, so they are built against real tests |
+| AP00.4 | Uniform `Operation` view over the existing operation tables | Moved to AP01; it is `listOperations` and `getOperation` |
+| AP00.5 | Test harness in `api/tests/`: server fixture, validating client, generated L3 invariants, pinned dependencies | Done |
+| AP00.6 | `api.yml` workflow with lint, generation check, `oasdiff` and the suite on Linux and macOS | Done; first hosted run is the evidence |
+| AP00.7 | One endpoint end to end, `GET /server/version` | Done |
+| AP00.8 | Governed transport and the L4 authorization generator | Open. Built with AP01, which is the first domain with roles to test |
 
 Acceptance: `GET /api/v1/server/version` is served, described, routed, tested
-at L0 to L3 and L7 on Linux and macOS, and gated in CI.
+at L0 to L3, L5 and L7 on Linux and macOS, and gated in CI.
 
 ### AP01: Project
 

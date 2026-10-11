@@ -26,6 +26,7 @@ pub mod project;
 pub mod projects;
 mod query;
 pub mod recovery;
+pub mod rest;
 mod runtime_cli;
 pub mod sessions;
 pub mod store;
