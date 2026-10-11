@@ -70,6 +70,76 @@ impl Call {
             .ok_or_else(|| Problem::invalid("cursor is not one this server issued."))
     }
 }
+/// The fields of a JSON object body. Unknown fields are refused, so a typo is
+/// an error and not a silently ignored setting.
+pub fn fields<'a>(
+    call: &'a Call,
+    allowed: &[&str],
+) -> Result<&'a serde_json::Map<String, Value>, Problem> {
+    let object = call
+        .body
+        .as_ref()
+        .and_then(Value::as_object)
+        .ok_or_else(|| Problem::invalid("Send a JSON object as the request body."))?;
+    match object.keys().find(|key| !allowed.contains(&key.as_str())) {
+        Some(key) => Err(Problem::invalid(format!(
+            "{key} is not a field of this request."
+        ))),
+        None => Ok(object),
+    }
+}
+/// A text field, when present. Any other JSON type is refused.
+pub fn text<'a>(
+    object: &'a serde_json::Map<String, Value>,
+    name: &str,
+) -> Result<Option<&'a str>, Problem> {
+    match object.get(name) {
+        None => Ok(None),
+        Some(Value::String(text)) => Ok(Some(text)),
+        Some(_) => Err(Problem::invalid(format!("{name} must be text."))),
+    }
+}
+
+/// Run a change at most once per `Idempotency-Key`. A repeat with the same
+/// request returns the first reply; the same key with another request is `409`.
+/// `run` must itself converge when repeated with the same key, because the
+/// server can stop after the change and before the reply is stored.
+pub fn idempotent(
+    store: &mut crate::store::Store,
+    call: &Call,
+    scope: &str,
+    run: impl FnOnce(&mut crate::store::Store, &str) -> Result<Reply, Problem>,
+) -> Result<Reply, Problem> {
+    use sha2::{Digest, Sha256};
+    let key = call
+        .idempotency_key
+        .as_deref()
+        .filter(|key| (8..=128).contains(&key.len()) && key.bytes().all(|b| b.is_ascii_graphic()))
+        .ok_or_else(|| {
+            Problem::invalid("Idempotency-Key is required: 8 to 128 printable characters.")
+        })?;
+    let digest = hex::encode(Sha256::digest(
+        serde_json::to_vec(&(&call.method, &call.path, &call.body)).unwrap(),
+    ));
+    let stored = store.api_reply(scope, key).map_err(|e| Problem::from(&e))?;
+    if let Some((old, reply)) = stored {
+        if old != digest {
+            return Err(Problem::new(
+                409,
+                "idempotency_key_reused",
+                "This Idempotency-Key was used for a different request.",
+            ));
+        }
+        return serde_json::from_str(&reply)
+            .map_err(|_| Problem::new(500, "internal_error", "The stored reply is unreadable."));
+    }
+    let reply = run(store, key)?;
+    store
+        .save_api_reply(scope, key, &digest, &serde_json::to_string(&reply).unwrap())
+        .map_err(|e| Problem::from(&e))?;
+    Ok(reply)
+}
+
 /// An opaque cursor for the position after an item with these ordering values.
 pub fn cursor(position: &[&str]) -> String {
     hex::encode(serde_json::to_vec(position).unwrap())

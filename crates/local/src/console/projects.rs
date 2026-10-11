@@ -435,7 +435,7 @@ impl Workspace {
 // A console-created source is published atomically at a server-chosen path.
 // The source UUID and durable deployment/apply journals recover lost responses
 // and process restarts. HTTP callers cannot select an arbitrary filesystem path.
-fn create(
+pub(crate) fn create(
     store: &mut Store,
     host: &Binding,
     id: OperationId,

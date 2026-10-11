@@ -253,10 +253,43 @@ mod project_name_tests {
         db.execute_batch(
             "INSERT INTO projects VALUES ('aaaaaaaa-1','sales'),('bbbbbbbb-2','Sales'),('cccccccc-3','other'),('dddddddd-4','sales');
              INSERT INTO project_definitions VALUES ('aaaaaaaa-1','sales');
-             INSERT INTO deployments SELECT 'dep-1','aaaaaaaa-1',w.id,'aaaaaaaa-1','local',1,1,p.id,p.id FROM workspaces w, principals p;",
+             INSERT INTO deployments SELECT 'dep-1','aaaaaaaa-1',w.id,'aaaaaaaa-1','local',1,1,p.id,p.id FROM workspaces w, principals p;
+             INSERT INTO project_applies VALUES ('apply-done','dep-1','k1','succeeded','{}'),('apply-open','dep-1','k2','queued','{}');",
         )
         .unwrap();
         catalog_upgrade(&mut db, 31, "backup", "release").unwrap();
+        let indexed: Vec<(String, bool)> = db
+            .prepare("SELECT id,finished_at_ms IS NOT NULL FROM operation_index ORDER BY seq")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(
+            indexed,
+            [("apply-done".into(), true), ("apply-open".into(), false)],
+            "existing operations join the feed in their original order"
+        );
+        db.execute(
+            "UPDATE project_applies SET state='failed' WHERE id='apply-open'",
+            [],
+        )
+        .unwrap();
+        db.execute(
+            "INSERT INTO project_applies VALUES ('apply-new','dep-1','k3','queued','{}')",
+            [],
+        )
+        .unwrap();
+        assert_eq!(
+            db.query_row(
+                "SELECT count(*) FROM operation_index WHERE (id='apply-open' AND finished_at_ms IS NOT NULL) OR (id='apply-new' AND finished_at_ms IS NULL AND created_at_ms>0)",
+                [],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+            2,
+            "triggers record new operations and when one finishes"
+        );
         let names: Vec<String> = db
             .prepare("SELECT name FROM projects ORDER BY id")
             .unwrap()

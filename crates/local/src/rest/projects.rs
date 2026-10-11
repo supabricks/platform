@@ -1,10 +1,12 @@
 //! The projects domain. A project is one instance of a source.
 use super::{
-    Call, Caller, Problem, Reply,
-    shared::{cursor, etag, internal_id, page, public_id, timestamp},
+    Call, Caller, Problem, Reply, operations,
+    shared::{cursor, etag, fields, idempotent, internal_id, page, public_id, text, timestamp},
 };
+use crate::api::Binding;
 use crate::store::{ProjectRecord, Store};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 fn body(caller: Caller, record: &ProjectRecord) -> Value {
     let mut value = json!({
@@ -56,4 +58,74 @@ pub fn get(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Probl
     let mut reply = Reply::ok(body(call.caller, &record));
     reply.headers.insert("ETag".into(), etag(record.revision));
     Ok(reply)
+}
+
+/// A stable identity derived from an idempotency key, so a repeated create
+/// lands on the same project even if the first reply was never stored.
+fn derived(purpose: &str, key: &str) -> supabricks_core::resource::OperationId {
+    let digest = Sha256::digest(format!("{purpose}:{key}"));
+    let mut bytes = [0u8; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    // Shaped as a random (version 4) UUID, like every other platform ID.
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    uuid::Uuid::from_bytes(bytes)
+        .to_string()
+        .parse()
+        .expect("a UUID is a valid operation ID")
+}
+
+pub fn create(store: &mut Store, host: &Binding, call: &Call) -> Result<Reply, Problem> {
+    let body = fields(call, &["name", "description"])?;
+    let name = text(body, "name")?.ok_or_else(|| Problem::invalid("name is required."))?;
+    let name = supabricks_core::validation::valid_name(&json!({"name": name}), "name")
+        .map_err(|e| Problem::invalid(e.message))?;
+    let description = text(body, "description")?.unwrap_or_default().to_owned();
+    if description.chars().count() > 500 {
+        return Err(Problem::invalid(
+            "description may be at most 500 characters.",
+        ));
+    }
+    idempotent(store, call, "local-owner:createProject", |store, key| {
+        let (source, attempt) = (derived("project", key), derived("apply", key));
+        let known = store
+            .root()
+            .join("console-created-projects")
+            .join(source.to_string())
+            .exists();
+        // Refuse a taken name before anything is written, unless this key
+        // already created the project and is being repeated.
+        if !known
+            && !store
+                .project_name_free(&name, None)
+                .map_err(|e| Problem::from(&e))?
+        {
+            return Err(Problem::new(
+                409,
+                "name_taken",
+                format!("A project named {name} already exists. Choose another name."),
+            ));
+        }
+        let created = crate::console::projects::create(store, host, source, &name, attempt)
+            .map_err(|e| Problem::from(&e))?;
+        let unreadable = || Problem::new(500, "internal_error", "The new project is unreadable.");
+        let deployment = created["operation"]["plan"]["context"]["deployment_id"]
+            .as_str()
+            .ok_or_else(unreadable)?;
+        let operation = created["operation"]["id"].as_str().ok_or_else(unreadable)?;
+        store
+            .set_project_description(deployment, &description)
+            .map_err(|e| Problem::from(&e))?;
+        store
+            .set_operation_api_key(operation, key)
+            .map_err(|e| Problem::from(&e))?;
+        let project = store
+            .project_record(deployment)
+            .map_err(|e| Problem::from(&e))?;
+        let entry = store
+            .operation_entry(deployment, operation)
+            .map_err(|e| Problem::from(&e))?;
+        let view = operations::view(store, &project, &entry).ok_or_else(unreadable)?;
+        Ok(operations::accepted(&project, view))
+    })
 }

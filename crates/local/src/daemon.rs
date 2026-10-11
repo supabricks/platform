@@ -929,7 +929,7 @@ impl Daemon {
                 if generation != self.store.generation() {
                     return Err(conflict("console belongs to a prior daemon generation"));
                 }
-                serde_json::to_value(crate::rest::dispatch(&mut self.store, &call))?
+                serde_json::to_value(crate::rest::dispatch(&mut self.store, &binding, &call))?
             }
             Request::Api { .. } => {
                 return Err(invalid(

@@ -90,6 +90,12 @@ class Server:
             '[package]\nversion="0.1.0"\ninclude=[]\nnotebook_outputs="strip"\n')
         return folder
 
+    @staticmethod
+    def definition_of(folder):
+        """The source ID written in a project folder's manifest."""
+        text = (pathlib.Path(folder) / 'supabricks.toml').read_text()
+        return next(line.split('"')[1] for line in text.splitlines() if line.startswith('id='))
+
     def copy_source(self, folder):
         """A second checkout of the same source."""
         copy = self.root / 'sources' / str(uuid.uuid4())

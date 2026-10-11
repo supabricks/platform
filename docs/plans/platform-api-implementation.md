@@ -263,13 +263,29 @@ That is ten operations in version 1, two removed, two deferred and one moved.
 (#318); `start_from` is replaced by `source_id`; every operation names its
 required role; `x-backend` values are corrected.
 
-**Built so far (AP01.2, AP01.3):** catalog 32 makes project names unique
-without regard to case and records each project's description and creation
-time. `project create` and the console's import take a name; a name in use is
-refused with `name_taken`. `listProjects` and `getProject` are served, with
-paging, the name filter and `ETag`. Still to build: create, rename, delete and
-its impact, the project map, the operations view, and the governed transport
-with role tests.
+**Built so far:**
+
+- Catalog 32 makes project names unique without regard to case and records
+  each project's description and creation time. `project create` and the
+  console's import take a name; a name in use is refused with `name_taken`.
+- `listProjects` and `getProject`, with paging, the name filter and `ETag`.
+- `createProject`. It reuses the console's create path and returns the apply
+  operation. To create a second project from an existing source, import it;
+  that belongs to the project-definition domain.
+- Idempotency, once for every domain: replies are stored by key in
+  `api_idempotency`, a repeat returns the first reply, and a key reused for a
+  different request is `409 idempotency_key_reused`.
+- The operations view (#285). `operation_index` is one ordered feed with
+  creation and finish times, kept current by triggers on the existing
+  operation tables, so no writer had to change. It covers project applies and
+  database and branch changes; other kinds join with their domains.
+  `listOperations`, `getOperation` and `cancelOperation` are served. Only
+  applies can be cancelled today.
+
+**Still to build:** rename and description, delete and its impact, the project
+map, and the governed transport with role tests. The harness has no database
+engines, so an apply never finishes there; completion is tested by an
+engine-backed fixture added with databases (AP02).
 
 **Design questions to settle in AP01.1**
 

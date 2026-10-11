@@ -1,6 +1,7 @@
 //! Platform API v1 (`api/openapi.yaml`). Transport-independent: an HTTP server
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
+mod operations;
 mod problem;
 mod projects;
 mod routes;
@@ -130,7 +131,7 @@ pub fn resolve<'a>(method: &str, path: &'a str) -> Result<Match<'a>, Reply> {
 }
 
 /// Route one call and run it. Never fails: every failure is a problem reply.
-pub fn dispatch(store: &mut Store, call: &Call) -> Reply {
+pub fn dispatch(store: &mut Store, host: &crate::api::Binding, call: &Call) -> Reply {
     let found = match resolve(&call.method, &call.path) {
         Ok(found) => found,
         Err(reply) => return reply,
@@ -152,6 +153,14 @@ pub fn dispatch(store: &mut Store, call: &Call) -> Reply {
         }))),
         Operation::ListProjects => projects::list(store, call),
         Operation::GetProject => projects::get(store, call, parameter("project")),
+        Operation::CreateProject => projects::create(store, host, call),
+        Operation::ListOperations => operations::list(store, call, parameter("project")),
+        Operation::GetOperation => {
+            operations::get(store, parameter("project"), parameter("operation"))
+        }
+        Operation::CancelOperation => {
+            operations::cancel(store, parameter("project"), parameter("operation"))
+        }
     };
     result.unwrap_or_else(Reply::from)
 }

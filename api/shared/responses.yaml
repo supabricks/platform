@@ -6,9 +6,23 @@ Accepted:
     until it reaches a final state.
   headers:
     Location: { description: 'URL of the operation.', schema: { type: string } }
+    Retry-After: { description: 'Suggested seconds before polling the operation.', schema: { type: integer } }
   content:
     application/json:
       schema: { $ref: './schemas.yaml#/Operation' }
+      example:
+        id: op_3c9e1f0a5b7d4e2c8a6f1d3b5c7e9a0b
+        kind: project.apply
+        state: running
+        project_id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+        target: { kind: project, id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73, label: sales-analytics }
+        idempotency_key: 2b1c9d7e-create-sales
+        created_at: '2026-10-10T14:05:00.000Z'
+        started_at: '2026-10-10T14:05:00.000Z'
+        finished_at: null
+        steps:
+          - { name: create database.main, state: running }
+        cancellable: true
 
 NoContent:
   description: Done. There is nothing to return.

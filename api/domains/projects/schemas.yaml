@@ -52,19 +52,18 @@ ProjectName:
     Chosen by the person when the project is created or imported; there is no
     default. Unique in the installation, compared without regard to case, so a
     source imported twice needs two names (`sales-analytics` and
-    `sales-analytics-staging`).
+    `sales-analytics-staging`). Letters, digits and hyphens, at most 40
+    characters, stored in lower case.
   pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
   examples: [sales-analytics]
 
 ProjectCreate:
   type: object
   required: [name]
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }
-    source_id:
-      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
-      description: Create another instance of this source. Omit it to start a new, empty project.
 
 ProjectUpdate:
   type: object

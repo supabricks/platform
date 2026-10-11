@@ -8,10 +8,10 @@ operations:
     tags: [Operations]
     summary: List operations in a project
     description: >-
-      Newest first, across every feature. This is the project's activity feed:
-      branch changes, imports, sync runs, backups, job runs and applies appear
-      in one ordered list.
-    x-backend: new
+      Newest first, across every feature. This is the project's activity feed.
+      Today it holds project applies and database and branch changes; imports,
+      sync runs, backups and job runs join it with their domains.
+    x-backend: ready
     x-required-role: viewer
     x-console-features: [HM-03]
     x-issues: [285]
@@ -39,6 +39,10 @@ operations:
         content:
           application/json:
             schema: { $ref: './schemas.yaml#/OperationPage' }
+            example:
+              items: []
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
@@ -63,6 +67,19 @@ operation:
         content:
           application/json:
             schema: { $ref: '../../shared/schemas.yaml#/Operation' }
+            example:
+              id: op_3c9e1f0a5b7d4e2c8a6f1d3b5c7e9a0b
+              kind: project.apply
+              state: running
+              project_id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+              target: { kind: project, id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73, label: sales-analytics }
+              idempotency_key: 2b1c9d7e-create-sales
+              created_at: '2026-10-10T14:05:00.000Z'
+              started_at: '2026-10-10T14:05:00.000Z'
+              finished_at: null
+              steps:
+                - { name: create database.main, state: running }
+              cancellable: true
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
 

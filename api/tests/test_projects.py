@@ -176,3 +176,113 @@ def test_projects_survive_a_killed_daemon(private_server):
     assert everything(private_server.session()) == before
     assert private_server.create_project(private_server.copy_source(source), 'DURABLE')[0] is None, \
         'the name rule holds after a restart'
+
+
+# ---- L2: create ----
+
+def key():
+    import uuid
+    return f'test-{uuid.uuid4()}'
+
+
+def create(api, name, expect=202, **extra):
+    headers = {'Idempotency-Key': extra.pop('key', None) or key()}
+    return api.call('createProject', json={'name': name, **extra}, headers=headers, expect=expect)
+
+
+@pytest.mark.l2
+def test_create_returns_an_operation_and_the_project_exists_at_once(api):
+    used = key()
+    response = create(api, 'Created-One', description='made by a test', key=used)
+    operation = response.json()
+    assert operation['kind'] == 'project.apply'
+    assert operation['idempotency_key'] == used
+    assert operation['target']['kind'] == 'project'
+    assert operation['target']['id'] == operation['project_id']
+    assert response.headers['Location'] == f"/api/v1/projects/{operation['project_id']}/operations/{operation['id']}"
+    assert response.headers['Retry-After'] == '1'
+    project = api.call('getProject', path={'project': operation['project_id']}, expect=200).json()
+    assert project['name'] == 'created-one', 'names are stored in lower case'
+    assert project['description'] == 'made by a test'
+    from harness.server import wait
+    assert wait(lambda: api.call('getProject', path={'project': project['id']}).json()['counts']['databases'] == 1), \
+        'a new project gets its main database'
+    assert project['id'] in [p['id'] for p in everything(api)]
+
+
+@pytest.mark.l2
+def test_create_with_the_same_key_returns_the_first_reply(api):
+    used = key()
+    first = create(api, 'replayed', key=used)
+    again = create(api, 'replayed', key=used)
+    assert again.json() == first.json()
+    assert again.headers['Location'] == first.headers['Location']
+    assert [p['name'] for p in everything(api)].count('replayed') == 1
+
+
+@pytest.mark.l2
+def test_create_refuses_a_key_reused_for_another_request(api):
+    used = key()
+    create(api, 'key-owner', key=used)
+    response = create(api, 'key-thief', key=used, expect=409)
+    assert response.json()['code'] == 'idempotency_key_reused'
+    assert 'key-thief' not in [p['name'] for p in everything(api)]
+
+
+@pytest.mark.l2
+def test_create_refuses_a_name_in_use(api):
+    create(api, 'taken-name')
+    for name in ('taken-name', 'TAKEN-NAME', 'Taken-Name'):
+        response = create(api, name, expect=409)
+        assert response.json()['code'] == 'name_taken'
+    assert [p['name'] for p in everything(api)].count('taken-name') == 1
+
+
+@pytest.mark.l2
+@pytest.mark.parametrize('body', [
+    {}, {'name': ''}, {'name': 'has space'}, {'name': '-leading'}, {'name': 'trailing-'}, {'name': 'a' * 41},
+    {'name': 'under_score'}, {'name': 7}, {'name': None}, {'name': 'ok', 'description': 'x' * 501},
+    {'name': 'ok', 'description': 5}, {'name': 'ok', 'source_id': 'src_' + '0' * 32}, {'name': 'ok', 'extra': 1},
+    [], 'text', None,
+])
+def test_create_rejects_an_invalid_body(api, body):
+    response = api.raw('POST', '/projects', json=body, headers={'Idempotency-Key': key()})
+    assert response.status_code == 400, response.text
+    assert response.json()['code'] == 'invalid_request'
+
+
+@pytest.mark.l2
+@pytest.mark.parametrize('headers', [{}, {'Idempotency-Key': 'short'}, {'Idempotency-Key': 'x' * 129},
+                                     {'Idempotency-Key': 'has a space in it'}])
+def test_create_requires_a_well_formed_idempotency_key(api, headers):
+    response = api.raw('POST', '/projects', json={'name': 'needs-a-key'}, headers=headers)
+    assert response.status_code == 400
+    assert 'needs-a-key' not in [p['name'] for p in everything(api)]
+
+
+@pytest.mark.l2
+def test_an_invalid_create_does_not_use_up_its_key(api):
+    used = key()
+    create(api, 'not valid!', key=used, expect=400)
+    create(api, 'valid-after-all', key=used)
+
+
+@pytest.mark.l6
+def test_a_project_created_here_is_visible_to_the_command_line(api, server):
+    operation = create(api, 'seen-by-cli').json()
+    project = api.call('getProject', path={'project': operation['project_id']}).json()
+    context = server.rpc(method='resolve_binding', source=dict(
+        definition_id=server.definition_of(project['path']), worktree=project['path']))
+    assert public('prj', context['deployment_id']) == project['id']
+
+
+@pytest.mark.l5
+def test_create_survives_a_killed_daemon_and_its_key_still_replays(private_server):
+    api, used = private_server.session(), key()
+    first = create(api, 'durable-create', description='kept', key=used).json()
+    private_server.restart(kill=True)
+    api = private_server.session()
+    assert create(api, 'durable-create', description='kept', key=used).json()['id'] == first['id']
+    project = api.call('getProject', path={'project': first['project_id']}).json()
+    assert (project['name'], project['description']) == ('durable-create', 'kept')
+    assert create(api, 'durable-create', expect=409).json()['code'] == 'name_taken'

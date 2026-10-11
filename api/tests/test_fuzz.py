@@ -4,6 +4,8 @@ Schemathesis builds requests from the specification, including ones the
 specification forbids, and checks that the server never answers with a 5xx or
 with a response the specification does not declare.
 """
+import pathlib
+
 import pytest
 import schemathesis
 from schemathesis.specs.openapi.checks import ignored_auth, positive_data_acceptance
@@ -15,6 +17,16 @@ pytestmark = pytest.mark.l7
 # Only what the server routes today: a method the specification describes but
 # the server does not serve yet is, correctly, missing from `Allow`.
 schema = schemathesis.openapi.from_dict(spec.only(lambda o: o.served))
+
+
+@pytest.fixture(scope='module')
+def api(request):
+    """A server of its own: generated requests create things other tests would trip over."""
+    from harness.server import Server
+    server = Server(pathlib.Path(request.config.getoption('--binary')).resolve()).start()
+    yield server.session()
+    server.stop()
+    server.cleanup()
 
 
 @schema.parametrize()
