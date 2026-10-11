@@ -115,6 +115,15 @@ fn accepted(
     let view = operations::view(store, project, &entry).ok_or_else(unreadable)?;
     Ok(operations::accepted(project, view))
 }
+/// The reply for an operation another request started.
+fn current(store: &Store, project: &ProjectRecord, operation: &str) -> Result<Reply, Problem> {
+    let unreadable = || Problem::new(500, "internal_error", "The operation is unreadable.");
+    let entry = store
+        .operation_entry(&project.id, operation)
+        .map_err(|e| Problem::from(&e))?;
+    let view = operations::view(store, project, &entry).ok_or_else(unreadable)?;
+    Ok(operations::accepted(project, view))
+}
 fn operation_id(made: &Value) -> Result<&str, Problem> {
     made["id"]
         .as_str()
@@ -411,10 +420,19 @@ fn set_state(
             if record.state == "deleting" {
                 return Err(conflict("The database is being deleted."));
             }
-            if desired == DesiredState::Suspended
-                && matches!(record.state, "suspended" | "suspending")
+            // Asking for the state it has, or is reaching, changes nothing:
+            // the reply is the operation that put it there.
+            let there = if desired == DesiredState::Suspended {
+                matches!(record.state, "suspended" | "suspending")
+            } else {
+                matches!(record.state, "running" | "resuming" | "provisioning")
+            };
+            if there
+                && let Some(operation) = store
+                    .last_state_operation(&record.id.to_string())
+                    .map_err(|e| Problem::from(&e))?
             {
-                return Err(conflict("The database is already suspended."));
+                return current(store, &project, &operation);
             }
         }
         let made = change(store, host, &project, &record, native, "conflict", |key| {

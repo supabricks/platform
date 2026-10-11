@@ -228,7 +228,8 @@ databaseSuspend:
       Stops compute for the database's first branch. Storage is kept, and the
       next connection resumes it. Other branches are not affected. Refused with
       `409` while connections are open or work is running on it. Suspending a
-      database that is already suspended succeeds and changes nothing. A
+      database that is already suspended, or being suspended, changes nothing
+      and answers with the operation that suspended it. A
       governed server does not offer this yet and answers `403` with
       `code: unavailable_in_profile`.
     x-backend: ready
@@ -256,7 +257,8 @@ databaseResume:
     summary: Resume a suspended database
     description: >-
       Starts compute for the database's first branch. Resuming a database that
-      is already running succeeds and changes nothing. Refused with `409` while
+      is already running, or starting, changes nothing and answers with the
+      operation that started it. Refused with `409` while
       an earlier suspend is still in progress. A governed server does not offer
       this yet and answers `403` with `code: unavailable_in_profile`.
     x-backend: ready

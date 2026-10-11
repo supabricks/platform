@@ -333,8 +333,18 @@ def test_suspend_returns_an_operation_and_the_state_follows(api, project, fresh)
     after = read(api, project, database).json()
     assert after['state'] == 'suspending' and after['revision'] == before['revision'] + 1
     assert change(api, 'suspendDatabase', project, database, used=used).json() == operation, 'a repeat is the same reply'
-    assert change(api, 'suspendDatabase', project, database, expect=409).json()['code'] == 'conflict'
+    again = change(api, 'suspendDatabase', project, database).json()
+    assert again == operation, 'suspending again changes nothing and answers with the same operation'
     assert read(api, project, database).json() == after
+
+
+@pytest.mark.l2
+def test_resuming_a_database_that_is_starting_changes_nothing(api, project, fresh):
+    before = read(api, project, fresh[0]).json()
+    assert before['state'] == 'provisioning'
+    operation = change(api, 'resumeDatabase', project, fresh[0]).json()
+    assert operation['kind'] == 'database.create' and operation['target']['id'] == fresh[0]
+    assert read(api, project, fresh[0]).json() == before
 
 
 @pytest.mark.l2
@@ -546,13 +556,15 @@ def test_a_database_starts_accepts_connections_suspends_resumes_and_goes(engine_
     assert done['kind'] == 'database.suspend'
     assert read(api, project, database).json()['state'] == 'suspended'
     assert read(api, project, main['id']).json()['state'] == 'running', 'other databases are not affected'
-    assert change(api, 'suspendDatabase', project, database, expect=409).json()['code'] == 'conflict'
+    assert change(api, 'suspendDatabase', project, database).json() == done, 'suspending a suspended database changes nothing'
     done = finished(api, project, change(api, 'resumeDatabase', project, database).json())
     assert done['kind'] == 'database.resume'
     assert read(api, project, database).json()['state'] == 'running'
     assert psql(request, secret['uri'], 'select answer from t') == '42', 'data survives a suspend'
-    again = finished(api, project, change(api, 'resumeDatabase', project, database).json())
-    assert again['steps'] == [], 'resuming a running database changes nothing'
+    running = read(api, project, database).json()
+    assert change(api, 'resumeDatabase', project, database).json() == done, 'resuming a running database changes nothing'
+    after = read(api, project, database).json()
+    assert (after['state'], after['revision']) == (running['state'], running['revision'])
 
     idle(api, project, database)
     renamed = rename(api, project, database, name_for('renamed')).json()
