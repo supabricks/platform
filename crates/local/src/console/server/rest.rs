@@ -11,6 +11,9 @@ use hyper::{Method, Request as HttpRequest, body::Incoming, header::HeaderValue}
 use percent_encoding::percent_decode_str;
 use serde_json::Value;
 
+/// Longest a transport keeps asking for an answer that is not ready.
+const WAIT: std::time::Duration = std::time::Duration::from_secs(45);
+
 pub(super) fn reply(reply: rest::Reply) -> Reply {
     let body = reply
         .body
@@ -114,7 +117,29 @@ impl State {
             idempotency_key,
             if_match,
             body,
+            resume: None,
         };
+        // A read that runs SQL answers `wait` until PostgreSQL has; the daemon
+        // bounds the SQL itself, so this only guards against a lost answer.
+        let until = tokio::time::Instant::now() + WAIT;
+        let mut call = call;
+        loop {
+            let answer = self.forward(call.clone()).await;
+            match answer.wait.clone() {
+                None => return reply(answer),
+                Some(_) if tokio::time::Instant::now() >= until => {
+                    return reply(
+                        Problem::unavailable("The database took too long to answer.").into(),
+                    );
+                }
+                Some(token) => {
+                    call.resume = Some(token);
+                    tokio::time::sleep(std::time::Duration::from_millis(15)).await;
+                }
+            }
+        }
+    }
+    async fn forward(&self, call: Call) -> rest::Reply {
         let config = self.config.clone();
         let result = tokio::task::spawn_blocking(move || {
             client::request_timeout(
@@ -128,7 +153,7 @@ impl State {
             )
         })
         .await;
-        reply(match result {
+        match result {
             Ok(Ok(value)) => serde_json::from_value(value).unwrap_or_else(|_| {
                 Problem::new(
                     500,
@@ -142,6 +167,6 @@ impl State {
                 "The server is busy. Check the operation before retrying a change.",
             )
             .into(),
-        })
+        }
     }
 }

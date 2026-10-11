@@ -352,6 +352,7 @@ fn rest(root: &Path, mut request: tiny_http::Request, path: String) {
         idempotency_key,
         if_match,
         body,
+        resume: None,
     };
     let result = control_credential(
         root,

@@ -1,0 +1,125 @@
+TableKind:
+  type: string
+  enum: [table, partitioned_table, view, materialized_view, foreign_table]
+
+Table:
+  type: object
+  description: Something on a branch that is read like a table. Named by its schema and name; it has no ID.
+  required: [schema, name, kind, row_estimate, size_bytes, comment]
+  properties:
+    schema: { type: string }
+    name: { type: string }
+    kind: { $ref: './schemas.yaml#/TableKind' }
+    row_estimate:
+      description: >-
+        PostgreSQL's estimate of the rows, from its statistics. Null for a
+        view, and for a table PostgreSQL has not analysed yet.
+      oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+    size_bytes:
+      description: >-
+        What the table occupies with its indexes. Null for a view, a
+        partitioned table and a foreign table.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Bytes' }, { type: 'null' }]
+    comment:
+      type: [string, 'null']
+
+TablePage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Table' } }
+
+TableDetail:
+  allOf:
+    - $ref: './schemas.yaml#/Table'
+    - type: object
+      required: [columns, primary_key, indexes, constraints]
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            required: [name, type, nullable, default, generated, identity, comment]
+            properties:
+              name: { type: string }
+              type: { type: string, description: 'As PostgreSQL writes it, for example `numeric(12,2)` or `timestamp with time zone`.' }
+              nullable: { type: boolean }
+              default: { type: [string, 'null'], description: 'The default expression. Null without one, and for a generated column.' }
+              generated: { type: boolean, description: 'Computed from other columns; it cannot be written.' }
+              identity: { type: boolean }
+              comment: { type: [string, 'null'] }
+        primary_key:
+          description: The primary key's columns, in key order. Null without one.
+          oneOf: [{ type: array, items: { type: string } }, { type: 'null' }]
+        indexes:
+          type: array
+          items:
+            type: object
+            required: [name, unique, primary, definition]
+            properties:
+              name: { type: string }
+              unique: { type: boolean }
+              primary: { type: boolean }
+              definition: { type: string }
+        constraints:
+          type: array
+          items:
+            type: object
+            required: [name, kind, definition]
+            properties:
+              name: { type: string }
+              kind: { type: string, enum: [primary_key, unique, foreign_key, check, exclusion, not_null, other] }
+              definition: { type: string }
+
+RowFilters:
+  type: array
+  maxItems: 8
+  items:
+    oneOf:
+      - type: object
+        required: [column, op, value]
+        additionalProperties: false
+        properties:
+          column: { type: string }
+          op: { type: string, enum: [eq, ne, lt, lte, gt, gte, contains] }
+          value: { type: string, maxLength: 256 }
+      - type: object
+        required: [column, op]
+        additionalProperties: false
+        properties:
+          column: { type: string }
+          op: { type: string, enum: [is_null, not_null] }
+
+RowPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [columns, primary_key, items, truncated]
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            required: [name, type]
+            properties:
+              name: { type: string }
+              type: { type: string }
+        primary_key:
+          description: The columns that identify a row. Null without a primary key.
+          oneOf: [{ type: array, items: { type: string } }, { type: 'null' }]
+        items:
+          type: array
+          description: One array per row, in column order.
+          items:
+            type: array
+            items: { type: [string, 'null'] }
+        truncated:
+          type: array
+          description: The values that were cut, each as the index of its row and of its column.
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items: { type: integer, minimum: 0 }

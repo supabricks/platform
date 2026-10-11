@@ -406,7 +406,7 @@ known now:
 | AP02 Databases | Done; see below | Compute sizes (#244), idle timeout (#245), storage (#246), pooled connections (#252), governed changes (#322), cascade delete (#323) |
 | AP03 Branches | Create at head, time or log position; rename, default, expiry, suspend, resume, delete | Reset (#256), schema diff (#255), restore window (#254), per-branch size (#246) |
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
-| AP05 Tables and objects | Tables and columns; bounded preview | Paged reads (#257), batched edits (#258), reviewed DDL (#259), full introspection (#260) |
+| AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Inspect, map, load, history, cancel, retry | Append and replace (#311), remote sources (#312), direct analytical import (#313) |
 | AP07 Administration and observability | Little | Roles (#251), password reset (#250), extensions (#253), metrics (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
@@ -603,6 +603,58 @@ is found only through its project; a statement wakes a suspended branch.
 | Saved query folders, export to project source, who and when | #329 |
 
 **Acceptance:** the eight operations pass L0 to L7 on the local profile on
+Linux and macOS, with the engine-backed tests run by the `engines` job.
+
+### AP05: Tables
+
+**Completeness review.** From reading the code on 2026-10-11. The platform had
+one fixed query for tables and columns and a 200-row preview, both run as
+statements the console polls. Nothing paged, sorted, filtered or described a
+table. This slice builds the reads; changes stay with statements.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| How can a `GET` run SQL? | The daemon is the single writer and must not wait on PostgreSQL; the console starts a query and polls it | A reply can say `wait`: the HTTP transport repeats the call with a token until the answer is ready (`rest::Reply::wait`, `Call::resume`). The client sees one ordinary request. The read runs on a statement worker under a scope of its own, and its handle is dropped once answered |
+| Who writes the SQL? | The console composes SQL strings | The server does, from validated names and values. Identifiers are quoted; values are `E''` literals with both quote and backslash doubled, so they read the same under either string setting |
+| What is listed? | Tables and columns in three excluded schemas | Tables, partitioned tables, views, materialized views and foreign tables outside PostgreSQL's own schemas, with PostgreSQL's row estimate and size (#257) |
+| What describes a table? | Column name, type and nullability | Columns with default, generated and identity; primary key; indexes and constraints with PostgreSQL's own definitions (#260, in part) |
+| Paging rows | One result of at most 1000 rows, no cursor | Offset pages ordered by the caller's column and then the primary key (or storage position without one). Stated plainly: pages are not a snapshot |
+| Sort and filter | None | One sort column; up to eight conditions joined by AND, with nine operators. A value is text read as the column's type, so PostgreSQL decides whether it fits; a refusal is `400` |
+| Values | Text | Text, null for null, cut at 2000 characters and listed in `truncated`. A page over 256 KiB is `422 result_too_large` |
+| Editing rows, changing a table | Raw SQL through a statement | Not served: #258 and #259 |
+| Signed-in callers | PostgreSQL is private | `x-profiles: [local]` (#328) |
+
+**Built:**
+
+- `rest::Reply::wait` and `Call::resume`, and the loop in the console's HTTP
+  transport. Any later read that needs PostgreSQL can use it.
+- `rest/tables.rs`: `listTables`, `getTable`, `listTableRows`. Reading rows
+  takes two statements, the table's description and then the page; the token
+  carries the first to the second.
+- `Queries::forget` drops an answered handle, so reads do not push statements
+  out of the 32 the server keeps.
+
+**Tests.** `api/tests/test_tables.py`: refusals before anything is read, the
+generated role tests, and ten engine-backed tests: the listing and its paging;
+a table's columns, keys, indexes and constraints, for a table, a view and a
+name with a quote, a slash and a space; rows in key order by page; a null and
+an empty string; a cut value; sorting; each filter operator and values that do
+not fit; a cursor refused for another listing; views and keyless tables; the
+size limit; the worker limit. Unit tests in `rest/tables.rs` fix the SQL the
+server writes; it was also run against PostgreSQL 17 under both string
+settings.
+
+**Left out, with where each is tracked:**
+
+| What | Issue |
+|---|---|
+| Batched row edits | #258 |
+| Create and alter a table through reviewed SQL | #259 |
+| Triggers, policies, full DDL, owner, privileges, dependencies; views, functions, sequences and types as objects | #260 |
+| A snapshot across pages; filters joined by OR | #257 |
+| Tables on a governed server | #328 |
+
+**Acceptance:** the three operations pass L0 to L7 on the local profile on
 Linux and macOS, with the engine-backed tests run by the `engines` job.
 
 ## 7. Risks

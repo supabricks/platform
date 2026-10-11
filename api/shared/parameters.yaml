@@ -28,6 +28,20 @@ Operation:
   description: Operation ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+Schema:
+  name: schema
+  in: path
+  required: true
+  description: A schema's name, percent-encoded.
+  schema: { type: string, minLength: 1, maxLength: 63 }
+
+Table:
+  name: table
+  in: path
+  required: true
+  description: A table's or view's name, percent-encoded.
+  schema: { type: string, minLength: 1, maxLength: 63 }
+
 Statement:
   name: statement
   in: path
