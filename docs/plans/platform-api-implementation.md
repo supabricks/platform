@@ -105,23 +105,23 @@ of date. Nothing can be routed that the specification does not describe.
 | Long work | `202` with an `Operation` | Existing durable operations; a uniform view over the per-feature tables |
 | Profiles | `403 unavailable_in_profile` | Existing gated-operation inventory |
 
-**Project means the logical package.** A Supabricks installation is deployed
-once. A project is a named package of resources inside it: databases and their
+**A project is one instance.** A Supabricks installation is deployed once. A
+project is a named package of resources inside it: databases and their
 branches, analytical tables, notebooks, jobs, catalog publications and access
 policy. Nothing is deployed, started or stopped per project.
 
-The platform stores this as three records: `project_definitions` (identity and
-name), `deployments` (the definition applied to a target, which is where
-authorization is attached today) and the runtime `projects` row (the owner of
-branches). The API exposes one resource. `Project.id` is the definition ID and
-`Project.name` is the definition's name. The deployment and runtime rows are
-internal and never appear in a path, a schema or an error. Authorization is
-expressed per project and resolved to the internal record by the server.
+The platform stores this as three records. `project_definitions` is the
+portable source (a folder with `supabricks.toml` and a fixed ID). `deployments`
+is one live instance of a source in this installation; roles and grants are
+attached here. The runtime `projects` row owns that instance's branches.
 
-The schema allows one definition to have several deployment rows. The API
-assumes exactly one per project in an installation. AP01.1 decides whether to
-enforce that with a constraint or to keep the rows as an internal detail of
-`project apply`.
+The API's `Project` is the instance. `Project.id` is the instance's ID (the
+platform's deployment ID), its name is its own, and its roles are the ones the
+platform already stores for it. The source it was created from is a field,
+`source_id`. The same source can be created more than once, for example as
+staging and as production; those are two projects with separate data and
+separate access. The word "deployment" and the runtime project ID never appear
+in a path, a schema or an error.
 
 ## 4. Test methodology
 
@@ -241,7 +241,7 @@ It corrects three `x-backend` values in the first draft of the specification.
 
 | Operation | Today | Finding | Proposed |
 |---|---|---|---|
-| `listProjects` | Console lists projects (`console/projects.rs`); governed lists by role | One entry per project definition | Version 1 |
+| `listProjects` | Console lists projects (`console/projects.rs`); governed lists by role | One entry per instance | Version 1 |
 | `createProject` | `project create --key`; governed request table keyed by actor and key | Idempotency already exists. `start_from: sample` has no backing (#315) | Version 1 without `sample` |
 | `getProject` | Available | | Version 1 |
 | `updateProject` | No rename; no description field | Needs a migration and an action. Name lives in two tables | Version 1 (#287, #314) |
@@ -260,9 +260,8 @@ That is ten operations in version 1, two removed, two deferred and one moved.
 
 **Design questions to settle in AP01.1**
 
-- Whether to enforce one deployment row per project definition, and how
-  existing project-scoped authorization moves from the deployment to the
-  project without changing who can do what.
+- Where a project's name lives. Two instances of one source need different
+  names, but the name is stored on the source today.
 - What a `path` is on a governed server, and who may see it.
 - What deleting a project does to backups and to data other projects have
   already read.
