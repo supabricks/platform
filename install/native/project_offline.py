@@ -69,7 +69,7 @@ def qualify(binary, release, source_project, workspace, env):
     assert closure['wheels'] > 0 and closure['status'] == 'inventory_verified_runtime_preparation_required'
     destination = workspace / 'pk05-installed'
     cli(source, 'project', 'unpack', package, '--destination', destination)
-    cli(destination, 'project', 'create', '--key', 'pk05-create')
+    cli(destination, 'project', 'create', '--key', 'pk05-create', '--name', 'pk05-installed')
     first = apply(destination, 'pk05-first')
     installed = cli(destination, 'project', 'installed')
     assert installed['active_revision'] == first['id'] and not installed['preparation_needed']
@@ -196,7 +196,7 @@ sequence=2
             (workspace / 'pk05-crash.log').write_text(r.stdout + r.stderr)
             raise RuntimeError('PK05 crash fixture CLI failed')
         return json.loads(r.stdout)
-    cli('project', 'create', '--key', 'crash')
+    cli('project', 'create', '--key', 'crash', '--name', 'pk05-crash')
     cli('down')
     local_env['SUPABRICKS_TEST_PROJECT_APPLY_KILL'] = 'migration_committed'
     cli('up')

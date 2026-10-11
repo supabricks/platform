@@ -246,12 +246,12 @@ def qualify(args):
         copies = [workspace / ('deployment-' + name) for name in ('a', 'b', 'attached')]
         for path in copies:
             shutil.copytree(source_project, path)
-        first, second = [deployment_cli(path, 'project', 'create', '--key', f'create-{index}') for index, path in enumerate(copies[:2])]
+        first, second = [deployment_cli(path, 'project', 'create', '--key', f'create-{index}', '--name', f'sales-{index}') for index, path in enumerate(copies[:2])]
         assert first['definition_id'] == second['definition_id']
         assert first['runtime_project_id'] != second['runtime_project_id']
         assert first['deployment_id'] != second['deployment_id']
         assert first['actor_id'] == first['effective_principal_id']
-        assert first == deployment_cli(copies[0], 'project', 'create', '--key', 'create-0')
+        assert first == deployment_cli(copies[0], 'project', 'create', '--key', 'create-0', '--name', 'sales-0')
         for path in copies[:2]:
             deployment_cli(path, 'database', 'create', 'main', '--wait')
         deployment_cli(copies[0], 'sql', '--branch', 'main', '--sql', 'CREATE TABLE pk03_private(id integer)', '--write')
