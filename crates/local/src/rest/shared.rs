@@ -33,6 +33,33 @@ pub fn timestamp(ms: i64) -> String {
 pub fn etag(revision: i64) -> String {
     format!("\"{revision}\"")
 }
+impl Call {
+    /// The revision `If-Match` names. `required` makes a missing header `428`;
+    /// `*` matches any revision.
+    pub fn expected_revision(&self, required: bool) -> Result<Option<i64>, Problem> {
+        match self.if_match.as_deref().map(str::trim) {
+            None if required => Err(Problem::new(
+                428,
+                "precondition_required",
+                "Send If-Match with the ETag from a recent read.",
+            )),
+            None | Some("*") => Ok(None),
+            Some(tag) => tag
+                .strip_prefix('"')
+                .and_then(|tag| tag.strip_suffix('"'))
+                .and_then(|revision| revision.parse().ok())
+                .map(Some)
+                // An ETag this server never issued cannot match anything.
+                .ok_or_else(|| {
+                    Problem::new(
+                        412,
+                        "revision_mismatch",
+                        "If-Match is not an ETag this server issued.",
+                    )
+                }),
+        }
+    }
+}
 
 impl Call {
     /// The single value of a query parameter. Repeating one is an error.

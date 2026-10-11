@@ -8,7 +8,7 @@ use crate::store::{ProjectRecord, Store};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-fn body(caller: Caller, record: &ProjectRecord) -> Value {
+fn body_of(caller: Caller, record: &ProjectRecord) -> Value {
     let mut value = json!({
         "id": public_id("prj", &record.id),
         "name": record.name,
@@ -45,7 +45,7 @@ pub fn list(store: &mut Store, call: &Call) -> Result<Reply, Problem> {
         cursor(&[&last.name, &last.id])
     });
     Ok(page(
-        records.iter().map(|r| body(call.caller, r)).collect(),
+        records.iter().map(|r| body_of(call.caller, r)).collect(),
         next,
     ))
 }
@@ -55,7 +55,7 @@ pub fn get(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Probl
     let missing = || Problem::not_found("There is no such project.");
     let id = internal_id("prj", project).ok_or_else(missing)?;
     let record = store.project_record(&id).map_err(|_| missing())?;
-    let mut reply = Reply::ok(body(call.caller, &record));
+    let mut reply = Reply::ok(body_of(call.caller, &record));
     reply.headers.insert("ETag".into(), etag(record.revision));
     Ok(reply)
 }
@@ -128,4 +128,33 @@ pub fn create(store: &mut Store, host: &Binding, call: &Call) -> Result<Reply, P
         let view = operations::view(store, &project, &entry).ok_or_else(unreadable)?;
         Ok(operations::accepted(&project, view))
     })
+}
+
+pub fn update(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Problem> {
+    let missing = || Problem::not_found("There is no such project.");
+    let id = internal_id("prj", project).ok_or_else(missing)?;
+    store.project_record(&id).map_err(|_| missing())?;
+    let body = fields(call, &["name", "description"])?;
+    if body.is_empty() {
+        return Err(Problem::invalid("Give a name or a description to change."));
+    }
+    let name = text(body, "name")?
+        .map(|name| {
+            supabricks_core::validation::valid_name(&json!({"name": name}), "name")
+                .map_err(|e| Problem::invalid(e.message))
+        })
+        .transpose()?;
+    let description = text(body, "description")?;
+    if description.is_some_and(|text| text.chars().count() > 500) {
+        return Err(Problem::invalid(
+            "description may be at most 500 characters.",
+        ));
+    }
+    let expected = call.expected_revision(false)?;
+    let record = store
+        .update_project(&id, name.as_deref(), description, expected)
+        .map_err(|e| Problem::from(&e))?;
+    let mut reply = Reply::ok(body_of(call.caller, &record));
+    reply.headers.insert("ETag".into(), etag(record.revision));
+    Ok(reply)
 }

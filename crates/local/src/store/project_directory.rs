@@ -23,6 +23,10 @@ pub struct ProjectRecord {
     pub branches: i64,
 }
 
+/// The project changed since the caller read it.
+pub(super) fn revision_mismatch() -> Error {
+    conflict("revision_mismatch: the project has changed; read it again and retry")
+}
 pub(super) fn name_taken(name: &str) -> Error {
     conflict(&format!(
         "name_taken: a project named {name} already exists; choose another name"
@@ -108,6 +112,60 @@ impl Store {
                 record,
             )?
             .collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+    /// Rename a project or change its description. `name` must already be
+    /// canonical. A change raises the revision by one; no change leaves it.
+    pub fn update_project(
+        &mut self,
+        id: &str,
+        name: Option<&str>,
+        description: Option<&str>,
+        expected_revision: Option<i64>,
+    ) -> Result<ProjectRecord> {
+        let current = self.project_record(id)?;
+        if expected_revision.is_some_and(|expected| expected != current.revision) {
+            return Err(revision_mismatch());
+        }
+        let name = name.filter(|name| *name != current.name);
+        let description = description.filter(|text| *text != current.description);
+        if name.is_none() && description.is_none() {
+            return Ok(current);
+        }
+        let tx = self.db.transaction()?;
+        if let Some(name) = name {
+            let runtime: String = tx.query_row(
+                "SELECT runtime_project_id FROM deployments WHERE id=?1",
+                [id],
+                |r| r.get(0),
+            )?;
+            if tx
+                .prepare("SELECT 1 FROM projects WHERE lower(name)=lower(?1) AND id!=?2")?
+                .exists(params![name, runtime])?
+            {
+                return Err(name_taken(name));
+            }
+            tx.execute(
+                "UPDATE projects SET name=?1 WHERE id=?2",
+                params![name, runtime],
+            )?;
+        }
+        if let Some(description) = description {
+            tx.execute(
+                "INSERT INTO project_details(deployment_id,description,created_at_ms) VALUES (?1,?2,?3)
+                 ON CONFLICT(deployment_id) DO UPDATE SET description=excluded.description",
+                params![id, description, chrono::Utc::now().timestamp_millis()],
+            )?;
+        }
+        // Checked again inside the transaction, so two writers cannot both win.
+        if tx.execute(
+            "UPDATE deployments SET revision=revision+1 WHERE id=?1 AND revision=?2",
+            params![id, current.revision],
+        )? != 1
+        {
+            return Err(revision_mismatch());
+        }
+        tx.commit()?;
+        self.project_record(id)
     }
     pub fn project_record(&self, id: &str) -> Result<ProjectRecord> {
         let sql = format!(

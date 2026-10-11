@@ -68,6 +68,7 @@ ProjectCreate:
 ProjectUpdate:
   type: object
   minProperties: 1
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }

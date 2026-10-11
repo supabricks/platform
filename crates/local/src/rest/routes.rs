@@ -12,6 +12,7 @@ pub enum Operation {
     GetServerVersion,
     ListOperations,
     ListProjects,
+    UpdateProject,
 }
 
 /// Method, path template and operation, with `{name}` for a path parameter.
@@ -20,6 +21,7 @@ pub const ROUTES: &[(&str, &str, Operation)] = &[
     ("GET", "/projects", Operation::ListProjects),
     ("POST", "/projects", Operation::CreateProject),
     ("GET", "/projects/{project}", Operation::GetProject),
+    ("PATCH", "/projects/{project}", Operation::UpdateProject),
     ("GET", "/projects/{project}/operations", Operation::ListOperations),
     ("GET", "/projects/{project}/operations/{operation}", Operation::GetOperation),
     ("POST", "/projects/{project}/operations/{operation}/cancel", Operation::CancelOperation),

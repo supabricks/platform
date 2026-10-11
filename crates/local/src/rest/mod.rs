@@ -154,6 +154,7 @@ pub fn dispatch(store: &mut Store, host: &crate::api::Binding, call: &Call) -> R
         Operation::ListProjects => projects::list(store, call),
         Operation::GetProject => projects::get(store, call, parameter("project")),
         Operation::CreateProject => projects::create(store, host, call),
+        Operation::UpdateProject => projects::update(store, call, parameter("project")),
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))

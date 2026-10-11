@@ -106,8 +106,9 @@ project:
       Renaming keeps the project ID, so datasets other projects read from it
       keep working. It changes this project only, not others created from the
       same source. A name already in use is refused with `409` and
-      `code: name_taken`.
-    x-backend: new
+      `code: name_taken`. The revision rises by one when something changes and
+      stays the same when nothing does.
+    x-backend: ready
     x-required-role: administrator
     x-console-features: [HM-01b, ST-02]
     x-issues: [287, 314]
@@ -120,7 +121,18 @@ project:
       '200':
         description: The updated project.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Project' }
+            example:
+              id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+              name: sales-analytics-eu
+              description: Orders and customers for the EU region
+              source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+              created_at: '2026-10-10T14:05:00.000Z'
+              revision: 5
+              counts: { databases: 1, branches: 3 }
+              my_role: administrator
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }

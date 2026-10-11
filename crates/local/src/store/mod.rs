@@ -174,7 +174,13 @@ impl Store {
                 (false, false) => return Err(project_directory::name_taken(&config.name)),
                 (true, false) => {}
                 _ => {
-                    self.db.execute("INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO UPDATE SET name=excluded.name", params![id, config.name])?;
+                    // The name belongs to the project once it exists: renaming is
+                    // an explicit change, so a later edit to the source's label
+                    // does not rename it.
+                    self.db.execute(
+                        "INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO NOTHING",
+                        params![id, config.name],
+                    )?;
                 }
             }
             self.ensure_legacy_deployment(config)

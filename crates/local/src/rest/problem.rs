@@ -80,6 +80,7 @@ impl From<&Error> for Problem {
             // A conflict may name a more specific stable code as a prefix.
             Error::Operation(OperationError::Conflict(s)) => match s.split_once(": ") {
                 Some(("name_taken", detail)) => Self::new(409, "name_taken", detail),
+                Some(("revision_mismatch", detail)) => Self::new(412, "revision_mismatch", detail),
                 _ => Self::new(409, "conflict", s.clone()),
             },
             Error::Operation(OperationError::Unavailable(s)) => Self::unavailable(s.clone()),

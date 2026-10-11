@@ -286,3 +286,124 @@ def test_create_survives_a_killed_daemon_and_its_key_still_replays(private_serve
     project = api.call('getProject', path={'project': first['project_id']}).json()
     assert (project['name'], project['description']) == ('durable-create', 'kept')
     assert create(api, 'durable-create', expect=409).json()['code'] == 'name_taken'
+
+
+# ---- L2: rename and description ----
+
+def update(api, project, body, expect=200, **headers):
+    return api.call('updateProject', path={'project': project}, json=body, headers=headers, expect=expect)
+
+
+@pytest.fixture
+def fresh(api):
+    """A project of its own for one test, as (id, name)."""
+    import uuid
+    name = f'edit-{uuid.uuid4().hex[:10]}'
+    return create(api, name).json()['project_id'], name
+
+
+@pytest.fixture(scope='module')
+def untouched(api):
+    """One project shared by tests that must leave it unchanged. The platform
+    allows 32 console-created projects, so tests do not each make their own."""
+    import uuid
+    name = f'same-{uuid.uuid4().hex[:10]}'
+    return create(api, name).json()['project_id'], name
+
+
+@pytest.mark.l2
+def test_rename_keeps_the_id_and_raises_the_revision(api, fresh):
+    project, _ = fresh
+    before = api.call('getProject', path={'project': project})
+    response = update(api, project, {'name': 'Renamed-' + project[-6:]})
+    after = response.json()
+    assert after['name'] == 'renamed-' + project[-6:], 'stored in lower case'
+    assert after['id'] == project and after['source_id'] == before.json()['source_id']
+    assert after['revision'] == before.json()['revision'] + 1
+    assert response.headers['ETag'] == f'"{after["revision"]}"'
+    assert api.call('getProject', path={'project': project}).json() == after
+    assert after['name'] in [p['name'] for p in everything(api)]
+
+
+@pytest.mark.l2
+def test_description_can_be_set_changed_and_cleared(api, fresh):
+    project, name = fresh
+    assert update(api, project, {'description': 'first'}).json()['description'] == 'first'
+    both = update(api, project, {'description': 'x' * 500, 'name': name}).json()
+    assert both['description'] == 'x' * 500 and both['name'] == name
+    assert update(api, project, {'description': ''}).json()['description'] == ''
+
+
+@pytest.mark.l2
+def test_a_change_that_changes_nothing_keeps_the_revision(api, untouched):
+    project, name = untouched
+    before = api.call('getProject', path={'project': project}).json()
+    assert update(api, project, {'name': name, 'description': ''}).json() == before
+    assert update(api, project, {'name': name.upper()}).json() == before, 'case alone is not a rename'
+
+
+@pytest.mark.l2
+def test_rename_to_a_name_in_use_is_refused(api, fresh):
+    project, name = fresh
+    other = create(api, name + '-other').json()['project_id']
+    for taken in (name, name.upper()):
+        assert update(api, other, {'name': taken}, expect=409).json()['code'] == 'name_taken'
+    assert api.call('getProject', path={'project': other}).json()['name'] == name + '-other'
+    update(api, project, {'name': name + '-moved'})
+    assert update(api, other, {'name': name}).json()['name'] == name, 'a freed name can be taken'
+
+
+@pytest.mark.l2
+def test_if_match_makes_a_change_conditional(api, fresh):
+    project, _ = fresh
+    etag = api.call('getProject', path={'project': project}).headers['ETag']
+    first = update(api, project, {'description': 'one'}, **{'If-Match': etag})
+    stale = update(api, project, {'description': 'two'}, expect=412, **{'If-Match': etag})
+    assert stale.json()['code'] == 'revision_mismatch'
+    assert api.call('getProject', path={'project': project}).json()['description'] == 'one'
+    update(api, project, {'description': 'two'}, **{'If-Match': first.headers['ETag']})
+    update(api, project, {'description': 'three'}, **{'If-Match': '*'})
+    for bad in ('nonsense', '"abc"', 'W/"1"'):
+        assert update(api, project, {'description': 'x'}, expect=412, **{'If-Match': bad}).json()['code'] == 'revision_mismatch'
+    assert api.call('getProject', path={'project': project}).json()['description'] == 'three'
+
+
+@pytest.mark.l2
+@pytest.mark.parametrize('body', [{}, {'name': ''}, {'name': 'has space'}, {'name': 'a' * 41}, {'name': 5},
+                                  {'description': 'x' * 501}, {'description': None}, {'id': 'prj_x'},
+                                  {'name': 'fine', 'revision': 9}, [], 'text'])
+def test_update_rejects_an_invalid_body(api, untouched, body):
+    project, name = untouched
+    response = api.raw('PATCH', f'/projects/{project}', json=body)
+    assert response.status_code == 400, response.text
+    assert response.json()['code'] == 'invalid_request'
+    assert api.call('getProject', path={'project': project}).json()['name'] == name
+
+
+@pytest.mark.l2
+def test_update_of_an_unknown_project_is_404(api):
+    response = api.raw('PATCH', '/projects/prj_' + '0' * 32, json={'description': 'x'})
+    assert response.status_code == 404
+    assert api.raw('PATCH', '/projects/nonsense', json={'description': 'x'}).status_code == 404
+
+
+@pytest.mark.l2
+def test_renaming_one_project_leaves_others_from_the_same_source_alone(api, server):
+    source = server.new_source('shared-source')
+    for folder, name in [(source, 'shared-prod'), (server.copy_source(source), 'shared-staging')]:
+        assert server.create_project(folder, name)[1] is None
+    by_name = {p['name']: p for p in everything(api)}
+    update(api, by_name['shared-staging']['id'], {'name': 'shared-test'})
+    names = {p['name'] for p in everything(api) if p['source_id'] == by_name['shared-prod']['source_id']}
+    assert names == {'shared-prod', 'shared-test'}
+
+
+@pytest.mark.l5
+def test_a_rename_survives_a_killed_daemon(private_server):
+    api = private_server.session()
+    project = create(api, 'before-restart').json()['project_id']
+    renamed = update(api, project, {'name': 'after-restart', 'description': 'kept'}).json()
+    private_server.restart(kill=True)
+    api = private_server.session()
+    assert api.call('getProject', path={'project': project}).json() == renamed
+    create(api, 'before-restart')

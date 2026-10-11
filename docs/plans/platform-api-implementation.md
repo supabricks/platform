@@ -282,8 +282,22 @@ required role; `x-backend` values are corrected.
   `listOperations`, `getOperation` and `cancelOperation` are served. Only
   applies can be cancelled today.
 
-**Still to build:** rename and description, delete and its impact, the project
-map, and the governed transport with role tests. The harness has no database
+- `updateProject`: rename and description, conditional on `If-Match`. The name
+  now belongs to the project once it exists, so editing the label in a source's
+  manifest no longer renames an existing project.
+
+**Delete is held until it can be tested.** The building blocks exist (delete a
+sync pipeline, unpublish a publication, force-delete a branch, collect
+environments), and a project has rows in about forty tables plus data in
+object storage and the catalog service. Delete has to drive those in order as
+one durable operation and refuse while another project reads its data. None of
+it completes without database engines, and the harness has none. Shipping a
+delete that cannot be run end to end risks leaving data behind or removing the
+wrong data, so the order is: engine-backed fixture first (planned for AP02),
+then delete and its impact preview.
+
+**Still to build:** delete and its impact, the project map, and the governed
+transport with role tests. The harness has no database
 engines, so an apply never finishes there; completion is tested by an
 engine-backed fixture added with databases (AP02).
 
