@@ -1,0 +1,161 @@
+SqlText:
+  type: string
+  description: One SQL statement, at most 32768 bytes, with something other than white space in it.
+  minLength: 1
+  maxLength: 32768
+  pattern: '\S'
+
+StatementRun:
+  type: object
+  required: [branch_id, sql]
+  additionalProperties: false
+  properties:
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: The branch to run on, in any database of the project.
+    sql: { $ref: './schemas.yaml#/SqlText' }
+    read_only:
+      type: boolean
+      default: true
+      description: Run in a read-only transaction. Send false to let the statement write.
+    max_rows:
+      type: integer
+      minimum: 1
+      maximum: 1000
+      default: 200
+      description: The most rows the result may have. A statement that returns more fails.
+    timeout_ms:
+      type: integer
+      minimum: 100
+      maximum: 30000
+      default: 10000
+      description: How long the statement may run before PostgreSQL stops it.
+
+Statement:
+  type: object
+  required: [id, database_id, branch_id, sql, read_only, max_rows, timeout_ms, state, started_at, elapsed_ms, result, error]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    sql: { type: string }
+    read_only: { type: boolean }
+    max_rows: { type: integer }
+    timeout_ms: { type: integer }
+    state:
+      type: string
+      enum: [running, cancelling, succeeded, failed, cancelled]
+      description: >-
+        `cancelling` from a cancel request until PostgreSQL has stopped the
+        statement. `succeeded`, `failed` and `cancelled` are final.
+    started_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    elapsed_ms:
+      type: integer
+      minimum: 0
+      description: How long it has run, or ran, including the time to connect.
+    result:
+      description: What the statement returned. Null until it has succeeded.
+      oneOf: [{ $ref: './schemas.yaml#/StatementResult' }, { type: 'null' }]
+    error:
+      description: Why it failed or that it was cancelled. Null otherwise.
+      oneOf: [{ $ref: './schemas.yaml#/StatementError' }, { type: 'null' }]
+
+StatementResult:
+  type: object
+  required: [columns, rows, row_count]
+  properties:
+    columns:
+      type: array
+      description: Empty for a statement that returns no rows.
+      items:
+        type: object
+        required: [name, type]
+        properties:
+          name: { type: string }
+          type: { type: string, description: 'The PostgreSQL type name, for example `int8` or `timestamptz`.' }
+    rows:
+      type: array
+      description: >-
+        One array per row, in column order. Every value is PostgreSQL's text
+        form of it, so numbers and timestamps lose nothing; a SQL null is null.
+      items:
+        type: array
+        items: { type: [string, 'null'] }
+    row_count:
+      type: integer
+      minimum: 0
+      description: The rows the statement returned or changed, as PostgreSQL reports it.
+
+StatementError:
+  type: object
+  required: [sqlstate, message]
+  properties:
+    sqlstate:
+      description: >-
+        PostgreSQL's five-character error code. `57014` for a statement that
+        was cancelled or ran out of time, `54000` for a result over the
+        limits. Null when the server could not reach PostgreSQL.
+      oneOf: [{ type: string, pattern: '^[0-9A-Z]{5}$' }, { type: 'null' }]
+    message:
+      type: string
+      description: PostgreSQL's message, without its detail or the statement's text.
+
+StatementPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Statement' } }
+
+SavedQueryTitle:
+  type: string
+  description: 1 to 120 characters, not only white space, without control characters.
+  minLength: 1
+  maxLength: 120
+  pattern: '^[^\x00-\x1f\x7f-\x9f]*[^\s\x00-\x1f\x7f-\x9f][^\x00-\x1f\x7f-\x9f]*$'
+  examples: [Customers without an email]
+
+SavedQuery:
+  type: object
+  description: SQL a project keeps under a title. Who saved it and when it was first saved are not reported in version 1.
+  required: [id, title, sql, branch_id, updated_at, revision]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    title: { $ref: './schemas.yaml#/SavedQueryTitle' }
+    sql: { $ref: './schemas.yaml#/SqlText' }
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: The branch it was written for. The branch may have been deleted since.
+    updated_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+
+SavedQueryCreate:
+  type: object
+  required: [title, sql, branch_id]
+  additionalProperties: false
+  properties:
+    title: { $ref: './schemas.yaml#/SavedQueryTitle' }
+    sql: { $ref: './schemas.yaml#/SqlText' }
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: A branch of the project.
+
+SavedQueryUpdate:
+  type: object
+  minProperties: 1
+  additionalProperties: false
+  properties:
+    title: { $ref: './schemas.yaml#/SavedQueryTitle' }
+    sql: { $ref: './schemas.yaml#/SqlText' }
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: A branch of the project.
+
+SavedQueryPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/SavedQuery' } }

@@ -8,6 +8,7 @@ mod problem;
 mod projects;
 mod routes;
 mod shared;
+mod sql;
 
 pub use problem::Problem;
 pub use routes::{Operation, ROUTES, Role};
@@ -55,6 +56,10 @@ pub(crate) struct Local<'a> {
     pub binding: &'a crate::api::Binding,
     pub cell: Option<&'a crate::engine::Cell>,
     pub gateway: Option<&'a mut crate::connections::Gateway>,
+    /// The statements this server is running, and has lately run, for the API.
+    pub statements: Option<&'a mut crate::console::workspace::Queries>,
+    /// SQL workers busy with work that is not one of those statements.
+    pub busy: usize,
 }
 
 /// One request, after the transport has checked the session.
@@ -351,6 +356,28 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             parameter("database"),
             parameter("branch"),
         ),
+        Operation::RunStatement => sql::run(store, &mut host, call, parameter("project")),
+        Operation::GetStatement => sql::get(
+            store,
+            &mut host,
+            parameter("project"),
+            parameter("statement"),
+        ),
+        Operation::CancelStatement => sql::cancel(
+            store,
+            &mut host,
+            parameter("project"),
+            parameter("statement"),
+        ),
+        Operation::ListSavedQueries => sql::list(store, call, parameter("project")),
+        Operation::GetSavedQuery => sql::get_saved(store, parameter("project"), parameter("query")),
+        Operation::CreateSavedQuery => sql::create_saved(store, call, parameter("project")),
+        Operation::UpdateSavedQuery => {
+            sql::update_saved(store, call, parameter("project"), parameter("query"))
+        }
+        Operation::DeleteSavedQuery => {
+            sql::delete_saved(store, call, parameter("project"), parameter("query"))
+        }
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))

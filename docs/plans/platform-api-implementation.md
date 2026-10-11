@@ -405,7 +405,7 @@ known now:
 |---|---|---|
 | AP02 Databases | Done; see below | Compute sizes (#244), idle timeout (#245), storage (#246), pooled connections (#252), governed changes (#322), cascade delete (#323) |
 | AP03 Branches | Create at head, time or log position; rename, default, expiry, suspend, resume, delete | Reset (#256), schema diff (#255), restore window (#254), per-branch size (#246) |
-| AP04 SQL | One statement, cancel, saved queries | Multiple statements, plans, history (#261) |
+| AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables and columns; bounded preview | Paged reads (#257), batched edits (#258), reviewed DDL (#259), full introspection (#260) |
 | AP06 Imports | Inspect, map, load, history, cancel, retry | Append and replace (#311), remote sources (#312), direct analytical import (#313) |
 | AP07 Administration and observability | Little | Roles (#251), password reset (#250), extensions (#253), metrics (#247), query activity (#248) |
@@ -553,6 +553,54 @@ its expiry passes.
 | Schema diff between branches | #255 |
 | Changed bytes and head position | #246 |
 | Deleting a database together with its branches | #323 |
+
+**Acceptance:** the eight operations pass L0 to L7 on the local profile on
+Linux and macOS, with the engine-backed tests run by the `engines` job.
+
+### AP04: SQL
+
+**Completeness review.** From reading the code on 2026-10-11. There was no
+draft contract for this domain; it is written from what the platform does.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| How does a statement run? | On one of four worker threads, as the application role, through the branch's gateway address, in one transaction (`query.rs`). The console starts it and polls a handle held in memory (`console::workspace::Queries`) | A statement is a resource: `runStatement` answers `201` with `state: running`, `getStatement` reads it, `cancelStatement` stops it. It is not an `Operation`: it is not durable and carries a result |
+| What bounds it? | 32768 bytes of SQL, 1 to 1000 rows, 256 KiB of result, 100 to 30000 ms | The same, with defaults of 200 rows and 10 seconds. Over a limit the statement fails with `54000`; nothing is cut short |
+| Writes | Read-only transaction unless asked | `read_only` defaults to true |
+| More than one statement | PostgreSQL refuses it at prepare | The statement fails with `42601`. Scripts are #261 |
+| How long is it kept? | Ten minutes after it finishes, 32 handles, gone on restart | Documented. `getStatement` answers `404`, and says a write may have committed. A history is #261 |
+| Repeats | The console names each statement with an ID it makes up | `Idempotency-Key`. The statement ID is derived from the caller and key, so a repeat finds the first even if its reply was not stored |
+| Four workers busy | Refused | `429` with `code: capacity_exhausted` |
+| Values | Text, as PostgreSQL prints them; null for null | The same: nothing is lost to JSON numbers |
+| Errors | SQLSTATE and message; no detail, context or statement text | `error: {sqlstate, message}` |
+| Saved queries | Up to 100 per project, one private file each, with title, SQL, the branch and a revision. No folders, no timestamps | Five operations. `updated_at` is the file's modification time. Titles are counted in characters, not bytes. Folders and export are #329 |
+| Signed-in callers | PostgreSQL is private on a governed server; nobody is handed a connection | The whole domain is `x-profiles: [local]` (#328) |
+
+**Built:**
+
+- `rest/sql.rs`: eight operations. Statements reuse the console's `Queries`
+  under a scope of their own, so a console's handles and the API's are never
+  mixed; the daemon passes it, and the count of other busy workers, in
+  `rest::Local`.
+- `console/workspace.rs`: the saved query file format and directory are shared
+  with the API, so a query saved through either is the same file.
+
+**Tests.** `api/tests/test_sql.py`: saved queries in full without engines
+(contract, paging, revisions, the limit of 100, durability, and parity with
+the file the console reads), statement refusals, the generated role tests, and
+thirteen engine-backed tests: values of every type come back as text; a
+statement is read-only unless asked; PostgreSQL's own codes for four failures;
+a result over the limits fails and commits nothing; running out of time;
+cancel; a repeated key runs once; the fifth statement is refused; a statement
+is found only through its project; a statement wakes a suspended branch.
+
+**Left out, with where each is tracked:**
+
+| What | Issue |
+|---|---|
+| Several statements in one run, structured plans, history | #261 |
+| Statements and saved queries on a governed server | #328 |
+| Saved query folders, export to project source, who and when | #329 |
 
 **Acceptance:** the eight operations pass L0 to L7 on the local profile on
 Linux and macOS, with the engine-backed tests run by the `engines` job.

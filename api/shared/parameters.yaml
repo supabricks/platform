@@ -28,6 +28,20 @@ Operation:
   description: Operation ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+Statement:
+  name: statement
+  in: path
+  required: true
+  description: Statement ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+SavedQuery:
+  name: query
+  in: path
+  required: true
+  description: Saved query ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
 Limit:
   name: limit
   in: query

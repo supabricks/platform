@@ -35,8 +35,10 @@ def test_without_a_session_is_401(op, anonymous):
 
 
 @pytest.mark.parametrize('op', [o for o in SERVED if o.secured], ids=repr)
-def test_a_forged_session_is_401(op, server, anonymous):
-    cookie = next(iter(server.session().http.cookies)).name
+def test_a_forged_session_is_401(op, api, anonymous):
+    # The name of the real session's cookie; a console keeps a fixed number of
+    # sessions, so one is not opened for every operation.
+    cookie = next(iter(api.http.cookies)).name
     response = anonymous.raw(op.method, sample(op), headers={'Cookie': f'{cookie}={"0" * 64}'})
     assert response.status_code == 401
 
