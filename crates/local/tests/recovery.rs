@@ -431,7 +431,7 @@ fn catalog_migration(source_schema: u32) {
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
     db.execute_batch(
-        "DROP TRIGGER branch_details_created; DROP TRIGGER branch_details_renamed; DROP TABLE branch_details;",
+        "DROP TRIGGER branch_details_created; DROP TRIGGER branch_details_edited; DROP TABLE branch_details;",
     )
     .unwrap();
     if source_schema < 32 {

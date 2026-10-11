@@ -443,6 +443,13 @@ mod branch_detail_tests {
         let (created, edits) = details(&db, "new");
         assert!(created > 0);
         assert_eq!(edits, 1, "only a change of name counts");
+        db.execute_batch(
+            "UPDATE branches SET expires_at_ms=5 WHERE id='new';
+             UPDATE branches SET expires_at_ms=5 WHERE id='new';
+             UPDATE branches SET expires_at_ms=NULL WHERE id='new';",
+        )
+        .unwrap();
+        assert_eq!(details(&db, "new").1, 3, "and each change of expiry");
         assert_eq!(details(&db, "old").1, 0);
     }
 }

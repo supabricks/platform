@@ -55,7 +55,7 @@ impl Store {
         id.and_then(|id| id.parse().ok())
             .ok_or_else(|| missing("project"))
     }
-    /// When a branch was created and how often it was renamed.
+    /// When a branch was created and how often its name or expiry changed.
     fn branch_details(&self, id: BranchId) -> Result<(i64, i64)> {
         Ok(self
             .db

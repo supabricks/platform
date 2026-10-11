@@ -464,7 +464,7 @@ is `x-profiles: [local]` (#322).
 
 **Built:**
 
-- Catalog 33 records when each branch was created and counts its renames, by
+- Catalog 33 records when each branch was created and counts its renames and expiry changes, by
   trigger, so no writer changed. The API's revision is the lifecycle revision
   plus the renames, so it rises with both and `If-Match` works for a rename.
 - `store/database_directory.rs`: databases as root branches with their state,
