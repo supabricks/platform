@@ -10,8 +10,10 @@ projects:
     operationId: listProjects
     tags: [Projects]
     summary: List projects
-    description: Projects the caller can open. In the governed profile that is every project where they hold a role.
-    x-backend: new
+    description: >-
+      Projects the caller can open, ordered by name. In the governed profile
+      that is every project where they hold a role.
+    x-backend: ready
     x-required-role: any
     x-console-features: [HM-01]
     parameters:
@@ -21,7 +23,21 @@ projects:
     responses:
       '200':
         description: A page of projects.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectPage' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ProjectPage' }
+            example:
+              items:
+                - id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+                  name: sales-analytics
+                  description: ''
+                  source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+                  created_at: '2026-10-10T14:05:00Z'
+                  revision: 1
+                  counts: { databases: 1, branches: 3 }
+                  my_role: null
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
   post:
     operationId: createProject
@@ -57,14 +73,27 @@ project:
     operationId: getProject
     tags: [Projects]
     summary: Get a project
-    x-backend: new
+    description: The `ETag` is the project's revision; send it in `If-Match` to rename or delete.
+    x-backend: ready
     x-required-role: viewer
     x-console-features: [HM-01]
     responses:
       '200':
         description: The project.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Project' }
+            example:
+              id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+              name: sales-analytics
+              description: Orders, customers and the dashboards built on them
+              source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+              created_at: '2026-10-10T14:05:00Z'
+              revision: 4
+              counts: { databases: 1, branches: 3 }
+              my_role: administrator
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   patch:

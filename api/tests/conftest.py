@@ -17,7 +17,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     for layer, meaning in [('l0', 'specification'), ('l1', 'conformance and coverage'), ('l2', 'scenarios'),
-                           ('l3', 'generated invariants'), ('l5', 'durability'), ('l7', 'fuzz')]:
+                           ('l3', 'generated invariants'), ('l5', 'durability'), ('l6', 'parity with the command line'), ('l7', 'fuzz')]:
         config.addinivalue_line('markers', f'{layer}: {meaning}')
 
 

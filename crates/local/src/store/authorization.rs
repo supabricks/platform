@@ -196,7 +196,7 @@ fn set_role(
     Ok(())
 }
 pub(super) fn project(db: &Connection, deployment: &str) -> Result<Value> {
-    let (name,target):(String,String)=db.query_row("SELECT p.name,d.target FROM deployments d JOIN project_definitions p ON p.id=d.definition_id WHERE d.id=?1",[deployment],|r|Ok((r.get(0)?,r.get(1)?))).optional()?.ok_or_else(auth::denied)?;
+    let (name,target):(String,String)=db.query_row("SELECT p.name,d.target FROM deployments d JOIN projects p ON p.id=d.runtime_project_id WHERE d.id=?1",[deployment],|r|Ok((r.get(0)?,r.get(1)?))).optional()?.ok_or_else(auth::denied)?;
     Ok(
         json!({"deployment_id":deployment,"name":name,"target":target,"policy_revision":policy(db,deployment)?,"workload_launch_enabled":false,"isolated_execution":"operator_opt_in"}),
     )

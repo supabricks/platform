@@ -380,7 +380,7 @@ fn catalog_29_upgrade_preserves_receipts_and_adds_lookup_indexes() {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap();
-    s.db.execute_batch("DROP INDEX publication_storage_generation; DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run; PRAGMA user_version=29;").unwrap();
+    s.db.execute_batch("DROP INDEX project_names; DROP TABLE project_details; DROP INDEX publication_storage_generation; DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run; PRAGMA user_version=29;").unwrap();
     drop(s);
     assert!(Store::open(dir.path()).is_err(), "upgrade must be explicit");
     let mut db = rusqlite::Connection::open(dir.path().join("state.sqlite3")).unwrap();

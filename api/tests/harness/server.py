@@ -71,6 +71,44 @@ class Server:
         assert 'error' not in value, value
         return value['result']
 
+    def try_rpc(self, **request):
+        """Like rpc, but returns (result, error) instead of failing."""
+        with socket.socket(socket.AF_UNIX) as s:
+            s.settimeout(10)
+            s.connect(str(self.data / 'control.sock'))
+            s.sendall(json.dumps(dict(version=1, request=request)).encode() + b'\n')
+            value = json.loads(s.makefile('rb').readline())
+        return value.get('result'), value.get('error')
+
+    def new_source(self, name):
+        """A project source on disk, as `supabricks project init` would leave it."""
+        source = str(uuid.uuid4())
+        folder = self.root / 'sources' / str(uuid.uuid4())
+        folder.mkdir(parents=True)
+        (folder / 'supabricks.toml').write_text(
+            f'format_version=2\nid="{source}"\nname="{name}"\n'
+            '[package]\nversion="0.1.0"\ninclude=[]\nnotebook_outputs="strip"\n')
+        return folder
+
+    def copy_source(self, folder):
+        """A second checkout of the same source."""
+        copy = self.root / 'sources' / str(uuid.uuid4())
+        shutil.copytree(folder, copy)
+        return copy
+
+    def create_project(self, folder, name=None):
+        """Create a project from a source folder, as the command line does.
+
+        Returns (context, error); exactly one is set.
+        """
+        definition = next(line.split('"')[1] for line in (folder / 'supabricks.toml').read_text().splitlines()
+                          if line.startswith('id='))
+        command = dict(action='create', key=str(uuid.uuid4()))
+        if name is not None:
+            command['name'] = name
+        return self.try_rpc(method='project', source=dict(definition_id=definition, worktree=str(folder)),
+                            command=command)
+
     def open_console(self):
         """Launch the HTTP server. Returns a one-time launch token for a session."""
         def launch():

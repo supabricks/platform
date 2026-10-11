@@ -263,6 +263,14 @@ That is ten operations in version 1, two removed, two deferred and one moved.
 (#318); `start_from` is replaced by `source_id`; every operation names its
 required role; `x-backend` values are corrected.
 
+**Built so far (AP01.2, AP01.3):** catalog 32 makes project names unique
+without regard to case and records each project's description and creation
+time. `project create` and the console's import take a name; a name in use is
+refused with `name_taken`. `listProjects` and `getProject` are served, with
+paging, the name filter and `ETag`. Still to build: create, rename, delete and
+its impact, the project map, the operations view, and the governed transport
+with role tests.
+
 **Design questions to settle in AP01.1**
 
 - Decided: a project's name is chosen by the person at create or import, has

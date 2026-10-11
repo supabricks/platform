@@ -118,6 +118,14 @@ def operations():
     return found
 
 
+def only(keep):
+    """The bundle with just the operations `keep` accepts, and no empty paths."""
+    wanted = {(o.path, o.method.lower()) for o in operations() if keep(o)}
+    paths = {path: {k: v for k, v in item.items() if k not in METHODS or (path, k) in wanted}
+             for path, item in bundle()['paths'].items() if any(p == path for p, _ in wanted)}
+    return dict(bundle(), paths=paths)
+
+
 def served():
     return [o for o in operations() if o.served]
 

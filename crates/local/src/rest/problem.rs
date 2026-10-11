@@ -77,7 +77,11 @@ impl From<&Error> for Problem {
         match error {
             Error::Operation(OperationError::InvalidInput(e)) => Self::invalid(e.message.clone()),
             Error::Operation(OperationError::NotFound(s)) => Self::not_found(s.clone()),
-            Error::Operation(OperationError::Conflict(s)) => Self::new(409, "conflict", s.clone()),
+            // A conflict may name a more specific stable code as a prefix.
+            Error::Operation(OperationError::Conflict(s)) => match s.split_once(": ") {
+                Some(("name_taken", detail)) => Self::new(409, "name_taken", detail),
+                _ => Self::new(409, "conflict", s.clone()),
+            },
             Error::Operation(OperationError::Unavailable(s)) => Self::unavailable(s.clone()),
             // Internal detail (paths, SQL) stays in the server log.
             _ => Self::new(

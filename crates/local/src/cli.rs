@@ -815,6 +815,7 @@ pub fn run() -> Result<u8> {
                         .take("--key")
                         .ok_or_else(|| invalid("create requires --key KEY"))?,
                     target: a.take("--target"),
+                    name: a.take("--name"),
                 },
                 2,
             ),

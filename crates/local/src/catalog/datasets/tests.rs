@@ -46,6 +46,11 @@ publication_id="{}"
                 Deployment::Create {
                     key: "create".into(),
                     target: None,
+                    // Each consumer is its own project and needs its own name.
+                    name: Some(format!(
+                        "consumer-{}",
+                        path.file_name().unwrap().to_string_lossy()
+                    )),
                 },
             )
             .unwrap(),

@@ -18,10 +18,12 @@ fn temp_root() -> tempfile::TempDir {
 }
 
 fn config() -> ProjectConfig {
+    // Project names are unique in an installation.
+    let id = ProjectId::new();
     ProjectConfig {
         format_version: 1,
-        id: ProjectId::new(),
-        name: "project".into(),
+        id,
+        name: format!("project-{}", &id.to_string()[..8]),
     }
 }
 fn create(name: &str, base: u16) -> Mutation {

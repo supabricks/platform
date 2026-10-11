@@ -2,7 +2,9 @@
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
 mod problem;
+mod projects;
 mod routes;
+mod shared;
 
 pub use problem::Problem;
 pub use routes::{Operation, ROUTES};
@@ -128,19 +130,30 @@ pub fn resolve<'a>(method: &str, path: &'a str) -> Result<Match<'a>, Reply> {
 }
 
 /// Route one call and run it. Never fails: every failure is a problem reply.
-pub fn dispatch(_store: &mut Store, call: &Call) -> Reply {
+pub fn dispatch(store: &mut Store, call: &Call) -> Reply {
     let found = match resolve(&call.method, &call.path) {
         Ok(found) => found,
         Err(reply) => return reply,
     };
-    match found.operation {
-        Operation::GetServerVersion => Reply::ok(json!({
+    let parameter = |name: &str| {
+        found
+            .parameters
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, value)| *value)
+            .unwrap_or_default()
+    };
+    let result = match found.operation {
+        Operation::GetServerVersion => Ok(Reply::ok(json!({
             "version": env!("CARGO_PKG_VERSION"),
             "api_version": "v1",
             "profile": call.caller.profile(),
             "schema_version": SCHEMA_VERSION,
-        })),
-    }
+        }))),
+        Operation::ListProjects => projects::list(store, call),
+        Operation::GetProject => projects::get(store, call, parameter("project")),
+    };
+    result.unwrap_or_else(Reply::from)
 }
 
 #[cfg(test)]

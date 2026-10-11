@@ -5,11 +5,15 @@
 /// does not compile, because the dispatcher matches on it exhaustively.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operation {
+    GetProject,
     GetServerVersion,
+    ListProjects,
 }
 
 /// Method, path template and operation, with `{name}` for a path parameter.
 #[rustfmt::skip]
 pub const ROUTES: &[(&str, &str, Operation)] = &[
+    ("GET", "/projects", Operation::ListProjects),
+    ("GET", "/projects/{project}", Operation::GetProject),
     ("GET", "/server/version", Operation::GetServerVersion),
 ];
