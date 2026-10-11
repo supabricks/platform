@@ -30,10 +30,12 @@ projects:
     description: >-
       Creates the project and its first database, `main`. The caller becomes its
       administrator. Give `source_id` to create another instance of a source
-      that already exists here, for example a staging copy.
+      that already exists here, for example a staging copy. Starting from the
+      sample tables is not part of version 1.
     x-backend: cli-only
     x-required-role: any
     x-console-features: [HM-01, FR-02]
+    x-issues: [315]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     requestBody:
