@@ -500,6 +500,12 @@ def psql(request, uri, sql):
     return result.stdout.strip()
 
 
+def idle(api, project, database):
+    """Wait until the server has seen every client connection close: a database
+    with one open is, correctly, not suspended or deleted."""
+    wait(lambda: read(api, project, database).json()['connections']['open'] == 0)
+
+
 @pytest.mark.engine
 @pytest.mark.l2
 def test_a_database_starts_accepts_connections_suspends_resumes_and_goes(engine_api, engine_server, request):
@@ -535,6 +541,7 @@ def test_a_database_starts_accepts_connections_suspends_resumes_and_goes(engine_
     assert psql(request, secret['uri'], 'create table t as select 41 + 1 as answer; select answer from t') == '42'
     assert psql(request, secret['uri'], 'select current_user') == connection['role']
 
+    idle(api, project, database)
     done = finished(api, project, change(api, 'suspendDatabase', project, database).json())
     assert done['kind'] == 'database.suspend'
     assert read(api, project, database).json()['state'] == 'suspended'
@@ -547,6 +554,7 @@ def test_a_database_starts_accepts_connections_suspends_resumes_and_goes(engine_
     again = finished(api, project, change(api, 'resumeDatabase', project, database).json())
     assert again['steps'] == [], 'resuming a running database changes nothing'
 
+    idle(api, project, database)
     renamed = rename(api, project, database, name_for('renamed')).json()
     assert api.call('getDatabaseConnection', path=path).json() == connection, 'a rename keeps the address'
 
