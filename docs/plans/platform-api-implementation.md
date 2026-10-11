@@ -265,8 +265,12 @@ required role; `x-backend` values are corrected.
 
 **Design questions to settle in AP01.1**
 
-- Where a project's name lives. Two instances of one source need different
-  names, but the name is stored on the source today.
+- Decided: a project's name is chosen by the person at create or import, has
+  no default, and is unique in the installation without regard to case.
+  Creating a source a second time under a name already in use is refused with
+  `name_taken`. The name is stored on the source today, so this needs a `name`
+  column on the instance with a unique index, filled from the source for
+  existing rows. Rename changes one instance only.
 - What a `path` is on a governed server, and who may see it.
 - What deleting a project does to backups and to data other projects have
   already read.

@@ -46,6 +46,11 @@ Project:
 
 ProjectName:
   type: string
+  description: >-
+    Chosen by the person when the project is created or imported; there is no
+    default. Unique in the installation, compared without regard to case, so a
+    source imported twice needs two names (`sales-analytics` and
+    `sales-analytics-staging`).
   pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
   examples: [sales-analytics]
 
