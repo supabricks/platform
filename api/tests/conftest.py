@@ -1,11 +1,12 @@
 """Fixtures for the API test harness. See README.md in this directory."""
+import os
 import pathlib
 import sys
 
 import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from harness.server import Server  # noqa: E402
+from harness.server import EngineServer, Server  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 
@@ -13,11 +14,17 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 def pytest_addoption(parser):
     parser.addoption('--binary', default=str(REPO / 'target/debug/supabricks'),
                      help='the supabricks executable to test')
+    installed = pathlib.Path.home() / '.local/share/supabricks/current'
+    parser.addoption('--bundle', default=os.environ.get('SUPABRICKS_ENGINE_BUNDLE', str(installed / 'engine')),
+                     help='a verified engine bundle, for tests marked engine')
+    parser.addoption('--helpers', default=os.environ.get('SUPABRICKS_ENGINE_HELPERS', str(installed / 'helpers')),
+                     help='prepared engine helpers, for tests marked engine')
 
 
 def pytest_configure(config):
     for layer, meaning in [('l0', 'specification'), ('l1', 'conformance and coverage'), ('l2', 'scenarios'),
-                           ('l3', 'generated invariants'), ('l5', 'durability'), ('l6', 'parity with the command line'), ('l7', 'fuzz')]:
+                           ('l3', 'generated invariants'), ('l5', 'durability'), ('l6', 'parity with the command line'), ('l7', 'fuzz'),
+                           ('engine', 'needs database engines; skipped without a bundle')]:
         config.addinivalue_line('markers', f'{layer}: {meaning}')
 
 
@@ -31,6 +38,20 @@ def server(request):
     server.stop()
     if request.session.testsfailed:
         sys.stderr.write(f'\n--- daemon log ({server.root}) ---\n{server.log()[-4000:]}\n')
+    server.cleanup()
+
+
+@pytest.fixture(scope='session')
+def engine_api(request):
+    """A signed-in client on a server with database engines. Tests that use
+    it are skipped where no engine bundle is available."""
+    bundle = pathlib.Path(request.config.getoption('--bundle')).resolve()
+    helpers = pathlib.Path(request.config.getoption('--helpers')).resolve()
+    if not (bundle / 'manifest.json').exists() or not helpers.is_dir():
+        pytest.skip('no engine bundle; pass --bundle and --helpers')
+    server = EngineServer(pathlib.Path(request.config.getoption('--binary')).resolve(), bundle, helpers).start()
+    yield server.session()
+    server.stop()
     server.cleanup()
 
 

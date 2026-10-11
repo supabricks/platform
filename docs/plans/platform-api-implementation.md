@@ -291,15 +291,15 @@ sync pipeline, unpublish a publication, force-delete a branch, collect
 environments), and a project has rows in about forty tables plus data in
 object storage and the catalog service. Delete has to drive those in order as
 one durable operation and refuse while another project reads its data. None of
-it completes without database engines, and the harness has none. Shipping a
-delete that cannot be run end to end risks leaving data behind or removing the
-wrong data, so the order is: engine-backed fixture first (planned for AP02),
-then delete and its impact preview.
+it completes without database engines. The harness now has an engine-backed
+server (`engine_api`), which runs locally from an installed release and proves
+that a created project finishes. It is not wired into CI yet. Delete and its
+impact preview come next, built and tested against that server.
 
 **Still to build:** delete and its impact, the project map, and the governed
 transport with role tests. The harness has no database
-engines, so an apply never finishes there; completion is tested by an
-engine-backed fixture added with databases (AP02).
+engines, so an apply never finishes there; completion is tested on the
+engine-backed server.
 
 **Design questions to settle in AP01.1**
 

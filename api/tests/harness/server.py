@@ -166,6 +166,39 @@ class Server:
         self._tmp.cleanup()
 
 
+class EngineServer(Server):
+    """The same server with database engines: PostgreSQL, storage and the rest.
+
+    It needs a verified engine bundle and helpers (see e2e/native/README.md),
+    takes tens of seconds to start, and is used only by tests that must see
+    work finish. It cannot be killed and restarted by a test.
+    """
+
+    def __init__(self, binary, bundle, helpers):
+        super().__init__(binary)
+        self.bundle, self.helpers = bundle, helpers
+
+    def _cli(self, *args, timeout=300):
+        return subprocess.run([str(self.binary), *args, '--data-dir', str(self.data)],
+                              capture_output=True, text=True, timeout=timeout)
+
+    def _spawn(self):
+        self._log = (self.root / 'daemon.log').open('ab')
+        result = self._cli('up', '--bundle', str(self.bundle), '--helpers', str(self.helpers))
+        assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+        wait(lambda: self._alive() and self.rpc(method='status').get('runtime', {}).get('ready'), timeout=120)
+
+    def restart(self, kill=False):
+        raise NotImplementedError('the engine-backed server is not restarted by tests')
+
+    def stop(self):
+        self._cli('down')
+        self._log.close()
+
+    def log(self):
+        return self._cli('doctor', timeout=30).stdout
+
+
 def wait(call, timeout=20):
     until = time.monotonic() + timeout
     while time.monotonic() < until:

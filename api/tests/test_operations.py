@@ -163,3 +163,38 @@ def test_operations_and_their_order_survive_a_killed_daemon(private_server):
     private_server.restart(kill=True)
     api = private_server.session()
     assert [(o['id'], o['created_at']) for o in listed(api, operation['project_id'])] == before
+
+
+# ---- With database engines: work that finishes ----
+
+@pytest.mark.engine
+@pytest.mark.l2
+def test_a_new_project_finishes_and_its_operations_record_it(engine_api):
+    api = engine_api
+    operation = api.call('createProject', json={'name': 'finishes'},
+                         headers={'Idempotency-Key': key()}, expect=202).json()
+    path = {'project': operation['project_id'], 'operation': operation['id']}
+
+    def final():
+        response = api.call('getOperation', path=path, expect=200)
+        found = response.json()
+        if found['finished_at'] is None:
+            assert response.headers['Retry-After'] == '1'
+            return None
+        assert 'Retry-After' not in response.headers, 'a finished operation is not polled'
+        return found
+    done = wait(final, timeout=180)
+    assert done['state'] == 'succeeded', done
+    assert done['cancellable'] is False
+    assert done['result']['project']['id'] == operation['project_id']
+    assert [step['state'] for step in done['steps']] == ['succeeded']
+    assert done['created_at'] <= done['started_at'] <= done['finished_at']
+    assert api.call('cancelOperation', path=path, expect=409).json()['code'] == 'not_cancellable'
+
+    items = listed(api, operation['project_id'])
+    change = next(o for o in items if o['kind'] == 'database.create')
+    assert change['state'] == 'succeeded' and change['finished_at']
+    assert all(step['state'] == 'succeeded' for step in change['steps'])
+    assert {o['id'] for o in listed(api, operation['project_id'], state='succeeded')} == {o['id'] for o in items}
+    project = api.call('getProject', path={'project': operation['project_id']}).json()
+    assert project['counts'] == {'databases': 1, 'branches': 1}
