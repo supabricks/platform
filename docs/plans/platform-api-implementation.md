@@ -504,6 +504,59 @@ qualified engine archive, so they no longer run locally only.
 Linux and macOS and L4 on the governed profile, and the engine-backed
 scenarios pass in CI; `databases` is `complete`.
 
+### AP03: Branches
+
+**Completeness review.** From reading the code on 2026-10-11.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| What can a branch start from? | The head of another branch, a past time, or a log position (`Mutation::BranchFrom`). The point is stored in `branch_pins` | All three served. The point is reported back as `created_from`, as asked, not as the position it resolved to |
+| Can it start from any branch? | Only from one that has converged: not while it is starting, suspending or resuming | `409 conflict`. Without engines nothing converges, so real branches are made only in engine-backed tests |
+| A point the platform does not hold | Found when the operation runs, not when it is accepted | Documented: the operation fails |
+| Expiry | `SetTtl`, a future time or none. Not for the default branch. An expired branch deletes itself | Served on create and update. Also refused for a database's first branch, which the platform would allow: an expiring database is not something to offer by accident |
+| Default branch | One per project, across its databases (`project_defaults`) | `setDefaultBranch` and `is_default` are project-wide and say so. A default per database is #326 |
+| Delete | Refused for the default, for a branch with children, with open connections or work | `409 delete_blocked`. A database's first branch is deleted with `deleteDatabase` |
+| Reset, restore window, schema diff | Do not exist | Deferred: #256, #254, #255 |
+| Head position, changed bytes, creator, sync pipeline | Not recorded per branch | Removed from `Branch` (#246) |
+| Signed-in callers | Lifecycle is reserved to the operator | Reads only; every change is `x-profiles: [local]` (#325) |
+
+**Built:**
+
+- `store/database_directory.rs`: `BranchView`, a branch with its database,
+  parent, children, starting point, expiry and revision.
+- The catalog 33 trigger also counts a change of expiry, so the revision rises
+  with a rename, an expiry change and a lifecycle change.
+- `rest/branches.rs`: eight operations. Suspend and resume share the database
+  handlers' code (`databases::set_state`), so a repeat behaves the same.
+- Operations on a branch are `branch.create`, `branch.suspend`,
+  `branch.resume`, `branch.delete` and `branch.set_expiry`, with `result.branch`
+  on success. Work on a database's first branch stays `database.*`.
+- Connection details for a branch come from the database's `connection` and
+  `credentials` operations, which already take a branch.
+
+**Tests.** `api/tests/test_branches.py`: scenario, durability and parity tests
+on the first branch and every refusal, the generated role tests for the eight
+operations, and four engine-backed tests: a branch starts from its parent and
+diverges, with a nested branch and deletes in order; branches start from a
+past time and a log position and see only what existed then; a branch is
+renamed, suspended, resumed and made the default; a branch deletes itself when
+its expiry passes.
+
+**Left out, with where each is tracked:**
+
+| What | Issue |
+|---|---|
+| Branch changes on a governed server | #325 |
+| A default branch for each database | #326 |
+| Reset a branch to its parent | #256 |
+| The span of history a branch can start from | #254 |
+| Schema diff between branches | #255 |
+| Changed bytes and head position | #246 |
+| Deleting a database together with its branches | #323 |
+
+**Acceptance:** the eight operations pass L0 to L7 on the local profile on
+Linux and macOS, with the engine-backed tests run by the `engines` job.
+
 ## 7. Risks
 
 | Risk | Mitigation |

@@ -1,6 +1,7 @@
 //! Platform API v1 (`api/openapi.yaml`). Transport-independent: an HTTP server
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
+mod branches;
 mod databases;
 mod operations;
 mod problem;
@@ -290,6 +291,65 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             call,
             parameter("project"),
             parameter("database"),
+        ),
+        Operation::ListBranches => {
+            branches::list(store, call, parameter("project"), parameter("database"))
+        }
+        Operation::GetBranch => branches::get(
+            store,
+            parameter("project"),
+            parameter("database"),
+            parameter("branch"),
+        ),
+        Operation::CreateBranch => branches::create(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::UpdateBranch => branches::update(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+            parameter("branch"),
+        ),
+        Operation::DeleteBranch => branches::delete(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+            parameter("branch"),
+        ),
+        Operation::SuspendBranch => branches::suspend(
+            store,
+            &mut host,
+            call,
+            (
+                parameter("project"),
+                parameter("database"),
+                parameter("branch"),
+            ),
+        ),
+        Operation::ResumeBranch => branches::resume(
+            store,
+            &mut host,
+            call,
+            (
+                parameter("project"),
+                parameter("database"),
+                parameter("branch"),
+            ),
+        ),
+        Operation::SetDefaultBranch => branches::make_default(
+            store,
+            &mut host,
+            parameter("project"),
+            parameter("database"),
+            parameter("branch"),
         ),
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {

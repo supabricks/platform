@@ -74,7 +74,7 @@ server routes only operations that are `implemented` or `complete`.
 | `projects` | AP01 | complete | 8 | 6 | 1 |
 | `operations` | AP01 | complete | 3 | 3 | 0 |
 | `databases` | AP02 | complete | 10 | 9 | 1 |
-| `branches` | AP03 | draft | 10 | 0 | 0 |
+| `branches` | AP03 | complete | 11 | 8 | 3 |
 <!-- status:end -->
 
 This table and the server's route table (`crates/local/src/rest/routes.rs`) are

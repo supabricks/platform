@@ -5,10 +5,11 @@ specification forbids, and checks that the server never answers with a 5xx or
 with a response the specification does not declare.
 """
 import pathlib
+import re
 
 import pytest
 import schemathesis
-from schemathesis.specs.openapi.checks import ignored_auth, positive_data_acceptance
+from schemathesis.specs.openapi.checks import ignored_auth, negative_data_rejection, positive_data_acceptance
 
 from harness import spec
 from harness.client import PREFIX
@@ -41,5 +42,10 @@ def test_generated_requests(case, api):
     # say. A made-up one is correctly refused, so it is not "valid data".
     if (case.query or {}).get('cursor'):
         excluded.append(positive_data_acceptance)
+    # HTTP drops the spaces around a header value, so a key that is invalid
+    # only for those reaches the server valid, and is correctly accepted.
+    sent = (case.headers or {}).get('Idempotency-Key')
+    if isinstance(sent, str) and sent != sent.strip(' \t') and re.fullmatch('[!-~]{8,128}', sent.strip(' \t')):
+        excluded.append(negative_data_rejection)
     case.call_and_validate(base_url=api.base + PREFIX, session=api.http, headers=headers,
                            excluded_checks=excluded)

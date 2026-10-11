@@ -105,6 +105,7 @@ class Governed:
         import uuid
         self.database = owner.call('createDatabase', path=dict(project=self.project), json=dict(name='roles-db'),
                                    headers={'Idempotency-Key': str(uuid.uuid4())}, expect=202).json()['target']['id']
+        self.branch = 'br_' + self.database.removeprefix('db_')
         self.ids, self.callers = {}, {'nobody': server.bearer(None)}
         for name, project, role in [('outsider', None, None), ('viewer', self.project, 'viewer'),
                                     ('editor', self.project, 'editor'),
