@@ -145,19 +145,23 @@ project:
     summary: Delete a project and everything in it
     description: >-
       Irreversible. Read the deletion impact first and show it to the person.
-      Refused with `409` while another project reads a dataset this one
-      publishes, unless `force` is true.
-    x-backend: new
+      The project disappears and its name is free as soon as this returns; the
+      operation then removes its databases, branches and files, and backups of
+      the project go with it. In version 1 the request is refused with `409`
+      and `code: delete_blocked` while the project still has sync pipelines,
+      publications, analytical data or running work, or while another project
+      reads its data. Remove those first; the deletion impact lists them.
+    x-backend: ready
     x-required-role: administrator
     x-console-features: [HM-01b]
-    x-issues: [287]
+    x-issues: [287, 320]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
-      - { name: confirm, in: query, required: true, description: 'The project name, typed by the person.', schema: { type: string } }
-      - { name: force, in: query, schema: { type: boolean, default: false } }
+      - { name: confirm, in: query, required: true, description: 'The project name as it is now, typed by the person.', schema: { type: string } }
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
@@ -172,14 +176,21 @@ projectDeletionImpact:
     operationId: getProjectDeletionImpact
     tags: [Projects]
     summary: See what deleting a project would remove
-    x-backend: new
+    description: Read-only. An empty `blocked_by` means the project can be deleted now.
+    x-backend: ready
     x-required-role: administrator
     x-console-features: [HM-01b]
     x-issues: [287]
     responses:
       '200':
         description: What would be removed, and what blocks it.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/DeletionImpact' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/DeletionImpact' }
+            example:
+              removes: { databases: 1, branches: 3 }
+              blocked_by:
+                - { reason: sync_pipelines, count: 1 }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }

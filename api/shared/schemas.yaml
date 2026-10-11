@@ -71,7 +71,7 @@ Problem:
     code:
       type: string
       description: Stable machine-readable code.
-      examples: [invalid_request, unauthorized, not_permitted, unavailable_in_profile, not_found, method_not_allowed, conflict, name_taken, revision_mismatch, precondition_required, capacity_exhausted, request_too_large, unsupported_media_type, idempotency_key_reused, not_cancellable, operation_failed, unavailable, internal_error]
+      examples: [invalid_request, unauthorized, not_permitted, unavailable_in_profile, not_found, method_not_allowed, conflict, name_taken, revision_mismatch, precondition_required, capacity_exhausted, request_too_large, unsupported_media_type, idempotency_key_reused, delete_blocked, not_cancellable, operation_failed, unavailable, internal_error]
     detail: { type: string }
     instance: { type: string, description: 'The request ID, for support.' }
     errors:
@@ -96,7 +96,7 @@ Operation:
     kind:
       type: string
       description: What the operation does, as `<resource>.<verb>`.
-      examples: [project.apply, database.create, branch.create, branch.set_state, backup.create, database.restore, sync.run, import.load]
+      examples: [project.apply, project.delete, database.create, branch.create, branch.set_state, backup.create, database.restore, sync.run, import.load]
     state: { $ref: '#/OperationState' }
     project_id: { $ref: '#/Id' }
     target: { $ref: '#/ResourceRef' }

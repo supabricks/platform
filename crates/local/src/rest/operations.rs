@@ -40,7 +40,26 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         "finished_at": entry.finished_at_ms.map(timestamp),
     });
     let state;
-    if entry.source == "apply" {
+    if entry.source == "delete" {
+        let deletion = store.project_deletion(&project.id).ok()??;
+        state = if deletion.state == "succeeded" {
+            "succeeded"
+        } else {
+            "running"
+        };
+        value["kind"] = json!("project.delete");
+        value["target"] = json!({"kind": "project", "id": public_id("prj", &project.id), "label": deletion.former_name});
+        value["cancellable"] = json!(false);
+        let mut step = json!({"name": "remove branches and files", "state": state});
+        if let Some(waiting) = deletion.waiting_on {
+            step["detail"] = json!(format!("Waiting for {waiting}."));
+        }
+        value["steps"] = json!([step]);
+        if state == "succeeded" {
+            value["result"] =
+                json!({"project": {"kind": "project", "id": public_id("prj", &project.id)}});
+        }
+    } else if entry.source == "apply" {
         let apply = store
             .project_apply(project.id.parse().ok()?, entry.id.parse().ok()?)
             .ok()?;
@@ -124,8 +143,9 @@ fn finish(mut value: Value, state: &str, entry: &OperationEntry) -> Value {
 
 fn project(store: &Store, id: &str) -> Result<ProjectRecord, Problem> {
     let missing = || Problem::not_found("There is no such project.");
+    // A deleted project's operations stay readable, so its deletion can be followed.
     store
-        .project_record(&internal_id("prj", id).ok_or_else(missing)?)
+        .project_record_any(&internal_id("prj", id).ok_or_else(missing)?)
         .map_err(|_| missing())
 }
 /// A reply for an operation that is still going asks the client to poll.

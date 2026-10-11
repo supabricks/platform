@@ -407,3 +407,147 @@ def test_a_rename_survives_a_killed_daemon(private_server):
     api = private_server.session()
     assert api.call('getProject', path={'project': project}).json() == renamed
     create(api, 'before-restart')
+
+
+# ---- L2: delete and its impact ----
+
+def delete(api, project, name, etag, expect=202, used=None, **params):
+    headers = {'Idempotency-Key': used or key()}
+    if etag is not None:
+        headers['If-Match'] = etag
+    return api.call('deleteProject', path={'project': project}, params={'confirm': name, **params},
+                    headers=headers, expect=expect)
+
+
+def etag_of(api, project):
+    return api.call('getProject', path={'project': project}, expect=200).headers['ETag']
+
+
+@pytest.mark.l2
+def test_impact_lists_what_would_go_and_nothing_blocks_a_new_project(api, fresh):
+    project, _ = fresh
+    from harness.server import wait
+    impact = wait(lambda: (lambda body: body if body['removes']['databases'] == 1 else None)(
+        api.call('getProjectDeletionImpact', path={'project': project}, expect=200).json()))
+    assert impact == {'removes': {'databases': 1, 'branches': 1}, 'blocked_by': []}
+    api.call('getProjectDeletionImpact', path={'project': 'prj_' + '0' * 32}, expect=404)
+
+
+@pytest.mark.l2
+def test_delete_hides_the_project_and_frees_its_name_at_once(api, fresh):
+    project, name = fresh
+    response = delete(api, project, name, etag_of(api, project))
+    operation = response.json()
+    assert operation['kind'] == 'project.delete'
+    assert operation['target'] == {'kind': 'project', 'id': project, 'label': name}
+    assert operation['cancellable'] is False
+    assert response.headers['Location'].endswith(operation['id'])
+    assert api.call('getProject', path={'project': project}, expect=404).json()['code'] == 'not_found'
+    assert project not in [p['id'] for p in everything(api)]
+    api.call('getProjectDeletionImpact', path={'project': project}, expect=404)
+    update(api, project, {'description': 'x'}, expect=404)
+    again = create(api, name).json()
+    assert again['project_id'] != project, 'the name is free for a new project'
+
+
+@pytest.mark.l2
+def test_the_deletion_can_be_followed_after_the_project_is_gone(api, fresh):
+    project, name = fresh
+    operation = delete(api, project, name, etag_of(api, project)).json()
+    path = {'project': project, 'operation': operation['id']}
+    found = api.call('getOperation', path=path, expect=200).json()
+    assert found['kind'] == 'project.delete' and found['state'] in ('running', 'succeeded')
+    kinds = [o['kind'] for o in api.call('listOperations', path={'project': project}, expect=200).json()['items']]
+    assert kinds[0] in ('project.delete', 'branch.force_delete'), kinds
+    assert 'project.delete' in kinds
+    assert api.call('cancelOperation', path=path, expect=409).json()['code'] == 'not_cancellable'
+
+
+@pytest.mark.l2
+def test_delete_needs_the_current_version_and_the_exact_name(api, fresh):
+    project, name = fresh
+    etag = etag_of(api, project)
+    assert delete(api, project, name, None, expect=428).json()['code'] == 'precondition_required'
+    assert delete(api, project, name + 'x', etag, expect=400).json()['code'] == 'invalid_request'
+    delete(api, project, name.upper(), etag, expect=400)
+    assert api.raw('DELETE', f'/projects/{project}', headers={'If-Match': etag, 'Idempotency-Key': key()}).status_code == 400
+    assert api.raw('DELETE', f'/projects/{project}?confirm={name}', headers={'If-Match': etag}).status_code == 400
+    update(api, project, {'description': 'changed since the read'})
+    assert delete(api, project, name, etag, expect=412).json()['code'] == 'revision_mismatch'
+    assert api.call('getProject', path={'project': project}, expect=200).json()['name'] == name, 'still there'
+    delete(api, project, name, etag_of(api, project))
+
+
+@pytest.mark.l2
+def test_delete_with_the_same_key_returns_the_first_reply(api, fresh):
+    project, name = fresh
+    etag, used = etag_of(api, project), key()
+    first = delete(api, project, name, etag, used=used)
+    again = delete(api, project, name, etag, used=used)
+    assert again.json()['id'] == first.json()['id']
+    assert delete(api, project, name, etag, expect=404).json()['code'] == 'not_found', 'a new request finds nothing'
+    assert api.raw('DELETE', f'/projects/prj_{"0" * 32}?confirm=x',
+                   headers={'If-Match': '"1"', 'Idempotency-Key': key()}).status_code == 404
+
+
+@pytest.mark.l2
+def test_a_deleted_project_cannot_be_reattached_from_a_checkout(api, server):
+    folder = server.new_source('reattach')
+    context, error = server.create_project(folder, 'reattach-me')
+    assert error is None
+    project = public('prj', context['deployment_id'])
+    delete(api, project, 'reattach-me', etag_of(api, project))
+    result, error = server.try_rpc(method='project', command=dict(action='attach', deployment=context['deployment_id']),
+                                   source=dict(definition_id=context['definition_id'], worktree=str(folder)))
+    assert result is None and error is not None
+    assert (folder / 'supabricks.toml').exists(), 'a checkout elsewhere on the machine is never removed'
+
+
+@pytest.mark.l5
+def test_a_deletion_survives_a_killed_daemon(private_server):
+    api = private_server.session()
+    project = create(api, 'going-away').json()['project_id']
+    operation = delete(api, project, 'going-away', etag_of(api, project)).json()
+    private_server.restart(kill=True)
+    api = private_server.session()
+    api.call('getProject', path={'project': project}, expect=404)
+    assert api.call('getOperation', path={'project': project, 'operation': operation['id']},
+                    expect=200).json()['kind'] == 'project.delete'
+    create(api, 'going-away')
+
+
+# ---- With database engines: a delete that finishes ----
+
+@pytest.mark.engine
+@pytest.mark.l2
+def test_delete_removes_the_databases_and_the_project_folder(engine_api):
+    import pathlib
+    from harness.server import wait
+    api = engine_api
+    made = create(api, 'removed-for-real').json()
+    project = made['project_id']
+    wait(lambda: api.call('getOperation', path={'project': project, 'operation': made['id']}).json()['finished_at'],
+         timeout=180)
+    record = api.call('getProject', path={'project': project}).json()
+    folder = pathlib.Path(record['path'])
+    assert folder.is_dir() and record['counts'] == {'databases': 1, 'branches': 1}
+    assert api.call('getProjectDeletionImpact', path={'project': project}).json() == {
+        'removes': {'databases': 1, 'branches': 1}, 'blocked_by': []}
+
+    operation = delete(api, project, 'removed-for-real', etag_of(api, project)).json()
+    path = {'project': project, 'operation': operation['id']}
+
+    def final():
+        found = api.call('getOperation', path=path, expect=200).json()
+        return found if found['finished_at'] else None
+    done = wait(final, timeout=180)
+    assert done['state'] == 'succeeded', done
+    assert done['result']['project']['id'] == project
+    assert not folder.exists(), 'the folder the server made for the project is gone'
+    items = api.call('listOperations', path={'project': project}).json()['items']
+    removal = next(o for o in items if o['kind'] == 'branch.force_delete')
+    assert removal['state'] == 'succeeded' and all(s['state'] == 'succeeded' for s in removal['steps'])
+    api.call('getProject', path={'project': project}, expect=404)
+    remade = create(api, 'removed-for-real').json()
+    wait(lambda: api.call('getOperation', path={'project': remade['project_id'], 'operation': remade['id']})
+         .json()['state'] == 'succeeded', timeout=180)

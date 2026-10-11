@@ -438,6 +438,9 @@ impl Daemon {
                     }
                 };
                 if !stopping {
+                    if let Err(error) = self.store.advance_project_deletions() {
+                        eprintln!("project deletion could not advance: {error}");
+                    }
                     self.project_apply_error = crate::project_apply::tick(
                         &mut self.store,
                         &mut self.environments,

@@ -25,6 +25,8 @@ mod operation_directory;
 pub(crate) mod ownership;
 mod project_apply;
 pub use operation_directory::{NativeRequest, OperationEntry};
+mod project_deletion;
+pub use project_deletion::{Blocker, Deletion, DeletionImpact};
 mod project_directory;
 pub use project_directory::ProjectRecord;
 mod sessions;

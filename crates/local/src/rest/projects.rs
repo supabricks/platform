@@ -158,3 +158,77 @@ pub fn update(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Pr
     reply.headers.insert("ETag".into(), etag(record.revision));
     Ok(reply)
 }
+
+fn found(store: &Store, project: &str) -> Result<ProjectRecord, Problem> {
+    let missing = || Problem::not_found("There is no such project.");
+    store
+        .project_record(&internal_id("prj", project).ok_or_else(missing)?)
+        .map_err(|_| missing())
+}
+
+pub fn deletion_impact(store: &mut Store, project: &str) -> Result<Reply, Problem> {
+    let record = found(store, project)?;
+    let impact = store
+        .project_deletion_impact(&record.id)
+        .map_err(|e| Problem::from(&e))?;
+    Ok(Reply::ok(json!({
+        "removes": {"databases": impact.databases, "branches": impact.branches},
+        "blocked_by": impact
+            .blockers
+            .iter()
+            .map(|b| json!({"reason": b.reason, "count": b.count}))
+            .collect::<Vec<_>>(),
+    })))
+}
+
+pub fn delete(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Problem> {
+    let record = found_or_deleting(store, call, project)?;
+    let expected = call.expected_revision(true)?;
+    if call.parameter("confirm")? != Some(record.name.as_str()) && !already(store, &record) {
+        return Err(Problem::invalid(
+            "confirm must be the project's name, exactly as it is now.",
+        ));
+    }
+    idempotent(store, call, "local-owner:deleteProject", |store, key| {
+        let operation = derived("delete", key).to_string();
+        // `*` matches any revision; a repeat after the delete began matches too.
+        let expected = match expected {
+            Some(revision) if !already(store, &record) => revision,
+            _ => record.revision,
+        };
+        store
+            .delete_project(&record.id, expected, &operation)
+            .map_err(|e| Problem::from(&e))?;
+        store
+            .set_operation_api_key(&operation, key)
+            .map_err(|e| Problem::from(&e))?;
+        let unreadable = || Problem::new(500, "internal_error", "The deletion is unreadable.");
+        let entry = store
+            .operation_entry(&record.id, &operation)
+            .map_err(|e| Problem::from(&e))?;
+        let view = operations::view(store, &record, &entry).ok_or_else(unreadable)?;
+        Ok(operations::accepted(&record, view))
+    })
+}
+/// Whether a deletion of this project has already begun.
+fn already(store: &Store, record: &ProjectRecord) -> bool {
+    store.project_deleted(&record.id).unwrap_or(false)
+}
+/// The project, even if this same request already began deleting it: a
+/// repeat with the same key must reach the stored reply, not a 404.
+fn found_or_deleting(store: &Store, call: &Call, project: &str) -> Result<ProjectRecord, Problem> {
+    let missing = || Problem::not_found("There is no such project.");
+    let id = internal_id("prj", project).ok_or_else(missing)?;
+    let record = store.project_record_any(&id).map_err(|_| missing())?;
+    if !already(store, &record) {
+        return Ok(record);
+    }
+    let repeated = call.idempotency_key.as_deref().is_some_and(|key| {
+        store
+            .project_deletion(&id)
+            .ok()
+            .flatten()
+            .is_some_and(|d| d.operation_id == derived("delete", key).to_string())
+    });
+    if repeated { Ok(record) } else { Err(missing()) }
+}

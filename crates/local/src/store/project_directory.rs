@@ -94,6 +94,7 @@ impl Store {
         });
         let sql = format!(
             "{SELECT} WHERE NOT EXISTS (SELECT 1 FROM worktree_bindings h WHERE h.deployment_id=d.id AND h.path=?1)
+             AND x.deleted_at_ms IS NULL
              AND (?2 IS NULL OR p.name LIKE ?2 ESCAPE '\\')
              AND (lower(p.name),d.id) > (lower(?3),?4)
              ORDER BY lower(p.name),d.id LIMIT ?5"
@@ -167,7 +168,17 @@ impl Store {
         tx.commit()?;
         self.project_record(id)
     }
+    /// A project that exists. A deleted one is not found.
     pub fn project_record(&self, id: &str) -> Result<ProjectRecord> {
+        let record = self.project_record_any(id)?;
+        if self.project_deleted(id)? {
+            return Err(missing("project"));
+        }
+        Ok(record)
+    }
+    /// A project whether or not it has been deleted, so the operation that
+    /// deletes it can still be followed.
+    pub fn project_record_any(&self, id: &str) -> Result<ProjectRecord> {
         let sql = format!(
             "{SELECT} WHERE d.id=?1 AND NOT EXISTS (SELECT 1 FROM worktree_bindings h WHERE h.deployment_id=d.id AND h.path=?2)"
         );

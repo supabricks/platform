@@ -9,10 +9,24 @@ CREATE UNIQUE INDEX project_names ON projects(lower(name));
 CREATE TABLE project_details (
  deployment_id TEXT PRIMARY KEY REFERENCES deployments(id),
  description TEXT NOT NULL DEFAULT '' CHECK(length(description) <= 500),
- created_at_ms INTEGER NOT NULL
+ created_at_ms INTEGER NOT NULL,
+ -- Set when the project is deleted. The rows stay as a tombstone, as deleted
+ -- branches do; the project is hidden and its name is free at once.
+ deleted_at_ms INTEGER
 );
-INSERT INTO project_details
+INSERT INTO project_details(deployment_id,description,created_at_ms)
  SELECT id,'',CAST(strftime('%s','now') AS INTEGER)*1000 FROM deployments;
+-- The durable record of deleting a project: what was asked, and how far it is.
+CREATE TABLE project_deletions (
+ deployment_id TEXT PRIMARY KEY REFERENCES deployments(id),
+ operation_id TEXT NOT NULL UNIQUE,
+ state TEXT NOT NULL CHECK(state IN ('running','succeeded')),
+ former_name TEXT NOT NULL,
+ -- Folders under the data directory to remove at the end, as a JSON array.
+ owned_paths TEXT NOT NULL,
+ -- Why the last attempt to advance could not, if it could not.
+ waiting_on TEXT
+);
 -- One ordered feed of every operation in a project, whatever recorded it.
 -- Triggers keep it current so no writer has to know about it. Operations from
 -- earlier catalogs carry the time of this upgrade.
@@ -20,7 +34,7 @@ CREATE TABLE operation_index (
  seq INTEGER PRIMARY KEY AUTOINCREMENT,
  id TEXT NOT NULL UNIQUE,
  deployment_id TEXT NOT NULL REFERENCES deployments(id),
- source TEXT NOT NULL CHECK(source IN ('native','apply')),
+ source TEXT NOT NULL CHECK(source IN ('native','apply','delete')),
  created_at_ms INTEGER NOT NULL,
  finished_at_ms INTEGER,
  -- The Idempotency-Key of the API request that started it, if one did.
@@ -64,6 +78,15 @@ CREATE TRIGGER operation_index_apply_done AFTER UPDATE OF state ON project_appli
  WHEN NEW.state NOT IN ('queued','preparing','activating') BEGIN
  UPDATE operation_index SET finished_at_ms=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER)
   WHERE id=NEW.id AND finished_at_ms IS NULL;
+END;
+CREATE TRIGGER operation_index_delete AFTER INSERT ON project_deletions BEGIN
+ INSERT INTO operation_index(id,deployment_id,source,created_at_ms)
+  VALUES (NEW.operation_id,NEW.deployment_id,'delete',CAST((julianday('now')-2440587.5)*86400000 AS INTEGER));
+END;
+CREATE TRIGGER operation_index_delete_done AFTER UPDATE OF state ON project_deletions
+ WHEN NEW.state='succeeded' BEGIN
+ UPDATE operation_index SET finished_at_ms=CAST((julianday('now')-2440587.5)*86400000 AS INTEGER)
+  WHERE id=NEW.operation_id AND finished_at_ms IS NULL;
 END;
 -- Replies to API requests that carry an Idempotency-Key, so a retry returns the
 -- original result. Rows older than a day may be removed.

@@ -83,29 +83,33 @@ ProjectPage:
 
 DeletionImpact:
   type: object
-  description: Everything that deleting the project removes, so the caller can show it before asking for confirmation.
+  description: What deleting the project removes and what stops it, so the caller can show both before asking for confirmation.
   required: [removes, blocked_by]
+  additionalProperties: false
   properties:
     removes:
       type: object
+      description: Counts for other kinds are added with their domains.
+      required: [databases, branches]
       properties:
-        databases: { type: integer }
-        branches: { type: integer }
-        analytical_versions: { type: integer }
-        notebooks: { type: integer }
-        jobs: { type: integer }
-        secrets: { type: integer }
-        backups: { type: integer }
-        storage_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
+        databases: { type: integer, minimum: 0 }
+        branches: { type: integer, minimum: 0 }
     blocked_by:
       type: array
-      description: Other projects that read a dataset this project publishes. Deleting is refused unless `force` is set.
+      description: Empty when the project can be deleted now.
       items:
         type: object
-        required: [project, publication]
+        required: [reason, count]
         properties:
-          project: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
-          publication: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+          reason:
+            type: string
+            enum: [read_by_another_project, sync_pipelines, publications, analytical_data, running_work]
+            description: >-
+              `read_by_another_project`: another project uses a dataset this
+              one publishes. `sync_pipelines`, `publications`,
+              `analytical_data`: these exist and must be removed first.
+              `running_work`: an import or analytical session is active.
+          count: { type: integer, minimum: 1 }
 
 ProjectMap:
   type: object

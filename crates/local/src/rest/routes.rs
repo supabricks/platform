@@ -7,8 +7,10 @@
 pub enum Operation {
     CancelOperation,
     CreateProject,
+    DeleteProject,
     GetOperation,
     GetProject,
+    GetProjectDeletionImpact,
     GetServerVersion,
     ListOperations,
     ListProjects,
@@ -20,8 +22,10 @@ pub enum Operation {
 pub const ROUTES: &[(&str, &str, Operation)] = &[
     ("GET", "/projects", Operation::ListProjects),
     ("POST", "/projects", Operation::CreateProject),
+    ("DELETE", "/projects/{project}", Operation::DeleteProject),
     ("GET", "/projects/{project}", Operation::GetProject),
     ("PATCH", "/projects/{project}", Operation::UpdateProject),
+    ("GET", "/projects/{project}/deletion-impact", Operation::GetProjectDeletionImpact),
     ("GET", "/projects/{project}/operations", Operation::ListOperations),
     ("GET", "/projects/{project}/operations/{operation}", Operation::GetOperation),
     ("POST", "/projects/{project}/operations/{operation}/cancel", Operation::CancelOperation),

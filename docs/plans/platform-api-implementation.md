@@ -286,20 +286,22 @@ required role; `x-backend` values are corrected.
   now belongs to the project once it exists, so editing the label in a source's
   manifest no longer renames an existing project.
 
-**Delete is held until it can be tested.** The building blocks exist (delete a
-sync pipeline, unpublish a publication, force-delete a branch, collect
-environments), and a project has rows in about forty tables plus data in
-object storage and the catalog service. Delete has to drive those in order as
-one durable operation and refuse while another project reads its data. None of
-it completes without database engines. The harness now has an engine-backed
-server (`engine_api`), which runs locally from an installed release and proves
-that a created project finishes. It is not wired into CI yet. Delete and its
-impact preview come next, built and tested against that server.
+- `deleteProject` and `getProjectDeletionImpact`. The request hides the
+  project and frees its name at once. A durable operation then cancels a
+  pending apply, force-deletes branches leaf first and removes the folders the
+  server created. Rows stay as a tombstone, as deleted branches do. It needs
+  the current revision, the exact name and an idempotency key.
+- Delete refuses with `delete_blocked` while the project has sync pipelines,
+  publications, analytical data or running work, or while another project
+  reads its data. Nothing reclaims those as part of a delete yet (#320), so
+  refusing is the safe behaviour; the impact preview lists what blocks.
+  `force` is removed from the contract until it has a defined effect.
+- An engine-backed test server (`engine_api`) runs from an installed release.
+  It proves that a created project finishes and that a delete removes its
+  branches and folder. It is not wired into CI yet.
 
-**Still to build:** delete and its impact, the project map, and the governed
-transport with role tests. The harness has no database
-engines, so an apply never finishes there; completion is tested on the
-engine-backed server.
+**Still to build:** the project map, the governed transport with role tests,
+and the delete cascade (#320).
 
 **Design questions to settle in AP01.1**
 

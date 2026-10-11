@@ -212,6 +212,9 @@ impl Store {
             return Ok(json!({"api_version":1,"deployments":deployments}));
         }
         if let Command::Attach { deployment } = command {
+            if self.project_deleted(&deployment.to_string())? {
+                return Err(missing("deployment in local workspace"));
+            }
             let context = self.deployment(deployment)?;
             if format == 2 && context.legacy {
                 return Err(conflict(
