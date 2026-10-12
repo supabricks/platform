@@ -42,6 +42,56 @@
       "additionalProperties": false,
       "properties": {
         "action": {
+          "const": "statements"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "branch": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "branch",
+            "revision"
+          ]
+        },
+        "include_query_text": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 100
+        },
+        "order_by": {
+          "enum": [
+            "total_time",
+            "mean_time",
+            "calls",
+            "rows"
+          ],
+          "default": "total_time"
+        }
+      },
+      "required": [
+        "action",
+        "target"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
           "const": "cancel"
         },
         "target": {

@@ -5,6 +5,7 @@ pub(super) struct Input {
     pub password: String,
     pub include_query_text: bool,
     pub observation: Option<Value>,
+    pub statements: Option<super::statements::Request>,
     pub terminate: bool,
 }
 struct Connection(tokio::task::JoinHandle<std::result::Result<(), tokio_postgres::Error>>);
@@ -13,7 +14,7 @@ impl Drop for Connection {
         self.0.abort();
     }
 }
-fn pg(error: tokio_postgres::Error) -> crate::store::Error {
+pub(super) fn pg(error: tokio_postgres::Error) -> crate::store::Error {
     conflict(format!(
         "activity SQL failed ({}); refresh before retrying a signal",
         error
@@ -31,6 +32,7 @@ pub(super) fn run(input: Input) -> Result<Value> {
                 .connect(NoTls).await.map_err(pg)?;
             let _connection=Connection(tokio::spawn(connection));
             if let Some(observation)=input.observation {signal(&client,observation,input.terminate).await}
+            else if let Some(request)=input.statements {super::statements::read(&client,request).await}
             else {list(&client,input.include_query_text).await}
         }).await.map_err(|_|conflict("activity deadline exceeded; signal outcome may be uncertain, refresh before acting again"))?
     })
@@ -126,7 +128,7 @@ async fn signal(client: &Client, observation: Value, terminate: bool) -> Result<
         json!({"pid":pid,"action":if terminate {"terminate"}else{"cancel"},"signal_sent":sent,"completion_confirmed":false,"refresh_required":true}),
     )
 }
-fn bound_text(text: String) -> String {
+pub(super) fn bound_text(text: String) -> String {
     let mut output = String::new();
     for c in text.chars() {
         if output.len() + c.len_utf8() > 1024 {

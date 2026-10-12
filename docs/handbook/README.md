@@ -12,7 +12,7 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 | --- | --- |
 | [Local walkthrough](local-demo.md) | Install and demonstrate import, SQL, snapshots, branching and notebooks |
 | [Local console](local-console.md) | Launch the browser console, source development and session recovery |
-| [Live PostgreSQL activity](postgres-activity.md) | Sessions, blocking locks and guarded cancel/terminate |
+| [PostgreSQL activity](postgres-activity.md) | Sessions, blocking locks, guarded cancel/terminate and statement rankings |
 | [PostgreSQL extensions](postgres-extensions.md) | Release catalogue, enable/disable, branch lifecycle and sync compatibility |
 | [Local CLI and MCP](local-workflow.md) | Project selection, commands and agent workflows |
 | [Governed Linux server](governed-server.md) | TLS/OIDC, administration, isolated execution, audit and recovery |

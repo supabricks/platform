@@ -1,13 +1,15 @@
-# Live PostgreSQL activity
+# PostgreSQL activity and statement rankings
 
 The local operator console workspace API, CLI and MCP expose running sessions,
 wait events, blocking PIDs and waited-on lock objects for an explicit branch.
-This is the live-activity slice of [#248](https://github.com/supabricks/platform/issues/248).
-It works with the existing PG17 engine; `pg_stat_statements` is not required.
-Statement rankings and historical metrics belong to subsequent slices.
+This implements the live-activity and statement-statistics slices of [#248](https://github.com/supabricks/platform/issues/248).
+Live sessions work with the existing PG17 engine. Statement rankings require
+the managed `pg_stat_statements` extension supplied by #253. Historical metrics
+and latency histograms belong to subsequent slices.
 
 ```sh
 supabricks activity list --branch main
+supabricks activity statements --branch main --order-by total_time --limit 20
 supabricks activity list --branch main --include-query-text
 supabricks activity cancel --branch main --snapshot SNAPSHOT_UUID --pid 12345
 supabricks activity terminate --branch main --snapshot SNAPSHOT_UUID --pid 12345
@@ -104,3 +106,67 @@ suspension and restart. Four focused Rust tests cover command validation, text
 bounds, eligible observations, receipt expiry and authority. The MCP contract
 snapshot is also checked. The fixture runs in native-cell GitHub CI on both
 targets; a local Linux pass does not assert macOS qualification.
+
+## Statement rankings (248b)
+
+Submit `statements` and poll the returned request id through the same API:
+
+```json
+{"action":"statements","target":{"branch":"BRANCH_UUID","revision":1},"order_by":"total_time","limit":20,"include_query_text":false}
+```
+
+`order_by` accepts `total_time` (default), `mean_time`, `calls` or `rows`.
+`limit` is 1–100, default 100. The CLI exposes `--order-by`, `--limit` and
+`--include-query-text`. All existing activity authority, worker, timeout,
+receipt-retention and suspension rules apply. A statistics result is not a
+session snapshot and cannot authorize a signal.
+
+Each row contains the database/user OIDs and query identifier as strings,
+call count, cumulative execution milliseconds, mean execution milliseconds,
+returned/affected row count, per-entry `stats_since`, and share of total
+execution time. Only top-level statements for `supabricks_owner` in `postgres`
+are eligible. Internal roles, other databases and nested execution are excluded
+from both the rankings and their denominator. Shares use **all eligible retained
+entries**, not just the displayed top-N; `eligible_statement_count` and
+`truncated` describe the displayed subset. A zero denominator gives a null share.
+
+These are cumulative counters, not interval rates. Entry start times can differ.
+The response includes global `stats_reset`, postmaster start, extension identity,
+per-entry `stats_since` and cumulative eviction count (`deallocations`). A full
+reset changes the global epoch; targeted resets/recreated entries change their
+own start times. A reset or eviction detected between the before/after metadata
+reads returns `available:false, reason:"statistics_changed_during_read"`.
+Live counters are not transactionally frozen; no atomic snapshot is claimed.
+Consumers must discard baselines when identities/start times change or counters
+regress. There is no endpoint for resetting counters in this slice.
+
+`p95_exec_time_ms` is null with `p95_available:false` and reason
+`latency_histogram_not_collected`. Mean and totals do not define a percentile.
+The collector reports effective tracking settings; these do not override
+per-role/session settings or imply that unsuccessful statements were recorded.
+
+When explicitly requested, query text is PostgreSQL's representative statement,
+limited to 1,024 UTF-8 bytes with terminal controls removed. PostgreSQL usually
+parameterizes constants but does not guarantee redaction of literals, comments
+or identifiers. It is hidden by default and retained only in short-lived memory.
+With text hidden, the collector requests counters without query text from the
+native function. This is not a durable SQL history.
+
+Unavailable statistics are an explicit state, not a zero-workload result.
+The reader requires the protected schema/owner established by #253, extension
+version 1.11 and a preloaded library. It never enables, downloads, relocates or
+resets an extension automatically. Enable it explicitly with
+`supabricks extensions enable pg_stat_statements --branch main` after installing
+the qualified bundle. Other schemas/versions and configured capacities above
+10,000 entries are refused. Output remains capped at 512 KiB.
+
+The [statement fixture receipt](../architecture/pg248b-evidence/statements.json)
+records 13 local Linux checks against the already-built #253 engine: known
+counts, rows, all sort modes, full-set time shares, text opt-in, role/database
+isolation, targeted/global resets, explicit missing support and no fabricated
+p95. Two focused unit tests cover bounds/sort validation and execution shares;
+the MCP contract test also passes. No full local engine build or CI suite was
+repeated. While CI still pins the exact previous engine commit, its fixture
+explicitly reports `legacy-unavailable-only` instead of claiming full statement
+qualification. Once #253 promotes the new engine, the same CI step must exercise
+the full fixture; any other engine is ineligible for the legacy exception.

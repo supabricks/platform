@@ -8454,7 +8454,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Local-operator live PostgreSQL sessions and blocking locks. List submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
+    "description": "Local-operator live PostgreSQL sessions, blocking locks and cumulative statement rankings. Statements requires the managed pg_stat_statements extension; missing support is explicit. Counters include reset/eviction metadata; p95 is unavailable without histograms. List/statements submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
@@ -8470,6 +8470,56 @@
                 "include_query_text": {
                   "default": false,
                   "type": "boolean"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "statements"
+                },
+                "include_query_text": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "limit": {
+                  "default": 100,
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "order_by": {
+                  "default": "total_time",
+                  "enum": [
+                    "total_time",
+                    "mean_time",
+                    "calls",
+                    "rows"
+                  ]
                 },
                 "target": {
                   "additionalProperties": false,

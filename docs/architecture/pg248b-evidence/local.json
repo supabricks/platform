@@ -1,0 +1,24 @@
+{
+  "recorded_at": "2026-10-12",
+  "base_commit": "6d4ba700e873b3dd28e46601a9b1e16410a86294",
+  "runtime_binary_sha256": "81184076f223ea559365fef6874b024796b377c444dbd30d176f4d58b4462a4c",
+  "engine_commit": "ad855721586a5a0fbad538c6336a77dbd6110d87",
+  "engine_archive_sha256": "a2380b7a5655a94e6182d997c9fd6c33e8978cd525f5ffdf75bcb2782c63b500",
+  "focused_tests": {
+    "statements_unit": 2,
+    "mcp_contract": 1,
+    "native_checks": 13
+  },
+  "commands": [
+    "cargo test --locked -p supabricks-local --lib activity::statements::",
+    "UPDATE_LOCAL_SNAPSHOTS=1 cargo test --locked -p supabricks-local --test application_api mcp_contract_is_separate_strict_and_negotiated",
+    "python3 e2e/native/statements.py --binary /binary --bundle /engine --helpers /helpers --report /output/statements.json"
+  ],
+  "isolation": "UID 1001 Docker; no external networking; read-only existing engine and binary; fixture-owned temporary state",
+  "limitations": [
+    "Local Linux full fixture; no macOS full-statement claim until new engine artifacts qualify.",
+    "Reused the already-built PG253 engine; no new local engine build or broad CI suite.",
+    "Current GitHub pinned legacy engine runs explicit absence checks; full fixture becomes mandatory after PG253 pin promotion.",
+    "Cumulative counters only; no percentiles, metrics history or governed access."
+  ]
+}
