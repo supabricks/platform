@@ -32,8 +32,10 @@ same key after a lost response; changed files, targets or paths conflict.
 After unpacking the same package into a new directory:
 
 ```sh
-# Independent database state, same public definition.
-supabricks project create --project ./sales-experiment --key sales-experiment
+# Independent database state, same public definition. A project's name is
+# unique in the installation, so the second one needs its own.
+supabricks project create --project ./sales-experiment --key sales-experiment \
+  --name sales-experiment
 
 # Discover this definition's existing deployment IDs.
 supabricks project deployments --project ./sales-other-checkout

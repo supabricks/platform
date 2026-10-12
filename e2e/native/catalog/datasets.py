@@ -137,7 +137,7 @@ requirement="sales.orders.previous"
         except ProcessLookupError:pass
     wait(lambda:cell.request(method='catalog_service',command=dict(action='status'))['ready'],timeout=60)
     definition=report['inspection']['definition']['id']
-    ctx=cell.request(method='project',source=dict(definition_id=definition,worktree=str(destination)),command=dict(action='create',key='imported',target=None))
+    ctx=cell.request(method='project',source=dict(definition_id=definition,worktree=str(destination)),command=dict(action='create',key='imported',target=None,name='uc05-imported'))
     imported=dict(project_id=ctx['runtime_project_id'],worktree=str(destination))
     unresolved=plan(imported)
     assert len([s for s in unresolved['steps'] if s['action']=='unresolved'])==2

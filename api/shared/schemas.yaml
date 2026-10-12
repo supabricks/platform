@@ -4,7 +4,7 @@ Id:
   type: string
   description: >-
     Opaque, stable identifier assigned by the platform. The prefix names the kind
-    (`prj_`, `db_`, `br_`, `op_`). Treat the rest as opaque.
+    (`prj_`, `src_`, `db_`, `br_`, `op_`). Treat the rest as opaque.
   pattern: '^[a-z]{2,5}_[A-Za-z0-9]{6,40}$'
   examples: [db_8f2a91c4]
 
@@ -71,7 +71,7 @@ Problem:
     code:
       type: string
       description: Stable machine-readable code.
-      examples: [invalid_request, unauthorized, not_permitted, unavailable_in_profile, not_found, method_not_allowed, conflict, name_taken, revision_mismatch, precondition_required, capacity_exhausted, request_too_large, unsupported_media_type, unavailable, internal_error]
+      examples: [invalid_request, unauthorized, not_permitted, unavailable_in_profile, not_found, method_not_allowed, conflict, name_taken, revision_mismatch, precondition_required, capacity_exhausted, request_too_large, unsupported_media_type, idempotency_key_reused, delete_blocked, not_cancellable, operation_failed, unavailable, internal_error]
     detail: { type: string }
     instance: { type: string, description: 'The request ID, for support.' }
     errors:
@@ -96,7 +96,7 @@ Operation:
     kind:
       type: string
       description: What the operation does, as `<resource>.<verb>`.
-      examples: [database.create, branch.create, branch.reset, backup.create, database.restore, sync.run, project.apply, import.load]
+      examples: [project.apply, project.delete, database.create, branch.create, branch.set_state, backup.create, database.restore, sync.run, import.load]
     state: { $ref: '#/OperationState' }
     project_id: { $ref: '#/Id' }
     target: { $ref: '#/ResourceRef' }
@@ -104,7 +104,9 @@ Operation:
     idempotency_key: { type: string }
     created_at: { $ref: '#/Timestamp' }
     started_at: { oneOf: [{ $ref: '#/Timestamp' }, { type: 'null' }] }
-    finished_at: { oneOf: [{ $ref: '#/Timestamp' }, { type: 'null' }] }
+    finished_at:
+      oneOf: [{ $ref: '#/Timestamp' }, { type: 'null' }]
+      description: Null until the operation reaches a final state.
     steps:
       type: array
       description: The steps of the operation in order, so a client can show progress.

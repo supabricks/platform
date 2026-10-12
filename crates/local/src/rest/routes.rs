@@ -5,11 +5,71 @@
 /// does not compile, because the dispatcher matches on it exhaustively.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operation {
+    CancelOperation,
+    CreateProject,
+    DeleteProject,
+    GetOperation,
+    GetProject,
+    GetProjectDeletionImpact,
     GetServerVersion,
+    ListOperations,
+    ListProjects,
+    UpdateProject,
 }
 
 /// Method, path template and operation, with `{name}` for a path parameter.
 #[rustfmt::skip]
 pub const ROUTES: &[(&str, &str, Operation)] = &[
+    ("GET", "/projects", Operation::ListProjects),
+    ("POST", "/projects", Operation::CreateProject),
+    ("DELETE", "/projects/{project}", Operation::DeleteProject),
+    ("GET", "/projects/{project}", Operation::GetProject),
+    ("PATCH", "/projects/{project}", Operation::UpdateProject),
+    ("GET", "/projects/{project}/deletion-impact", Operation::GetProjectDeletionImpact),
+    ("GET", "/projects/{project}/operations", Operation::ListOperations),
+    ("GET", "/projects/{project}/operations/{operation}", Operation::GetOperation),
+    ("POST", "/projects/{project}/operations/{operation}/cancel", Operation::CancelOperation),
     ("GET", "/server/version", Operation::GetServerVersion),
 ];
+
+/// The least role a signed-in caller needs (`x-required-role`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    Any,
+    Viewer,
+    Editor,
+    Administrator,
+    InstallationAdmin,
+}
+
+impl Operation {
+    pub const fn role(self) -> Role {
+        match self {
+            Self::CancelOperation => Role::Editor,
+            Self::CreateProject => Role::InstallationAdmin,
+            Self::DeleteProject => Role::Administrator,
+            Self::GetOperation => Role::Viewer,
+            Self::GetProject => Role::Viewer,
+            Self::GetProjectDeletionImpact => Role::Administrator,
+            Self::GetServerVersion => Role::Any,
+            Self::ListOperations => Role::Viewer,
+            Self::ListProjects => Role::Any,
+            Self::UpdateProject => Role::Administrator,
+        }
+    }
+    /// Whether the governed profile offers the operation (`x-profiles`).
+    pub const fn governed(self) -> bool {
+        match self {
+            Self::CancelOperation => true,
+            Self::CreateProject => true,
+            Self::DeleteProject => false,
+            Self::GetOperation => true,
+            Self::GetProject => true,
+            Self::GetProjectDeletionImpact => true,
+            Self::GetServerVersion => true,
+            Self::ListOperations => true,
+            Self::ListProjects => true,
+            Self::UpdateProject => true,
+        }
+    }
+}

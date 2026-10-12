@@ -24,19 +24,16 @@ impl Store {
             return Ok(());
         }
         let (_, workspace, actor) = self.owner_context()?;
+        let deployment = DeploymentId::new().to_string();
         self.db.execute(
             "INSERT INTO project_definitions VALUES (?1,?2) ON CONFLICT(id) DO NOTHING",
             params![config.id.to_string(), config.name],
         )?;
         self.db.execute(
             "INSERT INTO deployments VALUES (?1,?2,?3,?2,'local',1,1,?4,?4)",
-            params![
-                DeploymentId::new().to_string(),
-                config.id.to_string(),
-                workspace,
-                actor
-            ],
+            params![deployment, config.id.to_string(), workspace, actor],
         )?;
+        self.record_project_created(&deployment)?;
         Ok(())
     }
     pub fn deployment(&self, id: DeploymentId) -> Result<Context> {
@@ -215,6 +212,9 @@ impl Store {
             return Ok(json!({"api_version":1,"deployments":deployments}));
         }
         if let Command::Attach { deployment } = command {
+            if self.project_deleted(&deployment.to_string())? {
+                return Err(missing("deployment in local workspace"));
+            }
             let context = self.deployment(deployment)?;
             if format == 2 && context.legacy {
                 return Err(conflict(
@@ -228,7 +228,9 @@ impl Store {
             return Ok(serde_json::to_value(context)?);
         }
         let (key, target) = match &command {
-            Command::Create { key, target } | Command::Adopt { key, target, .. } => (key, target),
+            Command::Create { key, target, .. } | Command::Adopt { key, target, .. } => {
+                (key, target)
+            }
             _ => unreachable!(),
         };
         if key.is_empty() || key.len() > 256 {
@@ -255,7 +257,14 @@ impl Store {
             let (_, workspace, actor) = self.owner_context()?;
             self.db.execute("INSERT INTO project_definitions VALUES (?1,?2) ON CONFLICT(id) DO UPDATE SET name=excluded.name",params![config.id.to_string(),config.name])?;
             let id = match &command {
-                Command::Create { .. } => {
+                Command::Create { name, .. } => {
+                    let name = match name {
+                        Some(name) => super::canonical_name(name)?,
+                        None => config.name.clone(),
+                    };
+                    if !self.project_name_free(&name, None)? {
+                        return Err(super::project_directory::name_taken(&name));
+                    }
                     if self
                         .db
                         .prepare("SELECT 1 FROM worktree_bindings WHERE path=?1")?
@@ -269,7 +278,7 @@ impl Store {
                     let id = DeploymentId::new();
                     self.db.execute(
                         "INSERT INTO projects VALUES (?1,?2)",
-                        params![runtime.to_string(), config.name],
+                        params![runtime.to_string(), name],
                     )?;
                     self.db.execute(
                         "INSERT INTO deployments VALUES (?1,?2,?3,?4,?5,0,1,?6,?6)",
@@ -282,6 +291,7 @@ impl Store {
                             actor
                         ],
                     )?;
+                    self.record_project_created(&id.to_string())?;
                     id
                 }
                 Command::Adopt {

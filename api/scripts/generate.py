@@ -21,6 +21,9 @@ README = API / 'README.md'
 METHODS = ('get', 'post', 'put', 'patch', 'delete')
 STAGES = ('draft', 'frozen', 'implemented', 'complete', 'deferred')
 SERVED = ('implemented', 'complete')
+ROLES = {'any': 'Any', 'viewer': 'Viewer', 'editor': 'Editor', 'administrator': 'Administrator',
+         'installation-admin': 'InstallationAdmin'}
+PROFILES = ('local', 'governed')
 
 
 def operations():
@@ -33,7 +36,7 @@ def operations():
         doc = files.setdefault(target, yaml.safe_load(target.read_text()))
         for method in METHODS:
             if method in doc[key]:
-                found.append((path, method, doc[key][method]['operationId'], target.parent.name))
+                found.append((path, method, doc[key][method]['operationId'], target.parent.name, doc[key][method]))
     return found
 
 
@@ -47,7 +50,7 @@ def stages(ops):
     for name in domains:
         if name not in {o[3] for o in ops}:
             errors.append(f'status.yaml names domain {name}, which has no operations')
-    for _, _, name, domain in ops:
+    for _, _, name, domain, spec in ops:
         if domain not in domains:
             errors.append(f'domain {domain} has no entry in status.yaml')
             continue
@@ -56,6 +59,10 @@ def stages(ops):
             errors.append(f'{name}: unknown stage {stage}')
         if stage == 'deferred' and not (overrides.get(name) or {}).get('issue'):
             errors.append(f'{name}: a deferred operation needs an issue')
+        if stage in SERVED and spec.get('x-required-role') not in ROLES:
+            errors.append(f'{name}: a served operation needs x-required-role, one of {", ".join(ROLES)}')
+        if not set(spec.get('x-profiles', PROFILES)) <= set(PROFILES):
+            errors.append(f'{name}: x-profiles may only name {", ".join(PROFILES)}')
         result[name] = stage
     return domains, result, errors
 
@@ -82,6 +89,28 @@ def routes_rs(ops, stage):
         'pub const ROUTES: &[(&str, &str, Operation)] = &[',
         *[f'    ("{o[1].upper()}", "{o[0]}", Operation::{variant(o[2])}),' for o in served],
         '];',
+        '',
+        '/// The least role a signed-in caller needs (`x-required-role`).',
+        '#[derive(Clone, Copy, Debug, PartialEq, Eq)]',
+        'pub enum Role {',
+        *[f'    {name},' for name in ROLES.values()],
+        '}',
+        '',
+        'impl Operation {',
+        '    pub const fn role(self) -> Role {',
+        '        match self {',
+        *[f"            Self::{variant(o[2])} => Role::{ROLES[o[4]['x-required-role']]},"
+          for o in sorted(served, key=lambda o: o[2])],
+        '        }',
+        '    }',
+        '    /// Whether the governed profile offers the operation (`x-profiles`).',
+        '    pub const fn governed(self) -> bool {',
+        '        match self {',
+        *[f"            Self::{variant(o[2])} => {'true' if 'governed' in o[4].get('x-profiles', PROFILES) else 'false'},"
+          for o in sorted(served, key=lambda o: o[2])],
+        '        }',
+        '    }',
+        '}',
         '',
     ]
     return '\n'.join(lines)

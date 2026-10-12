@@ -71,8 +71,8 @@ server routes only operations that are `implemented` or `complete`.
 | Domain | Slice | Stage | Operations | Served | Deferred |
 |---|---|---|---|---|---|
 | `server` | AP00 | draft | 3 | 1 | 1 |
-| `projects` | AP01 | draft | 8 | 0 | 1 |
-| `operations` | AP01 | draft | 3 | 0 | 0 |
+| `projects` | AP01 | complete | 8 | 6 | 1 |
+| `operations` | AP01 | complete | 3 | 3 | 0 |
 | `databases` | AP02 | draft | 10 | 0 | 0 |
 | `branches` | AP03 | draft | 10 | 0 | 0 |
 <!-- status:end -->
@@ -106,6 +106,7 @@ Every operation carries:
 | `x-console-features` | Feature IDs from the prototype's `src/lib/backing.ts` that the operation serves |
 | `x-issues` | Tracking issues on `supabricks/platform` for whatever part is not `ready` |
 | `x-required-role` | The least project role that may call it: `viewer`, `editor`, `administrator`, `installation-admin`, or `any` for every signed-in caller. The authorization tests are generated from it. Required once a domain is `frozen` |
+| `x-profiles` | The profiles that offer the operation, `local` and `governed`. Both when absent. A profile that is not listed answers `403` with `code: unavailable_in_profile` |
 
 When one operation serves both a supported feature and an unsupported option
 (for example creating a database, where choosing a compute size is new),

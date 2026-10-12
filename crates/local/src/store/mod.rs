@@ -21,8 +21,14 @@ mod ingest;
 mod journal;
 pub(crate) mod migrations;
 mod native;
+mod operation_directory;
 pub(crate) mod ownership;
 mod project_apply;
+pub use operation_directory::{NativeRequest, OperationEntry};
+mod project_deletion;
+pub use project_deletion::{Blocker, Deletion, DeletionImpact};
+mod project_directory;
+pub use project_directory::ProjectRecord;
 mod sessions;
 pub(crate) mod sync;
 pub use sessions::AnalyticalSession;
@@ -159,7 +165,26 @@ impl Store {
         config.validate()?;
         self.db.execute_batch("SAVEPOINT register_project")?;
         let result = (|| {
-            self.db.execute("INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO UPDATE SET name=excluded.name", params![config.id.to_string(), config.name])?;
+            // A project's name is unique. A new project with a name in use is
+            // refused; an edited label that collides leaves the old name alone.
+            let id = config.id.to_string();
+            let known = self
+                .db
+                .prepare("SELECT 1 FROM projects WHERE id=?1")?
+                .exists([&id])?;
+            match (known, self.project_name_free(&config.name, Some(&id))?) {
+                (false, false) => return Err(project_directory::name_taken(&config.name)),
+                (true, false) => {}
+                _ => {
+                    // The name belongs to the project once it exists: renaming is
+                    // an explicit change, so a later edit to the source's label
+                    // does not rename it.
+                    self.db.execute(
+                        "INSERT INTO projects(id,name) VALUES (?1,?2) ON CONFLICT(id) DO NOTHING",
+                        params![id, config.name],
+                    )?;
+                }
+            }
             self.ensure_legacy_deployment(config)
         })();
         match result {

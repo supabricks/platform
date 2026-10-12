@@ -24,6 +24,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   identity control --session-file PRIVATE_JSON --request-file PRIVATE_JSON
   identity policy-admin | catalog-admin --request-file PRIVATE_JSON
   identity whoami | logout | mcp --session-file PRIVATE_JSON
+  identity api --listen 127.0.0.1:PORT
                                Authenticated control; isolated execution requires explicit Linux operator setup
   project validate | inspect [--target NAME]  Preview source graph (offline, read-only)
   project pack --output PATH.sbproj [--target NAME]
@@ -444,6 +445,14 @@ pub fn run() -> Result<u8> {
                     )?
                 }
             }
+            "api" => {
+                let listen = a
+                    .take("--listen")
+                    .ok_or_else(|| invalid("use --listen 127.0.0.1:PORT"))?;
+                a.finish(2)?;
+                transport::api(&root, &listen)?;
+                json!({})
+            }
             "whoami" | "logout" | "mcp" => {
                 let path = PathBuf::from(
                     a.take("--session-file")
@@ -815,6 +824,7 @@ pub fn run() -> Result<u8> {
                         .take("--key")
                         .ok_or_else(|| invalid("create requires --key KEY"))?,
                     target: a.take("--target"),
+                    name: a.take("--name"),
                 },
                 2,
             ),

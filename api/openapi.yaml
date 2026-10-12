@@ -111,4 +111,8 @@ components:
     token:
       type: http
       scheme: bearer
-      description: A service account token or API key.
+      description: >-
+        A service account token. A governed server accepts this and checks the
+        caller's role in the project for every operation. Browser sessions on
+        a governed server use the console's own endpoints until the console
+        moves to this API.

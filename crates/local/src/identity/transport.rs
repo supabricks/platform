@@ -252,6 +252,191 @@ fn json_reply(request: tiny_http::Request, status: u16, value: Value) {
     }
     let _ = request.respond(response);
 }
+fn rest_reply(request: tiny_http::Request, reply: crate::rest::Reply) {
+    let body = reply
+        .body
+        .as_ref()
+        .map(|body| body.to_string())
+        .unwrap_or_default();
+    let mut response = Response::from_string(body).with_status_code(StatusCode(reply.status));
+    for (name, value) in [
+        ("Content-Type", reply.content_type()),
+        ("Cache-Control", "no-store"),
+        ("X-Content-Type-Options", "nosniff"),
+        ("Referrer-Policy", "no-referrer"),
+    ]
+    .into_iter()
+    .chain(reply.headers.iter().map(|(n, v)| (n.as_str(), v.as_str())))
+    {
+        if let Ok(header) = Header::from_bytes(name, value) {
+            response.add_header(header);
+        }
+    }
+    let _ = request.respond(response);
+}
+/// Platform API v1 for a service credential, sent as a bearer token. Framing
+/// only: the daemon authenticates the token and checks the role per operation.
+fn rest(root: &Path, mut request: tiny_http::Request, path: String) {
+    use crate::rest::{BODY_LIMIT, Call, Problem};
+    let token = single(&request, "authorization")
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .filter(|token| !token.is_empty() && token.len() <= 512)
+        .map(str::to_owned);
+    let Some(token) = token else {
+        let mut reply: crate::rest::Reply =
+            Problem::unauthorized("Send a service token as a bearer credential.").into();
+        reply
+            .headers
+            .insert("WWW-Authenticate".into(), "Bearer".into());
+        return rest_reply(request, reply);
+    };
+    let query = request.url().split_once('?').map(|(_, query)| query);
+    let Ok(url) = Url::parse(&format!("http://127.0.0.1/?{}", query.unwrap_or_default())) else {
+        return rest_reply(
+            request,
+            Problem::invalid("The query string is not valid.").into(),
+        );
+    };
+    let query = url
+        .query_pairs()
+        .map(|(name, value)| (name.into_owned(), value.into_owned()))
+        .collect();
+    let text = |name: &str| single(&request, name).map(str::to_owned);
+    let (idempotency_key, if_match) = (text("idempotency-key"), text("if-match"));
+    let json = single(&request, "content-type").is_some_and(|kind| {
+        kind.split(';').next().unwrap_or_default().trim() == "application/json"
+    });
+    let method = request.method().as_str().to_owned();
+    let mut bytes = Vec::new();
+    if request
+        .as_reader()
+        .take(BODY_LIMIT as u64 + 1)
+        .read_to_end(&mut bytes)
+        .is_err()
+        || bytes.len() > BODY_LIMIT
+    {
+        return rest_reply(
+            request,
+            Problem::new(413, "request_too_large", "The request body is too large.").into(),
+        );
+    }
+    let body = if bytes.is_empty() {
+        None
+    } else if !json {
+        return rest_reply(
+            request,
+            Problem::new(
+                415,
+                "unsupported_media_type",
+                "Send the request body as application/json.",
+            )
+            .into(),
+        );
+    } else {
+        match serde_json::from_slice::<Value>(&bytes) {
+            Ok(body) => Some(body),
+            Err(_) => {
+                return rest_reply(
+                    request,
+                    Problem::invalid("The request body is not valid JSON.").into(),
+                );
+            }
+        }
+    };
+    let call = Call {
+        // The daemon sets the caller from the token it authenticates.
+        caller: Default::default(),
+        method,
+        path,
+        query,
+        idempotency_key,
+        if_match,
+        body,
+    };
+    let result = control_credential(
+        root,
+        token.clone(),
+        Channel::Service,
+        None,
+        crate::authorization::Command::Api { call },
+    );
+    let reply = match result {
+        Ok(value) => serde_json::from_value(value).unwrap_or_else(|_| {
+            Problem::new(
+                500,
+                "internal_error",
+                "The server returned an unreadable reply.",
+            )
+            .into()
+        }),
+        Err(error) => {
+            let signed_in = call_auth(root, token).is_ok();
+            if !signed_in {
+                Problem::unauthorized("The token is missing, expired or revoked.").into()
+            } else if error.to_string().contains("busy") {
+                Problem::unavailable("The server is busy. Try again shortly.").into()
+            } else {
+                Problem::forbidden("This credential may not use the platform API.").into()
+            }
+        }
+    };
+    rest_reply(request, reply)
+}
+fn call_auth(root: &Path, token: String) -> Result<Value> {
+    call(
+        root,
+        AuthCommand::Authenticate {
+            token,
+            channel: Channel::Service,
+            csrf: None,
+        },
+    )
+}
+/// Platform API v1 alone, on loopback, for service credentials. The governed
+/// console serves the same routes next to the browser application.
+pub fn api(root: &Path, listen: &str) -> Result<()> {
+    let address: std::net::SocketAddr = listen
+        .parse()
+        .map_err(|_| invalid("use --listen 127.0.0.1:PORT"))?;
+    if !address.ip().is_loopback() || address.port() == 0 {
+        return Err(invalid("the API server listens on loopback only"));
+    }
+    let server = Server::http(address).map_err(|_| invalid("API listener unavailable"))?;
+    let host = address.to_string();
+    eprintln!("Platform API: http://{host}{}", crate::rest::PREFIX);
+    std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..4)
+            .map(|_| {
+                scope.spawn(|| -> Result<()> {
+                    loop {
+                        let request = server.recv()?;
+                        let path = request.url().split('?').next().unwrap_or("");
+                        let v1 = path
+                            .strip_prefix(crate::rest::PREFIX)
+                            .filter(|rest| rest.starts_with('/'))
+                            .map(str::to_owned);
+                        match v1 {
+                            Some(v1) if single(&request, "host") == Some(&host) => {
+                                rest(root, request, v1)
+                            }
+                            _ => rest_reply(
+                                request,
+                                crate::rest::Problem::not_found("There is nothing at this path.")
+                                    .into(),
+                            ),
+                        }
+                    }
+                })
+            })
+            .collect();
+        for worker in workers {
+            worker
+                .join()
+                .map_err(|_| invalid("API worker unavailable"))??;
+        }
+        Ok(())
+    })
+}
 pub fn login(root: &Path, provider: &str, redirect: &str, output: &Path) -> Result<Value> {
     if output.exists() {
         return Err(invalid("session output must be a new private file"));
@@ -404,6 +589,16 @@ fn browser_with_assets(
             continue;
         }
         let path = request.url().split('?').next().unwrap_or("");
+        if assets.is_some() {
+            if let Some(v1) = path
+                .strip_prefix(crate::rest::PREFIX)
+                .filter(|rest| rest.starts_with('/'))
+                .map(str::to_owned)
+            {
+                rest(root, request, v1);
+                continue;
+            }
+        }
         if let Some(assets) = &assets {
             if request.method() == &Method::Get && request.url() == "/auth/v1/context" {
                 let csrf = cookie(&request, &csrf_name).unwrap_or_default();

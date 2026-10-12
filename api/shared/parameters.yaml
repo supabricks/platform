@@ -47,8 +47,9 @@ IdempotencyKey:
   description: >-
     A value the client makes up, unique per intended change. Repeating a request
     with the same key returns the original result instead of doing the work
-    twice. Keys are remembered for at least 24 hours.
-  schema: { type: string, minLength: 8, maxLength: 128 }
+    twice. Keys are remembered for at least 24 hours. Using a key again for a
+    different request is refused with `409` and `code: idempotency_key_reused`.
+  schema: { type: string, minLength: 8, maxLength: 128, pattern: '^[!-~]+$', description: 'Printable ASCII without spaces.' }
 
 IfMatch:
   name: If-Match

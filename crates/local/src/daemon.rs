@@ -451,6 +451,9 @@ impl Daemon {
                     }
                 };
                 if !stopping {
+                    if let Err(error) = self.store.advance_project_deletions() {
+                        eprintln!("project deletion could not advance: {error}");
+                    }
                     self.project_apply_error = crate::project_apply::tick(
                         &mut self.store,
                         &mut self.environments,
@@ -942,7 +945,14 @@ impl Daemon {
                 if generation != self.store.generation() {
                     return Err(conflict("console belongs to a prior daemon generation"));
                 }
-                serde_json::to_value(crate::rest::dispatch(&mut self.store, &call))?
+                // Arriving on the owner's control socket from a launched console.
+                let mut call = call;
+                call.caller = crate::rest::Caller::LocalOwner;
+                serde_json::to_value(crate::rest::dispatch(
+                    &mut self.store,
+                    Some(&binding),
+                    &call,
+                ))?
             }
             Request::Api { .. } => {
                 return Err(invalid(

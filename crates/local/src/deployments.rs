@@ -11,6 +11,9 @@ pub enum Command {
     Create {
         key: String,
         target: Option<String>,
+        /// The new project's name. Defaults to the source's name.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
     },
     Attach {
         deployment: DeploymentId,

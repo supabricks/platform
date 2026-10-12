@@ -57,7 +57,7 @@ notebook_outputs="strip"
 mode="development"
 default=true
 ''')
-        context=cell.request(method='project',source=dict(definition_id=definition,worktree=str(path)),command=dict(action='create',key=name,target=None))
+        context=cell.request(method='project',source=dict(definition_id=definition,worktree=str(path)),command=dict(action='create',key=name,target=None,name=name))
         scope=dict(project_id=context['runtime_project_id'],worktree=str(path));scopes.append(scope)
         namespaces.append(metadata('ensure_namespace',scope=scope)['namespace'])
     assert namespaces[0]['catalog']!=namespaces[1]['catalog'] and namespaces[0]['catalog_id']!=namespaces[1]['catalog_id']

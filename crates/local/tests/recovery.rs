@@ -415,13 +415,22 @@ fn catalog_thirty_migration_adds_root_lookup_index() {
     catalog_migration(30);
 }
 
+#[test]
+fn catalog_thirty_one_migration_makes_project_names_unique_and_records_details() {
+    catalog_migration(31);
+}
+
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch("DROP INDEX publication_storage_generation;")
+    db.execute_batch("DROP TRIGGER operation_index_delete; DROP TRIGGER operation_index_delete_done; DROP TABLE project_deletions; DROP TRIGGER operation_index_native; DROP TRIGGER operation_index_native_done; DROP TRIGGER operation_index_native_failed; DROP TRIGGER operation_index_native_failed_later; DROP TRIGGER operation_index_apply; DROP TRIGGER operation_index_apply_done; DROP TABLE operation_index; DROP TABLE api_idempotency; DROP INDEX project_names; DROP TABLE project_details;")
         .unwrap();
+    if source_schema < 31 {
+        db.execute_batch("DROP INDEX publication_storage_generation;")
+            .unwrap();
+    }
     if source_schema < 30 {
         db.execute_batch("DROP INDEX incremental_receipt_run; DROP INDEX incremental_receipt_owner; DROP INDEX sync_receipt_run; DROP INDEX sync_request_run;").unwrap();
     }

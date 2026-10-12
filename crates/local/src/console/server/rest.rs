@@ -106,7 +106,8 @@ impl State {
             }
         };
         let call = Call {
-            caller: Caller::LocalOwner,
+            // The daemon sets the caller; this transport only serves the local owner.
+            caller: Caller::default(),
             method: method.as_str().to_owned(),
             path,
             query,

@@ -76,6 +76,8 @@ impl Fixture {
             .project(Command::Create {
                 key: key.into(),
                 target: None,
+                // Two projects from one source need two names.
+                name: Some(format!("example-{key}")),
             })
             .unwrap()
     }
@@ -181,7 +183,8 @@ fn copied_definition_deploys_twice_with_isolated_resources_and_durable_owner_con
         f.client(&a)
             .project(Command::Create {
                 key: "changed".into(),
-                target: None
+                target: None,
+                name: None
             })
             .is_err()
     );
@@ -341,7 +344,8 @@ fn wrong_actor_stale_requests_and_forged_runtime_binding_are_rejected() {
         f.client(&a)
             .project(Command::Create {
                 key: "request".into(),
-                target: Some("staging".into())
+                target: Some("staging".into()),
+                name: None
             })
             .is_err()
     );
@@ -370,7 +374,8 @@ fn wrong_actor_stale_requests_and_forged_runtime_binding_are_rejected() {
         f.client(&a)
             .project(Command::Create {
                 key: "request".into(),
-                target: None
+                target: None,
+                name: None
             })
             .is_err()
     );

@@ -10,8 +10,10 @@ projects:
     operationId: listProjects
     tags: [Projects]
     summary: List projects
-    description: Projects the caller can open. In the governed profile that is every project where they hold a role.
-    x-backend: new
+    description: >-
+      Projects the caller can open, ordered by name. In the governed profile
+      that is every project where they hold a role.
+    x-backend: ready
     x-required-role: any
     x-console-features: [HM-01]
     parameters:
@@ -21,21 +23,38 @@ projects:
     responses:
       '200':
         description: A page of projects.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/ProjectPage' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ProjectPage' }
+            example:
+              items:
+                - id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+                  name: sales-analytics
+                  description: ''
+                  source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+                  created_at: '2026-10-10T14:05:00Z'
+                  revision: 1
+                  counts: { databases: 1, branches: 3 }
+                  my_role: null
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
   post:
     operationId: createProject
     tags: [Projects]
     summary: Create a project
     description: >-
-      Creates the project and its first database, `main`. The caller becomes its
-      administrator. Give `source_id` to create another instance of a source
-      that already exists here, for example a staging copy. Starting from the
-      sample tables is not part of version 1. A name that another project
+      Creates a new, empty project and its first database, `main`. The caller
+      becomes its administrator. On a governed server only an installation
+      administrator may create a project. The reply is the operation that prepares the
+      project; its `target` is the new project, which can be read at once. To
+      create another project from a source that already exists (a staging
+      copy), import it instead. Starting from the sample tables is not part of
+      version 1. A name that another project
       already has is refused with `409` and `code: name_taken`, including when
       the same source is created again.
-    x-backend: cli-only
-    x-required-role: any
+    x-backend: ready
+    x-required-role: installation-admin
     x-console-features: [HM-01, FR-02]
     x-issues: [315]
     parameters:
@@ -57,14 +76,27 @@ project:
     operationId: getProject
     tags: [Projects]
     summary: Get a project
-    x-backend: new
+    description: The `ETag` is the project's revision; send it in `If-Match` to rename or delete.
+    x-backend: ready
     x-required-role: viewer
     x-console-features: [HM-01]
     responses:
       '200':
         description: The project.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Project' }
+            example:
+              id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+              name: sales-analytics
+              description: Orders, customers and the dashboards built on them
+              source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+              created_at: '2026-10-10T14:05:00Z'
+              revision: 4
+              counts: { databases: 1, branches: 3 }
+              my_role: administrator
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   patch:
@@ -75,8 +107,9 @@ project:
       Renaming keeps the project ID, so datasets other projects read from it
       keep working. It changes this project only, not others created from the
       same source. A name already in use is refused with `409` and
-      `code: name_taken`.
-    x-backend: new
+      `code: name_taken`. The revision rises by one when something changes and
+      stays the same when nothing does.
+    x-backend: ready
     x-required-role: administrator
     x-console-features: [HM-01b, ST-02]
     x-issues: [287, 314]
@@ -89,7 +122,18 @@ project:
       '200':
         description: The updated project.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Project' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Project' }
+            example:
+              id: prj_5f0c2a9e7b1d4c3fa8e6d2b4c1a09f73
+              name: sales-analytics-eu
+              description: Orders and customers for the EU region
+              source_id: src_0b7e4d1c9a2f4e6d8c3b5a7f1e2d4c6b
+              created_at: '2026-10-10T14:05:00.000Z'
+              revision: 5
+              counts: { databases: 1, branches: 3 }
+              my_role: administrator
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
@@ -102,19 +146,26 @@ project:
     summary: Delete a project and everything in it
     description: >-
       Irreversible. Read the deletion impact first and show it to the person.
-      Refused with `409` while another project reads a dataset this one
-      publishes, unless `force` is true.
-    x-backend: new
+      The project disappears and its name is free as soon as this returns; the
+      operation then removes its databases, branches and files, and backups of
+      the project go with it. In version 1 the request is refused with `409`
+      and `code: delete_blocked` while the project still has sync pipelines,
+      publications, analytical data or running work, or while another project
+      reads its data. Remove those first; the deletion impact lists them. A
+      governed server does not offer delete yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
     x-required-role: administrator
+    x-profiles: [local]
     x-console-features: [HM-01b]
-    x-issues: [287]
+    x-issues: [287, 320]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
-      - { name: confirm, in: query, required: true, description: 'The project name, typed by the person.', schema: { type: string } }
-      - { name: force, in: query, schema: { type: boolean, default: false } }
+      - { name: confirm, in: query, required: true, description: 'The project name as it is now, typed by the person.', schema: { type: string } }
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
@@ -129,14 +180,21 @@ projectDeletionImpact:
     operationId: getProjectDeletionImpact
     tags: [Projects]
     summary: See what deleting a project would remove
-    x-backend: new
+    description: Read-only. An empty `blocked_by` means the project can be deleted now.
+    x-backend: ready
     x-required-role: administrator
     x-console-features: [HM-01b]
     x-issues: [287]
     responses:
       '200':
         description: What would be removed, and what blocks it.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/DeletionImpact' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/DeletionImpact' }
+            example:
+              removes: { databases: 1, branches: 3 }
+              blocked_by:
+                - { reason: sync_pipelines, count: 1 }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
@@ -148,10 +206,14 @@ projectMap:
     operationId: getProjectMap
     tags: [Projects]
     summary: Get the project map
-    description: Databases, pipelines, analytical tables and their readers as one graph, for the project overview.
+    description: >-
+      Databases, pipelines, analytical tables and their readers as one graph,
+      for the project overview. Not served yet: every node belongs to another
+      domain, so the map is built as those domains are completed.
     x-backend: new
     x-required-role: viewer
     x-console-features: [HM-05]
+    x-issues: [321]
     responses:
       '200':
         description: The map.

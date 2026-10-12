@@ -164,11 +164,16 @@ step e.
 | Profile | Where it runs | What it covers |
 |---|---|---|
 | Local owner | Linux and macOS, every PR | L0 to L3, L5 to L7 |
-| Governed | Linux, every PR that touches `api/` or the server; nightly otherwise | L4, plus L1 to L3 under a signed-in session |
+| Governed | Linux and macOS, every PR | L4, plus L1 and L2 for signed-in callers |
 
-The governed run reuses the identity provider fixture and server setup from
-`e2e/native/iam` and `e2e/native/governed-console`. AP00 measures how long that
-takes on a hosted runner and decides whether it can run on every PR.
+The governed run needs no identity provider. Callers are service accounts,
+which the owner of the machine creates and gives roles through the control
+socket; `supabricks identity api` serves the API to their bearer tokens on
+loopback. The daemon authenticates each token and checks the caller's role per
+operation, the same path the governed console uses, so the run takes a few
+seconds. What it cannot cover is anything only a person signed in through an
+identity provider can do: today that is creating a project as an installation
+administrator, which has a unit test instead.
 
 ### Regression protection
 
@@ -229,7 +234,7 @@ No domain is completed in this slice. It builds what every domain needs.
 | AP00.5 | Test harness in `api/tests/`: server fixture, validating client, generated L3 invariants, pinned dependencies | Done |
 | AP00.6 | `api.yml` workflow with lint, generation check, `oasdiff` and the suite on Linux and macOS | Done; first hosted run is the evidence |
 | AP00.7 | One endpoint end to end, `GET /server/version` | Done |
-| AP00.8 | Governed transport and the L4 authorization generator | Open. Built with AP01, which is the first domain with roles to test |
+| AP00.8 | Governed transport and the L4 authorization generator | Done, with AP01 |
 
 Acceptance: `GET /api/v1/server/version` is served, described, routed, tested
 at L0 to L3, L5 and L7 on Linux and macOS, and gated in CI.
@@ -263,6 +268,72 @@ That is ten operations in version 1, two removed, two deferred and one moved.
 (#318); `start_from` is replaced by `source_id`; every operation names its
 required role; `x-backend` values are corrected.
 
+**Built so far:**
+
+- Catalog 32 makes project names unique without regard to case and records
+  each project's description and creation time. `project create` and the
+  console's import take a name; a name in use is refused with `name_taken`.
+- `listProjects` and `getProject`, with paging, the name filter and `ETag`.
+- `createProject`. It reuses the console's create path and returns the apply
+  operation. To create a second project from an existing source, import it;
+  that belongs to the project-definition domain.
+- Idempotency, once for every domain: replies are stored by key in
+  `api_idempotency`, a repeat returns the first reply, and a key reused for a
+  different request is `409 idempotency_key_reused`.
+- The operations view (#285). `operation_index` is one ordered feed with
+  creation and finish times, kept current by triggers on the existing
+  operation tables, so no writer had to change. It covers project applies and
+  database and branch changes; other kinds join with their domains.
+  `listOperations`, `getOperation` and `cancelOperation` are served. Only
+  applies can be cancelled today.
+
+- `updateProject`: rename and description, conditional on `If-Match`. The name
+  now belongs to the project once it exists, so editing the label in a source's
+  manifest no longer renames an existing project.
+
+- `deleteProject` and `getProjectDeletionImpact`. The request hides the
+  project and frees its name at once. A durable operation then cancels a
+  pending apply, force-deletes branches leaf first and removes the folders the
+  server created. Rows stay as a tombstone, as deleted branches do. It needs
+  the current revision, the exact name and an idempotency key.
+- Delete refuses with `delete_blocked` while the project has sync pipelines,
+  publications, analytical data or running work, or while another project
+  reads its data. Nothing reclaims those as part of a delete yet (#320), so
+  refusing is the safe behaviour; the impact preview lists what blocks.
+  `force` is removed from the contract until it has a defined effect.
+- An engine-backed test server (`engine_api`) runs from an installed release.
+  It proves that a created project finishes and that a delete removes its
+  branches and folder. It is not wired into CI yet.
+
+- The API for signed-in callers. `rest::Caller` is set by the daemon from how
+  a request arrived and is never read from the wire. For a signed-in caller the
+  router checks the role the specification declares (`x-required-role`) before
+  the request is read: no role in the project is `404`, too low a role is
+  `403`, and every refusal is written to the security audit. The role table is
+  generated from the specification with the routes.
+- The governed server and `supabricks identity api` serve `/api/v1` to service
+  tokens. Browser sessions on a governed server keep using the console's own
+  endpoints until the console moves to this API.
+- On a governed server only an installation administrator creates a project,
+  through the existing governed create path, and delete is not offered
+  (`x-profiles: [local]`, `403 unavailable_in_profile`): delete is in the
+  platform's list of governed operations that are not yet qualified.
+- L4: 88 generated authorization tests, plus signed-in scenarios for both
+  domains.
+
+**Closed on 2026-10-11.** `projects` and `operations` are `complete`: ten
+operations are served, tested at every layer and gated in CI. What was left
+out, and where it is tracked:
+
+| Left out | Why | Tracked |
+|---|---|---|
+| `getProjectMap` | Every node is a resource of another domain; built as those complete | #321 |
+| `listRecentItems` | Convenience, not core | #286 |
+| Delete while the project has sync, publications or analytical data; `force` | Nothing reclaims those as part of a delete yet; delete refuses instead | #320 |
+| Delete on a governed server | Not yet qualified for the governed profile | #320 |
+| A required name on the command line and console import | They still default to the source's name. Requiring it changes about seventy scripts and the shipped console | Open decision |
+| `start_from: sample` on create | No sample tables exist | #315 |
+
 **Design questions to settle in AP01.1**
 
 - Decided: a project's name is chosen by the person at create or import, has
@@ -271,9 +342,11 @@ required role; `x-backend` values are corrected.
   `name_taken`. The name is stored on the source today, so this needs a `name`
   column on the instance with a unique index, filled from the source for
   existing rows. Rename changes one instance only.
-- What a `path` is on a governed server, and who may see it.
-- What deleting a project does to backups and to data other projects have
-  already read.
+- Decided: `path` is shown to the owner of a local installation only. A
+  governed server never returns it.
+- Decided: deleting a project deletes its backups too. No per-project backups
+  exist yet (#296), so the rule is recorded in the contract. A project another
+  project reads from cannot be deleted until the reader is removed.
 
 **Parts**
 
@@ -319,8 +392,8 @@ the command line's project listing; one created through the command line appears
 
 **Acceptance:** all ten operations pass L0 to L7 on the local profile on Linux
 and macOS and L4 on the governed profile; `projects` and `operations` are
-`complete`; #285, #287 and #314 are closed; #286 and #315 remain open and
-linked from the deferred operations.
+`complete`; #285, #287 and #314 close when the pull request merges; #286, #315,
+#320 and #321 remain open and are linked from the contract.
 
 ### AP02 to AP08: PostgreSQL
 
@@ -345,7 +418,7 @@ are the fastest. AP07 and AP08 are mostly new capability and are the slowest.
 
 | Risk | Mitigation |
 |---|---|
-| The governed server only serves a network listener with a qualification receipt, which makes it expensive to start in CI | AP00.6 measures it. If it is too slow per PR, L4 runs on PRs that touch `api/` or the server, and nightly |
+| The governed server only serves a network listener with a qualification receipt, which makes it expensive to start in CI | Resolved: role tests use service accounts and a loopback API server, and run on every PR |
 | Two HTTP APIs exist during the transition | The action endpoint is frozen: no new actions are added to it once AP00 lands |
 | A domain's review finds the draft specification wrong, as AP01 did three times | Step a always runs before step b, and corrects the specification before anything is built on it |
 | Capability work in step c is large and stalls a domain | Operations can be deferred individually; a domain completes with what version 1 needs |

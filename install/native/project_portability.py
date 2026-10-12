@@ -374,7 +374,7 @@ def consume(args, root, release, archive):
         cell.cli(project, 'analytics', 'close', session['id'], '--wait')
         check('explicit_deployment_sql_spark_notebook')
         second = root / 'second'; unpack(second)
-        two = cell.cli(second, 'project', 'create', '--key', 'second')
+        two = cell.cli(second, 'project', 'create', '--key', 'second', '--name', 'second')
         assert two['definition_id'] == binding['definition_id'] and two['deployment_id'] != binding['deployment_id']
         cell.apply(second, 'second'); totals(second)
         cell.cli(second, 'sql', '--branch', 'main', '--write', '--sql', 'CREATE TABLE public.only_second(id int)')
@@ -441,11 +441,11 @@ def consume(args, root, release, archive):
         # Missing local wheel closure must fail before activation in a cold deployment.
         missing = root / 'missing'; unpack(missing)
         (missing / 'dependencies' / f'{args.target}.zip').unlink()
-        cell.cli(missing, 'project', 'create', '--key', 'missing', success=False)
+        cell.cli(missing, 'project', 'create', '--key', 'missing', '--name', 'missing', success=False)
         check('missing_wheels_no_activation')
         # Kill at a durable adapter boundary, cancel after recovery, verify retention.
         interrupted = root / 'interrupted'; unpack(interrupted)
-        cell.cli(interrupted, 'project', 'create', '--key', 'interrupted')
+        cell.cli(interrupted, 'project', 'create', '--key', 'interrupted', '--name', 'interrupted')
         cell.cli(project, 'down'); cell.env['SUPABRICKS_TEST_PROJECT_APPLY_KILL'] = 'database_owned'
         cell.cli(project, 'up')
         plan = cell.plan(interrupted)

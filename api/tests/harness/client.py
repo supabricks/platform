@@ -5,8 +5,10 @@ PREFIX = '/api/v1'
 
 
 class Client:
-    def __init__(self, base, http, csrf):
+    def __init__(self, base, http, csrf, headers=None):
         self.base, self.http, self.csrf = base, http, csrf
+        # Sent with every request: a bearer token on a governed server.
+        self.headers = headers or {}
 
     def raw(self, method, path, *, json=None, params=None, headers=None, origin=True, csrf=True, data=None):
         """Send one request below /api/v1. Every error must be a problem document."""
@@ -15,6 +17,7 @@ class Client:
             sent['Origin'] = self.base
         if csrf and self.csrf and method.upper() not in ('GET', 'HEAD'):
             sent['X-CSRF-Token'] = self.csrf
+        sent.update(self.headers)
         sent.update(headers or {})
         response = self.http.request(method, self.base + PREFIX + path, json=json, params=params,
                                      data=data, headers=sent, timeout=15)

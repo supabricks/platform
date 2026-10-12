@@ -21,7 +21,7 @@ Or `just api-test`. Select one layer with `-m l3`, or one domain by file.
 | L1 conformance | every call through `Client.call` is checked against the specification | No |
 | L2 scenarios | `test_<domain>.py` | Yes |
 | L3 invariants | `test_l3_invariants.py`, generated from the specification | No |
-| L4 authorization | not built yet; it needs the governed profile | No |
+| L4 authorization | `test_l4_authorization.py`, generated from `x-required-role` and `x-profiles` | No |
 | L5 durability | `test_<domain>.py`, with the `private_server` fixture | Yes |
 | L6 parity | `test_<domain>.py`, comparing with `server.rpc` or the command line | Yes |
 | L7 fuzz | `test_fuzz.py` | No |
@@ -50,7 +50,15 @@ any request and still requires every error to be a problem document.
 | `api` | session | A signed-in client |
 | `anonymous` | session | A client with no session |
 | `private_server` | test | A server of its own, for tests that restart or kill it |
+| `governed` | session | A server that also serves signed-in callers. `governed.callers` has one client for each position: `nobody`, `outsider`, `viewer`, `editor`, `administrator` (of `governed.project`) and `elsewhere` (administrator of `governed.other_project`) |
 
-The server is the local profile without engines. It starts in about a second
-and covers everything that does not need a running PostgreSQL. Engine-backed
-and governed fixtures are added by the slices that first need them.
+| `engine_api` | session | A signed-in client on a server with database engines, for tests marked `engine` |
+
+The default server is the local profile without engines. It starts in about a
+second and covers everything that does not need a running PostgreSQL.
+
+Tests marked `engine` need work to finish, so they run against a server started
+with a verified engine bundle (`--bundle`, `--helpers`, or
+`SUPABRICKS_ENGINE_BUNDLE` and `SUPABRICKS_ENGINE_HELPERS`; an installed release
+is found automatically). They are skipped where there is no bundle, which today
+includes the `api` workflow in CI. Wiring the bundle into CI is part of AP02.

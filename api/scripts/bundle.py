@@ -17,12 +17,8 @@ PROTECTED = ('frozen', 'implemented', 'complete')
 
 
 def main():
-    document = spec.bundle()
-    if '--protected' in sys.argv:
-        keep = {(o.path, o.method.lower()) for o in spec.operations() if o.stage in PROTECTED}
-        document = dict(document, paths={
-            path: {k: v for k, v in item.items() if k not in spec.METHODS or (path, k) in keep}
-            for path, item in document['paths'].items() if any(p == path for p, _ in keep)})
+    protected = '--protected' in sys.argv
+    document = spec.only(lambda o: o.stage in PROTECTED) if protected else spec.bundle()
     json.dump(document, sys.stdout, indent=1)
 
 

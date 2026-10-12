@@ -20,7 +20,7 @@ def qualify(binary, release, source_project, workspace, env):
     template = release / 'python/notebooks/environments/base'
     for name in ('pyproject.toml', 'uv.lock'):
         shutil.copy2(template / name, applied / 'notebooks/environment' / name)
-    deployment_cli(applied, 'project', 'create', '--key', 'pk04-deployment')
+    deployment_cli(applied, 'project', 'create', '--key', 'pk04-deployment', '--name', 'pk04-applied')
     plan = deployment_cli(applied, 'project', 'plan')
     assert plan == deployment_cli(applied, 'project', 'plan')
     assert deployment_cli(applied, 'database', 'list')['branches'] == []

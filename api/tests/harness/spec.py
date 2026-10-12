@@ -93,6 +93,8 @@ class Operation:
         self.stage = (override or status()['domains'][self.domain])['stage']
         self.served = self.stage in SERVED
         self.secured = body.get('security', bundle().get('security')) != []
+        self.role = body.get('x-required-role')
+        self.governed = 'governed' in body.get('x-profiles', ['local', 'governed'])
 
     def __repr__(self):
         return self.id
@@ -116,6 +118,14 @@ def operations():
             if method in item:
                 found.append(Operation(path, method, item[method], item.get('parameters', [])))
     return found
+
+
+def only(keep):
+    """The bundle with just the operations `keep` accepts, and no empty paths."""
+    wanted = {(o.path, o.method.lower()) for o in operations() if keep(o)}
+    paths = {path: {k: v for k, v in item.items() if k not in METHODS or (path, k) in wanted}
+             for path, item in bundle()['paths'].items() if any(p == path for p, _ in wanted)}
+    return dict(bundle(), paths=paths)
 
 
 def served():

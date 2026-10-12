@@ -145,7 +145,7 @@ lifecycle="retain"
     check('noncollatable_tables_transfer_across_builtin_locales_while_text_refuses_mismatch')
     other_project=cell.root/'second-project';shutil.copytree(cell.worktree,other_project)
     cell.cli('project','data','import',package,'--branch','destination','--key','other',project=other_project,code=4)
-    cell.cli('project','create','--key','other-deployment',project=other_project)
+    cell.cli('project','create','--key','other-deployment','--name','second-project',project=other_project)
     cell.cli('database','create','destination','--wait',project=other_project)
     other_import=cell.cli('project','data','import',package,'--branch','destination','--key','initial',project=other_project)
     assert other_import['destination_project_id']!=imported['destination_project_id']

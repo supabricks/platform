@@ -75,6 +75,10 @@ pub enum Command {
     Catalog {
         command: crate::catalog::governance::ReadCommand,
     },
+    /// One platform API v1 request. Roles are checked per operation in `rest`.
+    Api {
+        call: crate::rest::Call,
+    },
     Projects {},
     Project {
         deployment: String,
@@ -134,7 +138,7 @@ pub enum Command {
 impl Command {
     pub(crate) fn deployment(&self) -> Option<&str> {
         match self {
-            Self::Projects {} | Self::Catalog { .. } => None,
+            Self::Projects {} | Self::Catalog { .. } | Self::Api { .. } => None,
             Self::Workspace { command } => command.deployment(),
             Self::Data { deployment, .. }
             | Self::Runtime { deployment, .. }
@@ -174,6 +178,7 @@ impl Command {
                 ..
             } => Some((*expected_policy, key)),
             Self::Workspace { .. }
+            | Self::Api { .. }
             | Self::Projects {}
             | Self::Data { .. }
             | Self::Catalog { .. }

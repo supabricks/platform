@@ -69,6 +69,9 @@ pub enum Command {
     Bind {
         key: String,
         target: Option<String>,
+        /// The new project's name. Defaults to the source's name.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
     },
     Attach {
         deployment: DeploymentId,
@@ -411,8 +414,8 @@ impl Workspace {
                 t.received = t.expected;
                 Ok(json!({"id":id,"bytes":t.expected,"chunk_bytes":CHUNK,"report":p.report}))
             }
-            Command::Bind { key, target } => {
-                store.project_command(&source, deployments::Command::Create { key, target })
+            Command::Bind { key, target, name } => {
+                store.project_command(&source, deployments::Command::Create { key, target, name })
             }
             Command::Attach { deployment } => {
                 store.project_command(&source, deployments::Command::Attach { deployment })
@@ -432,7 +435,7 @@ impl Workspace {
 // A console-created source is published atomically at a server-chosen path.
 // The source UUID and durable deployment/apply journals recover lost responses
 // and process restarts. HTTP callers cannot select an arbitrary filesystem path.
-fn create(
+pub(crate) fn create(
     store: &mut Store,
     host: &Binding,
     id: OperationId,
@@ -471,6 +474,7 @@ fn create(
         deployments::Command::Create {
             key: format!("console-create-{id}"),
             target: None,
+            name: None,
         },
     )?;
     let bound = binding(store, &src)?;
@@ -523,6 +527,7 @@ mod tests {
                         deployments::Command::Create {
                             key: "host".into(),
                             target: None,
+                            name: None,
                         },
                     )
                     .unwrap(),
@@ -798,6 +803,7 @@ mod tests {
                 Command::Bind {
                     key: "new".into(),
                     target: None,
+                    name: Some("browser-project-copy".into()),
                 },
             )
             .unwrap();
@@ -816,7 +822,8 @@ mod tests {
                 selection.clone(),
                 Command::Bind {
                     key: "new".into(),
-                    target: None
+                    target: None,
+                    name: Some("browser-project-copy".into()),
                 }
             )
             .unwrap()
@@ -827,7 +834,8 @@ mod tests {
                 selection.clone(),
                 Command::Bind {
                     key: "different".into(),
-                    target: None
+                    target: None,
+                    name: Some("browser-project-other".into()),
                 }
             )
             .is_err()

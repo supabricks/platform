@@ -4,11 +4,11 @@ Project:
     A project holds databases, sync pipelines, notebooks, jobs and saved queries
     that belong together, with its own access policy. It is one instance: two
     projects created from the same source share nothing.
-  required: [id, name, source_id, created_at, revision, counts]
+  required: [id, name, description, source_id, created_at, revision, counts, my_role]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
     name: { $ref: './schemas.yaml#/ProjectName' }
-    description: { type: string, maxLength: 500 }
+    description: { type: string, maxLength: 500, description: 'Empty when none was given.' }
     source_id:
       allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
       description: >-
@@ -20,24 +20,19 @@ Project:
       description: >-
         Folder that holds the project definition. Local profile only; a
         governed server never reveals its own paths.
-    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
-    last_active_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    created_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: >-
+        When the project was created. For a project that existed before the
+        server recorded this, the time of the upgrade that started recording it.
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
     counts:
       type: object
-      required: [databases, sync_pipelines, notebooks, jobs]
+      description: What the project holds now. Counts for other kinds are added with their domains.
+      required: [databases, branches]
       properties:
-        databases: { type: integer }
-        sync_pipelines: { type: integer }
-        notebooks: { type: integer }
-        jobs: { type: integer }
-    definition:
-      type: object
-      description: The project definition (`supabricks.toml`) as installed. See the Project definition domain.
-      properties:
-        format: { type: integer, examples: [2] }
-        installed_revision: { type: integer }
-        matches_folder: { type: boolean }
+        databases: { type: integer, minimum: 0 }
+        branches: { type: integer, minimum: 0, description: 'Including the default branch of each database.' }
     my_role:
       description: The caller's effective role in this project. Null in the local profile, where the owner can do everything.
       oneOf:
@@ -47,26 +42,26 @@ Project:
 ProjectName:
   type: string
   description: >-
-    Chosen by the person when the project is created or imported; there is no
-    default. Unique in the installation, compared without regard to case, so a
-    source imported twice needs two names (`sales-analytics` and
-    `sales-analytics-staging`).
+    Chosen by the person. Required when a project is created through this API;
+    there is no default. Unique in the installation, compared without regard to
+    case, so a source imported twice needs two names (`sales-analytics` and
+    `sales-analytics-staging`). Letters, digits and hyphens, at most 40
+    characters, stored in lower case.
   pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
   examples: [sales-analytics]
 
 ProjectCreate:
   type: object
   required: [name]
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }
-    source_id:
-      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
-      description: Create another instance of this source. Omit it to start a new, empty project.
 
 ProjectUpdate:
   type: object
   minProperties: 1
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/ProjectName' }
     description: { type: string, maxLength: 500 }
@@ -81,29 +76,33 @@ ProjectPage:
 
 DeletionImpact:
   type: object
-  description: Everything that deleting the project removes, so the caller can show it before asking for confirmation.
+  description: What deleting the project removes and what stops it, so the caller can show both before asking for confirmation.
   required: [removes, blocked_by]
+  additionalProperties: false
   properties:
     removes:
       type: object
+      description: Counts for other kinds are added with their domains.
+      required: [databases, branches]
       properties:
-        databases: { type: integer }
-        branches: { type: integer }
-        analytical_versions: { type: integer }
-        notebooks: { type: integer }
-        jobs: { type: integer }
-        secrets: { type: integer }
-        backups: { type: integer }
-        storage_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
+        databases: { type: integer, minimum: 0 }
+        branches: { type: integer, minimum: 0 }
     blocked_by:
       type: array
-      description: Other projects that read a dataset this project publishes. Deleting is refused unless `force` is set.
+      description: Empty when the project can be deleted now.
       items:
         type: object
-        required: [project, publication]
+        required: [reason, count]
         properties:
-          project: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
-          publication: { $ref: '../../shared/schemas.yaml#/ResourceRef' }
+          reason:
+            type: string
+            enum: [read_by_another_project, sync_pipelines, publications, analytical_data, running_work]
+            description: >-
+              `read_by_another_project`: another project uses a dataset this
+              one publishes. `sync_pipelines`, `publications`,
+              `analytical_data`: these exist and must be removed first.
+              `running_work`: an import or analytical session is active.
+          count: { type: integer, minimum: 1 }
 
 ProjectMap:
   type: object
