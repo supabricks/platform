@@ -104,8 +104,21 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
             Status::Pending if operation.next_step > 0 => "running",
             Status::Pending => "pending",
         };
+        // A root branch is a database, so work on one is work on the database.
+        let branch = store.branch(operation.branch_id).ok();
+        let database = branch
+            .as_ref()
+            .is_some_and(|b| b.branch.parent_id.is_none());
         let kind = match mutation["kind"].as_str().unwrap_or_default() {
             "create_database" => "database.create".to_owned(),
+            "set_state" | "force_delete" if database => {
+                match mutation["desired"].as_str().unwrap_or("deleted") {
+                    "running" => "database.resume",
+                    "suspended" => "database.suspend",
+                    _ => "database.delete",
+                }
+                .to_owned()
+            }
             "create_branch" | "branch_from" => "branch.create".to_owned(),
             "set_state" => "branch.set_state".to_owned(),
             "set_ttl" => "branch.set_ttl".to_owned(),
@@ -114,8 +127,15 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
             other => format!("branch.{other}"),
         };
         value["kind"] = json!(kind);
-        value["target"] =
-            json!({"kind": "branch", "id": public_id("br", &operation.branch_id.to_string())});
+        let id = operation.branch_id.to_string();
+        value["target"] = if database {
+            json!({"kind": "database", "id": public_id("db", &id)})
+        } else {
+            json!({"kind": "branch", "id": public_id("br", &id)})
+        };
+        if let Some(branch) = &branch {
+            value["target"]["label"] = json!(branch.branch.name);
+        }
         value["steps"] = json!(steps(
             operation.steps.iter().map(|s| format!("{s:?}")).collect(),
             operation.next_step,
@@ -124,6 +144,9 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         value["cancellable"] = json!(false);
         if state == "failed" {
             value["error"] = failure(request.error.as_deref().unwrap_or("The operation failed."));
+        }
+        if state == "succeeded" && database && kind != "database.delete" {
+            value["result"] = json!({"database": {"kind": "database", "id": public_id("db", &id)}});
         }
     }
     Some(finish(value, state, entry))

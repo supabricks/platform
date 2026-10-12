@@ -19,6 +19,8 @@ def pytest_addoption(parser):
                      help='a verified engine bundle, for tests marked engine')
     parser.addoption('--helpers', default=os.environ.get('SUPABRICKS_ENGINE_HELPERS', str(installed / 'helpers')),
                      help='prepared engine helpers, for tests marked engine')
+    parser.addoption('--require-engines', action='store_true',
+                     help='fail, instead of skipping, when the engine bundle is missing')
 
 
 def pytest_configure(config):
@@ -42,17 +44,25 @@ def server(request):
 
 
 @pytest.fixture(scope='session')
-def engine_api(request):
-    """A signed-in client on a server with database engines. Tests that use
-    it are skipped where no engine bundle is available."""
+def engine_server(request):
+    """A server with database engines. Tests that use it are skipped where no
+    engine bundle is available."""
     bundle = pathlib.Path(request.config.getoption('--bundle')).resolve()
     helpers = pathlib.Path(request.config.getoption('--helpers')).resolve()
     if not (bundle / 'manifest.json').exists() or not helpers.is_dir():
+        if request.config.getoption('--require-engines'):
+            pytest.fail(f'no engine bundle at {bundle} with helpers at {helpers}')
         pytest.skip('no engine bundle; pass --bundle and --helpers')
     server = EngineServer(pathlib.Path(request.config.getoption('--binary')).resolve(), bundle, helpers).start()
-    yield server.session()
+    yield server
     server.stop()
     server.cleanup()
+
+
+@pytest.fixture(scope='session')
+def engine_api(engine_server):
+    """A signed-in client on the server with database engines."""
+    return engine_server.session()
 
 
 @pytest.fixture(scope='session')
@@ -92,6 +102,9 @@ class Governed:
             return body['project_id'], body['id']
         self.project, self.operation = create('roles-one')
         self.other_project, _ = create('roles-two')
+        import uuid
+        self.database = owner.call('createDatabase', path=dict(project=self.project), json=dict(name='roles-db'),
+                                   headers={'Idempotency-Key': str(uuid.uuid4())}, expect=202).json()['target']['id']
         self.ids, self.callers = {}, {'nobody': server.bearer(None)}
         for name, project, role in [('outsider', None, None), ('viewer', self.project, 'viewer'),
                                     ('editor', self.project, 'editor'),

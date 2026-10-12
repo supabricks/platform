@@ -545,7 +545,7 @@ def test_delete_removes_the_databases_and_the_project_folder(engine_api):
     assert done['result']['project']['id'] == project
     assert not folder.exists(), 'the folder the server made for the project is gone'
     items = api.call('listOperations', path={'project': project}).json()['items']
-    removal = next(o for o in items if o['kind'] == 'branch.force_delete')
+    removal = next(o for o in items if o['kind'] == 'database.delete')
     assert removal['state'] == 'succeeded' and all(s['state'] == 'succeeded' for s in removal['steps'])
     api.call('getProject', path={'project': project}, expect=404)
     remade = create(api, 'removed-for-real').json()

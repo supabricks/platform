@@ -33,6 +33,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0030_sync_history.sql"),
     include_str!("migrations/0031_publication_generation.sql"),
     include_str!("migrations/0032_project_names.sql"),
+    include_str!("migrations/0033_branch_details.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -221,6 +222,7 @@ fn catalog_upgrade_inner(
                 | 29
                 | 30
                 | 31
+                | 32
         )
     {
         return Err(conflict(
@@ -403,4 +405,51 @@ pub(crate) fn catalog_upgrade(
     release: &str,
 ) -> Result<()> {
     foreign_key_migration(db, |db| catalog_upgrade_inner(db, from, source, release))
+}
+
+#[cfg(test)]
+mod branch_detail_tests {
+    use super::*;
+    #[test]
+    fn catalog_thirty_two_branches_gain_a_creation_time_and_renames_are_counted() {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        apply(&mut db, &MIGRATIONS[..32]).unwrap();
+        let branch =
+            "INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,revision,desired)";
+        db.execute_batch(&format!(
+            "INSERT INTO projects VALUES ('p','sales');
+             {branch} VALUES ('old','p','main','t','old',1,'running');"
+        ))
+        .unwrap();
+        catalog_upgrade(&mut db, 32, "backup", "release").unwrap();
+        let details = |db: &Connection, id: &str| -> (i64, i64) {
+            db.query_row(
+                "SELECT created_at_ms,edits FROM branch_details WHERE branch_id=?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap()
+        };
+        let (created, edits) = details(&db, "old");
+        assert!(created > 0 && edits == 0);
+        db.execute_batch(&format!(
+            "{branch} VALUES ('new','p','other','t','new',1,'running');
+             UPDATE branches SET name='renamed' WHERE id='new';
+             UPDATE branches SET name='renamed' WHERE id='new';
+             UPDATE branches SET revision=2 WHERE id='new';"
+        ))
+        .unwrap();
+        let (created, edits) = details(&db, "new");
+        assert!(created > 0);
+        assert_eq!(edits, 1, "only a change of name counts");
+        db.execute_batch(
+            "UPDATE branches SET expires_at_ms=5 WHERE id='new';
+             UPDATE branches SET expires_at_ms=5 WHERE id='new';
+             UPDATE branches SET expires_at_ms=NULL WHERE id='new';",
+        )
+        .unwrap();
+        assert_eq!(details(&db, "new").1, 3, "and each change of expiry");
+        assert_eq!(details(&db, "old").1, 0);
+    }
 }

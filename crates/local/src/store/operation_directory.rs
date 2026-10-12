@@ -100,6 +100,17 @@ impl Store {
             .optional()?
             .ok_or_else(|| missing("operation"))
     }
+    /// The latest operation that set a branch's state, creation included.
+    pub fn last_state_operation(&self, branch: &str) -> Result<Option<String>> {
+        Ok(self
+            .db
+            .query_row(
+                "SELECT id FROM operations WHERE branch_id=?1 AND json_extract(request,'$.kind') IN ('set_state','create_database') ORDER BY rowid DESC LIMIT 1",
+                [branch],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
     pub fn set_project_description(&self, deployment: &str, description: &str) -> Result<()> {
         self.db.execute(
             "UPDATE project_details SET description=?2 WHERE deployment_id=?1",

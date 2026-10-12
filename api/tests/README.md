@@ -52,7 +52,7 @@ any request and still requires every error to be a problem document.
 | `private_server` | test | A server of its own, for tests that restart or kill it |
 | `governed` | session | A server that also serves signed-in callers. `governed.callers` has one client for each position: `nobody`, `outsider`, `viewer`, `editor`, `administrator` (of `governed.project`) and `elsewhere` (administrator of `governed.other_project`) |
 
-| `engine_api` | session | A signed-in client on a server with database engines, for tests marked `engine` |
+| `engine_server`, `engine_api` | session | A server with database engines and a signed-in client on it, for tests marked `engine` |
 
 The default server is the local profile without engines. It starts in about a
 second and covers everything that does not need a running PostgreSQL.
@@ -60,5 +60,11 @@ second and covers everything that does not need a running PostgreSQL.
 Tests marked `engine` need work to finish, so they run against a server started
 with a verified engine bundle (`--bundle`, `--helpers`, or
 `SUPABRICKS_ENGINE_BUNDLE` and `SUPABRICKS_ENGINE_HELPERS`; an installed release
-is found automatically). They are skipped where there is no bundle, which today
-includes the `api` workflow in CI. Wiring the bundle into CI is part of AP02.
+is found automatically). They are skipped where there is no bundle. The
+`engines` job of the `api` workflow runs them on Linux and macOS with
+`--require-engines`, which fails instead of skipping.
+
+An installation runs at most 32 branches, and without engines a deleted branch
+keeps its place. A domain that creates databases or branches therefore uses a
+server of its own (see `test_databases.py`) and shares one resource between
+tests that do not change it.

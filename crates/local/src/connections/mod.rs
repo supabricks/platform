@@ -17,7 +17,7 @@ use tokio::{
 };
 
 const MAX_CONNECTIONS: usize = 256;
-const MAX_BRANCH_CONNECTIONS: usize = 64;
+pub(crate) const MAX_BRANCH_CONNECTIONS: usize = 64;
 const MAX_STARTUP_BYTES: usize = 64 * 1024;
 fn bind_listener(port: u16) -> std::io::Result<TcpListener> {
     let socket = socket2::Socket::new(

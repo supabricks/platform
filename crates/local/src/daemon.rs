@@ -950,7 +950,11 @@ impl Daemon {
                 call.caller = crate::rest::Caller::LocalOwner;
                 serde_json::to_value(crate::rest::dispatch(
                     &mut self.store,
-                    Some(&binding),
+                    Some(crate::rest::Local {
+                        binding: &binding,
+                        cell: self.cell.as_ref(),
+                        gateway: self.gateway.as_mut(),
+                    }),
                     &call,
                 ))?
             }

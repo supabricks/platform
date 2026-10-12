@@ -223,7 +223,7 @@ pub fn update(store: &mut Store, call: &Call, project: &str) -> Result<Reply, Pr
     Ok(reply)
 }
 
-fn found(store: &Store, project: &str) -> Result<ProjectRecord, Problem> {
+pub(super) fn found(store: &Store, project: &str) -> Result<ProjectRecord, Problem> {
     let missing = || Problem::not_found("There is no such project.");
     store
         .project_record(&internal_id("prj", project).ok_or_else(missing)?)

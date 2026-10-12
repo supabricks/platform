@@ -1,12 +1,18 @@
-# Databases: lifecycle, compute and how to connect.
-# Roles, extensions, metrics and query activity live in their own domains.
+# Databases: lifecycle and how to connect.
+#
+# A database is a PostgreSQL database with its branches. It starts with one
+# branch, which carries the database's name; other branches are made from it.
+# A project can hold several databases. Roles, extensions, metrics and query
+# activity live in their own domains.
 
 computeSizes:
   get:
     operationId: listComputeSizes
     tags: [Databases]
     summary: List the compute sizes a database can have
+    description: Not part of version 1. Every database runs on the same compute.
     x-backend: new
+    x-required-role: any
     x-console-features: [DB-02b, DB-06b]
     x-issues: [244]
     responses:
@@ -28,8 +34,11 @@ databases:
     operationId: listDatabases
     tags: [Databases]
     summary: List databases in a project
-    description: '`storage` and `connections` are omitted until the platform reports them.'
+    description: >-
+      Ordered by name. A database being deleted is listed, with
+      `state: deleting`, until its files are gone.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [DB-01, DB-03]
     x-issues: [246]
     parameters:
@@ -38,27 +47,59 @@ databases:
     responses:
       '200':
         description: A page of databases.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/DatabasePage' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/DatabasePage' }
+            example:
+              items:
+                - id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  name: main
+                  state: running
+                  postgres_version: '17'
+                  default_branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_count: 3
+                  holds_project_default: true
+                  connections: { open: 2, limit: 64 }
+                  created_at: '2026-10-10T14:05:00.000Z'
+                  revision: 1
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   post:
     operationId: createDatabase
     tags: [Databases]
     summary: Create a database
-    description: Creates the database with one branch, `main`. Choosing a compute size or an idle timeout is not available yet.
+    description: >-
+      Creates the database and its first branch, which has the same name. The
+      reply is the operation that starts it; its `target` is the new database,
+      which can be read at once with `state: provisioning`. A name another
+      database or branch in the project already has is refused with `409` and
+      `code: name_taken`. An installation runs at most 32 branches at a time,
+      counting every database; beyond that the request is refused with `409`
+      and `code: capacity_exhausted`. Choosing a compute size or an idle
+      timeout is not part of version 1. A governed server does not offer this
+      yet and answers `403` with `code: unavailable_in_profile`; a governed
+      project has the database it was created with.
     x-backend: ready
+    x-required-role: administrator
+    x-profiles: [local]
     x-console-features: [DB-02a, DB-02b]
-    x-issues: [244, 245]
+    x-issues: [244, 245, 322]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     requestBody:
       required: true
-      content: { application/json: { schema: { $ref: './schemas.yaml#/DatabaseCreate' } } }
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/DatabaseCreate' }
+          example: { name: reporting }
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
       '409': { $ref: '../../shared/responses.yaml#/Conflict' }
 
 database:
@@ -69,40 +110,74 @@ database:
     operationId: getDatabase
     tags: [Databases]
     summary: Get a database
+    description: The `ETag` is the database's revision; send it in `If-Match` to rename or delete.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [DB-03]
     x-issues: [246]
     responses:
       '200':
         description: The database.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Database' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Database' }
+            example:
+              id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              name: main
+              state: running
+              postgres_version: '17'
+              default_branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_count: 3
+              holds_project_default: true
+              connections: { open: 2, limit: 64 }
+              created_at: '2026-10-10T14:05:00.000Z'
+              revision: 1
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   patch:
     operationId: updateDatabase
     tags: [Databases]
-    summary: Rename, resize or reconfigure a database
+    summary: Rename a database
     description: >-
-      Renaming and choosing the default branch are supported on the command
-      line today. Resizing, the idle timeout and history retention are new.
-      Returns `200` when the change applied at once and `202` when it
-      started an operation (resizing).
-    x-backend: cli-only
+      Renaming keeps the database ID and its connection details. It also
+      renames the database's first branch, which carries the same name. A name
+      another database or branch in the project has is refused with `409` and
+      `code: name_taken`. The revision rises by one when the name changes and
+      stays the same when it does not. Resizing, an idle timeout and history
+      retention are not part of version 1. A governed server does not offer
+      this yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: administrator
+    x-profiles: [local]
     x-console-features: [DB-11a, DB-06b, DB-06c, DB-10c]
-    x-issues: [244, 245, 254]
+    x-issues: [244, 245, 254, 322]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatch'
-      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     requestBody:
       required: true
-      content: { application/json: { schema: { $ref: './schemas.yaml#/DatabaseUpdate' } } }
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/DatabaseUpdate' }
+          example: { name: reporting-eu }
     responses:
       '200':
         description: The updated database.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Database' } } }
-      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Database' }
+            example:
+              id: db_7a2c4e6f8b1d4a3c9e5f0b2d4c6a8e1f
+              name: reporting-eu
+              state: running
+              postgres_version: '17'
+              default_branch_id: br_7a2c4e6f8b1d4a3c9e5f0b2d4c6a8e1f
+              branch_count: 1
+              holds_project_default: false
+              connections: { open: 0, limit: 64 }
+              created_at: '2026-10-11T09:30:00.000Z'
+              revision: 2
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
@@ -112,16 +187,28 @@ database:
   delete:
     operationId: deleteDatabase
     tags: [Databases]
-    summary: Delete a database and all its branches
-    description: Irreversible. Refused while a sync pipeline reads any of its branches.
+    summary: Delete a database
+    description: >-
+      Irreversible. The database shows `state: deleting` until the operation
+      has removed its files; then it is gone and its name is free. In version 1
+      the request is refused with `409` and `code: delete_blocked` while the
+      database has other branches, holds the project's default branch, has open
+      connections, or has an import or other work running. Delete the branches
+      first; to remove the database that holds the default branch, delete the
+      project. A governed server does not offer delete yet and answers `403`
+      with `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: administrator
+    x-profiles: [local]
     x-console-features: [DB-11b]
+    x-issues: [322, 323]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
-      - { name: confirm, in: query, required: true, description: 'The database name, typed by the person.', schema: { type: string } }
+      - { name: confirm, in: query, required: true, description: 'The database name as it is now, typed by the person.', schema: { type: string } }
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
@@ -137,16 +224,28 @@ databaseSuspend:
     operationId: suspendDatabase
     tags: [Databases]
     summary: Suspend a database's compute
-    description: Closes connections and stops compute for the default branch. Storage is kept. The next connection resumes it.
+    description: >-
+      Stops compute for the database's first branch. Storage is kept, and the
+      next connection resumes it. Other branches are not affected. Refused with
+      `409` while connections are open or work is running on it. Suspending a
+      database that is already suspended, or being suspended, changes nothing
+      and answers with the operation that suspended it. A
+      governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [DB-06a]
+    x-issues: [322]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
 
 databaseResume:
   parameters:
@@ -156,15 +255,26 @@ databaseResume:
     operationId: resumeDatabase
     tags: [Databases]
     summary: Resume a suspended database
+    description: >-
+      Starts compute for the database's first branch. Resuming a database that
+      is already running, or starting, changes nothing and answers with the
+      operation that started it. Refused with `409` while
+      an earlier suspend is still in progress. A governed server does not offer
+      this yet and answers `403` with `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [DB-06a]
+    x-issues: [322]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
 
 databaseConnection:
   parameters:
@@ -174,20 +284,38 @@ databaseConnection:
     operationId: getDatabaseConnection
     tags: [Databases]
     summary: Get the parts of a connection string
-    description: Never includes a password. Pooled endpoints are not available yet.
+    description: >-
+      Never includes a password. Each branch has its own port, which stays the
+      same while the branch exists; connecting to a suspended branch resumes
+      it. On a governed server PostgreSQL is private: the reply has
+      `available: false` and no address. Answers `503` with
+      `code: unavailable` when the database engines are not running. Pooled
+      endpoints and choosing a role are not part of version 1.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [DB-04a, DB-04b, DB-04d]
-    x-issues: [252]
+    x-issues: [251, 252]
     parameters:
-      - { name: branch, in: query, description: 'Branch ID. Defaults to the default branch.', schema: { $ref: '../../shared/schemas.yaml#/Id' } }
-      - { name: role, in: query, description: 'PostgreSQL role. Defaults to the application owner role.', schema: { type: string } }
+      - { name: branch, in: query, description: 'ID of a branch of this database. Defaults to its first branch.', schema: { $ref: '../../shared/schemas.yaml#/Id' } }
     responses:
       '200':
         description: Connection details.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Connection' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Connection' }
+            example:
+              available: true
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              host: 127.0.0.1
+              port: 54817
+              database: postgres
+              role: supabricks_owner
+              sslmode: prefer
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
-      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
 
 databaseCredentials:
   parameters:
@@ -196,27 +324,43 @@ databaseCredentials:
   post:
     operationId: revealDatabaseCredentials
     tags: [Databases]
-    summary: Reveal the password for a role
+    summary: Reveal the password for connecting
     description: >-
-      A separate call so that showing a password is a deliberate, recorded act.
-      In the governed profile this is refused until per-person credentials exist.
+      A separate call so that showing a password is a deliberate act. The reply
+      must not be cached. A governed server refuses with `403` and
+      `code: unavailable_in_profile` until per-person credentials exist.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [DB-04a, AC-07b]
     x-issues: [306]
     requestBody:
-      required: true
+      required: false
       content:
         application/json:
           schema:
             type: object
+            additionalProperties: false
             properties:
-              branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
-              role: { type: string }
+              branch_id:
+                allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+                description: A branch of this database. Defaults to its first branch.
+          example: {}
     responses:
       '200':
         description: The credentials. Do not cache.
         headers: { Cache-Control: { schema: { type: string, enum: [no-store] } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Credentials' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Credentials' }
+            example:
+              role: supabricks_owner
+              password: 5c0e1b7a-example-password
+              uri: 'postgresql://supabricks_owner:5c0e1b7a-example-password@127.0.0.1:54817/postgres?sslmode=prefer'
+              expires_at: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }

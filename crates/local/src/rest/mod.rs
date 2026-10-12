@@ -1,6 +1,7 @@
 //! Platform API v1 (`api/openapi.yaml`). Transport-independent: an HTTP server
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
+mod databases;
 mod operations;
 mod problem;
 mod projects;
@@ -45,6 +46,14 @@ impl Caller {
             Self::LocalOwner | Self::Nobody => "local-owner".into(),
         }
     }
+}
+
+/// What only the owner's own console brings: the project it was launched in,
+/// and the engines and connection gateway of this machine when they run.
+pub(crate) struct Local<'a> {
+    pub binding: &'a crate::api::Binding,
+    pub cell: Option<&'a crate::engine::Cell>,
+    pub gateway: Option<&'a mut crate::connections::Gateway>,
 }
 
 /// One request, after the transport has checked the session.
@@ -188,7 +197,7 @@ fn authorize(
 
 /// Route one call and run it. Never fails: every failure is a problem reply.
 /// `host` is the console the local owner launched; a governed call has none.
-pub fn dispatch(store: &mut Store, host: Option<&crate::api::Binding>, call: &Call) -> Reply {
+pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) -> Reply {
     let found = match resolve(&call.method, &call.path) {
         Ok(found) => found,
         Err(reply) => return reply,
@@ -225,12 +234,63 @@ pub fn dispatch(store: &mut Store, host: Option<&crate::api::Binding>, call: &Ca
         }))),
         Operation::ListProjects => projects::list(store, call),
         Operation::GetProject => projects::get(store, call, parameter("project")),
-        Operation::CreateProject => projects::create(store, host, call),
+        Operation::CreateProject => {
+            projects::create(store, host.as_ref().map(|host| host.binding), call)
+        }
         Operation::UpdateProject => projects::update(store, call, parameter("project")),
         Operation::DeleteProject => projects::delete(store, call, parameter("project")),
         Operation::GetProjectDeletionImpact => {
             projects::deletion_impact(store, parameter("project"))
         }
+        Operation::ListDatabases => databases::list(store, call, parameter("project")),
+        Operation::GetDatabase => {
+            databases::get(store, parameter("project"), parameter("database"))
+        }
+        Operation::CreateDatabase => {
+            databases::create(store, &mut host, call, parameter("project"))
+        }
+        Operation::UpdateDatabase => databases::update(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::DeleteDatabase => databases::delete(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::SuspendDatabase => databases::suspend(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::ResumeDatabase => databases::resume(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::GetDatabaseConnection => databases::connection(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::RevealDatabaseCredentials => databases::credentials(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))
