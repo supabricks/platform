@@ -408,7 +408,7 @@ known now:
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
-| AP07 Administration and observability | Password reset, roles and extensions done; see below | Which extensions a release bundles (#253), metrics (#247), query activity (#248) |
+| AP07 Administration and observability | Password reset, roles, extensions and metrics done; see below | Which extensions a release bundles (#253), latency, CPU and memory (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
@@ -804,6 +804,41 @@ superuser; and a child branch's copy.
 **What this means for later work.** `pg_stat_statements` is not in the engine
 and is not preloaded, so "slowest queries" in #248 cannot be built on it
 without a change to the engine build.
+
+#### Metrics (#247)
+
+**Completeness review.** From reading the code on 2026-10-12. The platform
+measured nothing: `status` and `doctor` report readiness and which processes
+it owns. This is new capability, not a surface over one.
+
+| Question | Decision |
+|---|---|
+| Who asks PostgreSQL? | A thread of its own, given the running computes once a minute, connecting as the control role with a two-second limit. The daemon only writes what comes back, so it never waits on PostgreSQL |
+| What is asked? | One statement: client connections by state (the server's own left out), commits, rollbacks, blocks hit and read, the log position, and the database's size |
+| Where are samples kept? | A SQLite file of their own, `metrics/samples.sqlite3`, not the daemon's state. Telemetry is written every minute and loses nothing if lost, so it does not belong in the durable record or its schema version, and it is left out of backups |
+| How long? | Seven days, a sample a minute, pruned hourly: about ten thousand small rows a branch |
+| What is a rate? | Counters are stored as PostgreSQL reports them; a rate is the growth between two samples at most two and a half intervals apart. Across a gap, or a compute restart that set a counter back, there is no rate |
+| Suspended branches | Not asked and never woken. Their points are null, not zero. Reading metrics asks PostgreSQL nothing |
+| Ranges | `1h`, `6h`, `24h`, `7d`, as 60 to 96 evenly spaced points; a value is the average of the samples in its step |
+| Does anything leave the machine? | No. The sampler connects only to `127.0.0.1` |
+
+**Built:** `metrics.rs` (the sampler, the samples, and the arithmetic of
+points), its tick in the daemon, `getBranchMetrics`, and `metrics` added to
+what a backup leaves out.
+
+**Tests.** Unit tests fix the arithmetic: rates, gaps, restarts, wide steps,
+and that samples are kept by branch, pruned by age and found again after
+reopening. `api/tests/test_metrics.py` checks the shape of each range without
+engines, and on a server sampling every second that points follow real
+writes and that a suspended branch is a gap and is not woken.
+
+**Left out, and why #247 stays open:**
+
+| Left out | Why |
+|---|---|
+| Query latency percentiles | They need `pg_stat_statements`, which the engine does not ship |
+| CPU and memory of the compute | PostgreSQL does not report them; they need per-process accounting from the operating system, done differently on Linux and macOS |
+| Sparklines for a whole project in one call | One branch a call for now |
 
 ## 7. Risks
 

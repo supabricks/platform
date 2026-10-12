@@ -1,0 +1,76 @@
+# Metrics of a branch: what the server has sampled from its PostgreSQL.
+#
+# The server asks each running branch once a minute and keeps the answers for
+# seven days, on this machine and nowhere else. Nothing here asks PostgreSQL
+# when it is called, so reading metrics never wakes a suspended branch.
+
+branchMetrics:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: getBranchMetrics
+    tags: [Metrics]
+    summary: Get a branch's metrics over a range
+    description: >-
+      Connections, transactions, cache hits, log written and storage, as
+      evenly spaced points over the last hour, six hours, day or week. The
+      points are a minute wide for `1h`, five minutes for `6h`, fifteen for
+      `24h` and two hours for `7d`; a value is the average of the samples in
+      its step.
+
+
+      A branch is sampled only while its compute runs, so a suspended branch,
+      a stopped server and the time before the branch existed all appear as
+      points whose values are null. A rate is never computed across such a
+      gap. Samples survive a restart of the server, are not part of a backup,
+      and are never sent anywhere. The operation reads what is stored: it
+      does not ask PostgreSQL and does not need the database engines. A
+      governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [DB-07]
+    x-issues: [247]
+    parameters:
+      - name: range
+        in: query
+        description: How far back to go.
+        schema: { type: string, enum: [1h, 6h, 24h, 7d], default: 1h }
+    responses:
+      '200':
+        description: The points of the range.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/BranchMetrics' }
+            example:
+              range: 1h
+              from: '2026-10-12T08:31:00.000Z'
+              to: '2026-10-12T09:31:00.000Z'
+              step_seconds: 60
+              sample_interval_seconds: 60
+              retention_seconds: 604800
+              points:
+                - at: '2026-10-12T08:31:00.000Z'
+                  connections_active: 2
+                  connections_idle: 5
+                  commits_per_second: 41.25
+                  rollbacks_per_second: 0.1
+                  cache_hit_ratio: 0.987
+                  wal_bytes_per_second: 18240.5
+                  storage_bytes: 73400320
+                - at: '2026-10-12T08:32:00.000Z'
+                  connections_active: null
+                  connections_idle: null
+                  commits_per_second: null
+                  rollbacks_per_second: null
+                  cache_hit_ratio: null
+                  wal_bytes_per_second: null
+                  storage_bytes: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }

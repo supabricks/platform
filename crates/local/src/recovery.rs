@@ -230,6 +230,7 @@ fn excluded(name: &str) -> bool {
         name.split('/').next(),
         Some(
             "isolated-work"
+                | "metrics"
                 | "logs"
                 | "tmp"
                 | "launches"

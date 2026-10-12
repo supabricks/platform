@@ -5,6 +5,7 @@ console HTTP server. It is enough for every operation that does not need a
 running PostgreSQL, and it starts in about a second.
 """
 import hashlib
+import os
 import json
 import pathlib
 import shutil
@@ -191,8 +192,10 @@ class EngineServer(Server):
         self.bundle, self.helpers = bundle, helpers
 
     def _cli(self, *args, timeout=300):
+        # Sample every second, not every minute, so a test can see metrics move.
         return subprocess.run([str(self.binary), *args, '--data-dir', str(self.data)],
-                              capture_output=True, text=True, timeout=timeout)
+                              capture_output=True, text=True, timeout=timeout,
+                              env=dict(os.environ, SUPABRICKS_TEST_METRICS_INTERVAL_MS='1000'))
 
     def _spawn(self):
         self._log = (self.root / 'daemon.log').open('ab')

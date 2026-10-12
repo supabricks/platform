@@ -204,6 +204,9 @@ pub struct Daemon {
     project_migrations: crate::project_apply::migrations::Workers,
     ingestion: crate::ingest::service::Service,
     uploads: crate::console::ingestion::Uploads,
+    /// Absent if the samples could not be opened; the daemon runs without.
+    metrics: Option<crate::metrics::Metrics>,
+    metrics_error: Option<String>,
 }
 impl Daemon {
     pub fn bind(root: &Path) -> Result<Self> {
@@ -269,6 +272,14 @@ impl Daemon {
             project_migrations: Default::default(),
             ingestion: Default::default(),
             uploads: Default::default(),
+            metrics_error: None,
+            metrics: match crate::metrics::Metrics::start(store.root()) {
+                Ok(metrics) => Some(metrics),
+                Err(error) => {
+                    eprintln!("metrics are off: {error}");
+                    None
+                }
+            },
             gateway,
             validator,
             store,
@@ -466,6 +477,13 @@ impl Daemon {
                     .map(|e| e.to_string());
                 }
                 self.uploads.tick(&mut self.store, stopping)?;
+                if let Some(metrics) = self.metrics.as_mut() {
+                    // Telemetry never stops the daemon.
+                    self.metrics_error = metrics
+                        .tick(&self.store, self.cell.as_ref())
+                        .err()
+                        .map(|e| e.to_string());
+                }
                 self.console_analytics.tick(&mut self.store, stopping)?;
                 let ingestion_stopped = match self.ingestion.tick(&mut self.store, stopping) {
                     Ok(done) => {
@@ -958,6 +976,7 @@ impl Daemon {
                         busy: self.queries.len(),
                         uploads: Some(&mut self.uploads),
                         imports: Some(&mut self.ingestion),
+                        metrics: self.metrics.as_ref(),
                     }),
                     &call,
                 ))?
@@ -968,7 +987,7 @@ impl Daemon {
                 ));
             }
             Request::Status => {
-                json!({"managed_snapshots_error":self.sync_error,"catalog_publication_error":self.catalog_publication.last_error,"catalog_metadata_error":self.catalog_metadata_error,"catalog_metadata_active":self.catalog_metadata.active(),"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
+                json!({"managed_snapshots_error":self.sync_error,"catalog_publication_error":self.catalog_publication.last_error,"catalog_metadata_error":self.catalog_metadata_error,"catalog_metadata_active":self.catalog_metadata.active(),"catalog":self.catalog.status(),"project_apply_error":self.project_apply_error,"environment_error":self.environments.last_error,"notebook_events":self.notebooks.events,"notebook_error":self.notebooks.last_error,"ingest_error":self.ingest_error,"metrics_error":self.metrics_error,"console_error":self.consoles.last_error,"analytical_sessions_error":self.sessions.last_error,"analytical_sessions_active":self.store.active_analytical_sessions()?.len(),"analytics_recovery":self.publisher.recovery,"analytics_error":self.publisher.last_error,"sql_workers_active":self.queries.len()+self.console_queries.active(),"generation":self.store.generation(),"schema_version":SCHEMA_VERSION,"pending_operations":self.store.pending()?.len(),"engine_execution":self.cell.is_some(),"runtime":self.cell.as_ref().map(|c|c.status(&self.store)).transpose()?,"gateway":self.gateway.as_ref().map(|g|g.status())})
             }
             Request::CatalogService { command } => {
                 self.catalog.command(&mut self.store, command)?
