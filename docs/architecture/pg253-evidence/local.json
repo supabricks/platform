@@ -27,7 +27,15 @@
     },
     "platform_native": "PASS",
     "legacy_native": "PASS",
-    "engine_relocation_native": "PASS"
+    "engine_relocation_native": "PASS",
+    "additional_boundary_regression": {
+      "passed": 1,
+      "checks": [
+        "project ownership",
+        "stale revision",
+        "governed list and mutation refusal before engine access"
+      ]
+    }
   },
   "commands": [
     "cargo test --locked -p supabricks-local --lib --test application_api --test console",
@@ -36,7 +44,8 @@
     "cargo test --locked --release -p compute_api native_extension_lifecycle_is_explicit_and_defaults_to_legacy",
     "python3 scripts/native/test_extensions.py",
     "python3 scripts/native/smoke.py /engine --report /output/engine-smoke.json",
-    "python3 e2e/native/extensions.py --binary target/release/supabricks --bundle /engine --helpers build/eq236/programs/releases/v0.1.0-alpha.36.eq236cache/helpers --report /output/extensions.json"
+    "python3 e2e/native/extensions.py --binary target/release/supabricks --bundle /engine --helpers build/eq236/programs/releases/v0.1.0-alpha.36.eq236cache/helpers --report /output/extensions.json",
+    "cargo test --locked -p supabricks-local --lib extensions::tests"
   ],
   "isolation": {
     "container_image": "supabricks-sy08-qualifier:latest",
@@ -91,6 +100,11 @@
       "path": "/data2/pg253-bundle-02.log",
       "bytes": 54,
       "sha256": "f45bcc371e7745257571077aef8aa82316097b7b3789666e9010ec93c40e2e48"
+    },
+    {
+      "path": "build/pg253-boundaries-02.log",
+      "bytes": 550,
+      "sha256": "b1d6610d5300da1b3fe121d730df6aca431809636518d89ba76c0aea0b733966"
     }
   ]
 }

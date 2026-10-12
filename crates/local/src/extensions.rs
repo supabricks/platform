@@ -203,6 +203,97 @@ impl Drop for Connection {
 mod tests {
     use super::*;
     #[test]
+    fn ownership_revision_and_governance_are_checked_before_engine_access() {
+        use crate::{
+            operations::{Mutation, Ports},
+            project::ProjectConfig,
+        };
+        use std::os::unix::fs::PermissionsExt;
+        use supabricks_core::resource::ProjectId;
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut store = Store::open(dir.path()).unwrap();
+        let project = ProjectConfig {
+            format_version: 1,
+            id: ProjectId::new(),
+            name: "extensions".into(),
+        };
+        store.register_project(&project).unwrap();
+        let operation = store
+            .submit(
+                project.id,
+                "main",
+                Mutation::CreateBranch {
+                    name: "main".into(),
+                    parent_id: None,
+                    ports: Ports {
+                        sql: 5400,
+                        external_http: 5401,
+                        internal_http: 5402,
+                    },
+                },
+            )
+            .unwrap();
+        while let Some(ticket) = store.ticket(operation.id).unwrap() {
+            store.checkpoint(&ticket, json!({})).unwrap();
+        }
+        let branch = store.branch(operation.branch_id).unwrap();
+        let mut binding = Binding {
+            project_id: project.id,
+            worktree: dir.path().into(),
+        };
+        let target = Target {
+            branch: operation.branch_id,
+            revision: branch.revision,
+        };
+        let command = Command::List {
+            target: target.clone(),
+        };
+        assert!(
+            handle(&store, None, &binding, command.clone())
+                .unwrap_err()
+                .to_string()
+                .contains("engine is disabled")
+        );
+        binding.project_id = ProjectId::new();
+        assert!(
+            handle(&store, None, &binding, command.clone())
+                .unwrap_err()
+                .to_string()
+                .contains("branch in project")
+        );
+        binding.project_id = project.id;
+        let mut stale = target.clone();
+        stale.revision -= 1;
+        assert!(
+            handle(&store, None, &binding, Command::List { target: stale })
+                .unwrap_err()
+                .to_string()
+                .contains("Branch changed")
+        );
+        let db = rusqlite::Connection::open(dir.path().join("state.sqlite3")).unwrap();
+        db.execute(
+            "INSERT INTO governed_branches VALUES (?1,'ready')",
+            [operation.branch_id.to_string()],
+        )
+        .unwrap();
+        for command in [
+            command,
+            Command::Set {
+                target,
+                name: "pgcrypto".into(),
+                enabled: true,
+            },
+        ] {
+            assert!(
+                handle(&store, None, &binding, command)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("not yet qualified for governed branches")
+            );
+        }
+    }
+    #[test]
     fn only_reviewed_identifiers_can_reach_ddl() {
         let target = Target {
             branch: Default::default(),

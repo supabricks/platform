@@ -67,7 +67,7 @@ current Justfile recipes.
   provenance. License identifiers identify the primary component only; full
   bundled dependency notices and license review belong to E01/R02 packaging.
 
-The selected pair is Neon `1c6fa095261112aae239beef5a221b484703d49a`
+The selected pair is Neon `eecdc60e4e06e0906b1b3589c0bd190568b24a99`
 with PG17.8 gitlink `56692dfb680281a963c7470fc7f0fec7f65ecfd4` from
 `sb/REL_17_STABLE`. The original PG17.5 pair was reproduced first, then the Neon
 extension was adapted to the maintained fork's SLRU, block-LSN and lock hooks.
