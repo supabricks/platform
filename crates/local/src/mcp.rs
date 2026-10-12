@@ -457,6 +457,13 @@ pub fn tools() -> Value {
             false,
         ),
         (
+            "extensions",
+            "List release-local PostgreSQL extensions or set a reviewed extension enabled/disabled on an explicit branch revision. Local operator scope only; no downloads, arbitrary SQL, automatic wake, CASCADE or governed-branch bypass. Sync type support is separate from extension availability.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/extensions-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            false,
+        ),
+        (
             "catalog",
             "Discover tables and columns using the application role and SQL limits. Wakes the selected or explicit branch.",
             json!({"branch":branch}),

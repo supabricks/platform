@@ -100,6 +100,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog metadata capabilities | health | namespace | ensure-namespace
   catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
   catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
+  extensions list|enable NAME|disable NAME --branch NAME
   catalog [--branch NAME]       Discover application tables and columns
   catalog service status | restart | rotate-key
   catalog service configure local [--runtime ABSOLUTE_PATH]
@@ -1573,6 +1574,36 @@ pub fn run() -> Result<u8> {
             }
             println!("{value}");
             return Ok(if value["state"] == "failed" { 5 } else { 0 });
+        }
+        "extensions" => {
+            let verb = a.required(1)?;
+            let branch = a
+                .take("--branch")
+                .ok_or_else(|| invalid("extensions require an explicit --branch"))?;
+            let record = c.call(Action::GetBranch { branch })?;
+            let target = crate::console::workspace::Target {
+                branch: serde_json::from_value(record["branch"]["id"].clone())?,
+                revision: record["revision"]
+                    .as_i64()
+                    .ok_or_else(|| invalid("branch revision unavailable"))?,
+            };
+            let command = match verb.as_str() {
+                "list" => {
+                    a.finish(2)?;
+                    crate::extensions::Command::List { target }
+                }
+                "enable" | "disable" => {
+                    let name = a.required(2)?;
+                    a.finish(3)?;
+                    crate::extensions::Command::Set {
+                        target,
+                        name,
+                        enabled: verb == "enable",
+                    }
+                }
+                _ => return Err(invalid("extensions list|enable|disable --branch NAME")),
+            };
+            Action::Extensions { command }
         }
         "catalog" => {
             let branch = a.take("--branch");

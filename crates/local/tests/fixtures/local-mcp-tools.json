@@ -8450,6 +8450,140 @@
   },
   {
     "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "List release-local PostgreSQL extensions or set a reviewed extension enabled/disabled on an explicit branch revision. Local operator scope only; no downloads, arbitrary SQL, automatic wake, CASCADE or governed-branch bypass. Sync type support is separate from extension availability.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "list"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "set"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "enum": [
+                    "pg_stat_statements",
+                    "pgcrypto",
+                    "pg_trgm",
+                    "uuid-ossp",
+                    "citext"
+                  ]
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target",
+                "name",
+                "enabled"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "Branch PostgreSQL extensions command v1"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "name": "extensions",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api",
+            "api_version",
+            "project_id",
+            "worktree",
+            "features",
+            "limits"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
       "destructiveHint": false,
       "openWorldHint": false,
       "readOnlyHint": true
