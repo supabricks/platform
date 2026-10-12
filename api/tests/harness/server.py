@@ -20,6 +20,7 @@ import requests
 REPO = pathlib.Path(__file__).resolve().parents[3]
 # A Python with the import worker's packages, or None. Set by conftest.py.
 WORKER = None
+ANALYTICS = False
 
 
 class Server:

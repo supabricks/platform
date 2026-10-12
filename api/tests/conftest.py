@@ -25,16 +25,18 @@ def pytest_addoption(parser):
                      help='fail, instead of skipping, when the engine bundle is missing')
     parser.addoption('--worker-python',
                      default=os.environ.get('SUPABRICKS_WORKER_PYTHON', str(installed / 'python/analytics/python')),
-                     help='a Python with the packages in requirements-worker.txt, for tests marked worker')
+                     help='a Python with pyarrow, psycopg and psutil, for tests marked worker')
     parser.addoption('--require-worker', action='store_true',
                      help='fail, instead of skipping, when no such Python is found')
+    parser.addoption('--require-analytics', action='store_true',
+                     help='fail, instead of skipping, when that Python is not the locked analytical environment')
 
 
 def worker_python(config):
-    """The Python the import and sync workers run under: the one named, else this one."""
+    """The Python the import worker runs under: the one named, else this one."""
     for python in (config.getoption('--worker-python'), sys.executable):
         try:
-            found = subprocess.run([python, '-c', 'import pyarrow, psycopg, psutil, deltalake, packaging'],
+            found = subprocess.run([python, '-c', 'import pyarrow, psycopg, psutil'],
                                    capture_output=True, timeout=60).returncode == 0
         except (OSError, subprocess.TimeoutExpired):
             found = False
@@ -43,20 +45,41 @@ def worker_python(config):
     return None
 
 
+def locked(python):
+    """Whether a Python is exactly the environment in python/analytics/uv.lock.
+
+    The sync workers check this themselves and refuse to run under anything else.
+    """
+    if not python:
+        return False
+    check = 'import sys; sys.path.insert(0, sys.argv[1]); from runtime_environment import environment; environment()'
+    try:
+        return subprocess.run([str(python), '-c', check, str(harness.server.REPO / 'python/analytics')],
+                              capture_output=True, timeout=60).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def pytest_configure(config):
     for layer, meaning in [('l0', 'specification'), ('l1', 'conformance and coverage'), ('l2', 'scenarios'),
                            ('l3', 'generated invariants'), ('l4', 'authorization by role'), ('l5', 'durability'), ('l6', 'parity with the command line'), ('l7', 'fuzz'),
                            ('engine', 'needs database engines; skipped without a bundle'),
-                           ('worker', 'needs the import or sync workers; skipped without a Python that has their packages')]:
+                           ('worker', 'needs the import worker; skipped without a Python that has its packages'),
+                           ('analytics', 'needs the sync workers; skipped unless that Python is the locked analytical environment')]:
         config.addinivalue_line('markers', f'{layer}: {meaning}')
     harness.server.WORKER = worker_python(config)
+    harness.server.ANALYTICS = locked(harness.server.WORKER)
 
 
 def pytest_runtest_setup(item):
     if item.get_closest_marker('worker') and not harness.server.WORKER:
         if item.config.getoption('--require-worker'):
-            pytest.fail('no Python with the packages in requirements-worker.txt; pass --worker-python')
-        pytest.skip('no Python with the worker packages; pass --worker-python')
+            pytest.fail('no Python with pyarrow, psycopg and psutil; pass --worker-python')
+        pytest.skip('no Python with the import worker packages; pass --worker-python')
+    if item.get_closest_marker('analytics') and not harness.server.ANALYTICS:
+        if item.config.getoption('--require-analytics'):
+            pytest.fail('the worker Python is not the locked analytical environment; pass --worker-python')
+        pytest.skip('the worker Python is not the locked analytical environment; pass --worker-python')
 
 
 @pytest.fixture(scope='session')

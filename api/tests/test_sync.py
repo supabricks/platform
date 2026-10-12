@@ -4,7 +4,7 @@ A pipeline carries a branch's PostgreSQL tables into its analytical copy. A
 `snapshot` pipeline can be made, changed, paused and deleted without the
 database engines, and a run of it can be queued and cancelled; nothing runs
 until the engines and the analytical worker are there. The tests marked
-`engine` and `worker` run real pipelines and read what they publish.
+`engine` and `analytics` run real pipelines and read what they publish.
 
 These tests run on a server of their own, like the database tests.
 """
@@ -433,7 +433,7 @@ def ended(api, project, run, timeout=240):
 
 
 @pytest.mark.engine
-@pytest.mark.worker
+@pytest.mark.analytics
 @pytest.mark.l2
 def test_a_snapshot_run_publishes_a_version(engine_api, live, request):
     api, (project, _, branch, uri) = engine_api, live
@@ -468,7 +468,7 @@ def gone(api, project, pipeline):
 
 
 @pytest.mark.engine
-@pytest.mark.worker
+@pytest.mark.analytics
 @pytest.mark.l2
 def test_a_triggered_pipeline_applies_changes_and_is_resynced_after_review(engine_api, live, request):
     api, (project, _, branch, uri) = engine_api, live
@@ -510,7 +510,7 @@ def test_a_triggered_pipeline_applies_changes_and_is_resynced_after_review(engin
 
 
 @pytest.mark.engine
-@pytest.mark.worker
+@pytest.mark.analytics
 @pytest.mark.l2
 def test_a_continuous_pipeline_keeps_up_reports_freshness_and_pauses(engine_api, live, request):
     api, (project, _, branch, uri) = engine_api, live
