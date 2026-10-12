@@ -331,6 +331,16 @@ impl Queries {
             .filter(|w| w.scope == scope)
             .map(|w| (&w.query, w.began_ms))
     }
+    /// Drop a finished handle whose answer has been taken.
+    pub fn forget(&mut self, scope: &str, id: OperationId) {
+        if self
+            .work
+            .get(&id.to_string())
+            .is_some_and(|w| w.scope == scope && w.finished.is_some())
+        {
+            self.work.remove(&id.to_string());
+        }
+    }
     pub fn cancel_all(&self) {
         for w in self.work.values().filter(|w| w.finished.is_none()) {
             let _ = w.cancel.send(true);

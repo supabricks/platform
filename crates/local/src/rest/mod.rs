@@ -9,6 +9,7 @@ mod projects;
 mod routes;
 mod shared;
 mod sql;
+mod tables;
 
 pub use problem::Problem;
 pub use routes::{Operation, ROUTES, Role};
@@ -79,6 +80,10 @@ pub struct Call {
     pub if_match: Option<String>,
     #[serde(default)]
     pub body: Option<Value>,
+    /// Set by a transport when it repeats a call whose reply said `wait`.
+    /// Never read from the wire.
+    #[serde(default)]
+    pub resume: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -88,6 +93,11 @@ pub struct Reply {
     pub headers: BTreeMap<String, String>,
     #[serde(default)]
     pub body: Option<Value>,
+    /// The answer is not ready: the transport repeats the call with this as
+    /// `resume` until a reply comes without it. A read that runs SQL uses it,
+    /// so the daemon never waits on PostgreSQL. Never sent to a client.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wait: Option<String>,
 }
 impl Reply {
     pub fn ok(body: Value) -> Self {
@@ -95,6 +105,16 @@ impl Reply {
             status: 200,
             headers: BTreeMap::new(),
             body: Some(body),
+            wait: None,
+        }
+    }
+    /// Not ready yet; see `wait`.
+    pub(crate) fn waiting(token: String) -> Self {
+        Self {
+            status: 503,
+            headers: BTreeMap::new(),
+            body: None,
+            wait: Some(token),
         }
     }
     /// The media type of the body. Every error is a problem document.
@@ -378,6 +398,38 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::DeleteSavedQuery => {
             sql::delete_saved(store, call, parameter("project"), parameter("query"))
         }
+        Operation::ListTables => tables::list(
+            store,
+            &mut host,
+            call,
+            (
+                parameter("project"),
+                parameter("database"),
+                parameter("branch"),
+            ),
+        ),
+        Operation::GetTable => tables::get(
+            store,
+            &mut host,
+            call,
+            (
+                parameter("project"),
+                parameter("database"),
+                parameter("branch"),
+            ),
+            (parameter("schema"), parameter("table")),
+        ),
+        Operation::ListTableRows => tables::rows(
+            store,
+            &mut host,
+            call,
+            (
+                parameter("project"),
+                parameter("database"),
+                parameter("branch"),
+            ),
+            (parameter("schema"), parameter("table")),
+        ),
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))

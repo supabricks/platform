@@ -410,6 +410,7 @@ mod tests {
             query: vec![],
             idempotency_key: Some(key.into()).filter(|k: &String| !k.is_empty()),
             if_match: None,
+            resume: None,
             body: Some(body).filter(|b| !b.is_null()),
         }
     }

@@ -493,5 +493,6 @@ pub fn delete_saved(
         status: 204,
         headers: BTreeMap::new(),
         body: None,
+        wait: None,
     })
 }

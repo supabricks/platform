@@ -43,8 +43,8 @@ they share schemas only through `shared/`.
 | 6 | `database-observability` | Metric series, slow and running queries, locks | DB-07 | Planned |
 | 7 | `backups` | Online backups, schedule, restore in place, restore history, timeline events | DB-10 | Planned |
 | 8 | `sql` | Run statements on PostgreSQL, saved queries; history | SQ | Written |
-| 9 | `tables` | Paged rows with sort and filter, batched edits, reviewed DDL | TE | Planned |
-| 10 | `objects` | Introspection: tables, columns, indexes, views, functions and the rest | OE, TE-04 | Planned |
+| 9 | `tables` | Tables and views, a table's columns, keys, indexes and constraints, paged rows with sort and filter | TE, OE-01 | Written |
+| 10 | `objects` | Introspection beyond tables: functions, sequences, types, triggers, policies, dependencies | OE, TE-04 | Planned |
 | 11 | `imports` | Upload, inspect, mapping, load, history | IM | Planned |
 | 12 | `sync` | Pipelines, runs, per-table state, lag history, budgets | SY | Planned |
 | 13 | `analytics` | Published versions, pins, sessions and slots | AN | Planned |
@@ -76,6 +76,7 @@ server routes only operations that are `implemented` or `complete`.
 | `databases` | AP02 | complete | 10 | 9 | 1 |
 | `branches` | AP03 | complete | 11 | 8 | 3 |
 | `sql` | AP04 | complete | 9 | 8 | 1 |
+| `tables` | AP05 | complete | 3 | 3 | 0 |
 <!-- status:end -->
 
 This table and the server's route table (`crates/local/src/rest/routes.rs`) are

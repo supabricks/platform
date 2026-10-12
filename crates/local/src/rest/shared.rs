@@ -207,6 +207,7 @@ mod tests {
             idempotency_key: None,
             if_match: None,
             body: None,
+            resume: None,
         };
         assert_eq!(
             call.cursor().unwrap(),

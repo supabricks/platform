@@ -47,5 +47,9 @@ def test_generated_requests(case, api):
     sent = (case.headers or {}).get('Idempotency-Key')
     if isinstance(sent, str) and sent != sent.strip(' \t') and re.fullmatch('[!-~]{8,128}', sent.strip(' \t')):
         excluded.append(negative_data_rejection)
-    case.call_and_validate(base_url=api.base + PREFIX, session=api.http, headers=headers,
-                           excluded_checks=excluded)
+    response = case.call(base_url=api.base + PREFIX, session=api.http, headers=headers)
+    # The HTTP server reads at most 16 KiB of URL and headers and refuses more
+    # before the API sees the request, so there is nothing of the API's to check.
+    if response.status_code == 431:
+        return
+    case.validate_response(response, excluded_checks=excluded)

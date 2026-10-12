@@ -46,7 +46,7 @@ fn member(store: &Store, database: &DatabaseRecord, branch: &str) -> Result<Bran
         .branch_view(database.project, database.id, id)
         .map_err(|_| missing())
 }
-fn found(
+pub(super) fn found(
     store: &Store,
     project: &str,
     database: &str,

@@ -68,6 +68,7 @@ impl From<Problem> for Reply {
             status: problem.status,
             headers: BTreeMap::new(),
             body: Some(problem.body()),
+            wait: None,
         }
     }
 }
