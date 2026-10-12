@@ -42,7 +42,7 @@ they share schemas only through `shared/`.
 | 5 | `database-admin` | PostgreSQL roles and privileges, password reset, extensions | DB-04c, DB-08, DB-09 | Planned |
 | 6 | `database-observability` | Metric series, slow and running queries, locks | DB-07 | Planned |
 | 7 | `backups` | Online backups, schedule, restore in place, restore history, timeline events | DB-10 | Planned |
-| 8 | `sql` | Run statements on either engine, plans, saved queries, history | SQ, AN-01, AN-05 | Planned |
+| 8 | `sql` | Run statements on PostgreSQL, saved queries; history | SQ | Written |
 | 9 | `tables` | Paged rows with sort and filter, batched edits, reviewed DDL | TE | Planned |
 | 10 | `objects` | Introspection: tables, columns, indexes, views, functions and the rest | OE, TE-04 | Planned |
 | 11 | `imports` | Upload, inspect, mapping, load, history | IM | Planned |
@@ -75,6 +75,7 @@ server routes only operations that are `implemented` or `complete`.
 | `operations` | AP01 | complete | 3 | 3 | 0 |
 | `databases` | AP02 | complete | 10 | 9 | 1 |
 | `branches` | AP03 | complete | 11 | 8 | 3 |
+| `sql` | AP04 | complete | 9 | 8 | 1 |
 <!-- status:end -->
 
 This table and the server's route table (`crates/local/src/rest/routes.rs`) are

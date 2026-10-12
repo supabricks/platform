@@ -954,6 +954,8 @@ impl Daemon {
                         binding: &binding,
                         cell: self.cell.as_ref(),
                         gateway: self.gateway.as_mut(),
+                        statements: Some(&mut self.console_queries),
+                        busy: self.queries.len(),
                     }),
                     &call,
                 ))?

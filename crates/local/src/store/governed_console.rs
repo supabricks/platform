@@ -458,6 +458,8 @@ mod tests {
                 binding: &binding,
                 cell: None,
                 gateway: None,
+                statements: None,
+                busy: 0,
             };
             dispatch(store, Some(host), &call)
         };
@@ -502,6 +504,23 @@ mod tests {
             .map(|d| (d["name"].as_str().unwrap(), d["state"].as_str().unwrap()))
             .collect();
         assert_eq!(names, [("main", "provisioning"), ("reporting", "deleting")]);
+
+        // A saved query is a file, written before the reply is stored.
+        let main = listed["items"][0]["id"].as_str().unwrap();
+        let queries = format!("/projects/{project}/saved-queries");
+        let body =
+            json!({"title": "kept", "sql": "select 1", "branch_id": main.replace("db_", "br_")});
+        let first = owner(&mut store, "POST", &queries, "query-key-1", body.clone());
+        assert_eq!(first.status, 201, "{:?}", first.body);
+        lose(&mut store);
+        let again = owner(&mut store, "POST", &queries, "query-key-1", body.clone());
+        assert_eq!(again, first);
+        let other = owner(&mut store, "POST", &queries, "query-key-2", body);
+        assert_ne!(other.body.unwrap()["id"], first.body.unwrap()["id"]);
+        let saved = owner(&mut store, "GET", &queries, "", Value::Null)
+            .body
+            .unwrap();
+        assert_eq!(saved["items"].as_array().unwrap().len(), 2);
     }
     #[test]
     fn platform_api_creates_a_governed_project_for_an_installation_administrator_only() {

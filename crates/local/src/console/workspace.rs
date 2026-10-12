@@ -196,6 +196,7 @@ struct Work {
     target: Target,
     query: Query,
     started: Instant,
+    began_ms: i64,
     finished: Option<Instant>,
     cancel: tokio::sync::watch::Sender<bool>,
     receiver: mpsc::Receiver<Result<Value>>,
@@ -300,6 +301,7 @@ impl Queries {
                 target,
                 query,
                 started: Instant::now(),
+                began_ms: chrono::Utc::now().timestamp_millis(),
                 finished: None,
                 cancel,
                 receiver,
@@ -322,6 +324,13 @@ impl Queries {
         }
         Ok(value)
     }
+    /// What was asked and when it began, which the platform API reports.
+    pub fn asked(&self, scope: &str, id: OperationId) -> Option<(&Query, i64)> {
+        self.work
+            .get(&id.to_string())
+            .filter(|w| w.scope == scope)
+            .map(|w| (&w.query, w.began_ms))
+    }
     pub fn cancel_all(&self) {
         for w in self.work.values().filter(|w| w.finished.is_none()) {
             let _ = w.cancel.send(true);
@@ -341,24 +350,27 @@ impl Drop for Queries {
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Saved {
-    version: u32,
-    id: OperationId,
-    revision: i64,
-    target: Target,
-    title: String,
-    sql: String,
+pub(crate) struct Saved {
+    pub version: u32,
+    pub id: OperationId,
+    pub revision: i64,
+    pub target: Target,
+    pub title: String,
+    pub sql: String,
 }
-fn saved_dir(root: &Path, binding: &Binding) -> Result<std::path::PathBuf> {
+pub(crate) fn saved_dir(
+    root: &Path,
+    project: supabricks_core::resource::ProjectId,
+) -> Result<std::path::PathBuf> {
     let base = root.join("queries");
     super::directory(&base)?;
-    let project = base.join(binding.project_id.to_string());
+    let project = base.join(project.to_string());
     super::directory(&project)?;
     fs::File::open(root)?.sync_all()?;
     fs::File::open(&base)?.sync_all()?;
     Ok(project)
 }
-fn read_saved(path: &Path) -> Result<Saved> {
+pub(crate) fn read_saved(path: &Path) -> Result<Saved> {
     use std::os::unix::fs::MetadataExt;
     let m = fs::symlink_metadata(path).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
@@ -435,7 +447,7 @@ pub fn export_saved(
     )
 }
 pub fn saved(store: &Store, binding: &Binding, command: Command) -> Result<Value> {
-    let directory = saved_dir(store.root(), binding)?;
+    let directory = saved_dir(store.root(), binding.project_id)?;
     match command {
         Command::SavedList => {
             let mut values = Vec::new();

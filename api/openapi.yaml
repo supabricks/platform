@@ -55,12 +55,13 @@ tags:
   - { name: Operations, description: 'The durable record of asynchronous work, and the project activity feed.' }
   - { name: Databases, description: 'PostgreSQL databases: lifecycle and how to connect.' }
   - { name: Branches, description: "Copy-on-write branches of a database. A database's first branch has no parent; the rest form a tree beneath it. A project has one default branch." }
+  - { name: SQL, description: 'Statements run on a branch through the server, within fixed limits, and the queries a project keeps.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches]
+    tags: [Databases, Branches, SQL]
   - name: Installation
     tags: [Server]
 paths:
@@ -92,7 +93,13 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/restore-window: { $ref: './domains/branches/paths.yaml#/branchRestoreWindow' }
   /projects/{project}/databases/{database}/branches/{branch}/schema-diff: { $ref: './domains/branches/paths.yaml#/branchSchemaDiff' }
 
-  # ---- Server ----
+  # ---- SQL ----
+  /projects/{project}/statements: { $ref: './domains/sql/paths.yaml#/statements' }
+  /projects/{project}/statements/{statement}: { $ref: './domains/sql/paths.yaml#/statement' }
+  /projects/{project}/statements/{statement}/cancel: { $ref: './domains/sql/paths.yaml#/statementCancel' }
+  /projects/{project}/saved-queries: { $ref: './domains/sql/paths.yaml#/savedQueries' }
+  /projects/{project}/saved-queries/{query}: { $ref: './domains/sql/paths.yaml#/savedQuery' }
+
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }
   /server/services: { $ref: './domains/server/paths.yaml#/serverServices' }
   /server/services/{service}/restart: { $ref: './domains/server/paths.yaml#/serverServiceRestart' }

@@ -1,0 +1,366 @@
+# SQL: statements run on a branch, and the queries a project keeps.
+#
+# A statement is one SQL statement run on one branch of a PostgreSQL database
+# through the server, with fixed limits on its text, its result and its time.
+# The server keeps a statement and its result in memory for a short while, so
+# a client starts one and then reads it until it has finished. A saved query
+# is SQL a project keeps under a title. Paging through a table's rows and
+# editing them live in the tables domain.
+
+statements:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listStatements
+    tags: [SQL]
+    summary: List the statements a project has run
+    description: >-
+      Not part of version 1. The server forgets a statement ten minutes after
+      it finishes and keeps no history.
+    x-backend: new
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SQ-05]
+    x-issues: [261]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of statements, newest first, without their results.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/StatementPage' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: runStatement
+    tags: [SQL]
+    summary: Run a statement on a branch
+    description: >-
+      Starts one SQL statement in a transaction of its own and answers at once
+      with `state: running`; read the statement until it reaches `succeeded`,
+      `failed` or `cancelled`. A statement is read-only unless `read_only` is
+      false: PostgreSQL then refuses a write, and the statement fails with
+      SQLSTATE `25006`. Text with more than one statement fails with `42601`.
+      A result with more rows than `max_rows`, or larger than 256 KiB, is not
+      cut short: the statement fails with `54000` and nothing is committed.
+      Running on a suspended branch resumes it.
+
+
+      The server runs four statements at a time across the installation;
+      beyond that the request is refused with `429`. A branch that is being
+      deleted is refused with `409`. Repeating the request with the same
+      `Idempotency-Key` answers with the first reply and runs nothing again.
+      A governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-01, SQ-02, SQ-03, SQ-06]
+    x-issues: [261, 328]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/StatementRun' }
+          example:
+            branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+            sql: select id, email from customers order by id limit 2
+    responses:
+      '201':
+        description: The statement, running.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read the statement.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Statement' }
+            example:
+              id: stmt_7a1c3e5f9b2d4f6a8c0e2a4b6d8f1c3e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              sql: select id, email from customers order by id limit 2
+              read_only: true
+              max_rows: 200
+              timeout_ms: 10000
+              state: running
+              started_at: '2026-10-11T09:30:00.000Z'
+              elapsed_ms: 0
+              result: null
+              error: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+statement:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Statement'
+  get:
+    operationId: getStatement
+    tags: [SQL]
+    summary: Get a statement and its result
+    description: >-
+      The result is present once the statement has succeeded, and the error
+      once it has failed or been cancelled. The server keeps a statement for
+      ten minutes after it finishes, and the 32 most recent across the
+      installation; after that, and after a restart of the server, it answers
+      `404`. A write that was running when the server restarted may or may not
+      have committed, and is never run again by the server.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-03, SQ-06]
+    x-issues: [261, 328]
+    responses:
+      '200':
+        description: The statement.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Statement' }
+            example:
+              id: stmt_7a1c3e5f9b2d4f6a8c0e2a4b6d8f1c3e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              sql: select id, email from customers order by id limit 2
+              read_only: true
+              max_rows: 200
+              timeout_ms: 10000
+              state: succeeded
+              started_at: '2026-10-11T09:30:00.000Z'
+              elapsed_ms: 12
+              result:
+                columns:
+                  - { name: id, type: int8 }
+                  - { name: email, type: text }
+                rows:
+                  - ['1', ada@example.com]
+                  - ['2', null]
+                row_count: 2
+              error: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+statementCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Statement'
+  post:
+    operationId: cancelStatement
+    tags: [SQL]
+    summary: Cancel a running statement
+    description: >-
+      Asks PostgreSQL to stop the statement and answers with it, usually in
+      `state: cancelling`; it becomes `cancelled` when PostgreSQL has stopped.
+      Its transaction is rolled back, except that a write interrupted at the
+      moment it commits may have committed. Cancelling a statement that has
+      already finished changes nothing and answers with it as it is.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-01, SQ-06]
+    x-issues: [328]
+    responses:
+      '200':
+        description: The statement.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Statement' }
+            example:
+              id: stmt_7a1c3e5f9b2d4f6a8c0e2a4b6d8f1c3e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              sql: select pg_sleep(20)
+              read_only: true
+              max_rows: 200
+              timeout_ms: 30000
+              state: cancelling
+              started_at: '2026-10-11T09:30:00.000Z'
+              elapsed_ms: 2140
+              result: null
+              error: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+savedQueries:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listSavedQueries
+    tags: [SQL]
+    summary: List a project's saved queries
+    description: >-
+      Ordered by title, then ID. Each item carries its SQL. A project keeps at
+      most 100. Folders are not part of version 1.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SQ-04]
+    x-issues: [328, 329]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of saved queries.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SavedQueryPage' }
+            example:
+              items:
+                - id: qry_2b4d6f8a1c3e5a7b9d0f2a4c6e8b1d3f
+                  title: Customers without an email
+                  sql: select id from customers where email is null
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  updated_at: '2026-10-11T09:30:00.000Z'
+                  revision: 1
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createSavedQuery
+    tags: [SQL]
+    summary: Save a query
+    description: >-
+      Keeps SQL under a title, with the branch it was written for. Titles need
+      not be unique. The SQL is stored as written and is not checked or run. A
+      project keeps at most 100 saved queries; beyond that the request is
+      refused with `409` and `code: capacity_exhausted`. A governed server
+      does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-04]
+    x-issues: [328, 329]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SavedQueryCreate' }
+          example:
+            title: Customers without an email
+            sql: select id from customers where email is null
+            branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+    responses:
+      '201':
+        description: The saved query.
+        headers:
+          ETag: { schema: { type: string } }
+          Location: { schema: { type: string }, description: 'Where to read the saved query.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SavedQuery' }
+            example:
+              id: qry_2b4d6f8a1c3e5a7b9d0f2a4c6e8b1d3f
+              title: Customers without an email
+              sql: select id from customers where email is null
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              updated_at: '2026-10-11T09:30:00.000Z'
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+savedQuery:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/SavedQuery'
+  get:
+    operationId: getSavedQuery
+    tags: [SQL]
+    summary: Get a saved query
+    description: The `ETag` is the saved query's revision; send it in `If-Match` to change or delete it.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SQ-04]
+    x-issues: [328]
+    responses:
+      '200':
+        description: The saved query.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SavedQuery' }
+            example:
+              id: qry_2b4d6f8a1c3e5a7b9d0f2a4c6e8b1d3f
+              title: Customers without an email
+              sql: select id from customers where email is null
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              updated_at: '2026-10-11T09:30:00.000Z'
+              revision: 1
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  patch:
+    operationId: updateSavedQuery
+    tags: [SQL]
+    summary: Change a saved query
+    description: >-
+      Changes the title, the SQL or the branch. The revision rises by one when
+      anything changes and stays the same when nothing does.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-04]
+    x-issues: [328]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SavedQueryUpdate' }
+          example: { title: Customers missing an email }
+    responses:
+      '200':
+        description: The updated saved query.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SavedQuery' }
+            example:
+              id: qry_2b4d6f8a1c3e5a7b9d0f2a4c6e8b1d3f
+              title: Customers missing an email
+              sql: select id from customers where email is null
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              updated_at: '2026-10-11T09:45:00.000Z'
+              revision: 2
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+  delete:
+    operationId: deleteSavedQuery
+    tags: [SQL]
+    summary: Delete a saved query
+    description: Irreversible. Deleting one that is already gone answers `404`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SQ-04]
+    x-issues: [328]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }

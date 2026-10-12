@@ -41,7 +41,8 @@ def expected(op, caller):
 
 def send(governed, op, caller, project=None):
     values = dict(project=project or governed.project, operation=governed.operation,
-                  database=governed.database, branch=governed.branch)
+                  database=governed.database, branch=governed.branch,
+                  statement='stmt_' + '0' * 32, query='qry_' + '0' * 32)
     names = [p['name'] for p in op.parameters if p['in'] == 'path']
     return governed.callers[caller].call(op.id, path={name: values[name] for name in names},
                                          json={} if op.method in ('POST', 'PATCH', 'PUT') else None)
