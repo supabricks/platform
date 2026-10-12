@@ -1,0 +1,35 @@
+# Schemas for the server domain.
+
+ServerVersion:
+  type: object
+  required: [version, api_version, profile, schema_version]
+  additionalProperties: false
+  properties:
+    version:
+      type: string
+      description: The build version of the server.
+      examples: ['0.1.0']
+    api_version:
+      type: string
+      enum: [v1]
+      description: The API version served at this path.
+    profile:
+      type: string
+      enum: [local, governed]
+      description: >-
+        `local` is a single owner on one machine. `governed` has sign-in and
+        access control. Some operations exist in only one profile.
+    schema_version:
+      type: integer
+      description: The version of the server's own state. It rises when an upgrade changes stored state.
+
+Service:
+  type: object
+  description: One of the processes that run a project.
+  required: [id, name, state]
+  properties:
+    id: { type: string, enum: [postgres, storage, sync_capture, analytics_engine, catalog, notebooks] }
+    name: { type: string }
+    state: { type: string, enum: [starting, running, unhealthy, stopped] }
+    detail: { type: string }
+    since: { $ref: '../../shared/schemas.yaml#/Timestamp' }

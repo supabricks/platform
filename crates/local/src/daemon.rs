@@ -84,6 +84,11 @@ pub enum Request {
         binding: crate::api::Binding,
         generation: i64,
     },
+    Rest {
+        binding: crate::api::Binding,
+        generation: i64,
+        call: crate::rest::Call,
+    },
     Api {
         api_version: u32,
         binding: crate::api::Binding,
@@ -327,7 +332,20 @@ impl Daemon {
                                         )
                                     }
                                     AuthorizedFollowup::Data(deployment, command) => {
-                                        self.store.data_job(ctx, token_hash, deployment, command)
+                                        let cell = self.cell.as_ref();
+                                        self.store.data_job(
+                                            ctx,
+                                            token_hash,
+                                            deployment,
+                                            command,
+                                            |store, branch| {
+                                                cell.map(|cell| {
+                                                    cell.connection_ready(store, branch)
+                                                })
+                                                .transpose()
+                                                .map(|ready| ready.unwrap_or(false))
+                                            },
+                                        )
                                     }
                                     AuthorizedFollowup::Catalog(command) => {
                                         let broker = crate::catalog::governance::Broker::managed(
@@ -914,6 +932,17 @@ impl Daemon {
                         "needs_attention":runtime.as_ref().is_some_and(|r|!r["last_error"].is_null())},
                     "capabilities":{"managed_snapshot_scheduling":!console_home,"sync_controls":1,"incremental_triggered":!console_home && self.cell.is_some() && crate::sync::runtime_available(&self.store),"continuous_sync":!console_home && self.cell.is_some() && crate::sync::runtime_available(&self.store),"sync_event_triggers":false,"catalog_workspace":if console_home {0} else {1},"project_creation":1,"project_packaging":if console_home {0} else {1},"analytical_workspace":if console_home {0} else {1},"overview":true,"sql":!console_home,"workspace":!console_home,"ingestion":!console_home,"notebooks":!console_home,"notebook_runtime":1,"notebook_environments":1,"notebook_packages":1,"notebook_environment_controls":1,"notebook_environment_adoption":true},
                     "limits":{"active_branches":32}})
+            }
+            Request::Rest {
+                binding,
+                generation,
+                call,
+            } => {
+                binding.validate(&mut self.store)?;
+                if generation != self.store.generation() {
+                    return Err(conflict("console belongs to a prior daemon generation"));
+                }
+                serde_json::to_value(crate::rest::dispatch(&mut self.store, &call))?
             }
             Request::Api { .. } => {
                 return Err(invalid(

@@ -36,6 +36,17 @@ portable-check:
     python3 scripts/check-portable-deps.py
     cargo test --locked -p supabricks-core -p supabricks-local
 
+# ---- platform API (CI parity: api workflow) ----
+# Needs api/tests/.venv; see api/tests/README.md.
+
+api-check:
+    npx --yes @redocly/cli@2.62.1 lint api/openapi.yaml --config api/redocly.yaml
+    api/tests/.venv/bin/python api/scripts/generate.py --check
+
+api-test: api-check
+    cargo build --locked -p supabricks-local
+    api/tests/.venv/bin/python -m pytest api/tests -q
+
 # ---- local component baseline (separate native-baseline CI workflow) ----
 # Activate components/.venv first; see components/README.md.
 

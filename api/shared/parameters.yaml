@@ -1,0 +1,77 @@
+# Path, query and header parameters used by more than one domain.
+
+Project:
+  name: project
+  in: path
+  required: true
+  description: Project ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+Database:
+  name: database
+  in: path
+  required: true
+  description: Database ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+Branch:
+  name: branch
+  in: path
+  required: true
+  description: Branch ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+Operation:
+  name: operation
+  in: path
+  required: true
+  description: Operation ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+Limit:
+  name: limit
+  in: query
+  description: Largest number of items to return.
+  schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+
+Cursor:
+  name: cursor
+  in: query
+  description: The `next_cursor` of the previous page.
+  schema: { type: string }
+
+IdempotencyKey:
+  name: Idempotency-Key
+  in: header
+  required: true
+  description: >-
+    A value the client makes up, unique per intended change. Repeating a request
+    with the same key returns the original result instead of doing the work
+    twice. Keys are remembered for at least 24 hours.
+  schema: { type: string, minLength: 8, maxLength: 128 }
+
+IfMatch:
+  name: If-Match
+  in: header
+  required: false
+  description: >-
+    The `ETag` from a previous read. When present, the change is refused with
+    `412` if the resource has changed since.
+  schema: { type: string }
+
+IfMatchRequired:
+  name: If-Match
+  in: header
+  required: true
+  description: >-
+    The `ETag` from a previous read. Required here because the change is hard
+    to undo. Refused with `412` if the resource has changed since, and with
+    `428` if the header is missing.
+  schema: { type: string }
+
+CsrfToken:
+  name: X-CSRF-Token
+  in: header
+  required: false
+  description: Required on every non-GET request authenticated by the browser session cookie.
+  schema: { type: string }

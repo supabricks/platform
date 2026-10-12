@@ -1,0 +1,222 @@
+# Databases: lifecycle, compute and how to connect.
+# Roles, extensions, metrics and query activity live in their own domains.
+
+computeSizes:
+  get:
+    operationId: listComputeSizes
+    tags: [Databases]
+    summary: List the compute sizes a database can have
+    x-backend: new
+    x-console-features: [DB-02b, DB-06b]
+    x-issues: [244]
+    responses:
+      '200':
+        description: The sizes, smallest first.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items: { type: array, items: { $ref: './schemas.yaml#/ComputeSize' } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+
+databases:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listDatabases
+    tags: [Databases]
+    summary: List databases in a project
+    description: '`storage` and `connections` are omitted until the platform reports them.'
+    x-backend: ready
+    x-console-features: [DB-01, DB-03]
+    x-issues: [246]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of databases.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/DatabasePage' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createDatabase
+    tags: [Databases]
+    summary: Create a database
+    description: Creates the database with one branch, `main`. Choosing a compute size or an idle timeout is not available yet.
+    x-backend: ready
+    x-console-features: [DB-02a, DB-02b]
+    x-issues: [244, 245]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/DatabaseCreate' } } }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+database:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  get:
+    operationId: getDatabase
+    tags: [Databases]
+    summary: Get a database
+    x-backend: ready
+    x-console-features: [DB-03]
+    x-issues: [246]
+    responses:
+      '200':
+        description: The database.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Database' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  patch:
+    operationId: updateDatabase
+    tags: [Databases]
+    summary: Rename, resize or reconfigure a database
+    description: >-
+      Renaming and choosing the default branch are supported on the command
+      line today. Resizing, the idle timeout and history retention are new.
+      Returns `200` when the change applied at once and `202` when it
+      started an operation (resizing).
+    x-backend: cli-only
+    x-console-features: [DB-11a, DB-06b, DB-06c, DB-10c]
+    x-issues: [244, 245, 254]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatch'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content: { application/json: { schema: { $ref: './schemas.yaml#/DatabaseUpdate' } } }
+    responses:
+      '200':
+        description: The updated database.
+        headers: { ETag: { schema: { type: string } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Database' } } }
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+  delete:
+    operationId: deleteDatabase
+    tags: [Databases]
+    summary: Delete a database and all its branches
+    description: Irreversible. Refused while a sync pipeline reads any of its branches.
+    x-backend: ready
+    x-console-features: [DB-11b]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+      - { name: confirm, in: query, required: true, description: 'The database name, typed by the person.', schema: { type: string } }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+databaseSuspend:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  post:
+    operationId: suspendDatabase
+    tags: [Databases]
+    summary: Suspend a database's compute
+    description: Closes connections and stops compute for the default branch. Storage is kept. The next connection resumes it.
+    x-backend: ready
+    x-console-features: [DB-06a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+databaseResume:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  post:
+    operationId: resumeDatabase
+    tags: [Databases]
+    summary: Resume a suspended database
+    x-backend: ready
+    x-console-features: [DB-06a]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+databaseConnection:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  get:
+    operationId: getDatabaseConnection
+    tags: [Databases]
+    summary: Get the parts of a connection string
+    description: Never includes a password. Pooled endpoints are not available yet.
+    x-backend: ready
+    x-console-features: [DB-04a, DB-04b, DB-04d]
+    x-issues: [252]
+    parameters:
+      - { name: branch, in: query, description: 'Branch ID. Defaults to the default branch.', schema: { $ref: '../../shared/schemas.yaml#/Id' } }
+      - { name: role, in: query, description: 'PostgreSQL role. Defaults to the application owner role.', schema: { type: string } }
+    responses:
+      '200':
+        description: Connection details.
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Connection' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+databaseCredentials:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  post:
+    operationId: revealDatabaseCredentials
+    tags: [Databases]
+    summary: Reveal the password for a role
+    description: >-
+      A separate call so that showing a password is a deliberate, recorded act.
+      In the governed profile this is refused until per-person credentials exist.
+    x-backend: ready
+    x-console-features: [DB-04a, AC-07b]
+    x-issues: [306]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+              role: { type: string }
+    responses:
+      '200':
+        description: The credentials. Do not cache.
+        headers: { Cache-Control: { schema: { type: string, enum: [no-store] } } }
+        content: { application/json: { schema: { $ref: './schemas.yaml#/Credentials' } } }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
