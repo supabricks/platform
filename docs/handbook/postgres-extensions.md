@@ -25,7 +25,7 @@ For listing, the inner action is `list`, with the same explicit target and no
 name or enabled field. See [the command schema](../../schemas/extensions-command-v1.schema.json).
 Responses include `shipped`, versions, `enabled`, `required`, `managed`,
 `can_enable`, `can_disable`, `requires_restart`, schema, and analytical-sync
-notes. Available files alone do not imply permission to manage an extension.
+notes, including structured `unsupported_column_types`. Available files alone do not imply permission to manage an extension.
 
 ## Lifecycle and ownership
 
@@ -57,7 +57,9 @@ bundles preload `pg_stat_statements` on normal computes; older bundles preserve
 their `neon`-only configuration. Private export computes retain minimal preload.
 The module's SQL views still require enabling it in the database. Disabling the
 extension drops those SQL objects; it does not unload the preloaded library or
-stop its internal statistics collection. Explicit disable survives restart. This supplies
+stop its internal statistics collection. Explicit disable survives restart.
+Utility-statement tracking is disabled so private control-role credential DDL
+is not retained in statement statistics. This supplies
 a prerequisite for [#248](https://github.com/supabricks/platform/issues/248); it does not implement query activity, retained metrics,
 or latency percentiles.
 

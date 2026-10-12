@@ -51,7 +51,10 @@ class Extensions(Cell):
             assert self.sql(parent,"SELECT supabricks_extensions.similarity('same','same')=1")=='t'
             self.set(parent,'pg_trgm',False)
             return dict(status='PASS',profile='legacy engine',checks=['missing module reported honestly','no preload/download on old engine','existing bundled module enable and disable'],catalogue=before)
+        assert self.sql(parent,'SHOW pg_stat_statements.track_utility') == 'off'
         assert all(indexed[n]['shipped'] and indexed[n]['available_version'] for n in MANAGED), indexed
+        assert indexed['citext']['analytical_sync']['unsupported_column_types'] == ['citext']
+        assert indexed['uuid-ossp']['analytical_sync']['unsupported_column_types'] == ['uuid']
         assert not indexed['vector']['shipped'] and not indexed['postgis']['shipped']
         assert indexed['plpgsql']['required'] and not indexed['plpgsql']['can_disable']
         self.sql(parent,'CREATE SCHEMA supabricks_extensions AUTHORIZATION supabricks_owner')

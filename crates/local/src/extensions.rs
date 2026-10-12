@@ -154,11 +154,11 @@ pub fn handle(
                 let owned:bool=row.get(4);
                 let ready=name!="pg_stat_statements" || preload.split(',').any(|x| x.trim()==name);
                 let types:Vec<String>=row.get(6);
-                extensions.push(json!({"name":name,"available_version":row.get::<_,Option<String>>(1),"installed_version":enabled,"enabled":enabled.is_some(),"description":row.get::<_,Option<String>>(3),"available_versions":row.get::<_,Vec<String>>(5),"shipped":shipped,"required":REQUIRED.contains(&name.as_str()),"managed":managed,"can_enable":managed && shipped && ready && !capture_active && !triggers && enabled.is_none(),"can_disable":managed && owned && !capture_active && !triggers && enabled.is_some(),"requires_restart":!ready,"schema":row.get::<_,Option<String>>(7),"analytical_sync":{"policy":"supported_builtin_column_types_only","extension_types":types.iter().map(|t|json!({"name":t,"supported":false})).collect::<Vec<_>>(),"note":sync_note(&name)}}));
+                extensions.push(json!({"name":name,"available_version":row.get::<_,Option<String>>(1),"installed_version":enabled,"enabled":enabled.is_some(),"description":row.get::<_,Option<String>>(3),"available_versions":row.get::<_,Vec<String>>(5),"shipped":shipped,"required":REQUIRED.contains(&name.as_str()),"managed":managed,"can_enable":managed && shipped && ready && !capture_active && !triggers && enabled.is_none(),"can_disable":managed && owned && !capture_active && !triggers && enabled.is_some(),"requires_restart":!ready,"schema":row.get::<_,Option<String>>(7),"analytical_sync":{"policy":"supported_builtin_column_types_only","unsupported_column_types":unsupported_types(&name),"extension_types":types.iter().map(|t|json!({"name":t,"supported":false})).collect::<Vec<_>>(),"note":sync_note(&name)}}));
             }
             for name in MANAGED.iter().copied().chain(["vector", "postgis"]) {
                 if !extensions.iter().any(|e| e["name"] == name) {
-                    extensions.push(json!({"name":name,"available_version":null,"installed_version":null,"enabled":false,"available_versions":[],"shipped":false,"required":false,"managed":MANAGED.contains(&name),"can_enable":false,"can_disable":false,"requires_restart":false,"schema":null,"analytical_sync":{"policy":"unqualified","extension_types":[],"note":sync_note(name)}}));
+                    extensions.push(json!({"name":name,"description":null,"available_version":null,"installed_version":null,"enabled":false,"available_versions":[],"shipped":false,"required":false,"managed":MANAGED.contains(&name),"can_enable":false,"can_disable":false,"requires_restart":false,"schema":null,"analytical_sync":{"policy":"unqualified","unsupported_column_types":unsupported_types(name),"extension_types":[],"note":sync_note(name)}}));
                 }
             }
             tx.commit().await.map_err(pg)?;
@@ -166,6 +166,17 @@ pub fn handle(
             Ok(json!({"branch_id":target.branch,"revision":target.revision,"extensions":extensions,"downloads":false,"governed_supported":false,"capture_active":capture_active,"event_triggers_active":triggers}))
         }).await.map_err(|_| conflict("extension request timed out; refresh the catalogue before retrying"))?
     })
+}
+fn unsupported_types(name: &str) -> &'static [&'static str] {
+    match name {
+        "citext" => &["citext"],
+        "uuid-ossp" => &["uuid"],
+        "pgcrypto" => &["bytea"],
+        "pg_trgm" => &["gtrgm"],
+        "vector" => &["vector", "halfvec", "sparsevec"],
+        "postgis" => &["geometry", "geography"],
+        _ => &[],
+    }
 }
 fn sync_note(name: &str) -> &'static str {
     match name {

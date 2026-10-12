@@ -154,6 +154,15 @@ pub fn plan_compute(
             });
         }
     }
+    if input
+        .bundle
+        .join("pg_install/v17/share/postgresql/extension/pg_stat_statements.control")
+        .is_file()
+    {
+        // Utility statements include private control-role credential DDL.
+        // Keep those out of statement statistics before observability exposes it.
+        settings.push(serde_json::json!({"name":"pg_stat_statements.track_utility","value":"off","vartype":"enum"}));
+    }
     // Linux sustained-load diagnostics favor batching durable source commits.
     // PG waits only when at least five other transactions are active; fsync
     // and synchronous replication acknowledgements remain enabled. This does
