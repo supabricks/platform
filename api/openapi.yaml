@@ -57,12 +57,13 @@ tags:
   - { name: Branches, description: "Copy-on-write branches of a database. A database's first branch has no parent; the rest form a tree beneath it. A project has one default branch." }
   - { name: SQL, description: 'Statements run on a branch through the server, within fixed limits, and the queries a project keeps.' }
   - { name: Tables, description: 'What a branch holds that is read like a table, how each is built, and its rows a page at a time.' }
+  - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches, SQL, Tables]
+    tags: [Databases, Branches, SQL, Tables, Imports]
   - name: Installation
     tags: [Server]
 paths:
@@ -105,6 +106,16 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/tables: { $ref: './domains/tables/paths.yaml#/tables' }
   /projects/{project}/databases/{database}/branches/{branch}/tables/{schema}/{table}: { $ref: './domains/tables/paths.yaml#/table' }
   /projects/{project}/databases/{database}/branches/{branch}/tables/{schema}/{table}/rows: { $ref: './domains/tables/paths.yaml#/tableRows' }
+
+  # ---- Imports ----
+  /projects/{project}/import-sources: { $ref: './domains/imports/paths.yaml#/importSources' }
+  /projects/{project}/import-sources/{source}: { $ref: './domains/imports/paths.yaml#/importSource' }
+  /projects/{project}/import-sources/{source}/content: { $ref: './domains/imports/paths.yaml#/importSourceContent' }
+  /projects/{project}/import-sources/{source}/inspect: { $ref: './domains/imports/paths.yaml#/importSourceInspect' }
+  /projects/{project}/imports: { $ref: './domains/imports/paths.yaml#/imports' }
+  /projects/{project}/imports/{import}: { $ref: './domains/imports/paths.yaml#/import' }
+  /projects/{project}/imports/{import}/cancel: { $ref: './domains/imports/paths.yaml#/importCancel' }
+  /projects/{project}/imports/{import}/retry: { $ref: './domains/imports/paths.yaml#/importRetry' }
 
   # ---- Server ----
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }

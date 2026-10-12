@@ -956,6 +956,8 @@ impl Daemon {
                         gateway: self.gateway.as_mut(),
                         statements: Some(&mut self.console_queries),
                         busy: self.queries.len(),
+                        uploads: Some(&mut self.uploads),
+                        imports: Some(&mut self.ingestion),
                     }),
                     &call,
                 ))?

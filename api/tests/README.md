@@ -64,7 +64,15 @@ is found automatically). They are skipped where there is no bundle. The
 `engines` job of the `api` workflow runs them on Linux and macOS with
 `--require-engines`, which fails instead of skipping.
 
+Tests marked `worker` upload or inspect a file, which the import worker reads
+(`python/ingest/worker.py`). It needs a Python with the packages in
+`requirements-worker.txt`: the one given as `--worker-python` or
+`SUPABRICKS_WORKER_PYTHON`, else an installed release's, else the Python
+running the tests. They are skipped where none has the packages; CI installs
+them and passes `--require-worker`. A test that loads a file is marked `engine`
+as well.
+
 An installation runs at most 32 branches, and without engines a deleted branch
 keeps its place. A domain that creates databases or branches therefore uses a
-server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py` and `test_tables.py`) and shares one resource between
+server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py` and `test_imports.py`) and shares one resource between
 tests that do not change it.

@@ -407,7 +407,7 @@ known now:
 | AP03 Branches | Create at head, time or log position; rename, default, expiry, suspend, resume, delete | Reset (#256), schema diff (#255), restore window (#254), per-branch size (#246) |
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
-| AP06 Imports | Inspect, map, load, history, cancel, retry | Append and replace (#311), remote sources (#312), direct analytical import (#313) |
+| AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
 | AP07 Administration and observability | Little | Roles (#251), password reset (#250), extensions (#253), metrics (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
@@ -656,6 +656,56 @@ settings.
 
 **Acceptance:** the three operations pass L0 to L7 on the local profile on
 Linux and macOS, with the engine-backed tests run by the `engines` job.
+
+
+### AP06: Imports
+
+**Completeness review.** From reading the code on 2026-10-12. The platform
+imports a file into a new PostgreSQL table in three steps the console, the
+command line and MCP already share: a file is staged on the server, a worker
+inspects it and proposes columns, and one durable job loads it in a single
+transaction and proves the outcome from a receipt PostgreSQL holds. There was
+no draft contract; this one is written from that behaviour.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| How does a file reach the server? | The console streams it to an upload endpoint bound to a browser session; the command line names a path on the same machine | `createImportSource` reserves room for a declared size; `uploadImportSource` takes the bytes as `application/octet-stream`. A server path is never accepted |
+| How does a 100 MiB body pass through a 60000-byte call? | Calls to the daemon are small JSON documents | A transport sends a streamed body on in pieces (`rest::Part`, `Call::part`), each refused or stored by the daemon, and nothing is held whole in memory. The client sees one `PUT` |
+| When is a file inspected? | On the console's request, at once after the upload; an upload idle for 30 seconds is deleted | The source says how it is to be read when it is declared, and inspection starts when the last byte arrives. `inspectImportSource` reads a ready source again another way |
+| What is a source's life? | Kept 24 hours; deleted once an import from it succeeds or is cancelled; read only under the daemon that received it | The same, stated in the contract. After a restart a source is `failed` with `server_restarted` |
+| Is an import an operation? | A job of its own, with row counts, a retry and a receipt | A resource of its own, `Import`, not an `Operation`. It does not yet appear in the activity feed |
+| What does a load do? | Creates a new table, all rows or none; a table of that name fails it untouched; the schema must exist | The same. Append and replace are #311 |
+| Limits | 100 MiB a file, 512 MiB waiting across the installation, one inspection and one import at a time | `409 capacity_exhausted` for the staging limit, `429` for the two that clear by themselves |
+| Signed-in callers | The loader connects as the administrative role | `x-profiles: [local]` (#332) |
+
+**Built:**
+
+- `rest/imports.rs`: eleven operations over the console's `Uploads`, the
+  ingest `Service` and the store's jobs, which the daemon now passes to the
+  router in `rest::Local`.
+- `rest::Part` and the streaming branch of the console's HTTP transport.
+- Store reads for the two listings (`ingest_sources`, `ingest_page`); no
+  schema change.
+- The test harness configures the import worker (`--worker-python`), and CI
+  installs its three packages at the versions the release locks.
+
+**Tests.** `api/tests/test_imports.py`: refusals before any file is read; with
+the worker, declaring, sending and inspecting CSV, JSON in three shapes and
+Parquet, content of the wrong size, a second upload, a file that is not what
+it was declared as, inspecting again, listing, deleting, project isolation and
+restart; with engines as well, a load checked against the table it made,
+proposed columns, a repeated key, an existing table, a missing schema, a value
+that does not fit and its retry, cancelling, the one-import limit and the
+history.
+
+**Left out, with where each is tracked:**
+
+| Left out | Tracked |
+|---|---|
+| Adding rows to a table, or replacing one | #311 |
+| A file read from a web address or object storage | #312 |
+| Loading straight into analytical tables | #313 |
+| Imports for signed-in callers on a governed server | #332 |
 
 ## 7. Risks
 

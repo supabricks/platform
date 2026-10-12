@@ -13,6 +13,8 @@ use serde_json::Value;
 
 /// Longest a transport keeps asking for an answer that is not ready.
 const WAIT: std::time::Duration = std::time::Duration::from_secs(45);
+/// Longest a transport waits for the next piece of a streamed body.
+const PIECE: std::time::Duration = std::time::Duration::from_secs(10);
 
 pub(super) fn reply(reply: rest::Reply) -> Reply {
     let body = reply
@@ -75,6 +77,32 @@ impl State {
         };
         let text = |name: &str| single(headers, name).map(str::to_owned);
         let (idempotency_key, if_match) = (text("idempotency-key"), text("if-match"));
+        if rest::resolve(method.as_str(), &path)
+            .is_ok_and(|found| found.operation == rest::Operation::UploadImportSource)
+        {
+            if single(headers, "content-type") != Some("application/octet-stream") {
+                return reply(
+                    Problem::new(
+                        415,
+                        "unsupported_media_type",
+                        "Send the file's bytes as application/octet-stream.",
+                    )
+                    .into(),
+                );
+            }
+            let call = Call {
+                caller: Caller::default(),
+                method: method.as_str().to_owned(),
+                path,
+                query,
+                idempotency_key,
+                if_match,
+                body: None,
+                resume: None,
+                part: None,
+            };
+            return self.stream(call, request.into_body()).await;
+        }
         let json = single(headers, "content-type").is_some_and(|kind| {
             kind.split(';').next().unwrap_or_default().trim() == "application/json"
         });
@@ -92,6 +120,11 @@ impl State {
         let body = if bytes.is_empty() {
             None
         } else if !json {
+            // A path or method that does not exist is said so before the
+            // media type of what was sent to it.
+            if let Err(unknown) = rest::resolve(method.as_str(), &path) {
+                return reply(unknown);
+            }
             return reply(
                 Problem::new(
                     415,
@@ -118,6 +151,7 @@ impl State {
             if_match,
             body,
             resume: None,
+            part: None,
         };
         // A read that runs SQL answers `wait` until PostgreSQL has; the daemon
         // bounds the SQL itself, so this only guards against a lost answer.
@@ -138,6 +172,53 @@ impl State {
                 }
             }
         }
+    }
+    /// Send a body on to the daemon piece by piece as it arrives, so a file
+    /// is never held whole in memory. The daemon refuses a piece that does
+    /// not fit, and nothing more is read.
+    async fn stream(&self, call: Call, mut body: Incoming) -> Reply {
+        let piece = |offset: u64, bytes: &[u8], last: bool| Call {
+            part: Some(rest::Part {
+                offset,
+                hex: hex::encode(bytes),
+                last,
+            }),
+            ..call.clone()
+        };
+        let mut offset = 0;
+        loop {
+            let frame = tokio::time::timeout(PIECE, body.frame()).await;
+            let frame = match frame {
+                Ok(None) => break,
+                Ok(Some(Ok(frame))) => frame,
+                // Stalled or cut off: what arrived is of no use to anyone.
+                _ => {
+                    let source = call.path.trim_end_matches("/content").to_owned();
+                    self.forward(Call {
+                        method: "DELETE".into(),
+                        path: source,
+                        ..call.clone()
+                    })
+                    .await;
+                    return reply(
+                        Problem::invalid(
+                            "The upload was interrupted. The source is deleted; create another.",
+                        )
+                        .into(),
+                    );
+                }
+            };
+            if let Ok(bytes) = frame.into_data() {
+                for chunk in bytes.chunks(24576) {
+                    let answer = self.forward(piece(offset, chunk, false)).await;
+                    if answer.status >= 300 {
+                        return reply(answer);
+                    }
+                    offset += chunk.len() as u64;
+                }
+            }
+        }
+        reply(self.forward(piece(offset, &[], true)).await)
     }
     async fn forward(&self, call: Call) -> rest::Reply {
         let config = self.config.clone();

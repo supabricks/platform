@@ -1,0 +1,272 @@
+ImportFormat:
+  type: string
+  enum: [csv, json_lines, json_array, json_document, parquet]
+  description: >-
+    How the file is read. `csv` covers any of the four delimiters, so a
+    tab-separated file is `csv` with a tab. `json_lines` is one object a line,
+    `json_array` one array of objects, and `json_document` any JSON value,
+    loaded whole into a single `jsonb` column.
+
+ImportReading:
+  type: object
+  required: [format]
+  additionalProperties: false
+  properties:
+    format: { $ref: './schemas.yaml#/ImportFormat' }
+    delimiter:
+      type: string
+      enum: [',', "\t", ';', '|']
+      default: ','
+      description: What separates values. Only `csv` takes another than the default.
+    header:
+      type: boolean
+      default: true
+      description: Whether the first record names the columns. Only `csv` may say false.
+    null_strings:
+      type: array
+      maxItems: 16
+      default: []
+      items: { type: string, maxLength: 64 }
+      description: Values read as null, each at most 64 characters. Only `csv` takes any.
+
+ImportSourceCreate:
+  type: object
+  required: [name, size_bytes, format]
+  additionalProperties: false
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      pattern: '^[^\x00-\x1f\x7f-\x9f]+$'
+      description: What to call the file. It is shown, and never used as a path.
+    size_bytes:
+      type: integer
+      minimum: 1
+      maximum: 104857600
+      description: Exactly how many bytes the file has. At most 100 MiB.
+    format: { $ref: './schemas.yaml#/ImportFormat' }
+    delimiter:
+      type: string
+      enum: [',', "\t", ';', '|']
+      default: ','
+    header: { type: boolean, default: true }
+    null_strings:
+      type: array
+      maxItems: 16
+      default: []
+      items: { type: string, maxLength: 64 }
+
+ImportType:
+  type: object
+  required: [kind]
+  additionalProperties: false
+  properties:
+    kind:
+      type: string
+      enum: [text, boolean, smallint, integer, bigint, decimal, double, date, timestamp, timestamp_tz, jsonb]
+    precision:
+      type: integer
+      minimum: 1
+      maximum: 38
+      description: Required for `decimal`, and given for no other kind.
+    scale:
+      type: integer
+      minimum: 0
+      maximum: 38
+      description: Required for `decimal`, at most its precision.
+
+ImportColumn:
+  type: object
+  required: [input, name, type, nullable]
+  additionalProperties: false
+  properties:
+    input:
+      type: string
+      minLength: 1
+      maxLength: 1024
+      description: >-
+        Which field of the file. For `csv` and `parquet`, the column's
+        position from 0, as text; for JSON, the key.
+    name:
+      type: string
+      minLength: 1
+      maxLength: 63
+      description: The column's name in the new table.
+    type: { $ref: './schemas.yaml#/ImportType' }
+    nullable:
+      type: boolean
+      description: Whether the column accepts null. A null in a column that does not fails the import.
+
+ImportInspection:
+  type: object
+  required: [format, delimiter, header, null_strings, columns, sample_rows, source_columns]
+  properties:
+    format: { $ref: './schemas.yaml#/ImportFormat' }
+    delimiter: { type: string }
+    header: { type: boolean }
+    null_strings: { type: array, items: { type: string } }
+    columns:
+      type: array
+      description: >-
+        The columns the server proposes, from a sample of the file. Every
+        column of a `csv` file is proposed as `text`; the types of JSON and
+        `parquet` columns follow the file.
+      items: { $ref: './schemas.yaml#/ImportColumn' }
+    sample_rows:
+      type: array
+      description: >-
+        Up to 100 rows from the start of the file, each value as text or null,
+        in the order of `columns`. A sample: the rest of the file may hold
+        values the proposed types do not fit.
+      items:
+        type: array
+        items: { type: [string, 'null'] }
+    source_columns:
+      description: For `parquet`, the file's own columns and their Arrow types. Null otherwise.
+      oneOf:
+        - type: array
+          items:
+            type: object
+            required: [input, name, arrow_type, nullable]
+            properties:
+              input: { type: string }
+              name: { type: string }
+              arrow_type: { type: string }
+              nullable: { type: boolean }
+        - type: 'null'
+
+ImportSourceSummary:
+  type: object
+  required: [id, name, state, size_bytes, received_bytes, sha256, error, expires_at]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    name: { type: string }
+    state:
+      type: string
+      enum: [receiving, inspecting, ready, failed]
+      description: >-
+        `receiving` until its content has arrived. `inspecting` while the
+        server reads it. `ready` once it can be imported or inspected again.
+        `failed` if the content never arrived whole, could not be read as
+        the format given, or the server has restarted since; a failed source
+        can only be deleted.
+    size_bytes:
+      type: [integer, 'null']
+      description: The size it was created with; once `ready`, the size it has. Null when `failed`.
+    received_bytes: { type: integer, minimum: 0 }
+    sha256:
+      type: [string, 'null']
+      description: The SHA-256 of the content, in hexadecimal. Null until the first inspection has finished.
+    error:
+      type: [string, 'null']
+      description: >-
+        A short code for why the source failed or its last inspection did,
+        such as `column_limit`, `invalid_parquet`, `interrupted` or
+        `server_restarted`. Null otherwise.
+    expires_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: When the server deletes the file, 24 hours after the source was created.
+
+ImportSource:
+  allOf:
+    - $ref: './schemas.yaml#/ImportSourceSummary'
+    - type: object
+      required: [inspection]
+      properties:
+        inspection:
+          description: >-
+            What the last inspection found. Null while `receiving` or
+            `inspecting`, when it failed, and after the server has restarted
+            (inspect the source again).
+          oneOf: [{ $ref: './schemas.yaml#/ImportInspection' }, { type: 'null' }]
+
+ImportSourcePage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/ImportSourceSummary' }
+    next_cursor: { type: [string, 'null'] }
+
+ImportCreate:
+  type: object
+  required: [source_id, branch_id, table]
+  additionalProperties: false
+  properties:
+    source_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: A source that is `ready`.
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: The branch to load into, in any database of the project. It must be running.
+    schema:
+      type: string
+      minLength: 1
+      maxLength: 63
+      default: public
+      description: The schema of the new table. It must exist.
+    table:
+      type: string
+      minLength: 1
+      maxLength: 63
+      description: The name of the new table. A table of that name must not exist.
+    columns:
+      type: array
+      minItems: 1
+      maxItems: 256
+      items: { $ref: './schemas.yaml#/ImportColumn' }
+      description: >-
+        The columns of the new table. Left out, the columns the inspection
+        proposed are used. Each field of the file is named at most once.
+
+Import:
+  type: object
+  required: [id, source_id, source_name, database_id, branch_id, schema, table, format, columns, state, attempts, cancel_requested, parsed_rows, copied_rows, committed_rows, retryable, error, updated_at]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    source_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    source_name: { type: string }
+    database_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    schema: { type: string }
+    table: { type: string }
+    format: { $ref: './schemas.yaml#/ImportFormat' }
+    columns:
+      type: array
+      items: { $ref: './schemas.yaml#/ImportColumn' }
+    state:
+      type: string
+      enum: [queued, loading, reconciling, succeeded, failed, cancelled]
+      description: >-
+        `reconciling` while the server finds out from PostgreSQL whether the
+        load committed, after the loader stopped for any reason. `succeeded`,
+        `failed` and `cancelled` are final, except that a failed import may be
+        retried.
+    attempts: { type: integer, minimum: 0, description: How many times loading has started. }
+    cancel_requested: { type: boolean }
+    parsed_rows: { type: integer, minimum: 0, description: Rows read from the file so far. }
+    copied_rows: { type: integer, minimum: 0, description: Rows sent to PostgreSQL so far. None is visible until the import succeeds. }
+    committed_rows:
+      type: [integer, 'null']
+      description: Rows in the new table. Null unless the import succeeded.
+    retryable:
+      type: boolean
+      description: Whether a failed import can be retried, which needs its source to still be kept.
+    error:
+      type: [string, 'null']
+      description: >-
+        A short code for what went wrong, such as `target_exists`,
+        `invalid_integer` or `null_in_required_column`; an error from
+        PostgreSQL is `postgres_` and its SQLSTATE. Null otherwise.
+    updated_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+
+ImportPage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/Import' }
+    next_cursor: { type: [string, 'null'] }

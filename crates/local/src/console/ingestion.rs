@@ -65,6 +65,8 @@ struct Slot {
     started: Instant,
     touched: Instant,
     preview: u64,
+    /// How the platform API was told to read the file once it has arrived.
+    reading: Option<Mapping>,
 }
 #[derive(Default)]
 pub(crate) struct Uploads {
@@ -83,6 +85,24 @@ pub(super) fn reserve(file: &File, bytes: u64) -> Result<()> {
     Ok(())
 }
 impl Uploads {
+    /// Bytes received and expected, and whether the upload is still open.
+    pub(crate) fn progress(&self, id: SourceId) -> Option<(u64, u64, bool)> {
+        self.slots
+            .get(&id.to_string())
+            .map(|s| (s.received, s.expected, s.file.is_some()))
+    }
+    pub(crate) fn read_as(&mut self, id: SourceId, reading: Mapping) {
+        if let Some(slot) = self.slots.get_mut(&id.to_string()) {
+            slot.reading = Some(reading);
+        }
+    }
+    pub(crate) fn reading(&self, id: SourceId) -> Option<Mapping> {
+        self.slots.get(&id.to_string())?.reading.clone()
+    }
+    /// Close the upload and forget it. The source itself is the caller's to dispose.
+    pub(crate) fn release(&mut self, id: SourceId) {
+        self.slots.remove(&id.to_string());
+    }
     fn slot(
         &mut self,
         store: &Store,
@@ -179,6 +199,7 @@ impl Uploads {
                         started: Instant::now(),
                         touched: Instant::now(),
                         preview: 0,
+                        reading: None,
                     },
                 );
                 Ok(json!({"source":source,"received":0,"preview":0}))
@@ -333,6 +354,7 @@ mod tests {
                 started: Instant::now(),
                 touched: Instant::now(),
                 preview: 0,
+                reading: None,
             },
         );
         (root, store, binding, uploads, source.id)

@@ -38,7 +38,7 @@ impl Store {
     /// Allocate an unusable receiving slot. Only server IDs determine paths.
     pub fn acquire_source(&mut self, project: ProjectId, name: &str) -> Result<Source> {
         self.project(project)?;
-        if name.is_empty() || name.len() > 255 || name.chars().any(char::is_control) {
+        if name.is_empty() || name.chars().count() > 255 || name.chars().any(char::is_control) {
             return Err(invalid("invalid source display name"));
         }
         let reserved: i64=self.db.query_row("SELECT coalesce(sum(CASE WHEN state IN ('receiving','interrupted') THEN 104857600 ELSE bytes END),0) FROM ingest_sources WHERE state IN ('receiving','staged','interrupted')",[],|r|r.get(0))?;
@@ -433,6 +433,62 @@ impl Store {
                 )
             })
             .collect()
+    }
+    /// The sources of a project whose files the server still keeps, the one
+    /// that expires last first.
+    pub(crate) fn ingest_sources(&self, project: ProjectId) -> Result<Vec<Source>> {
+        let mut q = self.db.prepare("SELECT id FROM ingest_sources WHERE project_id=?1 AND state IN ('receiving','staged','interrupted') ORDER BY expires_at_ms DESC,id")?;
+        let ids = q
+            .query_map([project.to_string()], |r| r.get::<_, String>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        ids.into_iter()
+            .map(|id| {
+                self.ingest_source(
+                    project,
+                    id.parse().map_err(|_| invalid("invalid source ID"))?,
+                )
+            })
+            .collect()
+    }
+    /// A page of a project's jobs and when each last changed, the most
+    /// recently changed first, after the position `after` names.
+    pub(crate) fn ingest_page(
+        &self,
+        project: ProjectId,
+        branch: Option<supabricks_core::resource::BranchId>,
+        after: Option<(i64, String)>,
+        limit: usize,
+    ) -> Result<Vec<(Job, i64)>> {
+        let mut q = self.db.prepare("SELECT id,updated_at_ms FROM ingest_jobs WHERE project_id=?1 AND (?2 IS NULL OR branch_id=?2) AND (?3 IS NULL OR updated_at_ms<?3 OR (updated_at_ms=?3 AND id>?4)) ORDER BY updated_at_ms DESC,id LIMIT ?5")?;
+        let (at, id) = after.unzip();
+        let rows = q
+            .query_map(
+                params![
+                    project.to_string(),
+                    branch.map(|b| b.to_string()),
+                    at,
+                    id,
+                    limit as i64
+                ],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)),
+            )?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        rows.into_iter()
+            .map(|(id, at)| {
+                let id = id.parse().map_err(|_| invalid("invalid job ID"))?;
+                Ok((self.ingest_job(project, id)?, at))
+            })
+            .collect()
+    }
+    pub(crate) fn ingest_updated(&self, project: ProjectId, id: JobId) -> Result<i64> {
+        self.db
+            .query_row(
+                "SELECT updated_at_ms FROM ingest_jobs WHERE id=?1 AND project_id=?2",
+                params![id.to_string(), project.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?
+            .ok_or_else(|| missing("ingestion job in project"))
     }
     pub(crate) fn ingest_for_key(
         &self,
