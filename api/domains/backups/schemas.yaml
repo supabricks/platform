@@ -1,0 +1,113 @@
+Backup:
+  type: object
+  description: >-
+    A branch as it was at one moment, kept in the database's storage. It has no
+    PostgreSQL of its own and cannot be connected to or changed.
+  required: [id, database_id, branch_id, branch_name, name, origin, state, created_at, lsn, restored_branch_count, error]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: The branch it was taken from. That branch cannot be deleted while the backup exists.
+    branch_name: { type: string, description: 'The name of that branch now.' }
+    name: { $ref: './schemas.yaml#/BackupName' }
+    origin:
+      type: string
+      enum: [manual, scheduled]
+      description: Whether a request took it or the database's schedule did.
+    state:
+      type: string
+      enum: [creating, ready, failed, deleting]
+      description: >-
+        `creating` until the operation that takes it finishes, then `ready`. A
+        `failed` backup holds nothing and can only be deleted.
+    created_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: When it was asked for. What it holds is the branch a moment after this.
+    lsn:
+      description: Where in the branch's history it stands. Null until that is known.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]
+    restored_branch_count:
+      type: integer
+      minimum: 0
+      description: Branches restored from it that exist now. It cannot be deleted while this is above zero.
+    error:
+      description: Why it could not be taken. Null unless `state` is `failed`.
+      oneOf: [{ type: string }, { type: 'null' }]
+
+BackupName:
+  type: string
+  description: A label for people. It need not be unique. Between 1 and 64 characters, none of them a control character.
+  minLength: 1
+  maxLength: 64
+  pattern: '^[^\x00-\x1F\x7F-\x9F]+$'
+
+BackupCreate:
+  type: object
+  additionalProperties: false
+  properties:
+    name:
+      allOf: [{ $ref: './schemas.yaml#/BackupName' }]
+      description: Defaults to the time it was taken.
+    branch_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: A branch of this database to back up. Defaults to the database's first branch.
+
+BackupRestore:
+  type: object
+  required: [name]
+  additionalProperties: false
+  properties:
+    name:
+      allOf: [{ $ref: '../branches/schemas.yaml#/BranchName' }]
+      description: The name of the new branch.
+    expires_at:
+      description: When the new branch deletes itself; a time in the future. Omit or send null to keep it.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+
+BackupPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/Backup' } }
+
+BackupSchedule:
+  type: object
+  description: When the server takes backups of a database's first branch by itself.
+  required: [enabled, every_hours, keep, next_backup_at, updated_at]
+  properties:
+    enabled: { type: boolean }
+    every_hours:
+      description: Hours between scheduled backups. Null without a schedule.
+      oneOf: [{ type: integer, minimum: 1, maximum: 168 }, { type: 'null' }]
+    keep:
+      description: How many scheduled backups are kept. Null without a schedule.
+      oneOf: [{ type: integer, minimum: 1, maximum: 30 }, { type: 'null' }]
+    next_backup_at:
+      description: >-
+        When the next one is due. A time already past means it is due now and
+        waiting, for instance for a suspended database to be resumed. Null
+        without a schedule.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    updated_at:
+      description: When the schedule was last set. Null without a schedule.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+
+BackupScheduleSet:
+  description: Either a schedule, or `enabled` false to remove it.
+  oneOf:
+    - type: object
+      required: [enabled, every_hours, keep]
+      additionalProperties: false
+      properties:
+        enabled: { const: true }
+        every_hours: { type: integer, minimum: 1, maximum: 168 }
+        keep: { type: integer, minimum: 1, maximum: 30 }
+    - type: object
+      required: [enabled]
+      additionalProperties: false
+      properties:
+        enabled: { const: false }

@@ -59,13 +59,14 @@ tags:
   - { name: Tables, description: 'What a branch holds that is read like a table, how each is built, and its rows a page at a time.' }
   - { name: Roles, description: "Who can log in to a branch's PostgreSQL, and what each may do there." }
   - { name: Extensions, description: 'Which of the extensions the installed engine ships a branch has enabled.' }
+  - { name: Backups, description: "Points of a database's branches that storage keeps, the schedule that takes them, and restoring one as a new branch." }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions]
+    tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions, Backups]
   - name: Installation
     tags: [Server]
 paths:
@@ -125,6 +126,12 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}: { $ref: './domains/roles/paths.yaml#/role' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/password: { $ref: './domains/roles/paths.yaml#/rolePassword' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/privileges/{schema}: { $ref: './domains/roles/paths.yaml#/rolePrivileges' }
+
+  # ---- Backups ----
+  /projects/{project}/databases/{database}/backups: { $ref: './domains/backups/paths.yaml#/backups' }
+  /projects/{project}/databases/{database}/backups/{backup}: { $ref: './domains/backups/paths.yaml#/backup' }
+  /projects/{project}/databases/{database}/backups/{backup}/restore: { $ref: './domains/backups/paths.yaml#/backupRestore' }
+  /projects/{project}/databases/{database}/backup-schedule: { $ref: './domains/backups/paths.yaml#/backupSchedule' }
 
   # ---- Extensions ----
   /projects/{project}/databases/{database}/branches/{branch}/extensions: { $ref: './domains/extensions/paths.yaml#/extensions' }

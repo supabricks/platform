@@ -21,8 +21,10 @@ Branch:
         branch whose expiry has passed is `deleting`.
     is_default: { type: boolean, description: "Whether it is the project's default branch." }
     created_from:
-      description: The point in its parent the branch started from, as asked. Null for a database's first branch.
-      oneOf: [{ $ref: './schemas.yaml#/BranchPoint' }, { type: 'null' }]
+      description: >-
+        The point in its parent the branch started from, as asked, or the
+        backup it was restored from. Null for a database's first branch.
+      oneOf: [{ $ref: './schemas.yaml#/BranchOrigin' }, { type: 'null' }]
     created_at:
       allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
       description: >-
@@ -68,6 +70,19 @@ BranchPoint:
       properties:
         kind: { const: lsn }
         lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
+
+BranchOrigin:
+  description: >-
+    Where a branch started: a point in its parent, or a backup of its parent
+    that it was restored from.
+  oneOf:
+    - $ref: './schemas.yaml#/BranchPoint'
+    - type: object
+      required: [kind, backup_id]
+      additionalProperties: false
+      properties:
+        kind: { const: backup }
+        backup_id: { $ref: '../../shared/schemas.yaml#/Id' }
 
 BranchCreate:
   type: object

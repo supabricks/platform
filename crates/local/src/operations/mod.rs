@@ -59,6 +59,14 @@ pub enum Mutation {
         parent_id: Option<BranchId>,
         ports: Ports,
     },
+    /// A point of a branch kept without a compute, as a backup.
+    Hold {
+        parent_id: BranchId,
+        label: String,
+        origin: String,
+        #[serde(default = "branch_timeout")]
+        timeout_ms: u64,
+    },
     SetState {
         branch_id: BranchId,
         expected_revision: i64,

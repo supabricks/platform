@@ -33,6 +33,10 @@ pub(super) fn branch(store: &Store, runtime: ProjectId, named: &str) -> Result<B
     store
         .branch_in_project(runtime, id)
         .map_err(|_| unknown())?;
+    // The record that holds a backup has no PostgreSQL to run anything.
+    if store.is_backup(id).unwrap_or(true) {
+        return Err(unknown());
+    }
     Ok(id)
 }
 /// Where the branch stands now, as the platform's saved work records it.

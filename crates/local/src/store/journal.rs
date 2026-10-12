@@ -52,6 +52,43 @@ impl Store {
                 return Err(conflict("internal export branches cannot be mutated"));
             }
         }
+        // A backup has no compute to run and nothing about it changes; it is
+        // only ever deleted.
+        let held = match &request {
+            Mutation::SetState {
+                desired: DesiredState::Deleted,
+                ..
+            } => None,
+            Mutation::SetState { branch_id, .. }
+            | Mutation::SetTtl { branch_id, .. }
+            | Mutation::SetDefault { branch_id } => Some(*branch_id),
+            _ => None,
+        };
+        if held.is_some_and(|id| self.is_backup(id).unwrap_or(true)) {
+            return Err(conflict("a backup can only be deleted"));
+        }
+        if let Mutation::Hold {
+            label,
+            origin,
+            timeout_ms,
+            ..
+        } = &request
+        {
+            if label.is_empty() || label.chars().count() > 64 || label.chars().any(char::is_control)
+            {
+                return Err(invalid(
+                    "backup label must contain 1–64 printable characters",
+                ));
+            }
+            if !matches!(origin.as_str(), "manual" | "scheduled") {
+                return Err(invalid("backup origin must be manual or scheduled"));
+            }
+            if !(1000..=300_000).contains(timeout_ms) {
+                return Err(invalid(
+                    "branch timeout must be between 1000 and 300000 milliseconds",
+                ));
+            }
+        }
         if let Mutation::Export { limits, ports, .. } = &request {
             limits.validate()?;
             if !ports.valid() {
@@ -108,6 +145,7 @@ impl Store {
             Mutation::CreateBranch { .. }
             | Mutation::CreateDatabase { .. }
             | Mutation::BranchFrom { .. }
+            | Mutation::Hold { .. }
             | Mutation::Export { .. } => create_branch(&tx, project, &request)?,
             Mutation::SetDefault { branch_id } => {
                 let record = branch(&tx, *branch_id)?;
@@ -492,7 +530,30 @@ fn create_branch(
 ) -> Result<(BranchId, i64, Vec<Step>)> {
     let head = BranchPoint::Head;
     let export_name = format!("export-{}", BranchId::new());
+    let hold_name = format!("backup-{}", BranchId::new());
+    let hold = match request {
+        Mutation::Hold { label, origin, .. } => Some((label, origin)),
+        _ => None,
+    };
+    // A hold has no compute, so it takes no ports; these are never stored.
+    let none = crate::operations::Ports {
+        sql: 0,
+        external_http: 0,
+        internal_http: 0,
+    };
     let (name, parent_id, ports, point, default, timeout_ms) = match request {
+        Mutation::Hold {
+            parent_id,
+            timeout_ms,
+            ..
+        } => (
+            &hold_name,
+            Some(*parent_id),
+            none,
+            &head,
+            false,
+            *timeout_ms,
+        ),
         Mutation::CreateBranch {
             name,
             parent_id,
@@ -533,6 +594,16 @@ fn create_branch(
         {
             return Err(conflict("cannot branch from an internal export"));
         }
+        let held = tx
+            .prepare("SELECT 1 FROM backups WHERE branch_id=?1")?
+            .exists([id.to_string()])?;
+        if held && hold.is_some() {
+            return Err(conflict("cannot back up a backup"));
+        }
+        // A backup holds one point, so a branch made from it starts there.
+        if held && *point != BranchPoint::Head {
+            return Err(invalid("a branch made from a backup starts at the backup"));
+        }
         if parent.expired {
             return Err(conflict("expired parent is draining"));
         }
@@ -540,28 +611,30 @@ fn create_branch(
             return Err(conflict("parent operation has not converged"));
         }
     }
-    if [ports.sql, ports.external_http, ports.internal_http]
-        .iter()
-        .any(|p| {
-            tx.prepare("SELECT 1 FROM connection_endpoints WHERE port=?1")
-                .and_then(|mut q| q.exists([p]))
-                .unwrap_or(true)
-        })
+    if hold.is_none()
+        && [ports.sql, ports.external_http, ports.internal_http]
+            .iter()
+            .any(|p| {
+                tx.prepare("SELECT 1 FROM connection_endpoints WHERE port=?1")
+                    .and_then(|mut q| q.exists([p]))
+                    .unwrap_or(true)
+            })
     {
         return Err(conflict("compute port is reserved for a branch listener"));
     }
     let id = BranchId::new();
     let endpoint = EndpointId::new();
-    tx.execute("INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,parent_id,revision,desired) VALUES (?1,?2,?3,?4,?5,?6,1,'running')",params![id.to_string(),project.to_string(),name,project.to_string().replace('-',""),id.to_string().replace('-',""),parent_id.map(|p|p.to_string())]).map_err(constraint)?;
+    tx.execute("INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,parent_id,revision,desired) VALUES (?1,?2,?3,?4,?5,?6,1,?7)",params![id.to_string(),project.to_string(),name,project.to_string().replace('-',""),id.to_string().replace('-',""),parent_id.map(|p|p.to_string()),if hold.is_some() {"suspended"} else {"running"}]).map_err(constraint)?;
     tx.execute(
         "INSERT INTO endpoints VALUES (?1,?2,17)",
         params![endpoint.to_string(), id.to_string()],
     )?;
-    for (role, port) in [
+    let listeners = [
         ("sql", ports.sql),
         ("external_http", ports.external_http),
         ("internal_http", ports.internal_http),
-    ] {
+    ];
+    for (role, port) in listeners.into_iter().filter(|_| hold.is_none()) {
         tx.execute(
             "INSERT INTO ports VALUES (?1,?2,?3)",
             params![port, endpoint.to_string(), role],
@@ -601,6 +674,15 @@ fn create_branch(
         )?;
         steps.push(Step::CaptureBranchPoint);
     }
-    steps.extend([Step::EnsureTimeline, Step::StartCompute]);
+    steps.push(Step::EnsureTimeline);
+    match (hold, parent_id) {
+        (Some((label, origin)), Some(parent)) => {
+            tx.execute(
+                "INSERT INTO backups VALUES (?1,?2,?3,?4,?5)",
+                params![id.to_string(), parent.to_string(), label, origin, now_ms()?],
+            )?;
+        }
+        _ => steps.push(Step::StartCompute),
+    }
     Ok((id, 1, steps))
 }

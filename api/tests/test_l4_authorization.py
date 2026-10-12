@@ -18,6 +18,10 @@ SERVED = spec.served()
 RANK = {'outsider': 0, 'elsewhere': 0, 'viewer': 1, 'editor': 2, 'administrator': 3}
 NEEDS = {'viewer': 1, 'editor': 2, 'administrator': 3}
 REFUSED = (401, 403, 404)
+# Reads of a resource the governed server cannot hold, because making one
+# needs the database engines. A caller who is allowed is told the resource is
+# missing, in words a caller refused the project never sees.
+ABSENT = {'getBackup': 'no such backup'}
 
 
 def expected(op, caller):
@@ -42,7 +46,7 @@ def expected(op, caller):
 def send(governed, op, caller, project=None):
     values = dict(project=project or governed.project, operation=governed.operation,
                   database=governed.database, branch=governed.branch,
-                  statement='stmt_' + '0' * 32, query='qry_' + '0' * 32, schema='public', table='t', role='reporting', extension='pg_trgm',
+                  statement='stmt_' + '0' * 32, query='qry_' + '0' * 32, schema='public', table='t', role='reporting', extension='pg_trgm', backup='bkp_' + '0' * 32,
                   source='src_' + '0' * 32, **{'import': 'imp_' + '0' * 32})
     names = [p['name'] for p in op.parameters if p['in'] == 'path']
     return governed.callers[caller].call(op.id, path={name: values[name] for name in names},
@@ -56,6 +60,9 @@ def test_each_caller_is_allowed_or_refused_as_specified(op, caller, governed):
     refusal = expected(op, caller)
     if refusal:
         assert (response.status_code, response.json()['code']) == refusal, response.text
+    elif op.id in ABSENT:
+        # Let through, and then told the thing itself is not there.
+        assert response.status_code == 404 and ABSENT[op.id] in response.json()['detail'], response.text
     else:
         assert response.status_code not in REFUSED and response.status_code < 500, response.text
 

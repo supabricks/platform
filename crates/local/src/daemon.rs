@@ -454,6 +454,12 @@ impl Daemon {
                     if let Err(error) = self.store.advance_project_deletions() {
                         eprintln!("project deletion could not advance: {error}");
                     }
+                    // Only with engines: a backup is taken by the storage engine.
+                    if self.cell.is_some()
+                        && let Err(error) = self.store.run_backup_schedules()
+                    {
+                        eprintln!("backup schedules could not run: {error}");
+                    }
                     self.project_apply_error = crate::project_apply::tick(
                         &mut self.store,
                         &mut self.environments,

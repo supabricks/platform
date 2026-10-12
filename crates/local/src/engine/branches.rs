@@ -20,8 +20,22 @@ impl Cell {
                 "branch capture/ingestion deadline exceeded; no earlier boundary was substituted",
             ));
         }
-        let parent = store.ensure_parent_running(child.branch.id)?;
-        if !self.ensure_timeline(store, &parent)? || !self.ensure_compute(store, &parent)? {
+        // A backup has no compute to wake or flush: nothing writes to it, so
+        // everything it holds is already in storage.
+        let held = child
+            .branch
+            .parent_id
+            .map(|parent| store.is_backup(parent))
+            .transpose()?
+            .unwrap_or(false);
+        let parent = if held {
+            store.branch(child.branch.parent_id.unwrap())?
+        } else {
+            store.ensure_parent_running(child.branch.id)?
+        };
+        if !self.ensure_timeline(store, &parent)?
+            || (!held && !self.ensure_compute(store, &parent)?)
+        {
             return Ok(false);
         }
         let ps = self.pageserver()?;
@@ -32,6 +46,9 @@ impl Cell {
         let ingested = position(&detail, "last_record_lsn")?;
         let boundary = if let Some(lsn) = child.branch.ancestor_lsn {
             lsn
+        } else if held {
+            store.pin_lsn(ticket, ingested)?;
+            ingested
         } else {
             let flush = self.sql.flush(
                 parent

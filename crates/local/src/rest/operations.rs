@@ -109,7 +109,11 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         let database = branch
             .as_ref()
             .is_some_and(|b| b.branch.parent_id.is_none());
+        // The record that holds a backup is the backup, not a branch.
+        let held = store.is_backup(operation.branch_id).unwrap_or(false);
         let kind = match mutation["kind"].as_str().unwrap_or_default() {
+            "hold" => "backup.create".to_owned(),
+            "set_state" | "force_delete" if held => "backup.delete".to_owned(),
             "create_database" => "database.create".to_owned(),
             "set_state" | "force_delete" if database => {
                 match mutation["desired"].as_str().unwrap_or("deleted") {
@@ -136,12 +140,18 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         let id = operation.branch_id.to_string();
         // Only its lifecycle is the database's; an expiry or default is the branch's.
         let database = kind.starts_with("database.");
-        value["target"] = if database {
+        value["target"] = if held {
+            json!({"kind": "backup", "id": public_id("bkp", &id)})
+        } else if database {
             json!({"kind": "database", "id": public_id("db", &id)})
         } else {
             json!({"kind": "branch", "id": public_id("br", &id)})
         };
-        if let Some(branch) = &branch {
+        if held {
+            if let Ok(Some(label)) = store.backup_label(operation.branch_id) {
+                value["target"]["label"] = json!(label);
+            }
+        } else if let Some(branch) = &branch {
             value["target"]["label"] = json!(branch.branch.name);
         }
         value["steps"] = json!(steps(
@@ -155,6 +165,9 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         }
         if state == "succeeded" && database && kind != "database.delete" {
             value["result"] = json!({"database": {"kind": "database", "id": public_id("db", &id)}});
+        }
+        if state == "succeeded" && kind == "backup.create" {
+            value["result"] = json!({"backup": {"kind": "backup", "id": public_id("bkp", &id)}});
         }
         if state == "succeeded"
             && matches!(

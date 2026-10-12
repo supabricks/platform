@@ -34,6 +34,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0031_publication_generation.sql"),
     include_str!("migrations/0032_project_names.sql"),
     include_str!("migrations/0033_branch_details.sql"),
+    include_str!("migrations/0034_backups.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -223,6 +224,7 @@ fn catalog_upgrade_inner(
                 | 30
                 | 31
                 | 32
+                | 33
         )
     {
         return Err(conflict(

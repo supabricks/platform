@@ -424,16 +424,24 @@ fn catalog_thirty_one_migration_makes_project_names_unique_and_records_details()
 fn catalog_thirty_two_migration_records_when_branches_were_created() {
     catalog_migration(32);
 }
+#[test]
+fn catalog_thirty_three_migration_adds_backups_and_keeps_branch_details() {
+    catalog_migration(33);
+}
 
 fn catalog_migration(source_schema: u32) {
     let f = Fixture::with_project(source_schema >= 17);
     // Construct the predecessor catalog with real migrations 1..8, then use
     // installed-process upgrade handling. The native gate also uses real alpha.3.
     let db = rusqlite::Connection::open(f.root.join("state.sqlite3")).unwrap();
-    db.execute_batch(
-        "DROP TRIGGER branch_details_created; DROP TRIGGER branch_details_edited; DROP TABLE branch_details;",
-    )
-    .unwrap();
+    db.execute_batch("DROP INDEX backups_source; DROP TABLE backups; DROP TABLE backup_policies;")
+        .unwrap();
+    if source_schema < 33 {
+        db.execute_batch(
+            "DROP TRIGGER branch_details_created; DROP TRIGGER branch_details_edited; DROP TABLE branch_details;",
+        )
+        .unwrap();
+    }
     if source_schema < 32 {
         db.execute_batch("DROP TRIGGER operation_index_delete; DROP TRIGGER operation_index_delete_done; DROP TABLE project_deletions; DROP TRIGGER operation_index_native; DROP TRIGGER operation_index_native_done; DROP TRIGGER operation_index_native_failed; DROP TRIGGER operation_index_native_failed_later; DROP TRIGGER operation_index_apply; DROP TRIGGER operation_index_apply_done; DROP TABLE operation_index; DROP TABLE api_idempotency; DROP INDEX project_names; DROP TABLE project_details;")
         .unwrap();

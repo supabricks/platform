@@ -1,5 +1,6 @@
 mod analytics;
 mod authorization;
+mod backups;
 mod branches;
 pub(crate) mod capture;
 mod catalog;
@@ -7,6 +8,7 @@ mod catalog_governance;
 mod catalog_publication;
 mod connections;
 mod database_directory;
+pub use backups::{BackupPolicy, BackupView};
 pub use database_directory::{BranchView, DatabaseRecord};
 mod deployments;
 mod environments;

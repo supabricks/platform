@@ -1,6 +1,7 @@
 //! Platform API v1 (`api/openapi.yaml`). Transport-independent: an HTTP server
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
+mod backups;
 mod branches;
 mod databases;
 mod extensions;
@@ -500,6 +501,48 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::RetryImport => {
             imports::retry(store, call, parameter("project"), parameter("import"))
         }
+        Operation::ListBackups => {
+            backups::list(store, call, parameter("project"), parameter("database"))
+        }
+        Operation::GetBackup => backups::get(
+            store,
+            parameter("project"),
+            parameter("database"),
+            parameter("backup"),
+        ),
+        Operation::CreateBackup => backups::create(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
+        Operation::DeleteBackup => backups::delete(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+            parameter("backup"),
+        ),
+        Operation::RestoreBackup => backups::restore(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+            parameter("backup"),
+        ),
+        Operation::GetBackupSchedule => {
+            backups::schedule(store, parameter("project"), parameter("database"))
+        }
+        Operation::SetBackupSchedule => backups::set_schedule(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
         Operation::ListExtensions => extensions::list(store, &mut host, call, branch()),
         Operation::EnableExtension => {
             extensions::enable(store, &mut host, call, branch(), parameter("extension"))
