@@ -1,0 +1,140 @@
+RoleAccess:
+  type: string
+  enum: [none, read, read_write, owner]
+  description: >-
+    What the role may do with the branch's data, as membership in other
+    roles. `none`: only what it is granted schema by schema. `read`: read
+    every table (`pg_read_all_data`). `read_write`: read and write every
+    table (`pg_read_all_data`, `pg_write_all_data`). `owner`: everything the
+    application role may do, including changing tables it owns.
+
+Role:
+  type: object
+  required: [name, managed, login, access, member_of, superuser, create_role, create_database, replication, bypass_rls, connection_limit, connections]
+  properties:
+    name: { type: string }
+    managed:
+      type: boolean
+      description: >-
+        True for a role the engine or PostgreSQL made: the control role, the
+        application role and PostgreSQL's predefined roles. A managed role is
+        shown and cannot be changed here.
+    login: { type: boolean, description: Whether the role can connect. }
+    access:
+      description: >-
+        The access level the role's memberships amount to, or `custom` when
+        they were changed by other means and match none. Null for a managed
+        role.
+      oneOf:
+        - { type: string, enum: [none, read, read_write, owner, custom] }
+        - { type: 'null' }
+    member_of:
+      type: array
+      items: { type: string }
+      description: The roles this one is a direct member of.
+    superuser: { type: boolean }
+    create_role: { type: boolean }
+    create_database: { type: boolean }
+    replication: { type: boolean }
+    bypass_rls: { type: boolean }
+    connection_limit:
+      type: [integer, 'null']
+      description: The most connections the role may hold at once. Null for no limit.
+    connections:
+      type: integer
+      minimum: 0
+      description: How many connections the role holds now.
+
+RolePage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/Role' }
+    next_cursor: { type: [string, 'null'] }
+
+TablePrivilege:
+  type: string
+  enum: [select, insert, update, delete, truncate, references, trigger]
+
+SchemaPrivileges:
+  type: object
+  required: [schema, usage, create, tables, future_tables, uniform]
+  properties:
+    schema: { type: string }
+    usage: { type: boolean, description: Whether the role may use what is in the schema at all. }
+    create: { type: boolean, description: Whether the role may create tables and other objects in it. }
+    tables:
+      type: array
+      items: { $ref: './schemas.yaml#/TablePrivilege' }
+      description: What the role is granted on every table and view the schema holds now.
+    future_tables:
+      type: array
+      items: { $ref: './schemas.yaml#/TablePrivilege' }
+      description: What the role is granted on each table the application role creates in the schema from now on.
+    uniform:
+      type: boolean
+      description: >-
+        False when the role holds a privilege on some tables of the schema and
+        not others, which only a statement can have done. Setting the schema's
+        privileges makes them uniform again.
+
+RoleDetail:
+  allOf:
+    - $ref: './schemas.yaml#/Role'
+    - type: object
+      required: [privileges]
+      properties:
+        privileges:
+          type: array
+          description: >-
+            What the role itself is granted in each schema, ordered by schema.
+            What it holds through its access level, or because everyone holds
+            it, is not listed.
+          items: { $ref: './schemas.yaml#/SchemaPrivileges' }
+
+RoleCreate:
+  type: object
+  required: [name]
+  additionalProperties: false
+  properties:
+    name:
+      type: string
+      pattern: '^(?!pg_|sb_|supabricks_|neon|cloud_)[a-z_][a-z0-9_]{0,62}$'
+      description: >-
+        Lower-case letters, digits and underscores, at most 63, not starting
+        with a digit or with a prefix the engine keeps for itself.
+    access:
+      allOf: [{ $ref: './schemas.yaml#/RoleAccess' }]
+      default: none
+
+RoleCreated:
+  allOf:
+    - $ref: './schemas.yaml#/Role'
+    - type: object
+      required: [password, uri]
+      properties:
+        password: { type: string, format: password, description: 'Shown this once. The server does not keep it.' }
+        uri: { type: string, description: 'A complete connection URI including the password.' }
+
+RoleUpdate:
+  type: object
+  additionalProperties: false
+  minProperties: 1
+  properties:
+    login: { type: boolean, description: 'False stops the role connecting. Its open connections stay open.' }
+    access: { $ref: './schemas.yaml#/RoleAccess' }
+
+SchemaPrivilegesSet:
+  type: object
+  required: [usage, create, tables]
+  additionalProperties: false
+  properties:
+    usage: { type: boolean }
+    create: { type: boolean }
+    tables:
+      type: array
+      uniqueItems: true
+      items: { $ref: './schemas.yaml#/TablePrivilege' }
+      description: Granted on every table of the schema now, and on each the application role creates later.

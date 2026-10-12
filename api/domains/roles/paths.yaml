@@ -1,0 +1,328 @@
+# Roles of a branch: who can log in to its PostgreSQL and what they may do.
+#
+# Roles are data of the branch itself. A branch starts with a copy of its
+# parent's roles, with the same passwords, and from then on its roles are its
+# own. The server keeps nothing about a role: a password is shown once, when
+# it is made, and afterwards can only be replaced. Every change is made by
+# the server with SQL it writes itself, in one transaction.
+
+roles:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: listRoles
+    tags: [Roles]
+    summary: List the roles of a branch
+    description: >-
+      Every role in the branch's PostgreSQL, ordered by name, including the
+      ones the engine manages. Reading a suspended branch resumes it. Refused
+      with `429` while the server's four statement workers are busy, and with
+      `503` without the database engines. A governed server keeps PostgreSQL
+      private and answers `403` with `code: unavailable_in_profile`.
+    x-required-role: viewer
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of roles.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/RolePage' }
+            example:
+              items:
+                - name: reporting
+                  managed: false
+                  login: true
+                  access: read
+                  member_of: [pg_read_all_data]
+                  superuser: false
+                  create_role: false
+                  create_database: false
+                  replication: false
+                  bypass_rls: false
+                  connection_limit: null
+                  connections: 2
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+  post:
+    operationId: createRole
+    tags: [Roles]
+    summary: Create a role that can log in
+    description: >-
+      Creates a login role with a password the server makes up and shows in
+      this reply only, and the access level asked for. The role has none of
+      PostgreSQL's administrative attributes. It exists on this branch, and on
+      branches made from it afterwards; not on the branch's parent or on
+      branches that already exist.
+
+
+      The request takes no `Idempotency-Key`, so that no reply holding a
+      password is stored: a repeat is refused with `409` and
+      `code: name_taken`. If the reply was lost, give the role a new password.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/RoleCreate' }
+          example: { name: reporting, access: read }
+    responses:
+      '201':
+        description: The role and its password. Do not cache.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read the role.' }
+          Cache-Control: { schema: { type: string, enum: [no-store] } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/RoleCreated' }
+            example:
+              name: reporting
+              managed: false
+              login: true
+              access: read
+              member_of: [pg_read_all_data]
+              superuser: false
+              create_role: false
+              create_database: false
+              replication: false
+              bypass_rls: false
+              connection_limit: null
+              connections: 0
+              password: 7c1e9b3a-example-password
+              uri: 'postgresql://reporting:7c1e9b3a-example-password@127.0.0.1:54817/postgres?sslmode=prefer'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+role:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - $ref: '../../shared/parameters.yaml#/Role'
+  get:
+    operationId: getRole
+    tags: [Roles]
+    summary: Get a role and what it is granted
+    description: >-
+      The role, and for each schema what the role itself is granted there.
+      PostgreSQL's own schemas and the engine's are left out.
+    x-required-role: viewer
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    responses:
+      '200':
+        description: The role.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/RoleDetail' }
+            example:
+              name: reporting
+              managed: false
+              login: true
+              access: read
+              member_of: [pg_read_all_data]
+              superuser: false
+              create_role: false
+              create_database: false
+              replication: false
+              bypass_rls: false
+              connection_limit: null
+              connections: 2
+              privileges:
+                - schema: public
+                  usage: true
+                  create: false
+                  tables: [select, insert]
+                  future_tables: [select, insert]
+                  uniform: true
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+  patch:
+    operationId: updateRole
+    tags: [Roles]
+    summary: Change whether a role can log in, or its access level
+    description: >-
+      Setting `access` replaces the role's membership in the three roles an
+      access level is made of and leaves any other membership alone. A role
+      the engine manages is refused with `409`.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/RoleUpdate' }
+          example: { access: read_write }
+    responses:
+      '200':
+        description: The role as it now is.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/RoleDetail' }
+            example:
+              name: reporting
+              managed: false
+              login: true
+              access: read_write
+              member_of: [pg_read_all_data, pg_write_all_data]
+              superuser: false
+              create_role: false
+              create_database: false
+              replication: false
+              bypass_rls: false
+              connection_limit: null
+              connections: 2
+              privileges: []
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+  delete:
+    operationId: deleteRole
+    tags: [Roles]
+    summary: Delete a role
+    description: >-
+      Closes the role's connections, gives what it owns to the application
+      role, takes away everything it was granted, and removes it. Nothing the
+      role made is lost. A role the engine manages is refused with `409`.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+rolePassword:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - $ref: '../../shared/parameters.yaml#/Role'
+  post:
+    operationId: resetRolePassword
+    tags: [Roles]
+    summary: Give a role a new password
+    description: >-
+      Replaces the role's password with one the server makes up and shows in
+      this reply only. The old password stops working for new connections at
+      once; connections already open stay open. The change is to this branch
+      alone. The application role is refused with `409`: the platform keeps
+      its password, and the database's credentials are reset instead. Any
+      other role the engine manages is refused the same way.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    responses:
+      '200':
+        description: The new credentials. Do not cache.
+        headers: { Cache-Control: { schema: { type: string, enum: [no-store] } } }
+        content:
+          application/json:
+            schema: { $ref: '../databases/schemas.yaml#/Credentials' }
+            example:
+              role: reporting
+              password: 2f8d4b6c-example-new-password
+              uri: 'postgresql://reporting:2f8d4b6c-example-new-password@127.0.0.1:54817/postgres?sslmode=prefer'
+              expires_at: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+rolePrivileges:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - $ref: '../../shared/parameters.yaml#/Role'
+    - $ref: '../../shared/parameters.yaml#/Schema'
+  put:
+    operationId: setRolePrivileges
+    tags: [Roles]
+    summary: Set what a role is granted in one schema
+    description: >-
+      Replaces what the role itself is granted in the schema: whether it may
+      use the schema and create in it, and its privileges on the schema's
+      tables and views. The table privileges are granted on every table the
+      schema holds now and on each the application role creates later, and
+      any the role held on single tables are taken away, so afterwards the
+      schema is `uniform`. What the role holds through its access level is
+      not changed. A role the engine manages is refused with `409`, and a
+      schema of PostgreSQL's own or the engine's with `404`.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-08]
+    x-issues: [306]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SchemaPrivilegesSet' }
+          example: { usage: true, create: false, tables: [select, insert] }
+    responses:
+      '200':
+        description: What the role is now granted in the schema.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SchemaPrivileges' }
+            example:
+              schema: public
+              usage: true
+              create: false
+              tables: [select, insert]
+              future_tables: [select, insert]
+              uniform: true
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }

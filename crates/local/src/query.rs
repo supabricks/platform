@@ -72,10 +72,12 @@ impl Query {
                 .as_u64()
                 .ok_or_else(|| invalid("missing gateway port"))? as u16;
             let socket = TcpStream::connect(("127.0.0.1", port)).await?;
-            let (client,connection)=Config::new().user("supabricks_owner")
+            let (client,connection)=Config::new()
+                    // The application role, unless the server itself asks as another.
+                    .user(target["username"].as_str().unwrap_or("supabricks_owner"))
                     .password(target["password"].as_str().ok_or_else(||invalid("missing app credential"))?)
                     .dbname("postgres").application_name("supabricks-local-api")
-                    .options(format!("-c statement_timeout={} -c lock_timeout=1000 -c idle_in_transaction_session_timeout=5000",self.timeout_ms))
+                    .options(format!("-c statement_timeout={} -c lock_timeout=1000 -c idle_in_transaction_session_timeout=5000{}",self.timeout_ms,target["options"].as_str().unwrap_or_default()))
                     .connect_raw(FramedSocket::new(socket),NoTls).await.map_err(db_error)?;
             Ok::<_, crate::store::Error>((client, ConnectionTask(tokio::spawn(connection))))
         };

@@ -70,6 +70,13 @@ Import:
   description: Import ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+Role:
+  name: role
+  in: path
+  required: true
+  description: A role's name, percent-encoded.
+  schema: { type: string, minLength: 1, maxLength: 63 }
+
 Limit:
   name: limit
   in: query

@@ -29,7 +29,7 @@ fn no_table() -> Problem {
     Problem::not_found("There is no such table on this branch.")
 }
 /// A string literal that reads the same whatever the database's settings.
-fn literal(text: &str) -> Result<String, Problem> {
+pub(super) fn literal(text: &str) -> Result<String, Problem> {
     if text.contains('\0') {
         return Err(invalid("A value cannot contain a NUL character."));
     }
@@ -61,17 +61,33 @@ fn kind(relkind: &str) -> &'static str {
 fn scope_of(runtime: ProjectId) -> String {
     format!("api-read:{runtime}")
 }
-fn lost() -> Problem {
+pub(super) fn lost() -> Problem {
     Problem::unavailable("The read was interrupted. Try again.")
 }
-/// Start a read-only statement and say which handle holds it.
-fn start(
+/// Who a statement the server wrote runs as.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum As {
+    /// The application role, read-only.
+    Reader,
+    /// The engine's control role, for a change the application role may not
+    /// make. Its statements are kept out of PostgreSQL's log.
+    Control,
+}
+fn scope_as(runtime: ProjectId, who: As) -> String {
+    match who {
+        As::Reader => scope_of(runtime),
+        As::Control => format!("api-control:{runtime}"),
+    }
+}
+/// Start a statement and say which handle holds it.
+pub(super) fn start_as(
     store: &mut Store,
     host: &mut Option<Local>,
     runtime: ProjectId,
     branch: BranchId,
     sql: String,
     max_rows: usize,
+    who: As,
 ) -> Result<OperationId, Problem> {
     if sql.len() > 32768 {
         return Err(Problem::new(
@@ -113,14 +129,24 @@ fn start(
     gateway
         .ensure_listener(store, cell, branch)
         .map_err(|e| Problem::from(&e))?;
-    let connection = store
+    let mut connection = store
         .stable_connection_json(runtime, branch)
         .map_err(|e| Problem::from(&e))?;
     let record = store.branch(branch).map_err(|e| Problem::from(&e))?;
+    if who == As::Control {
+        connection["username"] = "cloud_admin".into();
+        connection["password"] = store
+            .endpoint_password(record.endpoint.id)
+            .map_err(|e| Problem::from(&e))?
+            .into();
+        connection["options"] = " -c search_path=pg_catalog -c log_statement=none \
+            -c log_min_error_statement=panic -c log_min_duration_statement=-1"
+            .into();
+    }
     let id = OperationId::new();
     statements
         .start(
-            scope_of(runtime),
+            scope_as(runtime, who),
             id,
             Target {
                 branch,
@@ -128,7 +154,7 @@ fn start(
             },
             Query {
                 sql,
-                read_only: true,
+                read_only: who == As::Reader,
                 max_rows,
                 timeout_ms: 10000,
             },
@@ -174,23 +200,26 @@ fn failed(error: &Value) -> Problem {
         }
     }
 }
-/// The rows a read returned, or `None` while it runs. `sql` is what this
-/// request would have started, so a handle only answers the request it is for.
-fn poll(
+/// The rows a statement returned, or `None` while it runs. `sql`, when given,
+/// is what this request would have started, so a handle only answers the
+/// request it is for. A failure is PostgreSQL's own error, for the caller to
+/// put in its terms.
+pub(super) fn poll_as(
     host: &mut Option<Local>,
     runtime: ProjectId,
     id: &str,
-    sql: &str,
-) -> Result<Option<Vec<Value>>, Problem> {
+    sql: Option<&str>,
+    who: As,
+) -> Result<Option<Result<Vec<Value>, Value>>, Problem> {
     let statements = databases::owner(host)?
         .statements
         .as_deref_mut()
         .ok_or_else(lost)?;
-    let scope = scope_of(runtime);
+    let scope = scope_as(runtime, who);
     let id: OperationId = id.parse().map_err(|_| lost())?;
     if statements
         .asked(&scope, id)
-        .is_none_or(|(query, _)| query.sql != sql)
+        .is_none_or(|(query, _)| sql.is_some_and(|sql| query.sql != sql))
     {
         return Err(lost());
     }
@@ -199,17 +228,39 @@ fn poll(
         Some("running" | "cancelling") => Ok(None),
         Some("succeeded") => {
             statements.forget(&scope, id);
-            Ok(Some(
-                value["result"]["rows"]
-                    .as_array()
-                    .cloned()
-                    .unwrap_or_default(),
-            ))
+            Ok(Some(Ok(value["result"]["rows"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default())))
         }
         _ => {
             statements.forget(&scope, id);
-            Err(failed(&value["error"]))
+            Ok(Some(Err(value["error"].clone())))
         }
+    }
+}
+/// Start a read as the application role.
+fn start(
+    store: &mut Store,
+    host: &mut Option<Local>,
+    runtime: ProjectId,
+    branch: BranchId,
+    sql: String,
+    max_rows: usize,
+) -> Result<OperationId, Problem> {
+    start_as(store, host, runtime, branch, sql, max_rows, As::Reader)
+}
+/// The rows a read returned, or `None` while it runs.
+fn poll(
+    host: &mut Option<Local>,
+    runtime: ProjectId,
+    id: &str,
+    sql: &str,
+) -> Result<Option<Vec<Value>>, Problem> {
+    match poll_as(host, runtime, id, Some(sql), As::Reader)? {
+        None => Ok(None),
+        Some(Ok(rows)) => Ok(Some(rows)),
+        Some(Err(error)) => Err(failed(&error)),
     }
 }
 /// Run one statement for a request: start it, then answer `wait` until done.
@@ -233,7 +284,10 @@ fn read(
         }),
     }
 }
-fn place(store: &Store, path: (&str, &str, &str)) -> Result<(ProjectId, BranchId), Problem> {
+pub(super) fn place(
+    store: &Store,
+    path: (&str, &str, &str),
+) -> Result<(ProjectId, BranchId), Problem> {
     let (project, database, branch) = path;
     let (_, database, view) = branches::found(store, project, database, branch)?;
     Ok((database.project, view.id))
