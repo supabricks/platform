@@ -336,6 +336,13 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             parameter("project"),
             parameter("database"),
         ),
+        Operation::ResetDatabaseCredentials => databases::reset_credentials(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("database"),
+        ),
         Operation::ListBranches => {
             branches::list(store, call, parameter("project"), parameter("database"))
         }

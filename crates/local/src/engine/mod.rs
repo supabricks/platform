@@ -272,6 +272,8 @@ pub struct Cell {
     attached: HashSet<supabricks_core::resource::BranchId>,
     sql: sql::Sql,
     configured: HashSet<(String, u32)>,
+    /// A digest of the application password each running compute was last given.
+    applied: std::collections::HashMap<String, String>,
     pub last_error: Option<String>,
 }
 // Retain the percentage reserve on small filesystems (including bounded
@@ -327,6 +329,7 @@ impl Cell {
         let mut cell = Self {
             sql: sql::Sql::new()?,
             configured: HashSet::new(),
+            applied: std::collections::HashMap::new(),
             config,
             root,
             generation: store.generation(),
@@ -756,6 +759,41 @@ impl Cell {
         Ok(supervisor::os::identity(record.pid)?
             .is_some_and(|id| !id.zombie && id.start == record.start_identity))
     }
+    /// Give the application role its password and remember which it was.
+    fn provision(
+        &mut self,
+        store: &Store,
+        branch: &BranchRecord,
+        port: u16,
+        role: &str,
+    ) -> Result<()> {
+        let password = store.app_password(branch.endpoint.id)?;
+        self.sql.provision(
+            port,
+            &store.endpoint_password(branch.endpoint.id)?,
+            &password,
+            branch.expired || store.governed_branch(branch.branch.id)?,
+        )?;
+        self.applied.insert(role.into(), Self::digest(&password));
+        Ok(())
+    }
+    fn digest(password: &str) -> String {
+        use sha2::{Digest, Sha256};
+        hex::encode(Sha256::digest(password))
+    }
+    /// Whether the branch's compute, if one is running, accepts the
+    /// application password the store now holds. A compute that is starting
+    /// is given it before it accepts anyone.
+    pub(crate) fn password_applied(&self, store: &Store, branch: &BranchRecord) -> Result<bool> {
+        let role = Self::compute_role(branch);
+        if !self.configured.iter().any(|(r, _)| r == &role) {
+            return Ok(true);
+        }
+        Ok(
+            self.applied.get(&role)
+                == Some(&Self::digest(&store.app_password(branch.endpoint.id)?)),
+        )
+    }
     fn compute_role(branch: &BranchRecord) -> String {
         format!("compute-{}", branch.endpoint.id)
     }
@@ -819,15 +857,16 @@ impl Cell {
                         &store.app_password(branch.endpoint.id)?,
                     )?;
                 } else {
-                    self.sql.provision(
-                        ports.sql,
-                        &store.endpoint_password(branch.endpoint.id)?,
-                        &store.app_password(branch.endpoint.id)?,
-                        branch.expired || store.governed_branch(branch.branch.id)?,
-                    )?;
+                    self.provision(store, branch, ports.sql, &role)?;
                 }
                 store.governed_clone_ready(branch.branch.id)?;
                 self.configured.insert((role, record.pid));
+            } else if !export
+                && self.applied.get(&role)
+                    != Some(&Self::digest(&store.app_password(branch.endpoint.id)?))
+            {
+                // The application password was reset while the compute ran.
+                self.provision(store, branch, ports.sql, &role)?;
             }
             return Ok(true);
         }
@@ -941,6 +980,7 @@ impl Cell {
         // Revoke launch authorization first. A delayed helper cannot start after suspension.
         self.launches.remove(&role);
         self.configured.retain(|(r, _)| r != &role);
+        self.applied.remove(&role);
         if let Some(record) = store
             .native_processes()?
             .into_iter()

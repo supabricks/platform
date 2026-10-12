@@ -408,7 +408,7 @@ known now:
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
-| AP07 Administration and observability | Little | Roles (#251), password reset (#250), extensions (#253), metrics (#247), query activity (#248) |
+| AP07 Administration and observability | Password reset done; see below | Roles (#251), extensions (#253), metrics (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
@@ -706,6 +706,38 @@ history.
 | A file read from a web address or object storage | #312 |
 | Loading straight into analytical tables | #313 |
 | Imports for signed-in callers on a governed server | #332 |
+
+
+### AP07: Administration and observability
+
+Built one capability at a time, each with its operation and tests, in this
+order: password reset (#250), roles and privileges (#251), extensions (#253),
+metrics (#247), query activity (#248). The domain is marked complete when all
+five are in.
+
+#### Password reset (#250)
+
+**Completeness review.** From reading the code on 2026-10-12. Every branch has
+one role applications connect as, `supabricks_owner`, with a password of its
+own that the daemon stores and gives to PostgreSQL each time the branch's
+compute starts. Nothing changed that password afterwards.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| Which role? | One application role per branch; no others exist until #251 | `resetDatabaseCredentials` resets that role and takes no role name. Named roles come with #251 |
+| How does a running branch get the new password? | The role is provisioned once per compute process | The engine remembers which password each running compute was given and provisions again when the stored one differs. The store is the only durable state, so a crash at any point converges, and there is no schema change |
+| When does the request answer? | The daemon must not wait on PostgreSQL | It answers `wait` (as a table read does) until the engine has applied the password, so the reply means PostgreSQL accepts it |
+| Open connections | PostgreSQL keeps sessions that are already authenticated | They stay open; the contract says so and says how to close them (suspend and resume) |
+| Parent and child branches | Each branch has its own stored password, applied over whatever the copied catalog held | A reset changes one branch only |
+| Repeats | | No `Idempotency-Key`: a repeat resets again and the last reply holds the password in force, so a stored reply never carries a stale secret |
+| Signed-in callers | The application role cannot log in on a governed server | `x-profiles: [local]`; `409` where PostgreSQL is private (#306) |
+
+**Tests.** `api/tests/test_databases.py`: refusals without engines and for
+bodies that name a role or a password; and on real PostgreSQL, that the new
+password is accepted and the old refused when the reply arrives, that a
+connection open during the reset finishes its work, that a child branch keeps
+its own password, and that a reset on a suspended branch does not wake it and
+is in force when it starts.
 
 ## 7. Risks
 

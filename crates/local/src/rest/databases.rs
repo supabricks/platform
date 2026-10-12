@@ -586,26 +586,15 @@ pub fn connection(
     ))
 }
 
-pub fn credentials(
-    store: &mut Store,
-    host: &mut Option<Local>,
-    call: &Call,
-    project: &str,
-    database: &str,
-) -> Result<Reply, Problem> {
-    let (_, record) = found(store, project, database)?;
-    let named = match &call.body {
-        None => None,
-        Some(_) => text(fields(call, &["branch_id"])?, "branch_id")?,
-    };
-    let branch = branch_of(store, &record, named)?;
-    let found = target(store, host, call, &record, branch)?.ok_or_else(|| {
-        Problem::new(
-            409,
-            "conflict",
-            "PostgreSQL is private in this project; nobody connects to it directly.",
-        )
-    })?;
+fn private() -> Problem {
+    Problem::new(
+        409,
+        "conflict",
+        "PostgreSQL is private in this project; nobody connects to it directly.",
+    )
+}
+/// The reply that shows a password: never cached.
+fn shown(found: &Value) -> Reply {
     let mut reply = Reply::ok(json!({
         "role": found["username"],
         "password": found["password"],
@@ -615,5 +604,64 @@ pub fn credentials(
     reply
         .headers
         .insert("Cache-Control".into(), "no-store".into());
-    Ok(reply)
+    reply
+}
+/// The branch a credentials request names in its body, or the first.
+fn credentials_branch(
+    store: &Store,
+    call: &Call,
+    record: &DatabaseRecord,
+) -> Result<BranchId, Problem> {
+    let named = match &call.body {
+        None => None,
+        Some(_) => text(fields(call, &["branch_id"])?, "branch_id")?,
+    };
+    branch_of(store, record, named)
+}
+
+pub fn credentials(
+    store: &mut Store,
+    host: &mut Option<Local>,
+    call: &Call,
+    project: &str,
+    database: &str,
+) -> Result<Reply, Problem> {
+    let (_, record) = found(store, project, database)?;
+    let branch = credentials_branch(store, call, &record)?;
+    let found = target(store, host, call, &record, branch)?.ok_or_else(private)?;
+    Ok(shown(&found))
+}
+
+/// Give the application role of a branch a new password. The store is
+/// changed at once; a running compute is given the password on the engine's
+/// next pass, and the reply waits until it has been.
+pub fn reset_credentials(
+    store: &mut Store,
+    host: &mut Option<Local>,
+    call: &Call,
+    project: &str,
+    database: &str,
+) -> Result<Reply, Problem> {
+    let (_, record) = found(store, project, database)?;
+    let branch = credentials_branch(store, call, &record)?;
+    target(store, host, call, &record, branch)?.ok_or_else(private)?;
+    let held = store.branch(branch).map_err(|e| Problem::from(&e))?;
+    // A call the transport repeats while it waits must not reset again.
+    let token = format!("reset:{}", held.endpoint.id);
+    if call.resume.as_deref() != Some(token.as_str()) {
+        store
+            .reset_app_password(held.endpoint.id)
+            .map_err(|e| Problem::from(&e))?;
+    }
+    let applied = owner(host)?
+        .cell
+        .map(|cell| cell.password_applied(store, &held))
+        .transpose()
+        .map_err(|e| Problem::from(&e))?
+        .unwrap_or(true);
+    if !applied {
+        return Ok(Reply::waiting(token));
+    }
+    let found = target(store, host, call, &record, branch)?.ok_or_else(private)?;
+    Ok(shown(&found))
 }
