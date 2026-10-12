@@ -47,6 +47,9 @@ fixture uses its normal local SeaweedFS storage cell.
 The selected archive identities and target-specific CI qualification live in
 [`native-linux.json`](../../components/provenance/native-linux.json) and
 [`native-macos.json`](../../components/provenance/native-macos.json).
+Both exact archives passed
+[native-engine run 38303651869](https://github.com/supabricks/neon/actions/runs/38303651869)
+at clean source `eecdc60e4e06e0906b1b3589c0bd190568b24a99` on 2026-10-12.
 Previous receipts are retained alongside this record when those pins change.
 Only archives whose clean source identity, PostgreSQL regression result,
 extension inventory and relocated runtime smoke all match are promoted.
@@ -67,6 +70,20 @@ notarization and release signing remain separate gates.
   rejects a broken chain and accepts a complete chain.
 - The first macOS CI build used the BSD UUID configure option. PG's Darwin
   implementation uses the e2fs-style API; both targets now select that API.
+- A subsequent macOS build and regression suite passed, but archive verification
+  expected Linux's `.so` module suffix. PostgreSQL installs `.dylib` modules on
+  this Darwin target. The verifier now selects the suffix for the target; the
+  corrected source must pass the complete native-engine workflow before its
+  archives are promoted.
+- The corrected archive then passed extension runtime checks but exposed a
+  macOS smoke-harness shutdown race: the post-SIGKILL group probe returned
+  `EPERM`. [#351](https://github.com/supabricks/platform/issues/351) records the
+  failure. The bounded wait now tolerates that intermediate result, still
+  requires `ESRCH` before restarting, and still fails on a persistent denial
+  or denial of the actual kill. Three focused regression checks cover those
+  cases. The fresh native build passed on both targets, including the abrupt
+  restart smoke. The separate replay passed Linux; its queued macOS job was
+  cancelled once the fresh qualification had passed those same runtime checks.
 - A platform fixture attempt reached SQL readiness before control-plane
   reconciliation after restart. The API correctly refused the premature
   request. The fixture now waits for catalogue readiness before continuing.

@@ -105,7 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           repository: supabricks/neon
-          run-id: 33985043318
+          run-id: 38303651869
           name: native-engine-${{ matrix.target }}
           path: engine-archive
           github-token: ${{ github.token }}
@@ -116,6 +116,8 @@ jobs:
       - run: cargo build --locked -p supabricks-local
       - name: Native cell lifecycle, S3 and cold restore
         run: python e2e/native/cell.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-cell.json ${{ matrix.fault_flags }}
+      - name: PostgreSQL extension catalogue and lifecycle
+        run: python e2e/native/extensions.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-extensions.json
       - name: Branches, credentials, TTL and interrupted cleanup
         run: python e2e/native/branches.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-branches.json
       - name: Stable connections, real drivers and wake/suspend races
@@ -190,6 +192,7 @@ jobs:
             native-capture.json
             native-snapshot-policies.json
             native-project-data.json
+            native-extensions.json
             native-cell.json
             native-cell.log
             native-branches.json
