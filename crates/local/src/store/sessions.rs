@@ -77,6 +77,28 @@ impl Store {
         let rows=self.db.prepare("SELECT record FROM analytical_sessions WHERE state IN ('waiting','starting','ready','closing') ORDER BY created_at_ms")?.query_map([],|r|r.get::<_,String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
         rows.iter().map(|s| Ok(serde_json::from_str(s)?)).collect()
     }
+    /// The sessions of a project, newest first, each with whether a notebook
+    /// runs in it. `active` leaves out the ones that have ended.
+    pub(crate) fn analytical_sessions_page(
+        &self,
+        project: ProjectId,
+        active: bool,
+        before: Option<(i64, String)>,
+        limit: usize,
+    ) -> Result<Vec<(AnalyticalSession, bool)>> {
+        let (made, id) = before.unwrap_or((i64::MAX, String::new()));
+        let rows=self.db.prepare("SELECT record,coalesce(json_extract(request,'$.notebook'),0) FROM analytical_sessions WHERE project_id=?1 AND (NOT ?2 OR state IN ('waiting','starting','ready','closing')) AND (created_at_ms<?3 OR (created_at_ms=?3 AND id<?4)) ORDER BY created_at_ms DESC,id DESC LIMIT ?5")?
+            .query_map(params![project.to_string(),active,made,id,limit as i64],|r|Ok((r.get::<_,String>(0)?,r.get::<_,bool>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        rows.iter()
+            .map(|(record, notebook)| Ok((serde_json::from_str(record)?, *notebook)))
+            .collect()
+    }
+    /// The sessions open on a version.
+    pub(crate) fn snapshot_sessions(&self, id: EpochId) -> Result<Vec<OperationId>> {
+        let rows=self.db.prepare("SELECT id FROM analytical_sessions WHERE epoch_id=?1 AND state IN ('waiting','starting','ready','closing') ORDER BY created_at_ms,id")?
+            .query_map([id.to_string()],|r|r.get::<_,String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        rows.iter().map(|id| super::parse(id)).collect()
+    }
     pub fn admit_analytical_session(
         &mut self,
         project: ProjectId,

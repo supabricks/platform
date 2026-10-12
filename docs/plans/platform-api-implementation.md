@@ -216,7 +216,8 @@ changing `api/status.yaml`, which is visible in review.
 | AP07 | Database administration and observability | AP02 |
 | AP08 | Backups and restore | AP03 |
 | AP09 | Sync | AP03 |
-| AP10 onward | Analytics, notebooks, environments, catalog, jobs, project definition, access, identity, secrets, alerts, usage, server | Analytics next; access, identity and secrets last, once the governed gaps of the PostgreSQL group are settled |
+| AP10 | Analytics | AP09 |
+| AP11 onward | Notebooks, environments, catalog, jobs, project definition, access, identity, secrets, alerts, usage, server | Notebooks next; access, identity and secrets last, once the governed gaps of the PostgreSQL group are settled |
 
 AP02 to AP08 are the PostgreSQL group. AP04 to AP08 do not depend on one
 another and can proceed in parallel once AP03 is complete.
@@ -923,6 +924,66 @@ itself and pauses.
 governed servers (#348); runs in the operations feed (#349); a check of the
 source's tables and the limits in force, and more than one incremental
 pipeline per installation (#350).
+
+### AP10: Analytics
+
+**Completeness review.** From reading the code on 2026-10-12. The draft had no
+analytics domain. The capability is whole at the command level, with three
+things the prototype shows that it does not have.
+
+- **Versions are complete.** The platform calls one an epoch or a snapshot.
+  A branch's history is listed, one is read with its tables, one is pinned for
+  a time (a snapshot lease), and the older ones are collected with a count to
+  keep. Nothing listed only the versions that still have files, the pins of a
+  version, or the sessions open on one.
+- **A refresh makes a version on request,** by a full copy, without a sync
+  pipeline. It can be read and cancelled.
+- **Sessions are complete, and scarce.** A session is an engine on one
+  version. An installation runs two at once, for every project together.
+  Nothing listed the sessions of a project.
+- **A session keeps one query.** The next replaces it, a running one cannot
+  be cancelled without closing the session, and no history is kept (#353).
+- **Catalog sessions need a checkout.** A session over the project's catalog
+  reads the project's source, which an API request does not have (#355).
+
+| Question | Decision |
+|---|---|
+| Words | Version, pin, refresh, session, query. The platform's epoch, snapshot and lease do not appear |
+| IDs | A version is `ver_`, so sync's `version_id` and `last_version_id` now carry the same ID a version is read by |
+| How does the API reach it? | Refresh and open go through the command line's own actions with the project named in the path, as databases do. Reads, pins, collecting, closing and queries call the store |
+| Versions that are gone | A version whose files are deleted is not listed and answers `404`. The platform's history keeps the record |
+| Figures | Tables, rows and size come from what the version recorded when it was made, and are null where it recorded none (#355) |
+| What holds a version | Its detail lists the sessions open on it and its live pins. Sync runs and catalog publications also hold one and are not listed |
+| Queries | Addressed as the session's query, because that is what the platform keeps. Its `id` tells a caller it is still the same one |
+| Values | Every value in a result is text or null, as the engine wrote it |
+| Capacity | Reported as the installation's two slots and how many are in use, which counts other projects' sessions |
+| Engines | A refresh and a session need the engines and the analytical runtime: `503` without them |
+| Governed servers | Every operation is local only (#354) |
+| A backup | The record that holds one is not a branch and has no analytical copy |
+
+**Built.** `rest/analytics.rs` with sixteen operations:
+`listAnalyticalVersions`, `getAnalyticalVersion`, `collectAnalyticalVersions`,
+`pinAnalyticalVersion`, `renewAnalyticalPin`, `releaseAnalyticalPin`,
+`startAnalyticalRefresh`, `getAnalyticalRefresh`, `cancelAnalyticalRefresh`,
+`listAnalyticalSessions`, `openAnalyticalSession`, `getAnalyticalSession`,
+`closeAnalyticalSession`, `getAnalyticalCapacity`, `runAnalyticalQuery` and
+`getAnalyticalQuery`; and six store reads (`kept_snapshots`,
+`snapshot_source_lsn`, `snapshot_pins`, `snapshot_pin`,
+`analytical_sessions_page`, `snapshot_sessions`). No schema change.
+
+**Tests.** `api/tests/test_analytics.py`. Without engines nothing can be
+published or opened, so those tests cover an empty branch, every refusal,
+what is not found, and what must not cross projects. Three tests with engines
+and the analytical runtime do the rest: refreshes publish versions that are
+listed, read, pinned, collected and seen the same by the command line;
+sessions read their version while the branch moves on, run queries that
+succeed, are cut short and fail, fill both slots, hold their version against
+collecting, and close; and a session on a branch with no version waits for
+the refresh it started.
+
+**What remains:** query history and cancelling one query (#353); governed
+servers (#354); session size, capacity that can be set, catalog sessions and
+figures for every version (#355).
 
 ## 7. Risks
 

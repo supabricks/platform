@@ -1,0 +1,310 @@
+AnalyticalVersion:
+  type: object
+  description: >-
+    One published state of a branch's analytical copy: every table sync
+    carried, as it stood at one position of the branch's PostgreSQL. A
+    version never changes once published.
+  required: [id, project_id, database_id, branch_id, sequence, state, current, error, requested_at, published_at, source_lsn, pipeline_id, table_count, row_count, size_bytes]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    project_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id:
+      description: The database the branch is in. Null once the branch is gone.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    sequence:
+      type: integer
+      description: The order versions were published in across the installation. Later is larger.
+    state:
+      type: string
+      enum: [available, unavailable, deleting]
+      description: >-
+        `unavailable` when its files are missing or damaged; `error` says
+        which. `deleting` once collected, until its files are gone, after
+        which it is no longer listed.
+    current:
+      type: boolean
+      description: Whether it is the branch's latest, which a session opened on the branch reads.
+    error:
+      oneOf: [{ type: string }, { type: 'null' }]
+    requested_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    published_at:
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    source_lsn:
+      description: The position of the branch's PostgreSQL that the version holds.
+      oneOf: [{ type: string }, { type: 'null' }]
+    pipeline_id:
+      description: The sync pipeline that published it. Null for a version made by a refresh.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    table_count:
+      description: Null where the version does not record it.
+      oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+    row_count:
+      description: Rows across its tables. Null where the version does not record it.
+      oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+    size_bytes:
+      description: The size of its files. Null where the version does not record it.
+      oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+
+AnalyticalVersionDetail:
+  allOf:
+    - $ref: './schemas.yaml#/AnalyticalVersion'
+    - type: object
+      required: [observed_at, tables, omitted_tables, readers]
+      properties:
+        observed_at:
+          description: When the PostgreSQL state it holds was read.
+          oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+        tables:
+          type: array
+          items: { $ref: './schemas.yaml#/AnalyticalTable' }
+        omitted_tables:
+          type: array
+          description: Relations of the branch that were not carried, and why.
+          items:
+            type: object
+            required: [schema, name, reason]
+            properties:
+              schema: { type: string }
+              name: { type: string }
+              reason: { type: string }
+        readers:
+          type: object
+          description: What holds the version. While anything does, collecting leaves it alone.
+          required: [session_ids, pins]
+          properties:
+            session_ids:
+              type: array
+              description: Sessions that are open on it.
+              items: { $ref: '../../shared/schemas.yaml#/Id' }
+            pins:
+              type: array
+              description: Pins that have not expired.
+              items: { $ref: './schemas.yaml#/AnalyticalPin' }
+
+AnalyticalTable:
+  type: object
+  required: [schema, name, rows, columns]
+  properties:
+    schema: { type: string, description: The PostgreSQL schema it came from. }
+    name: { type: string }
+    rows:
+      oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+    columns:
+      type: array
+      items:
+        type: object
+        required: [name, type, nullable]
+        properties:
+          name: { type: string }
+          type:
+            description: The analytical type the column is stored as.
+            oneOf: [{ type: string }, { type: 'null' }]
+          nullable:
+            oneOf: [{ type: boolean }, { type: 'null' }]
+
+AnalyticalVersionPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/AnalyticalVersion' } }
+
+AnalyticalPin:
+  type: object
+  description: A hold on a version for a time, so that collecting does not delete it.
+  required: [id, version_id, expires_at]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    version_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    expires_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+
+AnalyticalPinRequest:
+  type: object
+  additionalProperties: false
+  required: [ttl_seconds]
+  properties:
+    ttl_seconds:
+      type: integer
+      minimum: 1
+      maximum: 86400
+      description: How long the pin lasts from now.
+
+AnalyticalCollect:
+  type: object
+  additionalProperties: false
+  required: [keep]
+  properties:
+    keep:
+      type: integer
+      minimum: 1
+      maximum: 100
+      description: How many of the branch's newest versions to keep, the current one included.
+
+AnalyticalCollection:
+  type: object
+  required: [branch_id, keep, deleting]
+  properties:
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    keep: { type: integer }
+    deleting:
+      type: array
+      description: The versions this call marked for deletion. At most 256 a call.
+      items: { $ref: '../../shared/schemas.yaml#/Id' }
+
+AnalyticalRefreshRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    limits:
+      type: object
+      additionalProperties: false
+      description: Bounds on the copy. Left out, the platform's defaults apply.
+      properties:
+        max_bytes: { type: integer, minimum: 1 }
+        timeout_ms: { type: integer, minimum: 1 }
+
+AnalyticalRefresh:
+  type: object
+  description: One full copy of a branch's tables, made on request, that publishes a version.
+  required: [id, branch_id, state, error, version_id]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    state:
+      type: string
+      enum: [running, succeeded, failed, cancelled]
+    error:
+      oneOf: [{ type: string }, { type: 'null' }]
+    version_id:
+      description: The version it published. Null until it succeeds.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+
+AnalyticalSessionOpen:
+  type: object
+  additionalProperties: false
+  description: Give `branch_id` to read the branch's current version, or `version_id` to read that one.
+  properties:
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    version_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    ttl_seconds:
+      type: integer
+      minimum: 10
+      maximum: 3600
+      default: 900
+      description: How long the session lasts from now. It is closed when the time is up.
+
+AnalyticalSession:
+  type: object
+  description: >-
+    A running Spark-compatible engine reading one version of one branch. It
+    is read-only and sees exactly that version for as long as it lives.
+  required: [id, project_id, database_id, branch_id, version_id, refresh_id, purpose, state, error, created_at, expires_at, spark_connect_url]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    project_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id:
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    version_id:
+      description: The version it reads. Null while it waits for the branch's first version.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    refresh_id:
+      description: The refresh it waits for, when the branch had no version to read.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    purpose:
+      type: string
+      enum: [query, notebook]
+      description: '`notebook` for a session a notebook runs in; those are opened and closed by the notebook.'
+    state:
+      type: string
+      enum: [waiting, starting, ready, closing, closed, failed]
+      description: >-
+        `waiting` for the branch's first version, `starting` while the engine
+        comes up, `ready` to run queries. `closed` and `failed` are final.
+    error:
+      description: >-
+        Why it ended: `closed`, `cancelled`, `expired`, or the platform's code
+        for a failure such as `daemon_restarted`. Null while it lives.
+      oneOf: [{ type: string }, { type: 'null' }]
+    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    expires_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    spark_connect_url:
+      description: Where a Spark Connect client reaches it, on this machine only. Null unless `ready`.
+      oneOf: [{ type: string }, { type: 'null' }]
+
+AnalyticalSessionPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/AnalyticalSession' } }
+
+AnalyticalCapacity:
+  type: object
+  required: [session_slots, sessions_open]
+  properties:
+    session_slots:
+      type: integer
+      description: How many sessions the installation runs at once.
+    sessions_open:
+      type: integer
+      description: How many are open now, across every project of the installation.
+
+AnalyticalQueryRun:
+  type: object
+  additionalProperties: false
+  required: [sql]
+  properties:
+    sql:
+      type: string
+      minLength: 1
+      maxLength: 32768
+      description: One Spark SQL statement. A session is read-only.
+    max_rows: { type: integer, minimum: 1, maximum: 1000, default: 200 }
+    max_bytes: { type: integer, minimum: 1024, maximum: 262144, default: 262144 }
+    timeout_ms: { type: integer, minimum: 100, maximum: 30000, default: 10000 }
+
+AnalyticalQuery:
+  type: object
+  description: A statement run in a session, and its result once it has one.
+  required: [id, session_id, version_id, state, sql, columns, rows, truncated, error]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    session_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    version_id:
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    state:
+      type: string
+      enum: [running, complete, failed, cancelled]
+    sql:
+      description: The statement. Null for a query that `failed`, whose statement the platform does not keep.
+      oneOf: [{ type: string }, { type: 'null' }]
+    columns:
+      description: Null until the query is `complete`.
+      oneOf:
+        - type: array
+          items:
+            type: object
+            required: [name, type]
+            properties:
+              name: { type: string }
+              type: { type: string, description: 'The Spark type, such as `int` or `string`.' }
+        - { type: 'null' }
+    rows:
+      description: Each row as its values in column order, each value as text or null. Null until `complete`.
+      oneOf:
+        - type: array
+          items:
+            type: array
+            items:
+              oneOf: [{ type: string }, { type: 'null' }]
+        - { type: 'null' }
+    truncated:
+      type: boolean
+      description: Whether rows were left out to stay within `max_rows` or `max_bytes`.
+    error:
+      description: What went wrong, or why it was cancelled. Null otherwise.
+      oneOf: [{ type: string }, { type: 'null' }]

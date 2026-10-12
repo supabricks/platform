@@ -72,7 +72,8 @@ running the tests. They are skipped where none has the packages; CI installs
 them and passes `--require-worker`. A test that loads a file is marked `engine`
 as well.
 
-Tests marked `analytics` run a sync pipeline, which the analytical workers
+Tests marked `analytics` run a sync pipeline, a refresh or an analytical
+session, which the analytical workers
 carry out (`python/analytics/`). Those workers refuse to run under anything but
 the exact environment in `python/analytics/uv.lock`, Python version included,
 so these tests are skipped unless the worker Python is that environment: an
@@ -83,5 +84,5 @@ it and passes `--require-analytics`.
 
 An installation runs at most 32 branches, and without engines a deleted branch
 keeps its place. A domain that creates databases or branches therefore uses a
-server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py`, `test_extensions.py`, `test_backups.py` and `test_sync.py`) and shares one resource between
+server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py`, `test_extensions.py`, `test_backups.py`, `test_sync.py` and `test_analytics.py`) and shares one resource between
 tests that do not change it.
