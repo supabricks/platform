@@ -10,7 +10,8 @@ class Client:
         # Sent with every request: a bearer token on a governed server.
         self.headers = headers or {}
 
-    def raw(self, method, path, *, json=None, params=None, headers=None, origin=True, csrf=True, data=None):
+    def raw(self, method, path, *, json=None, params=None, headers=None, origin=True, csrf=True, data=None,
+            timeout=15):
         """Send one request below /api/v1. Every error must be a problem document."""
         sent = {}
         if origin:
@@ -20,7 +21,7 @@ class Client:
         sent.update(self.headers)
         sent.update(headers or {})
         response = self.http.request(method, self.base + PREFIX + path, json=json, params=params,
-                                     data=data, headers=sent, timeout=15)
+                                     data=data, headers=sent, timeout=timeout)
         if response.status_code >= 400 and method.upper() != 'HEAD':
             errors = spec.problem_errors(response.status_code, response.headers.get('Content-Type'), _body(response))
             assert not errors, f'{method} {path}: {errors}'
