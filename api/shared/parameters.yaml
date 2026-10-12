@@ -77,6 +77,13 @@ Role:
   description: A role's name, percent-encoded.
   schema: { type: string, minLength: 1, maxLength: 63 }
 
+Extension:
+  name: extension
+  in: path
+  required: true
+  description: An extension's name, percent-encoded.
+  schema: { type: string, minLength: 1, maxLength: 63 }
+
 Limit:
   name: limit
   in: query

@@ -3,6 +3,7 @@
 //! the same typed actions the command line uses.
 mod branches;
 mod databases;
+mod extensions;
 mod imports;
 mod operations;
 mod problem;
@@ -498,6 +499,13 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         }
         Operation::RetryImport => {
             imports::retry(store, call, parameter("project"), parameter("import"))
+        }
+        Operation::ListExtensions => extensions::list(store, &mut host, call, branch()),
+        Operation::EnableExtension => {
+            extensions::enable(store, &mut host, call, branch(), parameter("extension"))
+        }
+        Operation::DisableExtension => {
+            extensions::disable(store, &mut host, call, branch(), parameter("extension"))
         }
         Operation::ListRoles => roles::list(store, &mut host, call, branch()),
         Operation::CreateRole => roles::create(store, &mut host, call, branch()),

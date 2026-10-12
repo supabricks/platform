@@ -92,7 +92,7 @@ fn password_of(name: &str, password: &str) -> String {
 }
 /// One transaction of several commands, quoted with a tag no request can
 /// know, so no name or value can close the block.
-fn block(commands: &[String]) -> String {
+pub(super) fn block(commands: &[String]) -> String {
     let tag = format!("sb{}", OperationId::new().to_string().replace('-', ""));
     format!("DO ${tag}$ BEGIN {} END ${tag}$", commands.join(" "))
 }
@@ -148,7 +148,7 @@ fn refused(error: &Value) -> Problem {
 // ---- Running statements across the calls of one request ----
 
 /// Run a read for a request: start it, then answer `wait` until it is done.
-fn read(
+pub(super) fn read(
     store: &mut Store,
     host: &mut Option<Local>,
     call: &Call,
@@ -197,11 +197,12 @@ impl<'a> Progress<'a> {
 fn waiting(step: &str, handle: &str, secret: &str) -> Reply {
     Reply::waiting(format!("{step}:{handle}:{secret}"))
 }
-/// Make a change, then optionally read what it left. `write` is started once;
+/// Make a change, then optionally read what it left. `refused` puts
+/// PostgreSQL's refusal of the change in the caller's terms. `write` is started once;
 /// the calls the transport repeats only follow it. A read that cannot start
 /// because the workers are busy is tried again, not reported: the change is
 /// already made.
-fn change(
+pub(super) fn change_with(
     store: &mut Store,
     host: &mut Option<Local>,
     call: &Call,
@@ -209,6 +210,7 @@ fn change(
     secret: &str,
     write: impl FnOnce() -> Result<String, Problem>,
     after: Option<String>,
+    refused: fn(&Value) -> Problem,
 ) -> Result<Result<Vec<Value>, Reply>, Problem> {
     let (runtime, branch) = at;
     let Some(progress) = Progress::of(call)? else {
@@ -248,6 +250,18 @@ fn change(
             }
         },
     )
+}
+/// A change to a role, refused in a role's terms.
+fn change(
+    store: &mut Store,
+    host: &mut Option<Local>,
+    call: &Call,
+    at: (ProjectId, BranchId),
+    secret: &str,
+    write: impl FnOnce() -> Result<String, Problem>,
+    after: Option<String>,
+) -> Result<Result<Vec<Value>, Reply>, Problem> {
+    change_with(store, host, call, at, secret, write, after, refused)
 }
 /// The password a request made on its first call.
 fn made(call: &Call) -> Result<String, Problem> {
