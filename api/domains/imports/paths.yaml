@@ -222,6 +222,11 @@ importSourceContent:
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
       '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '408':
+        description: The content did not all arrive within ten minutes. The source is deleted.
+        content:
+          application/problem+json:
+            schema: { $ref: '../../shared/schemas.yaml#/Problem' }
       '415':
         description: The body was not sent as `application/octet-stream`.
         content:

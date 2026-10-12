@@ -38,8 +38,9 @@ def declare(api, project, name='people.csv', size=len(CSV), expect=201, used=Non
 
 
 def send(api, project, source, content, expect=200):
+    # A file may take minutes to arrive; the server allows ten.
     return api.call('uploadImportSource', path={'project': project, 'source': source}, data=content,
-                    headers=OCTETS, expect=expect)
+                    headers=OCTETS, expect=expect, timeout=300)
 
 
 def source_of(api, project, source, expect=200):
