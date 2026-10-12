@@ -17,12 +17,15 @@ domains:
   projects:   { slice: AP01, stage: complete }
   operations: { slice: AP01, stage: complete }
   databases:  { slice: AP02, stage: complete }
-  branches:   { slice: AP03, stage: draft }
+  branches:   { slice: AP03, stage: complete }
 
 operations:
   getServerVersion: { stage: implemented }
   restartService:   { stage: deferred, issue: 318 }
   listRecentItems:  { stage: deferred, issue: 286 }
   listComputeSizes: { stage: deferred, issue: 244 }
+  resetBranch:            { stage: deferred, issue: 256 }
+  getBranchRestoreWindow: { stage: deferred, issue: 254 }
+  getBranchSchemaDiff:    { stage: deferred, issue: 255 }
   # Built with the domains whose resources it draws.
   getProjectMap:    { stage: draft, issue: 321 }

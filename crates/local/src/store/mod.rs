@@ -7,7 +7,7 @@ mod catalog_governance;
 mod catalog_publication;
 mod connections;
 mod database_directory;
-pub use database_directory::DatabaseRecord;
+pub use database_directory::{BranchView, DatabaseRecord};
 mod deployments;
 mod environments;
 pub(crate) mod error;

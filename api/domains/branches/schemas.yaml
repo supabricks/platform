@@ -1,72 +1,98 @@
 Branch:
   type: object
   description: >-
-    A full, writable copy of a database that shares storage with its parent
-    and costs only what it changes.
-  required: [id, database_id, name, state, is_default, created_at, revision]
+    A full, writable copy of a database that shares storage with the branch it
+    was made from. Its head position, how much it has changed and who created
+    it are not reported in version 1.
+  required: [id, database_id, name, parent_id, state, is_default, created_from, created_at, expires_at, child_count, connections, revision]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
     database_id: { $ref: '../../shared/schemas.yaml#/Id' }
     name: { $ref: './schemas.yaml#/BranchName' }
     parent_id:
-      description: Null for the root branch of a database.
+      description: The branch it was made from. Null for a database's first branch.
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
-    state: { type: string, enum: [creating, running, suspended, resetting, deleting] }
-    is_default: { type: boolean }
-    created_from: { $ref: './schemas.yaml#/BranchPoint' }
-    created_by: { $ref: '../../shared/schemas.yaml#/PrincipalRef' }
-    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    state:
+      type: string
+      enum: [provisioning, running, suspending, suspended, resuming, deleting]
+      description: >-
+        `provisioning` until the branch has started for the first time; the
+        `-ing` states last until the operation that caused them finishes. A
+        branch whose expiry has passed is `deleting`.
+    is_default: { type: boolean, description: "Whether it is the project's default branch." }
+    created_from:
+      description: The point in its parent the branch started from, as asked. Null for a database's first branch.
+      oneOf: [{ $ref: './schemas.yaml#/BranchPoint' }, { type: 'null' }]
+    created_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: >-
+        When the branch was created. For one that existed before the server
+        recorded this, the time of the upgrade that started recording it.
     expires_at:
       description: When the branch deletes itself. Null to keep it.
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
-    head_lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
-    delta_bytes: { $ref: '../../shared/schemas.yaml#/Bytes', description: 'What this branch has changed since it was made. Not reported yet.' }
-    child_count: { type: integer }
-    sync_pipeline_id:
-      description: The sync pipeline that publishes this branch, if any.
-      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    child_count: { type: integer, minimum: 0, description: 'Branches made from it that exist now.' }
+    connections:
+      type: object
+      description: Client connections to the branch through the server.
+      required: [open, limit]
+      properties:
+        open: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, description: 'The most one branch accepts at a time.' }
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
 
 BranchName:
   type: string
-  pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]{0,62}$'
-  examples: [feature/loyalty-points]
+  description: >-
+    Unique among the databases and branches of the project. Letters, digits
+    and hyphens, at most 40 characters, stored in lower case.
+  pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,38}[a-zA-Z0-9])?$'
+  examples: [loyalty-points]
 
 BranchPoint:
   description: The moment in the parent's history that a branch starts from.
   oneOf:
     - type: object
       required: [kind]
+      additionalProperties: false
       properties: { kind: { const: head } }
     - type: object
       required: [kind, timestamp]
+      additionalProperties: false
       properties:
         kind: { const: time }
         timestamp: { $ref: '../../shared/schemas.yaml#/Timestamp' }
     - type: object
       required: [kind, lsn]
+      additionalProperties: false
       properties:
         kind: { const: lsn }
         lsn: { $ref: '../../shared/schemas.yaml#/Lsn' }
 
 BranchCreate:
   type: object
-  required: [name, parent_id]
+  required: [name]
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/BranchName' }
-    parent_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    parent_id:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
+      description: A branch of this database to start from. Defaults to the database's first branch.
     from:
       description: Defaults to the parent's current head.
       $ref: './schemas.yaml#/BranchPoint'
-    expires_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
-    start_suspended: { type: boolean, default: false }
+    expires_at:
+      description: When the branch deletes itself; a time in the future. Omit or send null to keep it.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
 
 BranchUpdate:
   type: object
   minProperties: 1
+  additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/BranchName' }
     expires_at:
+      description: A time in the future, or null to keep the branch.
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
 
 BranchPage:

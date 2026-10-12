@@ -8,7 +8,7 @@ use crate::api::{Action, Binding};
 use crate::store::{DatabaseRecord, Error, ProjectRecord, Store};
 use serde_json::{Value, json};
 use supabricks_core::error::OperationError;
-use supabricks_core::resource::{BranchId, DesiredState};
+use supabricks_core::resource::{BranchId, DesiredState, ProjectId};
 
 fn body_of(record: &DatabaseRecord) -> Value {
     json!({
@@ -30,7 +30,7 @@ fn body_of(record: &DatabaseRecord) -> Value {
 fn missing() -> Problem {
     Problem::not_found("There is no such database.")
 }
-fn found(
+pub(super) fn found(
     store: &Store,
     project: &str,
     database: &str,
@@ -53,12 +53,12 @@ fn one(record: &DatabaseRecord) -> Reply {
 }
 /// The owner's console, which every change needs: a governed server does not
 /// offer them, so a call without one never reaches a handler that asks.
-fn owner<'a, 'b>(host: &'a mut Option<Local<'b>>) -> Result<&'a mut Local<'b>, Problem> {
+pub(super) fn owner<'a, 'b>(host: &'a mut Option<Local<'b>>) -> Result<&'a mut Local<'b>, Problem> {
     host.as_mut()
         .ok_or_else(|| Problem::new(500, "internal_error", "The request has no local console."))
 }
 /// Run a branch action in the project, as the command line would.
-fn act(
+pub(super) fn act(
     store: &mut Store,
     host: &Local,
     record: &ProjectRecord,
@@ -87,11 +87,27 @@ fn reason(detail: &str) -> String {
             "A project apply that includes it is in progress.".into()
         }
         "branch has protected branch operations" => "A branch is being created from it.".into(),
+        "parent operation has not converged" => {
+            "The branch it starts from is still changing; wait for that to finish.".into()
+        }
+        "expired parent is draining" => "The branch it starts from has expired.".into(),
+        "default branch cannot have a TTL" => "The project's default branch cannot expire.".into(),
+        "branch does not accept TTL changes" => "It is being deleted.".into(),
         other => format!("The platform refused: {other}."),
     }
 }
-fn refused(code: &'static str, error: &Error) -> Problem {
+fn full() -> Problem {
+    Problem::new(
+        409,
+        "capacity_exhausted",
+        "This installation already runs 32 branches. Delete one that is not needed.",
+    )
+}
+pub(super) fn refused(code: &'static str, error: &Error) -> Problem {
     match error {
+        Error::Operation(OperationError::Conflict(detail)) if detail.contains("limit of 32") => {
+            full()
+        }
         Error::Operation(OperationError::Conflict(detail)) => {
             Problem::new(409, code, reason(detail))
         }
@@ -99,7 +115,7 @@ fn refused(code: &'static str, error: &Error) -> Problem {
     }
 }
 /// The reply to a change that started an operation.
-fn accepted(
+pub(super) fn accepted(
     store: &Store,
     project: &ProjectRecord,
     operation: &str,
@@ -116,7 +132,11 @@ fn accepted(
     Ok(operations::accepted(project, view))
 }
 /// The reply for an operation another request started.
-fn current(store: &Store, project: &ProjectRecord, operation: &str) -> Result<Reply, Problem> {
+pub(super) fn current(
+    store: &Store,
+    project: &ProjectRecord,
+    operation: &str,
+) -> Result<Reply, Problem> {
     let unreadable = || Problem::new(500, "internal_error", "The operation is unreadable.");
     let entry = store
         .operation_entry(&project.id, operation)
@@ -124,12 +144,12 @@ fn current(store: &Store, project: &ProjectRecord, operation: &str) -> Result<Re
     let view = operations::view(store, project, &entry).ok_or_else(unreadable)?;
     Ok(operations::accepted(project, view))
 }
-fn operation_id(made: &Value) -> Result<&str, Problem> {
+pub(super) fn operation_id(made: &Value) -> Result<&str, Problem> {
     made["id"]
         .as_str()
         .ok_or_else(|| Problem::new(500, "internal_error", "The operation is unreadable."))
 }
-fn name_taken(name: &str) -> Problem {
+pub(super) fn name_taken(name: &str) -> Problem {
     Problem::new(
         409,
         "name_taken",
@@ -139,7 +159,7 @@ fn name_taken(name: &str) -> Problem {
     )
 }
 /// Whether a database or branch of the project already has the name.
-fn taken(
+pub(super) fn taken(
     store: &Store,
     record: &ProjectRecord,
     name: &str,
@@ -160,7 +180,7 @@ fn taken(
                     || b.revision != b.observed_revision)
         }))
 }
-fn valid(name: &str) -> Result<String, Problem> {
+pub(super) fn valid(name: &str) -> Result<String, Problem> {
     supabricks_core::validation::valid_name(&json!({"name": name}), "name")
         .map_err(|e| Problem::invalid(e.message))
 }
@@ -241,11 +261,7 @@ pub fn create(
             Error::Operation(OperationError::Conflict(detail))
                 if detail.contains("limit of 32") =>
             {
-                Problem::new(
-                    409,
-                    "capacity_exhausted",
-                    "This installation already runs 32 branches. Delete one that is not needed.",
-                )
+                full()
             }
             _ => Problem::from(&error),
         })?;
@@ -308,29 +324,29 @@ pub fn update(
 /// Start a lifecycle change with the caller's key, or return the one that key
 /// already started: the server can stop after the change and before the reply
 /// is stored, and the repeat must land on the same operation.
-fn change(
+pub(super) fn change(
     store: &mut Store,
     host: &Local,
     project: &ProjectRecord,
-    record: &DatabaseRecord,
+    runtime: ProjectId,
     native: String,
     code: &'static str,
     action: impl FnOnce(String) -> Action,
 ) -> Result<Value, Problem> {
     if let Some(mutation) = store
-        .request_for_key(record.project, &native)
+        .request_for_key(runtime, &native)
         .map_err(|e| Problem::from(&e))?
     {
         let operation = store
-            .submit(record.project, &native, mutation)
+            .submit(runtime, &native, mutation)
             .map_err(|e| Problem::from(&e))?;
         return Ok(json!(operation));
     }
     act(store, host, project, action(native)).map_err(|e| refused(code, &e))
 }
-fn started(store: &Store, native: &str, record: &DatabaseRecord) -> Result<bool, Problem> {
+pub(super) fn started(store: &Store, native: &str, runtime: ProjectId) -> Result<bool, Problem> {
     Ok(store
-        .request_for_key(record.project, native)
+        .request_for_key(runtime, native)
         .map_err(|e| Problem::from(&e))?
         .is_some())
 }
@@ -349,7 +365,7 @@ pub fn delete(
     let scope = format!("{}:deleteDatabase", call.caller.scope());
     idempotent(store, call, &scope, |store, key| {
         let native = format!("api:deleteDatabase:{key}");
-        if !started(store, &native, &record)? {
+        if !started(store, &native, record.project)? {
             if confirm.as_deref() != Some(record.name.as_str()) {
                 return Err(Problem::invalid(
                     "confirm must be the database's name, exactly as it is now.",
@@ -383,7 +399,7 @@ pub fn delete(
             store,
             host,
             &project,
-            &record,
+            record.project,
             native,
             "delete_blocked",
             |key| Action::DeleteBranch {
@@ -397,54 +413,76 @@ pub fn delete(
     })
 }
 
-fn set_state(
+/// What a state change acts on: a database's first branch, or any branch.
+pub(super) struct Subject<'a> {
+    pub project: &'a ProjectRecord,
+    pub runtime: ProjectId,
+    pub id: BranchId,
+    pub state: &'static str,
+    pub lifecycle_revision: i64,
+    pub noun: &'static str,
+}
+pub(super) fn set_state(
     store: &mut Store,
     host: &mut Option<Local>,
     call: &Call,
-    project: &str,
-    database: &str,
+    subject: &Subject,
+    name: &'static str,
     desired: DesiredState,
 ) -> Result<Reply, Problem> {
-    let (project, record) = found(store, project, database)?;
     let host = owner(host)?;
-    let name = if desired == DesiredState::Suspended {
-        "suspendDatabase"
-    } else {
-        "resumeDatabase"
-    };
     let scope = format!("{}:{name}", call.caller.scope());
     idempotent(store, call, &scope, |store, key| {
         let native = format!("api:{name}:{key}");
-        if !started(store, &native, &record)? {
-            let conflict = |detail: &str| Problem::new(409, "conflict", detail);
-            if record.state == "deleting" {
-                return Err(conflict("The database is being deleted."));
+        if !started(store, &native, subject.runtime)? {
+            if subject.state == "deleting" {
+                return Err(Problem::new(
+                    409,
+                    "conflict",
+                    format!("The {} is being deleted.", subject.noun),
+                ));
             }
             // Asking for the state it has, or is reaching, changes nothing:
             // the reply is the operation that put it there.
             let there = if desired == DesiredState::Suspended {
-                matches!(record.state, "suspended" | "suspending")
+                matches!(subject.state, "suspended" | "suspending")
             } else {
-                matches!(record.state, "running" | "resuming" | "provisioning")
+                matches!(subject.state, "running" | "resuming" | "provisioning")
             };
             if there
                 && let Some(operation) = store
-                    .last_state_operation(&record.id.to_string())
+                    .last_state_operation(&subject.id.to_string())
                     .map_err(|e| Problem::from(&e))?
             {
-                return current(store, &project, &operation);
+                return current(store, subject.project, &operation);
             }
         }
-        let made = change(store, host, &project, &record, native, "conflict", |key| {
-            Action::SetState {
-                branch: record.id.to_string(),
-                expected_revision: record.lifecycle_revision,
+        let made = change(
+            store,
+            host,
+            subject.project,
+            subject.runtime,
+            native,
+            "conflict",
+            |key| Action::SetState {
+                branch: subject.id.to_string(),
+                expected_revision: subject.lifecycle_revision,
                 desired,
                 key,
-            }
-        })?;
-        accepted(store, &project, operation_id(&made)?, key)
+            },
+        )?;
+        accepted(store, subject.project, operation_id(&made)?, key)
     })
+}
+fn subject<'a>(project: &'a ProjectRecord, record: &DatabaseRecord) -> Subject<'a> {
+    Subject {
+        project,
+        runtime: record.project,
+        id: record.id,
+        state: record.state,
+        lifecycle_revision: record.lifecycle_revision,
+        noun: "database",
+    }
 }
 pub fn suspend(
     store: &mut Store,
@@ -453,14 +491,10 @@ pub fn suspend(
     project: &str,
     database: &str,
 ) -> Result<Reply, Problem> {
-    set_state(
-        store,
-        host,
-        call,
-        project,
-        database,
-        DesiredState::Suspended,
-    )
+    let (project, record) = found(store, project, database)?;
+    let subject = subject(&project, &record);
+    let desired = DesiredState::Suspended;
+    set_state(store, host, call, &subject, "suspendDatabase", desired)
 }
 pub fn resume(
     store: &mut Store,
@@ -469,7 +503,10 @@ pub fn resume(
     project: &str,
     database: &str,
 ) -> Result<Reply, Problem> {
-    set_state(store, host, call, project, database, DesiredState::Running)
+    let (project, record) = found(store, project, database)?;
+    let subject = subject(&project, &record);
+    let desired = DesiredState::Running;
+    set_state(store, host, call, &subject, "resumeDatabase", desired)
 }
 
 /// The branch of the database a connection request names: its first by default.

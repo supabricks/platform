@@ -120,14 +120,22 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
                 .to_owned()
             }
             "create_branch" | "branch_from" => "branch.create".to_owned(),
-            "set_state" => "branch.set_state".to_owned(),
-            "set_ttl" => "branch.set_ttl".to_owned(),
+            "set_state" | "force_delete" => match mutation["desired"].as_str().unwrap_or("deleted")
+            {
+                "running" => "branch.resume",
+                "suspended" => "branch.suspend",
+                _ => "branch.delete",
+            }
+            .to_owned(),
+            "set_ttl" => "branch.set_expiry".to_owned(),
             "export" => "analytics.export".to_owned(),
             "" => "branch.change".to_owned(),
             other => format!("branch.{other}"),
         };
         value["kind"] = json!(kind);
         let id = operation.branch_id.to_string();
+        // Only its lifecycle is the database's; an expiry or default is the branch's.
+        let database = kind.starts_with("database.");
         value["target"] = if database {
             json!({"kind": "database", "id": public_id("db", &id)})
         } else {
@@ -147,6 +155,14 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         }
         if state == "succeeded" && database && kind != "database.delete" {
             value["result"] = json!({"database": {"kind": "database", "id": public_id("db", &id)}});
+        }
+        if state == "succeeded"
+            && matches!(
+                kind.as_str(),
+                "branch.create" | "branch.suspend" | "branch.resume"
+            )
+        {
+            value["result"] = json!({"branch": {"kind": "branch", "id": public_id("br", &id)}});
         }
     }
     Some(finish(value, state, entry))

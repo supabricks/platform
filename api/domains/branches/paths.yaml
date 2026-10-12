@@ -1,4 +1,10 @@
 # Branches of a database.
+#
+# A branch is a full, writable copy of a database that shares storage with the
+# branch it was made from. Every database has a first branch, which carries the
+# database's name and has no parent; the others form a tree beneath it.
+# Connection details for a branch come from the database's `connection` and
+# `credentials` operations, which take a branch.
 
 branches:
   parameters:
@@ -9,9 +15,11 @@ branches:
     tags: [Branches]
     summary: List the branches of a database
     description: >-
-      Flat, with `parent_id` on each so the client can draw the tree.
-      `delta_bytes` is omitted until the platform reports it.
+      Flat and ordered by name, with `parent_id` on each so a client can draw
+      the tree. The database's first branch is included. A branch being deleted
+      is listed, with `state: deleting`, until its files are gone.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [BR-01, BR-01b]
     x-issues: [246]
     parameters:
@@ -20,7 +28,25 @@ branches:
     responses:
       '200':
         description: A page of branches.
-        content: { application/json: { schema: { $ref: './schemas.yaml#/BranchPage' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/BranchPage' }
+            example:
+              items:
+                - id: br_9d4b2a6c8e1f4b7a8c3d5e7f9a1b2c3d
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  name: loyalty-points
+                  parent_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  state: running
+                  is_default: false
+                  created_from: { kind: head }
+                  created_at: '2026-10-11T09:30:00.000Z'
+                  expires_at: '2026-10-18T09:30:00.000Z'
+                  child_count: 0
+                  connections: { open: 1, limit: 64 }
+                  revision: 1
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   post:
@@ -28,16 +54,31 @@ branches:
     tags: [Branches]
     summary: Create a branch
     description: >-
-      From the parent's current head, or from a past time or log position
-      inside the restore window. Restoring a database to a new branch is this
-      call with `from.kind: time`.
+      From the current head of another branch of the database, or from a past
+      time or log position in it. The reply is the operation that starts the
+      branch; its `target` is the new branch, which can be read at once with
+      `state: provisioning`. A name another database or branch in the project
+      has is refused with `409` and `code: name_taken`. An installation runs at
+      most 32 branches at a time; beyond that the request is refused with `409`
+      and `code: capacity_exhausted`. Refused with `409` while the branch it
+      starts from is still starting, suspending or resuming. A time or log
+      position the platform no longer holds, or has not reached, is found when
+      the operation runs: the operation fails and the branch is removed. A
+      governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [BR-02a, BR-02b, DB-10a]
+    x-issues: [254, 325]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     requestBody:
       required: true
-      content: { application/json: { schema: { $ref: './schemas.yaml#/BranchCreate' } } }
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/BranchCreate' }
+          example: { name: loyalty-points, expires_at: '2026-10-18T09:30:00.000Z' }
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
@@ -55,32 +96,78 @@ branch:
     operationId: getBranch
     tags: [Branches]
     summary: Get a branch
+    description: The `ETag` is the branch's revision; send it in `If-Match` to change or delete it.
     x-backend: ready
+    x-required-role: viewer
     x-console-features: [BR-01]
+    x-issues: [246]
     responses:
       '200':
         description: The branch.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Branch' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Branch' }
+            example:
+              id: br_9d4b2a6c8e1f4b7a8c3d5e7f9a1b2c3d
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              name: loyalty-points
+              parent_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: running
+              is_default: false
+              created_from: { kind: head }
+              created_at: '2026-10-11T09:30:00.000Z'
+              expires_at: '2026-10-18T09:30:00.000Z'
+              child_count: 0
+              connections: { open: 1, limit: 64 }
+              revision: 1
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
   patch:
     operationId: updateBranch
     tags: [Branches]
     summary: Rename a branch or change when it expires
-    description: To make a branch the default, update the database's `default_branch_id`.
-    x-backend: cli-only
+    description: >-
+      Renaming keeps the branch ID and its connection details; renaming a
+      database's first branch renames the database. `expires_at: null` keeps
+      the branch for good. A database's first branch and the project's default
+      branch cannot expire; asking is refused with `409`. The revision rises by
+      one for each of the two that changes and stays the same when nothing
+      does. A governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [BR-04b]
+    x-issues: [325]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatch'
     requestBody:
       required: true
-      content: { application/json: { schema: { $ref: './schemas.yaml#/BranchUpdate' } } }
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/BranchUpdate' }
+          example: { name: loyalty-points-v2, expires_at: null }
     responses:
       '200':
         description: The updated branch.
         headers: { ETag: { schema: { type: string } } }
-        content: { application/json: { schema: { $ref: './schemas.yaml#/Branch' } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Branch' }
+            example:
+              id: br_9d4b2a6c8e1f4b7a8c3d5e7f9a1b2c3d
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              name: loyalty-points-v2
+              parent_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: running
+              is_default: false
+              created_from: { kind: head }
+              created_at: '2026-10-11T09:30:00.000Z'
+              expires_at: null
+              child_count: 0
+              connections: { open: 1, limit: 64 }
+              revision: 3
       '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
@@ -91,19 +178,31 @@ branch:
     operationId: deleteBranch
     tags: [Branches]
     summary: Delete a branch
-    description: Refused for the default branch, for a branch that has children, and while a sync pipeline reads it.
+    description: >-
+      Irreversible. The branch shows `state: deleting` until the operation has
+      removed its files; then it is gone and its name is free. Refused with
+      `409` and `code: delete_blocked` for a database's first branch (delete
+      the database), for the project's default branch, for a branch others
+      were made from, and while it has open connections or an import or other
+      work running. A governed server does not offer delete yet and answers
+      `403` with `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [BR-04a]
+    x-issues: [325]
     parameters:
-      - $ref: '../../shared/parameters.yaml#/IfMatch'
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
       '409': { $ref: '../../shared/responses.yaml#/Conflict' }
       '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
 
 branchSuspend:
   parameters:
@@ -114,15 +213,27 @@ branchSuspend:
     operationId: suspendBranch
     tags: [Branches]
     summary: Suspend a branch's compute
+    description: >-
+      Stops the branch's compute. Storage is kept, and the next connection
+      resumes it. Refused with `409` while connections are open or work is
+      running on it. Suspending a branch that is already suspended, or being
+      suspended, changes nothing and answers with the operation that suspended
+      it. A governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [BR-04a]
+    x-issues: [325]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
 
 branchResume:
   parameters:
@@ -133,15 +244,73 @@ branchResume:
     operationId: resumeBranch
     tags: [Branches]
     summary: Resume a suspended branch
+    description: >-
+      Starts the branch's compute. Resuming a branch that is already running,
+      or starting, changes nothing and answers with the operation that started
+      it. Refused with `409` while an earlier suspend is still in progress. A
+      governed server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
     x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
     x-console-features: [BR-04a]
+    x-issues: [325]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
     responses:
       '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
       '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
       '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+branchDefault:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: setDefaultBranch
+    tags: [Branches]
+    summary: Make a branch the project's default
+    description: >-
+      A project has one default branch, across all of its databases: the one
+      tools use when none is named. It cannot expire or be deleted. Making a
+      branch the default takes effect at once and replaces the previous
+      default; doing it again changes nothing. Refused with `409` for a branch
+      that has an expiry or is being deleted. A default branch for each
+      database is not part of version 1. A governed server does not offer this
+      yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: administrator
+    x-profiles: [local]
+    x-console-features: [BR-04b]
+    x-issues: [325, 326]
+    responses:
+      '200':
+        description: The branch, now the default.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Branch' }
+            example:
+              id: br_9d4b2a6c8e1f4b7a8c3d5e7f9a1b2c3d
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              name: loyalty-points
+              parent_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: running
+              is_default: true
+              created_from: { kind: head }
+              created_at: '2026-10-11T09:30:00.000Z'
+              expires_at: null
+              child_count: 0
+              connections: { open: 1, limit: 64 }
+              revision: 1
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
 
 branchReset:
   parameters:
@@ -153,10 +322,11 @@ branchReset:
     tags: [Branches]
     summary: Reset a branch to its parent
     description: >-
-      Replaces the branch's contents with the parent's current head, or a past
-      point in the parent. Everything written to the branch is lost. The branch
-      keeps its ID, name and connection string.
+      Not part of version 1. Replaces the branch's contents with the parent's
+      current head, or a past point in the parent. Everything written to the
+      branch is lost. The branch keeps its ID, name and connection string.
     x-backend: new
+    x-required-role: editor
     x-console-features: [BR-06]
     x-issues: [256]
     parameters:
@@ -189,7 +359,9 @@ branchRestoreWindow:
     operationId: getBranchRestoreWindow
     tags: [Branches]
     summary: Get the span of history a new branch can start from
+    description: Not part of version 1. The platform does not report how far back a branch's history reaches.
     x-backend: new
+    x-required-role: viewer
     x-console-features: [BR-02b, DB-10a, DB-10c]
     x-issues: [254]
     responses:
@@ -208,8 +380,11 @@ branchSchemaDiff:
     operationId: getBranchSchemaDiff
     tags: [Branches]
     summary: Compare the schema of a branch with another branch
-    description: The branch in the path is the one compared; `base` is what it is compared against.
+    description: >-
+      Not part of version 1. The branch in the path is the one compared; `base`
+      is what it is compared against.
     x-backend: new
+    x-required-role: viewer
     x-console-features: [BR-05]
     x-issues: [255]
     parameters:

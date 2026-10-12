@@ -24,7 +24,35 @@ pub struct DatabaseRecord {
     pub connections: i64,
 }
 
+/// A branch as the platform API reports it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BranchView {
+    pub id: BranchId,
+    pub project: ProjectId,
+    /// The root of the tree the branch is in.
+    pub database: BranchId,
+    pub name: String,
+    pub parent: Option<BranchId>,
+    pub state: &'static str,
+    /// Whether it is the project's default branch.
+    pub is_default: bool,
+    /// The point in its parent it started from, as stored JSON.
+    pub from: Option<String>,
+    pub created_at_ms: i64,
+    pub expires_at_ms: Option<i64>,
+    /// Live branches made from it.
+    pub children: i64,
+    pub connections: i64,
+    /// Rises with every lifecycle change, rename and change of expiry.
+    pub revision: i64,
+    pub lifecycle_revision: i64,
+}
+
 fn state(record: &BranchRecord) -> &'static str {
+    // An expired branch is on its way out even before its deletion is recorded.
+    if record.expired {
+        return "deleting";
+    }
     let converged = record.revision == record.observed_revision;
     match (record.endpoint.desired_state, converged) {
         (DesiredState::Running, true) => "running",
@@ -135,6 +163,61 @@ impl Store {
             .into_iter()
             .find(|record| record.id == id)
             .ok_or_else(|| missing("database in project"))
+    }
+    /// The branches of a database, its first included, ordered by name.
+    pub fn branch_views(&self, project: ProjectId, database: BranchId) -> Result<Vec<BranchView>> {
+        let (branches, roots) = self.roots(project)?;
+        let mut views = Vec::new();
+        for branch in branches
+            .iter()
+            .filter(|b| roots.get(&b.branch.id) == Some(&database))
+        {
+            let id = branch.branch.id;
+            let (created_at_ms, edits) = self.branch_details(id)?;
+            let from: Option<String> = self
+                .db
+                .query_row(
+                    "SELECT point FROM branch_pins WHERE child_id=?1",
+                    [id.to_string()],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            views.push(BranchView {
+                id,
+                project,
+                database,
+                name: branch.branch.name.clone(),
+                parent: branch.branch.parent_id,
+                state: state(branch),
+                is_default: branch.is_default,
+                from,
+                created_at_ms,
+                expires_at_ms: branch.expires_at_ms,
+                children: branches
+                    .iter()
+                    .filter(|b| {
+                        b.branch.parent_id == Some(id)
+                            && b.endpoint.desired_state != DesiredState::Deleted
+                    })
+                    .count() as i64,
+                connections: self.connection_count(id)? as i64,
+                revision: branch.revision + edits,
+                lifecycle_revision: branch.revision,
+            });
+        }
+        views.sort_by(|a, b| (&a.name, a.id.to_string()).cmp(&(&b.name, b.id.to_string())));
+        Ok(views)
+    }
+    pub fn branch_view(
+        &self,
+        project: ProjectId,
+        database: BranchId,
+        id: BranchId,
+    ) -> Result<BranchView> {
+        self.branch_views(project, database)?
+            .into_iter()
+            .find(|view| view.id == id)
+            .ok_or_else(|| missing("branch in database"))
     }
     /// The database a branch belongs to, if the branch still exists.
     pub fn database_of(&self, project: ProjectId, branch: BranchId) -> Result<Option<BranchId>> {
@@ -353,5 +436,83 @@ mod tests {
         finish(&mut store, &delete);
         assert!(store.database_record(project, other.branch_id).is_err());
         assert_eq!(store.database_records(project).unwrap().len(), 1);
+    }
+    #[test]
+    fn a_branch_view_reports_its_place_in_the_tree_and_what_changed_it() {
+        let (_root, mut store, project) = setup();
+        let main = database(&mut store, project, "main", 5500);
+        finish(&mut store, &main);
+        let other = database(&mut store, project, "other", 5510);
+        let child = store
+            .submit(
+                project,
+                "child",
+                Mutation::BranchFrom {
+                    name: "child".into(),
+                    parent_id: main.branch_id,
+                    ports: ports(5520),
+                    point: crate::operations::BranchPoint::Time {
+                        timestamp: "2026-01-01T00:00:00Z".into(),
+                    },
+                    timeout_ms: 90_000,
+                },
+            )
+            .unwrap();
+        let views = store.branch_views(project, main.branch_id).unwrap();
+        let seen: Vec<_> = views
+            .iter()
+            .map(|v| (v.name.as_str(), v.parent, v.children, v.is_default, v.state))
+            .collect();
+        assert_eq!(
+            seen,
+            [
+                ("child", Some(main.branch_id), 0, false, "provisioning"),
+                ("main", None, 1, true, "running"),
+            ]
+        );
+        assert!(views[0].from.as_deref().unwrap().contains("2026-01-01"));
+        assert_eq!(views[1].from, None);
+        // A branch is found under its own database and no other.
+        assert!(
+            store
+                .branch_view(project, other.branch_id, child.branch_id)
+                .is_err()
+        );
+        let before = views[0].revision;
+        store
+            .submit(
+                project,
+                "ttl",
+                Mutation::SetTtl {
+                    branch_id: child.branch_id,
+                    expected_revision: 1,
+                    expires_at_ms: Some(i64::MAX),
+                },
+            )
+            .unwrap();
+        store
+            .rename_branch(project, child.branch_id, "renamed")
+            .unwrap();
+        let view = store
+            .branch_view(project, main.branch_id, child.branch_id)
+            .unwrap();
+        assert_eq!(view.revision, before + 2);
+        assert_eq!(view.lifecycle_revision, 1, "neither moves the lifecycle");
+        assert_eq!(view.expires_at_ms, Some(i64::MAX));
+        store
+            .db
+            .execute(
+                "UPDATE branches SET expires_at_ms=1 WHERE id=?1",
+                [child.branch_id.to_string()],
+            )
+            .unwrap();
+        store.mark_expired().unwrap();
+        let view = store
+            .branch_view(project, main.branch_id, child.branch_id)
+            .unwrap();
+        assert_eq!(
+            view.state, "deleting",
+            "an expired branch is on its way out"
+        );
     }
 }
