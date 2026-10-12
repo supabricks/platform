@@ -11,6 +11,7 @@ mod problem;
 mod projects;
 mod roles;
 mod routes;
+mod sessions;
 mod shared;
 mod sql;
 mod tables;
@@ -511,6 +512,13 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             extensions::disable(store, &mut host, call, branch(), parameter("extension"))
         }
         Operation::GetBranchMetrics => metrics::get(store, &mut host, call, branch()),
+        Operation::ListSessions => sessions::list(store, &mut host, call, branch()),
+        Operation::CancelSession => {
+            sessions::cancel(store, &mut host, call, branch(), parameter("pid"))
+        }
+        Operation::TerminateSession => {
+            sessions::terminate(store, &mut host, call, branch(), parameter("pid"))
+        }
         Operation::ListRoles => roles::list(store, &mut host, call, branch()),
         Operation::CreateRole => roles::create(store, &mut host, call, branch()),
         Operation::GetRole => roles::get(store, &mut host, call, branch(), parameter("role")),

@@ -1,0 +1,158 @@
+# Activity of a branch: who is connected to its PostgreSQL and what each is
+# doing, who waits on whom, and stopping a session.
+#
+# A session's statement is shown as the client sent it, values included, so
+# reading sessions needs the role that may read the data itself. PostgreSQL
+# keeps only the first 1024 bytes of a statement.
+
+sessions:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: listSessions
+    tags: [Activity]
+    summary: List the sessions connected to a branch
+    description: >-
+      Every client connection to the branch's PostgreSQL, ordered by process
+      ID, with its state, what it waits on, its statement, and the sessions
+      blocking it. The server's own connections are left out. A branch that
+      is not running has no sessions: the list is empty, and the branch is
+      not resumed to say so. Refused with `429` while the server's four
+      statement workers are busy, and with `503` without the database
+      engines. A governed server keeps PostgreSQL private and answers `403`
+      with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-07]
+    x-issues: [248]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of sessions.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SessionPage' }
+            example:
+              items:
+                - pid: 48213
+                  role: reporting
+                  application: psql
+                  state: active
+                  connected_at: '2026-10-12T09:28:11.204Z'
+                  transaction_started_at: '2026-10-12T09:30:02.118Z'
+                  query_started_at: '2026-10-12T09:30:02.118Z'
+                  duration_ms: 41250
+                  wait_event_type: Lock
+                  wait_event: relation
+                  query: select count(*) from orders
+                  blocked_by: [48190]
+                  waiting_for: { lock: relation, mode: AccessShareLock, relation: public.orders }
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+sessionCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - name: pid
+      in: path
+      required: true
+      description: The session's process ID, from the list of sessions.
+      schema: { type: integer, minimum: 1, maximum: 2147483647 }
+  post:
+    operationId: cancelSession
+    tags: [Activity]
+    summary: Cancel the statement a session is running
+    description: >-
+      Asks PostgreSQL to stop the session's current statement. The session
+      stays connected, and its transaction is aborted. A session that is
+      running nothing is left as it is. `404` when there is no such client
+      session, which includes the server's own and one that has just ended.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-07]
+    x-issues: [248]
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+sessionTerminate:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - name: pid
+      in: path
+      required: true
+      description: The session's process ID, from the list of sessions.
+      schema: { type: integer, minimum: 1, maximum: 2147483647 }
+  post:
+    operationId: terminateSession
+    tags: [Activity]
+    summary: Close a session
+    description: >-
+      Asks PostgreSQL to close the session's connection. What it had not
+      committed is rolled back, and the locks it held are released. `404`
+      when there is no such client session.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-07]
+    x-issues: [248]
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+statementStatistics:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: listStatementStatistics
+    tags: [Activity]
+    summary: List the statements a branch spends its time on
+    description: >-
+      Not part of version 1. The statistics come from PostgreSQL's
+      `pg_stat_statements` extension, which the engine does not ship and does
+      not load.
+    x-backend: new
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-07]
+    x-issues: [248]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of statements, the one taking the largest share of time first.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/StatementStatisticPage' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

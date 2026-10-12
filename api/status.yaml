@@ -24,6 +24,7 @@ domains:
   roles:      { slice: AP07, stage: complete }
   extensions: { slice: AP07, stage: complete }
   metrics:    { slice: AP07, stage: complete }
+  activity:   { slice: AP07, stage: complete }
 
 operations:
   getServerVersion: { stage: implemented }
@@ -34,5 +35,6 @@ operations:
   getBranchRestoreWindow: { stage: deferred, issue: 254 }
   getBranchSchemaDiff:    { stage: deferred, issue: 255 }
   listStatements:         { stage: deferred, issue: 261 }
+  listStatementStatistics: { stage: deferred, issue: 248 }
   # Built with the domains whose resources it draws.
   getProjectMap:    { stage: draft, issue: 321 }

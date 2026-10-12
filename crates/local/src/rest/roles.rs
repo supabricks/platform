@@ -156,12 +156,25 @@ pub(super) fn read(
     sql: String,
     max_rows: usize,
 ) -> Result<Result<Vec<Value>, Reply>, Problem> {
+    read_as(store, host, call, at, sql, max_rows, As::Reader)
+}
+/// The same, as whoever must ask: the control role sees what the application
+/// role may not.
+pub(super) fn read_as(
+    store: &mut Store,
+    host: &mut Option<Local>,
+    call: &Call,
+    at: (ProjectId, BranchId),
+    sql: String,
+    max_rows: usize,
+    who: As,
+) -> Result<Result<Vec<Value>, Reply>, Problem> {
     let (runtime, branch) = at;
     let Some(id) = &call.resume else {
-        let id = start_as(store, host, runtime, branch, sql, max_rows, As::Reader)?;
+        let id = start_as(store, host, runtime, branch, sql, max_rows, who)?;
         return Ok(Err(Reply::waiting(id.to_string())));
     };
-    Ok(match poll_as(host, runtime, id, Some(&sql), As::Reader)? {
+    Ok(match poll_as(host, runtime, id, Some(&sql), who)? {
         None => Err(Reply::waiting(id.clone())),
         Some(Ok(rows)) => Ok(rows),
         Some(Err(_)) => {
