@@ -94,19 +94,19 @@ class Extensions(Cell):
         self.refused(lambda:self.catalogue(parent), 'running, ready')
         parent=self.state(parent,'running');wait(lambda:self.sql(parent,'SELECT 1')=='1')
         assert next(e for e in self.catalogue(parent)['extensions'] if e['name']=='citext')['enabled']
-        self.stop(); self.start();wait(lambda:self.sql(parent,'SELECT 1')=='1')
+        self.stop(); self.start();wait(lambda:self.catalogue(parent))
         assert self.sql(parent,'SELECT value FROM public.citext_data')=='Hello'
         self.sql(parent,'DROP TABLE public.citext_data')
         for name in MANAGED:
             self.set(parent,name,False);self.set(parent,name,False)
         assert not any(e['enabled'] for e in self.catalogue(parent)['extensions'] if e['name'] in MANAGED)
-        self.stop();self.start();wait(lambda:self.sql(parent,'SELECT 1')=='1')
+        self.stop();self.start();wait(lambda:self.catalogue(parent))
         assert not any(e['enabled'] for e in self.catalogue(parent)['extensions'] if e['name'] in MANAGED)
         # The daemon checks branch project ownership before opening privileged SQL.
         foreign=self.root/'foreign';foreign.mkdir(); foreign_id=str(uuid.uuid4())
         (foreign/'supabricks.toml').write_text(f'format_version = 1\nid = "{foreign_id}"\nname = "foreign"\n')
         self.request(method='resolve_binding',source=dict(definition_id=foreign_id,worktree=str(foreign)))
-        self.refused(lambda:self.api(dict(action='list',target=self.target(parent)),dict(project_id=foreign_id,worktree=str(foreign))), 'not found')
+        self.refused(lambda:self.api(dict(action='list',target=self.target(parent)),dict(project_id=foreign_id,worktree=str(foreign))), 'not_found')
         result=subprocess.run([str(self.binary),'extensions','list','--branch','main','--project',str(self.work),'--data-dir',str(self.root)],capture_output=True,text=True,env=self.env,timeout=20)
         assert result.returncode==0,result.stderr
         assert json.loads(result.stdout)['branch_id']==parent['branch']['id']

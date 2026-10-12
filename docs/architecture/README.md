@@ -15,6 +15,7 @@ remains beside its owning record in the existing evidence directories.
 
 ## Native runtime and database
 
+- [PG253: installed PostgreSQL extension catalogue and qualification](pg253-extensions.md)
 - [P04 native databases and branches](native-branches.md)
 - [P03 native storage cell](native-cell.md)
 - [P05 stable connections and suspension](native-connections.md)

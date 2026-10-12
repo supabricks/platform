@@ -89,3 +89,6 @@ inheritance/isolation, restart and suspend/resume, stale revisions, project
 isolation and CLI access. The engine's relocated-bundle smoke separately tests
 all five native modules. Both Linux x86_64 and macOS arm64 must pass before the
 new engine artifacts become the pinned release inputs.
+
+See the [qualification record](../architecture/pg253-extensions.md) for exact
+evidence, failed attempts and the remaining boundaries.
