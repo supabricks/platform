@@ -162,8 +162,8 @@ backupRestore:
       data in its place, point clients at the new branch or make it the
       project's default. Restoring over a branch in place is not offered in
       version 1. The reply is the operation that starts the branch; its
-      `target` is the new branch, whose `created_from` names the backup and
-      whose `parent_id` is the branch the backup was taken from. Only a
+      `target` is the new branch, whose `restored_from_backup_id` names the
+      backup and whose `parent_id` is the branch the backup was taken from. Only a
       `ready` backup can be restored. The name and capacity rules are those of
       `createBranch`. While the new branch exists the backup cannot be
       deleted. A governed server does not offer this yet and answers `403`

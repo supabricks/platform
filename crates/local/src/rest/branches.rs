@@ -19,16 +19,13 @@ fn body_of(view: &BranchView) -> Value {
         "parent_id": view.parent.map(|parent| public_id("br", &parent.to_string())),
         "state": view.state,
         "is_default": view.is_default,
-        "created_from": match view.backup {
-            Some(backup) => Some(json!({
-                "kind": "backup",
-                "backup_id": public_id("bkp", &backup.to_string()),
-            })),
-            None => view
-                .from
-                .as_deref()
-                .and_then(|point| serde_json::from_str::<Value>(point).ok()),
-        },
+        "created_from": view
+            .from
+            .as_deref()
+            .and_then(|point| serde_json::from_str::<Value>(point).ok()),
+        "restored_from_backup_id": view
+            .backup
+            .map(|backup| public_id("bkp", &backup.to_string())),
         "created_at": timestamp(view.created_at_ms),
         "expires_at": view.expires_at_ms.map(timestamp),
         "child_count": view.children,

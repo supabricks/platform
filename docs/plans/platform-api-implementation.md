@@ -828,7 +828,7 @@ specification had no backups domain; #296 described what the console needs.
 | Does it count against the 32-branch limit? | No. The limit is on records with ports, and a backup has none. A database holds at most 100 backups |
 | Is it a branch to the API? | No. The record is left out of the branches and databases a caller sees, cannot be named as a branch anywhere, and work on it is reported as `backup.create` and `backup.delete` with a `backup` target. The command line, which is frozen, lists it as a suspended branch named `backup-…` and is refused every change to it but deletion |
 | Where is it kept? | In the database's own storage. It protects against a mistake in the data, not against losing the disk. The contract says so, and the offline bundle remains what leaves the machine |
-| How is one restored? | As a new branch made from it, without starting anything for the backup: what it holds is already in storage. The new branch reports the backup in `created_from` and stands under the branch the backup was taken from |
+| How is one restored? | As a new branch made from it, without starting anything for the backup: what it holds is already in storage. The new branch names the backup in `restored_from_backup_id` and stands under the branch the backup was taken from |
 | Restore in place | Not built. Replacing a branch's data while keeping its identity and address is the same missing capability as branch reset (#256); it stays in #296 |
 | What can be deleted when? | A branch with backups, and a database with backups, cannot be deleted until they are. A backup a branch was restored from cannot be deleted until that branch is, because the branch stands on it in storage (#340) |
 | Schedule | One per database, for its first branch: every 1 to 168 hours, keeping the newest 1 to 30. The first is taken at once. The schedule deletes only its own backups, never one a branch was restored from, and does not wake a suspended database |
@@ -847,7 +847,7 @@ specification had no backups domain; #296 described what the console needs.
   from the daemon's tick while the engines are present.
 - `rest/backups.rs`: `listBackups`, `createBackup`, `getBackup`,
   `deleteBackup`, `restoreBackup`, `getBackupSchedule`, `setBackupSchedule`.
-- `Branch.created_from` gains `{kind: backup, backup_id}`.
+- `Branch` gains `restored_from_backup_id`.
 
 **Tests.** `api/tests/test_backups.py`: the schedule, every refusal and the
 governed profile without engines, and five engine-backed tests. They take a

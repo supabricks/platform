@@ -32,7 +32,8 @@ class Client:
         op = spec.operation(operation_id)
         response = self.raw(op.method, op.url(**(path or {})), **kwargs)
         errors = spec.response_errors(op, response.status_code, response.headers.get('Content-Type'), _body(response))
-        assert not errors, errors
+        # The body says why, which the status alone does not.
+        assert not errors, (errors, response.text[:600])
         if expect is not None:
             assert response.status_code == expect, f'{operation_id}: {response.status_code} {response.text}'
         return response

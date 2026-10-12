@@ -277,7 +277,8 @@ def test_a_backup_keeps_a_moment_and_restores_as_a_branch(engine_api, live, requ
     branch = finished(api, project, restoring)['target']['id']
     restored = read_branch(api, project, database, branch).json()
     assert restored['state'] == 'running' and restored['name'] == name
-    assert restored['created_from'] == {'kind': 'backup', 'backup_id': backup}
+    assert restored['restored_from_backup_id'] == backup and restored['created_from'] == {'kind': 'head'}
+    assert read_branch(api, project, database, main).json()['restored_from_backup_id'] is None
     assert restored['parent_id'] == main, 'it stands under the branch the backup was taken from'
     theirs = address(api, project, database, branch)
     assert rows(request, theirs) == 'a' and rows(request, uri) == 'a,later'
