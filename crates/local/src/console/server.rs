@@ -567,8 +567,17 @@ pub(super) async fn serve(config: Config) -> Result<()> {
                     let service = service_fn(move |request| {
                         let state = state.clone();
                         async move {
-                            let timeout = if request.uri().path().starts_with("/api/upload/") {610} else if request.uri().path()=="/api/workspace" {125} else {8};
-                            Ok::<_, Infallible>(tokio::time::timeout(Duration::from_secs(timeout),state.handle(request)).await.unwrap_or_else(|_|fail(408,"Console request timed out")))
+                            let path = request.uri().path();
+                            // The platform API waits for PostgreSQL itself, up to its
+                            // own limit, and takes a whole file in one request.
+                            let api = path.starts_with(crate::rest::PREFIX);
+                            let file = api && request.method() == Method::PUT && path.ends_with("/content");
+                            let timeout = if path.starts_with("/api/upload/") || file {610} else if path=="/api/workspace" {125} else if api {50} else {8};
+                            Ok::<_, Infallible>(tokio::time::timeout(Duration::from_secs(timeout),state.handle(request)).await.unwrap_or_else(|_| if api {
+                                rest::reply(crate::rest::Problem::new(408, "request_timeout", "The request took too long. Check what it changed before repeating it.").into())
+                            } else {
+                                fail(408,"Console request timed out")
+                            }))
                         }
                     });
                     let mut builder = hyper::server::conn::http1::Builder::new();
