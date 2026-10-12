@@ -224,19 +224,23 @@ impl Store {
         }
         Ok(())
     }
-    pub(crate) fn data_job(
+    pub(crate) fn data_job<F>(
         &mut self,
         ctx: Context,
         hash: String,
         deployment: String,
         command: Command,
-    ) -> Result<super::identity::IdentityJob> {
+        ready: F,
+    ) -> Result<super::identity::IdentityJob>
+    where
+        F: FnOnce(&Store, &BranchRecord) -> Result<bool>,
+    {
         session(&self.db, &ctx, &hash)?;
         a::require(&self.db, &ctx, &deployment, 1)?;
         if let Command::Find { key } = &command {
             crate::authorization::key(key)?;
             let operation:String=self.db.query_row("SELECT id FROM data_operations WHERE deployment=?1 AND actor=?2 AND request_key=?3",params![deployment,ctx.actor_id,key],|r|r.get(0)).optional()?.ok_or_else(denied)?;
-            return self.data_job(ctx, hash, deployment, Command::Status { operation });
+            return self.data_job(ctx, hash, deployment, Command::Status { operation }, ready);
         }
         if let Command::Status { operation } = &command {
             let (actor, d): (String, String) = self.db.query_row(
@@ -389,6 +393,15 @@ impl Store {
             || branch.endpoint.desired_state != DesiredState::Running
         {
             return Err(denied());
+        }
+        // A saved observed revision can survive daemon restart. Wait for the
+        // current compute generation's credential/role sanitation before
+        // creating an operation or launching its temporary PostgreSQL login.
+        if !ready(self, &branch)? {
+            return Err(supabricks_core::error::OperationError::Unavailable(
+                "governed branch runtime is still preparing".into(),
+            )
+            .into());
         }
         self.governed_clone_ready(branch.branch.id)?;
         let target = postgres::Target {
@@ -684,8 +697,64 @@ mod tests {
                 self.hash.clone(),
                 self.deployment.clone(),
                 command,
+                |_, _| Ok(true),
             )
         }
+    }
+    #[test]
+    fn restored_observed_revision_does_not_admit_work_before_runtime_preparation() {
+        let mut f = F::new();
+        f.grant(Capability::Read, true);
+        let branch = f.store.branch(f.branch.parse().unwrap()).unwrap();
+        assert_eq!(branch.revision, branch.observed_revision);
+        let command = Command::Sql {
+            branch: f.branch.clone(),
+            capability: Capability::Read,
+            sql: "SELECT 1".into(),
+            expected_policy: a::policy(&f.store.db, &f.deployment).unwrap(),
+            key: "same-request-after-runtime-ready".into(),
+        };
+        let result = f.store.data_job(
+            f.ctx.clone(),
+            f.hash.clone(),
+            f.deployment.clone(),
+            command.clone(),
+            |_, _| Ok(false),
+        );
+        assert!(matches!(
+            result,
+            Err(super::super::error::Error::Operation(
+                supabricks_core::error::OperationError::Unavailable(_)
+            ))
+        ));
+        assert_eq!(
+            f.store
+                .db
+                .query_row("SELECT count(*) FROM data_operations", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+        // No SQL operation or key was admitted. The same request can enter once
+        // the new native generation has completed credential/role preparation.
+        let _job = f
+            .store
+            .data_job(
+                f.ctx.clone(),
+                f.hash.clone(),
+                f.deployment.clone(),
+                command,
+                |_, _| Ok(true),
+            )
+            .unwrap();
+        assert_eq!(
+            f.store
+                .db
+                .query_row("SELECT count(*) FROM data_operations", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
     }
     #[test]
     fn project_control_never_implies_data_and_branch_grants_are_separate() {
