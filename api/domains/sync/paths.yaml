@@ -1,0 +1,694 @@
+# Sync: carrying a branch's PostgreSQL tables into the analytical copy.
+#
+# A pipeline belongs to one branch and carries every supported table of it as
+# one unit; a branch has at most one. It runs in one of three modes: a full
+# snapshot on a schedule or on request, changes applied when asked
+# (`triggered`), or changes applied continuously. Each run that succeeds
+# publishes a new analytical version of the branch.
+#
+# The platform calls a pipeline a policy; the command line and its messages
+# use that word.
+#
+# Every operation is for the owner of a local installation. A governed server
+# authorizes sync by grants on each branch and runs a pipeline as a service
+# principal, which this contract does not carry yet (#348), so there every
+# operation answers `403` with `code: unavailable_in_profile`.
+
+pipelines:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listSyncPipelines
+    tags: [Sync]
+    summary: List the sync pipelines of a project
+    description: >-
+      Ordered by when they were created, oldest first. A deleted pipeline is
+      not listed. `branch_id` narrows the list to the pipeline of one branch,
+      which is one or none. Which tables a pipeline carries, and their rows,
+      are not reported in version 1.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SY-01]
+    x-issues: [347, 348]
+    parameters:
+      - name: branch_id
+        in: query
+        description: Only the pipeline of this branch.
+        schema: { $ref: '../../shared/schemas.yaml#/Id' }
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of pipelines.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipelinePage' }
+            example:
+              items:
+                - id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+                  project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  mode: snapshot
+                  state: active
+                  error: null
+                  schedule: { interval_seconds: 3600 }
+                  continuous: null
+                  limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+                  created_at: '2026-10-12T09:30:00.000Z'
+                  next_run_at: '2026-10-12T10:30:00.000Z'
+                  last_success_at: null
+                  last_version_id: null
+                  capture: null
+                  freshness: null
+                  revision: 1
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createSyncPipeline
+    tags: [Sync]
+    summary: Create a sync pipeline for a branch
+    description: >-
+      The pipeline starts `active`. With a schedule its first run is due one
+      interval from now; without one, a `snapshot` or `triggered` pipeline
+      runs only when asked, and a `continuous` one starts by itself. A branch
+      that already has a pipeline is refused with `409` and
+      `code: pipeline_exists`. `triggered` and `continuous` need the database
+      engines and the analytical runtime and answer `503` without them. An
+      installation captures changes from one branch at a time, so a second
+      `triggered` or `continuous` pipeline is refused with `409` and
+      `code: capacity_exhausted`. Whether the branch's tables qualify is found
+      when the first run starts, not here. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-02]
+    x-issues: [348, 350]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SyncPipelineCreate' }
+          example:
+            branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+            mode: snapshot
+            schedule: { interval_seconds: 3600 }
+    responses:
+      '201':
+        description: The pipeline.
+        headers:
+          ETag: { schema: { type: string } }
+          Location: { schema: { type: string }, description: 'Where to read the pipeline.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: active
+              error: null
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+pipeline:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  get:
+    operationId: getSyncPipeline
+    tags: [Sync]
+    summary: Get a sync pipeline
+    description: >-
+      The `ETag` is the pipeline's revision; send it in `If-Match` to change
+      the pipeline. For a `continuous` pipeline `freshness` is worked out as
+      it is read, so two reads a moment apart can differ while the revision
+      stays the same. Its history is not kept in version 1.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SY-03, SY-08]
+    x-issues: [347, 348]
+    responses:
+      '200':
+        description: The pipeline.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: active
+              error: null
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  patch:
+    operationId: updateSyncPipeline
+    tags: [Sync]
+    summary: Change how a sync pipeline runs
+    description: >-
+      Send only what changes; the rest stays as it is. `schedule: null`
+      removes the schedule. Any change cancels the pipeline's run in
+      progress, and its `error` is then `policy_revised`. Changing between
+      `snapshot` and the other two modes is refused with `409` until the
+      pipeline is paused and its capture is gone; delete the pipeline and
+      create it again in the new mode. A request that changes nothing leaves
+      the revision as it is. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-06]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SyncPipelineUpdate' }
+          example: { schedule: { interval_seconds: 900 } }
+    responses:
+      '200':
+        description: The updated pipeline.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: active
+              error: null
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+  delete:
+    operationId: deleteSyncPipeline
+    tags: [Sync]
+    summary: Delete a sync pipeline
+    description: >-
+      Cancels its run in progress and retires its capture. The analytical
+      versions it published stay, and so does everything reading them. The
+      branch can then be given a new pipeline. Deleting one that is already
+      deleted is `404`. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-06, SY-07]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+pipelinePause:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  post:
+    operationId: pauseSyncPipeline
+    tags: [Sync]
+    summary: Pause a sync pipeline
+    description: >-
+      Nothing is run or applied until it is resumed, and its run in progress is
+      cancelled. A `continuous` pipeline in the middle of a batch finishes that
+      batch first and shows `state: pausing` until it has. Pausing a paused
+      pipeline is refused with `409`. A governed server does not offer this
+      through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-07]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The pipeline as it is now.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: active
+              error: null
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+pipelineResume:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  post:
+    operationId: resumeSyncPipeline
+    tags: [Sync]
+    summary: Resume a sync pipeline
+    description: >-
+      Makes a paused pipeline `active` again. A scheduled pipeline is next due
+      one interval from now. After a reviewed resync this is the step that
+      starts the new capture and its full copy. Refused with `409` while the
+      pipeline is still pausing or its resync is still cleaning up, and for a
+      `blocked` pipeline whose branch is gone. `triggered` and `continuous` need
+      the database engines and answer `400` without them. A governed server does
+      not offer this through the API yet and answers `403` with `code:
+      unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-07]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The pipeline as it is now.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: active
+              error: null
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+pipelineRuns:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  get:
+    operationId: listSyncRuns
+    tags: [Sync]
+    summary: List the runs of a sync pipeline
+    description: >-
+      Newest first. The platform keeps a bounded history: the oldest runs of
+      a `continuous` pipeline are removed as new ones are recorded. Rows and
+      bytes per run are not reported in version 1.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SY-04]
+    x-issues: [347, 348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of runs.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncRunPage' }
+            example:
+              items:
+                - id: run_2b4d6f8a1c3e4a5b8d7f9e0c1a2b3c4d
+                  pipeline_id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  trigger: manual
+                  state: queued
+                  created_at: '2026-10-12T09:31:00.000Z'
+                  scheduled_for: null
+                  finished_at: null
+                  version_id: null
+                  source_lsn: null
+                  batches: 0
+                  error: null
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: startSyncRun
+    tags: [Sync]
+    summary: Run a sync pipeline now
+    description: >-
+      Queues one run of a `snapshot` or `triggered` pipeline. The reply is
+      the run, `queued`; read it until `finished_at` is set. A pipeline runs
+      one at a time and a branch has one pipeline, so a second request while
+      a run is going is refused with `409`. A `continuous` pipeline runs by
+      itself and refuses with `409`; pause or resume it instead. A pipeline
+      that is not `active` refuses with `409`. Without the database engines a
+      run is queued and does not start. A run is not an operation in the
+      project's activity in version 1. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-07]
+    x-issues: [348, 349]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '201':
+        description: The run.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read the run.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncRun' }
+            example:
+              id: run_2b4d6f8a1c3e4a5b8d7f9e0c1a2b3c4d
+              pipeline_id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              trigger: manual
+              state: queued
+              created_at: '2026-10-12T09:31:00.000Z'
+              scheduled_for: null
+              finished_at: null
+              version_id: null
+              source_lsn: null
+              batches: 0
+              error: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+run:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/SyncRun'
+  get:
+    operationId: getSyncRun
+    tags: [Sync]
+    summary: Get a sync run
+    description: A run is finished once `finished_at` is set. One that succeeded names the analytical version it published.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SY-04]
+    x-issues: [347, 348]
+    responses:
+      '200':
+        description: The run.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncRun' }
+            example:
+              id: run_2b4d6f8a1c3e4a5b8d7f9e0c1a2b3c4d
+              pipeline_id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              trigger: manual
+              state: queued
+              created_at: '2026-10-12T09:31:00.000Z'
+              scheduled_for: null
+              finished_at: null
+              version_id: null
+              source_lsn: null
+              batches: 0
+              error: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+runCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/SyncRun'
+  post:
+    operationId: cancelSyncRun
+    tags: [Sync]
+    summary: Cancel a sync run
+    description: >-
+      Stops a run that has not finished; nothing it prepared is published. A
+      run that already failed or was cancelled is returned as it is. A run
+      that succeeded has published its version and is refused with `409`.
+      Cancelling the run of a `continuous` pipeline pauses the pipeline.
+      Cancelling a `triggered` run in the middle of applying leaves its
+      capture unusable: the pipeline then needs a reviewed resync. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-04, SY-07]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The run as it is now.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncRun' }
+            example:
+              id: run_2b4d6f8a1c3e4a5b8d7f9e0c1a2b3c4d
+              pipeline_id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              trigger: manual
+              state: cancelled
+              created_at: '2026-10-12T09:31:00.000Z'
+              scheduled_for: null
+              finished_at: '2026-10-12T09:31:05.000Z'
+              version_id: null
+              source_lsn: null
+              batches: 0
+              error: user_cancelled
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+pipelineResyncReview:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  get:
+    operationId: reviewSyncResync
+    tags: [Sync]
+    summary: See what a full resync of a pipeline would do
+    description: >-
+      States the effect of starting a `triggered` or `continuous` pipeline
+      over from a full copy, and returns the `review_hash` that `resyncSyncPipeline`
+      must be sent. The hash changes whenever the pipeline or its capture
+      does, so what was reviewed is what is done. A `snapshot` pipeline has
+      nothing to resync and answers `409`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-07]
+    x-issues: [348]
+    responses:
+      '200':
+        description: The review.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncResyncReview' }
+            example:
+              pipeline_id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              revision: 4
+              effect: Cancel active work, pause the policy and retire its capture. Published epochs and existing readers remain pinned. After cleanup, explicitly resume to create a new capture and full bootstrap.
+              requires_full_copy: true
+              deletes_published_versions: false
+              review_hash: 9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e2b4d6f8a0c2e4a6b8d0f1a3c5e7b9d1f
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+pipelineResync:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Pipeline'
+  post:
+    operationId: resyncSyncPipeline
+    tags: [Sync]
+    summary: Start a pipeline over from a full copy
+    description: >-
+      The second step after `reviewSyncResync`. Cancels the pipeline's work,
+      pauses it and retires its capture; its `error` is then
+      `resync_cleanup_pending`. Published versions and their readers are
+      kept. Once the cleanup is done, `resumeSyncPipeline` makes the new
+      capture and the full copy. A `review_hash` that no longer matches is
+      refused with `409`: review again. A governed server does not offer this through the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [SY-07, SY-08]
+    x-issues: [348]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IfMatchRequired'
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/SyncResync' }
+          example: { review_hash: 9f2c4e6a8b0d1f3a5c7e9b1d3f5a7c9e2b4d6f8a0c2e4a6b8d0f1a3c5e7b9d1f }
+    responses:
+      '200':
+        description: The pipeline, paused.
+        headers: { ETag: { schema: { type: string } } }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncPipeline' }
+            example:
+              id: sync_7a1c5e9b3d2f4c8a9e0b1d3f5a7c9e2b
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              mode: snapshot
+              state: paused
+              error: resync_cleanup_pending
+              schedule: { interval_seconds: 3600 }
+              continuous: null
+              limits: { max_bytes: 1073741824, timeout_ms: 300000 }
+              created_at: '2026-10-12T09:30:00.000Z'
+              next_run_at: '2026-10-12T10:30:00.000Z'
+              last_success_at: null
+              last_version_id: null
+              capture: null
+              freshness: null
+              revision: 1
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '412': { $ref: '../../shared/responses.yaml#/PreconditionFailed' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
+
+source:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: getSyncSource
+    tags: [Sync]
+    summary: See whether a branch can be given a sync pipeline
+    description: >-
+      What the platform requires of a branch's tables, whether the branch is
+      running now, and the pipeline it already has, if any. The branch's
+      tables are not examined: whether they qualify is found when a
+      pipeline's first run starts.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [SY-02]
+    x-issues: [350, 348]
+    responses:
+      '200':
+        description: What sync needs of the branch.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/SyncSource' }
+            example:
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              available: true
+              pipeline_id: null
+              tables_checked: false
+              requirements:
+                - Logged public tables with one integer primary key
+                - Integer, text/varchar and bounded numeric columns
+                - No RLS, schema changes or unsupported application objects
+                - One capture per installation; retained WAL and spool budgets apply
+              modes: [snapshot, triggered, continuous]
+              continuous_keeps_compute_awake: true
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

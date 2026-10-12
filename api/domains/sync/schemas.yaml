@@ -1,0 +1,270 @@
+SyncPipeline:
+  type: object
+  description: >-
+    What carries one branch's PostgreSQL tables into its analytical copy, and
+    how. It covers every supported table of the branch; tables cannot be
+    chosen in version 1.
+  required: [id, project_id, database_id, branch_id, mode, state, error, schedule, continuous, limits, created_at, next_run_at, last_success_at, last_version_id, capture, freshness, revision]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    project_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    database_id:
+      description: The database the branch is in. Null once the branch is gone.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    mode: { $ref: './schemas.yaml#/SyncMode' }
+    state:
+      type: string
+      enum: [active, pausing, paused, blocked]
+      description: >-
+        `pausing` while a `continuous` pipeline finishes its batch. `blocked`
+        when its branch is gone or changed under it: it can then only be
+        deleted, or resumed if the branch is back.
+    error:
+      description: >-
+        The platform's code for what last went wrong, such as
+        `policy_revised`, `resync_cleanup_pending` or
+        `source_unavailable_or_authority_changed`. Null when nothing has.
+      oneOf: [{ type: string }, { type: 'null' }]
+    schedule:
+      description: Null for a pipeline that runs only when asked, and for a `continuous` one.
+      oneOf: [{ $ref: './schemas.yaml#/SyncSchedule' }, { type: 'null' }]
+    continuous:
+      description: Null unless `mode` is `continuous`.
+      oneOf: [{ $ref: './schemas.yaml#/SyncContinuous' }, { type: 'null' }]
+    limits: { $ref: './schemas.yaml#/SyncLimits' }
+    created_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    next_run_at:
+      description: When the schedule next runs it. Null without a schedule, and while paused.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    last_success_at:
+      description: When a run last published a version.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    last_version_id:
+      description: The analytical version that run published, as the platform names it.
+      oneOf: [{ type: string }, { type: 'null' }]
+    capture:
+      description: The reader of the branch's changes. Null for a `snapshot` pipeline, and until one exists.
+      oneOf: [{ $ref: './schemas.yaml#/SyncCapture' }, { type: 'null' }]
+    freshness:
+      description: How far the analytical copy is behind. Null unless `mode` is `continuous`.
+      oneOf: [{ $ref: './schemas.yaml#/SyncFreshness' }, { type: 'null' }]
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+
+SyncMode:
+  type: string
+  enum: [snapshot, triggered, continuous]
+  description: >-
+    `snapshot` copies every table in full each run. `triggered` copies in
+    full once and then applies the changes since the last run each time it
+    runs. `continuous` does the same without being asked, and keeps the
+    branch's PostgreSQL awake.
+
+SyncSchedule:
+  type: object
+  description: A fixed interval, in UTC. A run missed while the server was stopped is made up once, not once per interval missed.
+  required: [interval_seconds]
+  additionalProperties: false
+  properties:
+    interval_seconds: { type: integer, minimum: 60, maximum: 2592000 }
+
+SyncContinuous:
+  type: object
+  required: [freshness_ms, batch_interval_ms]
+  additionalProperties: false
+  properties:
+    freshness_ms:
+      type: integer
+      minimum: 1000
+      maximum: 300000
+      description: How far behind the copy may fall before the pipeline is `lagging`.
+    batch_interval_ms:
+      type: integer
+      minimum: 200
+      maximum: 60000
+      description: How often changes are applied. Not above `freshness_ms`.
+
+SyncLimits:
+  type: object
+  description: What one run may use before it is failed.
+  required: [max_bytes, timeout_ms]
+  additionalProperties: false
+  properties:
+    max_bytes: { type: integer, format: int64, minimum: 16777216, maximum: 17179869184 }
+    timeout_ms: { type: integer, minimum: 10000, maximum: 1800000 }
+
+SyncCapture:
+  type: object
+  required: [state, error, observed_at, source_lsn, captured_lsn, published_lsn, spool_bytes, retained_wal_bytes]
+  properties:
+    state:
+      type: string
+      enum: [requested, recovering, bootstrapping, capturing, pausing, paused, unavailable, resync_required, deleting, deleted]
+      description: >-
+        `bootstrapping` while the first full copy is made, then `capturing`.
+        `resync_required` when it can no longer continue from where it was.
+    error:
+      oneOf: [{ type: string }, { type: 'null' }]
+    observed_at:
+      description: When the capture last reported.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    source_lsn:
+      description: Where the branch's log was then.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]
+    captured_lsn:
+      description: How far the capture has read.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]
+    published_lsn:
+      description: How far the published analytical version reaches.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]
+    spool_bytes:
+      description: Changes read and not yet applied.
+      oneOf: [{ type: integer, format: int64, minimum: 0 }, { type: 'null' }]
+    retained_wal_bytes:
+      description: Log the branch is keeping for the capture.
+      oneOf: [{ type: integer, format: int64, minimum: 0 }, { type: 'null' }]
+
+SyncFreshness:
+  type: object
+  required: [state, lag_ms, observed_at, backlog_bytes, pressure]
+  properties:
+    state:
+      type: string
+      enum: [initializing, healthy, catching_up, lagging, unavailable, failed, blocked, pausing, paused]
+      description: >-
+        `healthy` when every change is published. `lagging` when the copy is
+        further behind than `freshness_ms`, or the capture is at 80% of a
+        budget. `unavailable` when the capture has not reported in the last
+        five seconds or the branch is not running.
+    lag_ms:
+      description: The age of the oldest change not yet published. Null when it is not known now.
+      oneOf: [{ type: integer, format: int64, minimum: 0 }, { type: 'null' }]
+    observed_at:
+      description: When `lag_ms` was worked out. Null with it.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    backlog_bytes:
+      oneOf: [{ type: integer, format: int64, minimum: 0 }, { type: 'null' }]
+    pressure: { type: boolean, description: 'Whether the capture is at 80% of its spool or retained-log budget.' }
+
+SyncPipelineCreate:
+  type: object
+  required: [branch_id, mode]
+  additionalProperties: false
+  properties:
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    mode: { $ref: './schemas.yaml#/SyncMode' }
+    schedule:
+      description: Not allowed with `continuous`.
+      oneOf: [{ $ref: './schemas.yaml#/SyncSchedule' }, { type: 'null' }]
+    continuous:
+      description: Only with `continuous`. Defaults to 5000 and 500.
+      $ref: './schemas.yaml#/SyncContinuousSet'
+    limits: { $ref: './schemas.yaml#/SyncLimitsSet' }
+
+SyncPipelineUpdate:
+  type: object
+  minProperties: 1
+  additionalProperties: false
+  properties:
+    mode: { $ref: './schemas.yaml#/SyncMode' }
+    schedule:
+      oneOf: [{ $ref: './schemas.yaml#/SyncSchedule' }, { type: 'null' }]
+    continuous: { $ref: './schemas.yaml#/SyncContinuousSet' }
+    limits: { $ref: './schemas.yaml#/SyncLimitsSet' }
+
+SyncContinuousSet:
+  type: object
+  minProperties: 1
+  additionalProperties: false
+  properties:
+    freshness_ms: { type: integer, minimum: 1000, maximum: 300000 }
+    batch_interval_ms: { type: integer, minimum: 200, maximum: 60000 }
+
+SyncLimitsSet:
+  type: object
+  minProperties: 1
+  additionalProperties: false
+  properties:
+    max_bytes: { type: integer, format: int64, minimum: 16777216, maximum: 17179869184 }
+    timeout_ms: { type: integer, minimum: 10000, maximum: 1800000 }
+
+SyncPipelinePage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/SyncPipeline' } }
+
+SyncRun:
+  type: object
+  description: One attempt to bring the analytical copy up to date.
+  required: [id, pipeline_id, branch_id, trigger, state, created_at, scheduled_for, finished_at, version_id, source_lsn, batches, error]
+  properties:
+    id: { $ref: '../../shared/schemas.yaml#/Id' }
+    pipeline_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    trigger:
+      type: string
+      enum: [manual, schedule, continuous]
+    state:
+      type: string
+      enum: [queued, starting, running, succeeded, failed, cancelled]
+    created_at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: When the run was accepted.
+    scheduled_for:
+      description: When the schedule meant it to run. Null for the other triggers.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    finished_at:
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    version_id:
+      description: The analytical version it published. Null unless it succeeded.
+      oneOf: [{ type: string }, { type: 'null' }]
+    source_lsn:
+      description: Where in the branch's log the published version stands.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]
+    batches: { type: integer, minimum: 0, description: 'Batches of changes applied so far. Zero for a `snapshot` run.' }
+    error:
+      description: The platform's code for why it failed or was cancelled.
+      oneOf: [{ type: string }, { type: 'null' }]
+
+SyncRunPage:
+  allOf:
+    - $ref: '../../shared/schemas.yaml#/PageInfo'
+    - type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: './schemas.yaml#/SyncRun' } }
+
+SyncResyncReview:
+  type: object
+  required: [pipeline_id, revision, effect, requires_full_copy, deletes_published_versions, review_hash]
+  properties:
+    pipeline_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    revision: { $ref: '../../shared/schemas.yaml#/Revision' }
+    effect: { type: string, description: 'What the resync does, in the platform''s words.' }
+    requires_full_copy: { type: boolean }
+    deletes_published_versions: { type: boolean }
+    review_hash: { type: string, minLength: 1, maxLength: 128 }
+
+SyncResync:
+  type: object
+  required: [review_hash]
+  additionalProperties: false
+  properties:
+    review_hash: { type: string, minLength: 1, maxLength: 128 }
+
+SyncSource:
+  type: object
+  required: [branch_id, available, pipeline_id, tables_checked, requirements, modes, continuous_keeps_compute_awake]
+  properties:
+    branch_id: { $ref: '../../shared/schemas.yaml#/Id' }
+    available: { type: boolean, description: 'Whether the branch is running now.' }
+    pipeline_id:
+      description: The pipeline the branch already has.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
+    tables_checked: { type: boolean, description: 'Always false in version 1: the tables are not examined.' }
+    requirements: { type: array, items: { type: string }, description: 'What the branch''s tables must be, in the platform''s words.' }
+    modes: { type: array, items: { $ref: './schemas.yaml#/SyncMode' } }
+    continuous_keeps_compute_awake: { type: boolean }

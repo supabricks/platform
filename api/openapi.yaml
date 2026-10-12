@@ -60,6 +60,7 @@ tags:
   - { name: Roles, description: "Who can log in to a branch's PostgreSQL, and what each may do there." }
   - { name: Extensions, description: 'Which of the extensions the installed engine ships a branch has enabled.' }
   - { name: Backups, description: "Points of a database's branches that storage keeps, the schedule that takes them, and restoring one as a new branch." }
+  - { name: Sync, description: "Pipelines that carry a branch's PostgreSQL tables into its analytical copy, and their runs." }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
@@ -67,6 +68,8 @@ x-tagGroups:
     tags: [Projects, Operations]
   - name: PostgreSQL
     tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions, Backups]
+  - name: Analytics
+    tags: [Sync]
   - name: Installation
     tags: [Server]
 paths:
@@ -126,6 +129,18 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}: { $ref: './domains/roles/paths.yaml#/role' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/password: { $ref: './domains/roles/paths.yaml#/rolePassword' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/privileges/{schema}: { $ref: './domains/roles/paths.yaml#/rolePrivileges' }
+
+  # ---- Sync ----
+  /projects/{project}/sync/pipelines: { $ref: './domains/sync/paths.yaml#/pipelines' }
+  /projects/{project}/sync/pipelines/{pipeline}: { $ref: './domains/sync/paths.yaml#/pipeline' }
+  /projects/{project}/sync/pipelines/{pipeline}/pause: { $ref: './domains/sync/paths.yaml#/pipelinePause' }
+  /projects/{project}/sync/pipelines/{pipeline}/resume: { $ref: './domains/sync/paths.yaml#/pipelineResume' }
+  /projects/{project}/sync/pipelines/{pipeline}/runs: { $ref: './domains/sync/paths.yaml#/pipelineRuns' }
+  /projects/{project}/sync/pipelines/{pipeline}/resync-review: { $ref: './domains/sync/paths.yaml#/pipelineResyncReview' }
+  /projects/{project}/sync/pipelines/{pipeline}/resync: { $ref: './domains/sync/paths.yaml#/pipelineResync' }
+  /projects/{project}/sync/runs/{run}: { $ref: './domains/sync/paths.yaml#/run' }
+  /projects/{project}/sync/runs/{run}/cancel: { $ref: './domains/sync/paths.yaml#/runCancel' }
+  /projects/{project}/sync/sources/{branch}: { $ref: './domains/sync/paths.yaml#/source' }
 
   # ---- Backups ----
   /projects/{project}/databases/{database}/backups: { $ref: './domains/backups/paths.yaml#/backups' }

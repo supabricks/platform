@@ -63,6 +63,26 @@ impl Store {
         )?;
         Ok(())
     }
+    /// Runs of a policy, newest first, older than `before`, each with the
+    /// position the next page continues from.
+    pub(crate) fn sync_runs_page(
+        &self,
+        policy: OperationId,
+        before: Option<i64>,
+        limit: usize,
+    ) -> Result<Vec<(i64, Run)>> {
+        let rows = self
+            .db
+            .prepare("SELECT ordinal,record FROM sync_runs WHERE policy_id=?1 AND ordinal<?2 ORDER BY ordinal DESC LIMIT ?3")?
+            .query_map(
+                params![policy.to_string(), before.unwrap_or(i64::MAX), limit as i64],
+                |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)),
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        rows.into_iter()
+            .map(|(ordinal, record)| Ok((ordinal, serde_json::from_str(&record)?)))
+            .collect()
+    }
     pub(crate) fn sync_source(&self, p: &Policy) -> Result<()> {
         let b = self.branch_in_project(p.project_id, p.branch_id)?;
         let d = self.deployment(p.deployment_id)?;
