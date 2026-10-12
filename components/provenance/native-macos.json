@@ -1,10 +1,10 @@
 {
-  "recorded_at": "2026-09-05",
+  "recorded_at": "2026-10-12",
   "target": "macos-arm64",
   "qualification": "probe-passed",
   "build": {
     "schema_version": 1,
-    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
+    "neon_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
     "neon_dirty": false,
     "postgres_major": 17,
     "sources": [
@@ -50,15 +50,15 @@
     "postgres_regression": "passed",
     "native_qualification": "not-run"
   },
-  "postgres_regression_tests_passed": 224,
   "smoke": {
     "status": "PASS",
     "postgres_version_num": 170008,
-    "branch_lsn": "0/2B1F588",
+    "branch_lsn": "0/2C66AC8",
     "checks": [
       "relocated bundle with spaces",
       "PG17 SQL and exact decimals",
       "startup with core dumps disabled",
+      "five managed extensions, native functions, branch isolation and restart",
       "explicit-LSN branch",
       "parent/child isolation",
       "graceful compute restart",
@@ -72,7 +72,7 @@
       "trusted local test credentials",
       "not a platform lifecycle test"
     ],
-    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
+    "neon_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
     "sources": [
       {
         "path": "vendor/postgres-v14",
@@ -98,27 +98,53 @@
   },
   "archive": {
     "name": "supabricks-engine-macos-arm64.tar.gz",
-    "sha256": "a816615c2bb65956ef85f8233232f8accec406763d7f51f215b2fd30d011f760",
-    "bytes": 94581877,
+    "sha256": "8177b246095c79243d1933f803da1c16e69dfd9f1362f69b046a2b6b0fa7b9ca",
+    "bytes": 94676232,
     "loader_check": "passed without library-path overrides",
     "distribution": "GitHub Actions developer artifact; no stable release URL",
-    "artifact_build_run": "https://github.com/supabricks/neon/actions/runs/33983137047"
+    "artifact_build_run": "https://github.com/supabricks/neon/actions/runs/38303651869"
   },
   "qualification_run": {
-    "url": "https://github.com/supabricks/neon/actions/runs/33985043318",
-    "harness_commit": "f787dba8e6e3af2c91e8b1783dd7993710bb3261",
-    "mode": "Replay the exact previously built archives with the corrected shutdown/reaping harness"
+    "url": "https://github.com/supabricks/neon/actions/runs/38303651869",
+    "harness_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
+    "mode": "Build exact sources and qualify relocated native extension lifecycle"
+  },
+  "postgres_extensions": {
+    "pg_stat_statements": {
+      "version": "1.11",
+      "control_sha256": "def533a679b8033cffb2e07949c8f65b13805c3a13de2d4b3218a6404eee51c9",
+      "library_sha256": "d4296db606416b964dcc62479a37f19528bbc04429b27950e7c2604ceb79f974"
+    },
+    "pgcrypto": {
+      "version": "1.3",
+      "control_sha256": "2a6c81eef34ae6cee9ff5b557f3b6285db7fdd7bc76ee57798e82c945c61c939",
+      "library_sha256": "7c4e0f3f884a3f79c7e7d455257f9124acb2e61a92eeb10ece66cb309c55f9e6"
+    },
+    "pg_trgm": {
+      "version": "1.6",
+      "control_sha256": "17c2745da2a706e1443ee363ab7424ced871a9a652e86bf55d25d139f43ee27b",
+      "library_sha256": "729e014c1993f4f67e7ba0b383cc1c2d44c2d34a57ec21e12980244e2e8556b7"
+    },
+    "citext": {
+      "version": "1.6",
+      "control_sha256": "748d123583d37e9f1be4376b736579b2e248750ddaa12a7bae1f8bc115ce43b5",
+      "library_sha256": "b0173e2444457e7905202a9678e0f8d0675de4c126b185596b59ee1362938760"
+    },
+    "uuid-ossp": {
+      "version": "1.1",
+      "control_sha256": "eaafef3ac3fbaa16e59986201e15f2944abb841167fb37553700c11b6ba97e5b",
+      "library_sha256": "bb78e60cc9d1a872cb73fa3508d5d425a756f4182c96cde2aa827c906a367212"
+    }
   },
   "commands": [
     "python scripts/native/build.py --fetch --jobs 2 --check",
     "python scripts/native/bundle.py build/supabricks-engine-macos-arm64",
-    "gh workflow run native-engine.yml --ref feat/native-engine-bundle -f artifact_run=33983137047"
+    "python scripts/native/smoke.py build/supabricks-engine-macos-arm64 --report build/native-smoke.json"
   ],
   "limitations": [
-    "The original artifact build passed core regressions but its overall run failed during the earlier runtime harness. The separate replay run supplies the successful runtime evidence.",
-    "PG17.8 fork compatibility is proven here; current upstream PG17 minor integration remains a preview gate.",
-    "LocalFs test remote storage; S3 compatibility, whole storage-cell failure and power-loss durability remain P03 work.",
-    "Full transitive license/source inventory and release signing remain pending.",
-    "macOS 15 arm64 runtime exercised on a build-capable runner; separate clean-host/offline and Developer ID/notarization qualification remain open."
+    "LocalFs engine smoke is not S3, whole-cell crash or power-loss qualification.",
+    "PG17.8 source pin unchanged; no claim about later PostgreSQL minors.",
+    "Developer artifacts; public release signing and transitive license audit remain separate gates.",
+    "macOS runs on a build-capable runner; clean-host/offline and notarization remain separate gates."
   ]
 }
