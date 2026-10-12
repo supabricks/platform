@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-10-12",
+  "base_commit": "8048022",
+  "runtime_binary_sha256": "25092553703f0dfaee73f608f4251e90f2f5ccc6a0367250010b531d06882574",
+  "engine": "existing v0.1.0-alpha.36.eq236cache engine; no pg_stat_statements dependency",
+  "engine_commit": "1c6fa095261112aae239beef5a221b484703d49a",
+  "focused_tests": {
+    "activity_unit": 4,
+    "mcp_contract": 1,
+    "native_checks": 12
+  },
+  "commands": [
+    "cargo test --locked -p supabricks-local --lib activity::",
+    "UPDATE_LOCAL_SNAPSHOTS=1 cargo test --locked -p supabricks-local --test application_api mcp_contract_is_separate_strict_and_negotiated",
+    "python3 e2e/native/activity.py --binary /binary --bundle /release/engine --helpers /release/helpers --report /output/activity.json"
+  ],
+  "isolation": "UID 1001 Docker, network none, read-only inputs, fixture-owned temporary state",
+  "limitations": [
+    "Local Linux fixture only; cross-platform full qualification runs in GitHub CI.",
+    "No full local CI rerun, engine rebuild or performance qualification.",
+    "Governed access, statement rankings and latency histograms remain outstanding."
+  ]
+}

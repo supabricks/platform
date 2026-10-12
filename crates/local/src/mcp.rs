@@ -457,6 +457,13 @@ pub fn tools() -> Value {
             false,
         ),
         (
+            "activity",
+            "Local-operator live PostgreSQL sessions and blocking locks. List submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/activity-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            false,
+        ),
+        (
             "extensions",
             "List release-local PostgreSQL extensions or set a reviewed extension enabled/disabled on an explicit branch revision. Local operator scope only; no downloads, arbitrary SQL, automatic wake, CASCADE or governed-branch bypass. Sync type support is separate from extension availability.",
             json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/extensions-command-v1.schema.json")).unwrap()}),

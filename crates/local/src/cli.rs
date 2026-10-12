@@ -100,6 +100,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog metadata capabilities | health | namespace | ensure-namespace
   catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
   catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
+  activity list|cancel|terminate --branch NAME [--snapshot UUID --pid PID]
   extensions list|enable NAME|disable NAME --branch NAME
   catalog [--branch NAME]       Discover application tables and columns
   catalog service status | restart | rotate-key
@@ -1570,6 +1571,71 @@ pub fn run() -> Result<u8> {
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 value = c.call(Action::CatalogMetadata {
                     command: M::Poll { id },
+                })?;
+            }
+            println!("{value}");
+            return Ok(if value["state"] == "failed" { 5 } else { 0 });
+        }
+        "activity" => {
+            use crate::activity::Command as A;
+            let verb = a.required(1)?;
+            let branch = a
+                .take("--branch")
+                .ok_or_else(|| invalid("activity requires an explicit --branch"))?;
+            let record = c.call(Action::GetBranch { branch })?;
+            let target = crate::console::workspace::Target {
+                branch: serde_json::from_value(record["branch"]["id"].clone())?,
+                revision: record["revision"]
+                    .as_i64()
+                    .ok_or_else(|| invalid("branch revision unavailable"))?,
+            };
+            let command = match verb.as_str() {
+                "list" => A::List {
+                    target,
+                    include_query_text: a.flag("--include-query-text"),
+                },
+                "cancel" | "terminate" => {
+                    let snapshot = a
+                        .take("--snapshot")
+                        .ok_or_else(|| {
+                            invalid("signal requires --snapshot from a recent activity list")
+                        })?
+                        .parse()
+                        .map_err(|_| invalid("invalid snapshot UUID"))?;
+                    let pid = a
+                        .take("--pid")
+                        .ok_or_else(|| invalid("signal requires --pid"))?
+                        .parse()
+                        .map_err(|_| invalid("invalid PID"))?;
+                    if verb == "cancel" {
+                        A::Cancel {
+                            target,
+                            snapshot,
+                            pid,
+                        }
+                    } else {
+                        A::Terminate {
+                            target,
+                            snapshot,
+                            pid,
+                        }
+                    }
+                }
+                _ => return Err(invalid("activity list|cancel|terminate --branch NAME")),
+            };
+            a.finish(2)?;
+            let mut value = c.call(Action::Activity { command })?;
+            let id = serde_json::from_value(value["id"].clone())?;
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            while value["state"] == "running" {
+                if std::time::Instant::now() >= deadline {
+                    return Err(invalid(
+                        "activity wait expired; poll the request before retrying a signal",
+                    ));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                value = c.call(Action::Activity {
+                    command: A::Poll { id },
                 })?;
             }
             println!("{value}");
