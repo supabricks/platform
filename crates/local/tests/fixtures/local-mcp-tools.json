@@ -8454,6 +8454,200 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
+    "description": "Local-operator live PostgreSQL sessions and blocking locks. List submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "list"
+                },
+                "include_query_text": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "cancel"
+                },
+                "pid": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "snapshot": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target",
+                "snapshot",
+                "pid"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "terminate"
+                },
+                "pid": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "snapshot": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "target": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "revision": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "branch",
+                    "revision"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "action",
+                "target",
+                "snapshot",
+                "pid"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "const": "poll"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "id"
+              ],
+              "type": "object"
+            }
+          ],
+          "title": "Local PostgreSQL live activity command v1"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "name": "activity",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api",
+            "api_version",
+            "project_id",
+            "worktree",
+            "features",
+            "limits"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
     "description": "List release-local PostgreSQL extensions or set a reviewed extension enabled/disabled on an explicit branch revision. Local operator scope only; no downloads, arbitrary SQL, automatic wake, CASCADE or governed-branch bypass. Sync type support is separate from extension availability.",
     "inputSchema": {
       "additionalProperties": false,

@@ -152,6 +152,7 @@ exec "$directory/../engine/pg_install/v17/bin/psql" "$@"
     shutil.copytree(ROOT / 'agents', destination / 'agents', ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copy2(ROOT / 'docs/handbook/local-workflow.md', destination / 'WORKFLOW.md')
     shutil.copy2(ROOT / 'docs/handbook/postgres-extensions.md', destination / 'POSTGRES-EXTENSIONS.md')
+    shutil.copy2(ROOT / 'docs/handbook/postgres-activity.md', destination / 'POSTGRES-ACTIVITY.md')
     shutil.copy2(ROOT / 'install/native/README.md', destination / 'INSTALL.md')
     shutil.copy2(ROOT / 'docs/handbook/recovery.md', destination / 'RECOVERY.md')
     shutil.copytree(ROOT / 'components/provenance', destination / 'provenance/engine-and-helpers')

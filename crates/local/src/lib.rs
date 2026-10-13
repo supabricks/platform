@@ -1,4 +1,5 @@
 //! Native configuration, durable local state and the single-writer daemon.
+pub mod activity;
 pub mod analytics;
 pub(crate) mod analytics_v2;
 pub mod api;
