@@ -97,7 +97,7 @@ class Wire:
         self.socket=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
         self.socket.settimeout(3)
         self.socket.connect(f'{directory}/.s.PGSQL.{port}')
-        params=b'user\0cloud_admin\0database\0postgres\0replication\0database\0application_name\0supabricks-capture\0client_encoding\0UTF8\0options\0-c logical_decoding_work_mem=1024 -c temp_file_limit=65536 -c log_statement=none -c log_min_error_statement=panic\0\0'
+        params=b'user\0cloud_admin\0database\0postgres\0replication\0database\0application_name\0supabricks-capture\0client_encoding\0UTF8\0options\0-c logical_decoding_work_mem=1024 -c temp_file_limit=65536 -c log_statement=none -c log_min_error_statement=panic -c DateStyle=ISO,YMD\0\0'
         body=struct.pack('!I',196608)+params
         self.socket.sendall(struct.pack('!I',len(body)+4)+body)
         while True:

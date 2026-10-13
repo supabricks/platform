@@ -117,13 +117,9 @@ class CompositeChecks:
         self.stop()
 
 
-from installed_sync import InstalledContinuous
-
-
-class Composite(CompositeChecks,InstalledContinuous):pass
-
-
 def main():
+    from installed_sync import InstalledContinuous
+    class Composite(CompositeChecks,InstalledContinuous):pass
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--release',type=Path,required=True);p.add_argument('--report',type=Path,required=True)
     p.add_argument('--inputs',type=Path);p.add_argument('--control-only',action='store_true');a=p.parse_args()

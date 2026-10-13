@@ -12,6 +12,32 @@ use serde_json::{Value, json};
 use supabricks_core::resource::{EpochId, OperationId, ProjectId};
 mod history;
 
+fn needs_compaction(manifest: &Value) -> bool {
+    let bytes = manifest["generation_bytes"].as_u64().unwrap_or(0);
+    // Pure appends create no obsolete target files. Allow a longer bounded log
+    // before copying that live set; mixed and legacy histories keep 64 versions.
+    let versions = if manifest["generation_append_only"].as_bool() == Some(true) {
+        512
+    } else {
+        64
+    };
+    // The first publication is the compacted/live baseline, not reclaimable
+    // growth. Legacy receipts retain the original 512 MiB trigger. New roots
+    // roll over after consuming half their remaining 1 GiB generation budget.
+    let baseline = manifest["generation_base_bytes"]
+        .as_u64()
+        .unwrap_or(0)
+        .min(bytes);
+    let threshold = baseline.saturating_add((1024_u64 * 1024 * 1024).saturating_sub(baseline) / 2);
+    manifest["tables"].as_array().is_some_and(|ts| {
+        ts.iter()
+            .any(|t| t["version"].as_u64().is_some_and(|v| v >= versions))
+    }) || manifest["files"]
+        .as_array()
+        .is_some_and(|fs| fs.len() >= 2048)
+        || bytes >= threshold
+}
+
 // Shared with the regression test so it measures the production query.
 pub(super) const ROOT_REFERENCED: &str = "SELECT 1 FROM snapshots s JOIN publications p ON p.export_id=s.export_id
             WHERE s.state IN ('available','unavailable','deleting') AND json_extract(p.descriptor,'$.generation')='analytics/incremental/' || ?1
@@ -237,15 +263,7 @@ impl Store {
                             .publication
                             .descriptor
                             .ok_or_else(|| conflict("missing previous epoch descriptor"))?;
-                        let compact = old["manifest"]["tables"].as_array().is_some_and(|ts| {
-                            ts.iter()
-                                .any(|t| t["version"].as_u64().is_some_and(|v| v >= 64))
-                        }) || old["manifest"]["files"]
-                            .as_array()
-                            .is_some_and(|fs| fs.len() >= 2048)
-                            || old["manifest"]["generation_bytes"]
-                                .as_u64()
-                                .is_some_and(|n| n >= 512 * 1024 * 1024);
+                        let compact = needs_compaction(&old["manifest"]);
                         storage_generation = if compact {
                             Some(id)
                         } else {
@@ -573,4 +591,68 @@ impl Store {
 pub(crate) fn restore(db: &rusqlite::Connection) -> Result<()> {
     db.execute_batch("INSERT INTO analytics_gc SELECT id,NULL,'pending' FROM incremental_runs WHERE state IN ('requested','running','ready') ON CONFLICT DO NOTHING; UPDATE publications SET state='cancelled',error='restored_requires_resync' WHERE export_id IN (SELECT id FROM incremental_runs WHERE state IN ('requested','running','ready')); UPDATE incremental_runs SET state='cancelled',record=json_set(record,'$.state','cancelled','$.error','restored_requires_resync') WHERE state IN ('requested','running','ready');")?;
     Ok(())
+}
+
+#[cfg(test)]
+mod compaction_tests {
+    use super::*;
+    const MIB: u64 = 1024 * 1024;
+
+    #[test]
+    fn large_compacted_baseline_does_not_roll_over_every_batch() {
+        let mut manifest = json!({"generation_bytes":600*MIB,"generation_base_bytes":600*MIB,
+            "tables":[{"version":1}],"files":[]});
+        assert!(!needs_compaction(&manifest));
+        manifest["generation_bytes"] = json!(601 * MIB);
+        assert!(!needs_compaction(&manifest));
+        manifest["generation_bytes"] = json!(812 * MIB);
+        assert!(needs_compaction(&manifest));
+        manifest["generation_base_bytes"] = json!(812 * MIB);
+        assert!(!needs_compaction(&manifest));
+    }
+
+    #[test]
+    fn legacy_size_version_and_file_rollovers_remain_enforced() {
+        let mut manifest = json!({"generation_bytes":511*MIB,"tables":[{"version":1}],"files":[]});
+        assert!(!needs_compaction(&manifest));
+        manifest["generation_bytes"] = json!(512 * MIB);
+        assert!(needs_compaction(&manifest));
+        manifest["generation_base_bytes"] = json!(512 * MIB);
+        assert!(!needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(64);
+        assert!(needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(1);
+        manifest["files"] = json!(vec![Value::Null; 2048]);
+        assert!(needs_compaction(&manifest));
+    }
+
+    #[test]
+    fn only_proven_append_histories_allow_512_versions() {
+        let mut manifest = json!({"generation_bytes":1,"generation_append_only":true,
+            "tables":[{"version":511}],"files":[]});
+        assert!(!needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(512);
+        assert!(needs_compaction(&manifest));
+        manifest["tables"][0]["version"] = json!(64);
+        manifest["generation_append_only"] = json!(false);
+        assert!(needs_compaction(&manifest));
+        manifest["generation_append_only"] = json!("true");
+        assert!(needs_compaction(&manifest));
+        manifest["generation_append_only"] = json!(true);
+        manifest["files"] = json!(vec![Value::Null; 2048]);
+        assert!(needs_compaction(&manifest));
+        manifest["files"] = json!([]);
+        manifest["generation_bytes"] = json!(512 * MIB);
+        assert!(needs_compaction(&manifest));
+    }
+
+    #[test]
+    fn full_generation_and_invalid_baseline_cannot_disable_rollover() {
+        assert!(needs_compaction(
+            &json!({"generation_bytes":1024*MIB,"generation_base_bytes":1024*MIB})
+        ));
+        assert!(needs_compaction(
+            &json!({"generation_bytes":1024*MIB,"generation_base_bytes":u64::MAX})
+        ));
+    }
 }

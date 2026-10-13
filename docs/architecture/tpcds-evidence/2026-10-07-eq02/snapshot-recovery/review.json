@@ -1,0 +1,1605 @@
+{
+  "status": "INCOMPLETE",
+  "fixture_sha256": "478a5a3095a8e508c38e8ae14828e6006777d7dc13b4f57647842cd54c3f07aa",
+  "comparison_sha256": "169c389ad8ef4ad7cc605b148060d35d9435071b5082519cdf4bb0ff8a87b9a3",
+  "raw_counts": {
+    "correct": 65,
+    "type_mismatch": 12,
+    "result_mismatch_review_required": 9,
+    "failed": 13,
+    "order_review_required": 4
+  },
+  "reviewed_counts": {
+    "correct": 69,
+    "type_mismatch": 12,
+    "decimal_value_mismatch": 9,
+    "execution_failed": 13
+  },
+  "order_reviews": [
+    {
+      "id": "q24a",
+      "sql_sha256": "b819a8b1944f128cf37d05ebb7344237cb2230b50c249a1d6f517b2e66480414",
+      "status": "correct_after_explicit_order_review",
+      "reason": "No ORDER BY or LIMIT; exact typed row multiset required.",
+      "product_sha256": "e143836730c34fa83f8c222e28726ef6f92288e29d1bc456ad75549bebe43c3f",
+      "reference_sha256": "21447d943f256b4fa7592b6c6b401043244f0e33a69f2fa82179b4d8f1dae599",
+      "rows": 7
+    },
+    {
+      "id": "q56",
+      "sql_sha256": "547f7203e33ef78f3c91968e85adf6e79dcbb61c60f90e171fc43e79fd96d0ef",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY total_sales LIMIT 100; same selected rows and sorted sales; differences only within ties.",
+      "product_sha256": "1c5340427b1bf0a693f9c665e7612135fbe960fe475a272a1fc05f116ee95549",
+      "reference_sha256": "53230e178d9161bd25964cd8ed00a8c1e8d2e383b4b7ed196d302ac4a9fd1f34",
+      "rows": 100
+    },
+    {
+      "id": "q64",
+      "sql_sha256": "b52e8f499ee22ecec48b261ff8df29f3aa8a8c620cd1c50ef7bb93c65622ddf9",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY cs1.product_name, cs1.store_name, cs2.cnt; same rows and sort keys; differences only within ties.",
+      "product_sha256": "4fda4d3a6cc346ab9cbaacbf46dcaa36c4e373f33719e1986e0932d3991282da",
+      "reference_sha256": "5399fce863d74ace5878c475367e53be240445ffec3f348066110e118a6f96c2",
+      "rows": 10
+    },
+    {
+      "id": "q77",
+      "sql_sha256": "c33390fc16bb8054deb65deec6fabebbf590259f982ce49ee228243cf72a9a9d",
+      "status": "correct_after_explicit_order_review",
+      "reason": "ORDER BY channel, id LIMIT 100; same selected rows and sort keys, NULLS FIRST; differences only within ties.",
+      "product_sha256": "4d24ef773a83ce8bcbea58f8193b082bc845f8ab82fbd5dbfff79125a7bffaa1",
+      "reference_sha256": "1986dd99afca82bff9e6facb19f3ac0323072db5e9bea8270734ea676ebf140f",
+      "rows": 44
+    }
+  ],
+  "decimal_value_differences": [
+    {
+      "id": "q18",
+      "different_values": 2,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 0,
+          "column": 5,
+          "type": "decimal(16,6)",
+          "product": "101.832507",
+          "reference": "101.832508",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 0,
+          "column": 9,
+          "type": "decimal(16,6)",
+          "product": "1957.467741",
+          "reference": "1957.467742",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q26",
+      "different_values": 3,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 12,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "85.596666",
+          "reference": "85.596667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 20,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "84.496666",
+          "reference": "84.496667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 46,
+          "column": 4,
+          "type": "decimal(11,6)",
+          "product": "16.276666",
+          "reference": "16.276667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q27",
+      "different_values": 5,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 0,
+          "column": 4,
+          "type": "decimal(11,6)",
+          "product": "75.659585",
+          "reference": "75.659586",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 7,
+          "column": 6,
+          "type": "decimal(11,6)",
+          "product": "5.506666",
+          "reference": "5.506667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 8,
+          "column": 6,
+          "type": "decimal(11,6)",
+          "product": "5.506666",
+          "reference": "5.506667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 65,
+          "column": 5,
+          "type": "decimal(11,6)",
+          "product": "23.186666",
+          "reference": "23.186667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 66,
+          "column": 5,
+          "type": "decimal(11,6)",
+          "product": "23.186666",
+          "reference": "23.186667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q28",
+      "different_values": 3,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 0,
+          "column": 6,
+          "type": "decimal(11,6)",
+          "product": "134.011513",
+          "reference": "134.011514",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 0,
+          "column": 12,
+          "type": "decimal(11,6)",
+          "product": "61.826049",
+          "reference": "61.826050",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 0,
+          "column": 15,
+          "type": "decimal(11,6)",
+          "product": "39.279555",
+          "reference": "39.279556",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q57",
+      "different_values": 36,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 1,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7659.241666",
+          "reference": "7659.241667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 3,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7659.241666",
+          "reference": "7659.241667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 4,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7640.491666",
+          "reference": "7640.491667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 5,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "8223.719166",
+          "reference": "8223.719167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 9,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6832.821666",
+          "reference": "6832.821667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 12,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "8223.719166",
+          "reference": "8223.719167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 16,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7640.491666",
+          "reference": "7640.491667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 21,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7966.579166",
+          "reference": "7966.579167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 23,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6959.934166",
+          "reference": "6959.934167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 24,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7082.129166",
+          "reference": "7082.129167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 25,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6904.689166",
+          "reference": "6904.689167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 34,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6690.091666",
+          "reference": "6690.091667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 38,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7243.994166",
+          "reference": "7243.994167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 41,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7593.929166",
+          "reference": "7593.929167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 45,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7966.579166",
+          "reference": "7966.579167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 46,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7082.129166",
+          "reference": "7082.129167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 47,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6959.934166",
+          "reference": "6959.934167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 50,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6829.956666",
+          "reference": "6829.956667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 51,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7082.129166",
+          "reference": "7082.129167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 55,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7243.994166",
+          "reference": "7243.994167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 61,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7966.579166",
+          "reference": "7966.579167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 62,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7243.994166",
+          "reference": "7243.994167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 66,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7045.164166",
+          "reference": "7045.164167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 69,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7966.579166",
+          "reference": "7966.579167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 70,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6832.821666",
+          "reference": "6832.821667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 73,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7593.929166",
+          "reference": "7593.929167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 80,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7082.129166",
+          "reference": "7082.129167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 81,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "8223.719166",
+          "reference": "8223.719167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 84,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7659.241666",
+          "reference": "7659.241667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 86,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6829.956666",
+          "reference": "6829.956667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 87,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6171.544166",
+          "reference": "6171.544167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 92,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "6690.091666",
+          "reference": "6690.091667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 93,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7243.994166",
+          "reference": "7243.994167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 94,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7640.491666",
+          "reference": "7640.491667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 96,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7045.164166",
+          "reference": "7045.164167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 97,
+          "column": 5,
+          "type": "decimal(21,6)",
+          "product": "7640.491666",
+          "reference": "7640.491667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q63",
+      "different_values": 43,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 0,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 1,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 2,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 3,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 4,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 5,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 6,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 7,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 8,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 9,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 10,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "531.919166",
+          "reference": "531.919167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 11,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 12,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 13,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 14,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 15,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 16,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 17,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 18,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 19,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 20,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "625.031666",
+          "reference": "625.031667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 66,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 67,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 68,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 69,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 70,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 71,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 72,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 73,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 74,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 75,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 76,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1618.954166",
+          "reference": "1618.954167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 89,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 90,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 91,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 92,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 93,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 94,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 95,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 96,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 97,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 98,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 99,
+          "column": 2,
+          "type": "decimal(21,6)",
+          "product": "1125.259166",
+          "reference": "1125.259167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q7",
+      "different_values": 5,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 32,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "58.646666",
+          "reference": "58.646667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 32,
+          "column": 4,
+          "type": "decimal(11,6)",
+          "product": "22.166666",
+          "reference": "22.166667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 54,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "73.876666",
+          "reference": "73.876667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 74,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "114.206666",
+          "reference": "114.206667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 91,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "78.256666",
+          "reference": "78.256667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q89",
+      "different_values": 33,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 6,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 7,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 8,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 12,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 15,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 17,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 20,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 23,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 31,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 33,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 45,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 48,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 50,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 52,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 54,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 55,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 60,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5410.916666",
+          "reference": "5410.916667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 62,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2569.346666",
+          "reference": "2569.346667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 63,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 72,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 73,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2569.346666",
+          "reference": "2569.346667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 79,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "4973.509166",
+          "reference": "4973.509167",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 81,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "5074.076666",
+          "reference": "5074.076667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 83,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2137.656666",
+          "reference": "2137.656667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 84,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2431.226666",
+          "reference": "2431.226667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 85,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2355.441666",
+          "reference": "2355.441667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 86,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2569.346666",
+          "reference": "2569.346667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 87,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2431.226666",
+          "reference": "2431.226667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 89,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2431.226666",
+          "reference": "2431.226667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 90,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2569.346666",
+          "reference": "2569.346667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 94,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2355.441666",
+          "reference": "2355.441667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 96,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "1908.056666",
+          "reference": "1908.056667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 99,
+          "column": 7,
+          "type": "decimal(21,6)",
+          "product": "2569.346666",
+          "reference": "2569.346667",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    },
+    {
+      "id": "q9",
+      "different_values": 3,
+      "all_one_decimal_unit": true,
+      "differences": [
+        {
+          "row": 0,
+          "column": 0,
+          "type": "decimal(11,6)",
+          "product": "358.584652",
+          "reference": "358.584653",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 0,
+          "column": 2,
+          "type": "decimal(11,6)",
+          "product": "1720.558851",
+          "reference": "1720.558852",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        },
+        {
+          "row": 0,
+          "column": 4,
+          "type": "decimal(11,6)",
+          "product": "3090.499277",
+          "reference": "3090.499278",
+          "delta": "-0.000001",
+          "one_decimal_unit": true
+        }
+      ]
+    }
+  ],
+  "type_differences": [
+    {
+      "id": "q12",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q2",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 1,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 2,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 3,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        },
+        {
+          "column": 7,
+          "product": "decimal(23,2)",
+          "reference": "decimal(20,2)"
+        }
+      ]
+    },
+    {
+      "id": "q20",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q31",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 3,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q36",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 0,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q49",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(23,8)",
+          "reference": "decimal(35,20)"
+        }
+      ]
+    },
+    {
+      "id": "q58",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(38,10)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    },
+    {
+      "id": "q59",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 3,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 4,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 5,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 6,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 7,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 8,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        },
+        {
+          "column": 9,
+          "product": "decimal(23,6)",
+          "reference": "decimal(37,20)"
+        }
+      ]
+    },
+    {
+      "id": "q61",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 2,
+          "product": "decimal(34,8)",
+          "reference": "decimal(38,19)"
+        }
+      ]
+    },
+    {
+      "id": "q83",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 7,
+          "product": "decimal(25,4)",
+          "reference": "decimal(27,6)"
+        }
+      ]
+    },
+    {
+      "id": "q90",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 0,
+          "product": "decimal(23,8)",
+          "reference": "decimal(35,20)"
+        }
+      ]
+    },
+    {
+      "id": "q98",
+      "issue": 199,
+      "fields": [
+        {
+          "column": 5,
+          "product": "decimal(34,6)",
+          "reference": "decimal(38,17)"
+        }
+      ]
+    }
+  ],
+  "execution_failures": [
+    {
+      "id": "q21",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 218.0 KB for HashJoinInput with 255.8 MB already allocated for this reservation - 166.3 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q30",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#169\", customer_address.\"#170\", customer_address.\"#171\", customer_address.\"#172\", customer_address.\"#173\", customer_address.\"#174\", customer_address.\"#175\", customer_address.\"#176\", customer_address.\"#177\", customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\"."
+    },
+    {
+      "id": "q39a",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 294.6 KB for HashJoinInput with 254.3 MB already allocated for this reservation - 280.7 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q39b",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 315.3 KB for HashJoinInput with 254.4 MB already allocated for this reservation - 189.5 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q41",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_manufact. Valid fields are item.\"#88\", item.\"#89\", item.\"#90\", item.\"#91\", item.\"#92\", item.\"#93\", item.\"#94\", item.\"#95\", item.\"#96\", item.\"#97\", item.\"#98\", item.\"#99\", item.\"#100\", item.\"#101\", item.\"#102\", item.\"#103\", item.\"#104\", item.\"#105\", item.\"#106\", item.\"#107\", item.\"#108\", item.\"#109\"."
+    },
+    {
+      "id": "q47",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 2.6 MB for GroupedHashAggregateStream[7] (sum(store_sales.#125)) with 64.0 B already allocated for this reservation - 2.3 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q6",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named item.i_category. Valid fields are item.\"#419\", item.\"#420\", item.\"#421\", item.\"#422\", item.\"#423\", item.\"#424\", item.\"#425\", item.\"#426\", item.\"#427\", item.\"#428\", item.\"#429\", item.\"#430\", item.\"#431\", item.\"#432\", item.\"#433\", item.\"#434\", item.\"#435\", item.\"#436\", item.\"#437\", item.\"#438\", item.\"#439\", item.\"#440\"."
+    },
+    {
+      "id": "q66",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1015.3 KB for HashJoinInput with 164.4 MB already allocated for this reservation - 585.2 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q67",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to reserve memory for sort during spill: Resources exhausted: Failed to allocate additional 7.1 MB for GroupedHashAggregateStream[6] (sum(CASE WHEN __common_expr_1 IS NOT NULL THEN __common_expr_1 ELSE Some(0),18,2 END) as sum(coalesce(store_sales.#59 * store_sales.#56,Int32(0)))) with 64.0 B already allocated for this reservation - 5.7 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q72",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 407.7 KB for HashJoinInput with 203.7 MB already allocated for this reservation - 241.7 KB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q75",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1281.0 KB for GroupedHashAggregateStream[14] () with 2.3 MB already allocated for this reservation - 2.5 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q78",
+      "issue": 197,
+      "error": "pyspark.errors.exceptions.connect.AnalysisException: Failed to allocate additional 1675.9 KB for GroupedHashAggregateStream[7] (sum(store_sales.#593), sum(store_sales.#594), sum(store_sales.#596)) with 2.6 MB already allocated for this reservation - 3.8 MB remain available for the total memory pool: fair(pool_size: 256.0 MB)"
+    },
+    {
+      "id": "q81",
+      "issue": 198,
+      "error": "pyspark.errors.exceptions.connect.SparkRuntimeException: No field named customer_address.ca_state. Valid fields are customer_address.\"#178\", customer_address.\"#179\", customer_address.\"#180\", customer_address.\"#181\", customer_address.\"#182\", customer_address.\"#183\", customer_address.\"#184\", customer_address.\"#185\", customer_address.\"#186\", customer_address.\"#187\", customer_address.\"#188\", customer_address.\"#189\", customer_address.\"#190\"."
+    }
+  ],
+  "scope": "Strict comparator retained unchanged; only four named SQL ordering cases are explicitly reviewed. No type coercion, numeric tolerance, or rewritten query."
+}

@@ -33,12 +33,13 @@ def compact(config, temporary):
         def batches():
             for batch in dataset.scanner(batch_size=256,batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
                 if batch.nbytes>32*1024*1024:raise CaptureError('compaction_value_budget')
-                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024)
+                boundary(temporary,config['deadline_ms'],extra=4*batch.nbytes+4*1024*1024,live_writer=True)
                 count[0]+=batch.num_rows
                 yield batch
         reader=pa.RecordBatchReader.from_batches(dataset.schema,batches())
         write_deltalake(str(temporary/table['path']),reader,
             target_file_size=16*1024*1024,
+            max_spill_size=64*1024*1024,max_temp_directory_size=64*1024*1024,
             writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
             configuration={'delta.dataSkippingNumIndexedCols':'0'})
         if count[0]!=table['rows']:raise CaptureError('compaction_row_count')

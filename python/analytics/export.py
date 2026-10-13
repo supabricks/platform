@@ -49,6 +49,8 @@ def arrow_type(oid, typmod):
               1114: pa.timestamp('us'), 1184: pa.timestamp('us', tz='UTC')}
     if oid in simple:
         return simple[oid]
+    if oid == 1042 and 5 <= typmod <= 10_485_764:
+        return pa.string()
     if oid == 1700 and typmod >= 4:
         precision = ((typmod - 4) >> 16) & 65535
         scale = (typmod - 4) & 2047
@@ -56,6 +58,15 @@ def arrow_type(oid, typmod):
         if 1 <= precision <= 38 and 0 <= scale <= precision:
             return pa.decimal128(precision, scale)
     raise Rejected(f'unsupported PostgreSQL type OID/typmod: {oid}/{typmod}')
+
+
+def field_metadata(oid,typmod):
+    # Delta/Spark's standard raw type marker distinguishes CHAR from STRING.
+    # PostgreSQL supplies the original padded bytes; never rstrip them here.
+    if oid==1042:
+        arrow_type(oid,typmod)
+        return {b'__CHAR_VARCHAR_TYPE_STRING':f'char({typmod-4})'.encode()}
+    return None
 
 
 def disk_bytes(root):
@@ -124,7 +135,7 @@ def discover(conn):
             if collation not in (0, 100):
                 raise Rejected(f'table {oid} has an explicit/non-default collation')
             dtype = arrow_type(type_oid, typmod)
-            fields.append(pa.field(column, dtype, nullable=not notnull))
+            fields.append(pa.field(column, dtype, nullable=not notnull,metadata=field_metadata(type_oid,typmod)))
             metadata.append({'name': column, 'type_oid': type_oid, 'typmod': typmod,
                              'nullable': not notnull, 'arrow_type': str(dtype),
                              'collation': colname, 'collation_provider': provider,
@@ -139,7 +150,7 @@ def query(namespace, name, columns):
     # Bound a row on the server BEFORE libpq/Python materialize it. octet_length
     # sees uncompressed text length, unlike pg_column_size on compressed TOAST.
     lengths = [sql.SQL('coalesce(octet_length({}),0)::bigint').format(sql.Identifier(c['name']))
-               if c['type_oid'] in (25, 1043) else sql.SQL('32::bigint') for c in columns]
+               if c['type_oid'] in (25, 1042, 1043) else sql.SQL('32::bigint') for c in columns]
     size = sql.SQL(' + ').join(lengths)
     safe = sql.SQL('({}) <= {}').format(size, sql.Literal(ROW_BYTES))
     values = [sql.SQL('CASE WHEN {} THEN {} ELSE NULL END').format(safe, sql.Identifier(c['name'])) for c in columns]

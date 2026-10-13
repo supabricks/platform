@@ -1,0 +1,115 @@
+{
+  "scope": "Copied retained compacted generation; diagnostic merge options only, not product throughput",
+  "results": [
+    {
+      "mode": "streamed",
+      "worker_report": {
+        "status": "RUNNING",
+        "scope": "copied post-compaction apply only; no installed-worker or throughput qualification"
+      },
+      "termination": {
+        "exit_code": 124,
+        "timeout_seconds": 35
+      },
+      "status": "TIMEOUT"
+    },
+    {
+      "mode": "range",
+      "worker_report": {
+        "status": "PASS",
+        "scope": "copied post-compaction apply only; no installed-worker or throughput qualification",
+        "mode": "range",
+        "results": [
+          {
+            "version": 1,
+            "metrics": {
+              "num_source_rows": 16384,
+              "num_target_rows_inserted": 16384,
+              "num_target_rows_updated": 0,
+              "num_target_rows_deleted": 0,
+              "num_target_rows_copied": 0,
+              "num_output_rows": 16384,
+              "num_target_files_scanned": 1,
+              "num_target_files_skipped_during_scan": 0,
+              "num_target_files_added": 1,
+              "num_target_files_removed": 0,
+              "execution_time_ms": 123,
+              "scan_time_ms": 110,
+              "rewrite_time_ms": 2,
+              "new_parquet_bytes": 141896,
+              "retained_parquet_bytes": 15898193
+            }
+          }
+        ],
+        "elapsed_seconds": 0.20915433097979985,
+        "highwater_bytes": 574541824
+      },
+      "termination": {
+        "exit_code": 0,
+        "timeout_seconds": 35
+      },
+      "status": "PASS"
+    },
+    {
+      "mode": "spill256",
+      "worker_report": {
+        "status": "PASS",
+        "scope": "copied post-compaction apply only; no installed-worker or throughput qualification",
+        "mode": "spill256",
+        "results": [
+          {
+            "version": 1,
+            "metrics": {
+              "num_source_rows": 16384,
+              "num_target_rows_inserted": 16384,
+              "num_target_rows_updated": 0,
+              "num_target_rows_deleted": 0,
+              "num_target_rows_copied": 0,
+              "num_output_rows": 16384,
+              "num_target_files_scanned": 1,
+              "num_target_files_skipped_during_scan": 0,
+              "num_target_files_added": 1,
+              "num_target_files_removed": 0,
+              "execution_time_ms": 110,
+              "scan_time_ms": 98,
+              "rewrite_time_ms": 1,
+              "new_parquet_bytes": 142012,
+              "retained_parquet_bytes": 15898309
+            }
+          }
+        ],
+        "elapsed_seconds": 0.18881957299890928,
+        "highwater_bytes": 569360384
+      },
+      "termination": {
+        "exit_code": 0,
+        "timeout_seconds": 35
+      },
+      "status": "PASS"
+    },
+    {
+      "mode": "sparse-range",
+      "worker_report": {
+        "status": "RUNNING",
+        "scope": "copied post-compaction apply only; no installed-worker or throughput qualification"
+      },
+      "termination": {
+        "exit_code": 124,
+        "timeout_seconds": 35
+      },
+      "status": "TIMEOUT"
+    },
+    {
+      "mode": "sparse-in",
+      "worker_report": {
+        "status": "RUNNING",
+        "scope": "copied post-compaction apply only; no installed-worker or throughput qualification"
+      },
+      "termination": {
+        "exit_code": 124,
+        "timeout_seconds": 35
+      },
+      "status": "TIMEOUT"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "suite": "bulk",
+  "exact_installed": true,
+  "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+  "binary_sha256": "d8663d0cccb73499462a6f4d828d2ed1309aa6e4abc5739979369dc54240f5c5",
+  "checks": [
+    "complete_transaction_row_prefix_drains_with_exact_equality_and_pinned_reader",
+    "oversized_single_transaction_preserves_last_complete_publication"
+  ],
+  "metrics": {
+    "complete_transaction_prefix": {
+      "source_transactions": 12,
+      "rows_per_transaction": 2048,
+      "changed_rows": 24576,
+      "apply_batches": 2
+    }
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

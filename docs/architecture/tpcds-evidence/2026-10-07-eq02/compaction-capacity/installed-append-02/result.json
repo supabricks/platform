@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "suite": "append",
+  "exact_installed": true,
+  "release_identity": "6b54ce28bc601f3ab46c78475f11d380b07f777a56e26987c5f18b1d9433a724",
+  "binary_sha256": "d8663d0cccb73499462a6f4d828d2ed1309aa6e4abc5739979369dc54240f5c5",
+  "checks": [
+    "append_commit_replay_and_old_versions_are_exact",
+    "proven_new_keys_append_without_target_sized_memory"
+  ],
+  "metrics": {
+    "rows": 16777216,
+    "insert_rows": 16384,
+    "target_files": 4,
+    "parquet_bytes": 66132309,
+    "append": {
+      "elapsed_seconds": 0.7554582589655183,
+      "planning_seconds": 0.7233166109654121,
+      "apply_seconds": 0.032142037991434336,
+      "highwater_bytes": 385445888,
+      "metrics": {
+        "committed_before_receipt": true,
+        "operation": "WRITE"
+      }
+    },
+    "replay": {
+      "elapsed_seconds": 0.07777614699443802,
+      "planning_seconds": 0.008538069960195571,
+      "apply_seconds": 0.06923848704900593,
+      "highwater_bytes": 188792832,
+      "metrics": {
+        "num_added_files": 1,
+        "num_removed_files": 0,
+        "num_partitions": 0,
+        "num_added_rows": 16384,
+        "execution_time_ms": 4,
+        "replayed": true,
+        "apply_kind": "append",
+        "new_parquet_bytes": 204566,
+        "retained_parquet_bytes": 66336875
+      }
+    },
+    "scope": "Synthetic large composite-key target; production planner/apply and saved-commit replay; no PG throughput claim"
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

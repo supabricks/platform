@@ -1,0 +1,303 @@
+{
+  "status": "PASS_ISSUE_199",
+  "overall_sf1_status": "INCOMPLETE",
+  "scope": "EQ02 retained SF1 engineering correction; SP frozen",
+  "sail_commit": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+  "package_proof_sha256": "fffca72ca24e7a7e211d25c55f8383ab5a7c72877d6cb3a9e0308d498aa3b66e",
+  "profile": {
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "memory_bytes": 17179869184,
+    "swap": false,
+    "network": "none",
+    "query_timeout_seconds": 120
+  },
+  "load_receipt_sha256": "0db09445eb65d8957bc8dbb14490cef96bc7d14b3845a6ff2a40a98f8de4720f",
+  "epoch_id": "fed0899c-c267-4d8a-8432-3e5e920718af",
+  "reference_sha256": "5dd00ad8da206b099aafe354087fcd4ca959d8afec331a49e5491de820c206a1",
+  "releases": {
+    "baseline": "6d365fc4d04dbe71b4447eb6c405e9fb1665d7472eec660a8d7cf35a964ec70e",
+    "candidate": "1208de89e46af8ae20ab62f3378ccf92082072564c53dc792449a70277021cee"
+  },
+  "raw_counts": {
+    "baseline": {
+      "correct": 73,
+      "type_mismatch": 12,
+      "failed": 13,
+      "order_review_required": 5
+    },
+    "candidate": {
+      "correct": 85,
+      "failed": 13,
+      "order_review_required": 5
+    }
+  },
+  "reviewed_counts": {
+    "baseline": {
+      "correct": 78,
+      "type_mismatch": 12,
+      "decimal_value_mismatch": 0,
+      "execution_failed": 13
+    },
+    "candidate": {
+      "correct": 90,
+      "type_mismatch": 0,
+      "decimal_value_mismatch": 0,
+      "execution_failed": 13
+    }
+  },
+  "changed_dispositions": [
+    {
+      "id": "q12",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q2",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q20",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q31",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q36",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q49",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q58",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q59",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q61",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q83",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q90",
+      "before": "type_mismatch",
+      "after": "correct"
+    },
+    {
+      "id": "q98",
+      "before": "type_mismatch",
+      "after": "correct"
+    }
+  ],
+  "new_regressions": [],
+  "affected_queries": [
+    {
+      "id": "q2",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.9376288180355914,
+      "candidate_seconds": 0.9302187430439517,
+      "baseline_session_start_seconds": 1.195565914036706,
+      "candidate_session_start_seconds": 1.1957718210178427
+    },
+    {
+      "id": "q12",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.8444832249660976,
+      "candidate_seconds": 0.8233856000006199,
+      "baseline_session_start_seconds": 1.1589389890432358,
+      "candidate_session_start_seconds": 1.1756107569672167
+    },
+    {
+      "id": "q20",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.9310528899659403,
+      "candidate_seconds": 0.907370003988035,
+      "baseline_session_start_seconds": 1.185928171966225,
+      "candidate_session_start_seconds": 1.1904415549943224
+    },
+    {
+      "id": "q31",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.2684413199895062,
+      "candidate_seconds": 1.2773170369910076,
+      "baseline_session_start_seconds": 1.1943983549717814,
+      "candidate_session_start_seconds": 1.1868978909915313
+    },
+    {
+      "id": "q36",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.9969862300204113,
+      "candidate_seconds": 1.0021537019638345,
+      "baseline_session_start_seconds": 1.1968226360040717,
+      "candidate_session_start_seconds": 1.1802495659794658
+    },
+    {
+      "id": "q49",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.1019757769536227,
+      "candidate_seconds": 1.0808679379988462,
+      "baseline_session_start_seconds": 1.1452593249850906,
+      "candidate_session_start_seconds": 1.1268635269952938
+    },
+    {
+      "id": "q58",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.197450336010661,
+      "candidate_seconds": 1.1933853460359387,
+      "baseline_session_start_seconds": 1.1832452910020947,
+      "candidate_session_start_seconds": 1.1945398449897766
+    },
+    {
+      "id": "q59",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.3341248669894412,
+      "candidate_seconds": 1.3285403360496275,
+      "baseline_session_start_seconds": 1.2045082039549015,
+      "candidate_session_start_seconds": 1.1951707020052709
+    },
+    {
+      "id": "q61",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.3635316989966668,
+      "candidate_seconds": 1.3662968360004015,
+      "baseline_session_start_seconds": 1.201237762987148,
+      "candidate_session_start_seconds": 1.1923634549602866
+    },
+    {
+      "id": "q83",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.8374861949705519,
+      "candidate_seconds": 0.8348766809795052,
+      "baseline_session_start_seconds": 1.1866950090043247,
+      "candidate_session_start_seconds": 1.1935830729780719
+    },
+    {
+      "id": "q90",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 0.8640358140110038,
+      "candidate_seconds": 0.8486685439711437,
+      "baseline_session_start_seconds": 1.2244319259771146,
+      "candidate_session_start_seconds": 1.2190994349657558
+    },
+    {
+      "id": "q98",
+      "before": "type_mismatch",
+      "after": "correct",
+      "baseline_seconds": 1.0699751860229298,
+      "candidate_seconds": 1.0622557190363295,
+      "baseline_session_start_seconds": 1.1981315989978611,
+      "candidate_session_start_seconds": 1.1915604480309412
+    }
+  ],
+  "affected_query_seconds": {
+    "baseline": 12.747172356932424,
+    "candidate": 12.655336486059241
+  },
+  "timing_scope": "One paired complete-suite run under identical declared limits; descriptive timings, not a statistical speedup or throughput claim; fixed run order and host/page-cache effects are not isolated.",
+  "reduced_cases": 47,
+  "reduced_completed_cases": 43,
+  "reduced_expected_cast_failures": 4,
+  "pytest_cases_per_engine": 52,
+  "pytest_engines": [
+    "Spark 4.2.0 JVM",
+    "Sail local",
+    "Sail local-cluster"
+  ],
+  "rust_regressions": 5,
+  "cleanup": {
+    "baseline": {
+      "exit_code": 0,
+      "timed_out": false,
+      "inspection_failed": false,
+      "descendants_observed": 282,
+      "leaked_descendants": 0,
+      "remaining_descendants": 0
+    },
+    "candidate": {
+      "exit_code": 0,
+      "timed_out": false,
+      "inspection_failed": false,
+      "descendants_observed": 282,
+      "leaked_descendants": 0,
+      "remaining_descendants": 0
+    }
+  },
+  "remaining_issues": [
+    197,
+    198
+  ],
+  "rejected_first_candidate": {
+    "source": "0c5b0bceeeceed605db6f45f523c6bc5d38b966b",
+    "release_identity": "545287cedce75da676267e7034ef3dedb7ff10ebd76c2c4c6229fc5715c99fee",
+    "raw_counts": {
+      "failed": 16,
+      "correct": 83,
+      "order_review_required": 4
+    },
+    "introduced_failures": [
+      "q1",
+      "q32",
+      "q92"
+    ],
+    "reason": "Decimal UDF rejected optimizer-generated untyped NULL while decorrelating aggregate subqueries",
+    "reduced_reproduction": "Five correlated-aggregate tests fail on first candidate and pass on Spark and final candidate",
+    "cleanup": {
+      "exit_code": 0,
+      "timed_out": false,
+      "inspection_failed": false,
+      "descendants_observed": 280,
+      "leaked_descendants": 0,
+      "remaining_descendants": 0
+    },
+    "elapsed_seconds": 465.10383185901446
+  },
+  "full_run_seconds": {
+    "baseline": 463.1777351460187,
+    "candidate": 464.3548823919846
+  },
+  "rust_validation": {
+    "arithmetic_source": "528b49dac7beafa6d5a0e1f2e538efcbbc4aca2f",
+    "arithmetic_checks": 3,
+    "codec_source": "0c5b0bceeeceed605db6f45f523c6bc5d38b966b",
+    "codec_checks": 2,
+    "note": "Codec implementation unchanged by null-coercion follow-up; final installed local-cluster SQL suite also passes"
+  }
+}

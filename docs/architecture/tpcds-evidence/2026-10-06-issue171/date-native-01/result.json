@@ -1,0 +1,271 @@
+{
+  "status": "PASS",
+  "kind": "date",
+  "scope": "installed engineering type qualification; separate reference comparison required",
+  "checks": [
+    "date_native_bootstrap_types_nulls_bounds_and_sail_queries",
+    "date_insert_update_delete_key_move_and_old_epoch_immutability",
+    "date_capture_sigkill_and_daemon_restart_replay",
+    "infinite_date_fails_closed_without_publishing_or_losing_previous_epoch"
+  ],
+  "metrics": {
+    "bootstrap_queries": [
+      {
+        "sql": "SELECT id,d,amount FROM public.typed ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          },
+          {
+            "name": "d",
+            "type": "date"
+          },
+          {
+            "name": "amount",
+            "type": "decimal(18,2)"
+          }
+        ],
+        "rows": [
+          [
+            "1",
+            "0001-01-01",
+            "1234567890123456.78"
+          ],
+          [
+            "2",
+            "9999-12-31",
+            null
+          ],
+          [
+            "3",
+            null,
+            "0.00"
+          ],
+          [
+            "4",
+            "2000-02-29",
+            "1.25"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,year(d),month(d),day(d) FROM public.typed ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          },
+          {
+            "name": "year(d)",
+            "type": "int"
+          },
+          {
+            "name": "month(d)",
+            "type": "int"
+          },
+          {
+            "name": "day(d)",
+            "type": "int"
+          }
+        ],
+        "rows": [
+          [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          [
+            "2",
+            "9999",
+            "12",
+            "31"
+          ],
+          [
+            "3",
+            null,
+            null,
+            null
+          ],
+          [
+            "4",
+            "2000",
+            "2",
+            "29"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id FROM public.typed WHERE d BETWEEN DATE '1900-01-01' AND DATE '2024-12-31' ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          }
+        ],
+        "rows": [
+          [
+            "4"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT count(d),min(d),max(d) FROM public.typed",
+        "columns": [
+          {
+            "name": "count(d)",
+            "type": "bigint"
+          },
+          {
+            "name": "min(d)",
+            "type": "date"
+          },
+          {
+            "name": "max(d)",
+            "type": "date"
+          }
+        ],
+        "rows": [
+          [
+            "3",
+            "0001-01-01",
+            "9999-12-31"
+          ]
+        ]
+      }
+    ],
+    "updated_queries": [
+      {
+        "sql": "SELECT id,d,amount FROM public.typed ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          },
+          {
+            "name": "d",
+            "type": "date"
+          },
+          {
+            "name": "amount",
+            "type": "decimal(18,2)"
+          }
+        ],
+        "rows": [
+          [
+            "3",
+            null,
+            "0.00"
+          ],
+          [
+            "4",
+            null,
+            "1.25"
+          ],
+          [
+            "5",
+            "1900-03-01",
+            "2.50"
+          ],
+          [
+            "10",
+            "2024-02-29",
+            "1234567890123456.79"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id,year(d),month(d),day(d) FROM public.typed ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          },
+          {
+            "name": "year(d)",
+            "type": "int"
+          },
+          {
+            "name": "month(d)",
+            "type": "int"
+          },
+          {
+            "name": "day(d)",
+            "type": "int"
+          }
+        ],
+        "rows": [
+          [
+            "3",
+            null,
+            null,
+            null
+          ],
+          [
+            "4",
+            null,
+            null,
+            null
+          ],
+          [
+            "5",
+            "1900",
+            "3",
+            "1"
+          ],
+          [
+            "10",
+            "2024",
+            "2",
+            "29"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT id FROM public.typed WHERE d BETWEEN DATE '1900-01-01' AND DATE '2024-12-31' ORDER BY id",
+        "columns": [
+          {
+            "name": "id",
+            "type": "int"
+          }
+        ],
+        "rows": [
+          [
+            "5"
+          ],
+          [
+            "10"
+          ]
+        ]
+      },
+      {
+        "sql": "SELECT count(d),min(d),max(d) FROM public.typed",
+        "columns": [
+          {
+            "name": "count(d)",
+            "type": "bigint"
+          },
+          {
+            "name": "min(d)",
+            "type": "date"
+          },
+          {
+            "name": "max(d)",
+            "type": "date"
+          }
+        ],
+        "rows": [
+          [
+            "2",
+            "1900-03-01",
+            "2024-02-29"
+          ]
+        ]
+      }
+    ]
+  },
+  "release_identity": "78d3cad528db5e75cec90a602f1417880f1eff693ce88f87fcb49a878a4cd42a",
+  "fixture_sha256": "8a3309a692f23654277abd50d33bf962b2c765de2518cdad2a29cc3ac340037d",
+  "elapsed_seconds": 38.95136497198837
+}

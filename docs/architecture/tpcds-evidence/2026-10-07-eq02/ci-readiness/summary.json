@@ -1,0 +1,137 @@
+{
+  "status": "Local candidates qualified; current-head hosted CI required before merge",
+  "issues": [
+    137,
+    201,
+    202
+  ],
+  "scope": "No SP trial or TPC-DS reload; #200 follows CI and merge",
+  "source_commits": {
+    "delta_workflow": "9dee851",
+    "capacity_evidence": "f2c9fe1",
+    "governed_readiness": "e37664f"
+  },
+  "unit_tests": 224,
+  "ignored_tests": 4,
+  "daemon_tests": 1,
+  "harness_tests": 13,
+  "fixtures": [
+    {
+      "fixture": "governed-candidate-01",
+      "status": "PASS",
+      "checks": 17,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 301,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": null
+    },
+    {
+      "fixture": "governed-candidate-02",
+      "status": "PASS",
+      "checks": 17,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 306,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": null
+    },
+    {
+      "fixture": "governed-candidate-03",
+      "status": "PASS",
+      "checks": 17,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 299,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": null
+    },
+    {
+      "fixture": "governed-ci-01",
+      "status": "PASS",
+      "checks": 17,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 301,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": null
+    },
+    {
+      "fixture": "installed-capacity-4cpu-01",
+      "status": "PASS",
+      "checks": 3,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 7,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": 402882560
+    },
+    {
+      "fixture": "installed-capacity-ci-01",
+      "status": "PASS",
+      "checks": 3,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 7,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": 383909888
+    },
+    {
+      "fixture": "installed-capacity-ci-02",
+      "status": "PASS",
+      "checks": 3,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 7,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": 388444160
+    },
+    {
+      "fixture": "installed-capacity-ci-03",
+      "status": "PASS",
+      "checks": 3,
+      "cleanup": {
+        "exit_code": 0,
+        "timed_out": false,
+        "inspection_failed": false,
+        "descendants_observed": 7,
+        "leaked_descendants": 0,
+        "remaining_descendants": 0
+      },
+      "history_highwater_bytes": 389484544
+    }
+  ],
+  "limitations": [
+    "Original capacity high-water value was lost; failure retained, local exact-archive repeats do not establish its cause.",
+    "Governed admission gap is corrected; original generic post-prepare CI denial was not reproduced locally.",
+    "Local native overlay is not an exact release archive; original CI archive is verified separately."
+  ]
+}

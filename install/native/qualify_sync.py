@@ -21,7 +21,7 @@ from sqlite_qualification import collect as collect_sqlite
 from capture_wal_qualification import collect as collect_wal
 
 ROOT=Path(__file__).resolve().parents[2]
-SUITES=('triggered','continuous','maintenance','governed','composite')
+SUITES=('triggered','continuous','maintenance','governed','composite','date','char','bulk','merge','append','capacity')
 
 
 def sha(path):

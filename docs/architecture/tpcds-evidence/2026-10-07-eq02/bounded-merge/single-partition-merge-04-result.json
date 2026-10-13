@@ -1,0 +1,71 @@
+{
+  "status": "FAIL",
+  "suite": "merge",
+  "exact_installed": true,
+  "release_identity": "7713ff1bb0b7abf530faaba7f35a748bc69abc52c02574f933a642bfac0f1770",
+  "binary_sha256": "03b5f4d3c39fa5a8b6e86229fc2eacb3879cfa71f43b51a978779ddf539bc28c",
+  "checks": [],
+  "metrics": {
+    "compacted": {
+      "rows": 1888080,
+      "insert_rows": 16384,
+      "initial_parquet_bytes": 13223685,
+      "insert": {
+        "elapsed_seconds": 0.43239992900635116,
+        "highwater_bytes": 481779712,
+        "metrics": {
+          "num_source_rows": 16384,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_copied": 0,
+          "num_output_rows": 16384,
+          "num_target_files_scanned": 1,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "execution_time_ms": 366,
+          "scan_time_ms": 355,
+          "rewrite_time_ms": 0,
+          "new_parquet_bytes": 115174,
+          "retained_parquet_bytes": 13338859
+        }
+      },
+      "mutate": {
+        "elapsed_seconds": 0.36128607401042245,
+        "highwater_bytes": 295198720,
+        "metrics": {
+          "committed_before_receipt": true
+        }
+      },
+      "replay": {
+        "elapsed_seconds": 0.02861228701658547,
+        "highwater_bytes": 181878784,
+        "metrics": {
+          "num_source_rows": 5,
+          "num_target_rows_inserted": 1,
+          "num_target_rows_updated": 2,
+          "num_target_rows_deleted": 2,
+          "num_target_rows_copied": 1888076,
+          "num_output_rows": 1888079,
+          "num_target_files_scanned": 2,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 1,
+          "execution_time_ms": 350,
+          "scan_time_ms": 308,
+          "rewrite_time_ms": 32,
+          "replayed": true,
+          "new_parquet_bytes": 13258877,
+          "retained_parquet_bytes": 26597736
+        }
+      }
+    }
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

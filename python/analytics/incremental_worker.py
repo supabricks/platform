@@ -2,6 +2,7 @@
 """Daemon-owned SY03 batch applier. SQLite publication remains the sole authority."""
 import copy
 from decimal import Decimal
+from datetime import date
 import hashlib
 import json
 import os
@@ -11,9 +12,9 @@ import time
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs as fs
-from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties
-from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn
-from incremental.rows import changes, overlay, key_columns, row_key, key_values, MAX_ROWS, MAX_VALUES
+from deltalake import DeltaTable, CommitProperties, PostCommitHookProperties, WriterProperties, write_deltalake
+from capture.spool import CaptureError, atomic, canonical, fault, pg_lsn, lsn
+from incremental.rows import changes, overlay, key_columns, row_key, key_values, value, MAX_ROWS, MAX_VALUES
 from incremental.storage import JournalBusyDeferred, read_json, initialize, journal, boundary, durable, verify_previous, inventory, retained_boundary
 from incremental.maintenance import base
 from incremental.planning import mutation_lease, PlanningBoundary
@@ -29,11 +30,16 @@ def schema_for(table,path):
 
 def key_filter(columns,keys):
     pk=key_columns(columns)
-    if len(pk)==1:return ds.field(columns[pk[0]][1]).isin(sorted(keys))
+    if not keys:return ds.scalar(False)
     # Bounded expression depth: an OR of thousands of exact tuples can crash
     # Arrow's expression optimizer. These are pruning candidates, not identity.
     parts=[key_values(key,pk) for key in keys]
-    terms=[ds.field(columns[i][1]).isin(sorted({v[n] for v in parts})) for n,i in enumerate(pk)]
+    terms=[]
+    for n,i in enumerate(pk):
+        values=sorted({v[n] for v in parts});field=ds.field(columns[i][1])
+        # Large membership predicates alone need not prune Parquet row groups.
+        # These redundant bounds let statistics reject nonoverlapping ranges.
+        terms.append(field.isin(values) & (field>=values[0]) & (field<=values[-1]))
     predicate=terms[0]
     for term in terms[1:]:predicate=predicate & term
     return predicate
@@ -41,7 +47,9 @@ def key_filter(columns,keys):
 
 def key_batches(dataset,columns,keys):
     pk=key_columns(columns)
-    for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32).to_batches():
+    # Keep native read-ahead bounded even when statistics cannot prune a scan.
+    for batch in dataset.scanner(filter=key_filter(columns,keys),batch_size=32,
+            batch_readahead=1,fragment_readahead=1,use_threads=False).to_batches():
         if len(pk)>1:
             # Reject Cartesian neighbors before row/value budgets or overlay.
             # Materialize only the key vectors, and at most one 32-row batch.
@@ -56,11 +64,17 @@ def plan(config,root,previous,journal_data=None,lease=None):
 
 
 def plan_rows(config,root,previous,journal_data,guard):
-    schema,transactions,end,input_bytes=journal(config) if journal_data is None else journal_data
-    operations=[]
-    for end,payload in transactions:
-        operations.extend(changes(payload,schema,end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None))
-        if len(operations)>MAX_ROWS:raise CaptureError('apply_row_budget')
+    schema,transactions,_,_=journal(config) if journal_data is None else journal_data
+    operations=[];end=lsn(config['after_lsn']);input_bytes=0
+    for candidate_end,payload in transactions:
+        guard.check()
+        selected=changes(payload,schema,candidate_end,'supabricks.barrier.'+config['identity']['generation'] if config['identity'].get('decoder_version')==2 else None)
+        # The byte-bounded journal range may contain more small rows than one
+        # apply can materialize. Publish a complete-transaction prefix and leave
+        # the rest for the next run. changes() still rejects an oversized single
+        # transaction; never divide its atomic visibility across publications.
+        if len(operations)+len(selected)>MAX_ROWS:break
+        operations.extend(selected);end=candidate_end;input_bytes+=len(payload)
     touched={}
     for oid,tag,old,new,row in operations:
         touched.setdefault(oid,set()).add(old)
@@ -88,8 +102,9 @@ def plan_rows(config,root,previous,journal_data,guard):
     for table in previous['manifest']['tables']:
         oid=str(table['oid'])
         if oid not in final:continue
-        # Decimal is serialized exactly as text, then restored under the pinned schema.
-        rows=[[key,None if row is None else [str(v) if isinstance(v,Decimal) else v for v in row]] for key,row in sorted(final[oid].items())]
+        # Dates and exact decimals use lossless JSON text only in the private plan;
+        # typed Arrow values are restored before writing Delta.
+        rows=[[key,None if row is None else [str(v) if isinstance(v,(Decimal,date)) else v for v in row]] for key,row in sorted(final[oid].items())]
         output.append(dict(oid=oid,before=table['version'],rows=rows,columns=schema[oid][3],row_delta=sum(int(row is not None)-int(existing[oid].get(key) is not None) for key,row in final[oid].items())))
     result=dict(run_id=config['id'],identity=config['identity'],previous_epoch=previous['epoch_id'],
                 after_lsn=config['after_lsn'],target_lsn=config['target_lsn'],end_lsn=pg_lsn(end),input_bytes=input_bytes,tables=output)
@@ -117,7 +132,7 @@ def apply_table(config,root,table,planned,checksum,sealed):
         if any(record.get(k)!=v for k,v in marker.items()):raise CaptureError('foreign_delta_commit')
         # A committed Delta log after SIGKILL may precede the worker receipt.
         durable(path,sealed)
-        return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True))
+        return delta.version(),commit_metrics(path,delta.version(),dict(record.get('operationMetrics',{}),replayed=True,apply_kind=record.get('sb_apply','merge')))
     if delta.version()!=before:raise CaptureError('foreign_delta_version')
     if before>=1023:raise CaptureError('delta_version_budget')
     columns=planned['columns'];pk=key_columns(columns)
@@ -125,28 +140,43 @@ def apply_table(config,root,table,planned,checksum,sealed):
     while delete in arrow.names:delete+='x'
     records=[]
     for key,values in planned['rows']:
-        row={c[1]:None for c in columns} if values is None else {c[1]:Decimal(v) if c[2]==1700 and v is not None else v for c,v in zip(columns,values)}
+        row={c[1]:None for c in columns} if values is None else {c[1]:value(v,c) if c[2] in (1700,1082) and v is not None else v for c,v in zip(columns,values)}
         for i,v in zip(pk,key_values(key,pk)):row[columns[i][1]]=v
         row[delete]=values is None;records.append(row)
     # Delete source rows may have NULL placeholders for non-key NOT NULL columns;
     # matched-delete removes them before any target insert/update.
-    input_schema=pa.schema([pa.field(f.name,f.type,nullable=True) for f in arrow]+[pa.field(delete,pa.bool_())])
+    input_schema=pa.schema([pa.field(f.name,f.type,nullable=True,metadata=f.metadata) for f in arrow]+[pa.field(delete,pa.bool_())])
     source=pa.Table.from_pylist(records,schema=input_schema)
     if source.nbytes>MAX_VALUES:raise CaptureError('apply_value_budget')
-    table_bytes=sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
+    # Each planned key contributes at most +1 to row_delta. Equality proves
+    # every final row is new: planning looked up the exact keys in this pinned
+    # version before sealing the plan. Missing proof retains the merge path.
+    # Avoid buffering the entire unchanged target in Delta's merge barrier.
+    append=bool(records) and planned.get('row_delta')==len(records) and all(not row[delete] for row in records)
+    # Appends create new files; they cannot rewrite the unchanged target.
+    table_bytes=0 if append else sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
     reservation=table_bytes+4*source.nbytes+4*1024*1024
     retained_boundary(root.parent,extra=reservation)
     boundary(root,config['deadline_ms'],extra=reservation)
-    expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
-    d='source.'+quote(delete)
-    predicate=' AND '.join('target.'+quote(columns[i][1])+' = source.'+quote(columns[i][1]) for i in pk)
-    metrics=delta.merge(source,predicate,source_alias='source',target_alias='target',
-        streamed_exec=False,max_spill_size=64*1024*1024,max_temp_directory_size=128*1024*1024,
-        writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
+    marker['sb_apply']='append' if append else 'merge'
+    options=dict(writer_properties=WriterProperties(compression='UNCOMPRESSED',max_row_group_size=1024),
         commit_properties=CommitProperties(custom_metadata=marker,max_commit_retries=0),
-        post_commithook_properties=PostCommitHookProperties(create_checkpoint=False,cleanup_expired_logs=False))\
-        .when_matched_delete(predicate=d).when_matched_update(expressions,predicate='NOT '+d)\
-        .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
+        post_commithook_properties=PostCommitHookProperties(create_checkpoint=False,cleanup_expired_logs=False))
+    if append:
+        # Restore the exact target nullability/metadata after the merge source's
+        # nullable tombstone placeholders and private delete column are removed.
+        write_deltalake(delta,source.select(arrow.names).cast(arrow),mode='append',**options)
+        delta.update_incremental()
+        metrics=dict(delta.history(1)[0].get('operationMetrics',{}))
+    else:
+        expressions={quote(c[1]):'source.'+quote(c[1]) for c in columns}
+        d='source.'+quote(delete)
+        predicate=' AND '.join('target.'+quote(columns[i][1])+' = source.'+quote(columns[i][1]) for i in pk)
+        metrics=delta.merge(source,predicate,source_alias='source',target_alias='target',
+            streamed_exec=False,max_spill_size=64*1024*1024,max_temp_directory_size=128*1024*1024,**options)\
+            .when_matched_delete(predicate=d).when_matched_update(expressions,predicate='NOT '+d)\
+            .when_not_matched_insert(expressions,predicate='NOT '+d).execute()
+    metrics['apply_kind']=marker['sb_apply']
     fault('after_table_commit')
     durable(path,sealed);boundary(root,config['deadline_ms'])
     return delta.version(),commit_metrics(path,delta.version(),metrics)
@@ -207,6 +237,15 @@ def run_owned(config,root,journal_data,lease):
     manifest['compaction']=compaction
     manifest['retained_bytes']=retained_boundary(root.parent)
     used=boundary(root,config['deadline_ms']);manifest['generation_bytes']=used
+    append_only=all(m['metrics'].get('apply_kind')=='append' for m in metrics)
+    if config['previous'] is None or compaction is not None:
+        # Keep this first-published size across later epochs in the same root.
+        manifest['generation_base_bytes']=used
+        manifest['generation_append_only']=append_only
+    else:
+        # An absent legacy marker is conservative; a merge cannot be forgotten
+        # merely because a later batch appends. Compaction starts a new history.
+        manifest['generation_append_only']=manifest.get('generation_append_only') is True and append_only
     descriptor=dict(format_version=2,installation_id=config['identity']['installation_id'],epoch_id=config['epoch_id'],
         ordinal=config['ordinal'],export_id=config['id'],source_revision=config['source_revision'],
         generation='analytics/incremental/'+(config.get('storage_generation') or config['identity']['generation']),manifest=manifest,

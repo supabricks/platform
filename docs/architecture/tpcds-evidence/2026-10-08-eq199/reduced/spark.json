@@ -1,0 +1,1116 @@
+{
+  "engine": "spark",
+  "fixture_sha256": "5d61d5a85c80f3d4f14168e4da37c96b1666aa0977a4d5cc98ae28435aa9972f",
+  "queries": [
+    {
+      "id": "15_4_+_15_4",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(15,4)) + CAST(3 AS DECIMAL(15,4)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(16,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.0000"
+        ],
+        [
+          "5.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 1.2294009090401232
+    },
+    {
+      "id": "15_4_-_15_4",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(15,4)) - CAST(3 AS DECIMAL(15,4)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(16,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.0000"
+        ],
+        [
+          "-1.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08041696599684656
+    },
+    {
+      "id": "15_4_*_15_4",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(15,4)) * CAST(3 AS DECIMAL(15,4)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(31,8)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.00000000"
+        ],
+        [
+          "6.00000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08402648899937049
+    },
+    {
+      "id": "15_4_/_15_4",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(15,4)) / CAST(3 AS DECIMAL(15,4)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(35,20)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.33333333333333333333"
+        ],
+        [
+          "0.66666666666666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.10168591403635219
+    },
+    {
+      "id": "17_2_+_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(17,2)) + CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(18,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.00"
+        ],
+        [
+          "5.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.10198279598262161
+    },
+    {
+      "id": "17_2_-_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(17,2)) - CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(18,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.00"
+        ],
+        [
+          "-1.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.052909485006239265
+    },
+    {
+      "id": "17_2_*_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(17,2)) * CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(35,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.0000"
+        ],
+        [
+          "6.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07495630899211392
+    },
+    {
+      "id": "17_2_/_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(17,2)) / CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(37,20)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.33333333333333333333"
+        ],
+        [
+          "0.66666666666666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08517464395845309
+    },
+    {
+      "id": "21_2_+_27_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,2)) + CAST(3 AS DECIMAL(27,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(28,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.00"
+        ],
+        [
+          "5.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.05734372301958501
+    },
+    {
+      "id": "21_2_-_27_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,2)) - CAST(3 AS DECIMAL(27,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(28,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.00"
+        ],
+        [
+          "-1.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04138668405357748
+    },
+    {
+      "id": "21_2_*_27_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,2)) * CAST(3 AS DECIMAL(27,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.0000"
+        ],
+        [
+          "6.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08044029999291524
+    },
+    {
+      "id": "21_2_/_27_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,2)) / CAST(3 AS DECIMAL(27,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,17)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.33333333333333333"
+        ],
+        [
+          "0.66666666666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.05878433200996369
+    },
+    {
+      "id": "21_4_+_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,4)) + CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.0000"
+        ],
+        [
+          "5.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04482216399628669
+    },
+    {
+      "id": "21_4_-_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,4)) - CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.0000"
+        ],
+        [
+          "-1.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.03644357103621587
+    },
+    {
+      "id": "21_4_*_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,4)) * CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.000000"
+        ],
+        [
+          "6.000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.05845034203957766
+    },
+    {
+      "id": "21_4_/_17_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(21,4)) / CAST(3 AS DECIMAL(17,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,19)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.3333333333333333333"
+        ],
+        [
+          "0.6666666666666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.06452344701392576
+    },
+    {
+      "id": "38_18_+_38_18",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,18)) + CAST(3 AS DECIMAL(38,18)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,17)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.00000000000000000"
+        ],
+        [
+          "5.00000000000000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.042914345976896584
+    },
+    {
+      "id": "38_18_-_38_18",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,18)) - CAST(3 AS DECIMAL(38,18)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,17)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.00000000000000000"
+        ],
+        [
+          "-1.00000000000000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.048341360001359135
+    },
+    {
+      "id": "38_18_*_38_18",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,18)) * CAST(3 AS DECIMAL(38,18)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,6)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.000000"
+        ],
+        [
+          "6.000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.048656485974788666
+    },
+    {
+      "id": "38_18_/_38_18",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,18)) / CAST(3 AS DECIMAL(38,18)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.333333"
+        ],
+        [
+          "0.666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.050524240010418
+    },
+    {
+      "id": "38_0_+_38_0",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,0)) + CAST(3 AS DECIMAL(38,0)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,0)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4"
+        ],
+        [
+          "5"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.051532134995795786
+    },
+    {
+      "id": "38_0_-_38_0",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,0)) - CAST(3 AS DECIMAL(38,0)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,0)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2"
+        ],
+        [
+          "-1"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04958117596106604
+    },
+    {
+      "id": "38_0_*_38_0",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,0)) * CAST(3 AS DECIMAL(38,0)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,0)",
+            "nullable": false,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3"
+        ],
+        [
+          "6"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0588173340074718
+    },
+    {
+      "id": "38_0_/_38_0",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,0)) / CAST(3 AS DECIMAL(38,0)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.333333"
+        ],
+        [
+          "0.666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.03843422397039831
+    },
+    {
+      "id": "38_38_+_38_38",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,38)) + CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id",
+      "status": "failed",
+      "error": "[NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION]  3 cannot be represented as Decimal(38, 38). If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error, and return NULL instead. SQLSTATE: 22003\n== SQL (line 1, position 39) ==\n... CAST(id+1 AS DECIMAL(38,38)) + CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+      "elapsed_seconds": 0.11355104297399521
+    },
+    {
+      "id": "38_38_-_38_38",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,38)) - CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id",
+      "status": "failed",
+      "error": "[NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION]  3 cannot be represented as Decimal(38, 38). If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error, and return NULL instead. SQLSTATE: 22003\n== SQL (line 1, position 39) ==\n... CAST(id+1 AS DECIMAL(38,38)) - CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+      "elapsed_seconds": 0.10645350394770503
+    },
+    {
+      "id": "38_38_*_38_38",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,38)) * CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id",
+      "status": "failed",
+      "error": "[NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION]  3 cannot be represented as Decimal(38, 38). If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error, and return NULL instead. SQLSTATE: 22003\n== SQL (line 1, position 39) ==\n... CAST(id+1 AS DECIMAL(38,38)) * CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+      "elapsed_seconds": 0.09469253802672029
+    },
+    {
+      "id": "38_38_/_38_38",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(38,38)) / CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id",
+      "status": "failed",
+      "error": "[NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION]  3 cannot be represented as Decimal(38, 38). If necessary set \"spark.sql.ansi.enabled\" to \"false\" to bypass this error, and return NULL instead. SQLSTATE: 22003\n== SQL (line 1, position 39) ==\n... CAST(id+1 AS DECIMAL(38,38)) / CAST(3 AS DECIMAL(38,38)) a FROM range(2) ORDER BY id\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+      "elapsed_seconds": 0.09461753902724013
+    },
+    {
+      "id": "7_2_+_7_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(7,2)) + CAST(3 AS DECIMAL(7,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(8,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "4.00"
+        ],
+        [
+          "5.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04240268497960642
+    },
+    {
+      "id": "7_2_-_7_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(7,2)) - CAST(3 AS DECIMAL(7,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(8,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-2.00"
+        ],
+        [
+          "-1.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04234462801832706
+    },
+    {
+      "id": "7_2_*_7_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(7,2)) * CAST(3 AS DECIMAL(7,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(15,4)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.0000"
+        ],
+        [
+          "6.0000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.03429279098054394
+    },
+    {
+      "id": "7_2_/_7_2",
+      "sql": "SELECT CAST(id+1 AS DECIMAL(7,2)) / CAST(3 AS DECIMAL(7,2)) a FROM range(2) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(17,10)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.3333333333"
+        ],
+        [
+          "0.6666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.04347330698510632
+    },
+    {
+      "id": "v*100",
+      "sql": "SELECT v*100 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(21,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "100.00"
+        ],
+        [
+          "200.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.2831947990343906
+    },
+    {
+      "id": "v/3",
+      "sql": "SELECT v/3 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(21,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.333333"
+        ],
+        [
+          "0.666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07978732802439481
+    },
+    {
+      "id": "v/3.0",
+      "sql": "SELECT v/3.0 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.333333"
+        ],
+        [
+          "0.666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07352242502383888
+    },
+    {
+      "id": "v/CAST(3 AS BIGINT)",
+      "sql": "SELECT v/CAST(3 AS BIGINT) a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,23)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.33333333333333333333333"
+        ],
+        [
+          "0.66666666666666666666667"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.09282115998212248
+    },
+    {
+      "id": "CAST(3 AS BIGINT)/v",
+      "sql": "SELECT CAST(3 AS BIGINT)/v a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,16)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.0000000000000000"
+        ],
+        [
+          "1.5000000000000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08592361101182178
+    },
+    {
+      "id": "v*2",
+      "sql": "SELECT v*2 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(19,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2.00"
+        ],
+        [
+          "4.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.08362963498802856
+    },
+    {
+      "id": "v+1",
+      "sql": "SELECT v+1 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(18,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2.00"
+        ],
+        [
+          "3.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07399009604705498
+    },
+    {
+      "id": "v-1",
+      "sql": "SELECT v-1 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(18,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.00"
+        ],
+        [
+          "1.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07709659403190017
+    },
+    {
+      "id": "v+1.0D",
+      "sql": "SELECT v+1.0D a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "2.0"
+        ],
+        [
+          "3.0"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.09831400803523138
+    },
+    {
+      "id": "round(v/v,2)",
+      "sql": "SELECT round(v/v,2) a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(20,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.00"
+        ],
+        [
+          "1.00"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.11608253698796034
+    },
+    {
+      "id": "v/(v+v+v)/3*100",
+      "sql": "SELECT v/(v+v+v)/3*100 a FROM (SELECT CAST(id+1 AS DECIMAL(17,2)) v FROM range(2)) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,17)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "11.11111111111111111"
+        ],
+        [
+          "11.11111111111111111"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07506406400352716
+    },
+    {
+      "id": "nested_sum",
+      "sql": "SELECT sum(v)*100/sum(sum(v)) OVER () a FROM (SELECT id%2 g,CAST(id+1 AS DECIMAL(7,2)) v FROM range(5)) GROUP BY g ORDER BY g",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(38,17)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "60.00000000000000000"
+        ],
+        [
+          "40.00000000000000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.28063630597898737
+    },
+    {
+      "id": "round_sum",
+      "sql": "SELECT round(sum(v)/sum(v+1),2) a FROM (SELECT CAST(id+1 AS DECIMAL(7,2)) v FROM range(5))",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(20,2)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.75"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.06014620803762227
+    },
+    {
+      "id": "int_sum_decimal",
+      "sql": "SELECT sum(id)/3.0 a FROM range(5)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(27,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "3.333333"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0784309069858864
+    },
+    {
+      "id": "negative_division",
+      "sql": "SELECT v,CAST(v AS DECIMAL(15,4))/CAST(32 AS DECIMAL(15,4)) a FROM VALUES (-1),(1),(NULL) t(v) ORDER BY v",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "v",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(35,20)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null,
+          null
+        ],
+        [
+          "-1",
+          "-0.03125000000000000000"
+        ],
+        [
+          "1",
+          "0.03125000000000000000"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.07976760203018785
+    }
+  ],
+  "java": "17.0.20.1+1"
+}

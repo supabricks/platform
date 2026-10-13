@@ -93,6 +93,52 @@ class IncrementalTests(unittest.TestCase):
         self.assert_incremental_durability(False)
     def test_unpublished_replayed_files_are_flushed_even_when_they_already_exist(self):
         self.assert_incremental_durability(True)
+    def test_proven_new_keys_append_with_exact_overlay_and_commit_replay(self):
+        self.spool.append(280,300,tx(280,300,
+            change(b'I',42,new=[2,'12.34567890','first']),
+            change(b'U',42,new=[2,'98.76543210','final']),
+            change(b'I',43,new=[2,None,None])))
+        config=self.config_next('0/12C')
+        def crash(point):
+            if point=='after_table_commit':raise SystemExit(86)
+        with patch.object(DeltaTable,'merge',side_effect=AssertionError('new keys must append')):
+            with patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):run(config)
+            path=Path(config['generation'])/'tables/42'
+            self.assertEqual(DeltaTable(str(path)).version(),1)
+            self.assertEqual(DeltaTable(str(path)).history(1)[0]['operation'],'WRITE')
+            with patch('incremental_worker.journal',side_effect=AssertionError('replay reread journal')):run(config)
+        result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(DeltaTable(str(path)).version(),1)
+        self.assertEqual([t['rows'] for t in result['manifest']['tables']],[2,2,1])
+        metrics={str(t['oid']):t['metrics'] for t in result['manifest']['apply_metrics']}
+        self.assertEqual(metrics['42']['apply_kind'],'append')
+        self.assertTrue(metrics['42']['replayed'])
+        self.assertEqual(metrics['43']['apply_kind'],'append')
+        self.assertTrue(result['manifest']['generation_append_only'])
+        self.assertEqual(sorted(self.rows(result,42),key=lambda r:r['id'])[1],
+                         dict(id=2,amount='98.76543210',note='final'))
+        self.assertEqual(len(self.rows(self.first,42)),1)
+    def test_existing_delete_and_insert_mix_keeps_merge(self):
+        self.spool.append(280,300,tx(280,300,
+            change(b'D',42,old=[1,None,None]),change(b'I',42,new=[2,None,'new'])))
+        config=self.config_next('0/12C');run(config)
+        result=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(result['manifest']['apply_metrics'][0]['metrics']['apply_kind'],'merge')
+        self.assertFalse(result['manifest']['generation_append_only'])
+        self.assertEqual(self.rows(result,42),[dict(id=2,amount=None,note='new')])
+        self.spool.append(380,400,tx(380,400,change(b'I',42,new=[3,None,'later'])))
+        following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),previous=result,
+            after_lsn='0/12C',target_lsn='0/190',workspace=str(self.root/'following'))
+        Path(following['workspace']).mkdir();run(following)
+        later=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(later['manifest']['apply_metrics'][0]['metrics']['apply_kind'],'append')
+        self.assertFalse(later['manifest']['generation_append_only'])
+    def test_missing_append_proof_keeps_merge(self):
+        from incremental_worker import apply_table
+        root=Path(self.config['generation']);table=self.first['manifest']['tables'][0]
+        planned=dict(before=0,columns=PROFILE['42'][3],rows=[[2,[2,None,'new']]])
+        _,metric=apply_table(self.config,root,table,planned,'a'*64,frozenset())
+        self.assertEqual(metric['apply_kind'],'merge')
     def test_key_move_unchanged_toast_decimal_delete_and_unchanged_table(self):
         raw=tx(280,300,change(b'U',42,new=[2,Decimal('12345678901234567890.12345678'),UNCHANGED],old=[1,None,None]),change(b'D',43,old=[1,None,None]),change(b'I',43,new=[3,None,'Unicode 🧱']))
         self.spool.append(280,300,raw);config=self.config_next('0/12C');run(config)
@@ -154,6 +200,44 @@ class IncrementalTests(unittest.TestCase):
         self.assertEqual(self.rows(result,42),[dict(id=3,amount=None,note='inserted')])
         self.assertEqual(self.rows(result,43),[])
         self.assertEqual([t['rows'] for t in result['manifest']['tables']],[1,0,1])
+    def test_row_bounded_prefix_replays_and_drains_without_splitting_transaction(self):
+        # Across tables and including a key move: byte admission alone fits both
+        # commits, but the second would exceed the aggregate row-work ceiling.
+        first=tx(280,300,change(b'I',42,new=[2,None,'two']),change(b'I',43,new=[2,None,'two']))
+        second=tx(380,400,change(b'U',42,new=[3,None,UNCHANGED],old=[2,None,None]),
+                  change(b'D',43,old=[2,None,None]))
+        self.spool.append(280,300,first);self.spool.append(380,400,second)
+        config=self.config_next('0/190')
+        def crash(point):
+            if point=='after_first_table':raise SystemExit(86)
+        with patch('incremental_worker.MAX_ROWS',3),patch('incremental_worker.fault',crash),self.assertRaises(SystemExit):
+            run(config)
+        prepared=json.loads((Path(config['workspace'])/'plan.json').read_text())
+        self.assertEqual(prepared['end_lsn'],'0/12C')
+        self.assertEqual(prepared['target_lsn'],'0/190')
+        self.assertEqual(prepared['input_bytes'],len(first))
+        with patch('incremental_worker.journal',side_effect=AssertionError('replay reread journal')):
+            run(config)
+        prefix=json.loads((Path(config['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(prefix['manifest']['source']['lsn'],'0/12C')
+        self.assertEqual([t['rows'] for t in prefix['manifest']['tables']],[2,2,1])
+        following=dict(config,id=str(uuid.uuid4()),epoch_id=str(uuid.uuid4()),ordinal=3,
+                       workspace=str(self.root/'work3'),previous=prefix,after_lsn='0/12C')
+        Path(following['workspace']).mkdir()
+        with patch('incremental_worker.MAX_ROWS',3):run(following)
+        final=json.loads((Path(following['workspace'])/'result.json').read_text())['descriptor']
+        self.assertEqual(final['manifest']['source']['lsn'],'0/190')
+        self.assertEqual(final['manifest']['input_bytes'],len(second))
+        self.assertEqual(sorted(r['id'] for r in self.rows(final,42)),[1,3])
+        self.assertEqual([r['id'] for r in self.rows(final,43)],[1])
+        self.assertEqual(sorted(r['id'] for r in self.rows(prefix,42)),[1,2])
+    def test_oversized_source_transaction_still_fails_before_plan_or_mutation(self):
+        from incremental.rows import MAX_ROWS
+        payload=tx(280,300,*(change(b'I',43,new=[n,None,None]) for n in range(2,MAX_ROWS+3)))
+        self.spool.append(280,300,payload);config=self.config_next('0/12C')
+        with self.assertRaisesRegex(CaptureError,'apply_row_budget'):run(config)
+        self.assertFalse((Path(config['workspace'])/'plan.json').exists())
+        self.assertEqual(DeltaTable(str(Path(config['generation'])/'tables/43')).version(),0)
     def test_one_key_update_rewrites_only_affected_files(self):
         from incremental.storage import inventory
         root=Path(self.config['generation']);path=root/'tables/42'

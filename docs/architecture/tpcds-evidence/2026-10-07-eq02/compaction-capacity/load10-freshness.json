@@ -1,0 +1,26 @@
+{
+  "status": "FAIL",
+  "scope": "Transaction-weighted commit acknowledgement to publication observation bounds. Only valid for this empty-baseline insert-only single-writer load. Observation starts precede RPCs, so upper bounds use the next observation start; the final bound includes cleanup. Not exact publication timestamps or a sustained 50-row/s SLO.",
+  "total_transactions": 16806,
+  "covered_transactions": 16742,
+  "unpublished_transactions": 64,
+  "covered_rows": 17128515,
+  "unpublished_rows": 65536,
+  "lower_bound_ms": {
+    "p50": 9606.715,
+    "p95": 28039.582,
+    "p99": 79183.408,
+    "max": 120713.178
+  },
+  "upper_bound_ms": {
+    "p50": 10344.624,
+    "p95": 28830.539,
+    "p99": 79893.997,
+    "max": 121590.837
+  },
+  "source_sha256": {
+    "result.json": "dd4a627604b0c36032266c21e37e6e2c5af02a98861b473ab90d311ea86baf7c",
+    "commits.jsonl": "94feef78bc44304cb44eeb8186a24e89fde9c4f1ba2ce951b31eeb01fd0ff959",
+    "observations.jsonl": "14fd4cc78ab648b5eb7189b265879e7f71aeb38610ec463cf8628c96a277585c"
+  }
+}

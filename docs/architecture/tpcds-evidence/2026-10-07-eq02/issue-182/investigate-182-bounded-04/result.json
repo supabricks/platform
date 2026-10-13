@@ -1,0 +1,103 @@
+{
+  "mode": "bounded",
+  "status": "PASS",
+  "events": [
+    {
+      "seconds": 0.00014038101653568447,
+      "phase": "journal",
+      "rss": 155803648,
+      "highwater": 155537408,
+      "arrow_bytes": 0,
+      "arrow_peak": 128,
+      "threads": 11
+    },
+    {
+      "seconds": 0.010663335997378454,
+      "phase": "planning",
+      "rss": 161030144,
+      "highwater": 162766848,
+      "arrow_bytes": 0,
+      "arrow_peak": 128,
+      "threads": 11
+    },
+    {
+      "seconds": 0.193304390006233,
+      "phase": "scan",
+      "rss": 203075584,
+      "highwater": 202485760,
+      "arrow_bytes": 0,
+      "arrow_peak": 3200,
+      "threads": 50
+    },
+    {
+      "seconds": 9.886091125023086,
+      "phase": "overlay",
+      "rss": 243159040,
+      "highwater": 242987008,
+      "arrow_bytes": 256,
+      "arrow_peak": 8856064,
+      "threads": 53
+    },
+    {
+      "seconds": 9.915472748019965,
+      "phase": "planned",
+      "rss": 248537088,
+      "highwater": 252555264,
+      "arrow_bytes": 0,
+      "arrow_peak": 8856064,
+      "threads": 53
+    },
+    {
+      "seconds": 9.92312442502589,
+      "phase": "apply",
+      "rss": 250863616,
+      "highwater": 252555264,
+      "arrow_bytes": 0,
+      "arrow_peak": 8856064,
+      "threads": 53
+    },
+    {
+      "seconds": 10.139276933012297,
+      "phase": "applied",
+      "rss": 569274368,
+      "highwater": 568426496,
+      "arrow_bytes": 0,
+      "arrow_peak": 8856064,
+      "threads": 67
+    },
+    {
+      "seconds": 10.14872691401979,
+      "phase": "collected",
+      "rss": 569274368,
+      "highwater": 568426496,
+      "arrow_bytes": 0,
+      "arrow_peak": 8856064,
+      "threads": 67
+    }
+  ],
+  "guard_checks": 37084,
+  "batches": 37056,
+  "matched_rows": 0,
+  "plan_sha256": "9877790a8fd5e7c4f1b4e2d816fa3ba810316cb90d360714c355d81de60b43ea",
+  "metrics": {
+    "num_source_rows": 16384,
+    "num_target_rows_inserted": 16384,
+    "num_target_rows_updated": 0,
+    "num_target_rows_deleted": 0,
+    "num_target_rows_copied": 0,
+    "num_output_rows": 16384,
+    "num_target_files_scanned": 20,
+    "num_target_files_skipped_during_scan": 0,
+    "num_target_files_added": 1,
+    "num_target_files_removed": 0,
+    "execution_time_ms": 149,
+    "scan_time_ms": 137,
+    "rewrite_time_ms": 1,
+    "new_parquet_bytes": 141967,
+    "retained_parquet_bytes": 10272740
+  },
+  "version": 20,
+  "planned_rows": 16384,
+  "end_lsn": "0/D6A8B00",
+  "elapsed_seconds": 10.148929130024044
+}

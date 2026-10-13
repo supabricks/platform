@@ -131,6 +131,16 @@ class ComponentContractTests(unittest.TestCase):
         self.component("pysail")["repository"] = "https://github.com/lakehq/sail"
         self.assert_invalid("controlled source")
 
+    def test_delta_source_patch_and_dependency_lock_are_required(self):
+        self.component("deltalake")["repository"] = "https://example.org/substitute"
+        self.assert_invalid("deltalake: controlled source")
+        for field in ("patch", "cargo_lock"):
+            source_path = ROOT / "components/deltalake-source.lock.json"
+            modified = read_json(source_path)
+            modified[field]["sha256"] = "0" * 64
+            with patch("validate.read_json", side_effect=lambda path: modified if path == source_path else read_json(path)):
+                self.assert_invalid(f"reviewed {field}")
+
     def test_legacy_image_drift_fails(self):
         self.manifest["legacy_images"]["images"][0]["reference"] = "example/neon@sha256:" + "0" * 64
         self.assert_invalid("digest inventory differs")

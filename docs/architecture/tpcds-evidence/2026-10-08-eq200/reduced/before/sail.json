@@ -1,0 +1,726 @@
+{
+  "engine": "sail",
+  "fixture_sha256": "8a47966f37c0b1aa2f505fe1c0c7883a3e95a3f990b99ac3eedf532189c2fb68",
+  "queries": [
+    {
+      "id": "sign1_sum2_count3",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN 2/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.020731671014800668
+    },
+    {
+      "id": "sign1_sum1_count32",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN 1/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(32)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.000312"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.003794844029471278
+    },
+    {
+      "id": "sign1_sum1_count3",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN 1/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.003333"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0038638520054519176
+    },
+    {
+      "id": "sign-1_sum2_count3",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN -2/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.003917030000593513
+    },
+    {
+      "id": "sign-1_sum1_count32",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN -1/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(32)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-0.000312"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0038158620009198785
+    },
+    {
+      "id": "sign-1_sum1_count3",
+      "sql": "SELECT avg(CAST(CASE WHEN id=0 THEN -1/100.0 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-0.003333"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0039283299702219665
+    },
+    {
+      "id": "avg_distinct",
+      "sql": "SELECT avg(DISTINCT CAST(v AS DECIMAL(18,2))) a FROM VALUES (0.01),(0.01),(0.00),(0.04),(NULL) t(v)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.016666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0039634559652768075
+    },
+    {
+      "id": "avg_grouped",
+      "sql": "SELECT s, avg(CAST(s*CASE WHEN id=0 THEN 0.02 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3) CROSS JOIN VALUES (1),(-1) t(s) GROUP BY s ORDER BY s",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "s",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-1",
+          "-0.006666"
+        ],
+        [
+          "1",
+          "0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.005189715011510998
+    },
+    {
+      "id": "avg_window",
+      "sql": "SELECT id, avg(CAST(CASE WHEN id=0 THEN 0.01 ELSE 0 END AS DECIMAL(18,2))) OVER () a FROM range(32) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0",
+          "0.000312"
+        ],
+        [
+          "1",
+          "0.000312"
+        ],
+        [
+          "2",
+          "0.000312"
+        ],
+        [
+          "3",
+          "0.000312"
+        ],
+        [
+          "4",
+          "0.000312"
+        ],
+        [
+          "5",
+          "0.000312"
+        ],
+        [
+          "6",
+          "0.000312"
+        ],
+        [
+          "7",
+          "0.000312"
+        ],
+        [
+          "8",
+          "0.000312"
+        ],
+        [
+          "9",
+          "0.000312"
+        ],
+        [
+          "10",
+          "0.000312"
+        ],
+        [
+          "11",
+          "0.000312"
+        ],
+        [
+          "12",
+          "0.000312"
+        ],
+        [
+          "13",
+          "0.000312"
+        ],
+        [
+          "14",
+          "0.000312"
+        ],
+        [
+          "15",
+          "0.000312"
+        ],
+        [
+          "16",
+          "0.000312"
+        ],
+        [
+          "17",
+          "0.000312"
+        ],
+        [
+          "18",
+          "0.000312"
+        ],
+        [
+          "19",
+          "0.000312"
+        ],
+        [
+          "20",
+          "0.000312"
+        ],
+        [
+          "21",
+          "0.000312"
+        ],
+        [
+          "22",
+          "0.000312"
+        ],
+        [
+          "23",
+          "0.000312"
+        ],
+        [
+          "24",
+          "0.000312"
+        ],
+        [
+          "25",
+          "0.000312"
+        ],
+        [
+          "26",
+          "0.000312"
+        ],
+        [
+          "27",
+          "0.000312"
+        ],
+        [
+          "28",
+          "0.000312"
+        ],
+        [
+          "29",
+          "0.000312"
+        ],
+        [
+          "30",
+          "0.000312"
+        ],
+        [
+          "31",
+          "0.000312"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.004103243991266936
+    },
+    {
+      "id": "avg_sliding",
+      "sql": "SELECT id, avg(CAST(CASE WHEN id % 3=0 THEN -0.02 ELSE 0 END AS DECIMAL(18,2))) OVER (ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) a FROM range(7) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0",
+          "-0.020000"
+        ],
+        [
+          "1",
+          "-0.010000"
+        ],
+        [
+          "2",
+          "-0.006666"
+        ],
+        [
+          "3",
+          "-0.006666"
+        ],
+        [
+          "4",
+          "-0.006666"
+        ],
+        [
+          "5",
+          "-0.006666"
+        ],
+        [
+          "6",
+          "-0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.004105388012249023
+    },
+    {
+      "id": "mean_distinct",
+      "sql": "SELECT mean(DISTINCT CAST(v AS DECIMAL(18,2))) a FROM VALUES (0.01),(0.01),(0.00),(0.04),(NULL) t(v)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0.016666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0036078779958188534
+    },
+    {
+      "id": "mean_grouped",
+      "sql": "SELECT s, mean(CAST(s*CASE WHEN id=0 THEN 0.02 ELSE 0 END AS DECIMAL(18,2))) a FROM range(3) CROSS JOIN VALUES (1),(-1) t(s) GROUP BY s ORDER BY s",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "s",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "-1",
+          "-0.006666"
+        ],
+        [
+          "1",
+          "0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.004553998995106667
+    },
+    {
+      "id": "mean_window",
+      "sql": "SELECT id, mean(CAST(CASE WHEN id=0 THEN 0.01 ELSE 0 END AS DECIMAL(18,2))) OVER () a FROM range(32) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0",
+          "0.000312"
+        ],
+        [
+          "1",
+          "0.000312"
+        ],
+        [
+          "2",
+          "0.000312"
+        ],
+        [
+          "3",
+          "0.000312"
+        ],
+        [
+          "4",
+          "0.000312"
+        ],
+        [
+          "5",
+          "0.000312"
+        ],
+        [
+          "6",
+          "0.000312"
+        ],
+        [
+          "7",
+          "0.000312"
+        ],
+        [
+          "8",
+          "0.000312"
+        ],
+        [
+          "9",
+          "0.000312"
+        ],
+        [
+          "10",
+          "0.000312"
+        ],
+        [
+          "11",
+          "0.000312"
+        ],
+        [
+          "12",
+          "0.000312"
+        ],
+        [
+          "13",
+          "0.000312"
+        ],
+        [
+          "14",
+          "0.000312"
+        ],
+        [
+          "15",
+          "0.000312"
+        ],
+        [
+          "16",
+          "0.000312"
+        ],
+        [
+          "17",
+          "0.000312"
+        ],
+        [
+          "18",
+          "0.000312"
+        ],
+        [
+          "19",
+          "0.000312"
+        ],
+        [
+          "20",
+          "0.000312"
+        ],
+        [
+          "21",
+          "0.000312"
+        ],
+        [
+          "22",
+          "0.000312"
+        ],
+        [
+          "23",
+          "0.000312"
+        ],
+        [
+          "24",
+          "0.000312"
+        ],
+        [
+          "25",
+          "0.000312"
+        ],
+        [
+          "26",
+          "0.000312"
+        ],
+        [
+          "27",
+          "0.000312"
+        ],
+        [
+          "28",
+          "0.000312"
+        ],
+        [
+          "29",
+          "0.000312"
+        ],
+        [
+          "30",
+          "0.000312"
+        ],
+        [
+          "31",
+          "0.000312"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0038912820164114237
+    },
+    {
+      "id": "mean_sliding",
+      "sql": "SELECT id, mean(CAST(CASE WHEN id % 3=0 THEN -0.02 ELSE 0 END AS DECIMAL(18,2))) OVER (ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) a FROM range(7) ORDER BY id",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {}
+          },
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "0",
+          "-0.020000"
+        ],
+        [
+          "1",
+          "-0.010000"
+        ],
+        [
+          "2",
+          "-0.006666"
+        ],
+        [
+          "3",
+          "-0.006666"
+        ],
+        [
+          "4",
+          "-0.006666"
+        ],
+        [
+          "5",
+          "-0.006666"
+        ],
+        [
+          "6",
+          "-0.006666"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.004178182978648692
+    },
+    {
+      "id": "all_null",
+      "sql": "SELECT avg(CAST(NULL AS DECIMAL(18,2))) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0032199889537878335
+    },
+    {
+      "id": "empty",
+      "sql": "SELECT avg(CAST(id AS DECIMAL(18,2))) a FROM range(0)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "decimal(22,6)",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          null
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.003126425959635526
+    },
+    {
+      "id": "float",
+      "sql": "SELECT avg(CAST(id AS DOUBLE)) a FROM range(3)",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "a",
+            "type": "double",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "rows": [
+        [
+          "1.0"
+        ]
+      ],
+      "status": "complete",
+      "elapsed_seconds": 0.0031033740378916264
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+#!/bin/bash
+set -eu
+docker run --rm --name eq189-replay-verify --network none --cpuset-cpus 0-7 --memory 16g --memory-swap 16g --user 1000:1000 --mount type=bind,src="$PWD",dst=/repo,readonly --mount type=bind,src=/data2/supabricks-eq/eq03-publication/load09-replay-02,dst=/pre,readonly --mount type=bind,src=/data2/supabricks-eq/eq03-publication/load09-replay-03,dst=/post,readonly -w /repo sha256:6ab9f17da0cb0203e98eac65f70f17ca8cc8d8c2aff25248a1082488dbbb23ec /repo/build/eq03-append/runtime-01/python/analytics/python build/eq03-append/verify-replays.py > build/eq03-append/replay-verification.json

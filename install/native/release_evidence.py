@@ -11,6 +11,7 @@ from environment_evidence import SUITES, collect as environments
 from demo import FILES
 from project_evidence import collect as projects
 from sail import verify_report as verify_sail
+from delta_runtime import verify_report as verify_delta
 
 TARGETS = ('linux-x86_64', 'macos-arm64')
 METRICS = ('source_bytes', 'rows', 'decoded_bytes', 'duration_ms', 'peak_rss_bytes',
@@ -67,6 +68,7 @@ def collect(directory, revision, console, worker, version):
         identity = env['release_sha256']
         source = env['source']
         sail = verify_sail(source.get('sail', {}), target)
+        delta = verify_delta(source.get('deltalake', {}), target)
         frontend = source['console']['source']
         require(sha(identity), 'invalid release manifest identity')
         require(frontend['commit'] == console and frontend['dirty'] is False, 'console source differs from reviewed pin')
@@ -147,7 +149,7 @@ def collect(directory, revision, console, worker, version):
             formats[name] = dict(source_sha256=sample['source_sha256'], budget_source_sha256=budget['source_sha256'], measurements=measured)
         require(env['notices'] and all(sha(v) for v in env['notices'].values()), 'missing notice inventory')
         result['targets'][target] = dict(
-            catalog=catalog, projects=portability[target], sail=sail, release_sha256=identity, archive=env['archive'], reports=reports,
+            catalog=catalog, projects=portability[target], sail=sail, deltalake=delta, release_sha256=identity, archive=env['archive'], reports=reports,
             environment_lifecycle_network=env['network'],
             source=dict(platform_commit=revision, console_commit=console,
                         console_manifest_sha256=source['console']['manifest_sha256'],
@@ -174,6 +176,7 @@ def markdown(report):
     lines = ['# Qualified local release', '', f"Version: `{report['version']}` · source: `{report['revision']}`", '',
              f"Console source: `{report['console_commit']}`", '',
              f"Sail source: `{report['targets']['linux-x86_64']['sail']['commit']}` (native build on each target)", '',
+             f"Delta source: `{report['targets']['linux-x86_64']['deltalake']['commit']}` with reviewed bounded-merge patch (native build on each target)", '',
              '| Target | Chromium | Checks across reports | Manifest SHA-256 |', '| --- | --- | ---: | --- |']
     for target, data in report['targets'].items():
         lines.append(f"| {target} | {data['browser']['version']} | {sum(r['checks'] for r in data['reports'].values())} | `{data['release_sha256']}` |")

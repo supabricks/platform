@@ -59,9 +59,18 @@ def files(root):
     return result
 
 
-def boundary(root,deadline,extra=0):
-    if time.time()*1000>deadline:raise CaptureError('apply_deadline')
-    used=sum(p.stat().st_size for p in files(root))
+def boundary(root,deadline,extra=0,*,live_writer=False):
+    # Only the compaction reader samples a directory while Delta's writer is
+    # finalizing files. Re-scan after a rename instead of dropping missing bytes.
+    # Immutable inventories and ordinary boundary calls remain strict.
+    for attempt in range(3 if live_writer else 1):
+        if time.time()*1000>deadline:raise CaptureError('apply_deadline')
+        try:
+            used=sum(p.stat().st_size for p in files(root))
+            break
+        except FileNotFoundError:
+            if not live_writer:raise
+            if attempt==2:raise CaptureError('incremental_inventory_unstable') from None
     space=os.statvfs(root)
     if used+extra>MAX_BYTES or space.f_bavail*space.f_frsize<RESERVE+extra:raise CaptureError('incremental_disk_budget')
     return used
@@ -177,7 +186,11 @@ def initialize(config):
             if not config.get('storage_generation') or not config.get('previous_generation') or Path(config['previous_generation'])==root:
                 raise CaptureError('incremental_history_lost')
             from .maintenance import compact, estimate_bytes
-            estimate=estimate_bytes(config)
+            # The size estimate is a reservation heuristic, not a minimum
+            # output size. A compacted live set can fit even when twice its
+            # source bytes exceeds the generation quota. Reserve no more than
+            # that quota; streaming and final boundaries still enforce it.
+            estimate=min(estimate_bytes(config),MAX_BYTES-boundary(temporary,config['deadline_ms']))
             retained_boundary(root.parent,extra=estimate)
             boundary(temporary,config['deadline_ms'],extra=estimate)
             compact(config,temporary)

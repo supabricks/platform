@@ -1,0 +1,132 @@
+{
+  "status": "PASS",
+  "suite": "merge",
+  "exact_installed": true,
+  "release_identity": "9f825f1381f660751f7815d4baf7b39d0d8e631049c4b31640e634651272b988",
+  "binary_sha256": "03b5f4d3c39fa5a8b6e86229fc2eacb3879cfa71f43b51a978779ddf539bc28c",
+  "checks": [
+    "bounded_merge_into_large_compacted_table_completes",
+    "bounded_merge_many_small_files_keeps_source_hash_build",
+    "old_delta_versions_remain_exact_after_bounded_merges",
+    "sparse_update_delete_key_move_and_saved_commit_replay_are_exact"
+  ],
+  "metrics": {
+    "compacted": {
+      "rows": 1888080,
+      "insert_rows": 16384,
+      "initial_parquet_bytes": 13223685,
+      "insert": {
+        "elapsed_seconds": 0.4354113939916715,
+        "highwater_bytes": 481816576,
+        "metrics": {
+          "num_source_rows": 16384,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_copied": 0,
+          "num_output_rows": 16384,
+          "num_target_files_scanned": 1,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "execution_time_ms": 369,
+          "scan_time_ms": 359,
+          "rewrite_time_ms": 0,
+          "new_parquet_bytes": 115174,
+          "retained_parquet_bytes": 13338859
+        }
+      },
+      "mutate": {
+        "elapsed_seconds": 0.36751288000959903,
+        "highwater_bytes": 299708416,
+        "metrics": {
+          "committed_before_receipt": true
+        }
+      },
+      "replay": {
+        "elapsed_seconds": 0.022984712006291375,
+        "highwater_bytes": 181399552,
+        "metrics": {
+          "num_source_rows": 5,
+          "num_target_rows_inserted": 1,
+          "num_target_rows_updated": 2,
+          "num_target_rows_deleted": 2,
+          "num_target_rows_copied": 1888076,
+          "num_output_rows": 1888079,
+          "num_target_files_scanned": 2,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 1,
+          "execution_time_ms": 356,
+          "scan_time_ms": 318,
+          "rewrite_time_ms": 28,
+          "replayed": true,
+          "new_parquet_bytes": 13258877,
+          "retained_parquet_bytes": 26597736
+        }
+      }
+    },
+    "fragmented": {
+      "rows": 131072,
+      "insert_rows": 16384,
+      "initial_parquet_bytes": 921683,
+      "insert": {
+        "elapsed_seconds": 0.16240359900984913,
+        "highwater_bytes": 278503424,
+        "metrics": {
+          "num_source_rows": 16384,
+          "num_target_rows_inserted": 16384,
+          "num_target_rows_updated": 0,
+          "num_target_rows_deleted": 0,
+          "num_target_rows_copied": 0,
+          "num_output_rows": 16384,
+          "num_target_files_scanned": 11,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 0,
+          "execution_time_ms": 44,
+          "scan_time_ms": 33,
+          "rewrite_time_ms": 1,
+          "new_parquet_bytes": 115174,
+          "retained_parquet_bytes": 1036857
+        }
+      },
+      "mutate": {
+        "elapsed_seconds": 0.05380797298857942,
+        "highwater_bytes": 260370432,
+        "metrics": {
+          "committed_before_receipt": true
+        }
+      },
+      "replay": {
+        "elapsed_seconds": 0.021290235978085548,
+        "highwater_bytes": 181616640,
+        "metrics": {
+          "num_source_rows": 5,
+          "num_target_rows_inserted": 1,
+          "num_target_rows_updated": 2,
+          "num_target_rows_deleted": 2,
+          "num_target_rows_copied": 20476,
+          "num_output_rows": 20479,
+          "num_target_files_scanned": 12,
+          "num_target_files_skipped_during_scan": 0,
+          "num_target_files_added": 1,
+          "num_target_files_removed": 2,
+          "execution_time_ms": 44,
+          "scan_time_ms": 33,
+          "rewrite_time_ms": 1,
+          "replayed": true,
+          "new_parquet_bytes": 143934,
+          "retained_parquet_bytes": 1180791
+        }
+      }
+    },
+    "scope": "Direct installed apply_table regression; synthetic compacted table; not end-to-end throughput"
+  },
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "cpu_count": 16,
+    "memory_bytes": 66505543680
+  }
+}

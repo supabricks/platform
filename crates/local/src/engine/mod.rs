@@ -299,6 +299,11 @@ impl Cell {
         // able to race recovery by launching another generation of writers.
         Self::recover(store)?;
         store.recover_captures()?;
+        Self::open_recovered(store)
+    }
+
+    /// Start children only after the caller has completed synchronous recovery.
+    pub(crate) fn open_recovered(store: &mut Store) -> Result<Self> {
         let config = RuntimeConfig::load(store)?;
         let root = store.root().to_owned();
         for name in [
