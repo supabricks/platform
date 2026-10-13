@@ -52,6 +52,7 @@ RULES = {
     'e2e/tpcds/**': set(),  # tpcds-inputs owns its contracts and source inventory.
     'scripts/check-portable-deps.py': {'core', 'local'},
     '.github/actions/deltalake/**': {'components', 'analytics'},
+    '.github/actions/portable-check/**': {'core', 'local'},
 }
 ALL_INPUTS = ('Cargo.toml', 'Cargo.lock', 'rust-toolchain*', '.cargo/**',
               'Dockerfile*', '.dockerignore', 'Justfile', 'scripts/checks.py',
