@@ -37,7 +37,9 @@ OS-independent portable dependency and upgrade-control tests run once on Linux.
 The six protected contexts remain `unit`, `e2e`, `portable (ubuntu-latest)`,
 `portable (macos-15)`, `components`, and `analytical-probe`. Required workflows
 always start; unrelated jobs skip at job level. A selector failure fails a
-required check. The analytical aggregate accepts a skipped matrix only when
+required check. Portable jobs have fixed per-OS names so a skipped job still
+reports the protected context without relying on matrix expansion. The
+analytical aggregate accepts a skipped matrix only when
 scope selection succeeded and explicitly marked analytics unrelated. Selected
 matrices must succeed on both targets. Cancellation does not manufacture a
 failed analytical aggregate.

@@ -7,6 +7,9 @@ on:
       - 'docs/architecture/sync-performance-evidence/**'
       - '.github/workflows/performance-accounting.yml'
   workflow_dispatch:
+concurrency:
+  group: performance-accounting-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
