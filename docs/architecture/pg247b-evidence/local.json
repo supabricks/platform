@@ -1,0 +1,27 @@
+{
+  "recorded_at": "2026-10-12",
+  "base_commit": "a7d9192f749a1c5238b41d5b3e18dbfafddcd247",
+  "runtime_binary_sha256": "36db16ae80cfc4473e97d5e52530a62c0afd69508d335d9cb7c13431044e49c1",
+  "engine_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
+  "engine_archive_sha256": "d83821d639a24cad6a601b565e4f09d9a5f60ce8370650e15b30edbe2876939e",
+  "focused_tests": {
+    "metrics_unit": 9,
+    "mcp_contract": 1,
+    "native_checks": 13
+  },
+  "commands": [
+    "cargo test -p supabricks-local metrics:: --lib",
+    "UPDATE_LOCAL_SNAPSHOTS=1 cargo test -p supabricks-local --test application_api mcp",
+    "cargo build -p supabricks-local",
+    "python3 e2e/native/metrics.py --binary /binary --bundle /engine --helpers /helpers --report /output/metrics.json"
+  ],
+  "isolation": "UID 1001 Docker; no external networking; read-only qualified engine and debug binary; fixture-owned temporary state",
+  "limitations": [
+    "Linux focused validation only; macOS implementation and portable/native tests await GitHub CI.",
+    "Process-tree snapshots are non-atomic. Churn and ambiguous ownership produce gaps. Detached/reparented descendants and CPU not rolled up by the OS are outside the scope.",
+    "RSS sum can count shared pages repeatedly; effective resource limits are not discovered or enforced.",
+    "No latency histograms, governed monitoring or product charts.",
+    "No local engine rebuild or full CI run."
+  ],
+  "related_issue": "https://github.com/supabricks/platform/issues/359"
+}

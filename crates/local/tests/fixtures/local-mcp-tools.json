@@ -8454,7 +8454,7 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
-    "description": "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null; CPU, memory and latency percentiles are explicitly unavailable. Local operator scope only; no query text or external telemetry.",
+    "description": "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null. Compute CPU is measured in cores and memory as summed process-tree RSS (shared pages may be counted repeatedly); limits and latency percentiles are not reported. Local operator scope only; no query text or external telemetry.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
