@@ -100,7 +100,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog metadata capabilities | health | namespace | ensure-namespace
   catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
   catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
-  activity list|cancel|terminate --branch NAME [--snapshot UUID --pid PID]
+  activity list|statements|cancel|terminate --branch NAME [--snapshot UUID --pid PID]
   extensions list|enable NAME|disable NAME --branch NAME
   catalog [--branch NAME]       Discover application tables and columns
   catalog service status | restart | rotate-key
@@ -1594,6 +1594,33 @@ pub fn run() -> Result<u8> {
                     target,
                     include_query_text: a.flag("--include-query-text"),
                 },
+                "statements" => {
+                    let limit = a
+                        .take("--limit")
+                        .map(|v| {
+                            v.parse::<u16>()
+                                .map_err(|_| invalid("invalid statement limit"))
+                        })
+                        .transpose()?
+                        .unwrap_or(100);
+                    let order_by = match a.take("--order-by").as_deref().unwrap_or("total_time") {
+                        "total_time" => crate::activity::Order::TotalTime,
+                        "mean_time" => crate::activity::Order::MeanTime,
+                        "calls" => crate::activity::Order::Calls,
+                        "rows" => crate::activity::Order::Rows,
+                        _ => {
+                            return Err(invalid(
+                                "statement order must be total_time, mean_time, calls or rows",
+                            ));
+                        }
+                    };
+                    A::Statements {
+                        target,
+                        include_query_text: a.flag("--include-query-text"),
+                        limit,
+                        order_by,
+                    }
+                }
                 "cancel" | "terminate" => {
                     let snapshot = a
                         .take("--snapshot")
@@ -1621,7 +1648,11 @@ pub fn run() -> Result<u8> {
                         }
                     }
                 }
-                _ => return Err(invalid("activity list|cancel|terminate --branch NAME")),
+                _ => {
+                    return Err(invalid(
+                        "activity list|statements|cancel|terminate --branch NAME",
+                    ));
+                }
             };
             a.finish(2)?;
             let mut value = c.call(Action::Activity { command })?;

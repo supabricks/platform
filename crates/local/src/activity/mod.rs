@@ -1,5 +1,6 @@
 //! Local-operator live PostgreSQL activity. No durable query text or automatic wake.
 mod sql;
+mod statements;
 use crate::{
     api::Binding,
     console::workspace::Target,
@@ -11,6 +12,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+pub use statements::Order;
 use std::{
     collections::HashMap,
     sync::mpsc,
@@ -29,6 +31,15 @@ pub enum Command {
         #[serde(default)]
         include_query_text: bool,
     },
+    Statements {
+        target: Target,
+        #[serde(default)]
+        include_query_text: bool,
+        #[serde(default = "statement_limit")]
+        limit: u16,
+        #[serde(default)]
+        order_by: Order,
+    },
     Cancel {
         target: Target,
         snapshot: OperationId,
@@ -42,6 +53,9 @@ pub enum Command {
     Poll {
         id: OperationId,
     },
+}
+fn statement_limit() -> u16 {
+    100
 }
 struct Job {
     project: ProjectId,
@@ -95,6 +109,9 @@ impl Service {
         command: Command,
     ) -> Result<Value> {
         self.tick();
+        if let Command::Statements { limit, .. } = &command {
+            statements::validate_limit(*limit)?;
+        }
         if let Command::Poll { id } = command {
             let job = self
                 .jobs
@@ -108,7 +125,7 @@ impl Service {
             return Ok(job.value.clone());
         }
         let (target, signal) = match &command {
-            Command::List { target, .. } => (target, None),
+            Command::List { target, .. } | Command::Statements { target, .. } => (target, None),
             Command::Cancel {
                 target,
                 snapshot,
@@ -183,6 +200,19 @@ impl Service {
                     ..
                 }
             ),
+            statements: match &command {
+                Command::Statements {
+                    include_query_text,
+                    limit,
+                    order_by,
+                    ..
+                } => Some(statements::Request {
+                    include_query_text: *include_query_text,
+                    limit: *limit,
+                    order_by: *order_by,
+                }),
+                _ => None,
+            },
             observation,
             terminate: signal.is_some_and(|(_, _, t)| t),
         };
