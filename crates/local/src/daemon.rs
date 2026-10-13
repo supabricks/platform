@@ -163,6 +163,7 @@ enum AuthorizedFollowup {
     Runtime(String, crate::execution::Command),
 }
 pub struct Daemon {
+    metrics: crate::metrics::Service,
     activity: crate::activity::Service,
     catalog: crate::catalog::Manager,
     catalog_publication: crate::catalog::publication::Service,
@@ -250,6 +251,7 @@ impl Daemon {
             .map(|c| crate::connections::Gateway::new(&mut store, c.connection_timeout()))
             .transpose()?;
         Ok(Self {
+            metrics: crate::metrics::Service::open(&store),
             activity: Default::default(),
             catalog,
             catalog_publication,
@@ -402,6 +404,7 @@ impl Daemon {
             }
             self.console_queries.tick();
             self.activity.tick();
+            self.metrics.tick(&self.store, self.cell.as_ref(), stopping);
             if let (Some(gateway), Some(cell)) = (&mut self.gateway, &self.cell) {
                 if stopping {
                     if !gateway.stop(&mut self.store)? {
@@ -546,6 +549,7 @@ impl Daemon {
                 if let Some(cell) = &mut self.cell {
                     if stopping
                         && self.activity.active() == 0
+                        && self.metrics.active() == 0
                         && catalog_stopped
                         && metadata_stopped
                         && publication_stopped
@@ -1243,6 +1247,9 @@ impl Daemon {
                     command,
                 );
             }
+            C::Metrics { command } => {
+                return self.public_action(binding, crate::api::Action::Metrics { command });
+            }
             C::Activity { command } => {
                 return self.public_action(binding, crate::api::Action::Activity { command });
             }
@@ -1377,6 +1384,9 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::Metrics { command } = action {
+            return self.metrics.handle(&self.store, &binding, command);
+        }
         if let crate::api::Action::Activity { command } = action {
             return self
                 .activity

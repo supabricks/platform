@@ -457,6 +457,13 @@ pub fn tools() -> Value {
             false,
         ),
         (
+            "metrics",
+            "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null; CPU, memory and latency percentiles are explicitly unavailable. Local operator scope only; no query text or external telemetry.",
+            json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/metrics-command-v1.schema.json")).unwrap()}),
+            vec!["command"],
+            true,
+        ),
+        (
             "activity",
             "Local-operator live PostgreSQL sessions, blocking locks and cumulative statement rankings. Statements requires the managed pg_stat_statements extension; missing support is explicit. Counters include reset/eviction metadata; p95 is unavailable without histograms. List/statements submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
             json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/activity-command-v1.schema.json")).unwrap()}),

@@ -8450,6 +8450,100 @@
   },
   {
     "annotations": {
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null; CPU, memory and latency percentiles are explicitly unavailable. Local operator scope only; no query text or external telemetry.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "history"
+            },
+            "range": {
+              "default": "1h",
+              "enum": [
+                "1h",
+                "6h",
+                "24h",
+                "7d"
+              ],
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "branch": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "branch",
+                "revision"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "action",
+            "target"
+          ],
+          "title": "Local PostgreSQL metrics command v1",
+          "type": "object"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "name": "metrics",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "required": [
+            "api",
+            "api_version",
+            "project_id",
+            "worktree",
+            "features",
+            "limits"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "error": {
+              "required": [
+                "code",
+                "message",
+                "hint",
+                "retryable",
+                "exit_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
       "destructiveHint": true,
       "openWorldHint": false,
       "readOnlyHint": false

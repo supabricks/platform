@@ -22,6 +22,7 @@ pub mod incremental;
 pub mod ingest;
 pub mod installation;
 pub mod mcp;
+pub mod metrics;
 pub mod notebooks;
 pub mod operations;
 pub mod project;
