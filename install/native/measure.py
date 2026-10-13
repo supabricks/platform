@@ -8,6 +8,8 @@ import platform
 import time
 import psutil
 
+from process_probe import cmdline
+
 
 def sample(args):
     peak_rss = 0
@@ -19,8 +21,13 @@ def sample(args):
     start = time.monotonic()
     while not args.stop.exists():
         processes = {}
-        for p in psutil.process_iter(['pid', 'cmdline']):
-            cmd = p.info['cmdline'] or []
+        for p in psutil.process_iter(['pid']):
+            # Another user's process, or one that is exiting, cannot always be
+            # inspected; it is not the daemon being measured.
+            try:
+                cmd = cmdline(p) or []
+            except psutil.Error:
+                continue
             if 'daemon' in cmd and (str(args.data) in cmd or (args.tree_root and any(a.startswith(str(args.data) + '/') for a in cmd))):
                 try:
                     for child in [p, *p.children(recursive=True)]:
