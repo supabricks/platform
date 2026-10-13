@@ -42,7 +42,7 @@ def expected(op, caller):
 def send(governed, op, caller, project=None):
     values = dict(project=project or governed.project, operation=governed.operation,
                   database=governed.database, branch=governed.branch,
-                  statement='stmt_' + '0' * 32, query='qry_' + '0' * 32, schema='public', table='t', role='reporting', extension='pg_trgm',
+                  statement='stmt_' + '0' * 32, query='qry_' + '0' * 32, schema='public', table='t', role='reporting', extension='pg_trgm', pid=4242,
                   source='src_' + '0' * 32, **{'import': 'imp_' + '0' * 32})
     names = [p['name'] for p in op.parameters if p['in'] == 'path']
     return governed.callers[caller].call(op.id, path={name: values[name] for name in names},

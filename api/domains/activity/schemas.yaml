@@ -1,0 +1,76 @@
+Session:
+  type: object
+  required: [pid, role, application, state, connected_at, transaction_started_at, query_started_at, duration_ms, wait_event_type, wait_event, query, blocked_by, waiting_for]
+  properties:
+    pid: { type: integer, description: PostgreSQL's process ID for the session. It names the session to cancel or terminate. }
+    role: { type: string }
+    application: { type: string, description: What the client calls itself. }
+    state:
+      type: string
+      description: >-
+        PostgreSQL's own word: `active` while a statement runs, `idle`,
+        `idle in transaction`, `idle in transaction (aborted)`, and a few
+        rarer ones.
+    connected_at: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    transaction_started_at:
+      description: Null outside a transaction.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    query_started_at:
+      description: When the statement now running started, or the last one that ran. Null before the first.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    duration_ms:
+      type: [integer, 'null']
+      description: For an `active` session, how long its statement has run. Otherwise how long it has been in its state.
+    wait_event_type:
+      type: [string, 'null']
+      description: What kind of thing the session waits on, such as `Lock` or `Client`. Null when it is not waiting.
+    wait_event: { type: [string, 'null'] }
+    query:
+      type: [string, 'null']
+      description: >-
+        The statement running, or the last that ran, as the client sent it,
+        values included. PostgreSQL keeps the first 1024 bytes of a statement
+        and no more.
+    blocked_by:
+      type: array
+      items: { type: integer }
+      description: The sessions holding what this one waits for. Empty when it is not blocked.
+    waiting_for:
+      description: The lock the session waits for. Null when it waits for none.
+      oneOf:
+        - type: object
+          required: [lock, mode, relation]
+          properties:
+            lock: { type: string, description: 'What kind of thing is locked, such as `relation`, `tuple` or `transactionid`.' }
+            mode: { type: string, description: 'The lock mode wanted, such as `AccessExclusiveLock`.' }
+            relation: { type: [string, 'null'], description: 'The table, as `schema.table`, when the lock is on one.' }
+        - type: 'null'
+
+SessionPage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/Session' }
+    next_cursor: { type: [string, 'null'] }
+
+StatementStatistic:
+  type: object
+  required: [query, calls, mean_ms, p95_ms, rows, share_of_time]
+  properties:
+    query: { type: string, description: The statement with its values replaced by placeholders. }
+    calls: { type: integer }
+    mean_ms: { type: number }
+    p95_ms: { type: [number, 'null'] }
+    rows: { type: integer }
+    share_of_time: { type: number, minimum: 0, maximum: 1 }
+
+StatementStatisticPage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/StatementStatistic' }
+    next_cursor: { type: [string, 'null'] }

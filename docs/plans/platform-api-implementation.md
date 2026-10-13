@@ -408,7 +408,7 @@ known now:
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
-| AP07 Administration and observability | Password reset, roles, extensions and metrics done; see below | Which extensions a release bundles (#253), latency, CPU and memory (#247), query activity (#248) |
+| AP07 Administration and observability | Done; see below | Which extensions a release bundles (#253); statement statistics (#248) and latency (#247), which need `pg_stat_statements`; CPU and memory (#247) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
@@ -839,6 +839,40 @@ writes and that a suspended branch is a gap and is not woken.
 | Query latency percentiles | They need `pg_stat_statements`, which the engine does not ship |
 | CPU and memory of the compute | PostgreSQL does not report them; they need per-process accounting from the operating system, done differently on Linux and macOS |
 | Sparklines for a whole project in one call | One branch a call for now |
+
+#### Query activity (#248)
+
+**Completeness review.** From a running branch on 2026-10-12. The console
+could cancel a statement it had started itself, and nothing more: there was no
+view of other sessions. PostgreSQL shows a session's statement only to its own
+role or to one with wider rights, and the application role is neither for a
+role made through this API.
+
+| Question | Decision |
+|---|---|
+| Who asks? | The control role, through the statement flow the roles domain added, so every client session is seen whatever role opened it |
+| Which sessions? | Client connections of roles that are not superusers. The server's own connections are left out and cannot be signalled |
+| What is shown? | Role, application, state, when it connected and when its transaction and statement started, how long it has run, what it waits on, its statement, the sessions blocking it (`pg_blocking_pids`) and the lock it waits for with its table |
+| What bounds the statement text? | PostgreSQL keeps the first 1024 bytes and no more. The text has its values in it, so listing sessions needs `editor`, the role that may read the data anyway |
+| Cancel and terminate | By process ID, `editor` as for suspending a branch. A process that is not a client session, the server's own included, is `404` |
+| A branch that is not running | Has no sessions: an empty list, and it is not resumed to say so |
+| Statement statistics | Not built. They need `pg_stat_statements`, which the engine neither ships nor loads; described in the contract as `listStatementStatistics`, deferred |
+
+**Built:** `rest/sessions.rs` with `listSessions`, `cancelSession` and
+`terminateSession`.
+
+**Tests.** `api/tests/test_activity.py`: refusals before PostgreSQL is asked,
+and six engine-backed tests that open real connections: one listed with its
+statement and times; a statement cancelled with its connection kept; a
+connection closed; one session blocked by another on a table, then freed; the
+server's own sessions and a background process refused; and a suspended
+branch left asleep.
+
+**AP07 as a whole.** Password reset, roles, extensions, metrics and activity
+are served. What remains needs something outside this repository or the
+operating system: which extensions the engine bundles (#253), and with
+`pg_stat_statements` among them, statement statistics (#248) and latency
+percentiles (#247); and compute CPU and memory (#247).
 
 ## 7. Risks
 

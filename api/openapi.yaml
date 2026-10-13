@@ -60,13 +60,14 @@ tags:
   - { name: Roles, description: "Who can log in to a branch's PostgreSQL, and what each may do there." }
   - { name: Extensions, description: 'Which of the extensions the installed engine ships a branch has enabled.' }
   - { name: Metrics, description: 'What the server has sampled from each running branch, kept on this machine.' }
+  - { name: Activity, description: "Who is connected to a branch's PostgreSQL, what each is doing, and stopping one." }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions, Metrics]
+    tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions, Metrics, Activity]
   - name: Installation
     tags: [Server]
 paths:
@@ -133,6 +134,12 @@ paths:
 
   # ---- Metrics ----
   /projects/{project}/databases/{database}/branches/{branch}/metrics: { $ref: './domains/metrics/paths.yaml#/branchMetrics' }
+
+  # ---- Activity ----
+  /projects/{project}/databases/{database}/branches/{branch}/sessions: { $ref: './domains/activity/paths.yaml#/sessions' }
+  /projects/{project}/databases/{database}/branches/{branch}/sessions/{pid}/cancel: { $ref: './domains/activity/paths.yaml#/sessionCancel' }
+  /projects/{project}/databases/{database}/branches/{branch}/sessions/{pid}/terminate: { $ref: './domains/activity/paths.yaml#/sessionTerminate' }
+  /projects/{project}/databases/{database}/branches/{branch}/statement-statistics: { $ref: './domains/activity/paths.yaml#/statementStatistics' }
 
   # ---- Server ----
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }
