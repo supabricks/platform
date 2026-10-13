@@ -353,6 +353,7 @@ fn rest(root: &Path, mut request: tiny_http::Request, path: String) {
         if_match,
         body,
         resume: None,
+        part: None,
     };
     let result = control_credential(
         root,

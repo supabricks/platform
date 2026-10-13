@@ -56,6 +56,20 @@ SavedQuery:
   description: Saved query ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+ImportSource:
+  name: source
+  in: path
+  required: true
+  description: Import source ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+Import:
+  name: import
+  in: path
+  required: true
+  description: Import ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
 Limit:
   name: limit
   in: query

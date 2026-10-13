@@ -91,7 +91,7 @@ def test_reads_are_never_cached_and_never_sniffed(op, api):
     assert response.headers['X-Content-Type-Options'] == 'nosniff'
 
 
-@pytest.mark.parametrize('op', [o for o in SERVED if o.method in ('POST', 'PUT', 'PATCH')], ids=repr)
+@pytest.mark.parametrize('op', [o for o in SERVED if o.method in ('POST', 'PUT', 'PATCH') and o.json_body], ids=repr)
 def test_a_body_that_is_not_json_is_rejected(op, api):
     response = api.raw(op.method, sample(op), data=b'{not json', headers={'Content-Type': 'application/json'})
     assert response.status_code == 400
@@ -100,7 +100,7 @@ def test_a_body_that_is_not_json_is_rejected(op, api):
     assert response.status_code == 415
 
 
-@pytest.mark.parametrize('op', [o for o in SERVED if o.method in ('POST', 'PUT', 'PATCH')], ids=repr)
+@pytest.mark.parametrize('op', [o for o in SERVED if o.method in ('POST', 'PUT', 'PATCH') and o.json_body], ids=repr)
 def test_an_oversized_body_is_413(op, api):
     response = api.raw(op.method, sample(op), data=b'{"x":"' + b'a' * 70000 + b'"}',
                        headers={'Content-Type': 'application/json'})

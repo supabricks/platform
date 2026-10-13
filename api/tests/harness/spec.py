@@ -95,6 +95,9 @@ class Operation:
         self.secured = body.get('security', bundle().get('security')) != []
         self.role = body.get('x-required-role')
         self.governed = 'governed' in body.get('x-profiles', ['local', 'governed'])
+        # False for an operation whose body is a file, not a JSON document.
+        content = body.get('requestBody', {}).get('content')
+        self.json_body = content is None or 'application/json' in content
 
     def __repr__(self):
         return self.id

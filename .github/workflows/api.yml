@@ -63,10 +63,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python3 -m pip install -r api/tests/requirements.txt
+      - run: python3 -m pip install -r api/tests/requirements.txt -r api/tests/requirements-worker.txt
       - run: cargo build --locked -p supabricks-local
       - name: API tests against a real server, local and governed (L0 to L7)
-        run: python3 -m pytest api/tests -q --binary target/debug/supabricks
+        run: python3 -m pytest api/tests -q --binary target/debug/supabricks --require-worker
 
   # Tests marked `engine`: work that has to finish on real PostgreSQL. The
   # engines are the qualified archive the native-cell workflow uses.
@@ -106,9 +106,9 @@ jobs:
           python -m pip install -r components/requirements.txt
           python components/prepare-native-cell.py ${{ matrix.target }} build/native --engine-archive engine-archive/supabricks-engine-${{ matrix.target }}.tar.gz
       # After the step above: the two files pin different jsonschema versions.
-      - run: python -m pip install -r api/tests/requirements.txt
+      - run: python -m pip install -r api/tests/requirements.txt -r api/tests/requirements-worker.txt
       - run: cargo build --locked -p supabricks-local
       - name: API tests that need database engines
         run: >-
-          python -m pytest api/tests -q -m engine --require-engines --binary target/debug/supabricks
+          python -m pytest api/tests -q -m engine --require-engines --require-worker --binary target/debug/supabricks
           --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native

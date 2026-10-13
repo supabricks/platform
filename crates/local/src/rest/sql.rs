@@ -18,14 +18,14 @@ const SAVED: usize = 100;
 /// The largest saved query file the platform reads back.
 const STORED: usize = 65536;
 
-fn runtime(store: &Store, project: &str) -> Result<ProjectId, Problem> {
+pub(super) fn runtime(store: &Store, project: &str) -> Result<ProjectId, Problem> {
     let project = projects::found(store, project)?;
     store
         .project_runtime(&project.id)
         .map_err(|e| Problem::from(&e))
 }
 /// A branch of the project a request names in its body.
-fn branch(store: &Store, runtime: ProjectId, named: &str) -> Result<BranchId, Problem> {
+pub(super) fn branch(store: &Store, runtime: ProjectId, named: &str) -> Result<BranchId, Problem> {
     let unknown = || Problem::not_found("There is no such branch in this project.");
     let id: BranchId = internal_id("br", named)
         .and_then(|id| id.parse().ok())
@@ -45,14 +45,14 @@ fn target(store: &Store, branch: BranchId) -> Result<Target, Problem> {
 }
 /// An ID fixed by the caller and key, so a repeat finds what the first made
 /// even when the reply to the first was never stored.
-fn keyed(scope: &str, key: &str) -> OperationId {
+pub(super) fn keyed(scope: &str, key: &str) -> OperationId {
     use sha2::{Digest, Sha256};
     let hex = hex::encode(Sha256::digest(format!("{scope}\n{key}")));
     internal_id("k", &format!("k_{}", &hex[..32]))
         .and_then(|id| id.parse().ok())
         .expect("32 hexadecimal digits are an ID")
 }
-fn required<'a>(body: &'a Map<String, Value>, name: &str) -> Result<&'a str, Problem> {
+pub(super) fn required<'a>(body: &'a Map<String, Value>, name: &str) -> Result<&'a str, Problem> {
     text(body, name)?.ok_or_else(|| Problem::invalid(format!("{name} is required.")))
 }
 fn sql_of(text: &str) -> Result<String, Problem> {
@@ -63,7 +63,7 @@ fn sql_of(text: &str) -> Result<String, Problem> {
     }
     Ok(text.to_owned())
 }
-fn created(mut reply: Reply, location: String) -> Reply {
+pub(super) fn created(mut reply: Reply, location: String) -> Reply {
     reply.status = 201;
     reply.headers.insert("Location".into(), location);
     reply

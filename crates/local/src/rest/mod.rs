@@ -3,6 +3,7 @@
 //! the same typed actions the command line uses.
 mod branches;
 mod databases;
+mod imports;
 mod operations;
 mod problem;
 mod projects;
@@ -61,6 +62,21 @@ pub(crate) struct Local<'a> {
     pub statements: Option<&'a mut crate::console::workspace::Queries>,
     /// SQL workers busy with work that is not one of those statements.
     pub busy: usize,
+    /// Files being received for import, and the workers that read and load them.
+    pub uploads: Option<&'a mut crate::console::ingestion::Uploads>,
+    pub imports: Option<&'a mut crate::ingest::service::Service>,
+}
+
+/// A piece of a body that a transport sends on as it arrives, because the
+/// whole would not fit in one call.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Part {
+    /// Where the piece starts.
+    pub offset: u64,
+    pub hex: String,
+    /// The body has ended at `offset`; `hex` is empty.
+    pub last: bool,
 }
 
 /// One request, after the transport has checked the session.
@@ -84,6 +100,9 @@ pub struct Call {
     /// Never read from the wire.
     #[serde(default)]
     pub resume: Option<String>,
+    /// Set by a transport that streams a body. Never read from the wire.
+    #[serde(default)]
+    pub part: Option<Part>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -430,6 +449,41 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             ),
             (parameter("schema"), parameter("table")),
         ),
+        Operation::ListImportSources => {
+            imports::list_sources(store, &mut host, call, parameter("project"))
+        }
+        Operation::CreateImportSource => {
+            imports::create_source(store, &mut host, call, parameter("project"))
+        }
+        Operation::GetImportSource => {
+            imports::get_source(store, &mut host, parameter("project"), parameter("source"))
+        }
+        Operation::DeleteImportSource => {
+            imports::delete_source(store, &mut host, parameter("project"), parameter("source"))
+        }
+        Operation::UploadImportSource => imports::upload(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("source"),
+        ),
+        Operation::InspectImportSource => imports::inspect(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("source"),
+        ),
+        Operation::ListImports => imports::list(store, call, parameter("project")),
+        Operation::CreateImport => imports::create(store, &mut host, call, parameter("project")),
+        Operation::GetImport => imports::get(store, parameter("project"), parameter("import")),
+        Operation::CancelImport => {
+            imports::cancel(store, parameter("project"), parameter("import"))
+        }
+        Operation::RetryImport => {
+            imports::retry(store, call, parameter("project"), parameter("import"))
+        }
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))

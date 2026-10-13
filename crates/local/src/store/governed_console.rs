@@ -411,6 +411,7 @@ mod tests {
             idempotency_key: Some(key.into()).filter(|k: &String| !k.is_empty()),
             if_match: None,
             resume: None,
+            part: None,
             body: Some(body).filter(|b| !b.is_null()),
         }
     }
@@ -461,6 +462,8 @@ mod tests {
                 gateway: None,
                 statements: None,
                 busy: 0,
+                uploads: None,
+                imports: None,
             };
             dispatch(store, Some(host), &call)
         };

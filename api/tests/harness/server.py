@@ -16,6 +16,10 @@ import uuid
 
 import requests
 
+REPO = pathlib.Path(__file__).resolve().parents[3]
+# A Python with the import worker's packages, or None. Set by conftest.py.
+WORKER = None
+
 
 class Server:
     def __init__(self, binary):
@@ -42,6 +46,14 @@ class Server:
         (self.assets / 'console.json').write_text(json.dumps(
             dict(api_version=1, files={'index.html': hashlib.sha256(html).hexdigest()})))
         self._spawn()
+        if WORKER:
+            # What `supabricks analytics configure` writes: where the workers
+            # that read and load files are. Imports need it, and nothing else
+            # here uses it.
+            configured = self.data / 'analytics.json'
+            configured.write_text(json.dumps(dict(
+                python=str(WORKER), worker=str(REPO / 'python/analytics/export.py'))))
+            configured.chmod(0o600)
         context = self.rpc(method='resolve_binding',
                            source=dict(definition_id=self.definition, worktree=str(self.project)))
         self.binding = dict(project_id=context['runtime_project_id'], worktree=str(self.project))

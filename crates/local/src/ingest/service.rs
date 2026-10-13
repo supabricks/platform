@@ -129,6 +129,14 @@ pub(crate) fn source_status(store: &Store, project: ProjectId, id: SourceId) -> 
     Ok(json!({"source":source,"inspection":inspection,"error":error,"progress":progress}))
 }
 impl Service {
+    /// Whether a worker is reading this source now.
+    pub(crate) fn inspecting(&self, id: SourceId) -> bool {
+        self.tasks.values().any(|t| t.source == Some(id))
+    }
+    /// Whether a worker is reading any source: one runs at a time.
+    pub(crate) fn busy(&self) -> bool {
+        self.tasks.values().any(|t| t.source.is_some())
+    }
     pub(crate) fn inspect(
         &mut self,
         store: &mut Store,

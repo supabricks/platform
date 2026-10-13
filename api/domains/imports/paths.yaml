@@ -1,0 +1,566 @@
+# Imports: a file loaded into a new PostgreSQL table.
+#
+# A client creates a source, sends the file's bytes, and the server inspects
+# them: it proposes columns and returns a sample. The client then creates an
+# import, which loads the whole file into a new table in one transaction, so
+# a table either holds every row or does not exist. The server keeps a source
+# for 24 hours and runs one import at a time.
+
+importSources:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listImportSources
+    tags: [Imports]
+    summary: List the files a project has uploaded
+    description: >-
+      The sources the server still keeps, the one that expires last first,
+      without their inspections.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [332]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of sources.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportSourcePage' }
+            example:
+              items:
+                - id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+                  name: customers.csv
+                  state: ready
+                  size_bytes: 48213
+                  received_bytes: 48213
+                  sha256: 4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a
+                  error: null
+                  expires_at: '2026-10-12T09:30:00.000Z'
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createImportSource
+    tags: [Imports]
+    summary: Declare a file to upload
+    description: >-
+      Reserves room for a file of exactly `size_bytes` and says how it is to be
+      read. Nothing is uploaded yet: send the bytes to the source's `content`.
+      The content must start arriving within 30 seconds, and all of it within
+      ten minutes, or the source is deleted.
+
+
+      Files waiting on the server share 512 MiB across the installation, and a
+      source that has not finished arriving counts as 100 MiB whatever its
+      size; beyond that the request is refused with `409` and
+      `code: capacity_exhausted` until a source is deleted or expires. A repeat
+      with the same `Idempotency-Key` answers with the first reply. A governed
+      server does not offer imports yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [312, 332]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/ImportSourceCreate' }
+          example: { name: customers.csv, size_bytes: 48213, format: csv }
+    responses:
+      '201':
+        description: The source, waiting for its content.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read the source.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportSource' }
+            example:
+              id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              name: customers.csv
+              state: receiving
+              size_bytes: 48213
+              received_bytes: 0
+              sha256: null
+              error: null
+              expires_at: '2026-10-12T09:30:00.000Z'
+              inspection: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+importSource:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/ImportSource'
+  get:
+    operationId: getImportSource
+    tags: [Imports]
+    summary: Get a source and what its inspection found
+    description: >-
+      Read it until `state` leaves `inspecting`. A source is `404` once it has
+      been deleted, has expired, or an import from it has succeeded or been
+      cancelled. A source does not outlive a restart of the server: it becomes
+      `failed` with `error: server_restarted`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [332]
+    responses:
+      '200':
+        description: The source.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportSource' }
+            example:
+              id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              name: customers.csv
+              state: ready
+              size_bytes: 48213
+              received_bytes: 48213
+              sha256: 4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a
+              error: null
+              expires_at: '2026-10-12T09:30:00.000Z'
+              inspection:
+                format: csv
+                delimiter: ','
+                header: true
+                null_strings: []
+                columns:
+                  - { input: '0', name: id, type: { kind: text }, nullable: true }
+                  - { input: '1', name: email, type: { kind: text }, nullable: true }
+                sample_rows:
+                  - ['1', ada@example.com]
+                  - ['2', null]
+                source_columns: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  delete:
+    operationId: deleteImportSource
+    tags: [Imports]
+    summary: Delete a source and its file
+    description: >-
+      Stops an inspection of it, if one is running. Refused with `409` while
+      an import is loading from it. Imports that used it stay in the history
+      and can no longer be retried.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [332]
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+importSourceContent:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/ImportSource'
+  put:
+    operationId: uploadImportSource
+    tags: [Imports]
+    summary: Send a source's bytes
+    description: >-
+      The body is the file itself, as `application/octet-stream`, and must be
+      exactly the `size_bytes` the source was created with. When the last byte
+      has arrived the server starts inspecting the file as the source says to
+      read it, and answers with the source in `state: inspecting`.
+
+
+      A source takes its content once. If the upload is interrupted, is a
+      different size, or cannot be stored, the source is deleted and the
+      request answers `400`; create another. The server inspects one file at a
+      time across the installation: while it is busy an upload is refused with
+      `429` before any byte is stored, and the source is kept so the upload
+      can be tried again within 30 seconds.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [332]
+    requestBody:
+      required: true
+      content:
+        application/octet-stream:
+          schema: { type: string, format: binary, maxLength: 104857600 }
+    responses:
+      '200':
+        description: The source, being inspected.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportSource' }
+            example:
+              id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              name: customers.csv
+              state: inspecting
+              size_bytes: 48213
+              received_bytes: 48213
+              sha256: null
+              error: null
+              expires_at: '2026-10-12T09:30:00.000Z'
+              inspection: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '408':
+        description: The content did not all arrive within ten minutes. The source is deleted.
+        content:
+          application/problem+json:
+            schema: { $ref: '../../shared/schemas.yaml#/Problem' }
+      '415':
+        description: The body was not sent as `application/octet-stream`.
+        content:
+          application/problem+json:
+            schema: { $ref: '../../shared/schemas.yaml#/Problem' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+importSourceInspect:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/ImportSource'
+  post:
+    operationId: inspectImportSource
+    tags: [Imports]
+    summary: Inspect a source again, read another way
+    description: >-
+      For a source that is `ready`: reads it with another format, delimiter,
+      header setting or null strings, and replaces its inspection. An import
+      reads the file the way its last inspection did. If the file cannot be
+      read this way the source stays `ready`, with `error` set and no
+      inspection. Refused with `429` while the server is inspecting another
+      file.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [332]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/ImportReading' }
+          example: { format: csv, delimiter: ';' }
+    responses:
+      '200':
+        description: The source, being inspected.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportSource' }
+            example:
+              id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              name: customers.csv
+              state: inspecting
+              size_bytes: 48213
+              received_bytes: 48213
+              sha256: 4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a
+              error: null
+              expires_at: '2026-10-12T09:30:00.000Z'
+              inspection: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+imports:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listImports
+    tags: [Imports]
+    summary: List a project's imports
+    description: The most recently changed first. `branch_id` keeps those into one branch.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [IM-02]
+    x-issues: [332]
+    parameters:
+      - name: branch_id
+        in: query
+        description: Only imports into this branch.
+        schema: { $ref: '../../shared/schemas.yaml#/Id' }
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of imports.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ImportPage' }
+            example:
+              items:
+                - id: imp_1f3a5c7e9b2d4f6a8c0e2a4b6d8f1c3e
+                  source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+                  source_name: customers.csv
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  schema: public
+                  table: customers
+                  format: csv
+                  columns:
+                    - { input: '0', name: id, type: { kind: bigint }, nullable: false }
+                    - { input: '1', name: email, type: { kind: text }, nullable: true }
+                  state: succeeded
+                  attempts: 1
+                  cancel_requested: false
+                  parsed_rows: 1200
+                  copied_rows: 1200
+                  committed_rows: 1200
+                  retryable: false
+                  error: null
+                  updated_at: '2026-10-11T09:31:04.000Z'
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createImport
+    tags: [Imports]
+    summary: Load a source into a new table
+    description: >-
+      Queues the load and answers at once; read the import until it reaches
+      `succeeded`, `failed` or `cancelled`. The whole file is loaded in one
+      transaction into a table the import creates, so the table holds every
+      row or does not exist. A table of that name already there fails the
+      import with `error: target_exists` and is left as it was. The schema
+      must exist: without it the import fails with `error: postgres_3F000`.
+      The file is read the way the source's last inspection read it. Once an
+      import from a source has succeeded or been cancelled the server deletes
+      the source; after a failure it is kept, so the import can be retried.
+
+
+      The branch must be running, and the source `ready` with an inspection;
+      otherwise the request is refused with `409`. The server runs one import
+      at a time across the installation: another is refused with `429`. A
+      repeat with the same `Idempotency-Key` answers with the first import and
+      loads nothing again.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-01]
+    x-issues: [311, 313, 332]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/ImportCreate' }
+          example:
+            source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+            branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+            table: customers
+    responses:
+      '201':
+        description: The import, queued.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read the import.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Import' }
+            example:
+              id: imp_1f3a5c7e9b2d4f6a8c0e2a4b6d8f1c3e
+              source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              source_name: customers.csv
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              schema: public
+              table: customers
+              format: csv
+              columns:
+                - { input: '0', name: id, type: { kind: bigint }, nullable: false }
+                - { input: '1', name: email, type: { kind: text }, nullable: true }
+              state: queued
+              attempts: 0
+              cancel_requested: false
+              parsed_rows: 0
+              copied_rows: 0
+              committed_rows: null
+              retryable: false
+              error: null
+              updated_at: '2026-10-11T09:31:04.000Z'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+import:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Import'
+  get:
+    operationId: getImport
+    tags: [Imports]
+    summary: Get an import
+    description: >-
+      Read it until `state` is `succeeded`, `failed` or `cancelled`. The row
+      counts rise while it loads; no row is visible in the table until it has
+      succeeded.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [IM-01, IM-02]
+    x-issues: [332]
+    responses:
+      '200':
+        description: The import.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Import' }
+            example:
+              id: imp_1f3a5c7e9b2d4f6a8c0e2a4b6d8f1c3e
+              source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              source_name: customers.csv
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              schema: public
+              table: customers
+              format: csv
+              columns:
+                - { input: '0', name: id, type: { kind: bigint }, nullable: false }
+                - { input: '1', name: email, type: { kind: text }, nullable: true }
+              state: succeeded
+              attempts: 1
+              cancel_requested: false
+              parsed_rows: 1200
+              copied_rows: 1200
+              committed_rows: 1200
+              retryable: false
+              error: null
+              updated_at: '2026-10-11T09:31:04.000Z'
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+importCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Import'
+  post:
+    operationId: cancelImport
+    tags: [Imports]
+    summary: Cancel an import
+    description: >-
+      A queued import is cancelled at once. One that is loading is stopped and
+      becomes `reconciling` until the server knows from PostgreSQL whether it
+      had already committed; it then ends `cancelled`, or `succeeded` if it
+      had. Cancelling a finished import changes nothing.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-02]
+    x-issues: [332]
+    responses:
+      '200':
+        description: The import as it now stands.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Import' }
+            example:
+              id: imp_1f3a5c7e9b2d4f6a8c0e2a4b6d8f1c3e
+              source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              source_name: customers.csv
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              schema: public
+              table: customers
+              format: csv
+              columns:
+                - { input: '0', name: id, type: { kind: bigint }, nullable: false }
+                - { input: '1', name: email, type: { kind: text }, nullable: true }
+              state: reconciling
+              attempts: 1
+              cancel_requested: true
+              parsed_rows: 800
+              copied_rows: 800
+              committed_rows: null
+              retryable: false
+              error: null
+              updated_at: '2026-10-11T09:31:04.000Z'
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+importRetry:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Import'
+  post:
+    operationId: retryImport
+    tags: [Imports]
+    summary: Run a failed import again
+    description: >-
+      Queues the same load again, from the same file. Only an import that is
+      `failed` and `retryable` can be retried, and only while its branch is as
+      it was when the import was created; otherwise the request is refused
+      with `409`, and with `429` while another import is running.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [IM-02]
+    x-issues: [332]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The import, queued again.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Import' }
+            example:
+              id: imp_1f3a5c7e9b2d4f6a8c0e2a4b6d8f1c3e
+              source_id: src_9d2b4f6a8c0e1a3c5e7f9b1d3f5a7c9e
+              source_name: customers.csv
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              schema: public
+              table: customers
+              format: csv
+              columns:
+                - { input: '0', name: id, type: { kind: bigint }, nullable: false }
+                - { input: '1', name: email, type: { kind: text }, nullable: true }
+              state: queued
+              attempts: 1
+              cancel_requested: false
+              parsed_rows: 0
+              copied_rows: 0
+              committed_rows: null
+              retryable: false
+              error: null
+              updated_at: '2026-10-11T09:31:04.000Z'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }

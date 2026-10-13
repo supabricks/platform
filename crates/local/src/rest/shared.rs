@@ -208,6 +208,7 @@ mod tests {
             if_match: None,
             body: None,
             resume: None,
+            part: None,
         };
         assert_eq!(
             call.cursor().unwrap(),

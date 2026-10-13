@@ -4,8 +4,10 @@ import pathlib
 import sys
 
 import pytest
+import subprocess
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import harness.server  # noqa: E402
 from harness.server import EngineServer, GovernedServer, Server  # noqa: E402
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -21,13 +23,40 @@ def pytest_addoption(parser):
                      help='prepared engine helpers, for tests marked engine')
     parser.addoption('--require-engines', action='store_true',
                      help='fail, instead of skipping, when the engine bundle is missing')
+    parser.addoption('--worker-python',
+                     default=os.environ.get('SUPABRICKS_WORKER_PYTHON', str(installed / 'python/analytics/python')),
+                     help='a Python with pyarrow, psycopg and psutil, for tests marked worker')
+    parser.addoption('--require-worker', action='store_true',
+                     help='fail, instead of skipping, when no such Python is found')
+
+
+def worker_python(config):
+    """The Python the import worker runs under: the one named, else this one."""
+    for python in (config.getoption('--worker-python'), sys.executable):
+        try:
+            found = subprocess.run([python, '-c', 'import pyarrow, psycopg, psutil'],
+                                   capture_output=True, timeout=60).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            found = False
+        if found:
+            return pathlib.Path(python).absolute()
+    return None
 
 
 def pytest_configure(config):
     for layer, meaning in [('l0', 'specification'), ('l1', 'conformance and coverage'), ('l2', 'scenarios'),
                            ('l3', 'generated invariants'), ('l4', 'authorization by role'), ('l5', 'durability'), ('l6', 'parity with the command line'), ('l7', 'fuzz'),
-                           ('engine', 'needs database engines; skipped without a bundle')]:
+                           ('engine', 'needs database engines; skipped without a bundle'),
+                           ('worker', 'needs the import worker; skipped without a Python that has its packages')]:
         config.addinivalue_line('markers', f'{layer}: {meaning}')
+    harness.server.WORKER = worker_python(config)
+
+
+def pytest_runtest_setup(item):
+    if item.get_closest_marker('worker') and not harness.server.WORKER:
+        if item.config.getoption('--require-worker'):
+            pytest.fail('no Python with pyarrow, psycopg and psutil; pass --worker-python')
+        pytest.skip('no Python with the import worker packages; pass --worker-python')
 
 
 @pytest.fixture(scope='session')
