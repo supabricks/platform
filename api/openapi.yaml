@@ -58,13 +58,14 @@ tags:
   - { name: SQL, description: 'Statements run on a branch through the server, within fixed limits, and the queries a project keeps.' }
   - { name: Tables, description: 'What a branch holds that is read like a table, how each is built, and its rows a page at a time.' }
   - { name: Roles, description: "Who can log in to a branch's PostgreSQL, and what each may do there." }
+  - { name: Extensions, description: 'Which of the extensions the installed engine ships a branch has enabled.' }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches, SQL, Tables, Imports, Roles]
+    tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions]
   - name: Installation
     tags: [Server]
 paths:
@@ -124,6 +125,10 @@ paths:
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}: { $ref: './domains/roles/paths.yaml#/role' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/password: { $ref: './domains/roles/paths.yaml#/rolePassword' }
   /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/privileges/{schema}: { $ref: './domains/roles/paths.yaml#/rolePrivileges' }
+
+  # ---- Extensions ----
+  /projects/{project}/databases/{database}/branches/{branch}/extensions: { $ref: './domains/extensions/paths.yaml#/extensions' }
+  /projects/{project}/databases/{database}/branches/{branch}/extensions/{extension}: { $ref: './domains/extensions/paths.yaml#/extension' }
 
   # ---- Server ----
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }

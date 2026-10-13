@@ -1,0 +1,43 @@
+Extension:
+  type: object
+  required: [name, description, default_version, enabled, installed_version, schema, requires, required]
+  properties:
+    name: { type: string }
+    description: { type: [string, 'null'] }
+    default_version: { type: string, description: The version enabling it installs. }
+    enabled: { type: boolean, description: Whether the branch has it now. }
+    installed_version:
+      type: [string, 'null']
+      description: The version the branch has. Null when it is not enabled.
+    schema:
+      type: [string, 'null']
+      description: The schema its functions and types are in. Null when it is not enabled.
+    requires:
+      type: array
+      items: { type: string }
+      description: Other extensions it needs enabled first.
+    required:
+      type: boolean
+      description: True for an extension the engine itself needs. It is always enabled and cannot be disabled.
+
+ExtensionPage:
+  type: object
+  required: [items, next_cursor]
+  properties:
+    items:
+      type: array
+      items: { $ref: './schemas.yaml#/Extension' }
+    next_cursor: { type: [string, 'null'] }
+
+ExtensionEnable:
+  type: object
+  additionalProperties: false
+  properties:
+    schema:
+      type: string
+      minLength: 1
+      maxLength: 63
+      default: public
+      description: >-
+        Where to put the extension's functions and types. It must exist.
+        Ignored for an extension that names a schema of its own.

@@ -1,0 +1,128 @@
+# Extensions of a branch: which of the extensions the installed engine ships
+# are enabled in its PostgreSQL.
+#
+# Only what the installed release contains can be enabled; nothing is ever
+# downloaded. Which extensions are enabled is data of the branch: a branch
+# starts with what its parent had and is then changed on its own.
+
+extensions:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: listExtensions
+    tags: [Extensions]
+    summary: List the extensions a branch can have, and which it has
+    description: >-
+      Every extension the installed engine ships, ordered by name, with
+      whether this branch has it enabled. The engine's internal tooling is
+      left out. Reading a suspended branch resumes it. Refused with `429`
+      while the server's four statement workers are busy, and with `503`
+      without the database engines. A governed server keeps PostgreSQL
+      private and answers `403` with `code: unavailable_in_profile`.
+    x-required-role: viewer
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-09]
+    x-issues: [253]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of extensions.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/ExtensionPage' }
+            example:
+              items:
+                - name: pg_trgm
+                  description: text similarity measurement and index searching based on trigrams
+                  default_version: '1.6'
+                  enabled: true
+                  installed_version: '1.6'
+                  schema: public
+                  requires: []
+                  required: false
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+extension:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+    - $ref: '../../shared/parameters.yaml#/Extension'
+  put:
+    operationId: enableExtension
+    tags: [Extensions]
+    summary: Enable an extension on a branch
+    description: >-
+      Installs the extension's default version in the branch's PostgreSQL.
+      Enabling one that is already enabled changes nothing and answers with
+      it as it is. An extension the installed engine does not ship is `404`.
+      Refused with `409` when something in the schema already has a name the
+      extension needs. The extension is owned by the engine: disable it here,
+      not with a statement.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-09]
+    x-issues: [253]
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/ExtensionEnable' }
+          example: {}
+    responses:
+      '200':
+        description: The extension, enabled.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Extension' }
+            example:
+              name: pg_trgm
+              description: text similarity measurement and index searching based on trigrams
+              default_version: '1.6'
+              enabled: true
+              installed_version: '1.6'
+              schema: public
+              requires: []
+              required: false
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+  delete:
+    operationId: disableExtension
+    tags: [Extensions]
+    summary: Disable an extension on a branch
+    description: >-
+      Removes the extension and what it brought. Refused with `409` while a
+      column, index or anything else in the database uses it, and for an
+      extension the engine needs. Disabling one that is not enabled changes
+      nothing.
+    x-required-role: administrator
+    x-backend: ready
+    x-profiles: [local]
+    x-console-features: [DB-09]
+    x-issues: [253]
+    responses:
+      '204': { $ref: '../../shared/responses.yaml#/NoContent' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '429': { $ref: '../../shared/responses.yaml#/TooManyRequests' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }

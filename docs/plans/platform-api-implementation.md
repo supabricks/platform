@@ -408,7 +408,7 @@ known now:
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
-| AP07 Administration and observability | Password reset and roles done; see below | Extensions (#253), metrics (#247), query activity (#248) |
+| AP07 Administration and observability | Password reset, roles and extensions done; see below | Which extensions a release bundles (#253), metrics (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
@@ -772,6 +772,38 @@ branch that admits no role and waits for a made role's open session.
 
 **Left out:** per-table and per-column grants, connection limits, and role
 attributes beyond login. A statement can still set them, and they read back.
+
+#### Extensions (#253)
+
+**Completeness review.** From a running branch on 2026-10-12. The qualified
+engine ships eleven extensions and never downloads one: `neon` and `plpgsql`,
+which it needs; `pg_trgm`, `pg_prewarm`, `amcheck`, `pageinspect`,
+`pg_buffercache` and `pg_visibility`; and three that are the engine's own
+tooling. None of the seven the console prototype shows as examples is among
+them except `pg_trgm`: there is no `pgcrypto`, `pg_stat_statements`, `vector`,
+`postgis`, `uuid-ossp` or `citext`.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| What can be enabled? | Whatever the installed engine has on disk | Exactly that, read from PostgreSQL itself, so the list is true for any release without a table to maintain. The engine's own tooling is left out |
+| Who enables? | The application role can create trusted extensions with SQL; others need a superuser | The server, as the control role, for all of them, so the three that need a superuser work too. An extension enabled here is owned by the engine and is disabled here |
+| Idempotent? | | `PUT` enables and `DELETE` disables; repeating either changes nothing |
+| What is refused? | | Disabling `neon` or `plpgsql`; disabling while something uses the extension (`409`, no cascade); an extension not shipped (`404`) |
+| Which extensions should a release bundle? | Decided when the engine is built, in another repository | Not decided here. It stays open on #253 |
+| Analytical sync support per extension | No shipped extension adds a column type | Nothing to report yet; it stays open on #253 with the bundling decision |
+
+**Built:** `rest/extensions.rs` with `listExtensions`, `enableExtension` and
+`disableExtension`, on the statement flow the roles domain added.
+
+**Tests.** `api/tests/test_extensions.py`: refusals before PostgreSQL is
+asked, and six engine-backed tests: the list equals what the engine ships;
+enabling, using, and disabling `pg_trgm`, refused while an index uses it; a
+schema of the project's own; extensions not shipped; one that needs a
+superuser; and a child branch's copy.
+
+**What this means for later work.** `pg_stat_statements` is not in the engine
+and is not preloaded, so "slowest queries" in #248 cannot be built on it
+without a change to the engine build.
 
 ## 7. Risks
 
