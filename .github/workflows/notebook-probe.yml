@@ -1,9 +1,6 @@
 name: notebook-probe
 on:
-  pull_request:
-    paths:
-      - 'e2e/native/notebooks/**'
-      - '.github/workflows/notebook-probe.yml'
+  # Historical frontend candidate comparison; current notebooks qualify in native-release.
   workflow_dispatch:
 permissions:
   contents: read

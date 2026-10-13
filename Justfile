@@ -1,8 +1,16 @@
-# sspc platform tasks. Two aggregate gates mirror CI exactly:
-#   just verify-static   == the CI "unit" job (no cluster needed)
-#   just verify-runtime  == the CI "e2e" job's test stages (needs the platform up)
+# Local feedback first; comprehensive suites are explicit, not pre-push hooks.
+# `just check` checks working changes. Pass a base to include committed changes.
 
-# ---- static gates (CI parity: unit job) ----
+default:
+    @just --list
+
+check base="HEAD":
+    python3 scripts/checks.py --base "{{base}}"
+
+check-plan base="HEAD":
+    python3 scripts/checks.py --base "{{base}}" --plan
+
+# ---- explicit comprehensive gates (not the default local loop) ----
 
 fmt-check:
     cargo fmt -- --check
@@ -31,7 +39,7 @@ console-build:
 
 verify-static: fmt-check test crd-check helm-lint ui-test ui-build console-build
 
-# Portable contracts also run on Linux and macOS in CI.
+# Includes integration/recovery tests; use for local diagnosis, not after `test`.
 portable-check:
     python3 scripts/check-portable-deps.py
     cargo test --locked -p supabricks-core -p supabricks-local
