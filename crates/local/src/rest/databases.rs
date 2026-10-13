@@ -21,8 +21,10 @@ fn body_of(record: &DatabaseRecord) -> Value {
         "holds_project_default": record.holds_default,
         "connections": {
             "open": record.connections,
-            "limit": crate::connections::MAX_BRANCH_CONNECTIONS,
+            "limit": record.connection_limit,
         },
+        "compute":record.compute,
+        "storage":record.storage,
         "created_at": timestamp(record.created_at_ms),
         "revision": record.revision,
     })
@@ -228,10 +230,9 @@ pub fn create(
     project: &str,
 ) -> Result<Reply, Problem> {
     let project = projects::found(store, project)?;
-    let name = valid(
-        text(fields(call, &["name"])?, "name")?
-            .ok_or_else(|| Problem::invalid("name is required."))?,
-    )?;
+    let body = fields(call, &["name", "compute_size", "idle_timeout_seconds"])?;
+    let settings = super::compute::settings(body, Default::default())?;
+    let name = valid(text(body, "name")?.ok_or_else(|| Problem::invalid("name is required."))?)?;
     let host = owner(host)?;
     let scope = format!("{}:createDatabase", call.caller.scope());
     idempotent(store, call, &scope, |store, key| {
@@ -252,9 +253,12 @@ pub fn create(
             store,
             host,
             &project,
-            Action::CreateDatabase {
-                name: name.clone(),
-                key: native,
+            Action::WithCompute {
+                creation: Box::new(Action::CreateDatabase {
+                    name: name.clone(),
+                    key: native,
+                }),
+                settings: settings.clone(),
             },
         )
         .map_err(|error| match &error {
@@ -277,6 +281,17 @@ pub fn update(
     database: &str,
 ) -> Result<Reply, Problem> {
     let (project, record) = found(store, project, database)?;
+    if super::compute::changing(call) {
+        return super::compute::update(
+            store,
+            host,
+            call,
+            &project,
+            record.project,
+            record.id,
+            record.revision,
+        );
+    }
     let name = valid(
         text(fields(call, &["name"])?, "name")?
             .ok_or_else(|| Problem::invalid("name is required."))?,

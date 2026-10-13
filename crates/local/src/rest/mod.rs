@@ -2,6 +2,7 @@
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
 mod branches;
+mod compute;
 mod databases;
 mod extensions;
 mod imports;
@@ -303,6 +304,7 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::CreateDatabase => {
             databases::create(store, &mut host, call, parameter("project"))
         }
+        Operation::ListComputeSizes => Ok(Reply::ok(crate::compute::catalog())),
         Operation::UpdateDatabase => databases::update(
             store,
             &mut host,

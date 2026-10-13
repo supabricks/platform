@@ -360,6 +360,7 @@ impl Stopped {
                 | 31
                 | 32
                 | 33
+                | 34
         ) {
             return Err(conflict("unsupported recovery schema"));
         }
@@ -563,6 +564,7 @@ pub fn verify(path: &Path) -> Result<Manifest> {
                 | 31
                 | 32
                 | 33
+                | 34
         )
         || manifest.consistency != "stopped-cell"
         || !manifest.source_root.is_absolute()

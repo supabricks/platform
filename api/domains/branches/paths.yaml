@@ -135,6 +135,12 @@ branch:
       one for each of the two that changes and stays the same when nothing
       does. A governed server does not offer this yet and answers `403` with
       `code: unavailable_in_profile`.
+      A compute change is sent separately from name or expiry edits, with
+      compute_size and/or idle_timeout_seconds. It requires If-Match and
+      Idempotency-Key and returns 202 with a durable operation. A running resize
+      needs allow_restart: true; the console must review the restart impact.
+      Drain connections and active work, including capture, first. Suspended
+      branches stay suspended. Idle-only changes do not restart PostgreSQL.
     x-backend: ready
     x-required-role: editor
     x-profiles: [local]
@@ -142,6 +148,11 @@ branch:
     x-issues: [325]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatch'
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Required for compute settings changes. Not used for name or expiry edits.
+        schema: { type: string, minLength: 8, maxLength: 128 }
     requestBody:
       required: true
       content:
@@ -149,6 +160,8 @@ branch:
           schema: { $ref: './schemas.yaml#/BranchUpdate' }
           example: { name: loyalty-points-v2, expires_at: null }
     responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
       '200':
         description: The updated branch.
         headers: { ETag: { schema: { type: string } } }

@@ -17,7 +17,6 @@ use tokio::{
 };
 
 const MAX_CONNECTIONS: usize = 256;
-pub(crate) const MAX_BRANCH_CONNECTIONS: usize = 64;
 const MAX_STARTUP_BYTES: usize = 64 * 1024;
 fn bind_listener(port: u16) -> std::io::Result<TcpListener> {
     let socket = socket2::Socket::new(
@@ -172,7 +171,7 @@ impl Gateway {
                         .values()
                         .filter(|s| s.branch == *branch)
                         .count()
-                        >= MAX_BRANCH_CONNECTIONS
+                        >= store.connection_limit(*branch)?
                 {
                     continue;
                 }
@@ -244,7 +243,7 @@ impl Gateway {
     }
     pub fn status(&self) -> serde_json::Value {
         serde_json::json!({"listeners":self.listeners.len(),"connections":self.sessions.len(),"errors":self.errors,
-            "startup_timeout_ms":self.timeout.as_millis(),"max_connections":MAX_CONNECTIONS,"max_connections_per_branch":MAX_BRANCH_CONNECTIONS})
+            "startup_timeout_ms":self.timeout.as_millis(),"max_connections":MAX_CONNECTIONS,"max_connections_per_branch":128,"default_max_connections_per_branch":64})
     }
 }
 impl Drop for Gateway {

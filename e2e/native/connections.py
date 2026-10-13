@@ -218,7 +218,7 @@ class ConnectionCell(BranchCell):
         )
         self.idle(main)
         raw = []
-        maximum = self.request(method="status")["gateway"]["max_connections_per_branch"]
+        maximum = self.request(method="status")["gateway"]["default_max_connections_per_branch"]
         try:
             for _ in range(maximum):
                 client = socket.create_connection((c["host"], c["port"]), timeout=5)

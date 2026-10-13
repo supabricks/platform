@@ -42,7 +42,9 @@ impl Store {
     ) -> Result<Operation> {
         if !internal {
             let target = match &request {
-                Mutation::SetState { branch_id, .. }
+                Mutation::ConfigureCompute { branch_id, .. }
+                | Mutation::AutoSuspend { branch_id, .. }
+                | Mutation::SetState { branch_id, .. }
                 | Mutation::SetTtl { branch_id, .. }
                 | Mutation::SetDefault { branch_id }
                 | Mutation::ForceDelete { branch_id, .. } => Some(*branch_id),
@@ -81,7 +83,49 @@ impl Store {
                 ));
             }
         }
+        let configured = if let Mutation::WithCompute { mutation, settings } = &mut request {
+            settings.validate()?;
+            match mutation.as_mut() {
+                Mutation::CreateDatabase { name, ports }
+                | Mutation::BranchFrom { name, ports, .. } => {
+                    *name = canonical_name(name)?;
+                    if !ports.valid() {
+                        return Err(invalid("ports must be distinct and nonzero"));
+                    }
+                }
+                _ => {
+                    return Err(invalid(
+                        "compute settings wrapper only accepts database or branch creation",
+                    ));
+                }
+            }
+            if let Mutation::BranchFrom {
+                point, timeout_ms, ..
+            } = mutation.as_ref()
+            {
+                super::branches::validate_point(point)?;
+                if !(1000..=300_000).contains(timeout_ms) {
+                    return Err(invalid("invalid branch timeout"));
+                }
+            }
+            Some(settings.clone())
+        } else {
+            None
+        };
+        let automatic = matches!(request, Mutation::AutoSuspend { .. });
         let request_json = serde_json::to_string(&request)?;
+        let request = match request {
+            Mutation::WithCompute { mutation, .. } => *mutation,
+            Mutation::AutoSuspend {
+                branch_id,
+                expected_revision,
+            } => Mutation::SetState {
+                branch_id,
+                expected_revision,
+                desired: DesiredState::Suspended,
+            },
+            other => other,
+        };
         let tx = self
             .db
             .transaction_with_behavior(TransactionBehavior::Immediate)?;
@@ -105,6 +149,23 @@ impl Store {
             return Err(missing("project"));
         }
         let (branch_id, revision, steps) = match &request {
+            Mutation::WithCompute { .. } | Mutation::AutoSuspend { .. } => {
+                unreachable!("normalized above")
+            }
+            Mutation::ConfigureCompute {
+                branch_id,
+                expected_revision,
+                settings,
+                allow_restart,
+                ..
+            } => super::compute::configure(
+                &tx,
+                project,
+                *branch_id,
+                *expected_revision,
+                settings,
+                *allow_restart,
+            )?,
             Mutation::CreateBranch { .. }
             | Mutation::CreateDatabase { .. }
             | Mutation::BranchFrom { .. }
@@ -160,6 +221,18 @@ impl Store {
                 branch_id,
                 expected_revision,
             } => {
+                if automatic {
+                    let record = branch(&tx, *branch_id)?;
+                    if record.endpoint.desired_state != DesiredState::Running
+                        || record.observed_revision != record.revision
+                        || super::compute::settings(&tx, *branch_id)?
+                            .idle_timeout_seconds
+                            .is_none()
+                        || !super::compute::idle(&tx, *branch_id)?
+                    {
+                        return Err(conflict("branch is not eligible for idle suspension"));
+                    }
+                }
                 let forced = matches!(request, Mutation::ForceDelete { .. });
                 let desired = match &request {
                     Mutation::SetState { desired, .. } => *desired,
@@ -268,6 +341,20 @@ impl Store {
                 }
             }
         };
+        if let Some(settings) = configured {
+            crate::compute::validate_host(crate::compute::profile(&settings.size)?)?;
+            super::compute::write_settings(&tx, branch_id, &settings)?;
+        }
+        if matches!(
+            request,
+            Mutation::SetState {
+                desired: DesiredState::Suspended,
+                ..
+            }
+        ) {
+            tx.execute("UPDATE branch_compute SET last_suspend_reason=?2,last_suspended_at_ms=?3 WHERE branch_id=?1",
+                params![branch_id.to_string(),if automatic { "idle_timeout" } else { "manual" },now_ms()?])?;
+        }
         let id = OperationId::new();
         tx.execute("INSERT INTO operations(id,project_id,request_key,request,branch_id,revision,steps) VALUES (?1,?2,?3,?4,?5,?6,?7)", params![id.to_string(),project.to_string(),key,request_json,branch_id.to_string(),revision,serde_json::to_string(&steps)?])?;
         if let Mutation::Export {

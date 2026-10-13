@@ -59,8 +59,9 @@ only the URI for applications. Keep this output private; do not commit it or pas
 it into tickets. Connecting wakes a suspended branch. `branch suspend NAME`
 refuses active connections, including idle pools. `down` stops the whole cell,
 retains data, and closes clients. `up` recovers desired running branches. An app
-must reconnect after `down`; its URI remains valid. There is no automatic idle
-suspension yet.
+must reconnect after `down`; its URI remains valid. [Idle suspension](database-compute.md)
+is opt-in through the platform API and defaults to never. Open pools and capture
+generations keep their compute awake.
 
 Deletion is always `branch delete NAME`. The protected default needs a replacement
 via `branch default NAME`, or explicit `--force`. Force disconnects clients and

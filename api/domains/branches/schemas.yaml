@@ -39,6 +39,8 @@ Branch:
       properties:
         open: { type: integer, minimum: 0 }
         limit: { type: integer, minimum: 1, description: 'The most one branch accepts at a time.' }
+    compute: { $ref: '../../shared/schemas.yaml#/ComputeSettings' }
+    storage: { $ref: '../../shared/schemas.yaml#/StorageUsage' }
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
 
 BranchName:
@@ -74,6 +76,8 @@ BranchCreate:
   required: [name]
   additionalProperties: false
   properties:
+    compute_size: { type: string, enum: [s, m, l], default: m }
+    idle_timeout_seconds: { $ref: '../../shared/schemas.yaml#/IdleTimeout' }
     name: { $ref: './schemas.yaml#/BranchName' }
     parent_id:
       allOf: [{ $ref: '../../shared/schemas.yaml#/Id' }]
@@ -86,14 +90,17 @@ BranchCreate:
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
 
 BranchUpdate:
-  type: object
-  minProperties: 1
-  additionalProperties: false
-  properties:
-    name: { $ref: './schemas.yaml#/BranchName' }
-    expires_at:
-      description: A time in the future, or null to keep the branch.
-      oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+  oneOf:
+    -
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name: { $ref: './schemas.yaml#/BranchName' }
+        expires_at:
+          description: A time in the future, or null to keep the branch.
+          oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
+    - $ref: '../../shared/schemas.yaml#/ComputeUpdate'
 
 BranchPage:
   allOf:

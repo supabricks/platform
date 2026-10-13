@@ -105,7 +105,7 @@ impl Store {
         Ok(self
             .db
             .query_row(
-                "SELECT id FROM operations WHERE branch_id=?1 AND json_extract(request,'$.kind') IN ('set_state','create_database') ORDER BY rowid DESC LIMIT 1",
+                "SELECT id FROM operations WHERE branch_id=?1 AND json_extract(request,'$.kind') IN ('set_state','create_database','with_compute','auto_suspend','configure_compute') ORDER BY rowid DESC LIMIT 1",
                 [branch],
                 |r| r.get(0),
             )

@@ -36,6 +36,23 @@ impl Ports {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Mutation {
+    WithCompute {
+        mutation: Box<Mutation>,
+        settings: crate::compute::Settings,
+    },
+    ConfigureCompute {
+        branch_id: BranchId,
+        expected_revision: i64,
+        settings: crate::compute::Settings,
+        allow_restart: bool,
+        /// Preserve the REST patch as well as its resolved settings across a lost reply.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        api_request: Option<serde_json::Value>,
+    },
+    AutoSuspend {
+        branch_id: BranchId,
+        expected_revision: i64,
+    },
     Export {
         parent_id: BranchId,
         ports: Ports,

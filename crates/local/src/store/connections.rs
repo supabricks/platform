@@ -50,6 +50,9 @@ impl Store {
     }
     pub fn accept_connection(&mut self, branch: BranchId) -> Result<LeaseId> {
         self.accepting_work(branch)?;
+        if self.connection_count(branch)? >= self.connection_limit(branch)? {
+            return Err(conflict("branch connection limit reached"));
+        }
         let id = LeaseId::new();
         self.db.execute(
             "INSERT INTO connection_leases VALUES (?1,?2,?3)",
