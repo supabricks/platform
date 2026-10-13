@@ -17,6 +17,7 @@ pub(super) fn collect(port: u16, password: String) -> Result<Raw> {
                 .options("-c statement_timeout=1500 -c lock_timeout=250 -c search_path=pg_catalog -c timezone=UTC -c datestyle=ISO -c stats_fetch_consistency=snapshot -c default_transaction_read_only=on -c log_statement=none -c log_min_error_statement=panic -c log_min_duration_statement=-1")
                 .connect(NoTls).await.map_err(pg)?;
             let _connection=Connection(tokio::spawn(connection));
+            client.batch_execute("SET neon.monitor_query_exec_time=off").await.map_err(pg)?;
             // Only built-in aggregates, never query text, relation names or user functions.
             // WAL is compute-wide; database counters/size cover only postgres.
             let row=client.query_one(r#"SELECT d.datid::text,pg_postmaster_start_time()::text,d.stats_reset::text,w.stats_reset::text,
@@ -27,7 +28,8 @@ pub(super) fn collect(port: u16, password: String) -> Result<Raw> {
                 pg_database_size(current_database())
                 FROM pg_stat_database d CROSS JOIN pg_stat_wal w WHERE d.datname=current_database()"#,&[]).await.map_err(pg)?;
             let counter=|i|->Result<u64> {u64::try_from(row.get::<_,i64>(i)).map_err(|_|conflict("negative PostgreSQL counter"))};
-            Ok(Raw {database_oid:row.get(0),postmaster_start:row.get(1),database_reset:row.get(2),wal_reset:row.get(3),commits:counter(4)?,rollbacks:counter(5)?,hits:counter(6)?,reads:counter(7)?,wal_bytes:row.get::<_,String>(8).parse().map_err(|_|conflict("invalid WAL counter"))?,connections_active:counter(9)?,connections_idle:counter(10)?,connections_other:counter(11)?,database_size_bytes:counter(12)?})
+            let latency=Some(super::latency::read(&client).await);
+            Ok(Raw {latency,database_oid:row.get(0),postmaster_start:row.get(1),database_reset:row.get(2),wal_reset:row.get(3),commits:counter(4)?,rollbacks:counter(5)?,hits:counter(6)?,reads:counter(7)?,wal_bytes:row.get::<_,String>(8).parse().map_err(|_|conflict("invalid WAL counter"))?,connections_active:counter(9)?,connections_idle:counter(10)?,connections_other:counter(11)?,database_size_bytes:counter(12)?})
         }).await.map_err(|_|conflict("metrics collection deadline exceeded"))?
     })
 }

@@ -143,6 +143,9 @@ pub fn plan_compute(
     // Older qualified bundles contain only Neon. New release-local contrib
     // files opt normal computes into statement statistics; never download code.
     let settings = cluster["settings"].as_array_mut().expect("settings array");
+    settings.push(
+        serde_json::json!({"name":"neon.monitor_query_exec_time","value":"on","vartype":"enum"}),
+    );
     for setting in settings.iter_mut() {
         if setting["name"] == "shared_preload_libraries" {
             setting["value"] = serde_json::json!(if input
@@ -233,6 +236,7 @@ mod tests {
             ("port", "55433"),
             ("listen_addresses", "127.0.0.1"),
             ("fsync", "on"),
+            ("neon.monitor_query_exec_time", "on"),
             ("unix_socket_directories", ""),
             ("neon.pageserver_connstring", p.pageserver_connstring),
         ] {

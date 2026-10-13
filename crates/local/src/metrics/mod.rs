@@ -1,5 +1,6 @@
 //! Bounded, installation-local PostgreSQL history. Never wakes a compute.
 mod history;
+mod latency;
 mod resources;
 mod sql;
 #[cfg(test)]
@@ -73,6 +74,8 @@ struct Raw {
     connections_idle: u64,
     connections_other: u64,
     database_size_bytes: u64,
+    #[serde(default)]
+    latency: Option<latency::Snapshot>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Sample {
@@ -88,6 +91,7 @@ impl Sample {
     fn point(&self, previous: Option<&Self>) -> Value {
         let mut value = json!({"observed_at_ms":self.at_ms,"status":self.status,"connections_active":null,"connections_idle":null,"connections_other":null,"database_size_bytes":null,"commits_per_second":null,"rollbacks_per_second":null,"wal_bytes_per_second":null,"cache_hit_ratio":null,"rate_interval_ms":null,"rates_status":"no_baseline"});
         value["compute"] = resources::point(self, previous);
+        value["latency"] = latency::point(self, previous);
         let Some(raw) = &self.raw else {
             value["rates_status"] = json!("sample_unavailable");
             return value;

@@ -945,6 +945,9 @@ impl Cell {
                 if setting["name"] == "shared_preload_libraries" {
                     setting["value"] = json!("neon");
                 }
+                if setting["name"] == "neon.monitor_query_exec_time" {
+                    setting["value"] = json!("off");
+                }
             }
             for (name, value) in [
                 ("autovacuum", "off"),

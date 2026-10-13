@@ -19,6 +19,7 @@ starting point and original acceptance criteria, not the current backlog.
 
 | Workstream | Delivered state | Evidence / current boundary |
 | --- | --- | --- |
+| PG247a–c database observability | Implemented on the review stack: durable database metrics, owned-compute CPU/RSS and executor latency p50/p95/p99 bucket bounds; local Linux focused qualification passed | [Metrics contract](../handbook/postgres-metrics.md), [PG247c evidence](../architecture/pg247c-evidence/local.json); GitHub native Linux/macOS qualification and merge pending; governed monitoring, product charts and large-installation rollups remain separate |
 | P00 / E01 / P01–P06 | Merged: PG17.8/Neon native engine, local state/supervision, branches, connections, CLI and MCP | Native engine, runtime and installed application gates retained |
 | A00–A03 | Merged: frozen exports, atomic Delta/Parquet epochs and Sail sessions | Read-only analytical SQL over explicit snapshots; triggered/continuous incrementality is delivered by SY00–SY08 |
 | R01–R03 | Merged for localhost: installer, complete offline runtime, stopped-cell backup/restore and upgrades | Public delivery and physical failure qualification remain separate |

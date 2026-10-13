@@ -12,7 +12,7 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 | --- | --- |
 | [Local walkthrough](local-demo.md) | Install and demonstrate import, SQL, snapshots, branching and notebooks |
 | [Local console](local-console.md) | Launch the browser console, source development and session recovery |
-| [PostgreSQL metrics](postgres-metrics.md) | Database and compute resource time series, suspended gaps and bounded retention |
+| [PostgreSQL metrics](postgres-metrics.md) | Database, compute resource and executor latency time series, suspended gaps and bounded retention |
 | [PostgreSQL activity](postgres-activity.md) | Sessions, blocking locks, guarded cancel/terminate and statement rankings |
 | [PostgreSQL extensions](postgres-extensions.md) | Release catalogue, enable/disable, branch lifecycle and sync compatibility |
 | [Local CLI and MCP](local-workflow.md) | Project selection, commands and agent workflows |

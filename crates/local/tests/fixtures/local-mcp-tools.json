@@ -8454,7 +8454,7 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
-    "description": "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null. Compute CPU is measured in cores and memory as summed process-tree RSS (shared pages may be counted repeatedly); limits and latency percentiles are not reported. Local operator scope only; no query text or external telemetry.",
+    "description": "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null. Compute CPU is measured in cores and memory as summed process-tree RSS (shared pages may be counted repeatedly); limits are not reported. Latency p50/p95/p99 are compute-wide executor histogram bounds, not client round-trip or per-statement percentiles; session opt-outs and gaps are explicit. Local operator scope only; no query text or external telemetry.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
@@ -8548,7 +8548,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Local-operator live PostgreSQL sessions, blocking locks and cumulative statement rankings. Statements requires the managed pg_stat_statements extension; missing support is explicit. Counters include reset/eviction metadata; p95 is unavailable without histograms. List/statements submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
+    "description": "Local-operator live PostgreSQL sessions, blocking locks and cumulative statement rankings. Statements requires the managed pg_stat_statements extension; missing support is explicit. Counters include reset/eviction metadata; Per-statement p95 is unavailable; compute-wide metrics histograms cannot supply it. List/statements submits a bounded background request; poll its id. Cancel/terminate require an eligible PID from a fresh snapshot id and explicit branch revision. Protected engine sessions and governed branches are refused. Query text is hidden unless explicitly requested; returned text is bounded raw SQL, not guaranteed redacted. Repeating the same snapshot/PID signal returns its receipt; refresh to observe completion.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {

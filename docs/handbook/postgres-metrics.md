@@ -34,6 +34,8 @@ Reads never connect to PostgreSQL or wake a compute.
 | `database_size_bytes` | `pg_database_size('postgres')`, not the installation/object-store footprint |
 | `compute.cpu_cores` | Interval CPU time / monotonic elapsed time; 1.0 means one fully busy core |
 | `compute.rss_sum_bytes` | Summed resident memory of the owned compute process tree; shared pages may be counted repeatedly |
+| `latency.p50_ms`, `latency.p95_ms`, `latency.p99_ms` | Nearest-rank executor-time bucket bounds, not scalar estimates |
+| `latency.sample_count` | Instrumented executor completions in the observed interval |
 | `compute.process_count` | Number of observed processes, including unreaped zombies (zero RSS) |
 
 Transaction counters include monitoring and other platform traffic. No artificial
@@ -41,8 +43,9 @@ subtraction is applied. PostgreSQL publishes cumulative statistics asynchronousl
 so these are sampled observations, not an exact event stream. Sources and scope
 follow the [PostgreSQL 17 statistics documentation](https://www.postgresql.org/docs/17/monitoring-stats.html).
 
-Query latency percentiles have an explicit `unavailable` reason.
-Statement means from `activity statements` cannot supply p95. There is no SQL
+Latency distributions come from the shipped Neon executor histogram.
+Statement means from `activity statements` cannot supply per-statement p95;
+compute-wide histogram percentiles do not change that contract. There is no SQL
 text, query fingerprint, table name, password, or external telemetry in history.
 
 ## Chart contract
@@ -53,7 +56,8 @@ ranges include the current partial bucket. `aggregation` is
 `last_observation_in_bucket`: a coarse point is the last sampled observation in
 that bucket, **not** a bucket mean or full-bucket transaction rate. `samples` and
 `available_samples` expose database coverage; `compute_available_samples` exposes
-resource coverage; clients must not interpolate missing
+resource coverage; `latency_available_samples` counts valid histogram intervals
+(including quiet intervals); clients must not interpolate missing
 buckets. `observed_at_ms` is the observation time, distinct from bucket start.
 
 Missing, suspended and not-ready samples have null metric values, never zero.
@@ -106,6 +110,58 @@ limits: per-compute effective limits are not discovered in this slice, and
 inherited host/container limits may apply. CPU is not normalized to host core
 count or a guessed quota. These fields measure usage; they do not enforce limits.
 
+## Executor latency (PG247c)
+
+Normal compute plans enable `neon.monitor_query_exec_time=on`; internal export
+computes leave it off. Existing running computes pick up this setting on their
+next explicit restart/resume. The existing Neon 1.5/1.6 extension owns the
+collector; no new engine build or extension installation is required.
+
+The histogram covers **compute-wide executor completions**, across databases and
+roles, including other platform traffic. Nested and parallel executor calls can
+contribute separately. It excludes planning, utility statements and executors
+that fail/cancel before ExecutorEnd. It is not client round-trip latency or
+necessarily one observation per client request. Server-side executor waits can
+contribute. Roles/databases/sessions can override this user-settable GUC, so this
+is not an all-query coverage guarantee. The sampler disables its own collection
+before querying and checks the inherited default (`pg_settings.reset_val`). An
+off default returns `histogram_disabled_for_default_session`; other sessions may
+still be collecting. Provider absence, unsupported versions/layouts, failed
+probes and inconsistent counters have explicit statuses.
+
+`neon.get_perf_counters()` supplies 33 fixed, cumulative histogram buckets. The
+sampler validates the extension, schema/function ownership and C provider before
+calling it; it stores counters, never query identifiers or SQL. The C collector
+uses **strict upper bounds** despite the SQL column name `bucket_le`. Bounds span
+2 microseconds through 100 seconds, followed by an open tail. Durations are
+truncated to integer microseconds by the provider.
+
+Every point carries `latency.status`, `sample_count`, `interval_ms`, and p50/p95/p99
+as `[inclusive_lower_ms, exclusive_upper_ms]`. For example, `[3, 6]` means the
+nearest-rank p95 falls in the 3–6 ms bucket; `[100000, null]` is the open tail.
+These are histogram resolution bounds, not confidence intervals. There is no
+interpolation or false decimal precision. Healthy intervals with no observations
+have `status: no_observations`, count zero and null quantiles. Unavailable points
+have null counts and quantiles. Old retained rows have `status: not_collected`.
+
+Deltas require consecutive valid snapshots within 90 seconds and identical daemon
+generation, branch revision and postmaster start. The provider retains backend
+slot counters across backend exits; compute restart resets them. Each disjoint
+bucket must be nondecreasing across snapshots. The lock-free scrape is not atomic:
+shape/count inconsistencies and regressions are rejected, but checks cannot prove
+an atomic instant. Float-exported counts at or above 2^53 are rejected to avoid
+pretending rounded values are exact. A subsequent valid pair restores coverage.
+Coarse history points retain the last observed interval, **not** a percentile of
+the full chart bucket and never an average of percentiles.
+
+Instrumentation uses fixed shared-memory counters already allocated by Neon and
+adds executor timing/update work. The native latency fixture records paired
+on/off timing for trivial statements and a row-processing aggregate, including
+raw trials, warm-up and method; it deliberately has no fragile performance pass
+threshold. The fixture also checks a known completion cohort, session opt-out,
+API bounds against independently computed persisted deltas, disabled defaults
+and durable history. See [local PG247c evidence](../architecture/pg247c-evidence/local.json).
+
 ## Resource and retention policy
 
 - Target cadence: 30 seconds; two workers; no unbounded request queue. Slow
@@ -136,8 +192,6 @@ observability history. Read failures are returned, never fabricated as empty dat
 
 ## Remaining #247 slices
 
-- **247c:** actual latency distributions/percentiles, selecting instrumentation
-  and validating its collection overhead; no estimates from statement means.
 - Governed monitoring authorization and product console charts remain separate
   integration work. Large-installation rollups are needed for guaranteed seven-day
   coverage beyond the documented raw-sample capacity.
