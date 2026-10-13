@@ -1,0 +1,162 @@
+{
+  "recorded_at": "2026-10-12",
+  "base_commit": "f9be51f0457376e36638dc0a7fac0b450f327f95",
+  "runtime_binary_sha256": "ce6bbed256a22e104d0303d852fb0859ad00e62f554248131f84dadc9fb42df1",
+  "final_contract_test_binary_sha256": "3bf7b9c0a22d7cadc17de6955d8abf50e88608c5017a111e736404c23e761bbe",
+  "runtime_source_note": "The native fixture used the implemented histogram code. Only activity MCP explanatory wording and a unit-test size assertion changed before the final contract-test binary was built; no histogram runtime code changed.",
+  "engine_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
+  "engine_archive_sha256": "d83821d639a24cad6a601b565e4f09d9a5f60ce8370650e15b30edbe2876939e",
+  "focused_tests": {
+    "metrics_unit": 12,
+    "compute_plan": 1,
+    "mcp_contract": 1,
+    "native_checks": 9
+  },
+  "commands": [
+    "cargo test -p supabricks-local metrics:: --lib",
+    "cargo test -p supabricks-local tests::native_pg17_plan --lib",
+    "cargo test -p supabricks-local --test application_api mcp",
+    "cargo build -p supabricks-local",
+    "python3 e2e/native/latency.py --binary /binary --bundle /engine --helpers /helpers --report /output/latency.json"
+  ],
+  "isolation": "UID 1001 Docker; no external networking; read-only qualified engine and debug binary; fixture-owned temporary state. Host CPU was not isolated; a focused Rust build/test also ran during qualification.",
+  "native_attempts": [
+    {
+      "attempt": 1,
+      "outcome": "Fixture assertion rejected valid gap_or_restart startup baseline after an earlier not-ready sample. Fixture corrected; no runtime change."
+    },
+    {
+      "attempt": 2,
+      "outcome": "PASS"
+    }
+  ],
+  "instrumentation_cost": {
+    "method": "same persistent local TCP application session; prepared statements; two ABBA blocks; client wall time includes driver and protocol; observational, no pass threshold",
+    "workloads": [
+      {
+        "workload": "trivial",
+        "trials": [
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.27545001200633124,
+            "microseconds_per_call": 137.72500600316562
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.25537434000580106,
+            "microseconds_per_call": 127.68717000290053
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.22900060001120437,
+            "microseconds_per_call": 114.50030000560218
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.2524350029998459,
+            "microseconds_per_call": 126.21750149992295
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.2527175800059922,
+            "microseconds_per_call": 126.3587900029961
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.24684404399886262,
+            "microseconds_per_call": 123.42202199943131
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.36647309400723316,
+            "microseconds_per_call": 183.23654700361658
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.23870132199954242,
+            "microseconds_per_call": 119.35066099977121
+          }
+        ],
+        "median_microseconds_per_call": {
+          "off": 126.28814575145952,
+          "on": 125.55459600116592
+        },
+        "median_overhead_percent": -0.5808540033023113
+      },
+      {
+        "workload": "executor_loop",
+        "trials": [
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.1262983019987587,
+            "microseconds_per_call": 1262.9830199875869
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.1254570510063786,
+            "microseconds_per_call": 1254.570510063786
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12735370299196802,
+            "microseconds_per_call": 1273.5370299196802
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.12805907998699695,
+            "microseconds_per_call": 1280.5907998699695
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.12680402600381058,
+            "microseconds_per_call": 1268.0402600381058
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12524585699429736,
+            "microseconds_per_call": 1252.4585699429736
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12282388600578997,
+            "microseconds_per_call": 1228.2388600578997
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.11670055400463752,
+            "microseconds_per_call": 1167.0055400463752
+          }
+        ],
+        "median_microseconds_per_call": {
+          "off": 1265.5116400128463,
+          "on": 1253.5145400033798
+        },
+        "median_overhead_percent": -0.9480039242740435
+      }
+    ]
+  },
+  "interpretation": "Neither short workload shows a resolved median slowdown; negative on/off differences are measurement noise, not a speedup claim. Client/protocol costs and host scheduling can hide instrumentation overhead. This is a regression screen, not a production performance bound.",
+  "limitations": [
+    "Linux focused runtime validation only; Linux/macOS native GitHub jobs pending.",
+    "Executor timing is compute-wide across all databases and roles; nested/parallel calls may contribute. Planning, utility commands and failed/cancelled executors are excluded. This is not client round-trip or per-statement latency.",
+    "Session overrides can disable collection. Non-atomic histogram snapshots have shape and monotonicity checks but no atomic-instant guarantee.",
+    "No governed monitoring, product charts, per-statement histograms or installation-wide rollups in this slice.",
+    "No local engine rebuild or full CI run."
+  ]
+}

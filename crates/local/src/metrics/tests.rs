@@ -1,5 +1,5 @@
 use super::*;
-fn sample(at_ms: i64) -> Sample {
+pub(super) fn sample(at_ms: i64) -> Sample {
     Sample {
         at_ms,
         generation: 1,
@@ -7,6 +7,7 @@ fn sample(at_ms: i64) -> Sample {
         status: "available".into(),
         compute: None,
         raw: Some(Raw {
+            latency: None,
             database_oid: "5".into(),
             postmaster_start: "boot".into(),
             database_reset: None,

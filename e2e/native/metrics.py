@@ -57,7 +57,7 @@ class Metrics(Activity):
             result=self.history(branch,window)
             assert len(result['points'])==count and result['storage_healthy']
             assert all(p['connections_active'] is None for p in result['points'] if p['status']=='missing')
-            assert result['unavailable']['query_latency_percentiles']=='histogram_not_collected'
+            assert result['latency_histogram']['provider']=='neon_executor_histogram_v1'
             assert not result['query_text_persisted'] and not result['external_telemetry']
         cli=subprocess.run([str(self.binary),'metrics','history','--branch','main','--range','6h','--project',str(self.work),'--data-dir',str(self.root)],capture_output=True,text=True,env=self.env,timeout=15)
         assert cli.returncode==0,cli.stderr
@@ -76,7 +76,7 @@ class Metrics(Activity):
         assert any(p['observed_at_ms']==first['observed_at_ms'] for p in points),points
         assert self.request(method='branch',id=branch['branch']['id'])['endpoint']['desired_state']=='suspended'
         assert b'metrics-must-not-store-this-text' not in (self.root/'metrics.sqlite3').read_bytes()
-        return dict(status='PASS',checks=['real idle connection gauge and database size','positive transaction rollback and WAL rates after workload','cache ratio bounded or unavailable','four bounded history ranges','missing data remains null','CLI history','suspend gaps without wake','history survives daemon restart','no SQL text in persisted history','unsupported percentiles explicit','owned compute process-tree resident memory','positive CPU including exited SQL backends','suspended resource metrics remain null'],first_sample=first,workload_sample=second,suspended_sample=gap)
+        return dict(status='PASS',checks=['real idle connection gauge and database size','positive transaction rollback and WAL rates after workload','cache ratio bounded or unavailable','four bounded history ranges','missing data remains null','CLI history','suspend gaps without wake','history survives daemon restart','no SQL text in persisted history','histogram provider scope explicit','owned compute process-tree resident memory','positive CPU including exited SQL backends','suspended resource metrics remain null'],first_sample=first,workload_sample=second,suspended_sample=gap)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

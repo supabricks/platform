@@ -1,0 +1,290 @@
+{
+  "status": "PASS",
+  "checks": [
+    "instrumentation on by default",
+    "known backend completion cohort in expected buckets",
+    "session opt-out does not increment histogram",
+    "API nearest-rank bounds match independently computed persisted deltas",
+    "missing intervals have null quantiles",
+    "compute-wide scope explicitly excludes per-statement quantiles",
+    "disabled inherited instrumentation preserves SQL gauges and reports null quantiles",
+    "history survives daemon restart",
+    "paired instrumentation overhead trials recorded"
+  ],
+  "first_sample": {
+    "available_samples": 1,
+    "bucket_start_ms": 1791860760000,
+    "cache_hit_ratio": null,
+    "commits_per_second": null,
+    "compute": {
+      "collection_ms": 5.01321,
+      "cpu_cores": null,
+      "cpu_interval_ms": null,
+      "cpu_status": "no_baseline",
+      "observed_at_ms": 1791860765801,
+      "process_count": 15,
+      "rss_sum_bytes": 253673472,
+      "status": "available"
+    },
+    "compute_available_samples": 1,
+    "connections_active": 0,
+    "connections_idle": 4,
+    "connections_other": 0,
+    "database_size_bytes": 7667712,
+    "latency": {
+      "interval_ms": null,
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "sample_count": null,
+      "status": "gap_or_restart"
+    },
+    "latency_available_samples": 0,
+    "observed_at_ms": 1791860765796,
+    "rate_interval_ms": null,
+    "rates_status": "gap",
+    "rollbacks_per_second": null,
+    "samples": 1,
+    "status": "available",
+    "wal_bytes_per_second": null
+  },
+  "workload_sample": {
+    "available_samples": 1,
+    "bucket_start_ms": 1791860790000,
+    "cache_hit_ratio": 0.9835503769705277,
+    "commits_per_second": 18.58470335954253,
+    "compute": {
+      "collection_ms": 4.605739,
+      "cpu_cores": 0.006173325347679954,
+      "cpu_interval_ms": 30777.57761,
+      "cpu_status": "available",
+      "observed_at_ms": 1791860796578,
+      "process_count": 15,
+      "rss_sum_bytes": 260644864,
+      "status": "available"
+    },
+    "compute_available_samples": 1,
+    "connections_active": 0,
+    "connections_idle": 4,
+    "connections_other": 0,
+    "database_size_bytes": 7667712,
+    "latency": {
+      "interval_ms": 30778,
+      "p50_ms": [
+        0.03,
+        0.06
+      ],
+      "p95_ms": [
+        3.0,
+        6.0
+      ],
+      "p99_ms": [
+        30.0,
+        60.0
+      ],
+      "sample_count": 288,
+      "status": "available"
+    },
+    "latency_available_samples": 1,
+    "observed_at_ms": 1791860796574,
+    "rate_interval_ms": 30778,
+    "rates_status": "available",
+    "rollbacks_per_second": 0.0,
+    "samples": 1,
+    "status": "available",
+    "wal_bytes_per_second": 3.5089999350185197
+  },
+  "disabled_sample": {
+    "available_samples": 1,
+    "bucket_start_ms": 1791860820000,
+    "cache_hit_ratio": 0.997545008183306,
+    "commits_per_second": 567.5746122768148,
+    "compute": {
+      "collection_ms": 2.541455,
+      "cpu_cores": 0.05474084470726109,
+      "cpu_interval_ms": 30690.063498,
+      "cpu_status": "available",
+      "observed_at_ms": 1791860827268,
+      "process_count": 15,
+      "rss_sum_bytes": 291762176,
+      "status": "available"
+    },
+    "compute_available_samples": 1,
+    "connections_active": 0,
+    "connections_idle": 4,
+    "connections_other": 0,
+    "database_size_bytes": 7667712,
+    "latency": {
+      "interval_ms": null,
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "sample_count": null,
+      "status": "histogram_disabled_for_default_session"
+    },
+    "latency_available_samples": 0,
+    "observed_at_ms": 1791860827266,
+    "rate_interval_ms": 30692,
+    "rates_status": "available",
+    "rollbacks_per_second": 0.0,
+    "samples": 1,
+    "status": "available",
+    "wal_bytes_per_second": 19.483904600547373
+  },
+  "backend_cohort_cumulative_delta": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    40,
+    40,
+    40,
+    40,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50
+  ],
+  "instrumentation_cost": {
+    "method": "same persistent local TCP application session; prepared statements; two ABBA blocks; client wall time includes driver and protocol; observational, no pass threshold",
+    "workloads": [
+      {
+        "workload": "trivial",
+        "trials": [
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.27545001200633124,
+            "microseconds_per_call": 137.72500600316562
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.25537434000580106,
+            "microseconds_per_call": 127.68717000290053
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.22900060001120437,
+            "microseconds_per_call": 114.50030000560218
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.2524350029998459,
+            "microseconds_per_call": 126.21750149992295
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.2527175800059922,
+            "microseconds_per_call": 126.3587900029961
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.24684404399886262,
+            "microseconds_per_call": 123.42202199943131
+          },
+          {
+            "enabled": true,
+            "iterations": 2000,
+            "seconds": 0.36647309400723316,
+            "microseconds_per_call": 183.23654700361658
+          },
+          {
+            "enabled": false,
+            "iterations": 2000,
+            "seconds": 0.23870132199954242,
+            "microseconds_per_call": 119.35066099977121
+          }
+        ],
+        "median_microseconds_per_call": {
+          "off": 126.28814575145952,
+          "on": 125.55459600116592
+        },
+        "median_overhead_percent": -0.5808540033023113
+      },
+      {
+        "workload": "executor_loop",
+        "trials": [
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.1262983019987587,
+            "microseconds_per_call": 1262.9830199875869
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.1254570510063786,
+            "microseconds_per_call": 1254.570510063786
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12735370299196802,
+            "microseconds_per_call": 1273.5370299196802
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.12805907998699695,
+            "microseconds_per_call": 1280.5907998699695
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.12680402600381058,
+            "microseconds_per_call": 1268.0402600381058
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12524585699429736,
+            "microseconds_per_call": 1252.4585699429736
+          },
+          {
+            "enabled": true,
+            "iterations": 100,
+            "seconds": 0.12282388600578997,
+            "microseconds_per_call": 1228.2388600578997
+          },
+          {
+            "enabled": false,
+            "iterations": 100,
+            "seconds": 0.11670055400463752,
+            "microseconds_per_call": 1167.0055400463752
+          }
+        ],
+        "median_microseconds_per_call": {
+          "off": 1265.5116400128463,
+          "on": 1253.5145400033798
+        },
+        "median_overhead_percent": -0.9480039242740435
+      }
+    ]
+  }
+}
