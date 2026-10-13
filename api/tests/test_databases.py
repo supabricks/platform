@@ -484,9 +484,17 @@ def test_the_api_and_the_command_line_see_the_same_databases(api, own, project, 
     for identity, record in roots.items():
         assert listed[identity]['name'] == record['branch']['name']
         assert listed[identity]['holds_project_default'] == record['is_default']
-    made = own.rpc(method='submit', project_id=runtime, key=key(), mutation=dict(
-        kind='create_database', name=name_for('cli'),
-        ports=dict(sql=free_port(), external_http=free_port(), internal_http=free_port())))
+    # A port free on the machine may still be one the server holds for a
+    # database that has not started, so a refusal for that is tried again.
+    for attempt in range(10):
+        try:
+            made = own.rpc(method='submit', project_id=runtime, key=key(), mutation=dict(
+                kind='create_database', name=name_for('cli'),
+                ports=dict(sql=free_port(), external_http=free_port(), internal_http=free_port())))
+            break
+        except AssertionError as refusal:
+            if 'already reserved' not in str(refusal) or attempt == 9:
+                raise
     theirs = 'db_' + made['branch_id'].replace('-', '')
     found = read(api, project, theirs).json()
     assert found['state'] == 'provisioning'

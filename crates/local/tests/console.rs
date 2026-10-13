@@ -126,16 +126,17 @@ fn http(origin: &str, method: &str, path: &str, headers: &[(&str, &str)], body: 
     stream
         .set_read_timeout(Some(Duration::from_secs(10)))
         .unwrap();
-    write!(
-        stream,
+    // One write: a request sent in pieces can be refused and closed before
+    // its body arrives, which the client then sees as a reset.
+    let mut request = format!(
         "{method} {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\nContent-Length: {}\r\n",
         body.len()
-    )
-    .unwrap();
+    );
     for (name, value) in headers {
-        write!(stream, "{name}: {value}\r\n").unwrap();
+        request.push_str(&format!("{name}: {value}\r\n"));
     }
-    write!(stream, "\r\n{body}").unwrap();
+    request.push_str(&format!("\r\n{body}"));
+    stream.write_all(request.as_bytes()).unwrap();
     let mut bytes = Vec::new();
     stream.read_to_end(&mut bytes).unwrap();
     let end = bytes.windows(4).position(|w| w == b"\r\n\r\n").unwrap();
