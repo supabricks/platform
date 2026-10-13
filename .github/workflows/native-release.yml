@@ -1,12 +1,16 @@
 name: native-release
 on:
-  pull_request:
+  # Full archive qualification runs after integration or by explicit dispatch.
+  push:
+    branches: [main]
     paths:
       - 'crates/core/**'
       - 'crates/local/**'
       - 'schemas/**'
       - 'examples/projects/**'
       - 'Cargo.lock'
+      - 'Cargo.toml'
+      - '.cargo/**'
       - 'components/**'
       - 'install/native/**'
       - 'python/analytics/**'
@@ -31,7 +35,6 @@ on:
       - 'python/execution/**'
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
-      - 'docs/handbook/**'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -39,9 +42,9 @@ on:
       - 'examples/console/**'
       - 'examples/notebooks/**'
       - 'agents/**'
-      - 'LICENSE'
       - '.github/workflows/native-release.yml'
       - '.github/actions/docker-registry-mirror/**'
+      - '.github/actions/deltalake/**'
       - '.github/workflows/catalog-release.yml'
   workflow_dispatch:
 
@@ -160,38 +163,9 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - name: Read reviewed Delta source
-        id: delta
-        run: |
-          python3 - <<'PYCODE'
-          import json, os
-          pin = json.load(open('components/deltalake-source.lock.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('commit=' + pin['commit'] + '\n')
-              output.write('rust=' + pin['rust'] + '\n')
-          PYCODE
-      - uses: actions/checkout@v4
+      - uses: ./.github/actions/deltalake
         with:
-          repository: delta-io/delta-rs
-          ref: ${{ steps.delta.outputs.commit }}
-          path: build/deltalake-source
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.delta.outputs.rust }}
-          components: rustfmt
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: build/deltalake-source -> target
-          shared-key: source-deltalake-${{ matrix.target }}
-          cache-on-failure: true
-      - name: Install pinned source builder
-        run: |
-          python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/deltalake-build-requirements.txt
-      - name: Build native Delta from locked source
-        run: python components/build-deltalake.py --source build/deltalake-source --target ${{ matrix.target }} --output build/deltalake-artifacts/${{ matrix.target }}
+          target: ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
         with:
           name: source-deltalake-${{ matrix.target }}
@@ -239,7 +213,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           repository: supabricks/neon
-          run-id: 33985043318
+          run-id: 38303651869
           name: native-engine-${{ matrix.target }}
           path: build/engine-archive
           github-token: ${{ github.token }}

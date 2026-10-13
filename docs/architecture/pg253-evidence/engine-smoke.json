@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "postgres_version_num": 170008,
+  "branch_lsn": "0/2C33D10",
+  "checks": [
+    "relocated bundle with spaces",
+    "PG17 SQL and exact decimals",
+    "startup with core dumps disabled",
+    "five managed extensions, native functions, branch isolation and restart",
+    "explicit-LSN branch",
+    "parent/child isolation",
+    "graceful compute restart",
+    "acknowledged writes survive abrupt compute restart",
+    "GiST index and concurrent reads after cache eviction/restart",
+    "lazy SLRU download exercised"
+  ],
+  "limits": [
+    "LocalFs test remote backend",
+    "no S3 or power-loss qualification",
+    "trusted local test credentials",
+    "not a platform lifecycle test"
+  ],
+  "neon_commit": "ad855721586a5a0fbad538c6336a77dbd6110d87",
+  "sources": [
+    {
+      "path": "vendor/postgres-v14",
+      "commit": "2155cb165d05f617eb2c8ad7e43367189b627703",
+      "role": "build-headers"
+    },
+    {
+      "path": "vendor/postgres-v15",
+      "commit": "2aaab3bb4a13557aae05bb2ae0ef0a132d0c4f85",
+      "role": "build-headers"
+    },
+    {
+      "path": "vendor/postgres-v16",
+      "commit": "a42351fcd41ea01edede1daed65f651e838988fc",
+      "role": "build-headers"
+    },
+    {
+      "path": "vendor/postgres-v17",
+      "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+      "role": "runtime"
+    }
+  ]
+}

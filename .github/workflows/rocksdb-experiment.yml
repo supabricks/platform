@@ -7,6 +7,9 @@ on:
       - 'python/analytics/capture/**'
       - '.github/workflows/rocksdb-experiment.yml'
   workflow_dispatch:
+concurrency:
+  group: rocksdb-experiment-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

@@ -1,0 +1,110 @@
+{
+  "recorded_at": "2026-10-12",
+  "platform_runtime_commit": "81d5924d79f0c01aa64b7a554e3013c01586290e",
+  "platform_binary_sha256": "11ba4079a6c58406f7cf096ded03ee3db6b76fbdfecfde6e07bbea8195ff969d",
+  "engine_commit": "ad855721586a5a0fbad538c6336a77dbd6110d87",
+  "engine_archive_sha256": "a2380b7a5655a94e6182d997c9fd6c33e8978cd525f5ffdf75bcb2782c63b500",
+  "engine_final_ci_only_change": "bcd349ed6f3187a6a686f7d2fa8e9fd379ba3681 adds the local regression commands to CI; local runtime built at ad855721",
+  "tests": {
+    "platform_unit": {
+      "passed": 236,
+      "ignored": 4
+    },
+    "application_api": {
+      "passed": 5
+    },
+    "console": {
+      "passed": 10
+    },
+    "postgres_regression": {
+      "passed": 224
+    },
+    "compute_api_explicit_lifecycle": {
+      "passed": 1
+    },
+    "bundle_sql_upgrade_graph": {
+      "passed": 1
+    },
+    "platform_native": "PASS",
+    "legacy_native": "PASS",
+    "engine_relocation_native": "PASS",
+    "additional_boundary_regression": {
+      "passed": 1,
+      "checks": [
+        "project ownership",
+        "stale revision",
+        "governed list and mutation refusal before engine access"
+      ]
+    }
+  },
+  "commands": [
+    "cargo test --locked -p supabricks-local --lib --test application_api --test console",
+    "python3 scripts/native/build.py --jobs 4 --check",
+    "python3 scripts/native/bundle.py /data2/pg253-engine-linux-02",
+    "cargo test --locked --release -p compute_api native_extension_lifecycle_is_explicit_and_defaults_to_legacy",
+    "python3 scripts/native/test_extensions.py",
+    "python3 scripts/native/smoke.py /engine --report /output/engine-smoke.json",
+    "python3 e2e/native/extensions.py --binary target/release/supabricks --bundle /engine --helpers build/eq236/programs/releases/v0.1.0-alpha.36.eq236cache/helpers --report /output/extensions.json",
+    "cargo test --locked -p supabricks-local --lib extensions::tests"
+  ],
+  "isolation": {
+    "container_image": "supabricks-sy08-qualifier:latest",
+    "uid": 1001,
+    "network": "none",
+    "inputs": "read-only",
+    "temporary_state": "fixture-owned /tmp/pg253-*"
+  },
+  "limitations": [
+    "No performance measurement; no quiet-host requirement.",
+    "Local engine build does not replace exact Linux/macOS CI archive qualification.",
+    "Governed extension lifecycle, vector and PostGIS remain unsupported.",
+    "SP and SF100 not resumed."
+  ],
+  "logs": [
+    {
+      "path": "build/pg253-tests-final.log",
+      "bytes": 26742,
+      "sha256": "a5eaab5296e7d61bd3a001ffcfe82e3d8b0b00c91b496b2b67d00c905dacc49c"
+    },
+    {
+      "path": "build/pg253-platform-extensions.log",
+      "bytes": 1487,
+      "sha256": "0e55e7745a1633de34a84e2a00cc8ecc03aebda8948e50464d254712be45db63"
+    },
+    {
+      "path": "build/pg253-platform-extensions-02.log",
+      "bytes": 2052,
+      "sha256": "69341af747763e76798e16fad021b27b8c27188bb2fd57ec49ccb8273b98e722"
+    },
+    {
+      "path": "build/pg253-platform-extensions-03.log",
+      "bytes": 11,
+      "sha256": "022d68e372bd9a5b48443566538241838750d079b63fffffd90cc3d49d0d96e9"
+    },
+    {
+      "path": "build/pg253-legacy-container.log",
+      "bytes": 11,
+      "sha256": "022d68e372bd9a5b48443566538241838750d079b63fffffd90cc3d49d0d96e9"
+    },
+    {
+      "path": "/data2/pg253-engine-build-05.log",
+      "bytes": 2118090,
+      "sha256": "1a83beb3fe10b2f6e12d90a92c548269e6abe4686c684daaa9d0a9c0b809c5ff"
+    },
+    {
+      "path": "/data2/pg253-compute-api-test-02.log",
+      "bytes": 10000,
+      "sha256": "2a38f64dcf7ed66dcec260a2e23b90e8906af348b942114dcd0f0826ea245840"
+    },
+    {
+      "path": "/data2/pg253-bundle-02.log",
+      "bytes": 54,
+      "sha256": "f45bcc371e7745257571077aef8aa82316097b7b3789666e9010ec93c40e2e48"
+    },
+    {
+      "path": "build/pg253-boundaries-02.log",
+      "bytes": 550,
+      "sha256": "b1d6610d5300da1b3fe121d730df6aca431809636518d89ba76c0aea0b733966"
+    }
+  ]
+}

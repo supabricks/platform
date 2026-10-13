@@ -12,11 +12,13 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 | --- | --- |
 | [Local walkthrough](local-demo.md) | Install and demonstrate import, SQL, snapshots, branching and notebooks |
 | [Local console](local-console.md) | Launch the browser console, source development and session recovery |
+| [PostgreSQL extensions](postgres-extensions.md) | Release catalogue, enable/disable, branch lifecycle and sync compatibility |
 | [Local CLI and MCP](local-workflow.md) | Project selection, commands and agent workflows |
 | [Governed Linux server](governed-server.md) | TLS/OIDC, administration, isolated execution, audit and recovery |
 | [Recovery and upgrades](recovery.md) | Stopped backups, new-root restore and supported upgrades |
 | [Local state](local-state.md) | SQLite control state and durable operations |
 | [Build and installation](../../install/native/README.md) | Native assembly, verified installation and release checks |
+| [Local checks and CI](ci.md) | Change-based local/PR checks, full release qualification and manual diagnostic probes |
 
 ## Projects and portability
 

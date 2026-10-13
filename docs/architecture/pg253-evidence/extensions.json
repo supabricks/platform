@@ -1,0 +1,1024 @@
+{
+  "status": "PASS",
+  "checks": [
+    "unsafe schema refused",
+    "unmanaged extension adoption refused",
+    "event trigger fence preserved",
+    "all five shipped and callable",
+    "required and unknown refused",
+    "stale revision refused",
+    "dependent table preserved",
+    "physical branch inheritance and isolation",
+    "suspended compute not awakened",
+    "suspend/resume and daemon restart",
+    "cross-project denied",
+    "CLI catalogue",
+    "desired-state retry",
+    "disable persists across restart"
+  ],
+  "before": {
+    "branch_id": "b43fade6-1797-431b-82ca-b1dd385a59d1",
+    "capture_active": false,
+    "downloads": false,
+    "event_triggers_active": false,
+    "extensions": [
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.4",
+        "available_versions": [
+          "1.0",
+          "1.1",
+          "1.2",
+          "1.3",
+          "1.4"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "functions for verifying relation integrity",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "amcheck",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "citext columns are unsupported; case-insensitive semantics are not mapped to text",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "citext"
+          ]
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": false,
+        "can_enable": true,
+        "description": "data type for case-insensitive character strings",
+        "enabled": false,
+        "installed_version": null,
+        "managed": true,
+        "name": "citext",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [
+            {
+              "name": "_local_cache",
+              "supported": false
+            },
+            {
+              "name": "_neon_backend_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "_neon_lfc_stats",
+              "supported": false
+            },
+            {
+              "name": "_neon_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "_neon_stat_file_cache",
+              "supported": false
+            },
+            {
+              "name": "local_cache",
+              "supported": false
+            },
+            {
+              "name": "neon_backend_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "neon_lfc_stats",
+              "supported": false
+            },
+            {
+              "name": "neon_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "neon_stat_file_cache",
+              "supported": false
+            }
+          ],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.0",
+          "1.1",
+          "1.2",
+          "1.3",
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "cloud storage for PostgreSQL",
+        "enabled": true,
+        "installed_version": "1.6",
+        "managed": false,
+        "name": "neon",
+        "required": true,
+        "requires_restart": false,
+        "schema": "neon",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "Neon WAL Resource Manager - custom WAL records used to make Neon work (since PG 16)",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_rmgr",
+        "required": true,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.3",
+        "available_versions": [
+          "1.3"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "helpers for neon testing and debugging",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_test_utils",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [
+          "1.0"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "neon_utils - small useful functions",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_utils",
+        "required": true,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.12",
+        "available_versions": [
+          "1.10",
+          "1.11",
+          "1.12",
+          "1.5",
+          "1.6",
+          "1.7",
+          "1.8",
+          "1.9"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "inspect the contents of database pages at a low level",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pageinspect",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.5",
+        "available_versions": [
+          "1.2",
+          "1.3",
+          "1.4",
+          "1.5"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "examine the shared buffer cache",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_buffercache",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.2",
+        "available_versions": [
+          "1.1",
+          "1.2"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "prewarm relation data",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_prewarm",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.11",
+        "available_versions": [
+          "1.10",
+          "1.11",
+          "1.4",
+          "1.5",
+          "1.6",
+          "1.7",
+          "1.8",
+          "1.9"
+        ],
+        "can_disable": false,
+        "can_enable": true,
+        "description": "track planning and execution statistics of all SQL statements executed",
+        "enabled": false,
+        "installed_version": null,
+        "managed": true,
+        "name": "pg_stat_statements",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "gtrgm"
+          ]
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.3",
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": false,
+        "can_enable": true,
+        "description": "text similarity measurement and index searching based on trigrams",
+        "enabled": false,
+        "installed_version": null,
+        "managed": true,
+        "name": "pg_trgm",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.2",
+        "available_versions": [
+          "1.1",
+          "1.2"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "examine the visibility map (VM) and page-level visibility info",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_visibility",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "bytea result columns are currently unsupported; supported text columns remain eligible",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "bytea"
+          ]
+        },
+        "available_version": "1.3",
+        "available_versions": [
+          "1.3"
+        ],
+        "can_disable": false,
+        "can_enable": true,
+        "description": "cryptographic functions",
+        "enabled": false,
+        "installed_version": null,
+        "managed": true,
+        "name": "pgcrypto",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [
+          "1.0"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "PL/pgSQL procedural language",
+        "enabled": true,
+        "installed_version": "1.0",
+        "managed": false,
+        "name": "plpgsql",
+        "required": true,
+        "requires_restart": false,
+        "schema": "pg_catalog",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "UUID result columns are currently unsupported by analytical sync",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "uuid"
+          ]
+        },
+        "available_version": "1.1",
+        "available_versions": [
+          "1.1"
+        ],
+        "can_disable": false,
+        "can_enable": true,
+        "description": "generate universally unique identifiers (UUIDs)",
+        "enabled": false,
+        "installed_version": null,
+        "managed": true,
+        "name": "uuid-ossp",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "unqualified",
+          "unsupported_column_types": [
+            "vector",
+            "halfvec",
+            "sparsevec"
+          ]
+        },
+        "available_version": null,
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": null,
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "vector",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": false
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "unqualified",
+          "unsupported_column_types": [
+            "geometry",
+            "geography"
+          ]
+        },
+        "available_version": null,
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": null,
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "postgis",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": false
+      }
+    ],
+    "governed_supported": false,
+    "revision": 1
+  },
+  "enabled": {
+    "branch_id": "b43fade6-1797-431b-82ca-b1dd385a59d1",
+    "capture_active": false,
+    "downloads": false,
+    "event_triggers_active": false,
+    "extensions": [
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.4",
+        "available_versions": [
+          "1.0",
+          "1.1",
+          "1.2",
+          "1.3",
+          "1.4"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "functions for verifying relation integrity",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "amcheck",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [
+            {
+              "name": "_citext",
+              "supported": false
+            },
+            {
+              "name": "citext",
+              "supported": false
+            }
+          ],
+          "note": "citext columns are unsupported; case-insensitive semantics are not mapped to text",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "citext"
+          ]
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": true,
+        "can_enable": false,
+        "description": "data type for case-insensitive character strings",
+        "enabled": true,
+        "installed_version": "1.6",
+        "managed": true,
+        "name": "citext",
+        "required": false,
+        "requires_restart": false,
+        "schema": "supabricks_extensions",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [
+            {
+              "name": "_local_cache",
+              "supported": false
+            },
+            {
+              "name": "_neon_backend_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "_neon_lfc_stats",
+              "supported": false
+            },
+            {
+              "name": "_neon_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "_neon_stat_file_cache",
+              "supported": false
+            },
+            {
+              "name": "local_cache",
+              "supported": false
+            },
+            {
+              "name": "neon_backend_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "neon_lfc_stats",
+              "supported": false
+            },
+            {
+              "name": "neon_perf_counters",
+              "supported": false
+            },
+            {
+              "name": "neon_stat_file_cache",
+              "supported": false
+            }
+          ],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.0",
+          "1.1",
+          "1.2",
+          "1.3",
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "cloud storage for PostgreSQL",
+        "enabled": true,
+        "installed_version": "1.6",
+        "managed": false,
+        "name": "neon",
+        "required": true,
+        "requires_restart": false,
+        "schema": "neon",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "Neon WAL Resource Manager - custom WAL records used to make Neon work (since PG 16)",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_rmgr",
+        "required": true,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.3",
+        "available_versions": [
+          "1.3"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "helpers for neon testing and debugging",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_test_utils",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [
+          "1.0"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "neon_utils - small useful functions",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "neon_utils",
+        "required": true,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.12",
+        "available_versions": [
+          "1.10",
+          "1.11",
+          "1.12",
+          "1.5",
+          "1.6",
+          "1.7",
+          "1.8",
+          "1.9"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "inspect the contents of database pages at a low level",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pageinspect",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.5",
+        "available_versions": [
+          "1.2",
+          "1.3",
+          "1.4",
+          "1.5"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "examine the shared buffer cache",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_buffercache",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.2",
+        "available_versions": [
+          "1.1",
+          "1.2"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "prewarm relation data",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_prewarm",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [
+            {
+              "name": "_pg_stat_statements",
+              "supported": false
+            },
+            {
+              "name": "_pg_stat_statements_info",
+              "supported": false
+            },
+            {
+              "name": "pg_stat_statements",
+              "supported": false
+            },
+            {
+              "name": "pg_stat_statements_info",
+              "supported": false
+            }
+          ],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.11",
+        "available_versions": [
+          "1.10",
+          "1.11",
+          "1.4",
+          "1.5",
+          "1.6",
+          "1.7",
+          "1.8",
+          "1.9"
+        ],
+        "can_disable": true,
+        "can_enable": false,
+        "description": "track planning and execution statistics of all SQL statements executed",
+        "enabled": true,
+        "installed_version": "1.11",
+        "managed": true,
+        "name": "pg_stat_statements",
+        "required": false,
+        "requires_restart": false,
+        "schema": "supabricks_extensions",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [
+            {
+              "name": "_gtrgm",
+              "supported": false
+            },
+            {
+              "name": "gtrgm",
+              "supported": false
+            }
+          ],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "gtrgm"
+          ]
+        },
+        "available_version": "1.6",
+        "available_versions": [
+          "1.3",
+          "1.4",
+          "1.5",
+          "1.6"
+        ],
+        "can_disable": true,
+        "can_enable": false,
+        "description": "text similarity measurement and index searching based on trigrams",
+        "enabled": true,
+        "installed_version": "1.6",
+        "managed": true,
+        "name": "pg_trgm",
+        "required": false,
+        "requires_restart": false,
+        "schema": "supabricks_extensions",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.2",
+        "available_versions": [
+          "1.1",
+          "1.2"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "examine the visibility map (VM) and page-level visibility info",
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "pg_visibility",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "bytea result columns are currently unsupported; supported text columns remain eligible",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "bytea"
+          ]
+        },
+        "available_version": "1.3",
+        "available_versions": [
+          "1.3"
+        ],
+        "can_disable": true,
+        "can_enable": false,
+        "description": "cryptographic functions",
+        "enabled": true,
+        "installed_version": "1.3",
+        "managed": true,
+        "name": "pgcrypto",
+        "required": false,
+        "requires_restart": false,
+        "schema": "supabricks_extensions",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": []
+        },
+        "available_version": "1.0",
+        "available_versions": [
+          "1.0"
+        ],
+        "can_disable": false,
+        "can_enable": false,
+        "description": "PL/pgSQL procedural language",
+        "enabled": true,
+        "installed_version": "1.0",
+        "managed": false,
+        "name": "plpgsql",
+        "required": true,
+        "requires_restart": false,
+        "schema": "pg_catalog",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "UUID result columns are currently unsupported by analytical sync",
+          "policy": "supported_builtin_column_types_only",
+          "unsupported_column_types": [
+            "uuid"
+          ]
+        },
+        "available_version": "1.1",
+        "available_versions": [
+          "1.1"
+        ],
+        "can_disable": true,
+        "can_enable": false,
+        "description": "generate universally unique identifiers (UUIDs)",
+        "enabled": true,
+        "installed_version": "1.1",
+        "managed": true,
+        "name": "uuid-ossp",
+        "required": false,
+        "requires_restart": false,
+        "schema": "supabricks_extensions",
+        "shipped": true
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "unqualified",
+          "unsupported_column_types": [
+            "vector",
+            "halfvec",
+            "sparsevec"
+          ]
+        },
+        "available_version": null,
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": null,
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "vector",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": false
+      },
+      {
+        "analytical_sync": {
+          "extension_types": [],
+          "note": "extension functions and indexes are not replicated; eligibility is checked for every stored column",
+          "policy": "unqualified",
+          "unsupported_column_types": [
+            "geometry",
+            "geography"
+          ]
+        },
+        "available_version": null,
+        "available_versions": [],
+        "can_disable": false,
+        "can_enable": false,
+        "description": null,
+        "enabled": false,
+        "installed_version": null,
+        "managed": false,
+        "name": "postgis",
+        "required": false,
+        "requires_restart": false,
+        "schema": null,
+        "shipped": false
+      }
+    ],
+    "governed_supported": false,
+    "revision": 1
+  }
+}

@@ -4,66 +4,28 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: native-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  source-deltalake:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            target: linux-x86_64
-          - runner: macos-15
-            target: macos-arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - name: Read reviewed Delta source
-        id: delta
-        run: |
-          python3 - <<'PYCODE'
-          import json, os
-          pin = json.load(open('components/deltalake-source.lock.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('commit=' + pin['commit'] + '\n')
-              output.write('rust=' + pin['rust'] + '\n')
-          PYCODE
-      - uses: actions/checkout@v4
-        with:
-          repository: delta-io/delta-rs
-          ref: ${{ steps.delta.outputs.commit }}
-          path: build/deltalake-source
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.delta.outputs.rust }}
-          components: rustfmt
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: build/deltalake-source -> target
-          shared-key: source-deltalake-${{ matrix.target }}
-          cache-on-failure: true
-      - name: Install pinned source builder
-        run: |
-          python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/deltalake-build-requirements.txt
-      - name: Build native Delta from locked source
-        run: python components/build-deltalake.py --source build/deltalake-source --target ${{ matrix.target }} --output build/deltalake-artifacts/${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: source-deltalake-${{ matrix.target }}
-          path: build/deltalake-artifacts/${{ matrix.target }}
-          if-no-files-found: error
+  changes:
+    uses: ./.github/workflows/check-scope.yml
 
   components:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.components == 'true') }}
     runs-on: ubuntu-latest
     # Checkout includes qualification evidence and can exceed five minutes.
     timeout-minutes: 15
     steps:
+      - name: Require successful scope selection
+        env:
+          SCOPE_RESULT: ${{ needs.changes.result }}
+        run: test "$SCOPE_RESULT" = success
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -73,7 +35,8 @@ jobs:
       - run: python -m unittest discover -s components -p 'test_*.py' -v
 
   analytical-native:
-    needs: source-deltalake
+    needs: changes
+    if: needs.changes.outputs.analytics == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +46,8 @@ jobs:
           - os: macos-15
             target: macos-arm64
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    # Includes the cold native Delta build as well as runtime qualification.
+    timeout-minutes: 135
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -96,10 +60,9 @@ jobs:
         run: |
           uv export --project python/analytics --locked --format requirements-txt --no-emit-project --output-file python/analytics/requirements.lock > /dev/null
           git diff --exit-code -- python/analytics/requirements.lock
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/deltalake
         with:
-          name: source-deltalake-${{ matrix.target }}
-          path: build/deltalake-artifacts/${{ matrix.target }}
+          target: ${{ matrix.target }}
       - name: Verify and install reviewed Delta runtime
         run: |
           python - <<'PYCODE'
@@ -131,14 +94,23 @@ jobs:
             analytical-qualification.json
             analytical-qualification.log
 
-  # Keep the branch-protection context stable; both native targets must pass.
+  # Keep the required context stable. Selected work must pass on both targets.
   analytical-probe:
-    if: always()
-    needs: analytical-native
+    if: ${{ !cancelled() }}
+    needs: [changes, analytical-native]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Require both native analytical fixtures
         env:
+          SCOPE_RESULT: ${{ needs.changes.result }}
+          SELECTED: ${{ needs.changes.outputs.analytics }}
           NATIVE_RESULT: ${{ needs.analytical-native.result }}
-        run: test "$NATIVE_RESULT" = success
+        run: |
+          test "$SCOPE_RESULT" = success
+          if [ "$SELECTED" = true ]; then
+            test "$NATIVE_RESULT" = success
+          else
+            test "$SELECTED" = false
+            test "$NATIVE_RESULT" = skipped
+          fi

@@ -1239,6 +1239,9 @@ impl Daemon {
                     command,
                 );
             }
+            C::Extensions { command } => {
+                return self.public_action(binding, crate::api::Action::Extensions { command });
+            }
             C::CatalogDatasets { command } => {
                 return self
                     .public_action(binding, crate::api::Action::CatalogDatasets { command });
@@ -1367,6 +1370,9 @@ impl Daemon {
         binding: crate::api::Binding,
         action: crate::api::Action,
     ) -> Result<Value> {
+        if let crate::api::Action::Extensions { command } = action {
+            return crate::extensions::handle(&self.store, self.cell.as_ref(), &binding, command);
+        }
         if let crate::api::Action::CatalogPublication { command } = action {
             return crate::catalog::publication::handle(
                 &mut self.store,

@@ -1,0 +1,124 @@
+{
+  "recorded_at": "2026-09-05",
+  "target": "macos-arm64",
+  "qualification": "probe-passed",
+  "build": {
+    "schema_version": 1,
+    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
+    "neon_dirty": false,
+    "postgres_major": 17,
+    "sources": [
+      {
+        "path": "vendor/postgres-v14",
+        "commit": "2155cb165d05f617eb2c8ad7e43367189b627703",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v15",
+        "commit": "2aaab3bb4a13557aae05bb2ae0ef0a132d0c4f85",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v16",
+        "commit": "a42351fcd41ea01edede1daed65f651e838988fc",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v17",
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+        "role": "runtime"
+      }
+    ],
+    "cargo_lock_sha256": "20887cda0146a7c51e5a95060456ddf089d059af58840217a45e0943f525b5ae",
+    "builder": {
+      "os": "macOS-15.7.9-arm64-arm-64bit",
+      "architecture": "arm64",
+      "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+      "cc": "Apple clang version 17.0.0 (clang-1700.0.13.5)\nTarget: arm64-apple-darwin24.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+    },
+    "build": {
+      "profile": "release",
+      "debug": false,
+      "jobs": 2,
+      "environment": {
+        "CFLAGS": "",
+        "LDFLAGS": "",
+        "RUSTFLAGS": "",
+        "MACOSX_DEPLOYMENT_TARGET": ""
+      }
+    },
+    "postgres_regression": "passed",
+    "native_qualification": "not-run"
+  },
+  "postgres_regression_tests_passed": 224,
+  "smoke": {
+    "status": "PASS",
+    "postgres_version_num": 170008,
+    "branch_lsn": "0/2B1F588",
+    "checks": [
+      "relocated bundle with spaces",
+      "PG17 SQL and exact decimals",
+      "startup with core dumps disabled",
+      "explicit-LSN branch",
+      "parent/child isolation",
+      "graceful compute restart",
+      "acknowledged writes survive abrupt compute restart",
+      "GiST index and concurrent reads after cache eviction/restart",
+      "lazy SLRU download exercised"
+    ],
+    "limits": [
+      "LocalFs test remote backend",
+      "no S3 or power-loss qualification",
+      "trusted local test credentials",
+      "not a platform lifecycle test"
+    ],
+    "neon_commit": "1c6fa095261112aae239beef5a221b484703d49a",
+    "sources": [
+      {
+        "path": "vendor/postgres-v14",
+        "commit": "2155cb165d05f617eb2c8ad7e43367189b627703",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v15",
+        "commit": "2aaab3bb4a13557aae05bb2ae0ef0a132d0c4f85",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v16",
+        "commit": "a42351fcd41ea01edede1daed65f651e838988fc",
+        "role": "build-headers"
+      },
+      {
+        "path": "vendor/postgres-v17",
+        "commit": "56692dfb680281a963c7470fc7f0fec7f65ecfd4",
+        "role": "runtime"
+      }
+    ]
+  },
+  "archive": {
+    "name": "supabricks-engine-macos-arm64.tar.gz",
+    "sha256": "a816615c2bb65956ef85f8233232f8accec406763d7f51f215b2fd30d011f760",
+    "bytes": 94581877,
+    "loader_check": "passed without library-path overrides",
+    "distribution": "GitHub Actions developer artifact; no stable release URL",
+    "artifact_build_run": "https://github.com/supabricks/neon/actions/runs/33983137047"
+  },
+  "qualification_run": {
+    "url": "https://github.com/supabricks/neon/actions/runs/33985043318",
+    "harness_commit": "f787dba8e6e3af2c91e8b1783dd7993710bb3261",
+    "mode": "Replay the exact previously built archives with the corrected shutdown/reaping harness"
+  },
+  "commands": [
+    "python scripts/native/build.py --fetch --jobs 2 --check",
+    "python scripts/native/bundle.py build/supabricks-engine-macos-arm64",
+    "gh workflow run native-engine.yml --ref feat/native-engine-bundle -f artifact_run=33983137047"
+  ],
+  "limitations": [
+    "The original artifact build passed core regressions but its overall run failed during the earlier runtime harness. The separate replay run supplies the successful runtime evidence.",
+    "PG17.8 fork compatibility is proven here; current upstream PG17 minor integration remains a preview gate.",
+    "LocalFs test remote storage; S3 compatibility, whole storage-cell failure and power-loss durability remain P03 work.",
+    "Full transitive license/source inventory and release signing remain pending.",
+    "macOS 15 arm64 runtime exercised on a build-capable runner; separate clean-host/offline and Developer ID/notarization qualification remain open."
+  ]
+}

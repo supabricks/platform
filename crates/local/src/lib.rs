@@ -14,6 +14,7 @@ pub mod engine;
 pub mod environments;
 pub(crate) mod epoch_view;
 pub mod execution;
+pub mod extensions;
 pub mod governed;
 pub mod identity;
 pub mod incremental;
@@ -127,19 +128,40 @@ pub fn plan_compute(
         .expect("rendered spec object");
     body.remove("timestamp");
     body.remove("operation_uuid");
+    body.insert(
+        "skip_pg_stat_statements_create".into(),
+        serde_json::json!(true),
+    );
     let cluster = body["cluster"]
         .as_object_mut()
         .expect("rendered cluster object");
     for field in ["cluster_id", "name", "state"] {
         cluster.remove(field);
     }
-    // The qualified E01 bundle ships Neon, but not the optional cloud
-    // pg_stat_statements preload. Never trigger a cloud extension download.
+    // Older qualified bundles contain only Neon. New release-local contrib
+    // files opt normal computes into statement statistics; never download code.
     let settings = cluster["settings"].as_array_mut().expect("settings array");
     for setting in settings.iter_mut() {
         if setting["name"] == "shared_preload_libraries" {
-            setting["value"] = serde_json::json!("neon");
+            setting["value"] = serde_json::json!(if input
+                .bundle
+                .join("pg_install/v17/share/postgresql/extension/pg_stat_statements.control")
+                .is_file()
+            {
+                "neon,pg_stat_statements"
+            } else {
+                "neon"
+            });
         }
+    }
+    if input
+        .bundle
+        .join("pg_install/v17/share/postgresql/extension/pg_stat_statements.control")
+        .is_file()
+    {
+        // Utility statements include private control-role credential DDL.
+        // Keep those out of statement statistics before observability exposes it.
+        settings.push(serde_json::json!({"name":"pg_stat_statements.track_utility","value":"off","vartype":"enum"}));
     }
     // Linux sustained-load diagnostics favor batching durable source commits.
     // PG waits only when at least five other transactions are active; fsync

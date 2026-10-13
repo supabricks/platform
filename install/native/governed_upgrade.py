@@ -16,6 +16,7 @@ sys.path.insert(0,str(ROOT/'e2e/native/catalog'))
 from probe import CatalogCell
 from cell import wait
 from service import api
+import upgrade_control
 
 
 def digest(path):
@@ -68,6 +69,16 @@ def main():
         report['checks'].append('qualified_predecessor_native_pg_and_published_uc_snapshot')
         cell.stop()
         backup=root/'before-upgrade'
+        if upgrade_control.engine_files(candidate)!=upgrade_control.engine_files(source):
+            stopped=upgrade_control.checkpoint(prefix,data)
+            result=subprocess.run([str(new/'bin/supabricks'),'installation','upgrade','--prefix',str(prefix),
+                '--previous',str(old),'--backup',str(backup),'--data-dir',str(data)],capture_output=True,text=True,timeout=240)
+            upgrade_control.assert_refused(result,prefix,data,backup,stopped)
+            report['checks'].append('exact_candidate_refuses_incompatible_engine_without_mutation')
+            control=prefix/'releases'/(candidate['version']+'.platformcontrol')
+            report['upgrade_control']=upgrade_control.create(new,old,control)
+            upgrade_control.verify(control)
+            new=control
         value=cli(new/'bin/supabricks','installation','upgrade','--prefix',prefix,'--previous',old,'--backup',backup)
         assert value['upgraded'] is True and (prefix/'current').resolve()==new
         assert cli(old/'bin/supabricks','backup','verify',backup)['verified'] is True

@@ -7,72 +7,32 @@ on:
       - 'schemas/**'
       - 'examples/projects/**'
       - 'Cargo.lock'
+      - 'Cargo.toml'
+      - '.cargo/**'
       - 'components/**'
       - 'python/analytics/**'
-      - 'e2e/native/**'
+      - 'e2e/native/*.py'
+      - 'e2e/native/requirements.txt'
+      - 'e2e/native/drivers/**'
       - 'examples/orders/**'
       - 'agents/**'
       - '.github/workflows/native-cell.yml'
+      - '.github/actions/deltalake/**'
+      - 'install/native/delta_runtime.py'
+      - 'install/native/analytics.py'
   workflow_dispatch:
+
+concurrency:
+  group: native-cell-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  source-deltalake:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            target: linux-x86_64
-          - runner: macos-15
-            target: macos-arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - name: Read reviewed Delta source
-        id: delta
-        run: |
-          python3 - <<'PYCODE'
-          import json, os
-          pin = json.load(open('components/deltalake-source.lock.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('commit=' + pin['commit'] + '\n')
-              output.write('rust=' + pin['rust'] + '\n')
-          PYCODE
-      - uses: actions/checkout@v4
-        with:
-          repository: delta-io/delta-rs
-          ref: ${{ steps.delta.outputs.commit }}
-          path: build/deltalake-source
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.delta.outputs.rust }}
-          components: rustfmt
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: build/deltalake-source -> target
-          shared-key: source-deltalake-${{ matrix.target }}
-          cache-on-failure: true
-      - name: Install pinned source builder
-        run: |
-          python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/deltalake-build-requirements.txt
-      - name: Build native Delta from locked source
-        run: python components/build-deltalake.py --source build/deltalake-source --target ${{ matrix.target }} --output build/deltalake-artifacts/${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: source-deltalake-${{ matrix.target }}
-          path: build/deltalake-artifacts/${{ matrix.target }}
-          if-no-files-found: error
 
   native-cell:
-    needs: source-deltalake
     strategy:
       fail-fast: false
       matrix:
@@ -84,7 +44,8 @@ jobs:
             target: macos-arm64
             fault_flags: ''
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    # Includes a bounded cold Delta build; cache hits run the original suite.
+    timeout-minutes: 165
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -105,7 +66,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           repository: supabricks/neon
-          run-id: 33985043318
+          run-id: 38303651869
           name: native-engine-${{ matrix.target }}
           path: engine-archive
           github-token: ${{ github.token }}
@@ -116,6 +77,8 @@ jobs:
       - run: cargo build --locked -p supabricks-local
       - name: Native cell lifecycle, S3 and cold restore
         run: python e2e/native/cell.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-cell.json ${{ matrix.fault_flags }}
+      - name: PostgreSQL extension catalogue and lifecycle
+        run: python e2e/native/extensions.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-extensions.json
       - name: Branches, credentials, TTL and interrupted cleanup
         run: python e2e/native/branches.py --binary target/debug/supabricks --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native --report native-branches.json
       - name: Stable connections, real drivers and wake/suspend races
@@ -130,10 +93,9 @@ jobs:
           enable-cache: false
       - name: Install locked exporter environment
         run: uv sync --project python/analytics --locked --managed-python
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/deltalake
         with:
-          name: source-deltalake-${{ matrix.target }}
-          path: build/deltalake-artifacts/${{ matrix.target }}
+          target: ${{ matrix.target }}
       - name: Verify and install reviewed Delta runtime
         run: |
           python - <<'PYCODE'
@@ -190,6 +152,7 @@ jobs:
             native-capture.json
             native-snapshot-policies.json
             native-project-data.json
+            native-extensions.json
             native-cell.json
             native-cell.log
             native-branches.json

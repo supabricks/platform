@@ -24,6 +24,8 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import upgrade_control
+
 TARGETS = ('linux-x86_64', 'macos-arm64')
 CHECKS = (
     'same_artifact_verified_unbound', 'malformed_archive_no_publication',
@@ -311,7 +313,7 @@ def consume(args, root, release, archive):
             assert execution['epoch_id'] and execution['environment']['contract'] and execution['environment']['inputs']
         finally:
             ws.close(); c.stop(execution)
-    def install(channel, upgrade=False):
+    def install(channel, upgrade=False, refused=None):
         env = dict(cell.env, SUPABRICKS_INSTALL_DIR=str(prefix), SUPABRICKS_DATA_DIR=str(cell.data), SUPABRICKS_NO_MODIFY_PATH='1')
         if upgrade: env.update(SUPABRICKS_UPGRADE='1', SUPABRICKS_BACKUP_DIR=str(root / 'upgrade-backup'))
         curl = subprocess.Popen(['curl', '-fsSL', base+'/'+channel+'/install.sh'], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -321,7 +323,11 @@ def consume(args, root, release, archive):
             curl.stdout.close()
         curl.wait(timeout=15)
         (root / 'private-installer.log').write_text(result.stdout+result.stderr)
-        assert curl.returncode == result.returncode == 0, 'signed installer failed'
+        assert curl.returncode==0, 'installer download failed'
+        if refused is not None:
+            upgrade_control.assert_refused(result,prefix,cell.data,root/'upgrade-backup',refused)
+        else:
+            assert result.returncode==0, 'signed installer failed: '+result.stderr[-1500:]
         cell.binary = prefix / 'bin/supabricks'
 
     try:
@@ -429,8 +435,21 @@ def consume(args, root, release, archive):
         assert previous_binding['definition_id'] == binding['definition_id']
         report['predecessor_database_recovery'] = seed_predecessor(cell, predecessor)
         totals(predecessor)
-        install('new', upgrade=True)
-        assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256'] != previous_identity
+        expected_identity=report['release_sha256']
+        old_release=(prefix/'current').resolve()
+        candidate_archive=next((web/'new').glob('*.tar.gz'))
+        upgrade_channel='new'
+        if upgrade_control.archive_engine_differs(candidate_archive,old_release):
+            cell.cli(predecessor,'down')
+            stopped=upgrade_control.checkpoint(prefix,cell.data)
+            install('new',upgrade=True,refused=stopped)
+            report['incompatible_engine_upgrade_refused_without_mutation']=True
+            report['upgrade_control']=upgrade_control.stage_control(prefix/'releases'/args.version,
+                old_release,web/'platform-control',base+'/platform-control',key)
+            expected_identity=report['upgrade_control']['control_identity']
+            upgrade_channel='platform-control'
+        install(upgrade_channel, upgrade=True)
+        assert cell.cli(root, 'installation', 'verify')['identity'] == expected_identity != previous_identity
         cell.cli(predecessor, 'up')
         assert cell.cli(predecessor, 'project', 'installed')['preparation_needed']
         project = root / 'upgraded-project'; unpack(project)
@@ -501,7 +520,7 @@ def consume(args, root, release, archive):
         finally:
             filler.unlink(missing_ok=True)
         check('low_disk_no_publication')
-        assert cell.cli(root, 'installation', 'verify')['identity'] == report['release_sha256']
+        assert cell.cli(root, 'installation', 'verify')['identity'] == expected_identity
         assert digest(package) == producer['package_sha256']
         check('final_inventory_verified')
         assert set(report['checks']) == set(CHECKS)

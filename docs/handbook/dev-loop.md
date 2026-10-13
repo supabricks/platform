@@ -97,12 +97,31 @@ re-applies them for this reason).
 
 ## Testing tiers
 
-Two aggregate gates mirror CI exactly — when in doubt, run these:
+Use `just check-plan` to inspect the checks for staged, unstaged and untracked
+changes, then `just check` to run the selected local checks once. To include
+committed work, pass the intended base: `just check origin/main` (or the parent
+branch for a stacked PR). This shares its change map with GitHub CI.
 
-| Gate | Command | Time | Mirrors |
-|---|---|---|---|
-| static (fmt, unit+snapshots, hardening contract, CRD drift, helm lint, UI tests+build) | `just verify-static` | ~2 min | the CI unit job |
-| runtime (e2e + chaos + restore) | `just verify-runtime` | ~8 min | the CI e2e job's test stages |
+The local loop checks Rust libraries/binary units, explicitly edited integration
+test targets, component contracts and affected frontend builds. Changed Python
+files are syntax checked. Analytics runtime tests, complete recovery suites,
+native packaging and multi-OS qualification run in GitHub. Run a focused
+regression test for the behavior you changed; do not repeat the entire hosted
+pipeline locally before pushing. Repeat checks when code changes or a failure
+requires it, not merely because another stage completed.
+
+Comprehensive suites remain available for explicit diagnosis:
+
+| Gate | Command | Scope |
+|---|---|---|
+| Selected local feedback | `just check [base]` | Relevant local checks; no native rebuild or cluster launch |
+| All static checks | `just verify-static` | Workspace tests, CRD drift, Helm, UI and console builds |
+| Portable integration/recovery | `just portable-check` | Core/local full suites; already included in `just test` |
+| Kubernetes runtime | `just verify-runtime` | E2E, chaos and restore; needs the platform up |
+
+See [CI execution policy](ci.md) for automatic PR checks, full release
+qualification and historical diagnostic workflows. `just` alone lists commands
+and does not launch checks.
 
 Individual targets: `just test`, `just hardening`, `just crd-check`,
 `just helm-lint`, `just ui-test`, `just e2e`, `just chaos`, `just restore`.

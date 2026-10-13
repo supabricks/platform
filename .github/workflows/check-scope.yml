@@ -1,0 +1,57 @@
+name: check-scope
+on:
+  workflow_call:
+    outputs:
+      core:
+        value: ${{ jobs.scope.outputs.core }}
+      local:
+        value: ${{ jobs.scope.outputs.local }}
+      operator:
+        value: ${{ jobs.scope.outputs.operator }}
+      cluster:
+        value: ${{ jobs.scope.outputs.cluster }}
+      ui:
+        value: ${{ jobs.scope.outputs.ui }}
+      console:
+        value: ${{ jobs.scope.outputs.console }}
+      notebooks:
+        value: ${{ jobs.scope.outputs.notebooks }}
+      components:
+        value: ${{ jobs.scope.outputs.components }}
+      analytics:
+        value: ${{ jobs.scope.outputs.analytics }}
+      policy:
+        value: ${{ jobs.scope.outputs.policy }}
+      fmt:
+        value: ${{ jobs.scope.outputs.fmt }}
+      portable:
+        value: ${{ jobs.scope.outputs.portable }}
+      unit:
+        value: ${{ jobs.scope.outputs.unit }}
+permissions:
+  contents: read
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      core: ${{ steps.scope.outputs.core }}
+      local: ${{ steps.scope.outputs.local }}
+      operator: ${{ steps.scope.outputs.operator }}
+      cluster: ${{ steps.scope.outputs.cluster }}
+      ui: ${{ steps.scope.outputs.ui }}
+      console: ${{ steps.scope.outputs.console }}
+      notebooks: ${{ steps.scope.outputs.notebooks }}
+      components: ${{ steps.scope.outputs.components }}
+      analytics: ${{ steps.scope.outputs.analytics }}
+      policy: ${{ steps.scope.outputs.policy }}
+      fmt: ${{ steps.scope.outputs.fmt }}
+      portable: ${{ steps.scope.outputs.portable }}
+      unit: ${{ steps.scope.outputs.unit }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check routing boundaries before selecting work
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Select checks from the tested tree and its base
+        id: scope
+        run: python3 scripts/checks.py --github
