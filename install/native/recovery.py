@@ -22,6 +22,7 @@ import time
 
 from qualify import Handler, run
 from stage import stage
+import upgrade_control
 
 
 class Checks(list):
@@ -107,14 +108,18 @@ assert process.status() != psutil.STATUS_ZOMBIE, 'process is already a zombie'
 print(json.dumps(pid))
 """)
 
-    def install(channel, upgrade=False):
+    def install(channel, upgrade=False, refused=None):
         install_env = dict(env)
         if upgrade:
             install_env.update(SUPABRICKS_UPGRADE='1', SUPABRICKS_BACKUP_DIR=str(workspace / 'upgrade-backup'))
         curl = subprocess.Popen(['curl', '-fsSL', base + '/' + channel + '/install.sh'], env=install_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         bash = subprocess.run(['bash'], env=install_env, stdin=curl.stdout, capture_output=True, text=True, timeout=600)
         curl.stdout.close(); curl.wait(timeout=10)
-        assert curl.returncode == 0 and bash.returncode == 0, bash.stderr
+        assert curl.returncode == 0, 'installer download failed'
+        if refused is not None:
+            upgrade_control.assert_refused(bash,prefix,data,workspace/'upgrade-backup',refused)
+        else:
+            assert bash.returncode == 0, bash.stderr
 
     def cli(*argv, executable=None, root=None):
         return json.loads(run([executable or binary, *argv, '--data-dir', root or data, '--project', project], env=env, timeout=240))
@@ -182,7 +187,20 @@ print(json.dumps(pid))
         credentials = (data / 'storage.pk8').read_bytes()
         before = {branch: sql('SELECT * FROM recovery_rows ORDER BY id', branch) for branch in epochs}
         checks.append('actual PR34 archive creates acknowledged parent/child data and both Delta epochs match exact source rows')
-        install('new', upgrade=True)
+        upgrade_channel='new'
+        candidate_archive=next((web/'new').glob('*.tar.gz'))
+        if upgrade_control.archive_engine_differs(candidate_archive,old_release):
+            cli('down')
+            stopped=upgrade_control.checkpoint(prefix,data)
+            install('new',upgrade=True,refused=stopped)
+            checks.append('exact candidate rejects incompatible historical engine without changing stopped source or current release')
+            actual_candidate=prefix/'releases'/args.version
+            report['distributed_candidate_identity']=upgrade_control.digest(actual_candidate/'release.json')
+            report['upgrade_control']=upgrade_control.stage_control(actual_candidate,old_release,
+                web/'platform-control',base+'/platform-control',key)
+            report['limits'].append(report['upgrade_control']['scope'])
+            upgrade_channel='platform-control'
+        install(upgrade_channel, upgrade=True)
         assert (prefix / 'current').resolve() != old_release
         current_release = (prefix / 'current').resolve()
         identity = json.loads(run([binary, 'installation', 'verify'], env=env))['identity']
@@ -212,7 +230,7 @@ print(json.dumps(pid))
                 (prefix / 'current').symlink_to(Path('releases') / args.previous_version)
             blocked = subprocess.run([str(current_release / 'bin/supabricks'), 'up', '--data-dir', str(data)], env=env, capture_output=True, timeout=90)
             assert blocked.returncode != 0, 'pending migration must block startup'
-            install('new', upgrade=True)
+            install(upgrade_channel, upgrade=True)
             with sqlite3.connect(data / 'state.sqlite3') as db:
                 assert db.execute('PRAGMA user_version').fetchone()[0] == candidate_schema
                 assert db.execute('SELECT source_sha256,release_identity FROM catalog_migrations WHERE version=?', (candidate_schema,)).fetchone() == (journal['database_sha256'], identity)
@@ -232,7 +250,7 @@ print(json.dumps(pid))
         assert cli('connect', 'main')['uri'] == parent_uri
         assert cli('connect', 'experiment')['uri'] == branch_uri
         assert (data / 'storage.pk8').read_bytes() == credentials
-        checks.append(f'signed curl upgrade {args.previous_version} to {args.version} creates verified backup, preserves credentials/URIs, branches and epochs')
+        checks.append(f"signed curl platform upgrade {args.previous_version} to {completed['to']['version']} creates verified backup, preserves credentials/URIs, branches and epochs")
 
         receipt = json.loads(run([current_release / 'python/analytics/python', Path(__file__).with_name('receipt_fixture.py'), binary, data, project], env=env, timeout=600))
         assert receipt['status'] == 'passed'

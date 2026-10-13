@@ -217,6 +217,11 @@ def main():
             assert blocker.getsockname()[1]==previous_port
         finally:blocker.close()
         check('port_collision_retries_without_adopting_or_stopping_unrelated_listener')
+        # Port collisions can legitimately consume all three automatic starts.
+        # Reset explicitly before the independent crash-recovery scenario; do
+        # not spend a previous scenario's remaining retry budget by accident.
+        collision_owner=owned()['pid']
+        command('restart');wait(lambda:ready_owner(cell,previous_pid=collision_owner))
         victim=owned()['pid'];os.kill(victim,signal.SIGKILL)
         wait(lambda:cell.sql(branch,'SELECT 42')=='42')
         wait(lambda:ready_owner(cell,previous_pid=victim))
@@ -278,8 +283,15 @@ def main():
         check('down_recovers_owned_catalog_after_daemon_crash')
         report['status']='PASS'
     finally:
+        if report['status']!='PASS':
+            try:
+                observed=status()
+                report['failure_state']={k:observed[k] for k in ('state','ready','error','start_attempts')}
+            except (OSError,RuntimeError):pass
         if proxy:proxy.shutdown();proxy.server_close();thread.join(timeout=3)
-        if external:external.stop()
+        if external:
+            if report['status']!='PASS':report['external_server_failure']=external.diagnostics()
+            external.stop()
         cell.close()
         for daemon in cell.daemons:
             if daemon.poll() is None:

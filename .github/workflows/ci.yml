@@ -25,6 +25,8 @@ jobs:
         run: python3 scripts/check-portable-deps.py
       - name: portable contracts and local crash recovery without UI or cluster setup
         run: cargo test --locked -p supabricks-core -p supabricks-local
+      - name: Upgrade qualification controls preserve inventory and rejection boundaries
+        run: python3 -m unittest discover -s install/native -p test_upgrade_control.py -v
       - name: experimental preparation range and receipt contracts
         run: cargo test --locked -p supabricks-local --lib --features sync-lookahead engine::preparation::tests
       - name: console survives a busy daemon and fences changed ownership
@@ -45,7 +47,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: .
-      # This job == `just verify-static`. Keep the two in lockstep.
+      # Together with portable, this covers `just verify-static`.
+      # Portable owns core/local tests on both OSes; do not run them twice on Linux.
       - name: rust format
         run: cargo fmt -- --check
 
@@ -53,7 +56,7 @@ jobs:
         run: python3 -m unittest discover -s python/notebooks -p test_environment_packages.py
 
       - name: cargo test (T1 unit + T2 snapshots + chart hardening contract)
-        run: cargo test --locked --workspace
+        run: cargo test --locked --workspace --exclude supabricks-core --exclude supabricks-local
 
       - name: generated CRDs match crd.rs
         run: cargo run --locked --bin crdgen | diff -u chart/crds/sspc-crds.yaml -

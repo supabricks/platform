@@ -13,7 +13,7 @@ def summarize(path):
         f.seek(max(0,size-32768))
         text=f.read(32768).decode('utf-8',errors='replace')
     files={'client.py','pk05-notebook.py','qualify_catalog.py','catalog_gate.py',
-           'service.py','recovery.py','datasets.py','publication.py','reads.py',
+           'service.py','server.py','recovery.py','datasets.py','publication.py','reads.py',
            'metadata.py','cell.py','epochs.py','project_offline.py',
            'qualify.py','qualify_governed.py','governed_upgrade.py','qualify_sync.py',
            'installed_sync.py','continuous.py','sync_maintenance.py','sync_surfaces.py'}
