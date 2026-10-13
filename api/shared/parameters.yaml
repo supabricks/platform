@@ -91,6 +91,20 @@ Backup:
   description: Backup ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+Pipeline:
+  name: pipeline
+  in: path
+  required: true
+  description: Sync pipeline ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+SyncRun:
+  name: run
+  in: path
+  required: true
+  description: Sync run ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
 Limit:
   name: limit
   in: query

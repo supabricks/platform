@@ -20,6 +20,7 @@ import requests
 REPO = pathlib.Path(__file__).resolve().parents[3]
 # A Python with the import worker's packages, or None. Set by conftest.py.
 WORKER = None
+ANALYTICS = False
 
 
 class Server:
@@ -49,8 +50,7 @@ class Server:
         self._spawn()
         if WORKER:
             # What `supabricks analytics configure` writes: where the workers
-            # that read and load files are. Imports need it, and nothing else
-            # here uses it.
+            # that read and load files, and that sync a branch, are.
             configured = self.data / 'analytics.json'
             configured.write_text(json.dumps(dict(
                 python=str(WORKER), worker=str(REPO / 'python/analytics/export.py'))))

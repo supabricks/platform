@@ -81,6 +81,7 @@ server routes only operations that are `implemented` or `complete`.
 | `roles` | AP07 | complete | 7 | 7 | 0 |
 | `extensions` | AP07 | complete | 3 | 3 | 0 |
 | `backups` | AP08 | complete | 7 | 7 | 0 |
+| `sync` | AP09 | complete | 14 | 14 | 0 |
 <!-- status:end -->
 
 This table and the server's route table (`crates/local/src/rest/routes.rs`) are

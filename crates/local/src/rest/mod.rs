@@ -13,6 +13,7 @@ mod roles;
 mod routes;
 mod shared;
 mod sql;
+mod sync;
 mod tables;
 
 pub use problem::Problem;
@@ -501,6 +502,62 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::RetryImport => {
             imports::retry(store, call, parameter("project"), parameter("import"))
         }
+        Operation::ListSyncPipelines => sync::list(store, call, parameter("project")),
+        Operation::GetSyncPipeline => sync::get(store, parameter("project"), parameter("pipeline")),
+        Operation::CreateSyncPipeline => sync::create(store, &mut host, call, parameter("project")),
+        Operation::UpdateSyncPipeline => sync::update(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("pipeline"),
+        ),
+        Operation::DeleteSyncPipeline => sync::delete(
+            store,
+            &mut host,
+            call,
+            (parameter("project"), parameter("pipeline")),
+        ),
+        Operation::PauseSyncPipeline => sync::pause(
+            store,
+            &mut host,
+            call,
+            (parameter("project"), parameter("pipeline")),
+        ),
+        Operation::ResumeSyncPipeline => sync::resume(
+            store,
+            &mut host,
+            call,
+            (parameter("project"), parameter("pipeline")),
+        ),
+        Operation::ListSyncRuns => {
+            sync::runs(store, call, parameter("project"), parameter("pipeline"))
+        }
+        Operation::StartSyncRun => sync::start_run(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("pipeline"),
+        ),
+        Operation::GetSyncRun => sync::run(store, parameter("project"), parameter("run")),
+        Operation::CancelSyncRun => sync::cancel_run(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("run"),
+        ),
+        Operation::ReviewSyncResync => {
+            sync::review(store, parameter("project"), parameter("pipeline"))
+        }
+        Operation::ResyncSyncPipeline => sync::resync(
+            store,
+            &mut host,
+            call,
+            (parameter("project"), parameter("pipeline")),
+        ),
+        Operation::GetSyncSource => sync::source(store, parameter("project"), parameter("branch")),
         Operation::ListBackups => {
             backups::list(store, call, parameter("project"), parameter("database"))
         }

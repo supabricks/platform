@@ -215,7 +215,8 @@ changing `api/status.yaml`, which is visible in review.
 | AP06 | Imports | AP03 |
 | AP07 | Database administration and observability | AP02 |
 | AP08 | Backups and restore | AP03 |
-| AP09 onward | Sync, analytics, notebooks, environments, jobs, catalog, project definition, access, identity, secrets, alerts, usage, server | Ordered when AP08 is under way |
+| AP09 | Sync | AP03 |
+| AP10 onward | Analytics, notebooks, environments, catalog, jobs, project definition, access, identity, secrets, alerts, usage, server | Analytics next; access, identity and secrets last, once the governed gaps of the PostgreSQL group are settled |
 
 AP02 to AP08 are the PostgreSQL group. AP04 to AP08 do not depend on one
 another and can proceed in parallel once AP03 is complete.
@@ -863,6 +864,65 @@ the command line sees the record and cannot run it.
 **What remains** is in #296: restore in place, a destination off the machine,
 online coverage of the analytical side, and a retention window that can be
 read and set (#254).
+
+### AP09: Sync
+
+**Completeness review.** From reading the code on 2026-10-12. The draft had no
+sync domain, only a line reserving "pipelines, runs, per-table state, lag
+history, budgets". The capability is far more finished than that line, and
+different from it.
+
+- **Sync is complete at the command level.** One typed command set
+  (`sync::Command`) is shared by the command line, MCP and the shipped
+  console: inspect, create, update, pause, resume, delete, run, cancel, list,
+  read, runs, and a reviewed two-step resync.
+- **The platform says policy; the contract says pipeline.** The shared
+  vocabulary already had `sync_pipeline`, and it is the word a console uses.
+- **A pipeline is per branch and covers the whole branch.** One per branch;
+  no choice of tables or schemas.
+- **Three modes:** `snapshot` (a full copy each run), `triggered` (changes
+  applied when asked) and `continuous`. An installation captures changes from
+  one branch at a time, so it holds one `triggered` or `continuous` pipeline.
+- **What the reserved line promised and the platform does not have:**
+  per-table state, lag history, and rows or bytes per run.
+- **A governed path exists,** unlike the PostgreSQL domains, with per-branch
+  grants and a service principal that runs the pipeline.
+
+| Question | Decision |
+|---|---|
+| How does the API reach sync? | It calls the store's `sync_command` with the project named in the path. The command line reaches the same function through a checkout bound to the project, which an API request does not have |
+| Engines | The check the command line makes for `triggered` and `continuous` is made here too: without the engines and the analytical runtime, `503` |
+| Update | The platform replaces the whole configuration. The API reads it, lays the request over it and sends the result, so a `PATCH` changes only what it names; one that changes nothing does not move the revision |
+| Revisions | Every change takes `If-Match`; the platform's own revision check is the second line |
+| Lists | The platform's list is unpaged and includes deleted pipelines; the API leaves those out, orders by creation and pages. Runs are paged by a new query on their order of admission |
+| Runs | A resource of their own, synchronous to ask for. They are not put in the operations feed: a pipeline can run every minute, and continuous runs are pruned (#349) |
+| Errors | The platform's codes are passed through as `error` on a pipeline and a run. Refusals a person meets are reworded; the rest keep the platform's text |
+| Freshness | Reported for `continuous` only, as the platform works it out on read. Nothing keeps its history (#347) |
+| Source check | `getSyncSource` states the fixed requirements, whether the branch runs and the pipeline it has. The tables are not examined (#350) |
+| Governed servers | Every operation, reads included, is local only. The API authorizes by project role, and governed sync is read by a per-branch grant and changed with a service principal the contract does not carry (#348) |
+| A backup | The record that holds one is not a branch and cannot be given a pipeline |
+
+**Built.** `rest/sync.rs` with fourteen operations: `listSyncPipelines`,
+`createSyncPipeline`, `getSyncPipeline`, `updateSyncPipeline`,
+`deleteSyncPipeline`, `pauseSyncPipeline`, `resumeSyncPipeline`,
+`listSyncRuns`, `startSyncRun`, `getSyncRun`, `cancelSyncRun`,
+`reviewSyncResync`, `resyncSyncPipeline` and `getSyncSource`; and
+`Store::sync_runs_page`. No schema change.
+
+**Tests.** `api/tests/test_sync.py`. Without engines a `snapshot` pipeline is
+real, so most of the domain is tested there: create, one per branch, change a
+field at a time, pause, resume, delete, queue and cancel runs, paging, every
+refusal, a killed daemon, and the command line seeing and making the same
+pipelines. Three tests with engines and the analytical workers run real
+pipelines: a snapshot run publishes a version, twice; a triggered pipeline
+applies changes, is refused a second capture, and is resynced after review
+and resumed; a continuous pipeline becomes healthy, publishes a change by
+itself and pauses.
+
+**What remains:** per-table state, lag history and run counts (#347);
+governed servers (#348); runs in the operations feed (#349); a check of the
+source's tables and the limits in force, and more than one incremental
+pipeline per installation (#350).
 
 ## 7. Risks
 

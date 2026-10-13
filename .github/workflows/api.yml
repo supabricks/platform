@@ -108,7 +108,14 @@ jobs:
       # After the step above: the two files pin different jsonschema versions.
       - run: python -m pip install -r api/tests/requirements.txt -r api/tests/requirements-worker.txt
       - run: cargo build --locked -p supabricks-local
+      # The sync workers run only under exactly this environment.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.21'
+          enable-cache: false
+      - run: uv sync --project python/analytics --locked --managed-python
       - name: API tests that need database engines
         run: >-
-          python -m pytest api/tests -q -m engine --require-engines --require-worker --binary target/debug/supabricks
+          python -m pytest api/tests -q -m engine --require-engines --require-worker --require-analytics
+          --worker-python "$PWD/python/analytics/.venv/bin/python" --binary target/debug/supabricks
           --bundle build/native/supabricks-engine-${{ matrix.target }} --helpers build/native

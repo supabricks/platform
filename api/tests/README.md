@@ -65,14 +65,23 @@ is found automatically). They are skipped where there is no bundle. The
 `--require-engines`, which fails instead of skipping.
 
 Tests marked `worker` upload or inspect a file, which the import worker reads
-(`python/ingest/worker.py`). It needs a Python with the packages in
+(`python/ingest/worker.py`). They need a Python with the packages in
 `requirements-worker.txt`: the one given as `--worker-python` or
 `SUPABRICKS_WORKER_PYTHON`, else an installed release's, else the Python
 running the tests. They are skipped where none has the packages; CI installs
 them and passes `--require-worker`. A test that loads a file is marked `engine`
 as well.
 
+Tests marked `analytics` run a sync pipeline, which the analytical workers
+carry out (`python/analytics/`). Those workers refuse to run under anything but
+the exact environment in `python/analytics/uv.lock`, Python version included,
+so these tests are skipped unless the worker Python is that environment: an
+installed release's, or one made with
+`uv sync --project python/analytics --locked --managed-python` and given as
+`--worker-python python/analytics/.venv/bin/python`. The `engines` job makes
+it and passes `--require-analytics`.
+
 An installation runs at most 32 branches, and without engines a deleted branch
 keeps its place. A domain that creates databases or branches therefore uses a
-server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py`, `test_extensions.py` and `test_backups.py`) and shares one resource between
+server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py`, `test_extensions.py`, `test_backups.py` and `test_sync.py`) and shares one resource between
 tests that do not change it.
