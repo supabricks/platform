@@ -49,6 +49,19 @@ impl Store {
             .optional()?
             .ok_or_else(|| missing("application credential"))
     }
+    /// Replace the application password. The engine gives it to a running
+    /// compute on its next pass, and to a stopped one when it starts.
+    pub fn reset_app_password(&mut self, endpoint: EndpointId) -> Result<()> {
+        let password = format!("{}{}", OperationId::new(), OperationId::new());
+        let changed = self.db.execute(
+            "UPDATE app_credentials SET password=?2 WHERE endpoint_id=?1",
+            params![endpoint.to_string(), password],
+        )?;
+        if changed == 0 {
+            return Err(missing("application credential"));
+        }
+        Ok(())
+    }
     pub fn list_branches(
         &self,
         project: ProjectId,
@@ -431,7 +444,37 @@ mod tests {
         let b = s.branch(op.branch_id).unwrap();
         assert!(b.ports.is_none());
         assert!(s.app_password(b.endpoint.id).is_err());
+        // A deleted branch has no application password to reset.
+        assert!(s.reset_app_password(b.endpoint.id).is_err());
         assert!(s.branch(parent.branch_id).unwrap().is_default);
+    }
+    #[test]
+    fn an_application_password_is_reset_for_one_branch_only() {
+        let (_root, mut s, p) = setup();
+        let parent = root(&mut s, p);
+        let other = s
+            .submit(
+                p,
+                "second",
+                Mutation::CreateDatabase {
+                    name: "second".into(),
+                    ports: ports(6100),
+                },
+            )
+            .unwrap();
+        let (first, second) = (
+            s.branch(parent.branch_id).unwrap().endpoint.id,
+            s.branch(other.branch_id).unwrap().endpoint.id,
+        );
+        let (before, theirs) = (
+            s.app_password(first).unwrap(),
+            s.app_password(second).unwrap(),
+        );
+        s.reset_app_password(first).unwrap();
+        let after = s.app_password(first).unwrap();
+        assert_ne!(after, before);
+        assert_eq!(after.len(), before.len());
+        assert_eq!(s.app_password(second).unwrap(), theirs);
     }
     #[test]
     fn suspended_parent_wake_and_restore_survive_owner_loss() {

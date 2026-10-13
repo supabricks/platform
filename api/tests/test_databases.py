@@ -427,7 +427,8 @@ def runtime_of(server, database):
 @pytest.mark.l2
 def test_connection_details_need_the_engines(api, project, shared):
     for operation, extra in [('getDatabaseConnection', {}), ('revealDatabaseCredentials', dict(json={})),
-                             ('revealDatabaseCredentials', {})]:
+                             ('revealDatabaseCredentials', {}), ('resetDatabaseCredentials', dict(json={})),
+                             ('resetDatabaseCredentials', {})]:
         response = api.call(operation, path={'project': project, 'database': shared[0]}, expect=503, **extra)
         assert response.json()['code'] == 'unavailable'
 
@@ -440,7 +441,12 @@ def test_a_connection_names_a_branch_of_the_same_database(api, project, shared):
         response = api.call('getDatabaseConnection', path=path, params={'branch': branch}, expect=404)
         assert response.json()['code'] == 'not_found'
         api.call('revealDatabaseCredentials', path=path, json={'branch_id': branch}, expect=404)
+        api.call('resetDatabaseCredentials', path=path, json={'branch_id': branch}, expect=404)
     api.call('revealDatabaseCredentials', path=path, json={'role': 'postgres'}, expect=400)
+    # Only the application role has a password to reset; no other can be named.
+    for body in ({'role': 'postgres'}, {'password': 'chosen'}, {'branch_id': 7}):
+        api.call('resetDatabaseCredentials', path=path, json=body, expect=400)
+    api.call('resetDatabaseCredentials', path={'project': project, 'database': MISSING}, json={}, expect=404)
 
 
 # ---- L5: durability ----
@@ -617,6 +623,71 @@ def test_connecting_wakes_a_suspended_database(engine_api, request):
     assert read(api, project, database).json()['state'] == 'suspended', 'reading the address does not wake it'
     assert psql(request, uri, 'select 1') == '1'
     assert read(api, project, database).json()['state'] == 'running'
+
+
+def refused_by_postgres(request, uri):
+    """Whether PostgreSQL turns the credentials in the URI away."""
+    binary = pathlib.Path(request.config.getoption('--bundle')) / 'pg_install/v17/bin/psql'
+    result = subprocess.run([str(binary), uri, '-qAt', '-c', 'select 1'], capture_output=True, text=True, timeout=60)
+    return result.returncode != 0 and 'password authentication failed' in result.stderr
+
+
+@pytest.mark.engine
+@pytest.mark.l2
+def test_a_reset_gives_the_application_role_a_new_password_on_that_branch_only(engine_api, request):
+    api = engine_api
+    made = api.call('createProject', json={'name': name_for('reset')},
+                    headers={'Idempotency-Key': key()}, expect=202).json()
+    project = made['project_id']
+    finished(api, project, made)
+    database = next(d for d in everything(api, project) if d['name'] == 'main')['id']
+    path = {'project': project, 'database': database}
+    operation = api.call('createBranch', path=path, json={'name': name_for('child')},
+                         headers={'Idempotency-Key': key()}, expect=202).json()
+    child = finished(api, project, operation)['target']['id']
+
+    def reveal(**body):
+        return api.call('revealDatabaseCredentials', path=path, json=body, expect=200).json()
+
+    old, theirs = reveal(), reveal(branch_id=child)
+    assert psql(request, old['uri'], 'select 1') == '1' and psql(request, theirs['uri'], 'select 1') == '1'
+    # A connection opened with the old password, still at work during the reset.
+    binary = pathlib.Path(request.config.getoption('--bundle')) / 'pg_install/v17/bin/psql'
+    working = subprocess.Popen([str(binary), old['uri'], '-qAt', '-c', 'select pg_sleep(6)', '-c', 'select 7'],
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    wait(lambda: psql(request, old['uri'], "select count(*) from pg_stat_activity where query like '%pg_sleep(6)%'"
+                                           " and pid <> pg_backend_pid()") == '1')
+
+    reset = api.call('resetDatabaseCredentials', path=path, json={}, expect=200)
+    assert reset.headers['Cache-Control'] == 'no-store'
+    new = reset.json()
+    assert (new['role'], new['expires_at']) == (old['role'], None)
+    assert new['password'] != old['password'] and new['password'] in new['uri']
+    assert reveal() == new
+    # The reply is sent once PostgreSQL accepts the new password and not the old.
+    assert psql(request, new['uri'], 'select current_user') == new['role']
+    assert refused_by_postgres(request, old['uri'])
+    out, err = working.communicate(timeout=60)
+    assert (working.returncode, out.split()[-1]) == (0, '7'), err
+
+    # Each branch has a password of its own.
+    assert reveal(branch_id=child) == theirs and psql(request, theirs['uri'], 'select 1') == '1'
+    changed = api.call('resetDatabaseCredentials', path=path, json={'branch_id': child}, expect=200).json()
+    assert changed['password'] not in (theirs['password'], new['password'])
+    assert psql(request, changed['uri'], 'select 1') == '1' and refused_by_postgres(request, theirs['uri'])
+    assert reveal() == new and psql(request, new['uri'], 'select 1') == '1'
+
+    # A second reset replaces the first; nothing is remembered between them.
+    again = api.call('resetDatabaseCredentials', path=path, expect=200).json()
+    assert again['password'] != new['password'] and refused_by_postgres(request, new['uri'])
+
+    # Reset while suspended: in force when the branch next starts.
+    idle(api, project, database)
+    finished(api, project, change(api, 'suspendDatabase', project, database).json())
+    asleep = api.call('resetDatabaseCredentials', path=path, json={}, expect=200).json()
+    assert read(api, project, database).json()['state'] == 'suspended', 'a reset does not wake the branch'
+    assert psql(request, asleep['uri'], 'select 1') == '1'
+    assert refused_by_postgres(request, again['uri'])
 
 
 # --- The same operations for signed-in callers on a governed server -----------
