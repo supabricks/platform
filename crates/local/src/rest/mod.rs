@@ -1,6 +1,7 @@
 //! Platform API v1 (`api/openapi.yaml`). Transport-independent: an HTTP server
 //! authenticates the caller, then forwards a `Call`; the daemon routes it to
 //! the same typed actions the command line uses.
+mod analytics;
 mod backups;
 mod branches;
 mod databases;
@@ -501,6 +502,54 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         }
         Operation::RetryImport => {
             imports::retry(store, call, parameter("project"), parameter("import"))
+        }
+        Operation::ListAnalyticalVersions => {
+            analytics::versions(store, call, parameter("project"), parameter("branch"))
+        }
+        Operation::GetAnalyticalVersion => {
+            analytics::version(store, parameter("project"), parameter("version"))
+        }
+        Operation::CollectAnalyticalVersions => {
+            analytics::collect(store, call, parameter("project"), parameter("branch"))
+        }
+        Operation::PinAnalyticalVersion => {
+            analytics::pin(store, call, parameter("project"), parameter("version"))
+        }
+        Operation::RenewAnalyticalPin => {
+            analytics::renew_pin(store, call, parameter("project"), parameter("pin"))
+        }
+        Operation::ReleaseAnalyticalPin => {
+            analytics::release_pin(store, call, parameter("project"), parameter("pin"))
+        }
+        Operation::StartAnalyticalRefresh => analytics::start_refresh(
+            store,
+            &mut host,
+            call,
+            parameter("project"),
+            parameter("branch"),
+        ),
+        Operation::GetAnalyticalRefresh => {
+            analytics::refresh(store, parameter("project"), parameter("refresh"))
+        }
+        Operation::CancelAnalyticalRefresh => {
+            analytics::cancel_refresh(store, call, parameter("project"), parameter("refresh"))
+        }
+        Operation::ListAnalyticalSessions => analytics::sessions(store, call, parameter("project")),
+        Operation::GetAnalyticalCapacity => analytics::capacity(store, parameter("project")),
+        Operation::OpenAnalyticalSession => {
+            analytics::open(store, &mut host, call, parameter("project"))
+        }
+        Operation::GetAnalyticalSession => {
+            analytics::session(store, parameter("project"), parameter("session"))
+        }
+        Operation::CloseAnalyticalSession => {
+            analytics::close(store, call, parameter("project"), parameter("session"))
+        }
+        Operation::RunAnalyticalQuery => {
+            analytics::run_query(store, call, parameter("project"), parameter("session"))
+        }
+        Operation::GetAnalyticalQuery => {
+            analytics::query(store, parameter("project"), parameter("session"))
         }
         Operation::ListSyncPipelines => sync::list(store, call, parameter("project")),
         Operation::GetSyncPipeline => sync::get(store, parameter("project"), parameter("pipeline")),

@@ -61,6 +61,7 @@ tags:
   - { name: Extensions, description: 'Which of the extensions the installed engine ships a branch has enabled.' }
   - { name: Backups, description: "Points of a database's branches that storage keeps, the schedule that takes them, and restoring one as a new branch." }
   - { name: Sync, description: "Pipelines that carry a branch's PostgreSQL tables into its analytical copy, and their runs." }
+  - { name: Analytics, description: "The versions sync publishes of a branch's analytical copy, the sessions that read one, and the queries run in a session." }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
@@ -69,7 +70,7 @@ x-tagGroups:
   - name: PostgreSQL
     tags: [Databases, Branches, SQL, Tables, Imports, Roles, Extensions, Backups]
   - name: Analytics
-    tags: [Sync]
+    tags: [Sync, Analytics]
   - name: Installation
     tags: [Server]
 paths:
@@ -141,6 +142,21 @@ paths:
   /projects/{project}/sync/runs/{run}: { $ref: './domains/sync/paths.yaml#/run' }
   /projects/{project}/sync/runs/{run}/cancel: { $ref: './domains/sync/paths.yaml#/runCancel' }
   /projects/{project}/sync/sources/{branch}: { $ref: './domains/sync/paths.yaml#/source' }
+
+  # ---- Analytics ----
+  /projects/{project}/analytics/branches/{branch}/versions: { $ref: './domains/analytics/paths.yaml#/branchVersions' }
+  /projects/{project}/analytics/branches/{branch}/collect: { $ref: './domains/analytics/paths.yaml#/branchCollect' }
+  /projects/{project}/analytics/branches/{branch}/refreshes: { $ref: './domains/analytics/paths.yaml#/branchRefreshes' }
+  /projects/{project}/analytics/refreshes/{refresh}: { $ref: './domains/analytics/paths.yaml#/refresh' }
+  /projects/{project}/analytics/refreshes/{refresh}/cancel: { $ref: './domains/analytics/paths.yaml#/refreshCancel' }
+  /projects/{project}/analytics/versions/{version}: { $ref: './domains/analytics/paths.yaml#/version' }
+  /projects/{project}/analytics/versions/{version}/pins: { $ref: './domains/analytics/paths.yaml#/versionPins' }
+  /projects/{project}/analytics/pins/{pin}: { $ref: './domains/analytics/paths.yaml#/pin' }
+  /projects/{project}/analytics/sessions: { $ref: './domains/analytics/paths.yaml#/sessions' }
+  /projects/{project}/analytics/sessions/{session}: { $ref: './domains/analytics/paths.yaml#/session' }
+  /projects/{project}/analytics/sessions/{session}/close: { $ref: './domains/analytics/paths.yaml#/sessionClose' }
+  /projects/{project}/analytics/sessions/{session}/query: { $ref: './domains/analytics/paths.yaml#/sessionQuery' }
+  /projects/{project}/analytics/capacity: { $ref: './domains/analytics/paths.yaml#/capacity' }
 
   # ---- Backups ----
   /projects/{project}/databases/{database}/backups: { $ref: './domains/backups/paths.yaml#/backups' }

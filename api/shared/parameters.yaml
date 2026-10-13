@@ -105,6 +105,34 @@ SyncRun:
   description: Sync run ID.
   schema: { $ref: './schemas.yaml#/Id' }
 
+AnalyticalVersion:
+  name: version
+  in: path
+  required: true
+  description: Analytical version ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+AnalyticalPin:
+  name: pin
+  in: path
+  required: true
+  description: Pin ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+AnalyticalRefresh:
+  name: refresh
+  in: path
+  required: true
+  description: Refresh ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
+AnalyticalSession:
+  name: session
+  in: path
+  required: true
+  description: Analytical session ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
 Limit:
   name: limit
   in: query

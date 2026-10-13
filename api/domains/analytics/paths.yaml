@@ -1,0 +1,699 @@
+# Analytics: the versions sync publishes of a branch's analytical copy, the
+# sessions that read one, and the queries run in a session.
+#
+# A version is one published state of every table sync carried from a branch.
+# It is made by a run of the branch's sync pipeline, or by a refresh asked for
+# here. A session is a running Spark-compatible engine on one version; an
+# installation runs two at once. A query is one read-only statement in a
+# session, and a session keeps only its latest.
+#
+# The platform calls a version an epoch or a snapshot, and a pin a lease; the
+# command line and its messages use those words.
+#
+# Every operation is for the owner of a local installation. A governed server
+# authorizes analytical reads by grants and audits them, which this contract
+# does not carry yet (#354), so there every operation answers `403` with
+# `code: unavailable_in_profile`.
+
+branchVersions:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  get:
+    operationId: listAnalyticalVersions
+    tags: [Analytics]
+    summary: List the analytical versions of a branch
+    description: >-
+      Newest first. A version whose files have been deleted is not listed.
+      Table, row and size figures are those recorded when the version was
+      made, and are null where it recorded none.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354, 355]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of versions.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalVersionPage' }
+            example:
+              items:
+                - id: ver_95ac210ec99a4cd7826db045a3e38bf0
+                  project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  sequence: 12
+                  state: available
+                  current: true
+                  error: null
+                  requested_at: '2026-10-12T09:30:00.000Z'
+                  published_at: '2026-10-12T09:30:04.000Z'
+                  source_lsn: 0/15BF2D8
+                  pipeline_id: null
+                  table_count: 1
+                  row_count: 4
+                  size_bytes: 3062
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+branchCollect:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: collectAnalyticalVersions
+    tags: [Analytics]
+    summary: Delete a branch's older analytical versions
+    description: >-
+      Keeps the branch's newest `keep` versions and marks the rest for
+      deletion; their files are removed shortly after. The current version is
+      always kept, and so is any version a session, a pin, a sync run or a
+      catalog publication holds. At most 256 versions are marked in one call;
+      call again for more. A governed server does not offer this through the
+      API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalCollect' }
+          example: { keep: 5 }
+    responses:
+      '200':
+        description: What was marked.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalCollection' }
+            example:
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              keep: 5
+              deleting: [ver_0b1c2d3e4f5a4b6c8d7e9f0a1b2c3d4e]
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+branchRefreshes:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Branch'
+  post:
+    operationId: startAnalyticalRefresh
+    tags: [Analytics]
+    summary: Copy a branch's tables into a new analytical version now
+    description: >-
+      A full copy of every supported table, made once, without a sync
+      pipeline. It needs the database engines and the analytical runtime and
+      answers `503` without them. An installation makes one copy at a time and
+      answers `409` while another is being made or cleared away. The refresh
+      is read with `getAnalyticalRefresh` until it has `succeeded`, when
+      `version_id` names what it published. A branch kept up to date by a sync
+      pipeline does not need this. A governed server does not offer this
+      through the API yet and answers `403` with `code:
+      unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalRefreshRequest' }
+          example: {}
+    responses:
+      '201':
+        description: The refresh, running.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read it.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalRefresh' }
+            example:
+              id: rfr_4ece4e53f3994cbd83de6272865ddffa
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: running
+              error: null
+              version_id: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+refresh:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalRefresh'
+  get:
+    operationId: getAnalyticalRefresh
+    tags: [Analytics]
+    summary: Get a refresh
+    description: >-
+      A refresh that a session started for itself, because its branch had no
+      version, is read here too.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    responses:
+      '200':
+        description: The refresh.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalRefresh' }
+            example:
+              id: rfr_4ece4e53f3994cbd83de6272865ddffa
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: running
+              error: null
+              version_id: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+refreshCancel:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalRefresh'
+  post:
+    operationId: cancelAnalyticalRefresh
+    tags: [Analytics]
+    summary: Cancel a refresh
+    description: >-
+      Stops the copy and discards what it made. A refresh that already
+      published its version is refused with `409`: the version stays.
+      Cancelling one that has already ended changes nothing. A governed server
+      does not offer this through the API yet and answers `403` with `code:
+      unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The refresh.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalRefresh' }
+            example:
+              id: rfr_4ece4e53f3994cbd83de6272865ddffa
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              state: cancelled
+              error: cancelled
+              version_id: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+version:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalVersion'
+  get:
+    operationId: getAnalyticalVersion
+    tags: [Analytics]
+    summary: Get an analytical version
+    description: >-
+      With its tables and their columns, the relations of the branch that were
+      left out and why, and what holds it: the sessions open on it and the
+      pins that have not expired.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-04]
+    x-issues: [354, 355]
+    responses:
+      '200':
+        description: The version.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalVersionDetail' }
+            example:
+              id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              sequence: 12
+              state: available
+              current: true
+              error: null
+              requested_at: '2026-10-12T09:30:00.000Z'
+              published_at: '2026-10-12T09:30:04.000Z'
+              source_lsn: 0/15BF2D8
+              pipeline_id: null
+              table_count: 1
+              row_count: 4
+              size_bytes: 3062
+              observed_at: '2026-10-12T09:30:01.000Z'
+              tables:
+                - schema: public
+                  name: orders
+                  rows: 4
+                  columns:
+                    - { name: order_id, type: string, nullable: true }
+              omitted_tables:
+                - { schema: neon, name: local_cache, reason: extension-owned }
+              readers:
+                session_ids: [ses_1cc711be6c904212ab9cf8b17f5444af]
+                pins: []
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+versionPins:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalVersion'
+  post:
+    operationId: pinAnalyticalVersion
+    tags: [Analytics]
+    summary: Pin an analytical version
+    description: >-
+      Holds the version for `ttl_seconds`, so that collecting does not delete
+      it. A version can have many pins. A version that is `unavailable` or
+      `deleting` is refused with `409`. An installation holds at most 1,024
+      pins and answers `409` with `code: capacity_exhausted` beyond that. A
+      governed server does not offer this through the API yet and answers
+      `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalPinRequest' }
+          example: { ttl_seconds: 3600 }
+    responses:
+      '201':
+        description: The pin.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalPin' }
+            example:
+              id: pin_6e1f0a2b3c4d4e5f8a7b9c0d1e2f3a4b
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              expires_at: '2026-10-12T10:30:00.000Z'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+pin:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalPin'
+  patch:
+    operationId: renewAnalyticalPin
+    tags: [Analytics]
+    summary: Make a pin last longer or shorter
+    description: >-
+      Sets the pin to expire `ttl_seconds` from now. A pin that has expired is
+      gone and answers `404`. A governed server does not offer this through
+      the API yet and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalPinRequest' }
+          example: { ttl_seconds: 3600 }
+    responses:
+      '200':
+        description: The pin.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalPin' }
+            example:
+              id: pin_6e1f0a2b3c4d4e5f8a7b9c0d1e2f3a4b
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              expires_at: '2026-10-12T10:30:00.000Z'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+  delete:
+    operationId: releaseAnalyticalPin
+    tags: [Analytics]
+    summary: Release a pin
+    description: >-
+      The version is then held only by whatever else holds it. A governed
+      server does not offer this through the API yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-02]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '204':
+        description: Released.
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+sessions:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: listAnalyticalSessions
+    tags: [Analytics]
+    summary: List the analytical sessions of a project
+    description: >-
+      Newest first, ended ones included. `active=true` leaves out sessions
+      that are `closed` or `failed`. Sessions that notebooks run in are listed
+      with `purpose: notebook`.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-03]
+    x-issues: [354, 355]
+    parameters:
+      - name: active
+        in: query
+        description: Only sessions that have not ended.
+        schema: { type: boolean, default: false }
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of sessions.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalSessionPage' }
+            example:
+              items:
+                - id: ses_1cc711be6c904212ab9cf8b17f5444af
+                  project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+                  refresh_id: null
+                  purpose: query
+                  state: starting
+                  error: null
+                  created_at: '2026-10-12T09:40:00.000Z'
+                  expires_at: '2026-10-12T09:55:00.000Z'
+                  spark_connect_url: null
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: openAnalyticalSession
+    tags: [Analytics]
+    summary: Open an analytical session
+    description: >-
+      Give `branch_id` to read the branch's current version, or `version_id`
+      to read that one; exactly one of the two. A branch with no version yet
+      gets a refresh started for it, and the session is `waiting` until that
+      publishes. That refresh is refused with `409` while the installation is
+      making another copy. The session is `ready` a few seconds after it is
+      `starting`; read it with `getAnalyticalSession` until then. An
+      installation runs two sessions at once, across every project, and
+      answers `409` with `code: capacity_exhausted` when both are in use. It
+      needs the database engines and the analytical runtime and answers `503`
+      without them. A session over the project's catalog cannot be opened
+      here. A governed server does not offer this through the API yet and
+      answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-01, AN-03]
+    x-issues: [354, 355]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalSessionOpen' }
+          example: { branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c, ttl_seconds: 900 }
+    responses:
+      '201':
+        description: The session.
+        headers:
+          Location: { schema: { type: string }, description: 'Where to read it.' }
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalSession' }
+            example:
+              id: ses_1cc711be6c904212ab9cf8b17f5444af
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              refresh_id: null
+              purpose: query
+              state: starting
+              error: null
+              created_at: '2026-10-12T09:40:00.000Z'
+              expires_at: '2026-10-12T09:55:00.000Z'
+              spark_connect_url: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+      '503': { $ref: '../../shared/responses.yaml#/Unavailable' }
+
+capacity:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+  get:
+    operationId: getAnalyticalCapacity
+    tags: [Analytics]
+    summary: See how many analytical sessions can run
+    description: >-
+      The slots are the installation's, shared by every project, so
+      `sessions_open` counts sessions of other projects too.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-03]
+    x-issues: [354, 355]
+    responses:
+      '200':
+        description: The capacity.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalCapacity' }
+            example:
+              session_slots: 2
+              sessions_open: 1
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+session:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalSession'
+  get:
+    operationId: getAnalyticalSession
+    tags: [Analytics]
+    summary: Get an analytical session
+    description: >-
+      `spark_connect_url` is given while the session is `ready`. It is
+      reachable from this machine only.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-03]
+    x-issues: [354]
+    responses:
+      '200':
+        description: The session.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalSession' }
+            example:
+              id: ses_1cc711be6c904212ab9cf8b17f5444af
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              refresh_id: null
+              purpose: query
+              state: starting
+              error: null
+              created_at: '2026-10-12T09:40:00.000Z'
+              expires_at: '2026-10-12T09:55:00.000Z'
+              spark_connect_url: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+
+sessionClose:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalSession'
+  post:
+    operationId: closeAnalyticalSession
+    tags: [Analytics]
+    summary: Close an analytical session
+    description: >-
+      The session is `closing` until its engine has stopped, then `closed`,
+      and its slot is free. A query it is running is cancelled. Closing a
+      session that has already ended changes nothing. A governed server does
+      not offer this through the API yet and answers `403` with `code:
+      unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-03]
+    x-issues: [354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '200':
+        description: The session.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalSession' }
+            example:
+              id: ses_1cc711be6c904212ab9cf8b17f5444af
+              project_id: prj_4f9a2c1e8b7d4a6f9c3e5b1d7a2f8c4e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              refresh_id: null
+              purpose: query
+              state: closing
+              error: closed
+              created_at: '2026-10-12T09:40:00.000Z'
+              expires_at: '2026-10-12T09:55:00.000Z'
+              spark_connect_url: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+sessionQuery:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/AnalyticalSession'
+  post:
+    operationId: runAnalyticalQuery
+    tags: [Analytics]
+    summary: Run a query in an analytical session
+    description: >-
+      One read-only Spark SQL statement against the session's version. The
+      query is `running` when this returns; read it with `getAnalyticalQuery`.
+      A session runs one query at a time and answers `409` while one is
+      running, and keeps only its latest: this query's result replaces the one
+      before. A running query cannot be cancelled by itself; closing the
+      session cancels it. A session that is not `ready` answers `409`. A
+      governed server does not offer this through the API yet and answers
+      `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [AN-01]
+    x-issues: [353, 354]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/AnalyticalQueryRun' }
+          example: { sql: 'SELECT count(*) AS orders FROM orders' }
+    responses:
+      '201':
+        description: The query, running.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalQuery' }
+            example:
+              id: aq_df723b7e36cc4510b82198781c591c94
+              session_id: ses_1cc711be6c904212ab9cf8b17f5444af
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              state: running
+              sql: SELECT count(*) AS orders FROM orders
+              columns: null
+              rows: null
+              truncated: false
+              error: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+  get:
+    operationId: getAnalyticalQuery
+    tags: [Analytics]
+    summary: Get the latest query of an analytical session
+    description: >-
+      The query last run in the session, with its result once it is
+      `complete`. Compare `id` with the one `runAnalyticalQuery` returned to
+      know it is the same query. A session that has run none answers `404`.
+      Values are text; numbers and dates are written as Spark writes them.
+    x-backend: ready
+    x-required-role: viewer
+    x-profiles: [local]
+    x-console-features: [AN-01]
+    x-issues: [353, 354]
+    responses:
+      '200':
+        description: The query.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/AnalyticalQuery' }
+            example:
+              id: aq_df723b7e36cc4510b82198781c591c94
+              session_id: ses_1cc711be6c904212ab9cf8b17f5444af
+              version_id: ver_95ac210ec99a4cd7826db045a3e38bf0
+              state: complete
+              sql: SELECT count(*) AS orders FROM orders
+              columns: [{ name: orders, type: bigint }]
+              rows: [['4']]
+              truncated: false
+              error: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }

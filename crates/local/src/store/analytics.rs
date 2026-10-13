@@ -308,6 +308,64 @@ impl Store {
             .map(|id| self.snapshot_record(project, parse(id)?, false))
             .collect()
     }
+    /// The versions of a branch that still have files, newest first, as
+    /// (ordinal, ID). The history above lists deleted ones as well.
+    pub(crate) fn kept_snapshots(
+        &self,
+        branch: BranchId,
+        before: Option<i64>,
+        limit: usize,
+    ) -> Result<Vec<(i64, EpochId)>> {
+        let rows=self.db.prepare("SELECT p.ordinal,s.epoch_id FROM snapshots s JOIN publications p ON p.export_id=s.export_id WHERE p.branch_id=?1 AND p.ordinal<?2 AND s.state<>'deleted' ORDER BY p.ordinal DESC LIMIT ?3")?
+            .query_map(params![branch.to_string(),before.unwrap_or(i64::MAX),limit as i64],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,String>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        rows.iter()
+            .map(|(ordinal, id)| Ok((*ordinal, parse(id)?)))
+            .collect()
+    }
+    /// The position of the branch's PostgreSQL that a version holds.
+    pub(crate) fn snapshot_source_lsn(&self, id: EpochId) -> Result<Option<String>> {
+        Ok(self
+            .db
+            .query_row(
+                "SELECT source_lsn FROM epochs WHERE id=?1",
+                [id.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+    /// The pins of a version that have not expired, soonest to expire first.
+    pub(crate) fn snapshot_pins(&self, id: EpochId) -> Result<Vec<SnapshotLease>> {
+        let rows=self.db.prepare("SELECT id,expires_at_ms FROM snapshot_leases WHERE epoch_id=?1 AND expires_at_ms>?2 ORDER BY expires_at_ms,id")?
+            .query_map(params![id.to_string(),now_ms()?],|r|Ok((r.get::<_,String>(0)?,r.get::<_,i64>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        rows.iter()
+            .map(|(lease, expires)| {
+                Ok(SnapshotLease {
+                    id: parse(lease)?,
+                    epoch_id: id,
+                    expires_at_ms: *expires,
+                })
+            })
+            .collect()
+    }
+    /// A pin that has not expired, if it is of a version of the project.
+    pub(crate) fn snapshot_pin(&self, project: ProjectId, id: LeaseId) -> Result<SnapshotLease> {
+        let row: Option<(String, i64)> = self
+            .db
+            .query_row(
+                "SELECT epoch_id,expires_at_ms FROM snapshot_leases WHERE id=?1 AND expires_at_ms>?2",
+                params![id.to_string(), now_ms()?],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?;
+        let (epoch, expires_at_ms) = row.ok_or_else(|| missing("live snapshot lease"))?;
+        let epoch_id = parse(&epoch)?;
+        self.snapshot_record(project, epoch_id, false)?;
+        Ok(SnapshotLease {
+            id,
+            epoch_id,
+            expires_at_ms,
+        })
+    }
     pub(crate) fn recoverable_snapshot_ids(&self) -> Result<Vec<(ProjectId, EpochId)>> {
         let rows=self.db.prepare("SELECT b.project_id,s.epoch_id FROM snapshots s JOIN epochs e ON e.id=s.epoch_id JOIN branches b ON b.id=e.branch_id WHERE s.state IN ('available','unavailable')")?.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
         rows.iter()

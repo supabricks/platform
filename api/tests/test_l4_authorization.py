@@ -47,6 +47,7 @@ def send(governed, op, caller, project=None):
     values = dict(project=project or governed.project, operation=governed.operation,
                   database=governed.database, branch=governed.branch,
                   statement='stmt_' + '0' * 32, query='qry_' + '0' * 32, schema='public', table='t', role='reporting', extension='pg_trgm', backup='bkp_' + '0' * 32, pipeline='sync_' + '0' * 32, run='run_' + '0' * 32,
+                  version='ver_' + '0' * 32, pin='pin_' + '0' * 32, refresh='rfr_' + '0' * 32, session='ses_' + '0' * 32,
                   source='src_' + '0' * 32, **{'import': 'imp_' + '0' * 32})
     names = [p['name'] for p in op.parameters if p['in'] == 'path']
     return governed.callers[caller].call(op.id, path={name: values[name] for name in names},
