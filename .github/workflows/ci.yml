@@ -12,27 +12,26 @@ jobs:
   changes:
     uses: ./.github/workflows/check-scope.yml
 
-  portable:
+  # Fixed names survive skipped jobs; a conditional matrix may never expand.
+  portable-linux:
+    name: portable (ubuntu-latest)
     needs: changes
     if: needs.changes.outputs.portable == 'true'
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-15]
-    runs-on: ${{ matrix.os }}
-    # Recovery now exercises each supported catalog migration and crash boundary.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: portable contracts and local crash recovery without UI or cluster setup
-        run: cargo test --locked -p supabricks-core -p supabricks-local
-      - name: experimental preparation range and receipt contracts
-        run: cargo test --locked -p supabricks-local --lib --features sync-lookahead engine::preparation::tests
-      - name: console survives a busy daemon and fences changed ownership
-        run: |
-          cargo build --locked -p supabricks-local
-          python3 e2e/native/console_health.py --binary target/debug/supabricks
+      - uses: ./.github/actions/portable-check
+
+  portable-macos:
+    name: portable (macos-15)
+    needs: changes
+    if: needs.changes.outputs.portable == 'true'
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/portable-check
 
   unit:
     needs: changes
