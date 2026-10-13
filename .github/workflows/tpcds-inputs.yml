@@ -5,6 +5,9 @@ on:
       - 'e2e/tpcds/**'
       - '.github/workflows/tpcds-inputs.yml'
   workflow_dispatch:
+concurrency:
+  group: tpcds-inputs-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

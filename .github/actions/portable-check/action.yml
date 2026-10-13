@@ -1,0 +1,18 @@
+name: Portable platform checks
+description: Core/local contracts and recovery, shared by both native OS jobs
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
+    - name: portable contracts and local crash recovery without UI or cluster setup
+      shell: bash
+      run: cargo test --locked -p supabricks-core -p supabricks-local
+    - name: experimental preparation range and receipt contracts
+      shell: bash
+      run: cargo test --locked -p supabricks-local --lib --features sync-lookahead engine::preparation::tests
+    - name: console survives a busy daemon and fences changed ownership
+      shell: bash
+      run: |
+        cargo build --locked -p supabricks-local
+        python3 e2e/native/console_health.py --binary target/debug/supabricks
