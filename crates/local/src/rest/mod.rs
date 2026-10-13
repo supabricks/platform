@@ -5,6 +5,7 @@ mod branches;
 mod databases;
 mod extensions;
 mod imports;
+mod metrics;
 mod operations;
 mod problem;
 mod projects;
@@ -67,6 +68,8 @@ pub(crate) struct Local<'a> {
     /// Files being received for import, and the workers that read and load them.
     pub uploads: Option<&'a mut crate::console::ingestion::Uploads>,
     pub imports: Option<&'a mut crate::ingest::service::Service>,
+    /// The samples this server keeps of each running branch.
+    pub metrics: Option<&'a crate::metrics::Metrics>,
 }
 
 /// A piece of a body that a transport sends on as it arrives, because the
@@ -507,6 +510,7 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::DisableExtension => {
             extensions::disable(store, &mut host, call, branch(), parameter("extension"))
         }
+        Operation::GetBranchMetrics => metrics::get(store, &mut host, call, branch()),
         Operation::ListRoles => roles::list(store, &mut host, call, branch()),
         Operation::CreateRole => roles::create(store, &mut host, call, branch()),
         Operation::GetRole => roles::get(store, &mut host, call, branch(), parameter("role")),

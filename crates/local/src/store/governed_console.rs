@@ -464,6 +464,7 @@ mod tests {
                 busy: 0,
                 uploads: None,
                 imports: None,
+                metrics: None,
             };
             dispatch(store, Some(host), &call)
         };

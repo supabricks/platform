@@ -1,0 +1,45 @@
+MetricPoint:
+  type: object
+  required: [at, connections_active, connections_idle, commits_per_second, rollbacks_per_second, cache_hit_ratio, wal_bytes_per_second, storage_bytes]
+  description: >-
+    One step of the range. Every value is null where the branch was not
+    sampled in the step, which is how a suspended branch appears: a gap, never
+    a zero.
+  properties:
+    at:
+      allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
+      description: When the step starts.
+    connections_active:
+      type: [number, 'null']
+      description: Connections running a statement, averaged over the samples in the step. The server's own are not counted.
+    connections_idle:
+      type: [number, 'null']
+      description: Connections open and not running a statement, averaged the same way.
+    commits_per_second: { type: [number, 'null'] }
+    rollbacks_per_second: { type: [number, 'null'] }
+    cache_hit_ratio:
+      type: [number, 'null']
+      minimum: 0
+      maximum: 1
+      description: The share of block reads PostgreSQL served from its own cache. Null when nothing was read.
+    wal_bytes_per_second:
+      type: [number, 'null']
+      description: How fast the branch wrote its log, which is how fast its history grows.
+    storage_bytes:
+      type: [integer, 'null']
+      description: The size of the branch's data as PostgreSQL reports it.
+
+BranchMetrics:
+  type: object
+  required: [range, from, to, step_seconds, sample_interval_seconds, retention_seconds, points]
+  properties:
+    range: { type: string, enum: [1h, 6h, 24h, 7d] }
+    from: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    to: { $ref: '../../shared/schemas.yaml#/Timestamp' }
+    step_seconds: { type: integer, description: The width of one point. }
+    sample_interval_seconds: { type: integer, description: How often the server samples a running branch. }
+    retention_seconds: { type: integer, description: How long the server keeps a sample. }
+    points:
+      type: array
+      description: Evenly spaced, oldest first, covering the whole range whether or not the branch was running.
+      items: { $ref: './schemas.yaml#/MetricPoint' }
