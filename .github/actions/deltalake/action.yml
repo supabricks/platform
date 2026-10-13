@@ -1,0 +1,82 @@
+name: Verified source-built Delta
+description: Reuse an exact-contract artifact or build it, then verify every file
+inputs:
+  target:
+    description: Native target matching this runner
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Identify complete Delta build contract
+      id: contract
+      shell: bash
+      env:
+        DELTA_TARGET: ${{ inputs.target }}
+      run: |
+        echo "key=$(python components/deltalake-cache-key.py "$DELTA_TARGET")" >> "$GITHUB_OUTPUT"
+        python - <<'PY'
+        import json,os
+        pin=json.load(open('components/deltalake-source.lock.json'))
+        with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+            output.write('commit='+pin['commit']+'\n')
+            output.write('rust='+pin['rust']+'\n')
+        PY
+    - uses: actions/cache/restore@v4
+      id: artifact
+      with:
+        path: build/deltalake-artifacts/${{ inputs.target }}
+        key: ${{ steps.contract.outputs.key }}
+    - uses: actions/checkout@v4
+      if: steps.artifact.outputs.cache-hit != 'true'
+      with:
+        repository: delta-io/delta-rs
+        ref: ${{ steps.contract.outputs.commit }}
+        path: build/deltalake-source
+    - name: Install pinned compiler without changing the platform default
+      if: steps.artifact.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        DELTA_RUST: ${{ steps.contract.outputs.rust }}
+      run: rustup toolchain install "$DELTA_RUST" --profile minimal --component rustfmt
+    - uses: Swatinem/rust-cache@v2
+      if: steps.artifact.outputs.cache-hit != 'true'
+      with:
+        workspaces: build/deltalake-source -> target
+        shared-key: source-deltalake-${{ inputs.target }}-${{ steps.contract.outputs.rust }}
+        cache-on-failure: true
+    - name: Build the exact locked source on a cache miss
+      if: steps.artifact.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        DELTA_TARGET: ${{ inputs.target }}
+      run: |
+        python -m pip install --require-hashes --no-deps --only-binary=:all: -r components/deltalake-build-requirements.txt
+        python components/build-deltalake.py --source build/deltalake-source --target "$DELTA_TARGET" --output "build/deltalake-artifacts/$DELTA_TARGET"
+    - name: Verify source, compiler, wheel and complete inventory on hits and misses
+      shell: bash
+      env:
+        DELTA_TARGET: ${{ inputs.target }}
+      run: |
+        python - <<'PY'
+        import os,sys
+        from pathlib import Path
+        sys.path.insert(0,'install/native')
+        from delta_runtime import verify
+        target=os.environ['DELTA_TARGET']
+        verify(Path('build/deltalake-artifacts')/target,target)
+        PY
+    - uses: actions/cache/save@v4
+      if: steps.artifact.outputs.cache-hit != 'true'
+      with:
+        path: build/deltalake-artifacts/${{ inputs.target }}
+        key: ${{ steps.contract.outputs.key }}
+    - name: Record reuse decision
+      shell: bash
+      env:
+        DELTA_KEY: ${{ steps.contract.outputs.key }}
+        DELTA_HIT: ${{ steps.artifact.outputs.cache-hit }}
+      run: |
+        printf 'Delta artifact `%s`: cache hit `%s`; source contract and payload verified.\n' "$DELTA_KEY" "$DELTA_HIT" >> "$GITHUB_STEP_SUMMARY"

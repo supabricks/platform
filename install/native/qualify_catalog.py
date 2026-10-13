@@ -94,6 +94,8 @@ def qualify(args):
             checks=[x['name'] if isinstance(x,dict) else x for x in value.get('checks',[])]
             reports[name]=dict(status=value.get('status','FAIL'), checks=checks, exit_code=result.returncode,
                                duration_seconds=time.monotonic()-started, report_sha256=digest(path) if path.exists() else None)
+            if value.get('failure_state'):reports[name]['failure_state']=value['failure_state']
+            if value.get('external_server_failure'):reports[name]['external_server_failure']=value['external_server_failure']
             reports[name]['cleanup']=json.loads(cleanup.read_text()) if cleanup.exists() else None
             report['suites']=reports
             assert result.returncode==0 and value.get('status')=='PASS', f'{name} catalog gate failed'

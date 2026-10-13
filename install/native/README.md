@@ -3,6 +3,10 @@
 [Documentation home](../../docs/README.md) · [Stack overview](../../docs/stack.md) ·
 [Current release evidence](../../docs/architecture/uc098-governed-release.md)
 
+See [PostgreSQL stack CI repairs](../../docs/architecture/pg-ci-repairs.md) for
+current qualification boundaries, historical engine upgrade controls and Delta
+artifact reuse. A platform-only control does not qualify an engine upgrade.
+
 The SY08 engineering release line is alpha.36. Consult the
 [SY08 ledger](../../docs/architecture/sy08-installed-sync.md) for qualification of
 an exact archive; a version label alone does not qualify a build. Historical
