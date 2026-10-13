@@ -458,7 +458,7 @@ pub fn tools() -> Value {
         ),
         (
             "metrics",
-            "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null; CPU, memory and latency percentiles are explicitly unavailable. Local operator scope only; no query text or external telemetry.",
+            "Read installation-local PostgreSQL history for an explicit branch revision over 1h, 6h, 24h or 7d. Bounded background sampling never wakes suspended computes. Missing data and counter resets remain null. Compute CPU is measured in cores and memory as summed process-tree RSS (shared pages may be counted repeatedly); limits and latency percentiles are not reported. Local operator scope only; no query text or external telemetry.",
             json!({"command":serde_json::from_str::<Value>(include_str!("../../../schemas/metrics-command-v1.schema.json")).unwrap()}),
             vec!["command"],
             true,

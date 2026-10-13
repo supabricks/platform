@@ -1,5 +1,6 @@
 //! Bounded, installation-local PostgreSQL history. Never wakes a compute.
 mod history;
+mod resources;
 mod sql;
 #[cfg(test)]
 mod tests;
@@ -80,10 +81,13 @@ struct Sample {
     revision: i64,
     status: String,
     raw: Option<Raw>,
+    #[serde(default)]
+    compute: Option<resources::Observation>,
 }
 impl Sample {
     fn point(&self, previous: Option<&Self>) -> Value {
         let mut value = json!({"observed_at_ms":self.at_ms,"status":self.status,"connections_active":null,"connections_idle":null,"connections_other":null,"database_size_bytes":null,"commits_per_second":null,"rollbacks_per_second":null,"wal_bytes_per_second":null,"cache_hit_ratio":null,"rate_interval_ms":null,"rates_status":"no_baseline"});
+        value["compute"] = resources::point(self, previous);
         let Some(raw) = &self.raw else {
             value["rates_status"] = json!("sample_unavailable");
             return value;
@@ -139,7 +143,7 @@ struct Job {
     target: Target,
     generation: i64,
     thread: thread::JoinHandle<()>,
-    receiver: mpsc::Receiver<Result<(i64, Raw)>>,
+    receiver: mpsc::Receiver<(i64, Option<Raw>, resources::Observation)>,
 }
 pub struct Service {
     history: Option<history::History>,
@@ -147,12 +151,14 @@ pub struct Service {
     due: HashMap<BranchId, Instant>,
     next_scan: Instant,
     storage_error: bool,
+    started: Instant,
 }
 impl Service {
     pub fn open(store: &Store) -> Self {
         let history = history::History::open(store.root()).ok();
         Self {
             storage_error: history.is_none(),
+            started: Instant::now(),
             history,
             jobs: vec![],
             due: HashMap::new(),
@@ -182,10 +188,11 @@ impl Service {
             {
                 continue;
             }
-            let result = job.receiver.try_recv().ok().and_then(Result::ok);
-            let (at_ms, raw) = result
-                .map(|(at, raw)| (at, Some(raw)))
-                .unwrap_or_else(|| (crate::identity::now(), None));
+            let (at_ms, raw, compute) = job
+                .receiver
+                .try_recv()
+                .map(|(at, raw, compute)| (at, raw, Some(compute)))
+                .unwrap_or_else(|_| (crate::identity::now(), None, None));
             self.save(
                 job.project,
                 job.target.branch,
@@ -200,6 +207,7 @@ impl Service {
                     }
                     .into(),
                     raw,
+                    compute,
                 },
             );
         }
@@ -257,6 +265,7 @@ impl Service {
                         revision: branch.revision,
                         status: status.into(),
                         raw: None,
+                        compute: None,
                     },
                 );
                 continue;
@@ -265,13 +274,24 @@ impl Service {
             let Ok(password) = store.endpoint_password(branch.endpoint.id) else {
                 continue;
             };
+            let root = store.native_processes().ok().and_then(|records| {
+                records.into_iter().find(|p| {
+                    p.role == format!("compute-{}", branch.endpoint.id)
+                        && p.generation == store.generation()
+                        && p.branch == Some((id, branch.revision))
+                        && p.root == store.root()
+                })
+            });
+            let started = self.started;
             let (sender, receiver) = mpsc::channel();
             match thread::Builder::new()
                 .name("postgres-metrics".into())
                 .spawn(move || {
-                    let _ = sender.send(
-                        sql::collect(ports.sql, password).map(|raw| (crate::identity::now(), raw)),
-                    );
+                    let raw = sql::collect(ports.sql, password).ok();
+                    let at_ms = crate::identity::now();
+                    // OS observation remains useful if SQL is overloaded/unavailable.
+                    let compute = resources::collect(root, started);
+                    let _ = sender.send((at_ms, raw, compute));
                 }) {
                 Ok(thread) => self.jobs.push(Job {
                     project: branch.branch.project_id,
@@ -292,6 +312,7 @@ impl Service {
                         revision: branch.revision,
                         status: "worker_unavailable".into(),
                         raw: None,
+                        compute: None,
                     },
                 ),
             }

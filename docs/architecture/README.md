@@ -16,6 +16,7 @@ remains beside its owning record in the existing evidence directories.
 ## Native runtime and database
 
 - [PG247a: PostgreSQL metrics contract](../handbook/postgres-metrics.md) and [focused evidence](pg247a-evidence/local.json)
+- [PG247b: compute CPU and resident-memory contract](../handbook/postgres-metrics.md#compute-resources-pg247b) and [focused evidence](pg247b-evidence/local.json)
 
 - [PG253: installed PostgreSQL extension catalogue and qualification](pg253-extensions.md)
 - [P04 native databases and branches](native-branches.md)

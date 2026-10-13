@@ -5,6 +5,7 @@ fn sample(at_ms: i64) -> Sample {
         generation: 1,
         revision: 1,
         status: "available".into(),
+        compute: None,
         raw: Some(Raw {
             database_oid: "5".into(),
             postmaster_start: "boot".into(),

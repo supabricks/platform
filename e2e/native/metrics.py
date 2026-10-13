@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PG247a: durable metric sampling, counter rates, suspend gaps and daemon restart."""
+"""PG247a/b: durable database and compute metrics, suspended gaps and restart."""
 import argparse
 import json
 import os
@@ -36,6 +36,8 @@ class Metrics(Activity):
                 return p if p.get('status')=='available' and p['observed_at_ms']>started else None
             first=wait(baseline,timeout=50)
             assert first['connections_idle']>=1 and first['database_size_bytes']>0,first
+            assert first['compute']['status']=='available',first
+            assert first['compute']['rss_sum_bytes']>0 and first['compute']['process_count']>=3,first
             with psycopg.connect(**connection) as writer:
                 writer.execute('CREATE TABLE public.metrics_fixture (i int, payload text)')
                 for i in range(300):
@@ -48,6 +50,8 @@ class Metrics(Activity):
             second=wait(rates,timeout=50)
             assert second['commits_per_second']>1 and second['rollbacks_per_second']>0,second
             assert second['wal_bytes_per_second']>0,second
+            assert second['compute']['status']=='available' and second['compute']['cpu_cores']>0,second
+            assert second['compute']['cpu_interval_ms']>0,second
             assert second['cache_hit_ratio'] is None or 0<=second['cache_hit_ratio']<=1,second
         for window,count in [('1h',121),('6h',721),('24h',1441),('7d',1009)]:
             result=self.history(branch,window)
@@ -64,6 +68,7 @@ class Metrics(Activity):
             return p if p.get('status')=='suspended' else None
         gap=wait(suspended,timeout=50)
         assert gap['connections_active'] is None and gap['commits_per_second'] is None
+        assert gap['compute']['rss_sum_bytes'] is None and gap['compute']['cpu_cores'] is None
         assert self.request(method='branch',id=branch['branch']['id'])['endpoint']['desired_state']=='suspended'
         # No API read can wake the compute; persisted pre-suspend values survive.
         self.stop();self.start()
@@ -71,7 +76,7 @@ class Metrics(Activity):
         assert any(p['observed_at_ms']==first['observed_at_ms'] for p in points),points
         assert self.request(method='branch',id=branch['branch']['id'])['endpoint']['desired_state']=='suspended'
         assert b'metrics-must-not-store-this-text' not in (self.root/'metrics.sqlite3').read_bytes()
-        return dict(status='PASS',checks=['real idle connection gauge and database size','positive transaction rollback and WAL rates after workload','cache ratio bounded or unavailable','four bounded history ranges','missing data remains null','CLI history','suspend gaps without wake','history survives daemon restart','no SQL text in persisted history','unsupported percentile and resource metrics explicit'],first_sample=first,workload_sample=second,suspended_sample=gap)
+        return dict(status='PASS',checks=['real idle connection gauge and database size','positive transaction rollback and WAL rates after workload','cache ratio bounded or unavailable','four bounded history ranges','missing data remains null','CLI history','suspend gaps without wake','history survives daemon restart','no SQL text in persisted history','unsupported percentiles explicit','owned compute process-tree resident memory','positive CPU including exited SQL backends','suspended resource metrics remain null'],first_sample=first,workload_sample=second,suspended_sample=gap)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -80,7 +85,7 @@ def main():
     root=Path(tempfile.mkdtemp(prefix='pg247a-',dir='/tmp')).resolve()
     cell=Metrics(args.binary.resolve(),args.bundle.resolve(),args.helpers.resolve(),root)
     try:
-        result=cell.run();args.report.write_text(json.dumps(result,indent=2)+'\n');print('PG247a PASS')
+        result=cell.run();args.report.write_text(json.dumps(result,indent=2)+'\n');print('PG247a/b PASS')
     except BaseException:print('Failed fixture retained at',root,flush=True);raise
     finally:
         if (root/'control.sock').exists():cell.stop()
