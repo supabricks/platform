@@ -8,7 +8,9 @@ pub(super) struct History {
 }
 impl History {
     pub fn open(root: &Path) -> Result<Self> {
-        let path = root.join("metrics.sqlite3");
+        // Resolve directory aliases (macOS /var -> /private/var), never the
+        // database entry itself: its no-follow/private-file checks remain intact.
+        let path = root.canonicalize()?.join("metrics.sqlite3");
         crate::store::ownership::private_file(&path)?.sync_all()?;
         let db = Connection::open_with_flags(
             path,
@@ -122,6 +124,23 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn directory_aliases_work_but_database_symlinks_are_refused() {
+        use std::os::unix::fs::symlink;
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("real");
+        std::fs::create_dir(&root).unwrap();
+        let alias = dir.path().join("alias");
+        symlink(&root, &alias).unwrap();
+        drop(History::open(&alias).unwrap());
+        let database = root.join("metrics.sqlite3");
+        let original = root.join("original.sqlite3");
+        std::fs::rename(&database, &original).unwrap();
+        let before = std::fs::read(&original).unwrap();
+        symlink(&original, &database).unwrap();
+        assert!(History::open(&alias).is_err());
+        assert_eq!(std::fs::read(original).unwrap(), before);
+    }
     #[test]
     fn installation_cap_retention_and_same_slot_replacement() {
         let dir = tempfile::tempdir().unwrap();
