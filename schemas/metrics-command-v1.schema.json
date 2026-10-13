@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local PostgreSQL metrics command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "target"],
+  "properties": {
+    "action": {"const": "history"},
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["branch", "revision"],
+      "properties": {"branch": {"type": "string", "format": "uuid"}, "revision": {"type": "integer"}}
+    },
+    "range": {"type": "string", "enum": ["1h", "6h", "24h", "7d"], "default": "1h"}
+  }
+}

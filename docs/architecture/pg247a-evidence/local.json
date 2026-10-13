@@ -1,0 +1,39 @@
+{
+  "recorded_at": "2026-10-12",
+  "base_commit": "c99b665cd2d54294c08d97b12f72f23dbe740370",
+  "runtime_binary_sha256": "218e590f3e82028bd16fd8e70c52060d306566971bbf920eca659bbb13c86d89",
+  "engine_commit": "eecdc60e4e06e0906b1b3589c0bd190568b24a99",
+  "engine_archive_sha256": "d83821d639a24cad6a601b565e4f09d9a5f60ce8370650e15b30edbe2876939e",
+  "focused_tests": {
+    "metrics_unit": 4,
+    "mcp_contract": 1,
+    "native_checks": 10
+  },
+  "commands": [
+    "cargo test -p supabricks-local metrics:: --lib",
+    "UPDATE_LOCAL_SNAPSHOTS=1 cargo test -p supabricks-local --test application_api mcp",
+    "cargo build -p supabricks-local",
+    "python3 e2e/native/metrics.py --binary /binary --bundle /engine --helpers /helpers --report /output/metrics.json"
+  ],
+  "isolation": "UID 1001 Docker; no external networking; read-only qualified engine and debug binary; fixture-owned temporary state",
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "setup failure: invoked container as root, preventing PostgreSQL startup"
+    },
+    {
+      "attempt": 2,
+      "result": "fixture failure: loop variable shadowed Python range; fixed"
+    },
+    {
+      "attempt": 3,
+      "result": "PASS"
+    }
+  ],
+  "limitations": [
+    "Local Linux focused fixture only; macOS and broader suites run asynchronously in GitHub CI.",
+    "No CPU/memory accounting, latency histograms, governed monitoring or product charts.",
+    "Capacity pressure can shorten seven-day retention; coarse buckets use last observations, not averages.",
+    "Uses an existing qualified engine archive; no local engine rebuild or broad CI run."
+  ]
+}

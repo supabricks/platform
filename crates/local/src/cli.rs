@@ -100,6 +100,7 @@ Usage: supabricks COMMAND [--project PATH] [--data-dir PATH] [--json]
   catalog metadata capabilities | health | namespace | ensure-namespace
   catalog metadata list [--branch NAME] [--limit N] [--after CURSOR]
   catalog metadata describe ID | resolve ID --version REV | validate-source ID --version REV
+  metrics history --branch NAME [--range 1h|6h|24h|7d]
   activity list|statements|cancel|terminate --branch NAME [--snapshot UUID --pid PID]
   extensions list|enable NAME|disable NAME --branch NAME
   catalog [--branch NAME]       Discover application tables and columns
@@ -1575,6 +1576,32 @@ pub fn run() -> Result<u8> {
             }
             println!("{value}");
             return Ok(if value["state"] == "failed" { 5 } else { 0 });
+        }
+        "metrics" => {
+            if a.required(1)? != "history" {
+                return Err(invalid(
+                    "metrics history --branch NAME [--range 1h|6h|24h|7d]",
+                ));
+            }
+            let branch = a
+                .take("--branch")
+                .ok_or_else(|| invalid("metrics requires an explicit --branch"))?;
+            let range =
+                serde_json::from_value(json!(a.take("--range").unwrap_or_else(|| "1h".into())))
+                    .map_err(|_| invalid("metrics range must be 1h, 6h, 24h or 7d"))?;
+            a.finish(2)?;
+            let record = c.call(Action::GetBranch { branch })?;
+            let target = crate::console::workspace::Target {
+                branch: serde_json::from_value(record["branch"]["id"].clone())?,
+                revision: record["revision"]
+                    .as_i64()
+                    .ok_or_else(|| invalid("branch revision unavailable"))?,
+            };
+            let value = c.call(Action::Metrics {
+                command: crate::metrics::Command::History { target, range },
+            })?;
+            println!("{value}");
+            return Ok(0);
         }
         "activity" => {
             use crate::activity::Command as A;
