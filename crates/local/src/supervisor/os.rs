@@ -114,27 +114,41 @@ pub fn identity(pid: u32) -> Result<Option<Identity>> {
     }))
 }
 
+// libproc converts syscall errors into zero while leaving errno set. Zero
+// without errno is the only empty-list proof; preserve IO errors for stop retries.
+#[cfg(any(target_os = "macos", test))]
+fn process_list_count(count: i32, errno: i32, capacity: Option<usize>) -> Result<usize> {
+    if count < 0 || (count == 0 && errno != 0) {
+        return Err(
+            io::Error::from_raw_os_error(if errno == 0 { libc::EIO } else { errno }).into(),
+        );
+    }
+    let count = count as usize;
+    if capacity.is_some_and(|capacity| count >= capacity) {
+        return Err(conflict("cannot enumerate process groups: truncated list"));
+    }
+    Ok(count)
+}
+
 #[cfg(target_os = "macos")]
 pub fn group_pids(group: u32) -> Result<Vec<u32>> {
-    // Ask the kernel for this group. Inspecting every system PID can fail
-    // under macOS process protections even before querying its environment.
-    let count = unsafe { libc::proc_listpgrppids(group as i32, std::ptr::null_mut(), 0) };
-    if count < 0 {
-        let e = io::Error::last_os_error();
-        return Err(io::Error::new(e.kind(), format!("proc_listpgrppids({group}): {e}")).into());
-    }
-    let mut pids = vec![0i32; count as usize + 4096];
+    // Ask only for this group; system-wide enumeration can hit protected PIDs.
+    let count = unsafe {
+        *libc::__error() = 0;
+        let count = libc::proc_listpgrppids(group as i32, std::ptr::null_mut(), 0);
+        process_list_count(count, *libc::__error(), None)?
+    };
+    let mut pids = vec![0i32; count + 4096];
     let n = unsafe {
-        libc::proc_listpgrppids(
+        *libc::__error() = 0;
+        let count = libc::proc_listpgrppids(
             group as i32,
             pids.as_mut_ptr().cast(),
             (pids.len() * 4) as i32,
-        )
+        );
+        process_list_count(count, *libc::__error(), Some(pids.len()))?
     };
-    if n < 0 || n as usize >= pids.len() {
-        return Err(conflict("cannot enumerate process groups"));
-    }
-    Ok(pids[..n as usize]
+    Ok(pids[..n]
         .iter()
         .filter(|p| **p > 0)
         .map(|p| *p as u32)
@@ -290,6 +304,19 @@ mod tests {
         thread,
         time::{Duration, Instant},
     };
+
+    #[test]
+    fn process_enumeration_never_treats_denial_as_an_empty_group() {
+        assert_eq!(process_list_count(0, 0, Some(8)).unwrap(), 0);
+        assert_eq!(process_list_count(3, 0, Some(8)).unwrap(), 3);
+        for (count, errno) in [(0, libc::EPERM), (0, libc::EIO), (-1, libc::ESRCH), (-1, 0)] {
+            assert!(matches!(
+                process_list_count(count, errno, Some(8)),
+                Err(crate::store::Error::Io(_))
+            ));
+        }
+        assert!(process_list_count(8, 0, Some(8)).is_err());
+    }
 
     #[test]
     fn resident_memory_of_an_unreaped_exited_child_is_zero() {
