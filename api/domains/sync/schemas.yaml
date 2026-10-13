@@ -41,8 +41,8 @@ SyncPipeline:
       description: When a run last published a version.
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
     last_version_id:
-      description: The analytical version that run published, as the platform names it.
-      oneOf: [{ type: string }, { type: 'null' }]
+      description: The analytical version that run published.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
     capture:
       description: The reader of the branch's changes. Null for a `snapshot` pipeline, and until one exists.
       oneOf: [{ $ref: './schemas.yaml#/SyncCapture' }, { type: 'null' }]
@@ -220,7 +220,7 @@ SyncRun:
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }, { type: 'null' }]
     version_id:
       description: The analytical version it published. Null unless it succeeded.
-      oneOf: [{ type: string }, { type: 'null' }]
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
     source_lsn:
       description: Where in the branch's log the published version stands.
       oneOf: [{ $ref: '../../shared/schemas.yaml#/Lsn' }, { type: 'null' }]

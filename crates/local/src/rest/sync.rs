@@ -138,7 +138,7 @@ fn body_of(store: &Store, at: &Place, view: &Value) -> Value {
         "created_at": time(&view["created_at_ms"]),
         "next_run_at": time(&view["next_due_at_ms"]),
         "last_success_at": time(&view["last_success_at_ms"]),
-        "last_version_id": view["last_epoch_id"],
+        "last_version_id": view["last_epoch_id"].as_str().map(|id| public_id("ver", id)),
         "capture": if capture.is_null() {
             Value::Null
         } else {
@@ -177,7 +177,7 @@ fn run_of(run: &Run) -> Value {
         "created_at": timestamp(run.admitted_at_ms),
         "scheduled_for": run.scheduled_for_ms.map(timestamp),
         "finished_at": run.finished_at_ms.map(timestamp),
-        "version_id": run.epoch_id,
+        "version_id": run.epoch_id.as_ref().map(|id| public_id("ver", &id.to_string())),
         "source_lsn": run.source_lsn,
         "batches": run.batches,
         "error": run.error,
