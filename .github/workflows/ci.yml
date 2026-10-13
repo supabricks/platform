@@ -1,5 +1,4 @@
-# RFC 014 H5: the gate the engineering team inherits. Unit tests + the full
-# e2e gate + the chaos drills, on every PR — green on GitHub, not on a laptop.
+# Required contexts stay stable; unrelated jobs skip at job level, never by workflow path filters.
 name: ci
 on:
   pull_request:
@@ -10,7 +9,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    uses: ./.github/workflows/check-scope.yml
+
   portable:
+    needs: changes
+    if: needs.changes.outputs.portable == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-15]
@@ -21,12 +25,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: portable dependency boundary
-        run: python3 scripts/check-portable-deps.py
       - name: portable contracts and local crash recovery without UI or cluster setup
         run: cargo test --locked -p supabricks-core -p supabricks-local
-      - name: Upgrade qualification controls preserve inventory and rejection boundaries
-        run: python3 -m unittest discover -s install/native -p test_upgrade_control.py -v
       - name: experimental preparation range and receipt contracts
         run: cargo test --locked -p supabricks-local --lib --features sync-lookahead engine::preparation::tests
       - name: console survives a busy daemon and fences changed ownership
@@ -35,44 +35,67 @@ jobs:
           python3 e2e/native/console_health.py --binary target/debug/supabricks
 
   unit:
+    needs: changes
+    # A failed selector must fail a required context, not silently skip every job.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.unit == 'true') }}
     runs-on: ubuntu-latest
-    # Migration recovery exercises every durable boundary across supported schemas.
-    # The SY05 run exceeded 20 minutes on hosted runners without assertion failures.
     timeout-minutes: 40
     steps:
+      - name: Require successful scope selection
+        env:
+          SCOPE_RESULT: ${{ needs.changes.result }}
+        run: test "$SCOPE_RESULT" = success
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: ${{ needs.changes.outputs.console == 'true' }}
       - uses: dtolnay/rust-toolchain@stable
+        if: needs.changes.outputs.fmt == 'true'
       - uses: Swatinem/rust-cache@v2
+        if: needs.changes.outputs.operator == 'true'
         with:
           workspaces: .
-      # Together with portable, this covers `just verify-static`.
+      # Comprehensive local checks remain available explicitly via `just verify-static`.
       # Portable owns core/local tests on both OSes; do not run them twice on Linux.
       - name: rust format
+        if: needs.changes.outputs.fmt == 'true'
         run: cargo fmt -- --check
 
+      - name: Portable dependency and upgrade-control contracts (once on Linux)
+        if: needs.changes.outputs.portable == 'true'
+        run: |
+          python3 scripts/check-portable-deps.py
+          python3 -m unittest discover -s install/native -p test_upgrade_control.py -v
+
       - name: Package archive and registry source policy
+        if: needs.changes.outputs.notebooks == 'true'
         run: python3 -m unittest discover -s python/notebooks -p test_environment_packages.py
 
       - name: cargo test (T1 unit + T2 snapshots + chart hardening contract)
+        if: needs.changes.outputs.operator == 'true'
         run: cargo test --locked --workspace --exclude supabricks-core --exclude supabricks-local
 
       - name: generated CRDs match crd.rs
+        if: needs.changes.outputs.operator == 'true'
         run: cargo run --locked --bin crdgen | diff -u chart/crds/sspc-crds.yaml -
 
       - name: helm lint
+        if: needs.changes.outputs.operator == 'true'
         run: helm lint chart
 
-      - name: UI tests + build
-        run: cd ui && npm ci --no-audit --no-fund && npm test && npm run build
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.console == 'true'
         with:
           node-version: '22'
+      - name: UI tests + build
+        if: needs.changes.outputs.ui == 'true'
+        run: cd ui && npm ci --no-audit --no-fund && npm test && npm run build
       - name: Local console typecheck and locked asset build
+        if: needs.changes.outputs.console == 'true'
         run: npm ci --prefix console --no-audit --no-fund && npm run build --prefix console
 
   e2e:
+    needs: changes
+    if: needs.changes.outputs.cluster == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

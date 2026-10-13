@@ -16,7 +16,20 @@ concurrency:
   group: sync-probe-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  contracts:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r e2e/native/requirements.txt
+      - run: python -m unittest discover -s e2e/native/sync -p 'test_*.py'
   capture:
+    # Historical feasibility archives are diagnostic inputs, not current PR binaries.
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
