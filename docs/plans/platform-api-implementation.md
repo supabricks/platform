@@ -408,7 +408,7 @@ known now:
 | AP04 SQL | Done; see below | Multiple statements, plans, history (#261), governed servers (#328), folders (#329) |
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
-| AP07 Administration and observability | Password reset done; see below | Roles (#251), extensions (#253), metrics (#247), query activity (#248) |
+| AP07 Administration and observability | Password reset and roles done; see below | Extensions (#253), metrics (#247), query activity (#248) |
 | AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
@@ -738,6 +738,40 @@ password is accepted and the old refused when the reply arrives, that a
 connection open during the reset finishes its work, that a child branch keeps
 its own password, and that a reset on a suspended branch does not wake it and
 is in force when it starts.
+
+#### Roles and privileges (#251)
+
+**Completeness review.** From reading the code and a running branch on
+2026-10-12. A branch's PostgreSQL has the engine's control role, the
+application role and PostgreSQL's predefined roles, and nothing else. The
+application role may not create roles, so the only way to another login was
+none at all. Roles and grants are data of the branch.
+
+| Question | What the platform does | Decision |
+|---|---|---|
+| Where is a role kept? | In the branch's PostgreSQL | Nowhere else. The daemon stores nothing about a role, so there is no schema change, and a branch starts with a copy of its parent's roles and their passwords |
+| Who makes a change? | Only the control role can create roles | The server, as the control role, with SQL it writes: one `DO` block in one transaction, quoted with a tag made for that request so no name can close it. The statement worker can now connect as another role (`tables::As::Control`), and keeps such statements out of PostgreSQL's log |
+| Passwords | The application role's is stored by the daemon | A made role's is shown once and not kept. PostgreSQL is sent its digest, never the password. No `Idempotency-Key` on the two operations that show one, so no reply with a password is stored |
+| What is an access level? | | Membership in `pg_read_all_data`, `pg_write_all_data` or the application role: `none`, `read`, `read_write`, `owner`. Other memberships read back as `custom` |
+| Privileges | Whatever SQL granted | Per role and schema: use, create, and table privileges granted on every table now and, through default privileges, on each the application role creates later. Grants that differ table by table read back as not `uniform` |
+| Which roles can be changed? | | Not the control role, the application role, PostgreSQL's own, any superuser or any reserved prefix: shown with `managed: true`, refused with `409` |
+| Does anything assume one login role? | A branch past its expiry makes the application role unable to log in and is deleted once nothing is connected | Checked, and nothing needed changing: the connection gateway refuses an expired branch for every role, and the branch is kept while any connection through it is open. A test holds this for a made role |
+| Signed-in callers | PostgreSQL is private | `x-profiles: [local]` (#306) |
+
+**Built:** `rest/roles.rs` with seven operations (`listRoles`, `createRole`,
+`getRole`, `updateRole`, `deleteRole`, `resetRolePassword`,
+`setRolePrivileges`), and the control connection for the statement worker.
+
+**Tests.** `api/tests/test_roles.py`: refusals before PostgreSQL is asked, and
+eight engine-backed tests that create roles and then connect as them, because
+what a role may do is only proved by PostgreSQL allowing it or not: each
+access level, login off and on, a new password, privileges by schema
+including a table made later and a grant changed by hand, deleting a role
+with a table and an open connection, a child branch's copy, and an expired
+branch that admits no role and waits for a made role's open session.
+
+**Left out:** per-table and per-column grants, connection limits, and role
+attributes beyond login. A statement can still set them, and they read back.
 
 ## 7. Risks
 

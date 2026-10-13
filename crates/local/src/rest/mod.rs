@@ -7,6 +7,7 @@ mod imports;
 mod operations;
 mod problem;
 mod projects;
+mod roles;
 mod routes;
 mod shared;
 mod sql;
@@ -270,6 +271,13 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
             }
         }
     }
+    let branch = || {
+        (
+            parameter("project"),
+            parameter("database"),
+            parameter("branch"),
+        )
+    };
     let result = match found.operation {
         Operation::GetServerVersion => Ok(Reply::ok(json!({
             "version": env!("CARGO_PKG_VERSION"),
@@ -491,6 +499,22 @@ pub(crate) fn dispatch(store: &mut Store, mut host: Option<Local>, call: &Call) 
         Operation::RetryImport => {
             imports::retry(store, call, parameter("project"), parameter("import"))
         }
+        Operation::ListRoles => roles::list(store, &mut host, call, branch()),
+        Operation::CreateRole => roles::create(store, &mut host, call, branch()),
+        Operation::GetRole => roles::get(store, &mut host, call, branch(), parameter("role")),
+        Operation::UpdateRole => roles::update(store, &mut host, call, branch(), parameter("role")),
+        Operation::DeleteRole => roles::delete(store, &mut host, call, branch(), parameter("role")),
+        Operation::ResetRolePassword => {
+            roles::reset_password(store, &mut host, call, branch(), parameter("role"))
+        }
+        Operation::SetRolePrivileges => roles::set_privileges(
+            store,
+            &mut host,
+            call,
+            branch(),
+            parameter("role"),
+            parameter("schema"),
+        ),
         Operation::ListOperations => operations::list(store, call, parameter("project")),
         Operation::GetOperation => {
             operations::get(store, parameter("project"), parameter("operation"))

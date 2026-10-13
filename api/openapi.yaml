@@ -57,13 +57,14 @@ tags:
   - { name: Branches, description: "Copy-on-write branches of a database. A database's first branch has no parent; the rest form a tree beneath it. A project has one default branch." }
   - { name: SQL, description: 'Statements run on a branch through the server, within fixed limits, and the queries a project keeps.' }
   - { name: Tables, description: 'What a branch holds that is read like a table, how each is built, and its rows a page at a time.' }
+  - { name: Roles, description: "Who can log in to a branch's PostgreSQL, and what each may do there." }
   - { name: Imports, description: 'Files uploaded to the server, inspected, and loaded into new tables.' }
   - { name: Server, description: 'The installation itself: version, health and fixed limits.' }
 x-tagGroups:
   - name: Project
     tags: [Projects, Operations]
   - name: PostgreSQL
-    tags: [Databases, Branches, SQL, Tables, Imports]
+    tags: [Databases, Branches, SQL, Tables, Imports, Roles]
   - name: Installation
     tags: [Server]
 paths:
@@ -117,6 +118,12 @@ paths:
   /projects/{project}/imports/{import}: { $ref: './domains/imports/paths.yaml#/import' }
   /projects/{project}/imports/{import}/cancel: { $ref: './domains/imports/paths.yaml#/importCancel' }
   /projects/{project}/imports/{import}/retry: { $ref: './domains/imports/paths.yaml#/importRetry' }
+
+  # ---- Roles ----
+  /projects/{project}/databases/{database}/branches/{branch}/roles: { $ref: './domains/roles/paths.yaml#/roles' }
+  /projects/{project}/databases/{database}/branches/{branch}/roles/{role}: { $ref: './domains/roles/paths.yaml#/role' }
+  /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/password: { $ref: './domains/roles/paths.yaml#/rolePassword' }
+  /projects/{project}/databases/{database}/branches/{branch}/roles/{role}/privileges/{schema}: { $ref: './domains/roles/paths.yaml#/rolePrivileges' }
 
   # ---- Server ----
   /server/version: { $ref: './domains/server/paths.yaml#/serverVersion' }
