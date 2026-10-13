@@ -4,7 +4,7 @@ Branch:
     A full, writable copy of a database that shares storage with the branch it
     was made from. Its head position, how much it has changed and who created
     it are not reported in version 1.
-  required: [id, database_id, name, parent_id, state, is_default, created_from, created_at, expires_at, child_count, connections, revision]
+  required: [id, database_id, name, parent_id, state, is_default, created_from, restored_from_backup_id, created_at, expires_at, child_count, connections, revision]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
     database_id: { $ref: '../../shared/schemas.yaml#/Id' }
@@ -21,8 +21,16 @@ Branch:
         branch whose expiry has passed is `deleting`.
     is_default: { type: boolean, description: "Whether it is the project's default branch." }
     created_from:
-      description: The point in its parent the branch started from, as asked. Null for a database's first branch.
+      description: >-
+        The point in its parent the branch started from, as asked. Null for a
+        database's first branch. A branch restored from a backup started at
+        the head of that backup, and `restored_from_backup_id` names it.
       oneOf: [{ $ref: './schemas.yaml#/BranchPoint' }, { type: 'null' }]
+    restored_from_backup_id:
+      description: >-
+        The backup the branch was restored from. Its `parent_id` is then the
+        branch that backup was taken from. Null for any other branch.
+      oneOf: [{ $ref: '../../shared/schemas.yaml#/Id' }, { type: 'null' }]
     created_at:
       allOf: [{ $ref: '../../shared/schemas.yaml#/Timestamp' }]
       description: >-

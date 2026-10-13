@@ -23,6 +23,9 @@ fn body_of(view: &BranchView) -> Value {
             .from
             .as_deref()
             .and_then(|point| serde_json::from_str::<Value>(point).ok()),
+        "restored_from_backup_id": view
+            .backup
+            .map(|backup| public_id("bkp", &backup.to_string())),
         "created_at": timestamp(view.created_at_ms),
         "expires_at": view.expires_at_ms.map(timestamp),
         "child_count": view.children,
@@ -37,7 +40,11 @@ fn missing() -> Problem {
     Problem::not_found("There is no such branch.")
 }
 /// A branch ID that names a branch of this database.
-fn member(store: &Store, database: &DatabaseRecord, branch: &str) -> Result<BranchView, Problem> {
+pub(super) fn member(
+    store: &Store,
+    database: &DatabaseRecord,
+    branch: &str,
+) -> Result<BranchView, Problem> {
     // An ID of the wrong shape names nothing, exactly like an unknown one.
     let id: BranchId = internal_id("br", branch)
         .and_then(|id| id.parse().ok())
@@ -81,7 +88,9 @@ fn stale(expected: Option<i64>, view: &BranchView) -> Result<(), Problem> {
     Ok(())
 }
 /// `expires_at` in a body: absent, `null` to never expire, or a future time.
-fn expiry(body: &serde_json::Map<String, Value>) -> Result<Option<Option<i64>>, Problem> {
+pub(super) fn expiry(
+    body: &serde_json::Map<String, Value>,
+) -> Result<Option<Option<i64>>, Problem> {
     let wrong = || Problem::invalid("expires_at must be a time in the future, or null.");
     match body.get("expires_at") {
         None => Ok(None),
@@ -327,6 +336,9 @@ pub fn delete(
             }
             if view.children > 0 {
                 return Err(blocked("Branches were made from it. Delete them first."));
+            }
+            if view.backups > 0 {
+                return Err(blocked("It has backups. Delete them first."));
             }
         }
         let made = databases::change(

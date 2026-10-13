@@ -86,7 +86,9 @@ fn reason(detail: &str) -> String {
         d if d.starts_with("branch belongs to a pending project apply") => {
             "A project apply that includes it is in progress.".into()
         }
-        "branch has protected branch operations" => "A branch is being created from it.".into(),
+        "branch has protected branch operations" => {
+            "A branch or a backup is being made from it.".into()
+        }
         "parent operation has not converged" => {
             "The branch it starts from is still changing; wait for that to finish.".into()
         }
@@ -388,6 +390,9 @@ pub fn delete(
             }
             if record.branches > 1 {
                 return Err(blocked("It still has other branches. Delete them first."));
+            }
+            if record.backups > 0 {
+                return Err(blocked("It has backups. Delete them first."));
             }
             if record.holds_default {
                 return Err(blocked(

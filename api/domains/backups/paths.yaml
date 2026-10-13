@@ -1,0 +1,265 @@
+# Backups of a database: points of its branches that storage keeps.
+#
+# A backup is taken while the database runs and takes no copy: it is a point
+# in a branch's history that is kept, with every byte it shares with the
+# branch stored once. It has no PostgreSQL of its own, so nothing connects to
+# it and nothing changes it. Restoring makes a new branch from it.
+#
+# A backup is kept in the same storage as the database. It protects against a
+# mistake in the data, not against losing the machine or its disk; the
+# installation's offline recovery bundle is what leaves the machine.
+
+backups:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  get:
+    operationId: listBackups
+    tags: [Backups]
+    summary: List the backups of a database
+    description: >-
+      The backups of every branch of the database, newest first. One being
+      deleted is listed, with `state: deleting`, until its files are gone. One
+      that could not be taken is listed with `state: failed` until it is
+      deleted. How much storage a backup holds is not reported in version 1.
+    x-backend: ready
+    x-required-role: viewer
+    x-console-features: [DB-10b]
+    x-issues: [246, 296]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/Limit'
+      - $ref: '../../shared/parameters.yaml#/Cursor'
+    responses:
+      '200':
+        description: A page of backups.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/BackupPage' }
+            example:
+              items:
+                - id: bkp_5b8e1c3a7d2f4a6b9c0e1f2a3b4c5d6e
+                  database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+                  branch_name: orders
+                  name: Before the loyalty migration
+                  origin: manual
+                  state: ready
+                  created_at: '2026-10-12T09:30:00.000Z'
+                  lsn: 0/4A2F0000
+                  restored_branch_count: 0
+                  error: null
+              next_cursor: null
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  post:
+    operationId: createBackup
+    tags: [Backups]
+    summary: Take a backup of a branch
+    description: >-
+      Keeps the branch as it is at this moment. The branch keeps running and
+      nothing is copied. The reply is the operation that takes it; its `target`
+      is the new backup, which can be read at once with `state: creating`.
+      Taking one of a suspended branch resumes the branch for the moment it
+      takes and suspends it again. Refused with `409` while the branch is
+      starting, suspending, resuming or being deleted. A database holds at
+      most 100 backups; beyond that the request is refused with `409` and
+      `code: capacity_exhausted`. A governed server does not offer this yet
+      and answers `403` with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-10b]
+    x-issues: [296, 339]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/BackupCreate' }
+          example: { name: Before the loyalty migration }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+backup:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Backup'
+  get:
+    operationId: getBackup
+    tags: [Backups]
+    summary: Get a backup
+    description: A backup never changes once it is `ready`, apart from how many branches were restored from it.
+    x-backend: ready
+    x-required-role: viewer
+    x-console-features: [DB-10b]
+    x-issues: [246]
+    responses:
+      '200':
+        description: The backup.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/Backup' }
+            example:
+              id: bkp_5b8e1c3a7d2f4a6b9c0e1f2a3b4c5d6e
+              database_id: db_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_id: br_3c1e9a7b5d2f4e8a9b0c6d4e2f1a3b5c
+              branch_name: orders
+              name: Before the loyalty migration
+              origin: manual
+              state: ready
+              created_at: '2026-10-12T09:30:00.000Z'
+              lsn: 0/4A2F0000
+              restored_branch_count: 0
+              error: null
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  delete:
+    operationId: deleteBackup
+    tags: [Backups]
+    summary: Delete a backup
+    description: >-
+      Irreversible. The backup shows `state: deleting` until the operation has
+      removed its files; then it is gone. Refused with `409` and
+      `code: delete_blocked` while a branch restored from it exists, because
+      that branch stands on it in storage; delete the branch first. A governed
+      server does not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-10b]
+    x-issues: [339, 340]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+backupRestore:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+    - $ref: '../../shared/parameters.yaml#/Backup'
+  post:
+    operationId: restoreBackup
+    tags: [Backups]
+    summary: Restore a backup as a new branch
+    description: >-
+      Makes a new branch of the database that holds what the backup holds. The
+      branch the backup was taken from is not touched; to put the restored
+      data in its place, point clients at the new branch or make it the
+      project's default. Restoring over a branch in place is not offered in
+      version 1. The reply is the operation that starts the branch; its
+      `target` is the new branch, whose `restored_from_backup_id` names the
+      backup and whose `parent_id` is the branch the backup was taken from. Only a
+      `ready` backup can be restored. The name and capacity rules are those of
+      `createBranch`. While the new branch exists the backup cannot be
+      deleted. A governed server does not offer this yet and answers `403`
+      with `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: editor
+    x-profiles: [local]
+    x-console-features: [DB-10b]
+    x-issues: [296, 339, 340]
+    parameters:
+      - $ref: '../../shared/parameters.yaml#/IdempotencyKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/BackupRestore' }
+          example: { name: orders-restored }
+    responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }
+
+backupSchedule:
+  parameters:
+    - $ref: '../../shared/parameters.yaml#/Project'
+    - $ref: '../../shared/parameters.yaml#/Database'
+  get:
+    operationId: getBackupSchedule
+    tags: [Backups]
+    summary: Get the backup schedule of a database
+    description: >-
+      Whether the server takes backups of the database's first branch by
+      itself, how often, and how many it keeps. A database has no schedule
+      until one is set; then `enabled` is false and the rest is null.
+    x-backend: ready
+    x-required-role: viewer
+    x-console-features: [DB-10b]
+    x-issues: [296]
+    responses:
+      '200':
+        description: The schedule.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/BackupSchedule' }
+            example:
+              enabled: true
+              every_hours: 24
+              keep: 7
+              next_backup_at: '2026-10-13T09:30:00.000Z'
+              updated_at: '2026-10-12T09:30:00.000Z'
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+  put:
+    operationId: setBackupSchedule
+    tags: [Backups]
+    summary: Set or remove the backup schedule of a database
+    description: >-
+      With `enabled: true`, the server takes a backup of the database's first
+      branch every `every_hours` hours, the first one at once, and deletes the
+      oldest scheduled backups beyond the newest `keep`. Backups taken by
+      request are never deleted by the schedule, and neither is one a branch
+      was restored from. While the database is suspended the schedule does not
+      wake it: nothing in it has changed. The schedule runs while the server
+      does; a backup missed while it was stopped is taken when it starts.
+      With `enabled: false` the schedule is removed and the backups it took
+      are kept. Repeating the request changes nothing. A governed server does
+      not offer this yet and answers `403` with
+      `code: unavailable_in_profile`.
+    x-backend: ready
+    x-required-role: administrator
+    x-profiles: [local]
+    x-console-features: [DB-10b]
+    x-issues: [296, 339]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/BackupScheduleSet' }
+          example: { enabled: true, every_hours: 24, keep: 7 }
+    responses:
+      '200':
+        description: The schedule now in force.
+        content:
+          application/json:
+            schema: { $ref: './schemas.yaml#/BackupSchedule' }
+            example:
+              enabled: true
+              every_hours: 24
+              keep: 7
+              next_backup_at: '2026-10-12T09:30:00.000Z'
+              updated_at: '2026-10-12T09:30:00.000Z'
+      '400': { $ref: '../../shared/responses.yaml#/BadRequest' }
+      '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
+      '404': { $ref: '../../shared/responses.yaml#/NotFound' }
+      '409': { $ref: '../../shared/responses.yaml#/Conflict' }

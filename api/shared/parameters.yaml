@@ -84,6 +84,13 @@ Extension:
   description: An extension's name, percent-encoded.
   schema: { type: string, minLength: 1, maxLength: 63 }
 
+Backup:
+  name: backup
+  in: path
+  required: true
+  description: Backup ID.
+  schema: { $ref: './schemas.yaml#/Id' }
+
 Limit:
   name: limit
   in: query

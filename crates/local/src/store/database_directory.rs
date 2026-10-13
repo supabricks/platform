@@ -20,6 +20,8 @@ pub struct DatabaseRecord {
     pub lifecycle_revision: i64,
     /// Live branches in the tree, including the root.
     pub branches: i64,
+    /// Backups of any branch in the tree that still exist.
+    pub backups: i64,
     pub holds_default: bool,
     pub connections: i64,
 }
@@ -40,8 +42,12 @@ pub struct BranchView {
     pub from: Option<String>,
     pub created_at_ms: i64,
     pub expires_at_ms: Option<i64>,
-    /// Live branches made from it.
+    /// The backup it was made from, if it was restored from one.
+    pub backup: Option<BranchId>,
+    /// Live branches made from it or from a backup of it.
     pub children: i64,
+    /// Backups of it that still exist.
+    pub backups: i64,
     pub connections: i64,
     /// Rises with every lifecycle change, rename and change of expiry.
     pub revision: i64,
@@ -127,9 +133,26 @@ impl Store {
         }
         Ok((branches, roots))
     }
+    /// The branch each backup of a project was taken from, by the record that
+    /// holds the backup. Those records are not branches to the platform API.
+    pub(super) fn holds(&self, project: ProjectId) -> Result<HashMap<BranchId, BranchId>> {
+        let mut holds = HashMap::new();
+        let mut query = self.db.prepare(
+            "SELECT k.branch_id,k.source_id FROM backups k JOIN branches b ON b.id=k.branch_id WHERE b.project_id=?1",
+        )?;
+        let rows = query.query_map([project.to_string()], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+        })?;
+        for row in rows {
+            let (hold, source) = row?;
+            holds.insert(super::parse(&hold)?, super::parse(&source)?);
+        }
+        Ok(holds)
+    }
     /// Every database of a project, ordered by name.
     pub fn database_records(&self, project: ProjectId) -> Result<Vec<DatabaseRecord>> {
         let (branches, roots) = self.roots(project)?;
+        let holds = self.holds(project)?;
         let mut records = Vec::new();
         for root in branches.iter().filter(|b| b.branch.parent_id.is_none()) {
             let members: Vec<_> = branches
@@ -148,9 +171,16 @@ impl Store {
                 lifecycle_revision: root.revision,
                 branches: members
                     .iter()
-                    .filter(|b| b.endpoint.desired_state != DesiredState::Deleted)
+                    .filter(|b| {
+                        b.endpoint.desired_state != DesiredState::Deleted
+                            && !holds.contains_key(&b.branch.id)
+                    })
                     .count()
                     .max(1) as i64,
+                backups: members
+                    .iter()
+                    .filter(|b| holds.contains_key(&b.branch.id))
+                    .count() as i64,
                 holds_default: members.iter().any(|b| b.is_default),
                 connections: self.connection_count(root.branch.id)? as i64,
             });
@@ -167,11 +197,14 @@ impl Store {
     /// The branches of a database, its first included, ordered by name.
     pub fn branch_views(&self, project: ProjectId, database: BranchId) -> Result<Vec<BranchView>> {
         let (branches, roots) = self.roots(project)?;
+        let holds = self.holds(project)?;
+        // A branch restored from a backup stands under the branch the backup
+        // was taken from, which exists for as long as the backup does.
+        let shown = |parent: Option<BranchId>| parent.map(|id| *holds.get(&id).unwrap_or(&id));
         let mut views = Vec::new();
-        for branch in branches
-            .iter()
-            .filter(|b| roots.get(&b.branch.id) == Some(&database))
-        {
+        for branch in branches.iter().filter(|b| {
+            roots.get(&b.branch.id) == Some(&database) && !holds.contains_key(&b.branch.id)
+        }) {
             let id = branch.branch.id;
             let (created_at_ms, edits) = self.branch_details(id)?;
             let from: Option<String> = self
@@ -187,7 +220,11 @@ impl Store {
                 project,
                 database,
                 name: branch.branch.name.clone(),
-                parent: branch.branch.parent_id,
+                parent: shown(branch.branch.parent_id),
+                backup: branch
+                    .branch
+                    .parent_id
+                    .filter(|parent| holds.contains_key(parent)),
                 state: state(branch),
                 is_default: branch.is_default,
                 from,
@@ -196,9 +233,14 @@ impl Store {
                 children: branches
                     .iter()
                     .filter(|b| {
-                        b.branch.parent_id == Some(id)
+                        shown(b.branch.parent_id) == Some(id)
+                            && !holds.contains_key(&b.branch.id)
                             && b.endpoint.desired_state != DesiredState::Deleted
                     })
+                    .count() as i64,
+                backups: branches
+                    .iter()
+                    .filter(|b| holds.get(&b.branch.id) == Some(&id))
                     .count() as i64,
                 connections: self.connection_count(id)? as i64,
                 revision: branch.revision + edits,
@@ -221,6 +263,10 @@ impl Store {
     }
     /// The database a branch belongs to, if the branch still exists.
     pub fn database_of(&self, project: ProjectId, branch: BranchId) -> Result<Option<BranchId>> {
+        // The record that holds a backup is not a branch of any database.
+        if self.is_backup(branch)? {
+            return Ok(None);
+        }
         Ok(self.roots(project)?.1.get(&branch).copied())
     }
 }

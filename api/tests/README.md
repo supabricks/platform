@@ -74,5 +74,5 @@ as well.
 
 An installation runs at most 32 branches, and without engines a deleted branch
 keeps its place. A domain that creates databases or branches therefore uses a
-server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py` and `test_extensions.py`) and shares one resource between
+server of its own (see `test_databases.py`, `test_branches.py`, `test_sql.py`, `test_tables.py`, `test_imports.py`, `test_roles.py`, `test_extensions.py` and `test_backups.py`) and shares one resource between
 tests that do not change it.

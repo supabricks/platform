@@ -34,7 +34,12 @@ pub(super) fn validate_point(point: &BranchPoint) -> Result<()> {
 impl Store {
     pub fn accepting_work(&self, id: BranchId) -> Result<()> {
         let b = self.branch(id)?;
-        if self.is_export(id)? || b.expired || b.endpoint.desired_state == DesiredState::Deleted {
+        // A backup has no PostgreSQL: no connection, statement or load reaches it.
+        if self.is_export(id)?
+            || self.is_backup(id)?
+            || b.expired
+            || b.endpoint.desired_state == DesiredState::Deleted
+        {
             return Err(conflict("branch is not accepting new work"));
         }
         Ok(())
@@ -114,6 +119,13 @@ impl Store {
     ) -> Result<()> {
         self.db.execute("INSERT INTO operation_errors VALUES (?1,?2,?3) ON CONFLICT(operation_id) DO UPDATE SET detail=excluded.detail,terminal=excluded.terminal",params![id.to_string(),serde_json::to_string(&detail)?,terminal])?;
         Ok(())
+    }
+    /// Whether the branch record is the hold of a backup.
+    pub fn is_backup(&self, id: BranchId) -> Result<bool> {
+        Ok(self
+            .db
+            .prepare("SELECT 1 FROM backups WHERE branch_id=?1")?
+            .exists([id.to_string()])?)
     }
     pub fn ensure_parent_running(&mut self, child: BranchId) -> Result<super::BranchRecord> {
         let parent = self

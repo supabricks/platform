@@ -6,6 +6,7 @@ running PostgreSQL, and it starts in about a second.
 """
 import hashlib
 import json
+import os
 import pathlib
 import shutil
 import socket
@@ -191,8 +192,10 @@ class EngineServer(Server):
         self.bundle, self.helpers = bundle, helpers
 
     def _cli(self, *args, timeout=300):
+        # Make a backup schedule's hour three seconds long.
         return subprocess.run([str(self.binary), *args, '--data-dir', str(self.data)],
-                              capture_output=True, text=True, timeout=timeout)
+                              capture_output=True, text=True, timeout=timeout,
+                              env=dict(os.environ, SUPABRICKS_TEST_BACKUP_HOUR_MS='3000'))
 
     def _spawn(self):
         self._log = (self.root / 'daemon.log').open('ab')

@@ -409,7 +409,7 @@ known now:
 | AP05 Tables and objects | Tables done; see below | Batched edits (#258), reviewed DDL (#259), the rest of introspection and other objects (#260) |
 | AP06 Imports | Done; see below | Append and replace (#311), remote sources (#312), direct analytical import (#313), governed servers (#332) |
 | AP07 Administration and observability | Password reset, roles and extensions done; see below | Which extensions a release bundles (#253), metrics (#247), query activity (#248) |
-| AP08 Backups | Whole-cell offline bundle | Online backups, schedule, restore in place (#296) |
+| AP08 Backups | Done; see below | Restore in place, a destination off the machine, the analytical side (#296); the retention window (#254); governed servers (#339); deleting a backup a branch stands on (#340) |
 
 AP02 and AP03 are mostly a REST surface over capabilities that exist, so they
 are the fastest. AP07 and AP08 are mostly new capability and are the slowest.
@@ -804,6 +804,65 @@ superuser; and a child branch's copy.
 **What this means for later work.** `pg_stat_statements` is not in the engine
 and is not preloaded, so "slowest queries" in #248 cannot be built on it
 without a change to the engine build.
+
+### AP08: Backups and restore
+
+**Completeness review.** From reading the code on 2026-10-12. The draft
+specification had no backups domain; #296 described what the console needs.
+
+- **The only backup was the offline recovery bundle.** `backup create` stops
+  the whole installation and copies its data directory. The server that
+  answers the API is the thing it stops, so no API operation can be it, and
+  it covers the installation, not one database.
+- **History is already kept.** Storage keeps a branch's history, and a branch
+  can be made from a past time or log position in it (AP03). How far back it
+  reaches is not reported and cannot be set (#254).
+- **A point that is branched from is kept for good.** Storage does not collect
+  history another timeline stands on. That is a backup in everything but
+  name: taken while the database runs, with nothing copied.
+- **Nothing took one on a schedule,** and nothing restored a branch in place.
+
+| Question | Decision |
+|---|---|
+| What is a backup? | A point of a branch that storage keeps: a timeline made at the branch's head, held by a branch record that has no compute, no ports and no credentials in use. Nothing can connect to it, so nothing changes it |
+| Does it count against the 32-branch limit? | No. The limit is on records with ports, and a backup has none. A database holds at most 100 backups |
+| Is it a branch to the API? | No. The record is left out of the branches and databases a caller sees, cannot be named as a branch anywhere, and work on it is reported as `backup.create` and `backup.delete` with a `backup` target. The command line, which is frozen, lists it as a suspended branch named `backup-…` and is refused every change to it but deletion |
+| Where is it kept? | In the database's own storage. It protects against a mistake in the data, not against losing the disk. The contract says so, and the offline bundle remains what leaves the machine |
+| How is one restored? | As a new branch made from it, without starting anything for the backup: what it holds is already in storage. The new branch names the backup in `restored_from_backup_id` and stands under the branch the backup was taken from |
+| Restore in place | Not built. Replacing a branch's data while keeping its identity and address is the same missing capability as branch reset (#256); it stays in #296 |
+| What can be deleted when? | A branch with backups, and a database with backups, cannot be deleted until they are. A backup a branch was restored from cannot be deleted until that branch is, because the branch stands on it in storage (#340) |
+| Schedule | One per database, for its first branch: every 1 to 168 hours, keeping the newest 1 to 30. The first is taken at once. The schedule deletes only its own backups, never one a branch was restored from, and does not wake a suspended database |
+| A suspended branch | A backup by request resumes it for the moment it takes and the platform suspends it again, as for any branch made from a suspended parent |
+| Size and verification | Not reported. Per-branch size does not exist (#246), and there is nothing to verify: a backup is the storage engine's own data, not a copy |
+| The analytical side | A backup holds PostgreSQL only. Published versions, catalog state, notebooks and environments are covered by the offline bundle and nothing else (#296) |
+| Governed servers | Read only; every change is `403` (#339) |
+
+**Built.**
+
+- Catalog 34: `backups` and `backup_policies`.
+- A `hold` request in the operation journal: the branch-point capture and the
+  timeline, and no compute. A branch made from a hold takes the hold's own
+  position from storage instead of waking a parent.
+- `store/backups.rs`: backups as the API reports them, and the schedule, run
+  from the daemon's tick while the engines are present.
+- `rest/backups.rs`: `listBackups`, `createBackup`, `getBackup`,
+  `deleteBackup`, `restoreBackup`, `getBackupSchedule`, `setBackupSchedule`.
+- `Branch` gains `restored_from_backup_id`.
+
+**Tests.** `api/tests/test_backups.py`: the schedule, every refusal and the
+governed profile without engines, and five engine-backed tests. They take a
+backup, change the branch, restore twice and check with SQL that each restored
+branch holds what the backup did and then diverges; list backups of several
+branches newest first; see a branch and a database refuse to go while they
+have backups, and a backup refuse while a branch stands on it; back up and
+restore a suspended database without leaving it awake; watch a schedule take
+backups, keep the newest two, spare the one a branch was restored from and
+its manual neighbour, and leave a suspended database asleep; and check that
+the command line sees the record and cannot run it.
+
+**What remains** is in #296: restore in place, a destination off the machine,
+online coverage of the analytical side, and a retention window that can be
+read and set (#254).
 
 ## 7. Risks
 
