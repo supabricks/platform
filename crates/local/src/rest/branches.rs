@@ -28,8 +28,10 @@ fn body_of(view: &BranchView) -> Value {
         "child_count": view.children,
         "connections": {
             "open": view.connections,
-            "limit": crate::connections::MAX_BRANCH_CONNECTIONS,
+            "limit": view.connection_limit,
         },
+        "compute":view.compute,
+        "storage":view.storage,
         "revision": view.revision,
     })
 }
@@ -175,7 +177,17 @@ pub fn create(
     database: &str,
 ) -> Result<Reply, Problem> {
     let (project, database) = databases::found(store, project, database)?;
-    let body = fields(call, &["name", "parent_id", "from", "expires_at"])?;
+    let body = fields(
+        call,
+        &[
+            "name",
+            "parent_id",
+            "from",
+            "expires_at",
+            "compute_size",
+            "idle_timeout_seconds",
+        ],
+    )?;
     let name = databases::valid(
         text(body, "name")?.ok_or_else(|| Problem::invalid("name is required."))?,
     )?;
@@ -186,6 +198,7 @@ pub fn create(
         Some(parent) => member(store, &database, parent)
             .map_err(|_| Problem::not_found("There is no such parent branch in this database."))?,
     };
+    let settings = super::compute::settings(body, Default::default())?;
     let point = point(body.get("from"))?;
     let expires = expiry(body)?.flatten();
     let host = databases::owner(host)?;
@@ -202,20 +215,21 @@ pub fn create(
                 return Err(databases::name_taken(&name));
             }
         }
-        let made = databases::change(
+        let made = databases::act(
             store,
             host,
             &project,
-            database.project,
-            native,
-            "conflict",
-            |key| Action::CreateBranch {
-                name: name.clone(),
-                parent: parent.id.to_string(),
-                key,
-                point: point.clone(),
+            Action::WithCompute {
+                creation: Box::new(Action::CreateBranch {
+                    name: name.clone(),
+                    parent: parent.id.to_string(),
+                    key: native,
+                    point: point.clone(),
+                }),
+                settings: settings.clone(),
             },
-        )?;
+        )
+        .map_err(|e| databases::refused("conflict", &e))?;
         if let Some(at) = expires {
             let branch = made["branch_id"].as_str().ok_or_else(|| {
                 Problem::new(500, "internal_error", "The new branch is unreadable.")
@@ -243,6 +257,17 @@ pub fn update(
     branch: &str,
 ) -> Result<Reply, Problem> {
     let (project, _, view) = found(store, project, database, branch)?;
+    if super::compute::changing(call) {
+        return super::compute::update(
+            store,
+            host,
+            call,
+            &project,
+            view.project,
+            view.id,
+            view.revision,
+        );
+    }
     let body = fields(call, &["name", "expires_at"])?;
     if body.is_empty() {
         return Err(Problem::invalid("Give a name or an expiry to change."));

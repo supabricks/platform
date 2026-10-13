@@ -35,6 +35,7 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 
 | Guide | What it covers |
 | --- | --- |
+| [Database compute](database-compute.md) | Sizing profiles, idle suspension and shared storage accounting |
 | [Database workspace](database-workspace.md) | Branches, SQL, cancellation and saved queries |
 | [File ingestion](file-ingestion.md) | CSV/TSV, JSON/JSONL/document and Parquet |
 | [CSV/TSV ingestion](csv-ingestion.md) | CLI/MCP mappings and durable import jobs |

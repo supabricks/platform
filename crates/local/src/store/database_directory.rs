@@ -22,6 +22,9 @@ pub struct DatabaseRecord {
     pub branches: i64,
     pub holds_default: bool,
     pub connections: i64,
+    pub connection_limit: usize,
+    pub compute: serde_json::Value,
+    pub storage: serde_json::Value,
 }
 
 /// A branch as the platform API reports it.
@@ -43,6 +46,9 @@ pub struct BranchView {
     /// Live branches made from it.
     pub children: i64,
     pub connections: i64,
+    pub connection_limit: usize,
+    pub compute: serde_json::Value,
+    pub storage: serde_json::Value,
     /// Rises with every lifecycle change, rename and change of expiry.
     pub revision: i64,
     pub lifecycle_revision: i64,
@@ -153,6 +159,19 @@ impl Store {
                     .max(1) as i64,
                 holds_default: members.iter().any(|b| b.is_default),
                 connections: self.connection_count(root.branch.id)? as i64,
+                connection_limit: self.connection_limit(root.branch.id)?,
+                compute: self.compute_view(root.branch.id)?,
+                storage: {
+                    let mut value = self.storage_view(root.branch.id)?;
+                    value["database"] = self.database_storage(
+                        &members
+                            .iter()
+                            .filter(|b| b.endpoint.desired_state != DesiredState::Deleted)
+                            .map(|b| b.branch.id)
+                            .collect::<Vec<_>>(),
+                    )?;
+                    value
+                },
             });
         }
         records.sort_by(|a, b| (&a.name, a.id.to_string()).cmp(&(&b.name, b.id.to_string())));
@@ -201,6 +220,9 @@ impl Store {
                     })
                     .count() as i64,
                 connections: self.connection_count(id)? as i64,
+                connection_limit: self.connection_limit(id)?,
+                compute: self.compute_view(id)?,
+                storage: self.storage_view(id)?,
                 revision: branch.revision + edits,
                 lifecycle_revision: branch.revision,
             });

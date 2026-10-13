@@ -7,6 +7,7 @@ pub mod capture;
 pub mod catalog;
 pub mod cli;
 pub mod client;
+pub mod compute;
 mod connections;
 pub mod console;
 pub mod daemon;

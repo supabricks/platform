@@ -5,7 +5,7 @@ mod exports;
 mod http;
 mod incremental;
 mod lifecycle;
-mod pageserver;
+pub(crate) mod pageserver;
 mod s3;
 mod sql;
 pub(crate) mod validation;
@@ -656,7 +656,7 @@ impl Cell {
             self.root.clone(),
         ))
     }
-    fn pageserver(&self) -> Result<pageserver::Pageserver> {
+    pub(crate) fn pageserver(&self) -> Result<pageserver::Pageserver> {
         Ok(pageserver::Pageserver {
             port: self.port("ps_http"),
             token: self
@@ -705,6 +705,9 @@ impl Cell {
         std::time::Duration::from_millis(self.config.connection_startup_timeout_ms)
     }
     pub fn validate_mutation(&self, mutation: &crate::operations::Mutation) -> Result<()> {
+        if let crate::operations::Mutation::WithCompute { mutation, .. } = mutation {
+            return self.validate_mutation(mutation);
+        }
         self.validate_export(mutation)?;
         if let crate::operations::Mutation::CreateBranch { ports, .. }
         | crate::operations::Mutation::CreateDatabase { ports, .. }
@@ -932,6 +935,10 @@ impl Cell {
             if setting["name"] == "unix_socket_directories" {
                 setting["value"] = json!(sockets);
             }
+        }
+        if !export {
+            crate::compute::profile(&store.compute_settings(branch.branch.id)?.size)?
+                .apply(settings);
         }
         if export {
             for setting in settings.iter_mut() {

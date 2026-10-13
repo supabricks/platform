@@ -38,6 +38,7 @@ pub enum Operation {
     GetTable,
     InspectImportSource,
     ListBranches,
+    ListComputeSizes,
     ListDatabases,
     ListExtensions,
     ListImportSources,
@@ -70,6 +71,7 @@ pub enum Operation {
 /// Method, path template and operation, with `{name}` for a path parameter.
 #[rustfmt::skip]
 pub const ROUTES: &[(&str, &str, Operation)] = &[
+    ("GET", "/compute-sizes", Operation::ListComputeSizes),
     ("GET", "/projects", Operation::ListProjects),
     ("POST", "/projects", Operation::CreateProject),
     ("DELETE", "/projects/{project}", Operation::DeleteProject),
@@ -178,6 +180,7 @@ impl Operation {
             Self::GetTable => Role::Viewer,
             Self::InspectImportSource => Role::Editor,
             Self::ListBranches => Role::Viewer,
+            Self::ListComputeSizes => Role::Any,
             Self::ListDatabases => Role::Viewer,
             Self::ListExtensions => Role::Viewer,
             Self::ListImportSources => Role::Editor,
@@ -243,6 +246,7 @@ impl Operation {
             Self::GetTable => false,
             Self::InspectImportSource => false,
             Self::ListBranches => true,
+            Self::ListComputeSizes => false,
             Self::ListDatabases => true,
             Self::ListExtensions => false,
             Self::ListImportSources => false,

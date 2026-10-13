@@ -34,6 +34,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migrations/0031_publication_generation.sql"),
     include_str!("migrations/0032_project_names.sql"),
     include_str!("migrations/0033_branch_details.sql"),
+    include_str!("migrations/0034_compute.sql"),
 ];
 pub const SCHEMA_VERSION: u32 = MIGRATIONS.len() as u32;
 
@@ -74,6 +75,22 @@ fn apply_inner(db: &mut Connection, migrations: &[&str]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn compute_upgrade_preserves_existing_branches_and_defaults_to_never() {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        apply(&mut db, &MIGRATIONS[..33]).unwrap();
+        db.execute_batch("INSERT INTO projects VALUES ('p','project'); INSERT INTO branches(id,project_id,name,tenant_id,timeline_id,revision,desired) VALUES ('b','p','main','tenant','timeline',7,'running');").unwrap();
+        catalog_upgrade(&mut db, 33, "verified-backup", "release").unwrap();
+        let value:(String,Option<i64>,i64,i64) = db.query_row("SELECT c.size,c.idle_timeout_seconds,b.revision,d.edits FROM branch_compute c JOIN branches b ON b.id=c.branch_id JOIN branch_details d ON d.branch_id=b.id",[],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?))).unwrap();
+        assert_eq!(value, ("m".into(), None, 7, 0));
+        assert!(
+            !db.prepare("PRAGMA foreign_key_check")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+    }
     #[test]
     fn schema_twenty_five_preserves_populated_publications_capture_and_foreign_keys() {
         let mut db = Connection::open_in_memory().unwrap();
@@ -223,6 +240,7 @@ fn catalog_upgrade_inner(
                 | 30
                 | 31
                 | 32
+                | 33
         )
     {
         return Err(conflict(

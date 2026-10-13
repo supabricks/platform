@@ -95,6 +95,11 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
         let operation = store.operation(entry.id.parse().ok()?).ok()?;
         let request = store.native_request(&entry.id).ok()?;
         let mutation: Value = serde_json::from_str(&request.request).unwrap_or_default();
+        let mutation = if mutation["kind"] == "with_compute" {
+            mutation["mutation"].clone()
+        } else {
+            mutation
+        };
         use crate::operations::Status;
         state = match operation.status {
             Status::Succeeded => "succeeded",
@@ -110,6 +115,18 @@ pub fn view(store: &Store, project: &ProjectRecord, entry: &OperationEntry) -> O
             .as_ref()
             .is_some_and(|b| b.branch.parent_id.is_none());
         let kind = match mutation["kind"].as_str().unwrap_or_default() {
+            "configure_compute" => if database {
+                "database.configure_compute"
+            } else {
+                "branch.configure_compute"
+            }
+            .to_owned(),
+            "auto_suspend" => if database {
+                "database.auto_suspend"
+            } else {
+                "branch.auto_suspend"
+            }
+            .to_owned(),
             "create_database" => "database.create".to_owned(),
             "set_state" | "force_delete" if database => {
                 match mutation["desired"].as_str().unwrap_or("deleted") {

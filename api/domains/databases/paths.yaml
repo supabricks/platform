@@ -10,8 +10,9 @@ computeSizes:
     operationId: listComputeSizes
     tags: [Databases]
     summary: List the compute sizes a database can have
-    description: Not part of version 1. Every database runs on the same compute.
-    x-backend: new
+    description: Shared-host PostgreSQL tuning profiles. CPU and memory are budgets, not hard isolation. Availability reflects detected host capacity.
+    x-backend: ready
+    x-profiles: [local]
     x-required-role: any
     x-console-features: [DB-02b, DB-06b]
     x-issues: [244]
@@ -22,10 +23,21 @@ computeSizes:
           application/json:
             schema:
               type: object
-              required: [items]
+              required: [items, default, installation_connection_limit, cpu_memory_isolation, resize_requires_restart]
               properties:
                 items: { type: array, items: { $ref: './schemas.yaml#/ComputeSize' } }
+                default: { type: string, const: m }
+                installation_connection_limit: { type: integer, const: 256 }
+                cpu_memory_isolation: { type: boolean, const: false }
+                resize_requires_restart: { type: boolean, const: true }
+            example:
+              items: [{ id: s, label: Small, vcpu: 1, memory_bytes: 1073741824, max_connections: 32, available: true, resource_model: shared_host_tuning }]
+              default: m
+              installation_connection_limit: 256
+              cpu_memory_isolation: false
+              resize_requires_restart: true
       '401': { $ref: '../../shared/responses.yaml#/Unauthorized' }
+      '403': { $ref: '../../shared/responses.yaml#/Forbidden' }
 
 databases:
   parameters:
@@ -77,8 +89,8 @@ databases:
       database or branch in the project already has is refused with `409` and
       `code: name_taken`. An installation runs at most 32 branches at a time,
       counting every database; beyond that the request is refused with `409`
-      and `code: capacity_exhausted`. Choosing a compute size or an idle
-      timeout is not part of version 1. A governed server does not offer this
+      and `code: capacity_exhausted`. Optional compute_size defaults to m;
+      idle_timeout_seconds defaults to null (never). A governed server does not offer this
       yet and answers `403` with `code: unavailable_in_profile`; a governed
       project has the database it was created with.
     x-backend: ready
@@ -138,15 +150,20 @@ database:
   patch:
     operationId: updateDatabase
     tags: [Databases]
-    summary: Rename a database
+    summary: Rename a database or configure its compute
     description: >-
       Renaming keeps the database ID and its connection details. It also
       renames the database's first branch, which carries the same name. A name
       another database or branch in the project has is refused with `409` and
       `code: name_taken`. The revision rises by one when the name changes and
-      stays the same when it does not. Resizing, an idle timeout and history
-      retention are not part of version 1. A governed server does not offer
+      stays the same when it does not. History retention is not part of version 1. A governed server does not offer
       this yet and answers `403` with `code: unavailable_in_profile`.
+      A compute change is sent separately from name or expiry edits, with
+      compute_size and/or idle_timeout_seconds. It requires If-Match and
+      Idempotency-Key and returns 202 with a durable operation. A running resize
+      needs allow_restart: true; the console must review the restart impact.
+      Drain connections and active work, including capture, first. Suspended
+      branches stay suspended. Idle-only changes do not restart PostgreSQL.
     x-backend: ready
     x-required-role: administrator
     x-profiles: [local]
@@ -154,6 +171,11 @@ database:
     x-issues: [244, 245, 254, 322]
     parameters:
       - $ref: '../../shared/parameters.yaml#/IfMatch'
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Required for compute settings changes. Not used for name or expiry edits.
+        schema: { type: string, minLength: 8, maxLength: 128 }
     requestBody:
       required: true
       content:
@@ -161,6 +183,8 @@ database:
           schema: { $ref: './schemas.yaml#/DatabaseUpdate' }
           example: { name: reporting-eu }
     responses:
+      '202': { $ref: '../../shared/responses.yaml#/Accepted' }
+      '428': { $ref: '../../shared/responses.yaml#/PreconditionRequired' }
       '200':
         description: The updated database.
         headers: { ETag: { schema: { type: string } } }

@@ -47,8 +47,9 @@ invalidates relays associated with its old process identity.
 
 ## Limits and TLS
 
-The gateway admits at most 256 simultaneous connections per cell and 64 per
-branch, including unauthenticated clients and clients waiting for wake. It
+The gateway admits at most 256 simultaneous connections per cell. A branch
+accepts 32, 64 (the default), or 128 according to its [compute profile](../handbook/database-compute.md),
+including unauthenticated clients and clients waiting for wake. It
 buffers at most 64 KiB of client startup data per waiting connection. Overflow
 closes the new socket. The default wake/backend-connect deadline is 30 seconds;
 the private `runtime.json` field `connection_startup_timeout_ms` accepts 100 to
@@ -103,7 +104,8 @@ then obtains the durable commit boundary from the safekeeper. An old receipt
 cannot stand in for a later suspend revision. Unavailable storage leaves the
 operation pending instead of inventing a boundary or deleting uncertain state.
 
-Suspension is explicit in this slice; there is no automatic idle timer. Keeping
+The original P05 slice added explicit suspension. The [compute controls](../handbook/database-compute.md)
+now add an opt-in idle timer using the same durable suspend path. Keeping
 a pool connected intentionally keeps compute active. Whole-cell `down` closes
 connections and stops services while retaining desired branch state and durable
 storage; it is distinct from branch suspension. R03 still owns coordinated

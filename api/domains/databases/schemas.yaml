@@ -2,8 +2,8 @@ Database:
   type: object
   description: >-
     A PostgreSQL database and its branches. Its first branch carries the
-    database's name and is its default branch. Compute size, storage used and
-    history retention are not reported in version 1.
+    database's name and is its default branch. Compute and storage describe
+    the root branch; storage.database counts shared timeline layers once.
   required: [id, name, state, postgres_version, default_branch_id, branch_count, holds_project_default, connections, created_at, revision]
   properties:
     id: { $ref: '../../shared/schemas.yaml#/Id' }
@@ -37,6 +37,8 @@ Database:
       description: >-
         When the database was created. For one that existed before the server
         recorded this, the time of the upgrade that started recording it.
+    compute: { $ref: '../../shared/schemas.yaml#/ComputeSettings' }
+    storage: { $ref: '../../shared/schemas.yaml#/StorageUsage' }
     revision: { $ref: '../../shared/schemas.yaml#/Revision' }
 
 DatabaseName:
@@ -51,11 +53,13 @@ ComputeSize:
   type: object
   required: [id, label, vcpu, memory_bytes, max_connections]
   properties:
-    id: { type: string, examples: [xs, s, m, l, xl] }
+    id: { type: string, enum: [s, m, l] }
     label: { type: string, examples: [Small] }
     vcpu: { type: number }
     memory_bytes: { $ref: '../../shared/schemas.yaml#/Bytes' }
     max_connections: { type: integer }
+    available: { type: boolean }
+    resource_model: { const: shared_host_tuning }
 
 DatabaseCreate:
   type: object
@@ -63,13 +67,17 @@ DatabaseCreate:
   additionalProperties: false
   properties:
     name: { $ref: './schemas.yaml#/DatabaseName' }
+    compute_size: { type: string, enum: [s, m, l], default: m }
+    idle_timeout_seconds: { $ref: '../../shared/schemas.yaml#/IdleTimeout' }
 
 DatabaseUpdate:
-  type: object
-  required: [name]
-  additionalProperties: false
-  properties:
-    name: { $ref: './schemas.yaml#/DatabaseName' }
+  oneOf:
+    - type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { $ref: './schemas.yaml#/DatabaseName' }
+    - $ref: '../../shared/schemas.yaml#/ComputeUpdate'
 
 DatabasePage:
   allOf:

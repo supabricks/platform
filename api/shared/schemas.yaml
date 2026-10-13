@@ -149,3 +149,58 @@ BackendStatus:
     Not part of the wire contract. Records, for each operation in this document,
     whether the platform can do it today.
   enum: [ready, cli-only, new]
+
+IdleTimeout:
+  description: Seconds with no gateway clients or protected work before suspension. Null means never (the default). Capture retains its source until the generation is deleted, even when paused.
+  oneOf:
+    - { type: integer, minimum: 60, maximum: 86400 }
+    - { type: 'null' }
+  default: null
+
+ComputeUpdate:
+  type: object
+  additionalProperties: false
+  anyOf: [{ required: [compute_size] }, { required: [idle_timeout_seconds] }]
+  properties:
+    compute_size: { type: string, enum: [s, m, l] }
+    idle_timeout_seconds: { $ref: './schemas.yaml#/IdleTimeout' }
+    allow_restart: { type: boolean, default: false, description: 'Required to resize running compute. Drain connections and work first.' }
+
+ComputeSettings:
+  type: object
+  required: [size, idle_timeout_seconds, last_suspend_reason, last_suspended_at_ms, capture_holds_awake, resource_model]
+  properties:
+    size: { type: string, enum: [s, m, l], description: 'Desired size; applied when the lifecycle operation succeeds.' }
+    idle_timeout_seconds: { $ref: './schemas.yaml#/IdleTimeout' }
+    last_suspend_reason: { enum: [manual, idle_timeout, null] }
+    last_suspended_at_ms: { type: [integer, 'null'], description: 'Unix milliseconds when suspension was requested, not when retirement completed.' }
+    capture_holds_awake: { type: boolean }
+    resource_model: { const: shared_host_tuning }
+
+StorageUsage:
+  type: object
+  description: >-
+    Pageserver observations sampled every 30 seconds without waking compute.
+    Stale after 120 seconds or an owner restart. Unknown bytes are null, never
+    zero. Logical size includes inherited data and may be estimated until
+    logical_size_accurate is true. Exclusive bytes count this timeline's layer
+    files, excluding ancestor layers, and count local/remote copies only once;
+    they are not a bytewise row-data delta. Excludes WAL, compute caches,
+    exports, backup-only timelines, analytical objects and object-store overhead.
+  required: [status, sampled_at_ms, logical_bytes, exclusive_physical_bytes, logical_size_accurate]
+  properties:
+    status: { enum: [fresh, stale, unavailable] }
+    sampled_at_ms: { type: [integer, 'null'] }
+    logical_bytes: { type: [integer, 'null'], minimum: 0 }
+    exclusive_physical_bytes: { type: [integer, 'null'], minimum: 0 }
+    logical_size_accurate: { type: boolean }
+    database:
+      type: object
+      description: Sum of distinct live database timeline layers; never the sum of logical clone sizes. Null if any branch is unavailable. Timestamp is the oldest component sample.
+      required: [status, sampled_at_ms, total_physical_bytes, scope, branch_count]
+      properties:
+        status: { enum: [fresh, stale, unavailable] }
+        sampled_at_ms: { type: [integer, 'null'] }
+        total_physical_bytes: { type: [integer, 'null'], minimum: 0 }
+        scope: { const: live_database_timeline_layers }
+        branch_count: { type: integer, minimum: 0 }

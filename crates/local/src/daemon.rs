@@ -199,6 +199,7 @@ pub struct Daemon {
     )>,
     ingest_error: Option<String>,
     sync_error: Option<String>,
+    compute: crate::compute::Service,
     project_apply_error: Option<String>,
     dataset_checks: crate::catalog::datasets::Checks,
     project_migrations: crate::project_apply::migrations::Workers,
@@ -264,6 +265,7 @@ impl Daemon {
             environment_gc: None,
             ingest_error: None,
             sync_error: None,
+            compute: Default::default(),
             project_apply_error: None,
             dataset_checks: Default::default(),
             project_migrations: Default::default(),
@@ -535,6 +537,11 @@ impl Daemon {
                 } else {
                     true
                 };
+                if !stopping && let Some(cell) = &self.cell {
+                    if let Err(error) = self.compute.tick(&mut self.store, cell) {
+                        eprintln!("compute scheduling: {error}");
+                    }
+                }
                 if let Some(validator) = &self.validator {
                     validator.refresh(&self.store)?;
                 }

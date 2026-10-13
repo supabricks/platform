@@ -229,7 +229,7 @@ def test_the_same_name_can_be_used_in_another_project(api, project, shared):
 
 @pytest.mark.l2
 @pytest.mark.parametrize('body', [{}, {'name': ''}, {'name': 'has space'}, {'name': '-lead'}, {'name': 'a' * 41},
-                                  {'name': 7}, {'name': 'ok', 'compute_size': 's'}, [], 'text'])
+                                  {'name': 7}, {'name': 'ok', 'compute_size': 'xl'}, [], 'text'])
 def test_create_rejects_an_invalid_body(api, project, body):
     before = len(everything(api, project))
     response = api.call('createDatabase', path={'project': project}, json=body,
