@@ -18,6 +18,7 @@ and exact release qualification, use the [delivery ledger](../plans/status.md).
 | [Recovery and upgrades](recovery.md) | Stopped backups, new-root restore and supported upgrades |
 | [Local state](local-state.md) | SQLite control state and durable operations |
 | [Build and installation](../../install/native/README.md) | Native assembly, verified installation and release checks |
+| [Local checks and CI](ci.md) | Change-based local/PR checks, full release qualification and manual diagnostic probes |
 
 ## Projects and portability
 
