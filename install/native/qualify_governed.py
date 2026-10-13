@@ -134,7 +134,9 @@ def inside(args):
                 suite['diagnostics']=summarize(root/(name+'.private.log'))
             if name=='sync':suite['exact_installed']=value.get('exact_installed')
             if name=='identity':suite['measurements']=value.get('measurements',{})
-            if name=='upgrade':suite['predecessor_identity']=value.get('predecessor_identity')
+            if name=='upgrade':
+                suite['predecessor_identity']=value.get('predecessor_identity')
+                suite['upgrade_control']=value.get('upgrade_control')
             if name=='browser':
                 for field in ['revocation_observed_ms','resource_envelope','execution_memory','tls','exact_installed','console_manifest_sha256']:
                     suite[field]=value.get(field)
