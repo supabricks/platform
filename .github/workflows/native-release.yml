@@ -1,12 +1,16 @@
 name: native-release
 on:
-  pull_request:
+  # Full archive qualification runs after integration or by explicit dispatch.
+  push:
+    branches: [main]
     paths:
       - 'crates/core/**'
       - 'crates/local/**'
       - 'schemas/**'
       - 'examples/projects/**'
       - 'Cargo.lock'
+      - 'Cargo.toml'
+      - '.cargo/**'
       - 'components/**'
       - 'install/native/**'
       - 'python/analytics/**'
@@ -31,7 +35,6 @@ on:
       - 'python/execution/**'
       - 'e2e/native/notebooks/**'
       - 'e2e/native/notebook-environments/**'
-      - 'docs/handbook/**'
       - 'console/**'
       - 'console'
       - '.gitmodules'
@@ -39,7 +42,6 @@ on:
       - 'examples/console/**'
       - 'examples/notebooks/**'
       - 'agents/**'
-      - 'LICENSE'
       - '.github/workflows/native-release.yml'
       - '.github/actions/docker-registry-mirror/**'
       - '.github/actions/deltalake/**'

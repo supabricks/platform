@@ -4,6 +4,11 @@ The October 2026 PG253/PG248/PG247 stack exposed product portability bugs,
 qualification assumptions and duplicated CI work. These changes are awaiting
 native Linux/macOS CI; focused local checks are not release qualification.
 
+The subsequent [CI execution policy](../handbook/ci.md) scopes local/PR checks to
+changed inputs and moves full archive qualification to affected main pushes or
+explicit dispatch. The repair results and unresolved failures below are retained;
+a cadence change does not qualify a previously failing archive.
+
 ## Correctness and qualification
 
 - [#359](https://github.com/supabricks/platform/issues/359): macOS process-group
